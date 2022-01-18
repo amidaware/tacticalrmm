@@ -20,7 +20,7 @@ The Legal entity behind Tactical RMM
 
 ## Is it possible to use XXX with Tactical RMM
 
-While it _may be possible_ to use XXX, we have not configured it and therefore it is [Unsupported](../unsupported_guidelines). We cannot help you configure XXX as it pertains to **your environment**. 
+While it _may be possible_ to use XXX, we have not configured it and therefore it is [Unsupported](../unsupported_guidelines). We cannot help you configure XXX as it pertains to **your environment**.
 
 ## Is it possible to use XXX proxy server with Tactical RMM
 
@@ -35,15 +35,21 @@ There are some [implementations](../unsupported_scripts) that others have done, 
 
 ## How do I do X feature in the web UI?
 
-Alot of features in the web UI are hidden behind right-click menus; almost everything has a right click menu so if you don't see something, try right clicking on it.
+A lot of features in the web UI are hidden behind right-click menus; almost everything has a right click menu so if you don't see something, try right clicking on it.
 
 ## Where are the Linux / Mac agents?
 
 Linux / Mac agents are currently under development.
 
-## Can I run Tactical RMM locally behind NAT without exposing anything to the internet?
+## Can I run Tactical RMM locally behind NAT **without** exposing my RMM server to the internet?
 
 Yes, you will just need to setup local DNS for the 3 subdomains, either by editing host files on all your agents or through a local DNS server.
+
+Similarly asked: Can I use onsite DNS servers (I don’t want my server accessible from the internet).
+
+Yes, you can use (only) internal DNS (if you want) for api, mesh and rmm domains. You don't have to put these records in your public DNS servers
+
+**Note:** You still **must** have an internet resolvable domain name and add the DNS `TXT` record to its public DNS server for the Let's Encrypt wildcard cert request process that is part of the install process. This **does not** require any inbound connection from the internet (port forwarding etc) to be enabled. This does not expose your RMM server to the internet in any way. The Let's Encrypt wildcard is done for [nats](#self-signed-certs)
 
 ## I am locked out of the web UI. How do I reset my password?
 
@@ -113,18 +119,16 @@ No, you haven't.
 
 ## DNS can't find record
 
-Q. My dns isn’t working 
+Q. My dns isn’t working
 
-A. Make sure it’s correctly formatted some dns hosts add in the domain automatically. 
+A. Make sure it’s correctly formatted, most DNS providers add in the domain automatically.
 
-## Onsite DNS server and LAN only TRMM servers
-
-Q. Can I use onsite dns servers (I don’t want my server internet accessible). 
-
-A. Yes that’s covered in the docs, you can use internal dns for api, mesh and rmm domains but need to add the dns txt to an internet resolvable dns server for letsencrypt wildcard cert
+![DNS Examples](images/trmmdnsexample.png)
 
 ## Self-Signed Certs
 
-Q. Why can’t I use a self signed certificate for web etc. 
+Q. Why can’t I use a self signed certificate for web etc.
 
-A. NATS over TLS needs a real certificate signed with a trusted root certificate. NATS can function without TLS however that isn’t recommended
+A. NATS over TLS needs a real certificate signed with a trusted root certificate.
+
+NATS can function without TLS however that isn’t recommended, and we don't support it. NATS is what passes data between server and agent. Would you really pass your RMM's Command and Control without encryption that manages all your agents? Hint: The answer to this question is **HELL NO**

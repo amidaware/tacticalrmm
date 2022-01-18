@@ -147,7 +147,7 @@
           <div class="text-subtitle2 q-pa-sm">
             Actions:
             <q-checkbox class="float-right" label="Continue on Errors" v-model="state.continue_on_error" dense>
-              <q-tooltip>Continue if task if an action fails</q-tooltip>
+              <q-tooltip>Continue task if an action fails</q-tooltip>
             </q-checkbox>
           </div>
           <div class="scroll q-pt-sm" style="height: 40vh; max-height: 40vh">

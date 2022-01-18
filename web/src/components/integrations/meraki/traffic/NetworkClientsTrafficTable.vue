@@ -248,11 +248,16 @@ export default {
     const totalSent = ref(null)
     const filter = ref("")
     const dateOptions = ref([])
+    const dateRange = ref("")
     const updateProxy = ref("")
     const tableLoading = ref(false)
 
     function formatUsage(usage) {
-      if (usage > 1000 && usage < 1000000) {
+      if (usage < 1000) {
+        let totalKB = usage.toFixed(0)
+        return String(totalKB) + " KB"
+
+      } else if (usage > 1000 && usage < 1000000) {
         let totalMB = (usage / 1000).toFixed(2)
         return String(totalMB) + " MB"
 
@@ -349,6 +354,7 @@ export default {
       totalSent,
       filter,
       dateOptions,
+      dateRange,
       updateProxy,
       tableLoading,
       getClientTraffic,

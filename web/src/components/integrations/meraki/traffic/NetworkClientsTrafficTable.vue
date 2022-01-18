@@ -269,7 +269,7 @@ export default {
         return String(totalGB) + " GB"
 
       } else if (usage > 1000000000 && usage < 1000000000000) {
-        let totalTB = (usage / 1000000).toFixed(2)
+        let totalTB = (usage / 1000000000).toFixed(2)
         return String(totalTB) + " TB"
 
       }

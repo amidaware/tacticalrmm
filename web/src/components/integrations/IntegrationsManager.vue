@@ -44,12 +44,18 @@
                     v-if="props.row.enabled"
                     outline
                   >Enabled</q-chip>
-                  <q-chip dense color="positive" text-color="white" outline>Agent</q-chip>
                   <q-chip
+                    v-if="props.row.agent_related === true"
                     dense
                     color="positive"
                     text-color="white"
-                    v-if="props.row.client_related"
+                    outline
+                  >Agent</q-chip>
+                  <q-chip
+                    v-if="props.row.client_related === true"
+                    dense
+                    color="positive"
+                    text-color="white"
                     outline
                   >Client</q-chip>
                 </q-card-section>
@@ -113,6 +119,7 @@ export default {
               description: integration.description,
               api_key: integration.configuration.api_key,
               enabled: integration.enabled,
+              agent_related: integration.agent_related,
               client_related: integration.client_related,
               integration: integration
             };

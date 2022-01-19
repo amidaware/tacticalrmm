@@ -3,7 +3,7 @@
     class="q-pt-md q-mb-xl"
     :rows="rows"
     :columns="columns"
-    row-key="id"
+    row-key="name"
     :pagination="pagination"
     :loading="tableLoading"
   >
@@ -14,21 +14,10 @@
           dense
           @click="timespan.label = 'for the last day'; timespan.value = 86400; getTopClients()"
           icon="refresh"
-          label="Top Clients"
-          class="q-mr-md"
+          label="Top 10 Clients"
         />
-      </div>
-      <div>
-        <span class="text-h6 q-mr-xs">{{ totalUsage }}</span>
-        <span class="q-ml-xs q-mr-sm">transferred</span>
-        <q-btn-dropdown
-          no-caps
-          flat
-          :label="timespan.label"
-          v-model="timespanMenu"
-          class="q-px-none"
-          style="margin-bottom:2.2px"
-        >
+
+        <q-btn-dropdown no-caps flat :label="timespan.label" v-model="timespanMenu">
           <q-list>
             <q-item
               clickable
@@ -88,18 +77,13 @@
     </template>
     <template v-slot:body="props">
       <q-tr :props="props">
-        <q-td key="id" :props="props">
-          <span class="text-caption">{{ props.row.id }}</span>
-        </q-td>
         <q-td key="name" :props="props">
           <span class="text-caption">{{ props.row.name }}</span>
         </q-td>
         <q-td key="networkName" :props="props">
           <span class="text-caption">{{ props.row.networkName }}</span>
         </q-td>
-        <q-td key="mac" :props="props">
-          <span class="text-caption">{{ props.row.mac }}</span>
-        </q-td>
+
         <q-td key="usageTotal" :props="props">
           <span class="text-caption">{{ props.row.usage.total }}</span>
         </q-td>
@@ -118,20 +102,22 @@ import { ref, onMounted } from "vue";
 import { date } from "quasar";
 
 const columns = [
-  {
-    name: "id",
-    required: true,
-    label: "ID",
-    align: "left",
-    field: (row) => row.id,
-    format: (val) => `${val}`,
-    sortable: true,
-  },
+  // {
+  //   name: "id",
+  //   required: true,
+  //   label: "ID",
+  //   align: "left",
+  //   field: (row) => row.id,
+  //   format: (val) => `${val}`,
+  //   sortable: true,
+  // },
   {
     name: "name",
     align: "left",
     label: "Name",
     field: "name",
+    field: (row) => row.name,
+    format: (val) => `${val}`,
     sortable: true,
   },
   {
@@ -141,13 +127,13 @@ const columns = [
     field: "networkName",
     sortable: true,
   },
-  {
-    name: "mac",
-    label: "MAC",
-    field: "mac",
-    align: "left",
-    sortable: true,
-  },
+  // {
+  //   name: "mac",
+  //   label: "MAC",
+  //   field: "mac",
+  //   align: "left",
+  //   sortable: true,
+  // },
   {
     name: "usageTotal",
     align: "left",

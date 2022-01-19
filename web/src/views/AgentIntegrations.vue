@@ -14,7 +14,7 @@
             </template>
             <template v-slot:after>
                 <q-card-section class="row items-center q-py-none">
-                    <div class="text-h6">{{ agent.hostname }} Integrations</div>
+                    <div class="text-h6">{{ agent.hostname }}</div>
                 </q-card-section>
                 <q-tab-panels
                     v-model="integrationTab"
@@ -26,9 +26,6 @@
                 >
                     <q-tab-panel class="q-px-none" name="Bitdefender GravityZone">
                         <Bitdefender :agent="agent" />
-                    </q-tab-panel>
-                    <q-tab-panel class="q-px-none" name="Cisco Meraki">
-                        <AgentMeraki :agent="agent" />
                     </q-tab-panel>
                     <q-tab-panel class="q-px-none" name="Snipe-IT">
                         <SnipeIT :agent="agent" />
@@ -42,23 +39,23 @@
 <script>
 import axios from "axios";
 import { useRoute } from 'vue-router';
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, onBeforeMount } from "vue";
 import { useDialogPluginComponent, useMeta } from "quasar";
 import { notifyWarning } from "@/utils/notify";
 import Bitdefender from "@/components/integrations/bitdefender/Bitdefender";
 import SnipeIT from "@/components/integrations/snipeit/SnipeIT";
-import AgentMeraki from "@/components/integrations/meraki/AgentMeraki";
 
 export default {
     name: "AgentIntegrations",
     emits: [...useDialogPluginComponent.emits],
-    components: { Bitdefender, SnipeIT, AgentMeraki },
+    components: { Bitdefender, SnipeIT },
 
     setup(props) {
         const { dialogRef, onDialogHide } = useDialogPluginComponent();
         const route = useRoute()
         const agent = ref([])
         const integrations = ref([])
+        const integration = ref("")
         const integrationTab = ref("")
 
         function getAgent() {
@@ -67,7 +64,6 @@ export default {
                 .then(r => {
                     agent.value = r.data
                     useMeta({ title: agent.value.hostname + ` Integrations Dashboard` });
-                    getIntegrations()
                 })
                 .catch((e) => {
                     console.log(e)
@@ -79,7 +75,7 @@ export default {
                 .get("/integrations/")
                 .then(r => {
                     for (let integrationObj of r.data) {
-                        if (integrationObj.enabled) {
+                        if (integrationObj.enabled && integrationObj.agent_related) {
                             integrations.value.push(integrationObj)
                         }
                     }
@@ -96,15 +92,13 @@ export default {
             if (selection === 'Bitdefender GravityZone') {
                 integrationTab.value = 'Bitdefender GravityZone'
 
-            } else if (selection === 'Cisco Meraki') {
-                integrationTab.value = 'Cisco Meraki'
-
             } else if (selection === 'Snipe-IT') {
                 integrationTab.value = 'Snipe-IT'
             }
         })
 
         onMounted(() => {
+            getIntegrations();
             getAgent();
         });
 
@@ -112,6 +106,7 @@ export default {
             splitterModel: ref(15),
             integrationTab,
             agent,
+            integration,
             integrations,
             // quasar dialog
             dialogRef,

@@ -2,7 +2,7 @@
     <q-dialog ref="dialogRef" @hide="onDialogHide" persistant>
         <q-card class="q-dialog-plugin" style="width: 60vw">
             <q-bar>
-                {{ agent.hostname }} Device Policy
+                Meraki Device Policy
                 <q-space />
                 <q-btn dense flat icon="close" v-close-popup>
                     <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -45,7 +45,7 @@ import { notifySuccess, notifyError } from "@/utils/notify";
 export default {
     name: "Policy",
     emits: [...useDialogPluginComponent.emits],
-    props: ['agent', 'selected'],
+    props: ['networkId', 'client'],
 
     setup(props) {
         const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
@@ -54,11 +54,12 @@ export default {
         const policyOptions = ref([{ label: 'Whitelisted', value: 'Whitelisted', description: 'No bandwidth limits or splash page' }, { label: 'Blocked', value: 'Blocked', description: 'No access allowed' }, { label: 'Normal', value: 'Normal', description: '' }])
 
         function getDevicePolicy() {
+            console.log(props.client)
             $q.loading.show({
-                message: 'Getting device policy for ' + props.agent.hostname
+                message: 'Getting current device policy...'
             })
             axios
-                .get(`/meraki/` + props.selected.value[0].networkId + `/clients/` + props.selected.value[0].mac + `/policy/`)
+                .get(`/meraki/` + props.networkId + `/clients/` + props.client.id + `/policy/`)
                 .then(r => {
                     policy.value = r.data.devicePolicy
                     if (r.data.errors) {
@@ -71,13 +72,13 @@ export default {
 
         function savePolicy() {
             $q.loading.show({
-                message: 'Applying new device policy for ' + props.agent.hostname
+                message: 'Applying new device policy...'
             })
             let data = {
                 devicePolicy: policy.value.value
             }
             axios
-                .put(`/meraki/` + props.selected.value[0].networkId + `/clients/` + props.selected.value[0].mac + `/policy/`, data)
+                .put(`/meraki/` + props.networkId + `/clients/` + props.client.mac + `/policy/`, data)
                 .then(r => {
                     policy.value = r.data.devicePolicy
 
@@ -85,7 +86,7 @@ export default {
                         notifyError(r.data.errors[0])
                     }
                     $q.loading.hide()
-                    notifySuccess('Device policy successfully applied to ' + props.agent.hostname)
+                    notifySuccess('Device policy successfully applied')
                     onDialogOK()
                 })
                 .catch(e => { });

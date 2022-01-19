@@ -13,7 +13,7 @@
         </template>
         <template v-slot:after>
             <q-card-section class="row items-center q-py-none">
-                <div class="text-h6">{{ node.name }} Integrations</div>
+                <div class="text-h6">{{ node.name }}</div>
             </q-card-section>
             <q-tab-panels
                 v-model="integrationTab"
@@ -24,7 +24,7 @@
                 transition-next="jump-up"
             >
                 <q-tab-panel class="q-px-none" name="Cisco Meraki">
-                    <ClientMeraki :node="node" :integrations="integrations" />
+                    <Meraki :node="node" :integrations="integrations" />
                 </q-tab-panel>
             </q-tab-panels>
         </template>
@@ -37,12 +37,12 @@ import { useRoute } from 'vue-router';
 import { ref, watch, onMounted } from "vue";
 import { useDialogPluginComponent, useMeta } from "quasar";
 import { notifyWarning } from "@/utils/notify";
-import ClientMeraki from "@/components/integrations/meraki/ClientMeraki";
+import Meraki from "@/components/integrations/meraki/Meraki";
 
 export default {
     name: "ClientIntegrations",
     emits: [...useDialogPluginComponent.emits],
-    components: { ClientMeraki },
+    components: { Meraki },
 
     setup(props) {
         const { dialogRef, onDialogHide } = useDialogPluginComponent();

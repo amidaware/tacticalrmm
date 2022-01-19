@@ -132,6 +132,7 @@ export default {
 
       } else {
         let data = {
+          associate_client: false,
           apikey: apikey.value,
           apiurl: apiurl.value,
           companyID: companyID.value,

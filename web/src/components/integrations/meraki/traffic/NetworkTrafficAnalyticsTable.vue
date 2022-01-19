@@ -1,4 +1,106 @@
 <template>
+  <div class="row justify-center">
+    <div class="col-6">
+      <q-card>
+        <q-card-section class="text-center">
+          <span class="text-weight-light">Total</span>
+          <div>
+            <span class="text-h6">{{ totalUsage }}</span>
+            <q-btn-dropdown
+              no-caps
+              flat
+              :label="timespan.label"
+              v-model="timespanMenu"
+              style="margin-bottom:2.20px"
+            >
+              <q-list>
+                <q-item
+                  clickable
+                  v-close-popup
+                  no-caps
+                  @click="timespan.label = 'for the last 2 hours'; timespan.value = 7200; getTrafficAnalytics()"
+                >
+                  <q-item-section>
+                    <q-item-label>for the last 2 hours</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  clickable
+                  v-close-popup
+                  no-caps
+                  @click="timespan.label = 'for the last day'; timespan.value = 86400; getTrafficAnalytics()"
+                >
+                  <q-item-section>
+                    <q-item-label>for the last day</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  clickable
+                  v-close-popup
+                  no-caps
+                  @click="timespan.label = 'for the last week'; timespan.value = 604800; getTrafficAnalytics()"
+                >
+                  <q-item-section>
+                    <q-item-label>for the last week</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="timespan.label = 'for the last 30 days'; timespan.value = 2592000; getTrafficAnalytics()"
+                >
+                  <q-item-section>
+                    <q-item-label>for the last 30 days</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable>
+                  <q-item-section v-ripple>
+                    <q-item-label>Custom range</q-item-label>
+                    <q-popup-proxy
+                      @before-show="updateProxy"
+                      transition-show="scale"
+                      transition-hide="scale"
+                    >
+                      <q-date v-model="dateRange" :options="dateOptions" range>
+                        <div class="row items-center justify-end q-gutter-sm">
+                          <q-btn label="Cancel" color="primary" flat v-close-popup />
+                          <q-btn
+                            label="OK"
+                            color="primary"
+                            flat
+                            @click="timespan.value = dateRange; timespanMenu = false; getTrafficAnalytics()"
+                            v-close-popup
+                          />
+                        </div>
+                      </q-date>
+                    </q-popup-proxy>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
+        </q-card-section>
+      </q-card>
+    </div>
+  </div>
+  <div class="row justify-center q-my-sm">
+    <div class="col-3 q-pr-sm">
+      <q-card>
+        <q-card-section class="text-center">
+          <span class="text-weight-light">Downloaded</span>
+          <div class="text-h6">{{ totalRecv }}</div>
+        </q-card-section>
+      </q-card>
+    </div>
+    <div class="col-3">
+      <q-card>
+        <q-card-section class="text-center">
+          <span class="text-weight-light">Uploaded</span>
+          <div class="text-h6">{{ totalSent }}</div>
+        </q-card-section>
+      </q-card>
+    </div>
+  </div>
   <q-table
     :rows="rows"
     :columns="columns"
@@ -14,93 +116,9 @@
           dense
           @click="timespan.label = 'for the last 2 hours'; timespan.value = 7200; getTrafficAnalytics()"
           icon="refresh"
-          label="Application Traffic"
+          label="Traffic analytics"
           class="q-mr-md"
         />
-      </div>
-      <div>
-        <span class="text-h6 q-mr-xs">{{ totalUsage }}</span>
-        <span>
-          (
-          <q-icon name="arrow_downward" />
-          {{ totalRecv }},
-          <q-icon name="arrow_upward" />
-          {{ totalSent }})
-        </span>
-        <span class="q-ml-xs q-mr-sm">transferred</span>
-        <q-btn-dropdown
-          no-caps
-          flat
-          :label="timespan.label"
-          v-model="timespanMenu"
-          class="q-px-none"
-          style="margin-bottom:2.2px"
-        >
-          <q-list>
-            <q-item
-              clickable
-              v-close-popup
-              no-caps
-              @click="timespan.label = 'for the last 2 hours'; timespan.value = 7200; getTrafficAnalytics()"
-            >
-              <q-item-section>
-                <q-item-label>for the last 2 hours</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item
-              clickable
-              v-close-popup
-              no-caps
-              @click="timespan.label = 'for the last day'; timespan.value = 86400; getTrafficAnalytics()"
-            >
-              <q-item-section>
-                <q-item-label>for the last day</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item
-              clickable
-              v-close-popup
-              no-caps
-              @click="timespan.label = 'for the last week'; timespan.value = 604800; getTrafficAnalytics()"
-            >
-              <q-item-section>
-                <q-item-label>for the last week</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item
-              clickable
-              v-close-popup
-              @click="timespan.label = 'for the last 30 days'; timespan.value = 2592000; getTrafficAnalytics()"
-            >
-              <q-item-section>
-                <q-item-label>for the last 30 days</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item clickable>
-              <q-item-section v-ripple>
-                <q-item-label>Custom range</q-item-label>
-                <q-popup-proxy
-                  @before-show="updateProxy"
-                  transition-show="scale"
-                  transition-hide="scale"
-                >
-                  <q-date v-model="dateRange" :options="dateOptions" range>
-                    <div class="row items-center justify-end q-gutter-sm">
-                      <q-btn label="Cancel" color="primary" flat v-close-popup />
-                      <q-btn
-                        label="OK"
-                        color="primary"
-                        flat
-                        @click="timespan.value = dateRange; timespanMenu = false; getTrafficAnalytics()"
-                        v-close-popup
-                      />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-btn-dropdown>
       </div>
     </template>
     <template v-slot:top-right>

@@ -7,6 +7,7 @@ class Integration(models.Model):
     configuration = models.JSONField(null=True, blank=True)
     data = models.JSONField(null=True, blank=True)
     enabled = models.BooleanField(default=False)
+    agent_related = models.BooleanField(default=False)
     client_related = models.BooleanField(default=False)
 
     def __str__(self):

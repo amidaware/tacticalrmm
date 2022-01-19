@@ -11,26 +11,16 @@
       narrow-indicator
       inline-label
     >
-      <q-btn-dropdown auto-close stretch flat no-caps icon="business" label="Organization">
-        <q-list>
-          <q-item
-            clickable
-            @click="tab = 'overviewTable'"
-            :active="tab === 'overviewTable'"
-            active-class="menu-link"
-          >
-            <q-item-section>Overview</q-item-section>
-          </q-item>
-          <q-item
-            clickable
-            @click="tab = 'topClientsTable'"
-            :active="tab === 'topClientsTable'"
-            active-class="menu-link"
-          >
-            <q-item-section>Top Clients</q-item-section>
-          </q-item>
-        </q-list>
-      </q-btn-dropdown>
+      <q-tab
+        icon="business"
+        name="summary"
+        label="Summary"
+        clickable
+        @click="tab = 'summary'"
+        :active="tab === 'summary'"
+        active-class="menu-link"
+      />
+
       <q-btn-dropdown flat dense stretch no-caps icon="public" label="Networks" class="q-px-md">
         <q-list>
           <q-item v-for="network in networks" clickable>
@@ -66,11 +56,8 @@
       </q-btn-dropdown>
     </q-tabs>
     <q-tab-panels v-model="tab" animated>
-      <q-tab-panel name="overviewTable" class="q-px-md">
-        <OverviewTable :organizationID="organizationID" :organizationName="organizationName" />
-      </q-tab-panel>
-      <q-tab-panel name="topClientsTable" class="q-px-md">
-        <TopClientsTable :organizationID="organizationID" :organizationName="organizationName" />
+      <q-tab-panel name="summary" class="q-px-md">
+        <Summary :organizationID="organizationID" :organizationName="organizationName" />
       </q-tab-panel>
       <q-tab-panel :name="networkId + 'networkTrafficAnalyticsTable'">
         <NetworkTrafficAnalyticsTable
@@ -103,13 +90,12 @@
 <script>
 import axios from "axios";
 import AssociateOrg from "@/components/integrations/meraki/modals/AssociateOrg";
-import OverviewTable from "@/components/integrations/meraki/organization/OverviewTable";
-import TopClientsTable from "@/components/integrations/meraki/organization/TopClientsTable";
+import Summary from "@/components/integrations/meraki/organization/Summary";
 import NetworkTrafficAnalyticsTable from "@/components/integrations/meraki/traffic/NetworkTrafficAnalyticsTable";
 import NetworkClientsTrafficTable from "@/components/integrations/meraki/traffic/NetworkClientsTrafficTable";
 import NetworkEventsTable from "@/components/integrations/meraki/events/NetworkEventsTable";
 // composable imports
-import { ref, onBeforeMount } from "vue";
+import { ref, onBeforeMount, onMounted } from "vue";
 import { useQuasar } from "quasar";
 import { notifySuccess, notifyError } from "@/utils/notify";
 
@@ -118,8 +104,7 @@ export default {
   props: ['node', 'integrations'],
   components: {
     AssociateOrg,
-    OverviewTable,
-    TopClientsTable,
+    Summary,
     NetworkTrafficAnalyticsTable,
     NetworkClientsTrafficTable,
     NetworkEventsTable,
@@ -135,8 +120,8 @@ export default {
     const networkId = ref("");
     const networkName = ref("");
 
-    function checkAssocation() {
-      const obj = props.integrations[0].configuration.tactical_meraki_associations.find(o => o.node_id === props.node.id);
+    function checkAssociation() {
+      const obj = props.integrations[0].configuration.backend.associations.clients.find(o => o.node_id === props.node.id);
 
       if (obj) {
         getOrganization(obj)
@@ -144,16 +129,16 @@ export default {
         $q.dialog({
           component: AssociateOrg,
         }).onOk(val => {
-          notifySuccess(val['meraki_organization_label'] + ' is now associated with ' + props.node.name)
           let data = {
-            associate: true,
+            associate_client: true,
             node_id: props.node.id,
-            meraki_organization_id: val['meraki_organization_id'],
+            meraki_organization_id: parseInt(val['meraki_organization_id']),
             meraki_organization_label: val['meraki_organization_label']
           }
           axios
             .put(`/integrations/` + props.integrations[0].id + `/`, data)
             .then(r => {
+              notifySuccess(val['meraki_organization_label'] + ' is now associated with ' + props.node.name)
               getOrganization(val)
             })
             .catch(e => {
@@ -169,6 +154,7 @@ export default {
         .get(`/meraki/organizations/` + obj.meraki_organization_id)
         .then(r => {
           organizationID.value = r.data.id
+          organizationName.value = r.data.name
           organization.value = r.data;
           if (r.data.errors) {
             notifyError(r.data.errors[0])
@@ -185,7 +171,7 @@ export default {
         .get(`/meraki/` + organizationID.value + `/networks/`)
         .then(r => {
           networks.value = r.data;
-          tab.value = 'overviewTable'
+          tab.value = 'summary'
           $q.loading.hide()
         })
         .catch(e => {
@@ -208,8 +194,8 @@ export default {
       tab.value = this.networkId + "networkEventsTable"
     }
 
-    onBeforeMount(() => {
-      checkAssocation()
+    onMounted(() => {
+      checkAssociation()
 
     })
 

@@ -12,11 +12,13 @@
         <q-btn
           flat
           dense
-          @click="timespan.label = 'for the last 2 hours'; timespan.value = 7200; getClientTraffic()"
+          @click="timespan.label = 'for the last 2 hours'; timespan.value = 7200; getTrafficAnalytics()"
           icon="refresh"
           label="Application Traffic"
           class="q-mr-md"
         />
+      </div>
+      <div>
         <span class="text-h6 q-mr-xs">{{ totalUsage }}</span>
         <span>
           (

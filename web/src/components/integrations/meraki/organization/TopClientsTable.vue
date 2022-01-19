@@ -17,7 +17,8 @@
           label="Top Clients"
           class="q-mr-md"
         />
-
+      </div>
+      <div>
         <span class="text-h6 q-mr-xs">{{ totalUsage }}</span>
         <span class="q-ml-xs q-mr-sm">transferred</span>
         <q-btn-dropdown

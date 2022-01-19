@@ -53,6 +53,8 @@
           label="Overview"
           class="q-mr-md"
         />
+      </div>
+      <div>
         <span class="text-h6 q-mr-xs">{{ totalClients }}</span>
         <span class="q-ml-xs q-mr-sm">total clients and</span>
         <span class="text-h6 q-mr-xs">{{ totalUsage }}</span>

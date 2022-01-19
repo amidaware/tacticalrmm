@@ -114,7 +114,7 @@
 <script>
 import axios from "axios";
 import { ref, onMounted } from "vue";
-import { useQuasar, date } from "quasar";
+import { date } from "quasar";
 
 const columns = [
   {

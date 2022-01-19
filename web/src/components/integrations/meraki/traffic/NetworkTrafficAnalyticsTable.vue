@@ -136,12 +136,6 @@
         <q-td key="flows" :props="props">
           <span class="text-caption">{{ props.row.flows }}</span>
         </q-td>
-        <!-- <q-td key="recv" :props="props">
-          <span class="text-caption">{{ props.row.recv }}</span>
-        </q-td>
-        <q-td key="sent" :props="props">
-          <span class="text-caption">{{ props.row.sent }}</span>
-        </q-td>-->
         <q-td key="activeTime" :props="props">
           <span class="text-caption">{{ props.row.activeTime }}</span>
         </q-td>
@@ -156,7 +150,7 @@
 <script>
 import axios from "axios";
 import { ref, onMounted } from "vue";
-import { useQuasar, date } from "quasar";
+import { date } from "quasar";
 
 const columns = [
   {

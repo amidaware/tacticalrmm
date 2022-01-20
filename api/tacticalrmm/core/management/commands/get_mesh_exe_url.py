@@ -41,7 +41,7 @@ class Command(BaseCommand):
                 response = json.loads(message)
 
                 if response["action"] == "createInviteLink":
-                    print(response["url"])
+                    print(response["url"].replace(":4443", ":443"))
                     break
 
     def handle(self, *args, **kwargs):

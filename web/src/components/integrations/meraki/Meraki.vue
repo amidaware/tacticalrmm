@@ -170,7 +170,6 @@
                       <span class="text-h6">{{ totalClients }}</span>
                       <span class="text-weight-normal q-mx-sm">clients,</span>
                       <span class="text-h6">{{ totalUsage }}</span>
-                      <span class="text-weight-normal q-ml-sm">transferred</span>
                     </div>
                   </q-card-section>
                 </q-card>

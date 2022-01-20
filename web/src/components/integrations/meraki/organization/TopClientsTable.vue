@@ -193,17 +193,18 @@ export default {
     const totalUpstream = ref(null)
 
     function formatUsage(usage) {
-      if (usage < 1000) {
-        let totalMB = usage.toFixed(2)
+      if (usage < 1024) {
+        let totalMB = (usage / 1024).toFixed(2)
         return String(totalMB) + " MB"
 
-      } else if (usage > 1000 && usage <= 1000000) {
-        let totalGB = (usage / 1000).toFixed(2)
+      } else if (usage / 1024 < 1024) {
+        let totalGB = (usage / 1024).toFixed(2)
         return String(totalGB) + " GB"
 
-      } else if (usage > 1000000 && usage <= 1000000000) {
-        let totalTB = (usage / 1000000).toFixed(2)
+      } else if (usage / 1024 / 1024 < 1024) {
+        let totalTB = (usage / 1024 / 1024).toFixed(2)
         return String(totalTB) + " TB"
+
       }
     }
 

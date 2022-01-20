@@ -3,81 +3,80 @@
     <div class="col-6">
       <q-card>
         <q-card-section class="text-center">
-          <span class="text-weight-light">Total</span>
+          <q-btn-dropdown
+            no-caps
+            flat
+            :label="timespan.label"
+            v-model="timespanMenu"
+            style="margin-bottom:2.20px"
+          >
+            <q-list>
+              <q-item
+                clickable
+                v-close-popup
+                no-caps
+                @click="timespan.label = 'For the last 2 hours'; timespan.value = 7200; getTrafficAnalytics()"
+              >
+                <q-item-section>
+                  <q-item-label>For the last 2 hours</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item
+                clickable
+                v-close-popup
+                no-caps
+                @click="timespan.label = 'For the last day'; timespan.value = 86400; getTrafficAnalytics()"
+              >
+                <q-item-section>
+                  <q-item-label>For the last day</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item
+                clickable
+                v-close-popup
+                no-caps
+                @click="timespan.label = 'For the last week'; timespan.value = 604800; getTrafficAnalytics()"
+              >
+                <q-item-section>
+                  <q-item-label>For the last week</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item
+                clickable
+                v-close-popup
+                @click="timespan.label = 'For the last 30 days'; timespan.value = 2592000; getTrafficAnalytics()"
+              >
+                <q-item-section>
+                  <q-item-label>For the last 30 days</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item clickable>
+                <q-item-section v-ripple>
+                  <q-item-label>Custom range</q-item-label>
+                  <q-popup-proxy
+                    @before-show="updateProxy"
+                    transition-show="scale"
+                    transition-hide="scale"
+                  >
+                    <q-date v-model="dateRange" :options="dateOptions" range>
+                      <div class="row items-center justify-end q-gutter-sm">
+                        <q-btn label="Cancel" color="primary" flat v-close-popup />
+                        <q-btn
+                          label="OK"
+                          color="primary"
+                          flat
+                          @click="timespan.value = dateRange; timespanMenu = false; getTrafficAnalytics()"
+                          v-close-popup
+                        />
+                      </div>
+                    </q-date>
+                  </q-popup-proxy>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
           <div>
             <span class="text-h6">{{ totalUsage }}</span>
-            <q-btn-dropdown
-              no-caps
-              flat
-              :label="timespan.label"
-              v-model="timespanMenu"
-              style="margin-bottom:2.20px"
-            >
-              <q-list>
-                <q-item
-                  clickable
-                  v-close-popup
-                  no-caps
-                  @click="timespan.label = 'for the last 2 hours'; timespan.value = 7200; getTrafficAnalytics()"
-                >
-                  <q-item-section>
-                    <q-item-label>for the last 2 hours</q-item-label>
-                  </q-item-section>
-                </q-item>
-                <q-item
-                  clickable
-                  v-close-popup
-                  no-caps
-                  @click="timespan.label = 'for the last day'; timespan.value = 86400; getTrafficAnalytics()"
-                >
-                  <q-item-section>
-                    <q-item-label>for the last day</q-item-label>
-                  </q-item-section>
-                </q-item>
-                <q-item
-                  clickable
-                  v-close-popup
-                  no-caps
-                  @click="timespan.label = 'for the last week'; timespan.value = 604800; getTrafficAnalytics()"
-                >
-                  <q-item-section>
-                    <q-item-label>for the last week</q-item-label>
-                  </q-item-section>
-                </q-item>
-                <q-item
-                  clickable
-                  v-close-popup
-                  @click="timespan.label = 'for the last 30 days'; timespan.value = 2592000; getTrafficAnalytics()"
-                >
-                  <q-item-section>
-                    <q-item-label>for the last 30 days</q-item-label>
-                  </q-item-section>
-                </q-item>
-                <q-item clickable>
-                  <q-item-section v-ripple>
-                    <q-item-label>Custom range</q-item-label>
-                    <q-popup-proxy
-                      @before-show="updateProxy"
-                      transition-show="scale"
-                      transition-hide="scale"
-                    >
-                      <q-date v-model="dateRange" :options="dateOptions" range>
-                        <div class="row items-center justify-end q-gutter-sm">
-                          <q-btn label="Cancel" color="primary" flat v-close-popup />
-                          <q-btn
-                            label="OK"
-                            color="primary"
-                            flat
-                            @click="timespan.value = dateRange; timespanMenu = false; getTrafficAnalytics()"
-                            v-close-popup
-                          />
-                        </div>
-                      </q-date>
-                    </q-popup-proxy>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-btn-dropdown>
           </div>
         </q-card-section>
       </q-card>
@@ -108,13 +107,14 @@
     :pagination="pagination"
     :loading="tableLoading"
     :filter="filter"
+    :visible-columns="visibleColumns"
   >
     <template v-slot:top-left>
       <div>
         <q-btn
           flat
           dense
-          @click="timespan.label = 'for the last 2 hours'; timespan.value = 7200; getTrafficAnalytics()"
+          @click="timespan.label = 'For the last 2 hours'; timespan.value = 7200; getTrafficAnalytics()"
           icon="refresh"
           label="Traffic analytics"
           class="q-mr-md"
@@ -151,6 +151,9 @@
           <span class="text-caption">{{ props.row.port }}</span>
         </q-td>
         <q-td key="usageTotal" :props="props">
+          <span class="text-caption">{{ props.row.usage.total }}</span>
+        </q-td>
+        <q-td key="totalUsage" :props="props">
           <span class="text-caption">{{ props.row.usage.total }}</span>
         </q-td>
         <q-td key="flows" :props="props">
@@ -205,6 +208,15 @@ const columns = [
     sortable: false,
   },
   {
+    name: "totalUsage",
+    label: "Total Usage",
+    field: "totalUsage",
+    align: "left",
+    field: (row) => row.totalUsage,
+    format: (val) => `${val}`,
+    sortable: true
+  },
+  {
     name: "flows",
     label: "Flows",
     field: "flows",
@@ -232,7 +244,7 @@ export default {
   props: ["organizationID", "organizationName", "networkID", "networkName"],
   setup(props) {
     const timespanMenu = ref(false)
-    const timespan = ref({ label: "for the last 2 hours", value: 7200 })
+    const timespan = ref({ label: "For the last 2 hours", value: 7200 })
     const rows = ref([])
     const totalActiveTime = ref(null)
     const totalUsage = ref(null)
@@ -245,20 +257,20 @@ export default {
     const tableLoading = ref(false)
 
     function formatUsage(usage) {
-      if (usage < 1000) {
+      if (usage < 1024) {
         let totalKB = usage.toFixed(0)
         return String(totalKB) + " KB"
 
-      } else if (usage > 1000 && usage < 1000000) {
-        let totalMB = (usage / 1000).toFixed(2)
+      } else if (usage / 1024 < 1024) {
+        let totalMB = (usage / 1024).toFixed(2)
         return String(totalMB) + " MB"
 
-      } else if (usage > 1000000 && usage < 1000000000) {
-        let totalGB = (usage / 1000000).toFixed(2)
+      } else if (usage / 1024 / 1024 < 1024) {
+        let totalGB = (usage / 1024 / 1024).toFixed(2)
         return String(totalGB) + " GB"
 
-      } else if (usage > 1000000000 && usage < 1000000000000) {
-        let totalTB = (usage / 1000000000).toFixed(2)
+      } else if (usage / 1024 / 1024 / 1024 < 1024) {
+        let totalTB = (usage / 1024 / 1024 / 1024).toFixed(2)
         return String(totalTB) + " TB"
 
       }
@@ -311,11 +323,11 @@ export default {
           totalSent.value = 0
 
           for (let application of r.data) {
-            let test = application.recv + application.sent
-            let returnedUsage = formatUsage(test)
+            let returnedRecvSent = application.recv + application.sent
+            let returnedUsage = formatUsage(returnedRecvSent)
             let returnedActiveTime = formatTime(application.activeTime)
 
-            totalUsage.value += test
+            totalUsage.value += returnedRecvSent
             totalRecv.value += application.recv
             totalSent.value += application.sent
 
@@ -325,6 +337,7 @@ export default {
               protocol: application.protocol,
               port: application.port,
               usage: { total: returnedUsage, recv: application.recv, sent: application.sent },
+              totalUsage: application.recv + application.sent,
               flows: application.flows,
               activeTime: returnedActiveTime,
               numClients: application.numClients,
@@ -352,11 +365,12 @@ export default {
 
     return {
       pagination: {
-        sortBy: 'application',
-        descending: false,
+        sortBy: 'totalUsage',
+        descending: true,
         page: 1,
         rowsPerPage: 10
       },
+      visibleColumns: ref(['application', 'destination', 'protocol', 'port', 'usageTotal', 'flows', 'activeTime', 'numClients']),
       timespanMenu,
       timespan,
       columns,

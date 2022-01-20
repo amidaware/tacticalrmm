@@ -1,14 +1,90 @@
 <template>
-  <q-table
-    class="q-pt-md q-mb-xl"
-    :rows="rows"
-    :columns="columns"
-    row-key="name"
-    :pagination="pagination"
-    :loading="tableLoading"
-  >
-    <template v-slot:top-left>
+  <q-card flat bordered class="q-mb-sm">
+    <q-card-section class="text-center">
+      <q-btn-dropdown
+        no-caps
+        flat
+        :label="timespan.label"
+        v-model="timespanMenu"
+        style="margin-bottom:2.20px"
+      >
+        <q-list>
+          <q-item
+            clickable
+            v-close-popup
+            no-caps
+            @click="timespan.label = 'For the last day'; timespan.value = 86400; getTopClients()"
+          >
+            <q-item-section>
+              <q-item-label>For the last day</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item
+            clickable
+            v-close-popup
+            no-caps
+            @click="timespan.label = 'For the last week'; timespan.value = 604800; getTopClients()"
+          >
+            <q-item-section>
+              <q-item-label>For the last week</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item
+            clickable
+            v-close-popup
+            @click="timespan.label = 'For the last 30 days'; timespan.value = 2592000; getTopClients()"
+          >
+            <q-item-section>
+              <q-item-label>For the last 30 days</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item clickable>
+            <q-item-section v-ripple>
+              <q-item-label>Custom range</q-item-label>
+              <q-popup-proxy
+                @before-show="updateProxy"
+                transition-show="scale"
+                transition-hide="scale"
+              >
+                <q-date v-model="dateRange" :options="dateOptions" range>
+                  <div class="row items-center justify-end q-gutter-sm">
+                    <q-btn label="Cancel" color="primary" flat v-close-popup />
+                    <q-btn
+                      label="OK"
+                      color="primary"
+                      flat
+                      @click="timespan.value = dateRange; timespanMenu = false; getTopClients()"
+                      v-close-popup
+                    />
+                  </div>
+                </q-date>
+              </q-popup-proxy>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
       <div>
+        <span class="text-h6">{{ totalUsage }}</span>
+        <span class="text-weight-normal q-ml-sm">
+          (
+          <q-icon name="arrow_downward" />
+          {{ totalDownstream }},
+          <q-icon name="arrow_upward" />
+          {{ totalUpstream }})
+        </span>
+      </div>
+    </q-card-section>
+  </q-card>
+  <q-card flat bordered>
+    <q-table
+      class="q-mt-sm"
+      :rows="rows"
+      :columns="columns"
+      row-key="name"
+      :pagination="pagination"
+      :loading="tableLoading"
+    >
+      <template v-slot:top-left>
         <q-btn
           flat
           dense
@@ -16,84 +92,27 @@
           icon="refresh"
           label="Top 10 Clients"
         />
+      </template>
+      <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td key="name" :props="props">
+            <span class="text-caption">{{ props.row.name }}</span>
+          </q-td>
+          <q-td key="networkName" :props="props">
+            <span class="text-caption">{{ props.row.networkName }}</span>
+          </q-td>
 
-        <q-btn-dropdown no-caps flat :label="timespan.label" v-model="timespanMenu">
-          <q-list>
-            <q-item
-              clickable
-              v-close-popup
-              no-caps
-              @click="timespan.label = 'for the last day'; timespan.value = 86400; getTopClients()"
-            >
-              <q-item-section>
-                <q-item-label>for the last day</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item
-              clickable
-              v-close-popup
-              no-caps
-              @click="timespan.label = 'for the last week'; timespan.value = 604800; getTopClients()"
-            >
-              <q-item-section>
-                <q-item-label>for the last week</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item
-              clickable
-              v-close-popup
-              @click="timespan.label = 'for the last 30 days'; timespan.value = 2592000; getTopClients()"
-            >
-              <q-item-section>
-                <q-item-label>for the last 30 days</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item clickable>
-              <q-item-section v-ripple>
-                <q-item-label>Custom range</q-item-label>
-                <q-popup-proxy
-                  @before-show="updateProxy"
-                  transition-show="scale"
-                  transition-hide="scale"
-                >
-                  <q-date v-model="dateRange" :options="dateOptions" range>
-                    <div class="row items-center justify-end q-gutter-sm">
-                      <q-btn label="Cancel" color="primary" flat v-close-popup />
-                      <q-btn
-                        label="OK"
-                        color="primary"
-                        flat
-                        @click="timespan.value = dateRange; timespanMenu = false; getTopClients()"
-                        v-close-popup
-                      />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-btn-dropdown>
-      </div>
-    </template>
-    <template v-slot:body="props">
-      <q-tr :props="props">
-        <q-td key="name" :props="props">
-          <span class="text-caption">{{ props.row.name }}</span>
-        </q-td>
-        <q-td key="networkName" :props="props">
-          <span class="text-caption">{{ props.row.networkName }}</span>
-        </q-td>
-
-        <q-td key="usageTotal" :props="props">
-          <span class="text-caption">{{ props.row.usage.total }}</span>
-        </q-td>
-        <q-td key="usagePercentage" :props="props">
-          <span class="text-caption">{{ props.row.usage.percentage.toFixed(0) }}%</span>
-          <q-linear-progress :value="props.row.usage.progress" color="positive"></q-linear-progress>
-        </q-td>
-      </q-tr>
-    </template>
-  </q-table>
+          <q-td key="usageTotal" :props="props">
+            <span class="text-caption">{{ props.row.usage.total }}</span>
+          </q-td>
+          <q-td key="usagePercentage" :props="props">
+            <span class="text-caption">{{ props.row.usage.percentage.toFixed(0) }}%</span>
+            <q-linear-progress :value="props.row.usage.progress" color="positive"></q-linear-progress>
+          </q-td>
+        </q-tr>
+      </template>
+    </q-table>
+  </q-card>
 </template>
 
 <script>
@@ -165,7 +184,7 @@ export default {
     const rows = ref([])
     const uplinks = ref([])
     const timespanMenu = ref(false)
-    const timespan = ref({ label: "for the last day", value: 86400 })
+    const timespan = ref({ label: "For the last day", value: 86400 })
     const dateOptions = ref([])
     const dateRange = ref("")
     const updateProxy = ref("")
@@ -282,8 +301,6 @@ export default {
     onMounted(() => {
       getTopClients();
     })
-
-
 
     return {
       pagination: {

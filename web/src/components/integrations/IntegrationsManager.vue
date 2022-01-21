@@ -63,9 +63,16 @@
                 <q-card-actions align="right">
                   <q-btn
                     size="md"
-                    label="View Config"
+                    :label="props.row.enabled ? 'View Config' : 'Enable'"
                     class="q-ml-sm"
-                    @click="viewIntegrationConfig(props.row.id, props.row.name, props.row.integration)"
+                    @click="getIntegrationModal(props.row)"
+                  ></q-btn>
+                  <q-btn
+                    v-if="props.row.enabled"
+                    size="md"
+                    label="Disable"
+                    class="q-ml-sm"
+                    @click="getDisableIntegrationModal(props.row)"
                   ></q-btn>
                 </q-card-actions>
               </q-card>
@@ -81,31 +88,31 @@
 import axios from "axios";
 import { ref, onMounted } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
-import IntegrationConfigModal from "@/components/integrations/modals/IntegrationConfigModal";
-import { notifyError } from "@/utils/notify";
-import { useRouter } from 'vue-router';
+import IntegrationModal from "@/components/integrations/modals/IntegrationModal";
+import DisableIntegrationModal from "@/components/integrations/modals/DisableIntegrationModal";
+
+const columns = [
+  {
+    name: 'name',
+    required: true,
+    label: 'Name',
+    align: 'left',
+    field: row => row.name,
+    format: val => `${val}`,
+    sortable: true
+  },
+]
 
 export default {
   name: "IntegrationsManager",
   emits: [...useDialogPluginComponent.emits],
+  components: { IntegrationModal, DisableIntegrationModal },
+
   setup() {
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
     const $q = useQuasar();
-    const router = useRouter()
-    let enabled = ref("")
-    let rows = ref([])
 
-    const columns = [
-      {
-        name: 'name',
-        required: true,
-        label: 'Name',
-        align: 'left',
-        field: row => row.name,
-        format: val => `${val}`,
-        sortable: true
-      },
-    ]
+    const rows = ref([])
 
     function getIntegrations() {
       axios
@@ -117,11 +124,10 @@ export default {
               id: integration.id,
               name: integration.name,
               description: integration.description,
-              api_key: integration.configuration.api_key,
+              configuration: integration.configuration,
               enabled: integration.enabled,
               agent_related: integration.agent_related,
               client_related: integration.client_related,
-              integration: integration
             };
             rows.value.push(integrationObj);
           }
@@ -130,44 +136,26 @@ export default {
         });
     };
 
-    function viewIntegrationConfig(id, name, integration) {
-      if (name === "Bitdefender GravityZone") {
-        $q.dialog({
-          component: IntegrationConfigModal,
-          componentProps: {
-            id: id,
-            name: name,
-            integration: integration
-          }
-        }).onOk(() => {
-          getIntegrations()
-        })
+    function getIntegrationModal(integration) {
+      $q.dialog({
+        component: IntegrationModal,
+        componentProps: {
+          integration: integration
+        }
+      }).onOk(() => {
+        getIntegrations()
+      })
+    }
 
-      } else if (name === "Cisco Meraki") {
-        $q.dialog({
-          component: IntegrationConfigModal,
-          componentProps: {
-            id: id,
-            name: name,
-            integration: integration
-          },
-        }).onOk(() => {
-          getIntegrations()
-        })
-      } else if (name === "Snipe-IT") {
-        $q.dialog({
-          component: IntegrationConfigModal,
-          componentProps: {
-            id: id,
-            name: name,
-            integration: integration
-          },
-        }).onOk(() => {
-          getIntegrations()
-        })
-      } else {
-        notifyError(name + " integration not yet implemented")
-      }
+    function getDisableIntegrationModal(integration) {
+      $q.dialog({
+        component: DisableIntegrationModal,
+        componentProps: {
+          integration: integration
+        }
+      }).onOk(() => {
+        getIntegrations()
+      })
     }
 
     onMounted(() => {
@@ -183,9 +171,9 @@ export default {
       filter: ref(""),
       columns,
       rows,
-      enabled,
       getIntegrations,
-      viewIntegrationConfig,
+      getIntegrationModal,
+      getDisableIntegrationModal,
 
       // quasar dialog
       dialogRef,

@@ -1,5 +1,5 @@
 <template>
-  <q-card flat bordered class="q-mb-sm">
+  <q-card class="q-mb-sm">
     <q-card-section class="text-center">
       <q-btn-dropdown
         no-caps
@@ -75,7 +75,7 @@
       </div>
     </q-card-section>
   </q-card>
-  <q-card flat bordered>
+  <q-card>
     <q-table
       class="q-mt-sm"
       :rows="rows"
@@ -88,7 +88,7 @@
         <q-btn
           flat
           dense
-          @click="timespan.label = 'for the last day'; timespan.value = 86400; getTopClients()"
+          @click="timespan.label = 'For the last day'; timespan.value = 86400; getTopClients()"
           icon="refresh"
           label="Top 10 Clients"
         />
@@ -178,8 +178,9 @@ function wrapCsvValue(val, formatFn) {
 }
 export default {
   name: "TopClientsTable",
+  emits: ["onNotifyError"],
   props: ["organizationID", "organizationName"],
-  setup(props) {
+  setup(props, { emit }) {
     const tableLoading = ref(false)
     const rows = ref([])
     const uplinks = ref([])
@@ -223,7 +224,7 @@ export default {
         timespan.value.value = "t0=" + t0 + "&t1=" + t1
         timespan.value.label = date.formatDate(t0, "MMM D, YYYY @ hh:mm A") + " - " + date.formatDate(t1, "MMM D, YYYY @ hh:mm A")
 
-      } else if (timespan.value.value !== 86400 && timespan.value.value !== 604800 && timespan.value.value !== 2592000) {
+      } else if (typeof timespan.value.value !== 'object' && timespan.value.value !== 86400 && timespan.value.value !== 604800 && timespan.value.value !== 2592000) {
         const t0 = date.formatDate(timespan.value.value, "YYYY-MM-DDT00:00:00.000Z");
         const t1 = date.formatDate(timespan.value.value, "YYYY-MM-DDT23:59:00.000Z");
         timespan.value.value = "t0=" + t0 + "&t1=" + t1
@@ -233,36 +234,42 @@ export default {
       axios
         .get(`meraki/` + props.organizationID + `/top_clients/` + timespan.value.value + `/`)
         .then(r => {
-          rows.value = []
-          totalUsage.value = 0
-          totalDownstream.value = 0
-          totalUpstream.value = 0
+          if (r.data.errors) {
+            emit('onNotifyError', r.data.errors);
 
-          for (let client of r.data) {
-            let returnedUsage = formatUsage(client.usage.total)
-            totalUsage.value += client.usage.total
-            totalDownstream.value += client.usage.downstream
-            totalUpstream.value += client.usage.upstream
 
-            let clientObj = {
-              id: client.id,
-              mac: client.mac,
-              name: client.name,
-              networkId: client.network.id,
-              networkName: client.network.name,
-              usage: { total: returnedUsage, downstream: client.usage.downstream, upstream: client.usage.upstream, percentage: client.usage.percentage, progress: client.usage.percentage / 100 },
+          } else {
+            rows.value = []
+            totalUsage.value = 0
+            totalDownstream.value = 0
+            totalUpstream.value = 0
+
+            for (let client of r.data) {
+              let returnedUsage = formatUsage(client.usage.total)
+              totalUsage.value += client.usage.total
+              totalDownstream.value += client.usage.downstream
+              totalUpstream.value += client.usage.upstream
+
+              let clientObj = {
+                id: client.id,
+                mac: client.mac,
+                name: client.name,
+                networkId: client.network.id,
+                networkName: client.network.name,
+                usage: { total: returnedUsage, downstream: client.usage.downstream, upstream: client.usage.upstream, percentage: client.usage.percentage, progress: client.usage.percentage / 100 },
+              }
+              rows.value.push(clientObj)
             }
-            rows.value.push(clientObj)
+
+            let returnedTotalUsage = formatUsage(totalUsage.value)
+            let returnedTotalDownstream = formatUsage(totalDownstream.value)
+            let returnedTotalUpstream = formatUsage(totalUpstream.value)
+
+            totalUsage.value = returnedTotalUsage
+            totalDownstream.value = returnedTotalDownstream
+            totalUpstream.value = returnedTotalUpstream
+            tableLoading.value = false
           }
-
-          let returnedTotalUsage = formatUsage(totalUsage.value)
-          let returnedTotalDownstream = formatUsage(totalDownstream.value)
-          let returnedTotalUpstream = formatUsage(totalUpstream.value)
-
-          totalUsage.value = returnedTotalUsage
-          totalDownstream.value = returnedTotalDownstream
-          totalUpstream.value = returnedTotalUpstream
-          tableLoading.value = false
         })
         .catch(e => {
 

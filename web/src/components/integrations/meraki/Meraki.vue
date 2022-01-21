@@ -58,9 +58,26 @@
     <q-tab-panels v-model="tab" animated>
       <q-tab-panel name="summary" class="q-px-md">
         <q-card flat class="q-mb-sm">
-          <div>
-            <q-btn flat dense @click="getUplinks()" icon="refresh" label="Summary" />
-          </div>
+          <q-btn-dropdown label="Actions" flat>
+            <q-list>
+              <q-item clickable v-close-popup @click="changeAssociation()" disable>
+                <q-item-section>
+                  <q-item-label>Change Association</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="removeOrgAssociation()">
+                <q-item-section>
+                  <q-item-label>Remove Association</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="getUplinks()">
+                <q-item-section>
+                  <q-item-label>Refresh</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+
           <q-scroll-area style="height: 245px;">
             <div class="q-py-md row justify-center q-gutter-md">
               <q-card flat bordered class="my-card bg-grey-1 q-mx-md" v-for="device in uplinks">
@@ -102,7 +119,7 @@
           <div class="col-7">
             <div class="row justify-center">
               <div class="col-12">
-                <q-card flat bordered class="q-mr-sm">
+                <q-card class="q-mr-sm">
                   <q-card-section class="text-center">
                     <q-btn-dropdown
                       no-caps
@@ -176,7 +193,7 @@
               </div>
             </div>
 
-            <q-card flat bordered class="q-mr-sm q-mt-sm">
+            <q-card class="q-mr-sm q-mt-sm">
               <q-table
                 :pagination="pagination"
                 row-key="networkId"
@@ -209,7 +226,11 @@
             </q-card>
           </div>
           <div class="col-5">
-            <TopClientsTable :organizationID="organizationID" :organizationName="organizationName" />
+            <TopClientsTable
+              :organizationID="organizationID"
+              :organizationName="organizationName"
+              @onNotifyError="onNotifyError"
+            />
           </div>
         </div>
       </q-tab-panel>
@@ -244,12 +265,13 @@
 <script>
 import axios from "axios";
 import AssociateOrg from "@/components/integrations/meraki/modals/AssociateOrg";
+import RemoveOrgAssociation from "@/components/integrations/meraki/modals/RemoveOrgAssociation";
 import TopClientsTable from "@/components/integrations/meraki/organization/TopClientsTable";
 import NetworkTrafficAnalyticsTable from "@/components/integrations/meraki/traffic/NetworkTrafficAnalyticsTable";
 import NetworkClientsTrafficTable from "@/components/integrations/meraki/traffic/NetworkClientsTrafficTable";
 import NetworkEventsTable from "@/components/integrations/meraki/events/NetworkEventsTable";
 // composable imports
-import { ref, onBeforeMount, onMounted } from "vue";
+import { ref, onBeforeMount } from "vue";
 import { useQuasar, date } from "quasar";
 import { notifySuccess, notifyError } from "@/utils/notify";
 
@@ -313,6 +335,7 @@ export default {
   props: ['node', 'integrations'],
   components: {
     AssociateOrg,
+    RemoveOrgAssociation,
     TopClientsTable,
     NetworkTrafficAnalyticsTable,
     NetworkClientsTrafficTable,
@@ -355,7 +378,13 @@ export default {
     }
 
     function checkAssociation() {
-      const obj = props.integrations[0].configuration.backend.associations.clients.find(o => o.node_id === props.node.id);
+      let obj = null
+      for (let i = 0; i < props.integrations.length; i++) {
+        obj = props.integrations[i].configuration.backend.associations.clients.find(o => o.client_id === props.node.id);
+        if (obj) {
+          break;
+        }
+      }
 
       if (obj) {
         getOrganization(obj)
@@ -364,16 +393,20 @@ export default {
           component: AssociateOrg,
         }).onOk(val => {
           let data = {
-            associate_client: true,
-            node_id: props.node.id,
+            client_id: props.node.id,
             meraki_organization_id: parseInt(val['meraki_organization_id']),
             meraki_organization_label: val['meraki_organization_label']
           }
           axios
-            .put(`/integrations/` + props.integrations[0].id + `/`, data)
+            .put(`/integrations/` + props.integrations[0].id + `/associate_client/`, data)
             .then(r => {
-              notifySuccess(val['meraki_organization_label'] + ' is now associated with ' + props.node.name)
-              getOrganization(val)
+              if (r.data.errors) {
+                notifyError(r.data.errors[0])
+
+              } else {
+                notifySuccess(val['meraki_organization_label'] + ' is now associated with ' + props.node.name)
+                getOrganization(val)
+              }
             })
             .catch(e => {
               console.log(e)
@@ -383,17 +416,20 @@ export default {
     }
 
     function getOrganization(obj) {
-      $q.loading.show({ message: 'Getting ' + obj.meraki_organization_label + ' networks...' })
+      $q.loading.show({ message: 'Getting ' + props.node.name + ' networks...' })
       axios
         .get(`/meraki/organizations/` + obj.meraki_organization_id)
         .then(r => {
-          organizationID.value = r.data.id
-          organizationName.value = r.data.name
-          organization.value = r.data;
           if (r.data.errors) {
             notifyError(r.data.errors[0])
+
+          } else {
+            organizationID.value = r.data.id
+            organizationName.value = r.data.name
+            organization.value = r.data;
+            getNetworks()
           }
-          getNetworks()
+
         })
         .catch(e => {
 
@@ -404,23 +440,33 @@ export default {
       axios
         .get(`/meraki/` + organizationID.value + `/networks/`)
         .then(r => {
+          if (r.data.errors) {
+            notifyError(r.data.errors[0])
 
-          networks.value = r.data;
-          getUplinks()
+          } else {
+            networks.value = r.data;
+            getUplinks()
+          }
         })
         .catch(e => {
 
         });
     }
+
     function getUplinks() {
-      $q.loading.show({ message: 'Producing the summary for ' + organizationName.value + '...' })
+      $q.loading.show({ message: 'Producing a summary for ' + props.node.name + '...' })
 
       axios
         .get(`/meraki/` + organizationID.value + `/networks/uplinks/`)
         .then(r => {
-          uplinks.value = r.data
-          tab.value = 'summary'
-          getOverview()
+          if (r.data.errors) {
+            notifyError(r.data.errors[0])
+
+          } else {
+            uplinks.value = r.data
+            tab.value = 'summary'
+            getOverview()
+          }
         })
         .catch(e => {
 
@@ -434,14 +480,16 @@ export default {
         let formattedDate = date.formatDate(newDate, "YYYY/MM/DD");
         dateOptions.value.push(formattedDate);
       }
-      console.log(timespan.value.value)
-      if (typeof timespan.value.value === 'object') {
+
+      if (timespan.value.value.from && timespan.value.value.to) {
         const t0 = date.formatDate(timespan.value.value.from, "YYYY-MM-DDT00:00:00.000Z");
         const t1 = date.formatDate(timespan.value.value.to, "YYYY-MM-DDT23:59:00.000Z");
         timespan.value.value = "t0=" + t0 + "&t1=" + t1
         timespan.value.label = date.formatDate(t0, "MMM D, YYYY @ hh:mm A") + " - " + date.formatDate(t1, "MMM D, YYYY @ hh:mm A")
 
-      } else if (timespan.value.value !== 'object' && timespan.value.value !== 86400 && timespan.value.value !== 604800 && timespan.value.value !== 2592000) {
+
+
+      } else if (typeof timespan.value.value !== 'object' && timespan.value.value !== 86400 && timespan.value.value !== 604800 && timespan.value.value !== 2592000) {
         const t0 = date.formatDate(timespan.value.value, "YYYY-MM-DDT00:00:00.000Z");
         const t1 = date.formatDate(timespan.value.value, "YYYY-MM-DDT23:59:00.000Z");
         timespan.value.value = "t0=" + t0 + "&t1=" + t1
@@ -451,36 +499,73 @@ export default {
       axios
         .get(`/meraki/` + organizationID.value + `/overview/` + timespan.value.value + `/`)
         .then(r => {
-          rows.value = []
-          totalUsage.value = 0
-          totalClients.value = 0
-          for (let device of r.data) {
-            let returnedUsage = formatUsage(device.usage.total)
-            totalUsage.value += device.usage.total
-            totalClients.value += device.clients.counts.total
+          if (r.data.errors) {
+            notifyError(r.data.errors[0])
 
-            let deviceObj = {
-              clients: device.clients.counts.total,
-              mac: device.mac,
-              model: device.model,
-              name: device.name,
-              networkId: device.network.id,
-              networkName: device.network.name,
-              productType: device.productType,
-              serial: device.serial,
-              usage: { total: returnedUsage, percentage: device.usage.percentage, progress: device.usage.percentage / 100 },
+          } else {
+            rows.value = []
+            totalUsage.value = 0
+            totalClients.value = 0
+            for (let device of r.data) {
+              let returnedUsage = formatUsage(device.usage.total)
+              totalUsage.value += device.usage.total
+              totalClients.value += device.clients.counts.total
+
+              let deviceObj = {
+                clients: device.clients.counts.total,
+                mac: device.mac,
+                model: device.model,
+                name: device.name,
+                networkId: device.network.id,
+                networkName: device.network.name,
+                productType: device.productType,
+                serial: device.serial,
+                usage: { total: returnedUsage, percentage: device.usage.percentage, progress: device.usage.percentage / 100 },
+              }
+              rows.value.push(deviceObj)
             }
-            rows.value.push(deviceObj)
-          }
 
-          let returnedTotalUsage = formatUsage(totalUsage.value)
-          totalUsage.value = returnedTotalUsage
-          $q.loading.hide()
-          tableLoading.value = false
+            let returnedTotalUsage = formatUsage(totalUsage.value)
+            totalUsage.value = returnedTotalUsage
+            $q.loading.hide()
+            tableLoading.value = false
+          }
         })
         .catch(e => {
+          // notifyError(e)
           console.log(e)
         });
+    }
+
+    function changeAssociation() {
+      $q.dialog({
+        component: AssociateOrg,
+        componentProps: {
+          integrations: props.integrations,
+          organization: organization.value,
+          client: props.node
+        }
+      }).onOk(() => {
+        checkAssociation()
+      })
+    }
+
+    function removeOrgAssociation() {
+      $q.dialog({
+        component: RemoveOrgAssociation,
+        componentProps: {
+          integrations: props.integrations,
+          organization: organization.value,
+          client: props.node
+        }
+      }).onOk(() => {
+        location.reload();
+        return false;
+      })
+    }
+
+    function onNotifyError(error) {
+      notifyError(error[0])
     }
 
     function getNetworkApplicationTraffic(network_Id) {
@@ -528,12 +613,15 @@ export default {
       organizationName,
       networkName,
       networkId,
+      onNotifyError,
       getUplinks,
       getOverview,
       getNetworks,
       getNetworkApplicationTraffic,
       getNetworkClientTraffic,
       getNetworkEventsTable,
+      changeAssociation,
+      removeOrgAssociation,
     };
   },
 };

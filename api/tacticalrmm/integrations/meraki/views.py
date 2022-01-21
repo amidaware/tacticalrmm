@@ -116,7 +116,7 @@ class GetTopClients(APIView):
 
     def get(self, request, pk, timespan, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
-        print(timespan)
+
         if "t0" and "t1" in str(timespan):
             url = integration.base_url + "organizations/" + pk +"/summary/top/clients/byUsage?" + str(timespan)
         else:
@@ -203,7 +203,7 @@ class GetNetworkEvents(APIView):
 
     def get(self, request, network_id, timespan, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
-        print(timespan)
+
         if "endingBefore" in str(timespan):
             url = integration.base_url + "networks/"+ network_id +"/events?perPage=1000&productType=appliance&" + str(timespan)
         else:

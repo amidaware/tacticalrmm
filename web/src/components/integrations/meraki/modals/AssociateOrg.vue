@@ -36,6 +36,7 @@ import { useQuasar, useDialogPluginComponent, date } from "quasar";
 export default {
     name: "AssociateOrg",
     emits: [...useDialogPluginComponent.emits],
+    props: ['organization'],
     setup(props) {
         const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
         const $q = useQuasar();
@@ -45,19 +46,38 @@ export default {
 
         function getOrganizations() {
             $q.loading.show({ message: 'Getting Cisco Meraki organizations...' })
-            axios
-                .get(`/meraki/organizations/`)
-                .then(r => {
-                    for (let org of r.data) {
-                        let orgObj = {
-                            label: org.name,
-                            value: org.id,
+
+            if (props.organization) {
+                axios
+                    .get(`/meraki/organizations/`)
+                    .then(r => {
+                        for (let org of r.data) {
+                            let orgObj = {
+                                label: org.name,
+                                value: org.id,
+                            }
+                            organizationOptions.value.push(orgObj)
                         }
-                        organizationOptions.value.push(orgObj)
-                    }
-                    $q.loading.hide()
-                })
-                .catch(e => { });
+                        organization.value = { label: props.organization.name, value: props.organization.value }
+                        $q.loading.hide()
+                    })
+                    .catch(e => { });
+
+            } else {
+                axios
+                    .get(`/meraki/organizations/`)
+                    .then(r => {
+                        for (let org of r.data) {
+                            let orgObj = {
+                                label: org.name,
+                                value: org.id,
+                            }
+                            organizationOptions.value.push(orgObj)
+                        }
+                        $q.loading.hide()
+                    })
+                    .catch(e => { });
+            }
         }
 
         function onOKClick() {

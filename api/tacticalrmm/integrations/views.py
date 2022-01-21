@@ -21,50 +21,64 @@ class GetIntegrations(APIView):
 class GetIntegration(APIView):
     permission_classes = [IsAuthenticated]
 
-    # serializer_class = GetIntegrationsSerializer
     def get(self, request, pk):
         integration = get_object_or_404(Integration, pk=pk)
+
         return Response(GetIntegrationSerializer(integration).data)
 
     def post(self, request, pk):
         integration = get_object_or_404(Integration, pk=pk)
-        if request.data["enabled"] == True:
-            integration.configuration["api_key"] = request.data["apikey"]
-            integration.configuration["api_url"] = request.data["apiurl"]
-            integration.configuration["company_id"] = request.data["companyID"]
-            integration.enabled = True
-            # integration.configuration['tactical_meraki_associations'] = [{'id':1, 'name':'osborn'},{'id':2, 'name':'dea'}]
-            integration.save()
 
-            return Response("ok")
-        else:
-            integration.configuration["api_key"] = ""
-            integration.configuration["api_url"] = ""
-            integration.configuration["company_id"] = ""
-            integration.enabled = False
-            integration.save()
+        integration.configuration["api_key"] = request.data["apiKey"]
+        integration.configuration["api_url"] = request.data["apiUrl"]
+        integration.configuration["company_id"] = request.data["companyId"]
+        integration.enabled = True
+        integration.save()
 
-            return Response("ok")
+        return Response("ok")
 
     def put(self, request, pk):
         integration = get_object_or_404(Integration, pk=pk)
-        print(request.data)
-        if request.data["associate_client"] == True:
-            integration.configuration["backend"]["associations"]["clients"].append(
-                {
-                    "node_id": request.data["node_id"],
-                    "meraki_organization_id": request.data["meraki_organization_id"],
-                    "meraki_organization_label": request.data[
-                        "meraki_organization_label"
-                    ],
-                }
-            )
-            integration.save()
-            return Response("ok")
-        elif request.data["associate_client"] == False:
-            integration.configuration["api_key"] = request.data["apikey"]
-            integration.configuration["api_url"] = request.data["apiurl"]
-            integration.configuration["company_id"] = request.data["companyID"]
-            integration.save()
+        integration.configuration["api_key"] = request.data["apikey"]
+        integration.configuration["api_url"] = request.data["apiurl"]
+        integration.configuration["company_id"] = request.data["companyID"]
+        integration.save()
 
-            return Response("ok")
+        return Response("ok")
+
+    def delete(self, request, pk):
+        integration = get_object_or_404(Integration, pk=pk)
+
+        integration.configuration["api_key"] = ""
+        integration.configuration["api_url"] = ""
+        integration.configuration["company_id"] = ""
+        integration.enabled = False
+        integration.save()
+
+        return Response("ok")
+
+
+class GetAssociateIntegration(APIView):
+    permission_classes = [IsAuthenticated]
+    def put(self, request, pk):
+        integration = get_object_or_404(Integration, pk=pk)
+
+        integration.configuration["backend"]["associations"]["clients"].append(
+            {
+                "client_id": request.data["client_id"],
+                "meraki_organization_id": request.data["meraki_organization_id"],
+                "meraki_organization_label": request.data[
+                    "meraki_organization_label"
+                ],
+            }
+        )
+        integration.save()
+        return Response("ok")
+
+    def delete(self, request, pk):
+        integration = get_object_or_404(Integration, pk=pk)
+
+        res = [i for i in integration.configuration["backend"]["associations"]["clients"] if not (i['client_id'] == request.data['client']['id'])]
+        integration.configuration["backend"]["associations"]["clients"] = res
+        integration.save()
+        return Response("ok")

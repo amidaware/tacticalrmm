@@ -86,9 +86,9 @@ Copy the username then ssh into the server and run:
 
 ```bash
 cd /meshcentral/
-sudo systemctl stop meshcentral
+sudo systemctl stop meshcentral.service
 node node_modules/meshcentral --resetaccount <username> --pass <newpassword>
-sudo systemctl start meshcentral
+sudo systemctl start meshcentral.service
 ```
 
 ## Help! I've been hacked there are weird agents appearing in my Tactical RMM

@@ -2,6 +2,7 @@
 
 # Tactical RMM install troubleshooting script
 # Contributed by https://github.com/dinger1986
+# v1.1 1/21/2022 update to include all services
 
 # This script asks for the 3 subdomains, checks they exist, checks they resolve locally and remotely (using google dns for remote), 
 # checks services are running, checks ports are opened. The only part that will make the script stop is if the sub domains dont exist, theres literally no point in going further if thats the case
@@ -134,6 +135,10 @@ celerybeatstatus=$(systemctl is-active celerybeat)
 nginxstatus=$(systemctl is-active nginx)
 natsstatus=$(systemctl is-active nats)
 natsapistatus=$(systemctl is-active nats-api)
+meshcentralstatus=$(systemctl is-active meshcentral)
+mongodstatus=$(systemctl is-active mongod)
+postgresqlstatus=$(systemctl is-active postgresql)
+redisserverstatus=$(systemctl is-active redis-server)
 
 # RMM Service
 if [ $rmmstatus = active ]; then
@@ -208,6 +213,50 @@ if [ $natsapistatus = active ]; then
 else
 	printf >&2 "\n\n" | tee -a checklog.log
     echo -ne ${RED}  'nats-api Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	printf >&2 "\n\n"
+
+fi
+
+# meshcentral Service
+if [ $meshcentralstatus = active ]; then
+    echo -ne ${GREEN} Success meshcentral Service is running | tee -a checklog.log
+	printf >&2 "\n\n"
+else
+	printf >&2 "\n\n" | tee -a checklog.log
+    echo -ne ${RED}  'meshcentral Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	printf >&2 "\n\n"
+
+fi
+
+# mongod Service
+if [ $mongodstatus = active ]; then
+    echo -ne ${GREEN} Success mongod Service is running | tee -a checklog.log
+	printf >&2 "\n\n"
+else
+	printf >&2 "\n\n" | tee -a checklog.log
+    echo -ne ${RED}  'mongod Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	printf >&2 "\n\n"
+
+fi
+
+# postgresql Service
+if [ $postgresqlstatus = active ]; then
+    echo -ne ${GREEN} Success postgresql Service is running | tee -a checklog.log
+	printf >&2 "\n\n"
+else
+	printf >&2 "\n\n" | tee -a checklog.log
+    echo -ne ${RED}  'postgresql Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	printf >&2 "\n\n"
+
+fi
+
+# redis-server Service
+if [ $redisserverstatus = active ]; then
+    echo -ne ${GREEN} Success redis-server Service is running | tee -a checklog.log
+	printf >&2 "\n\n"
+else
+	printf >&2 "\n\n" | tee -a checklog.log
+    echo -ne ${RED}  'redis-server Service isnt running (Tactical wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi

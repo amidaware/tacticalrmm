@@ -66,3 +66,7 @@ Use the (i) at the end of the script name to:
 - Left Click: Opens the script source in Github
 
 ![Script Parameter Syntax](images/tipsntricks_script_syntaxhelp.png)
+
+## Running a command on Tactical with Tactical
+
+Use the agent recovery "shell command" feature that will run in detached process so it won't kill itself or create a script that runs detached to call it.

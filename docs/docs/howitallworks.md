@@ -130,7 +130,7 @@ Nginx is the web server for the `rmm`, `api`, and `mesh` domains. All sites redi
 
 #### Tactical RMM (Django uWSGI) service
 
-Built on the Django framework, the Tactical RMM service is the heart of system by serving the API for the frontend and agents.
+Built on the Django framework, the Tactical RMM service is the heart of the system by serving the API for the frontend and agents.
 
 ???+ note "systemd config"
 

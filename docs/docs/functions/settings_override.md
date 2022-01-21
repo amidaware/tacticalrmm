@@ -16,4 +16,4 @@ REST_KNOX = {
 }
 ```
 
-Change `(days=30)` to whatever you prefer. Then run `sudo systemctl restart rmm` for changes to take effect.
+Change `(days=30)` to whatever you prefer. Then run `sudo systemctl restart rmm.service` for changes to take effect.

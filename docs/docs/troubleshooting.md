@@ -78,25 +78,25 @@ Reload NATS:
 
 ```bash
 /rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reload_nats
-sudo systemctl restart nats
+sudo systemctl restart nats.service
 ```
 
 Look at nats service errors (make sure it's running)
 
 ```bash
-sudo systemctl status nats
+sudo systemctl status nats.service
 ```
 
 If nats isn't running see detailed reason why it isn't:
 
 ```bash
-sudo systemctl stop nats
+sudo systemctl stop nats.service
 nats-server -DVV -c /rmm/api/tacticalrmm/nats-rmm.conf
 ```
 
 Fix the problem, then restart nats.
 ```
-sudo systemctl restart nats
+sudo systemctl restart nats.service
 ```
 
 ### From Agent Install
@@ -143,18 +143,20 @@ Open your browser's dev tools (++ctrl+shift+j++ on chrome) and check the Console
 Check all the systemd services that the rmm uses to function and check to make sure they're all active/running and enabled:
 
 ```bash
-sudo systemctl status rmm
-sudo systemctl status daphne
-sudo systemctl status celery
-sudo systemctl status celerybeat
-sudo systemctl status nginx
-sudo systemctl status nats
-sudo systemctl status nats-api
-sudo systemctl status meshcentral
-sudo systemctl status mongod
-sudo systemctl status postgresql
-sudo systemctl status redis
+sudo systemctl status rmm.service
+sudo systemctl status daphne.service
+sudo systemctl status celery.service
+sudo systemctl status celerybeat.service
+sudo systemctl status nginx.service
+sudo systemctl status nats.service
+sudo systemctl status nats-api.service
+sudo systemctl status meshcentral.service
+sudo systemctl status mongod.service
+sudo systemctl status postgresql.service
+sudo systemctl status redis-server.service
 ```
+
+or you can use `systemctl --failed` to see any failed services on your machine.
 
 Read through the log files in the following folders and check for errors:
 
@@ -170,6 +172,8 @@ Read through the log files in the following folders and check for errors:
 - api.example.com can NOT be proxied.
 
 - mesh.example.com can be proxied with the caveat that Mesh checks the cert presented to the agent is the same one on the server. I.e. no MITM. You'll need to copy Cloudflare's edge cert to your server if you want to proxy this domain.
+
+If you're getting `Invalid group id` at the end of the install you're probably doing something wrong/wrong IP for api.
 
 ## Testing Network Connectivity between agent and server
 

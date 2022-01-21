@@ -37,15 +37,6 @@ class GetIntegration(APIView):
 
         return Response("ok")
 
-    def put(self, request, pk):
-        integration = get_object_or_404(Integration, pk=pk)
-        integration.configuration["api_key"] = request.data["apikey"]
-        integration.configuration["api_url"] = request.data["apiurl"]
-        integration.configuration["company_id"] = request.data["companyID"]
-        integration.save()
-
-        return Response("ok")
-
     def delete(self, request, pk):
         integration = get_object_or_404(Integration, pk=pk)
 

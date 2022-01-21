@@ -35,36 +35,23 @@ import { notifySuccess, notifyError } from "@/utils/notify";
 export default {
     name: "RemoveOrgAssociation",
     emits: [...useDialogPluginComponent.emits],
-    props: ['integrations', 'organization', 'client'],
+    props: ['integration', 'organization', 'client'],
 
     setup(props) {
         const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
         const $q = useQuasar();
 
-        const integration = ref(null)
-
         function removeOrgAssociation() {
-            let obj = null
-            for (let i = 0; i < props.integrations.length; i++) {
-                obj = props.integrations[i].configuration.backend.associations.clients.find(o => o.client_id === props.client.id);
-                integration.value = props.integrations[i]
-                if (obj && integration.value) {
-                    break;
-                }
-            }
 
-            if (obj) {
-                axios
-                    .delete(`/integrations/` + integration.value.id + `/associate_client/`, { data: { client: props.client } })
-                    .then(r => {
-                        onDialogOK()
-                    })
-                    .catch(e => {
-                        console.log(e.response.data)
-                    });
-            } else {
-                notifySuccess('There is no Cisco Meraki association found')
-            }
+            axios
+                .delete(`/integrations/` + props.integration.id + `/associate_client/`, { data: { client: props.client } })
+                .then(r => {
+                    location.reload();
+                    return false;
+                })
+                .catch(e => {
+                    console.log(e.response.data)
+                });
 
         }
 

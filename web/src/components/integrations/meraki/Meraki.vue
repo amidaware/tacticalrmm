@@ -554,13 +554,10 @@ export default {
       $q.dialog({
         component: RemoveOrgAssociation,
         componentProps: {
-          integrations: props.integrations,
+          integration: props.integrations[0],
           organization: organization.value,
           client: props.node
         }
-      }).onOk(() => {
-        location.reload();
-        return false;
       })
     }
 

@@ -13,6 +13,8 @@ class Command(BaseCommand):
     help = "Collection of tasks to run after updating the rmm, after migrations"
 
     def handle(self, *args, **kwargs):
+        self.stdout.write("Running post update tasks")
+
         # remove task pending actions. deprecated 4/20/2021
         PendingAction.objects.filter(action_type="taskaction").delete()
 
@@ -68,3 +70,5 @@ class Command(BaseCommand):
                     task.save()
             except:
                 continue
+
+        self.stdout.write("Post update tasks finished")

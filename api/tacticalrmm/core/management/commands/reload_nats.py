@@ -7,4 +7,6 @@ class Command(BaseCommand):
     help = "Reload Nats"
 
     def handle(self, *args, **kwargs):
+        self.stdout.write("Reloading NATs configuration...")
         reload_nats()
+        self.stdout.write("NATs configuration reloaded")

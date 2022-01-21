@@ -137,12 +137,15 @@ EOF
   python manage.py post_update_tasks
 
   # create super user 
+  echo "Creating dashboard user if it doesn't exist"
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
 
   # chown everything to tactical user
+  echo "Updating permissions on files"
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
 
   # create install ready file
+  echo "Creating install ready file"
   su -c "echo 'tactical-init' > ${TACTICAL_READY_FILE}" "${TACTICAL_USER}"
 
 fi

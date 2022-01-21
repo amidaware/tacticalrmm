@@ -20,7 +20,7 @@ Headers:
 Example curl request:
 
 ```bash
-curl https://api.example.com/clients/clients/ -H "X-API-KEY: Y57BXCFAA9WBCXH0XTEL6R5KAK69CNCZ"
+curl https://api.example.com/clients/ -H "X-API-KEY: Y57BXCFAA9WBCXH0XTEL6R5KAK69CNCZ"
 ```
 
 ## Enable Swagger

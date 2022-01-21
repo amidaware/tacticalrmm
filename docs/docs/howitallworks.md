@@ -463,7 +463,87 @@ Files create `c:\Windows\temp\Tacticalxxxx\` folder for install (and log files)
 
 ***
 
-### Agent Recovery
+### Agent Debugging
+
+You can temporarily log to screen, or log to file
+
+???+ note "Debugging Options"
+
+    === ":material-math-log: Manual One Time"
+
+        Stop the services
+
+        ```cmd
+        net stop tacticalagent
+        net stop tacticalrpc
+        ```
+
+        Then run either Agent:
+
+        Run the tacticalagent service manually with debug logging:
+
+        ```cmd
+        "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m winagentsvc -log debug -logto stdout
+        ```
+
+        Run the tacticalrpc service manually with debug logging:
+
+        ```cmd
+        "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m rpc -log debug -logto stdout
+        ```
+
+    === ":material-math-log: Log debug to file"
+
+        TacticalAgent
+        
+        Stop the service
+
+        ```cmd
+        net stop tacticalagent
+        ```
+
+        Edit the service: `TacticalAgent`
+
+        ```cmd
+        cd "c:\Program Files\TacticalAgent"
+        nssm.exe edit tacticalagent
+        ```
+
+        Add options `-m winagentsvc -log debug`
+
+        TacticalAgent: Start the service
+        ```cmd
+        net start tacticalagent
+        ```
+
+        It will debug log to `"C:\Program Files\TacticalAgent\agent.log"`
+
+        **AND/OR**
+
+        Tacticalrpc
+        
+        Stop the service
+
+        ```cmd
+        net stop tacticalrpc
+        ```
+
+        Edit the service: `Tacticalrpc`
+
+        ```cmd
+        cd "c:\Program Files\Tacticalrpc"
+        nssm.exe edit tacticalrpc
+        ```
+
+        Add options `-m rpc -log debug`
+
+        Tacticalrpc: Start the service
+        ```cmd
+        net start tacticalrpc
+        ```
+
+        It will debug log to `"C:\Program Files\TacticalAgent\agent.log"`
+
 
 #### Mesh Agent Recovery
 

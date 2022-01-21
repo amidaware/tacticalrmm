@@ -70,7 +70,7 @@ KEY_FILE = '${CERT_PRIV_PATH}'
 EXE_DIR = '/opt/tactical/api/tacticalrmm/private/exe'
 LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'
 
-SCRIPTS_DIR = '/opt/tactical/scripts'
+SCRIPTS_DIR = '/opt/tactical/community-scripts'
 
 ALLOWED_HOSTS = ['${API_HOST}', 'tactical-backend']
 

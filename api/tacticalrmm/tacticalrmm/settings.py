@@ -4,7 +4,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SCRIPTS_DIR = "/srv/salt/scripts"
+SCRIPTS_DIR = "/community-scripts"
 
 DOCKER_BUILD = False
 

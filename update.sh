@@ -226,6 +226,7 @@ fi
 
 sudo npm install -g npm
 
+# update from main repo
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -235,11 +236,30 @@ git reset --hard FETCH_HEAD
 git clean -df
 git pull
 
+# update from community-scripts repo
+if [[ ! -d /community-scripts ]]; then
+  sudo mkdir /community-scripts
+  sudo chown ${USER}:${USER} /community-scripts
+  git clone https://github.com/wh1te909/tacticalrmm.git /community-scripts/
+  cd /community-scripts
+  git config user.email "admin@example.com"
+  git config user.name "Bob"
+else
+  cd /community-scripts
+  git config user.email "admin@example.com"
+  git config user.name "Bob"
+  git fetch
+  git reset --hard FETCH_HEAD
+  git clean -df
+  git pull
+fi
+
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 
 sudo chown ${USER}:${USER} -R /rmm
+sudo chown ${USER}:${USER} -R /community-scripts
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 sudo chown -R $USER:$GROUP /home/${USER}/.npm

@@ -129,6 +129,12 @@
                                 </q-item-section>
                                 <q-item-section side top>${{ asset.purchase_cost }}</q-item-section>
                             </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Order Number</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>{{ asset.order_number }}</q-item-section>
+                            </q-item>
                             <q-separator inset />
                             <q-item-label header>WARRANTY</q-item-label>
                             <q-item dense>

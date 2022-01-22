@@ -12,6 +12,7 @@ class GetOrganizations(APIView):
 
         result = requests.get(
             integration.base_url + "organizations/",
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -28,6 +29,7 @@ class GetOrganization(APIView):
 
         result = requests.get(
             integration.base_url + "organizations/" + organization_id,
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -46,6 +48,7 @@ class GetNetworks(APIView):
 
         result = requests.get(
             integration.base_url + "organizations/" + pk + "/networks",
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -63,6 +66,7 @@ class GetDevices(APIView):
 
         result = requests.get(
             integration.base_url + "/organizations/" + pk + "/devices/statuses/",
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -85,6 +89,7 @@ class GetOverview(APIView):
 
         result = requests.get(
             url,
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -102,6 +107,7 @@ class GetNetworkUplinks(APIView):
 
         result = requests.get(
             integration.base_url + "organizations/" + pk + "/uplinks/statuses",
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -124,6 +130,7 @@ class GetTopClients(APIView):
 
         result = requests.get(
             url,
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -143,6 +150,7 @@ class GetClient(APIView):
         try:
             result = requests.get(
                 integration.base_url + "/organizations/" + pk + "/clients/search?mac=" + mac,
+                verify=False,
                 headers={
                     "Accept": "application/json",
                     "Content-Type": "application/json",
@@ -167,6 +175,7 @@ class GetNetworkApplicationTraffic(APIView):
 
         result = requests.get(
             url,
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -189,6 +198,7 @@ class GetNetworkClientTraffic(APIView):
         
         result = requests.get(
             url,
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -211,6 +221,7 @@ class GetNetworkEvents(APIView):
 
         result = requests.get(
             url,
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -228,6 +239,7 @@ class GetClientPolicy(APIView):
 
         result = requests.get(
             integration.base_url + "networks/" + network_id + "/clients/" + client_mac + "/policy",
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -245,6 +257,7 @@ class GetClientPolicy(APIView):
 
         result = requests.put(
             integration.base_url + "networks/" + network_id + "/clients/" + client_mac + "/policy",
+            verify=False,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",

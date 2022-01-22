@@ -226,7 +226,7 @@
               <q-item-section top>
                 <q-item-label>Purchase Cost</q-item-label>
               </q-item-section>
-              <q-item-section side top>{{ assetPurchaseCost }}</q-item-section>
+              <q-item-section side top>${{ assetPurchaseCost }}</q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>

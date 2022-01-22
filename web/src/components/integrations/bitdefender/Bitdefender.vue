@@ -186,7 +186,7 @@
             <q-tab-panel name="quarantine" class="q-px-none">
                 <QuarantineTab :endpoint="endpoint" />
             </q-tab-panel>
-            <q-tab-panel name="quarantine" class="q-px-none">
+            <q-tab-panel name="reports" class="q-px-none">
                 <ReportsTab :endpoint="endpoint" />
             </q-tab-panel>
         </q-tab-panels>

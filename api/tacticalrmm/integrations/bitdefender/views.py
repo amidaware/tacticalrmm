@@ -236,7 +236,7 @@ class GetTasks(APIView):
 
         return Response(result)
 
-class GetReports(APIView):
+class GetReportsList(APIView):
 
     permission_classes = [IsAuthenticated]
 
@@ -252,12 +252,12 @@ class GetReports(APIView):
         }  
 
         result = requests.post(
-            integration.base_url + "v1.0/jsonrpc/network",
+            integration.base_url + "v1.0/jsonrpc/reports/computers",
         json=json,
         verify=False,
         headers = {
         "Content-Type": "application/json",
         "Authorization": integration.auth_header
         }).json()
-
+        print(result)
         return Response(result)

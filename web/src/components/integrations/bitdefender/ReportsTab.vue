@@ -121,11 +121,9 @@ const columns = [
 
 export default {
     name: "Reports",
-    emits: [...useDialogPluginComponent.emits],
     props: ['endpoint'],
 
     setup(props) {
-        const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
         const $q = useQuasar();
 
         const rows = ref([])
@@ -135,27 +133,14 @@ export default {
         function getReports() {
             $q.loading.show()
             axios
-                .get(`/bitdefender/reports/` + props.endpoint.id + `/`)
+                .get(`/bitdefender/reports/`)
                 .then(r => {
                     console.log(r.data)
-                    rows.value = []
-                    for (let item of r.data.result.items) {
-                        let quarantineObj = {
-                            name: item.endpointName,
-                            ip: item.endpointIP,
-                            threatName: item.threatName,
-                            quarantinedOn: item.quarantinedOn,
-                            canBeRemoved: item.canBeRemoved,
-                            canBeRestored: item.canBeRestored,
-                            details: item.details.filePath
-                        }
-                        rows.value.push(quarantineObj)
-                    }
 
                     $q.loading.hide()
                 })
                 .catch(e => {
-                    console.log(e)
+                    console.log(e.response.data)
                 });
         }
         watch(selected, (val) => {
@@ -187,9 +172,6 @@ export default {
                 return selected.value.length === 0 ? '' : `${selected.value.length} record${selected.value.length > 1 ? 's' : ''} selected of ${rows.value.length}`
             },
             getReports,
-            // quasar dialog plugin
-            dialogRef,
-            onDialogHide,
         };
     },
 };

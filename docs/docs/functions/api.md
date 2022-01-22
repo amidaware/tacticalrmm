@@ -33,7 +33,7 @@ Open `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` and add
 SWAGGER_ENABLED = True
 ```
 
-Restart django: `sudo systemctl restart rmm`
+Restart django: `sudo systemctl restart rmm.service`
 
 Then visit `https://api.example.com/api/schema/swagger-ui/` to see it in action.
 

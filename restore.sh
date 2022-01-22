@@ -218,6 +218,14 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
 
+sudo mkdir /community-scripts
+sudo chown ${USER}:${USER} /community-scripts
+git clone https://github.com/amidaware/community-scripts.git /community-scripts/
+cd /community-scripts
+git config user.email "admin@example.com"
+git config user.name "Bob"
+git checkout main
+
 print_green 'Restoring NATS'
 
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')

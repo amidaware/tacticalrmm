@@ -1,1 +1,0 @@
-/usr/bin/dscl . -list /Users

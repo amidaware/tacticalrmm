@@ -86,22 +86,15 @@ class Script(BaseAuditModel):
     def load_community_scripts(cls):
         import json
         import os
-        from pathlib import Path
 
         from django.conf import settings
 
         # load community uploaded scripts into the database
         # skip ones that already exist, only updating name / desc in case it changes
         # for install script
-        if not settings.DOCKER_BUILD:
-            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
-        # for docker
-        else:
-            scripts_dir = settings.SCRIPTS_DIR
+        scripts_dir = os.path.join(settings.SCRIPTS_DIR, "scripts")
 
-        with open(
-            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
-        ) as f:
+        with open(os.path.join(settings.SCRIPTS_DIR, "community_scripts.json")) as f:
             info = json.load(f)
 
         # used to remove scripts from DB that are removed from the json file and file system

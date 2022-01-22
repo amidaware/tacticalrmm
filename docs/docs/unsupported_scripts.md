@@ -365,7 +365,7 @@ sudo echo "${tacticalfail2banjail}" > /etc/fail2ban/jail.d/tacticalrmm.local
 ### Restart fail2ban
 
 ```bash
-sudo systemctl restart fail2ban
+sudo systemctl restart fail2ban.service
 ```
 
 ## Using purchased SSL certs instead of LetsEncrypt wildcards
@@ -430,7 +430,7 @@ You need to add the certificate private key and public keys to the following fil
 
 7. Restart services
    
-        sudo systemctl restart rmm celery celerybeat nginx nats nats-api
+        sudo systemctl restart rmm.service celery.service celerybeat.service nginx.service nats.service nats-api.service
 
 ## Use certbot to do acme challenge over http
 
@@ -668,7 +668,7 @@ sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/fro
 
 ### Restart nginx
 
-sudo systemctl restart nginx
+sudo systemctl restart nginx.service
 
 
 ### Get letsencrypt Certs
@@ -886,7 +886,7 @@ add the lines from 'real_ip' module inside server tag:
 
 restart nginx
 
-    systemctl restart nginx
+    systemctl restart nginx.service
 
 ### APACHE
 enable ssl proxy, rewriteEngine. 

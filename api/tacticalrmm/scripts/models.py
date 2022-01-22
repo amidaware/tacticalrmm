@@ -86,7 +86,6 @@ class Script(BaseAuditModel):
     def load_community_scripts(cls):
         import json
         import os
-        from pathlib import Path
 
         from django.conf import settings
 

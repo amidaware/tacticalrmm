@@ -48,7 +48,7 @@
     </q-item>
 
     <!-- integrations -->
-    <q-item clickable v-close-popup @click="getAgentIntegrations(agent)">
+    <q-item clickable v-close-popup @click="getAgentIntegrations(agent.agent_id)">
       <q-item-section side>
         <q-icon size="xs" name="vertical_split" />
       </q-item-section>
@@ -203,6 +203,7 @@ import {
   removeAgent,
   runRemoteBackground,
   runTakeControl,
+  getAgentIntegrations,
 } from "@/api/agents";
 import { runAgentUpdateScan, runAgentUpdateInstall } from "@/api/winupdates";
 import { runAgentChecks } from "@/api/checks";
@@ -451,17 +452,6 @@ export default {
           console.error(e);
         }
       });
-    }
-    function getAgentIntegrations(agent) {
-      axios
-        .get("agents/" + agent.agent_id + "/")
-        .then(r => {
-          const url = router.resolve(`/integrations/agents/${agent.agent_id}`).href;
-          window.open(url, null, { popup: true, location: false, status: false, toolbar: false, menubar: false, width: 1800, height: 900 });
-          })
-        .catch((e) => {
-            console.log(e)
-        });
     }
 
     return {

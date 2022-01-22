@@ -186,10 +186,9 @@
             <q-tab-panel name="quarantine" class="q-px-none">
                 <QuarantineTab :endpoint="endpoint" />
             </q-tab-panel>
-            <q-tab-panel
-                name="reports"
-                class="q-px-none"
-            >Lorem ipsum dolor sit amet consectetur adipisicing elit.</q-tab-panel>
+            <q-tab-panel name="quarantine" class="q-px-none">
+                <ReportsTab :endpoint="endpoint" />
+            </q-tab-panel>
         </q-tab-panels>
     </q-card>
 </template>
@@ -203,12 +202,13 @@ import InstallLinks from "@/components/integrations/bitdefender/modals/InstallLi
 import ScanEndpoint from "@/components/integrations/bitdefender/modals/ScanEndpoint";
 import QuarantineTab from "@/components/integrations/bitdefender/QuarantineTab";
 import ScanTasksTab from "@/components/integrations/bitdefender/ScanTasksTab";
+import ReportsTab from "@/components/integrations/bitdefender/ReportsTab"
 
 export default {
     name: "Bitdefender",
     emits: [...useDialogPluginComponent.emits],
     props: ['agent'],
-    components: { InstallLinks, ScanTasksTab, QuarantineTab },
+    components: { InstallLinks, ScanTasksTab, QuarantineTab, ReportsTab },
     setup(props) {
         const { dialogRef, onDialogHide } = useDialogPluginComponent();
         const $q = useQuasar();

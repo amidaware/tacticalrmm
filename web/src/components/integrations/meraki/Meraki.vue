@@ -70,7 +70,7 @@
                   <q-item-label>Remove Association</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="getUplinks()">
+              <q-item clickable v-close-popup @click="checkAssociation()">
                 <q-item-section>
                   <q-item-label>Refresh</q-item-label>
                 </q-item-section>
@@ -285,13 +285,6 @@ const columns = [
     format: (val) => `${val}`,
     sortable: true,
   },
-  // {
-  //     name: "model",
-  //     align: "left",
-  //     label: "Model",
-  //     field: "model",
-  //     sortable: true,
-  // },
 
   {
     name: "productType",
@@ -300,13 +293,6 @@ const columns = [
     field: "productType",
     sortable: true,
   },
-  // {
-  //     name: "serial",
-  //     align: "left",
-  //     label: "Serial",
-  //     field: "serial",
-  //     sortable: true,
-  // },
   {
     name: "usageTotal",
     align: "left",
@@ -378,6 +364,7 @@ export default {
     }
 
     function checkAssociation() {
+      timespan.value = { label: "For the last day", value: 86400 }
       let obj = null
       for (let i = 0; i < props.integrations.length; i++) {
         obj = props.integrations[i].configuration.backend.associations.clients.find(o => o.client_id === props.node.id);
@@ -611,6 +598,7 @@ export default {
       networkName,
       networkId,
       onNotifyError,
+      checkAssociation,
       getUplinks,
       getOverview,
       getNetworks,

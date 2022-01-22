@@ -235,3 +235,29 @@ class GetTasks(APIView):
         }).json()
 
         return Response(result)
+
+class GetReports(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        integration = Integration.objects.get(name="Bitdefender GravityZone")
+        json =   {
+            "params": {
+                "perPage": 100
+            },
+            "jsonrpc": "2.0",
+            "method": "getReportsList",
+            "id": integration.company_id
+        }  
+
+        result = requests.post(
+            integration.base_url + "v1.0/jsonrpc/network",
+        json=json,
+        verify=False,
+        headers = {
+        "Content-Type": "application/json",
+        "Authorization": integration.auth_header
+        }).json()
+
+        return Response(result)

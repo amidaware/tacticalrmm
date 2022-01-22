@@ -41,17 +41,15 @@ import Meraki from "@/components/integrations/meraki/Meraki";
 
 export default {
     name: "ClientIntegrations",
-    emits: [...useDialogPluginComponent.emits],
     components: { Meraki },
 
     setup(props) {
         const { dialogRef, onDialogHide } = useDialogPluginComponent();
-        const route = useRoute()
+        const { params } = useRoute();
 
         const integrationTab = ref("")
         const node = ref([])
         const integrations = ref([])
-        const orgChoice = ref(false)
 
         function getIntegrations() {
             axios
@@ -73,10 +71,9 @@ export default {
 
         function getClient() {
             axios
-                .get("clients/" + route.params.client_id + "/")
+                .get("clients/" + params.client_id + "/")
                 .then(r => {
                     node.value = r.data
-                    useMeta({ title: node.value.name + ` Integrations Dashboard` });
                 })
                 .catch((e) => {
                     console.log(e)
@@ -90,6 +87,12 @@ export default {
             }
         })
 
+        useMeta(() => {
+            return {
+                title: node.value.name + ` | Client Integrations Dashboard`
+            }
+        })
+
         onMounted(() => {
             getIntegrations()
             getClient();
@@ -100,7 +103,6 @@ export default {
             integrationTab,
             integrations,
             node,
-            orgChoice,
             // quasar dialog
             dialogRef,
             onDialogHide,

@@ -240,7 +240,7 @@ git pull
 if [[ ! -d /community-scripts ]]; then
   sudo mkdir /community-scripts
   sudo chown ${USER}:${USER} /community-scripts
-  git clone https://github.com/wh1te909/tacticalrmm.git /community-scripts/
+  git clone https://github.com/amidaware/community-scripts.git /community-scripts/
   cd /community-scripts
   git config user.email "admin@example.com"
   git config user.name "Bob"
@@ -249,6 +249,7 @@ else
   git config user.email "admin@example.com"
   git config user.name "Bob"
   git fetch
+  git checkout main
   git reset --hard FETCH_HEAD
   git clean -df
   git pull

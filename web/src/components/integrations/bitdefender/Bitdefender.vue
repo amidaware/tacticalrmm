@@ -20,6 +20,11 @@
             <q-tab-panel name="endpoint" class="q-px-none">
                 <q-btn-dropdown label="Actions" flat>
                     <q-list>
+                        <q-item clickable v-close-popup @click="createReport()">
+                            <q-item-section>
+                                <q-item-label>Create Report</q-item-label>
+                            </q-item-section>
+                        </q-item>
                         <q-item clickable v-close-popup @click="getInstallLinks()">
                             <q-item-section>
                                 <q-item-label>Get Install Links</q-item-label>
@@ -187,7 +192,11 @@
                 <QuarantineTab :endpoint="endpoint" />
             </q-tab-panel>
             <q-tab-panel name="reports" class="q-px-none">
-                <ReportsTab :endpoint="endpoint" />
+                <ReportsTab
+                    :endpoint="endpoint"
+                    :reportTypeOptions="reportTypeOptions"
+                    :reportOccurrenceOptions="reportOccurrenceOptions"
+                />
             </q-tab-panel>
         </q-tab-panels>
     </q-card>
@@ -203,12 +212,13 @@ import ScanEndpoint from "@/components/integrations/bitdefender/modals/ScanEndpo
 import QuarantineTab from "@/components/integrations/bitdefender/QuarantineTab";
 import ScanTasksTab from "@/components/integrations/bitdefender/ScanTasksTab";
 import ReportsTab from "@/components/integrations/bitdefender/ReportsTab"
+import CreateReport from "@/components/integrations/bitdefender/modals/CreateReport";
 
 export default {
     name: "Bitdefender",
     emits: [...useDialogPluginComponent.emits],
     props: ['agent'],
-    components: { InstallLinks, ScanTasksTab, QuarantineTab, ReportsTab },
+    components: { InstallLinks, ScanTasksTab, QuarantineTab, ReportsTab, CreateReport },
     setup(props) {
         const { dialogRef, onDialogHide } = useDialogPluginComponent();
         const $q = useQuasar();
@@ -220,6 +230,48 @@ export default {
         const bitdefenderEndpoint = ref([])
         const endpoint = ref([])
         const modules = ref([])
+        const reportOccurrenceOptions = ref([{ value: 2, label: 'Hourly' }, { value: 3, label: 'Daily' }, { value: 4, label: 'Weekly' }, { value: 5, label: 'Monthly' }])
+        const reportIntervalOptions = ref([{ value: 0, label: 'Today' },
+        { value: 1, label: 'Last day' },
+        { value: 2, label: 'This week' },
+        { value: 3, label: 'Last week' },
+        { value: 4, label: 'This month' },
+        { value: 5, label: 'Last month' },
+        { value: 6, label: 'Last 2 months' },
+        { value: 7, label: 'Last 3 months' },
+        { value: 8, label: 'This year' },])
+        const daysOptions = ref([{ value: 0, label: 'Sunday' }, { value: 1, label: 'Monday' }, { value: 2, label: 'Tuesday' }, { value: 4, label: 'Wedensday' }, { value: 5, label: 'Thursday' }, { value: 6, label: 'Friday' }, { value: 7, label: 'Saturday' }])
+        const reportTypeOptions = ref([
+            { value: 1, label: 'Antiphishing Activity' },
+            { value: 2, label: 'Blocked Applications' },
+            { value: 3, label: 'Blocked Websites' },
+            { value: 4, label: 'Customer Status Overview' },
+            { value: 5, label: 'Data Protection' },
+            { value: 6, label: 'Device Control Activity' },
+            { value: 7, label: 'Endpoint Modules Status' },
+            { value: 8, label: 'Endpoint Protection Status' },
+            { value: 9, label: 'Firewall Activity' },
+            { value: 10, label: 'License Status' },
+            { value: 12, label: 'Malware Status' },
+            { value: 13, label: 'Monthly License Usage' },
+            { value: 14, label: 'Network Status' },
+            { value: 15, label: 'On demand scanning' },
+            { value: 16, label: 'Policy Compliance' },
+            { value: 17, label: 'Security Audit' },
+            { value: 18, label: 'Security Server Status' },
+            { value: 19, label: 'Top 10 Detected Malware' },
+            { value: 20, label: 'Top 10 Infected Companies' },
+            { value: 21, label: 'Top 10 Infected Endpoints' },
+            { value: 22, label: 'Update Status' },
+            { value: 23, label: 'Upgrade Status' },
+            { value: 24, label: 'AWS Monthly Usage' },
+            { value: 29, label: 'Email Security Usage' },
+            { value: 30, label: 'Endpoint Encryption Status' },
+            { value: 31, label: 'HyperDetect Activity' },
+            { value: 32, label: 'Network Patch Status' },
+            { value: 33, label: 'Sandbox Analyzer Failed Submissions' },
+            { value: 34, label: 'Network Incidents' },
+        ])
 
         async function getBitdefenderEndpoints() {
             $q.loading.show()
@@ -303,6 +355,21 @@ export default {
             })
         }
 
+        function createReport() {
+            $q.dialog({
+                component: CreateReport,
+                componentProps: {
+                    endpoint: endpoint.value,
+                    reportTypeOptions: reportTypeOptions.value,
+                    reportOccurrenceOptions: reportOccurrenceOptions.value,
+                    reportIntervalOptions: reportIntervalOptions.value,
+                    daysOptions: daysOptions.value,
+                }
+            }).onOk(() => {
+
+            })
+        }
+
         function quickScan() {
             $q.dialog({
                 component: ScanEndpoint,
@@ -331,7 +398,10 @@ export default {
             tab,
             endpoint,
             modules,
+            reportOccurrenceOptions,
+            reportTypeOptions,
             getInstallLinks,
+            createReport,
             quickScan,
             fullScan,
             // quasar dialog

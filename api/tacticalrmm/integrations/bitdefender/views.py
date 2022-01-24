@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from datetime import datetime
 import requests
 import json
 from ..models import Integration
@@ -242,9 +243,9 @@ class GetReportsList(APIView):
 
     def get(self, request, format=None):
         integration = Integration.objects.get(name="Bitdefender GravityZone")
-        json =   {
+        json = {
             "params": {
-                "perPage": 100
+                "perPage": 100,
             },
             "jsonrpc": "2.0",
             "method": "getReportsList",
@@ -252,12 +253,99 @@ class GetReportsList(APIView):
         }  
 
         result = requests.post(
-            integration.base_url + "v1.0/jsonrpc/reports/computers",
+            integration.base_url + "v1.0/jsonrpc/reports",
         json=json,
         verify=False,
         headers = {
         "Content-Type": "application/json",
         "Authorization": integration.auth_header
         }).json()
-        print(result)
+
+        return Response(result)
+
+
+class GetCreateReport(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, endpoint_id, format=None):
+        integration = Integration.objects.get(name="Bitdefender GravityZone")
+
+        endpoint_array = []
+        endpoint_array.append(endpoint_id)
+        # print(request.data)
+        json = {
+                "params": {
+                    "name": request.data['name'],
+                    "type": request.data['type'],
+                    "targetIds": endpoint_array,
+                    "scheduledInfo": {},
+                    "options": {}
+                },
+                "jsonrpc": "2.0",
+                "method": "createReport",
+                "id": integration.company_id
+            } 
+
+        params_scheduledInfo = json['params']['scheduledInfo']
+        params_options = json['params']['options']
+
+        if request.data['occurrence']:
+            params_scheduledInfo['occurrence'] = request.data['occurrence']
+
+        if request.data['interval']:
+            params_scheduledInfo['interval'] = request.data['interval']
+
+        if request.data['days']:
+            params_scheduledInfo['days'] = request.data['days']
+
+        if request.data['day']:
+            params_scheduledInfo['day'] = request.data['day']
+
+        if request.data['occurrence'] == 3 or request.data['occurrence'] == 4 or request.data['occurrence'] == 5:
+            params_scheduledInfo['startHour'] = int(request.data['startHour'])
+
+        if request.data['occurrence'] == 3 or request.data['occurrence'] == 4 or request.data['occurrence'] == 5:
+            params_scheduledInfo['startMinute'] = int(request.data['startMinute'])
+
+        if request.data['reportingInterval']:
+            params_options['reportingInterval'] = request.data['reportingInterval']
+
+        print(json)
+
+        result = requests.post(
+            integration.base_url + "v1.0/jsonrpc/reports",
+        json=json,
+        verify=False,
+        headers = {
+        "Content-Type": "application/json",
+        "Authorization": integration.auth_header
+        }).json()
+
+        return Response(result)
+
+
+class GetDeleteReport(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, report_id, format=None):
+        integration = Integration.objects.get(name="Bitdefender GravityZone")
+
+        json = {
+                "params": {
+                    "reportId": report_id
+                },
+                "jsonrpc": "2.0",
+                "method": "deleteReport",
+                "id": integration.company_id
+            }
+
+        result = requests.post(
+            integration.base_url + "v1.0/jsonrpc/reports",
+        json=json,
+        verify=False,
+        headers = {
+        "Content-Type": "application/json",
+        "Authorization": integration.auth_header
+        }).json()
+
         return Response(result)

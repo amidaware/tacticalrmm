@@ -6,7 +6,7 @@
                 :columns="columns"
                 row-key="id"
                 :selected-rows-label="getSelectedString"
-                selection="multiple"
+                selection="single"
                 v-model:selected="selected"
                 :pagination="pagination"
             >
@@ -14,14 +14,14 @@
                     <q-btn flat dense @click="getReports()" icon="refresh" />
                     <q-btn-dropdown label="Actions" flat :disable="actionBtnDisabled">
                         <q-list>
-                            <q-item clickable v-close-popup @click="checkout()">
-                                <q-item-section>
-                                    <q-item-label>Restore</q-item-label>
-                                </q-item-section>
-                            </q-item>
                             <q-item clickable v-close-popup @click="checkin()">
                                 <q-item-section>
-                                    <q-item-label>Remove</q-item-label>
+                                    <q-item-label>Get Download Links</q-item-label>
+                                </q-item-section>
+                            </q-item>
+                            <q-item clickable v-close-popup @click="deleteReport()">
+                                <q-item-section>
+                                    <q-item-label>Delete Report</q-item-label>
                                 </q-item-section>
                             </q-item>
                         </q-list>
@@ -51,6 +51,8 @@ import axios from "axios";
 // composable imports
 import { ref, onMounted, watch } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
+import DeleteReport from "@/components/integrations/bitdefender/modals/DeleteReport";
+
 
 const columns = [
     {
@@ -63,65 +65,29 @@ const columns = [
         format: val => `${val}`,
     },
     {
-        name: "ip",
+        name: "type",
         required: true,
-        label: "IP",
+        label: "Type",
         align: "left",
         sortable: true,
-        field: row => row.ip,
+        field: row => row.type,
         format: val => `${val}`,
     },
     {
-        name: "threatName",
+        name: "occurrence",
         required: true,
-        label: "Threat",
+        label: "Occurrence",
         align: "left",
         sortable: true,
-        field: row => row.threatName,
+        field: row => row.occurrence,
         format: val => `${val}`,
     },
-
-    {
-        name: "quarantinedOn",
-        required: true,
-        label: "Quarantined On",
-        align: "left",
-        sortable: true,
-        field: row => row.quarantinedOn,
-        format: val => `${val}`,
-    },
-    {
-        name: "canBeRemoved",
-        required: true,
-        label: "Can Be Removed",
-        align: "left",
-        sortable: true,
-        field: row => row.canBeRemoved,
-        format: val => `${val}`,
-    },
-    {
-        name: "canBeRestored",
-        required: true,
-        label: "Can Be Restored",
-        align: "left",
-        sortable: true,
-        field: row => row.canBeRestored,
-        format: val => `${val}`,
-    },
-    {
-        name: "details",
-        required: true,
-        label: "Details",
-        align: "left",
-        sortable: true,
-        field: row => row.details,
-        format: val => `${val}`,
-    }
 ]
 
 export default {
     name: "Reports",
-    props: ['endpoint'],
+    props: ['endpoint', 'reportTypeOptions', 'reportOccurrenceOptions'],
+    components: { DeleteReport },
 
     setup(props) {
         const $q = useQuasar();
@@ -136,13 +102,37 @@ export default {
                 .get(`/bitdefender/reports/`)
                 .then(r => {
                     console.log(r.data)
+                    rows.value = []
+                    for (let report of r.data.result.items) {
+                        const reportTypeObj = props.reportTypeOptions.find(o => o.value === report.type);
+                        const occurrenceObj = props.reportOccurrenceOptions.find(o => o.value === report.occurrence)
 
+                        let reportObj = {
+                            id: report.id,
+                            name: report.name,
+                            type: reportTypeObj != undefined ? reportTypeObj.label : "N/A",
+                            occurrence: occurrenceObj != undefined ? occurrenceObj.label : "N/A"
+                        }
+                        rows.value.push(reportObj)
+                    }
                     $q.loading.hide()
                 })
                 .catch(e => {
-                    console.log(e.response.data)
+                    console.log(e)
                 });
         }
+
+        function deleteReport() {
+            $q.dialog({
+                component: DeleteReport,
+                componentProps: {
+                    selected: selected.value,
+                }
+            }).onOk(() => {
+                getReports()
+            })
+        }
+
         watch(selected, (val) => {
 
             if (selected.value.length > 0) {
@@ -172,6 +162,7 @@ export default {
                 return selected.value.length === 0 ? '' : `${selected.value.length} record${selected.value.length > 1 ? 's' : ''} selected of ${rows.value.length}`
             },
             getReports,
+            deleteReport,
         };
     },
 };

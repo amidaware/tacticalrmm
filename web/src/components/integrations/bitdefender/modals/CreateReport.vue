@@ -1,5 +1,5 @@
 <template>
-    <q-dialog ref="dialogRef" @hide="onDialogHide" persistant>
+    <q-dialog ref="dialogRef" @hide="onDialogHide" persistent>
         <q-card class="q-dialog-plugin" style="width: 60vw">
             <q-bar>
                 Create Report

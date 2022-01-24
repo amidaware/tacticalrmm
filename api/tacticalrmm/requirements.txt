@@ -1,4 +1,4 @@
-asgiref==3.4.1
+asgiref==3.5.0
 asyncio-nats-client==0.11.5
 celery==5.2.3
 certifi==2021.10.8
@@ -19,12 +19,12 @@ msgpack==1.0.3
 packaging==21.3
 psycopg2-binary==2.9.3
 pycparser==2.21
-pycryptodome==3.12.0
+pycryptodome==3.13.0
 pyotp==2.6.0
-pyparsing==3.0.6
+pyparsing==3.0.7
 pytz==2021.3
 qrcode==7.3.1
-redis==4.1.0
+redis==4.1.1
 requests==2.27.1
 six==1.16.0
 sqlparse==0.4.2

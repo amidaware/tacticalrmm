@@ -4,7 +4,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SCRIPTS_DIR = "/community-scripts"
+SCRIPTS_DIR = "/opt/trmm-community-scripts"
 
 DOCKER_BUILD = False
 

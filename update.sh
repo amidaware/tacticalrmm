@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="128"
+SCRIPT_VERSION="129"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -8,6 +8,8 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
+
+SCRIPTS_DIR="/opt/trmm-community-scripts"
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -237,15 +239,15 @@ git clean -df
 git pull
 
 # update from community-scripts repo
-if [[ ! -d /community-scripts ]]; then
-  sudo mkdir /community-scripts
-  sudo chown ${USER}:${USER} /community-scripts
-  git clone https://github.com/amidaware/community-scripts.git /community-scripts/
-  cd /community-scripts
+if [[ ! -d ${SCRIPTS_DIR} ]]; then
+  sudo mkdir -p ${SCRIPTS_DIR}
+  sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
+  git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+  cd ${SCRIPTS_DIR}
   git config user.email "admin@example.com"
   git config user.name "Bob"
 else
-  cd /community-scripts
+  cd ${SCRIPTS_DIR}
   git config user.email "admin@example.com"
   git config user.name "Bob"
   git fetch
@@ -260,7 +262,7 @@ WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 
 sudo chown ${USER}:${USER} -R /rmm
-sudo chown ${USER}:${USER} -R /community-scripts
+sudo chown ${USER}:${USER} -R ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 sudo chown -R $USER:$GROUP /home/${USER}/.npm

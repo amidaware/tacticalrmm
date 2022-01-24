@@ -194,8 +194,12 @@ export default {
                 .then(r => {
                     console.log(r.data)
                     if (r.data.error) {
-                        notifyError(r.data.error.data.details)
+                        if (r.data.error.data.details === 'Validation exception.') {
+                            notifyError(r.data.error.data.details + ' You may not have access to the feature you are trying to generate a report for.')
 
+                        } else {
+                            notifyError(r.data.error.data.details)
+                        }
                     } else {
                         notifySuccess('The report has been created for Bitdefender GravityZone')
                     }

@@ -17,6 +17,7 @@
                     :rules="[(val) => !!val || '*Required']"
                 />
                 <q-select
+                    v-if="reportName"
                     filled
                     dense
                     v-model="reportType"
@@ -25,6 +26,7 @@
                     :rules="[(val) => !!val || '*Required']"
                 />
                 <q-select
+                    v-if="reportType.value"
                     filled
                     dense
                     v-model="reportOccurrence"
@@ -33,15 +35,7 @@
                     :rules="[(val) => !!val || '*Required']"
                 />
                 <q-select
-                    v-if="reportOccurrence.value === 2"
-                    filled
-                    dense
-                    v-model="interval"
-                    label="Interval *"
-                    :options="intervalOptions"
-                    :rules="[(val) => !!val || '*Required']"
-                />
-                <q-select
+                    v-if="reportOccurrence.value"
                     filled
                     dense
                     v-model="reportInterval"
@@ -50,7 +44,16 @@
                     :rules="[(val) => !!val || '*Required']"
                 />
                 <q-select
-                    v-if="reportOccurrence.value === 4"
+                    v-if="reportOccurrence.value === 2 && reportOccurrence.value"
+                    filled
+                    dense
+                    v-model="interval"
+                    label="Interval (Hours) *"
+                    :options="intervalOptions"
+                    :rules="[(val) => !!val || '*Required']"
+                />
+                <q-select
+                    v-if="reportOccurrence.value === 4 && reportOccurrence.value"
                     filled
                     dense
                     v-model="days"
@@ -59,7 +62,7 @@
                     :rules="[(val) => !!val || '*Required']"
                 />
                 <q-select
-                    v-if="reportOccurrence.value === 5 || reportOccurrence.value == 6"
+                    v-if="reportOccurrence.value === 5 && reportOccurrence.value || reportOccurrence.value == 6 && reportOccurrence.value"
                     filled
                     dense
                     v-model="day"
@@ -68,7 +71,7 @@
                     :rules="[(val) => !!val || '*Required']"
                 />
                 <q-select
-                    v-if="reportOccurrence.value === 6"
+                    v-if="reportOccurrence.value === 6 && reportOccurrence.value"
                     filled
                     dense
                     v-model="month"
@@ -76,6 +79,20 @@
                     :options="monthOptions"
                     :rules="[(val) => !!val || '*Required']"
                 />
+                <q-select
+                    v-if="reportName && reportType.value && reportOccurrence.value"
+                    stack-label
+                    dense
+                    clearable
+                    filled
+                    use-input
+                    use-chips
+                    multiple
+                    hide-dropdown-icon
+                    input-debounce="0"
+                    new-value-mode="add-unique"
+                    v-model="reportRecipients"
+                ></q-select>
             </q-card-section>
             <q-card-actions align="right">
                 <q-btn label="Save" v-close-popup @click="createReport()" />
@@ -142,7 +159,7 @@ export default {
         { value: 5, label: 'Last month' },
         { value: 6, label: 'Last 2 months' },
         { value: 7, label: 'Last 3 months' }])
-        const daysOptions = ref([{ value: 0, label: 'Sunday' }, { value: 1, label: 'Monday' }, { value: 2, label: 'Tuesday' }, { value: 4, label: 'Wedensday' }, { value: 5, label: 'Thursday' }, { value: 6, label: 'Friday' }, { value: 7, label: 'Saturday' }])
+        const daysOptions = ref([{ value: 0, label: 'Sunday' }, { value: 1, label: 'Monday' }, { value: 2, label: 'Tuesday' }, { value: 3, label: 'Wedensday' }, { value: 4, label: 'Thursday' }, { value: 5, label: 'Friday' }, { value: 6, label: 'Saturday' }])
         const reportName = ref("")
         const reportType = ref("")
         const reportOccurrence = ref("")
@@ -152,6 +169,7 @@ export default {
         const day = ref("")
         const monthOptions = ref([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
         const month = ref('')
+        const reportRecipients = ref([])
 
         function createReport() {
             let now = new Date();
@@ -167,7 +185,8 @@ export default {
                 day: reportOccurrence.value.value === 5 || reportOccurrence.value.value === 6 ? day.value : null,
                 month: reportOccurrence.value.value === 6 ? month.value.value : null,
                 startHour: reportOccurrence.value.value === 3 || reportOccurrence.value.value === 4 || reportOccurrence.value.value === 5 ? formattedString[0] : null,
-                startMinute: reportOccurrence.value.value === 3 || reportOccurrence.value.value === 4 || reportOccurrence.value.value === 5 ? formattedString[1] : null
+                startMinute: reportOccurrence.value.value === 3 || reportOccurrence.value.value === 4 || reportOccurrence.value.value === 5 ? formattedString[1] : null,
+                reportRecipients: reportRecipients.value
             }
 
             axios
@@ -186,19 +205,15 @@ export default {
                 });
         }
 
-        watch([reportOccurrence, reportInterval], ([newOccurrence, newInterval], [prevOccurrence, prevInterval]) => {
-            console.log(newOccurrence, newInterval)
-            if (newOccurrence.value === 1) {
-                reportIntervalOptions.value = []
-            }
-            else if (newOccurrence.value === 2) {
-                reportIntervalOptions.value = [{ value: 0, label: 'Today' }]
+        watch([reportOccurrence, reportInterval, reportType], ([newOccurrence, newReportInterval, newType], [prevOccurrence, prevReportInterval, prevType]) => {
+            console.log(newOccurrence, newReportInterval, newType)
 
+            if (newOccurrence.value === 2) {
+                reportIntervalOptions.value = [{ value: 0, label: 'Today' }]
             } else if (newOccurrence.value === 3) {
                 reportIntervalOptions.value = [{ value: 0, label: 'Today' },
                 { value: 1, label: 'Last day' },
                 { value: 2, label: 'This week' }]
-
             } else if (newOccurrence.value === 4) {
                 reportIntervalOptions.value = [{ value: 0, label: 'Today' },
                 { value: 1, label: 'Last day' },
@@ -215,6 +230,46 @@ export default {
                 { value: 6, label: 'Last 2 months' },
                 { value: 7, label: 'Last 3 months' }]
             }
+            // } else if (newOccurrence.value === 3) {
+            //     reportIntervalOptions.value = []
+            //     reportIntervalOptions.value = [{ value: 0, label: 'Today' },
+            //     { value: 1, label: 'Last day' },
+            //     { value: 2, label: 'This week' }]
+
+            // } else if (newOccurrence.value === 4) {
+            //     reportIntervalOptions.value = []
+            //     reportIntervalOptions.value = [{ value: 0, label: 'Today' },
+            //     { value: 1, label: 'Last day' },
+            //     { value: 2, label: 'This week' },
+            //     { value: 3, label: 'Last week' },
+            //     { value: 4, label: 'This month' }]
+            // } else if (newOccurrence.value === 5 && newType.value !== 13 || newOccurrence.value === 5 && newType.value !== 24 || newOccurrence.value === 5 && newType.value !== 29) {
+            //     reportIntervalOptions.value = []
+            //     reportIntervalOptions.value = [{ value: 0, label: 'Today' },
+            //     { value: 1, label: 'Last day' },
+            //     { value: 2, label: 'This week' },
+            //     { value: 3, label: 'Last week' },
+            //     { value: 4, label: 'This month' },
+            //     { value: 5, label: 'Last month' },
+            //     { value: 6, label: 'Last 2 months' },
+            //     { value: 7, label: 'Last 3 months' }]
+            // } else if (newOccurrence.value === 5 && newType.value === 13 || newOccurrence.value === 5 && newType.value === 24 || newOccurrence.value === 5 && newType.value === 29) {
+            //     console.log("in")
+            //     reportOccurrenceOptions.value = []
+            //     reportIntervalOptions.value = []
+            //     reportOccurrenceOptions.value = [{ value: 4, label: 'Weekly' }]
+            //     if (reportOccurrence.value)
+            //         reportIntervalOptions.value = [{ value: 4, label: 'This month' }]
+
+            // } else if (newOccurrence.value === 5 && newType.value === 13 || newOccurrence.value === 5 && newType.value === 24 || newOccurrence.value === 5 && newType.value === 29) {
+            //     reportOccurrenceOptions.value = []
+            //     reportIntervalOptions.value = []
+            //     reportOccurrenceOptions.value = [{ value: 4, label: 'Weekly' }, { value: 5, label: 'Monthly' }]
+            //     reportIntervalOptions.value = [{ value: 4, label: 'This month' }, { value: 5, label: 'Last month' },]
+
+
+            // }
+
         });
 
         // watch(report, (val) => {
@@ -239,6 +294,7 @@ export default {
             daysOptions,
             day,
             dayOptions,
+            reportRecipients,
             createReport,
             // quasar dialog plugin
             dialogRef,

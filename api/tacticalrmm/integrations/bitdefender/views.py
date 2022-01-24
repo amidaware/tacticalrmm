@@ -270,16 +270,21 @@ class GetCreateReport(APIView):
     def post(self, request, endpoint_id, format=None):
         integration = Integration.objects.get(name="Bitdefender GravityZone")
 
+        report_recipients_array = []
         endpoint_array = []
         endpoint_array.append(endpoint_id)
-        # print(request.data)
+
+        for recipient in request.data['reportRecipients']:
+            report_recipients_array.append(recipient)
+
         json = {
                 "params": {
                     "name": request.data['name'],
                     "type": request.data['type'],
                     "targetIds": endpoint_array,
                     "scheduledInfo": {},
-                    "options": {}
+                    "options": {},
+                    "emailsList": report_recipients_array
                 },
                 "jsonrpc": "2.0",
                 "method": "createReport",
@@ -310,7 +315,7 @@ class GetCreateReport(APIView):
         if request.data['reportingInterval']:
             params_options['reportingInterval'] = request.data['reportingInterval']
 
-        print(json)
+        # print(json)
 
         result = requests.post(
             integration.base_url + "v1.0/jsonrpc/reports",

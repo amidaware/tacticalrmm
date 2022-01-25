@@ -58,8 +58,6 @@
           </q-td>
           <q-td key="mac" :props="props">{{ props.row.mac }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
-          <q-td key="deviceName" :props="props">{{ props.row.deviceName }}</q-td>
-          <q-td key="type" :props="props">{{ props.row.type }}</q-td>
           <q-td key="details" :props="props">{{ props.row.details }}</q-td>
         </q-tr>
       </template>
@@ -107,24 +105,6 @@ const columns = [
     field: "description",
     align: "left",
     field: (row) => row.description,
-    format: (val) => `${val}`,
-    sortable: true,
-  },
-  {
-    name: "deviceName",
-    label: "Device Name",
-    field: "deviceName",
-    align: "left",
-    field: (row) => row.deviceName,
-    format: (val) => `${val}`,
-    sortable: true,
-  },
-  {
-    name: "type",
-    label: "Type",
-    field: "type",
-    align: "left",
-    field: (row) => row.type,
     format: (val) => `${val}`,
     sortable: true,
   },

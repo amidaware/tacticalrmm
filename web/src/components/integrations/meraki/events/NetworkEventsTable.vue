@@ -141,8 +141,7 @@ export default {
     const selectedDate = ref("")
     const updateProxy = ref("")
     const filter = ref("")
-
-
+    const tableLoading = ref(false)
 
     function getDateOptions() {
       for (let i = 0; i < 93; i++) {
@@ -153,6 +152,7 @@ export default {
     }
 
     function getEvents() {
+      tableLoading.value = true
       if (selectedDate.value) {
         const startingAfter = date.formatDate(selectedDate.value, 'YYYY-MM-DDT00:00:00.000Z');
         timespan.value.value = "startingAfter=" + startingAfter
@@ -162,7 +162,6 @@ export default {
       axios
         .get(`/meraki/` + props.networkID + `/events/` + timespan.value.value)
         .then(r => {
-          console.log(r.data)
           rows.value = []
           for (let event of r.data.events) {
             let eventObj = {
@@ -177,7 +176,7 @@ export default {
             }
             rows.value.push(eventObj)
           }
-
+          tableLoading.value = false
         })
         .catch(e => {
           console.log(e)
@@ -244,6 +243,7 @@ export default {
       selectedDate,
       updateProxy,
       filter,
+      tableLoading,
       getEvents,
       getDevicePolicy,
       exportTable,

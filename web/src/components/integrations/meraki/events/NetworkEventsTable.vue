@@ -17,7 +17,15 @@
           icon="refresh"
           label="Network Events"
         />
-        <q-btn icon="event" no-caps dense flat color="primary" class="q-ml-md">
+        <q-btn
+          icon="event"
+          no-caps
+          dense
+          flat
+          color="primary"
+          class="q-ml-md"
+          :label="timespan.label"
+        >
           <q-popup-proxy @before-show="updateProxy" transition-show="scale" transition-hide="scale">
             <q-date v-model="selectedDate" :options="dateOptions">
               <div class="row items-center justify-end q-gutter-sm">
@@ -159,16 +167,16 @@ export default {
     function getDateOptions() {
       for (let i = 0; i < 93; i++) {
         let newDate = date.subtractFromDate(new Date(), { days: i });
-        let formattedDate = date.formatDate(newDate, "YYYY/MM/DD");
+        let formattedDate = date.formatDate(newDate, 'YYYY/MM/DD');
         dateOptions.value.push(formattedDate);
       }
     }
 
     function getEvents() {
       if (selectedDate.value) {
-        const startingAfter = date.formatDate(selectedDate.value, "YYYY-MM-DDT00:00:00.000Z");
+        const startingAfter = date.formatDate(selectedDate.value, 'YYYY-MM-DDT00:00:00.000Z');
         timespan.value.value = "startingAfter=" + startingAfter
-        timespan.value.label = date.formatDate(startingAfter, "MMM D, YYYY @ hh:mm A")
+        timespan.value.label = "Starting after " + date.formatDate(startingAfter, 'MMM D, YYYY @ hh:mm A')
       }
 
       axios

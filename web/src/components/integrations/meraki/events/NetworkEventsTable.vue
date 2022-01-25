@@ -13,7 +13,7 @@
         <q-btn
           flat
           dense
-          @click="selectedDate = ''; timespan.value = 0; getEvents()"
+          @click="selectedDate = ''; timespan.label = ''; timespan.value = 0; getEvents()"
           icon="refresh"
           label="Network Events"
         />

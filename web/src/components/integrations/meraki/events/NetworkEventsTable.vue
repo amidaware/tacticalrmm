@@ -1,126 +1,132 @@
 <template>
-  <q-table
-    :rows="rows"
-    :columns="columns"
-    row-key="occurredAt"
-    :pagination="pagination"
-    :loading="loading"
-    :filter="filter"
-    wrap-cells
-  >
-    <template v-slot:loading v-model="loading">
-      <q-inner-loading showing color="primary" />
-    </template>
-    <template v-slot:top-right="props">
-      <q-input outlined clearable dense debounce="300" v-model="filter" label="Search">
-        <template v-slot:prepend>
-          <q-icon name="search" />
-        </template>
-      </q-input>
-      <q-btn
-        flat
-        dense
-        :icon="props.inFullscreen ? 'fullscreen_exit' : 'fullscreen'"
-        @click="props.toggleFullscreen"
-        class="q-ml-md"
-      />
-      <q-btn flat dense color="primary" icon="archive" no-caps @click="exportTable" />
-    </template>
-    <template v-slot:top-left>
-      <q-btn
-        flat
-        dense
-        @click="
-  getEvents(networkID);
-timespan.label = '';
-        "
-        icon="refresh"
-        label="Network Events"
-      />
-      <q-btn
-        icon="event"
-        :label="timespan.label"
-        no-caps
-        dense
-        flat
-        color="primary"
-        class="q-ml-md"
-      >
-        <q-popup-proxy @before-show="updateProxy" transition-show="scale" transition-hide="scale">
-          <q-date
-            subtitle="Ending Before date"
-            v-model="selectedDate"
-            :navigation-min-year-month="minMonth"
-            :navigation-max-year-month="maxMonth"
-          >
-            <div class="row items-center justify-end q-gutter-sm">
-              <q-btn label="Cancel" color="primary" flat v-close-popup />
-              <q-btn
-                label="OK"
-                color="primary"
-                flat
-                @click="getEvents(networkID, selectedDate)"
-                v-close-popup
-              />
-            </div>
-          </q-date>
-        </q-popup-proxy>
-      </q-btn>
-    </template>
-    <template v-slot:body="props">
-      <q-tr :props="props">
-        <q-td key="occurredAt" :props="props">
-          <span class="text-caption">{{ props.row.occurredAt }}</span>
-        </q-td>
-        <q-td key="client" :props="props">
-          <span class="text-caption">{{ props.row.client }}</span>
-        </q-td>
-        <q-td key="description" :props="props">
-          <span class="text-caption">{{ props.row.description }}</span>
-        </q-td>
-        <q-td key="details" :props="props">
-          <span class="text-caption">{{ props.row.details }}</span>
-        </q-td>
-      </q-tr>
-    </template>
-  </q-table>
+  <q-card>
+    <q-table
+      class="q-mt-sm"
+      :rows="rows"
+      :columns="columns"
+      row-key="occurredAt"
+      :pagination="pagination"
+      :loading="tableLoading"
+      :filter="filter"
+    >
+      <template v-slot:top-left>
+        <q-btn
+          flat
+          dense
+          @click="selectedDate = ''; timespan.value = 0; getEvents()"
+          icon="refresh"
+          label="Network Events"
+        />
+        <q-btn icon="event" no-caps dense flat color="primary" class="q-ml-md">
+          <q-popup-proxy @before-show="updateProxy" transition-show="scale" transition-hide="scale">
+            <q-date v-model="selectedDate" :options="dateOptions">
+              <div class="row items-center justify-end q-gutter-sm">
+                <q-btn label="Cancel" color="primary" flat v-close-popup />
+                <q-btn label="OK" color="primary" flat @click="getEvents()" v-close-popup />
+              </div>
+            </q-date>
+          </q-popup-proxy>
+        </q-btn>
+      </template>
+      <template v-slot:top-right>
+        <div>
+          <q-input outlined clearable dense debounce="300" v-model="filter" label="Search">
+            <template v-slot:prepend>
+              <q-icon name="search" />
+            </template>
+          </q-input>
+        </div>
+      </template>
+      <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td key="time" :props="props">{{ props.row.time }}</q-td>
+          <q-td key="id" :props="props">
+            <q-btn
+              flat
+              no-caps
+              class="text-weight-bold q-px-none"
+              @click="getDevicePolicy(props.row)"
+            >{{ props.row.id }}</q-btn>
+          </q-td>
+          <q-td key="mac" :props="props">{{ props.row.mac }}</q-td>
+          <q-td key="description" :props="props">{{ props.row.description }}</q-td>
+          <q-td key="deviceName" :props="props">{{ props.row.deviceName }}</q-td>
+          <q-td key="type" :props="props">{{ props.row.type }}</q-td>
+          <q-td key="details" :props="props">{{ props.row.details }}</q-td>
+        </q-tr>
+      </template>
+    </q-table>
+  </q-card>
 </template>
 
 <script>
 import axios from "axios";
-import { ref, onMounted, onBeforeMount } from "vue";
+import { ref, onMounted } from "vue";
 import { useQuasar, date, exportFile } from "quasar";
+import Policy from "@/components/integrations/meraki/modals/Policy";
 
 const columns = [
   {
-    name: "occurredAt",
+    name: "time",
     required: true,
     label: "Time",
     align: "left",
-    field: (row) => row.occurredAt,
+    field: (row) => row.time,
     format: (val) => `${val}`,
     sortable: true,
   },
   {
-    name: "client",
+    name: "id",
     align: "left",
-    label: "Client",
-    field: "client",
-    sortable: false,
+    label: "Client ID",
+    field: "id",
+    field: (row) => row.clientId,
+    format: (val) => `${val}`,
+    sortable: true,
+  },
+  {
+    name: "mac",
+    align: "left",
+    label: "MAC",
+    field: "mac",
+    field: (row) => row.clientDescription,
+    format: (val) => `${val}`,
+    sortable: true,
   },
   {
     name: "description",
     label: "Description",
     field: "description",
     align: "left",
-    sortable: false,
+    field: (row) => row.description,
+    format: (val) => `${val}`,
+    sortable: true,
   },
-
+  {
+    name: "deviceName",
+    label: "Device Name",
+    field: "deviceName",
+    align: "left",
+    field: (row) => row.deviceName,
+    format: (val) => `${val}`,
+    sortable: true,
+  },
+  {
+    name: "type",
+    label: "Type",
+    field: "type",
+    align: "left",
+    field: (row) => row.type,
+    format: (val) => `${val}`,
+    sortable: true,
+  },
   {
     name: "details",
     label: "Details",
     field: "details",
     align: "left",
+    field: (row) => row.details,
+    format: (val) => `${val}`,
     sortable: false,
   },
 ];
@@ -140,61 +146,64 @@ export default {
   setup(props) {
     const $q = useQuasar();
 
+    const tableLoading = ref(false)
     const rows = ref([])
-    const events = ref("")
-    const maxMonth = ref("")
-    const minMonth = ref("")
     const timespan = ref({ label: "", value: 0 })
-    const loading = ref(false)
-    const filter = ref("")
+    const dateOptions = ref([])
     const selectedDate = ref("")
     const updateProxy = ref("")
-    const save = ref("")
-    const timespanDropdown = ref(false)
+    const filter = ref("")
 
-    function getEvents(timespan) {
-      const currentDate = new Date();
-      maxMonth.value = date.formatDate(currentDate, "YYYY/MM");
-      const newDate = date.subtractFromDate(currentDate, { month: 2 });
-      minMonth.value = date.formatDate(newDate, "YYYY/MM");
-      timespanDropdown.value = false;
-      let url = null;
-      if (typeof timespan === "string" && typeof timespan !== null) {
-        const endingBefore = date.formatDate(timespan, "YYYY-MM-DDT00:00:00.000Z");
-        const formattedDate = date.formatDate(timespan, "MMM DD, YYYY @ h:mm A");
-        timespan.value.label = "Before: " + formattedDate;
 
-        url = "endingBefore=" + endingBefore;
-      } else if (typeof timespan === "number" && timespan !== null) {
-        url = timespan;
-      } else {
-        url = 7200;
+
+    function getDateOptions() {
+      for (let i = 0; i < 93; i++) {
+        let newDate = date.subtractFromDate(new Date(), { days: i });
+        let formattedDate = date.formatDate(newDate, "YYYY/MM/DD");
+        dateOptions.value.push(formattedDate);
       }
+    }
+
+    function getEvents() {
+      if (selectedDate.value) {
+        const startingAfter = date.formatDate(selectedDate.value, "YYYY-MM-DDT00:00:00.000Z");
+        timespan.value.value = "startingAfter=" + startingAfter
+        timespan.value.label = date.formatDate(startingAfter, "MMM D, YYYY @ hh:mm A")
+      }
+
       axios
-        .get(`/meraki/` + props.networkID + `/events/` + url + `/`)
+        .get(`/meraki/` + props.networkID + `/events/` + timespan.value.value)
         .then(r => {
-          rows.value = [];
-          events.value = "";
-          events.value = r.data.events;
-          for (let event of events.value) {
-            let arr = Object.entries(event.eventData);
-            let result = arr.join(" ").replaceAll(",", ": ");
-            let formattedDate = date.formatDate(
-              event.occurredAt,
-              "MMM DD, YYYY @ h:mm A"
-            );
+          console.log(r.data)
+          rows.value = []
+          for (let event of r.data.events) {
             let eventObj = {
-              occurredAt: formattedDate,
-              client: event.clientDescription,
-              details: result,
+              time: date.formatDate(event.occurredAt, "MMM DD, YYYY @ h:mm A"),
+              occurredAt: event.occurredAt,
+              id: event.clientId ? event.clientId : "",
+              mac: event.clientDescription ? event.clientDescription : "",
               description: event.description,
-            };
-            rows.value.push(eventObj);
+              deviceName: event.deviceName,
+              type: event.type,
+              details: Object.entries(event.eventData).join(" ").replaceAll(",", ": ")
+            }
+            rows.value.push(eventObj)
           }
+
         })
         .catch(e => {
           console.log(e)
         });
+    }
+
+    function getDevicePolicy(client) {
+      $q.dialog({
+        component: Policy,
+        componentProps: {
+          networkId: props.networkID,
+          client: client
+        }
+      })
     }
 
     function exportTable() {
@@ -225,30 +234,30 @@ export default {
         });
       }
     }
-    onBeforeMount(() => {
+
+    onMounted(() => {
+      getDateOptions()
       getEvents()
     })
 
 
     return {
       pagination: {
-        sortBy: 'time',
+        sortBy: 'occurredAt',
         descending: true,
         page: 1,
         rowsPerPage: 10
       },
-      events,
-      columns,
+      tableLoading,
       rows,
+      columns,
       timespan,
-      loading,
-      filter,
+      dateOptions,
       selectedDate,
       updateProxy,
-      save,
-      timespanDropdown,
-      minMonth,
-      maxMonth,
+      filter,
+      getEvents,
+      getDevicePolicy,
       exportTable,
     }
   }

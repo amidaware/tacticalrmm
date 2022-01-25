@@ -140,41 +140,21 @@
           <q-btn
             flat
             no-caps
-            class="text-caption text-weight-bold q-px-none"
+            class="text-weight-bold q-px-none"
             @click="getDevicePolicy(props.row)"
           >{{ props.row.id }}</q-btn>
         </q-td>
 
-        <q-td key="user" :props="props">
-          <span class="text-caption">{{ props.row.user }}</span>
-        </q-td>
-        <q-td key="description" :props="props">
-          <span class="text-caption">{{ props.row.description }}</span>
-        </q-td>
-        <q-td key="ip" :props="props">
-          <span class="text-caption">{{ props.row.ip }}</span>
-        </q-td>
-        <q-td key="mac" :props="props">
-          <span class="text-caption">{{ props.row.mac }}</span>
-        </q-td>
-        <q-td key="usageTotal" :props="props">
-          <span class="text-caption">{{ props.row.usage.total }}</span>
-        </q-td>
-        <q-td key="totalUsage" :props="props">
-          <span class="text-caption">{{ props.row.usage.total }}</span>
-        </q-td>
-        <q-td key="firstSeen" :props="props">
-          <span class="text-caption">{{ props.row.firstSeen }}</span>
-        </q-td>
-        <q-td key="lastSeen" :props="props">
-          <span class="text-caption">{{ props.row.lastSeen }}</span>
-        </q-td>
-        <q-td key="os" :props="props">
-          <span class="text-caption">{{ props.row.os }}</span>
-        </q-td>
-        <q-td key="vlan" :props="props">
-          <span class="text-caption">{{ props.row.vlan }}</span>
-        </q-td>
+        <q-td key="user" :props="props">{{ props.row.user }}</q-td>
+        <q-td key="description" :props="props">{{ props.row.description }}</q-td>
+        <q-td key="ip" :props="props">{{ props.row.ip }}</q-td>
+        <q-td key="mac" :props="props">{{ props.row.mac }}</q-td>
+        <q-td key="usageTotal" :props="props">{{ props.row.usage.total }}</q-td>
+        <q-td key="totalUsage" :props="props">{{ props.row.usage.total }}</q-td>
+        <q-td key="firstSeen" :props="props">{{ props.row.firstSeen }}</q-td>
+        <q-td key="lastSeen" :props="props">{{ props.row.lastSeen }}</q-td>
+        <q-td key="os" :props="props">{{ props.row.os }}</q-td>
+        <q-td key="vlan" :props="props">{{ props.row.vlan }}</q-td>
       </q-tr>
     </template>
   </q-table>
@@ -202,14 +182,6 @@ const columns = [
     field: "id",
     sortable: true,
   },
-
-  // {
-  //   name: "name",
-  //   align: "left",
-  //   label: "Name",
-  //   field: "name",
-  //   sortable: true,
-  // },
   {
     name: "user",
     align: "left",

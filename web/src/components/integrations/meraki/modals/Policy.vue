@@ -54,7 +54,6 @@ export default {
         const policyOptions = ref([{ label: 'Whitelisted', value: 'Whitelisted', description: 'No bandwidth limits or splash page' }, { label: 'Blocked', value: 'Blocked', description: 'No access allowed' }, { label: 'Normal', value: 'Normal', description: '' }])
 
         function getDevicePolicy() {
-            console.log(props.client)
             $q.loading.show({
                 message: 'Getting current device policy...'
             })

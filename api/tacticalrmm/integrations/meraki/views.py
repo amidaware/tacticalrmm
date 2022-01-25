@@ -216,7 +216,7 @@ class GetNetworkEvents(APIView):
     def get(self, request, network_id, timespan, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
 
-        if "endingBefore" in str(timespan):
+        if "startingAfter" in str(timespan):
             url = integration.base_url + "networks/"+ network_id +"/events?perPage=1000&productType=appliance&" + str(timespan)
         else:
             url = integration.base_url + "networks/"+ network_id +"/events?perPage=1000&productType=appliance"

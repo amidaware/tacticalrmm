@@ -121,15 +121,6 @@ import { ref, onMounted } from "vue";
 import { date } from "quasar";
 
 const columns = [
-  // {
-  //   name: "id",
-  //   required: true,
-  //   label: "ID",
-  //   align: "left",
-  //   field: (row) => row.id,
-  //   format: (val) => `${val}`,
-  //   sortable: true,
-  // },
   {
     name: "name",
     align: "left",
@@ -146,13 +137,6 @@ const columns = [
     field: "networkName",
     sortable: true,
   },
-  // {
-  //   name: "mac",
-  //   label: "MAC",
-  //   field: "mac",
-  //   align: "left",
-  //   sortable: true,
-  // },
   {
     name: "usageTotal",
     align: "left",
@@ -169,13 +153,6 @@ const columns = [
   },
 ];
 
-function wrapCsvValue(val, formatFn) {
-  let formatted = formatFn !== void 0 ? formatFn(val) : val;
-  formatted = formatted === void 0 || formatted === null ? "" : String(formatted);
-  formatted = formatted.split('"').join('""');
-
-  return `"${formatted}"`;
-}
 export default {
   name: "TopClientsTable",
   emits: ["onNotifyError"],
@@ -183,7 +160,6 @@ export default {
   setup(props, { emit }) {
     const tableLoading = ref(false)
     const rows = ref([])
-    const uplinks = ref([])
     const timespanMenu = ref(false)
     const timespan = ref({ label: "For the last day", value: 86400 })
     const dateOptions = ref([])
@@ -237,7 +213,6 @@ export default {
           if (r.data.errors) {
             emit('onNotifyError', r.data.errors);
 
-
           } else {
             rows.value = []
             totalUsage.value = 0
@@ -272,38 +247,7 @@ export default {
           }
         })
         .catch(e => {
-
         });
-
-    }
-
-    function exportTable() {
-      const content = [columns.value.map((col) => wrapCsvValue(col.label))]
-        .concat(
-          rows.value.map((row) =>
-            columns.value
-              .map((col) =>
-                wrapCsvValue(
-                  typeof col.field === "function"
-                    ? col.field(row)
-                    : row[col.field === void 0 ? col.name : col.field],
-                  col.format
-                )
-              )
-              .join(",")
-          )
-        )
-        .join("\r\n");
-
-      const status = exportFile("table-export.csv", content, "text/csv");
-
-      if (status !== true) {
-        $q.notify({
-          message: "Browser denied file download...",
-          color: "negative",
-          icon: "warning",
-        });
-      }
     }
 
     onMounted(() => {
@@ -320,7 +264,6 @@ export default {
       tableLoading,
       rows,
       columns,
-      uplinks,
       timespanMenu,
       timespan,
       dateOptions,
@@ -330,7 +273,6 @@ export default {
       totalDownstream,
       totalUpstream,
       getTopClients,
-      exportTable,
     };
   }
 }

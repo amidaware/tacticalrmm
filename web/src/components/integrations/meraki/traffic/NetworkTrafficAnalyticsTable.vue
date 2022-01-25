@@ -131,13 +131,13 @@
     <template v-slot:body="props">
       <q-tr :props="props">
         <q-td key="application" :props="props">
-          <span class="text-caption">{{ props.row.application }}</span>
+          {{ props.row.application }}
         </q-td>
         <q-td key="destination" :props="props">
           <q-btn
             type="a"
             no-caps
-            class="q-pa-none text-caption text-weight-bold"
+            class="q-pa-none text-weight-bold"
             flat
             :href="'https://viewdns.info/whois/?domain=' + props.row.destination"
             target="_blank"
@@ -145,25 +145,25 @@
           />
         </q-td>
         <q-td key="protocol" :props="props">
-          <span class="text-caption">{{ props.row.protocol }}</span>
+          {{ props.row.protocol }}
         </q-td>
         <q-td key="port" :props="props">
-          <span class="text-caption">{{ props.row.port }}</span>
+          {{ props.row.port }}
         </q-td>
         <q-td key="usageTotal" :props="props">
-          <span class="text-caption">{{ props.row.usage.total }}</span>
+          {{ props.row.usage.total }}
         </q-td>
         <q-td key="totalUsage" :props="props">
-          <span class="text-caption">{{ props.row.usage.total }}</span>
+          {{ props.row.usage.total }}
         </q-td>
         <q-td key="flows" :props="props">
-          <span class="text-caption">{{ props.row.flows }}</span>
+          {{ props.row.flows }}
         </q-td>
         <q-td key="activeTime" :props="props">
-          <span class="text-caption">{{ props.row.activeTime }}</span>
+          {{ props.row.activeTime }}
         </q-td>
         <q-td key="numClients" :props="props">
-          <span class="text-caption">{{ props.row.numClients }}</span>
+          {{ props.row.numClients }}
         </q-td>
       </q-tr>
     </template>

@@ -189,7 +189,7 @@ class GetEndpointQuarantine(APIView):
 
     def get(self, request, endpoint_id, format=None):
         integration = Integration.objects.get(name="Bitdefender GravityZone")
-        print(endpoint_id)
+
         json = {
             "params": {
                     "endpointId": endpoint_id,
@@ -208,7 +208,7 @@ class GetEndpointQuarantine(APIView):
         "Content-Type": "application/json",
         "Authorization": integration.auth_header
         }).json()
-        print(result)
+
         return Response(result)
 
 class GetTasks(APIView):
@@ -294,6 +294,9 @@ class GetCreateReport(APIView):
         params_scheduledInfo = json['params']['scheduledInfo']
         params_options = json['params']['options']
 
+        if request.data['reportInterval'] or request.data['reportInterval'] == 0:
+            params_options['reportingInterval'] = request.data['reportInterval']
+
         if request.data['occurrence']:
             params_scheduledInfo['occurrence'] = request.data['occurrence']
 
@@ -311,11 +314,6 @@ class GetCreateReport(APIView):
 
         if request.data['occurrence'] == 3 or request.data['occurrence'] == 4 or request.data['occurrence'] == 5:
             params_scheduledInfo['startMinute'] = int(request.data['startMinute'])
-
-        if request.data['reportingInterval']:
-            params_options['reportingInterval'] = request.data['reportingInterval']
-
-        # print(json)
 
         result = requests.post(
             integration.base_url + "v1.0/jsonrpc/reports",

@@ -180,7 +180,7 @@ export default {
                 type: reportType.value.value,
                 occurrence: reportOccurrence.value.value,
                 interval: interval.value ? interval.value : null,
-                reportingInterval: reportInterval.value ? reportInterval.value.value : null,
+                reportInterval: reportInterval.value ? reportInterval.value.value : null,
                 days: days.value ? days.value.value : null,
                 day: reportOccurrence.value.value === 5 || reportOccurrence.value.value === 6 ? day.value : null,
                 month: reportOccurrence.value.value === 6 ? month.value.value : null,
@@ -201,7 +201,7 @@ export default {
                             notifyError(r.data.error.data.details)
                         }
                     } else {
-                        notifySuccess('The report has been created for Bitdefender GravityZone')
+                        notifySuccess('The ' + reportName.value + ' report has been created for Bitdefender GravityZone')
                     }
                 })
                 .catch(e => {
@@ -210,8 +210,6 @@ export default {
         }
 
         watch([reportOccurrence, reportInterval, reportType], ([newOccurrence, newReportInterval, newType], [prevOccurrence, prevReportInterval, prevType]) => {
-            console.log(newOccurrence, newReportInterval, newType)
-
             if (newOccurrence.value === 2) {
                 reportIntervalOptions.value = [{ value: 0, label: 'Today' }]
             } else if (newOccurrence.value === 3) {
@@ -219,70 +217,32 @@ export default {
                 { value: 1, label: 'Last day' },
                 { value: 2, label: 'This week' }]
             } else if (newOccurrence.value === 4) {
-                reportIntervalOptions.value = [{ value: 0, label: 'Today' },
-                { value: 1, label: 'Last day' },
-                { value: 2, label: 'This week' },
-                { value: 3, label: 'Last week' },
-                { value: 4, label: 'This month' }]
+                if (newType.value === 13 || newType.value === 24 || newType.value === 29) {
+                    reportIntervalOptions.value = [{ value: 4, label: 'This month' }]
+                } else {
+                    reportIntervalOptions.value = [{ value: 0, label: 'Today' },
+                    { value: 1, label: 'Last day' },
+                    { value: 2, label: 'This week' },
+                    { value: 3, label: 'Last week' },
+                    { value: 4, label: 'This month' }]
+                }
             } else if (newOccurrence.value === 5) {
-                reportIntervalOptions.value = [{ value: 0, label: 'Today' },
-                { value: 1, label: 'Last day' },
-                { value: 2, label: 'This week' },
-                { value: 3, label: 'Last week' },
-                { value: 4, label: 'This month' },
-                { value: 5, label: 'Last month' },
-                { value: 6, label: 'Last 2 months' },
-                { value: 7, label: 'Last 3 months' }]
+                if (newType.value === 13 || newType.value === 24 || newType.value === 29) {
+                    reportIntervalOptions.value = [{ value: 4, label: 'This month' },
+                    { value: 5, label: 'Last month' }]
+                } else {
+                    reportIntervalOptions.value = [{ value: 0, label: 'Today' },
+                    { value: 1, label: 'Last day' },
+                    { value: 2, label: 'This week' },
+                    { value: 3, label: 'Last week' },
+                    { value: 4, label: 'This month' },
+                    { value: 5, label: 'Last month' },
+                    { value: 6, label: 'Last 2 months' },
+                    { value: 7, label: 'Last 3 months' }]
+                }
+
             }
-            // } else if (newOccurrence.value === 3) {
-            //     reportIntervalOptions.value = []
-            //     reportIntervalOptions.value = [{ value: 0, label: 'Today' },
-            //     { value: 1, label: 'Last day' },
-            //     { value: 2, label: 'This week' }]
-
-            // } else if (newOccurrence.value === 4) {
-            //     reportIntervalOptions.value = []
-            //     reportIntervalOptions.value = [{ value: 0, label: 'Today' },
-            //     { value: 1, label: 'Last day' },
-            //     { value: 2, label: 'This week' },
-            //     { value: 3, label: 'Last week' },
-            //     { value: 4, label: 'This month' }]
-            // } else if (newOccurrence.value === 5 && newType.value !== 13 || newOccurrence.value === 5 && newType.value !== 24 || newOccurrence.value === 5 && newType.value !== 29) {
-            //     reportIntervalOptions.value = []
-            //     reportIntervalOptions.value = [{ value: 0, label: 'Today' },
-            //     { value: 1, label: 'Last day' },
-            //     { value: 2, label: 'This week' },
-            //     { value: 3, label: 'Last week' },
-            //     { value: 4, label: 'This month' },
-            //     { value: 5, label: 'Last month' },
-            //     { value: 6, label: 'Last 2 months' },
-            //     { value: 7, label: 'Last 3 months' }]
-            // } else if (newOccurrence.value === 5 && newType.value === 13 || newOccurrence.value === 5 && newType.value === 24 || newOccurrence.value === 5 && newType.value === 29) {
-            //     console.log("in")
-            //     reportOccurrenceOptions.value = []
-            //     reportIntervalOptions.value = []
-            //     reportOccurrenceOptions.value = [{ value: 4, label: 'Weekly' }]
-            //     if (reportOccurrence.value)
-            //         reportIntervalOptions.value = [{ value: 4, label: 'This month' }]
-
-            // } else if (newOccurrence.value === 5 && newType.value === 13 || newOccurrence.value === 5 && newType.value === 24 || newOccurrence.value === 5 && newType.value === 29) {
-            //     reportOccurrenceOptions.value = []
-            //     reportIntervalOptions.value = []
-            //     reportOccurrenceOptions.value = [{ value: 4, label: 'Weekly' }, { value: 5, label: 'Monthly' }]
-            //     reportIntervalOptions.value = [{ value: 4, label: 'This month' }, { value: 5, label: 'Last month' },]
-
-
-            // }
-
         });
-
-        // watch(report, (val) => {
-        //     if (selected.value.length > 0) {
-        //         actionBtnDisabled.value = false
-        //     } else {
-        //         actionBtnDisabled.value = true
-        //     }
-        // })
 
         return {
             reportName,

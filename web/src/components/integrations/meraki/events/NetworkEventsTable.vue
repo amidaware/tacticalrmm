@@ -134,7 +134,6 @@ export default {
   setup(props) {
     const $q = useQuasar();
 
-    const tableLoading = ref(false)
     const rows = ref([])
     const timespan = ref({ label: "", value: 0 })
     const dateOptions = ref([])

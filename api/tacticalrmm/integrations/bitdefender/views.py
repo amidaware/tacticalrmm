@@ -8,7 +8,6 @@ from ..models import Integration
 import base64
 
 class GetEndpoints(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -42,7 +41,6 @@ class GetEndpoints(APIView):
 
 
 class GetEndpoint(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, endpoint_id, format=None):
@@ -124,7 +122,6 @@ class GetQuickScan(APIView):
         return Response(result)
 
 class GetFullScan(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request, endpoint_id, format=None):
@@ -158,7 +155,6 @@ class GetFullScan(APIView):
 
 
 class GetQuarantine(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -184,7 +180,6 @@ class GetQuarantine(APIView):
         return Response(result)
 
 class GetEndpointQuarantine(APIView):
-
     permission_classes = [IsAuthenticated] 
 
     def get(self, request, endpoint_id, format=None):
@@ -212,7 +207,6 @@ class GetEndpointQuarantine(APIView):
         return Response(result)
 
 class GetTasks(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -238,7 +232,6 @@ class GetTasks(APIView):
         return Response(result)
 
 class GetReportsList(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):

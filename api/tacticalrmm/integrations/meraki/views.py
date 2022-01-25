@@ -7,6 +7,7 @@ from ..models import Integration
 
 class GetOrganizations(APIView):
     permission_classes = [IsAuthenticated]
+    
     def get(self, request, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
 
@@ -24,6 +25,7 @@ class GetOrganizations(APIView):
 
 class GetOrganization(APIView):
     permission_classes = [IsAuthenticated]
+
     def get(self, request, organization_id, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
 

@@ -89,7 +89,7 @@ timespan.label = '';
 <script>
 import axios from "axios";
 import { ref, onMounted, onBeforeMount } from "vue";
-import { useQuasar, date } from "quasar";
+import { useQuasar, date, exportFile } from "quasar";
 
 const columns = [
   {
@@ -170,7 +170,6 @@ export default {
       } else {
         url = 7200;
       }
-      $q.loading.show({ message: 'fdsaafsdas' })
       axios
         .get(`/meraki/` + props.networkID + `/events/` + url + `/`)
         .then(r => {
@@ -192,7 +191,6 @@ export default {
             };
             rows.value.push(eventObj);
           }
-          $q.loading.hide()
         })
         .catch(e => {
           console.log(e)
@@ -200,10 +198,10 @@ export default {
     }
 
     function exportTable() {
-      const content = [columns.value.map((col) => wrapCsvValue(col.label))]
+      const content = [columns.map((col) => wrapCsvValue(col.label))]
         .concat(
           rows.value.map((row) =>
-            columns.value
+            columns
               .map((col) =>
                 wrapCsvValue(
                   typeof col.field === "function"

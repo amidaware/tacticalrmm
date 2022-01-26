@@ -2,7 +2,7 @@
     <q-dialog ref="dialogRef" @hide="onDialogHide" persistant>
         <q-card class="q-dialog-plugin" style="width: 60vw">
             <q-bar>
-                Meraki Device Policy
+                Device Policy
                 <q-space />
                 <q-btn dense flat icon="close" v-close-popup>
                     <q-tooltip class="bg-white text-primary">Close</q-tooltip>

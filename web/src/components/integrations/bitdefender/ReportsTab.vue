@@ -127,6 +127,7 @@ export default {
                 component: DeleteReport,
                 componentProps: {
                     selected: selected.value,
+                    endpoint: props.endpoint
                 }
             }).onOk(() => {
                 getReports()

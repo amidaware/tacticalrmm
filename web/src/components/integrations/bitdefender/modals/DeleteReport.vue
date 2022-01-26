@@ -33,7 +33,7 @@ import { notifySuccess, notifyError } from "@/utils/notify";
 export default {
     name: "DeleteReport",
     emits: [...useDialogPluginComponent.emits],
-    props: ['selected'],
+    props: ['selected', 'endpoint'],
 
     setup(props) {
         const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
@@ -43,7 +43,7 @@ export default {
             axios
                 .delete(`/bitdefender/reports/delete/` + props.selected[0].id + `/`)
                 .then(r => {
-                    notifySuccess('The ' + props.selected[0].name + ' report has been deleted from Bitdefender GravityZone')
+                    notifySuccess('The ' + props.selected[0].type + ' report has been deleted from ' + props.endpoint.name)
                     onDialogOK()
                 })
                 .catch(e => {

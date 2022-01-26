@@ -201,11 +201,11 @@ export default {
                             notifyError(r.data.error.data.details)
                         }
                     } else {
-                        notifySuccess('The ' + reportName.value + ' report has been created for Bitdefender GravityZone')
+                        notifySuccess('The ' + reportType.value.label + ' report has been created for ' + props.endpoint.name)
                     }
                 })
                 .catch(e => {
-                    console.log(e.response.data)
+                    console.log(e)
                 });
         }
 

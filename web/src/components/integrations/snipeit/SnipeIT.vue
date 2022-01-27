@@ -166,17 +166,18 @@
                             <div class="col-12">
                                 <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center" v-if="!asset.assigned_to">
-                                        <span class="text-h6">Checked In To</span>
-                                        <q-list v-if="asset.location">
-                                            <q-item dense>{{ asset.location.name }}</q-item>
-                                        </q-list>
+                                        <span class="text-weight-light">Checked In To</span>
+                                        <div
+                                            class="text-h6"
+                                            v-if="asset.location"
+                                        >{{ asset.location.name }}</div>
                                     </q-card-section>
                                     <q-card-section class="text-center" v-else>
-                                        <span class="text-h6">Checked Out To</span>
-                                        <q-list v-if="asset.assigned_to">
-                                            <q-item dense>{{ asset.assigned_to.name }}</q-item>
-                                            <q-item dense>{{ asset.assigned_to.username }}</q-item>
-                                        </q-list>
+                                        <span class="text-weight-light">Checked Out To</span>
+                                        <div
+                                            class="text-h6"
+                                            v-if="asset.assigned_to"
+                                        >{{ asset.assigned_to.name }}</div>
                                     </q-card-section>
                                 </q-card>
                             </div>

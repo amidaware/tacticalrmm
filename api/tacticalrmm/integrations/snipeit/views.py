@@ -145,11 +145,17 @@ class GetAssetCheckout(APIView):
         payload = {
             "id": asset_id,
             "checkout_to_type": request.data["checkout_to_type"],
-            "assigned_user": request.data["assigned_user"],
             "checkout_at": request.data["checkout_at"],
             "expected_checkin": request.data["expected_checkin"],
             "note": request.data["note"]
         }
+
+        if request.data['assigned_user']:
+            payload['assigned_user'] = request.data["assigned_user"]
+        elif request.data['assigned_location']:
+            payload['assigned_location'] = request.data["assigned_location"]
+        else:
+            payload['assigned_asset'] = request.data["assigned_asset"]
 
         result = requests.post(
             integration.base_url + "hardware/" + asset_id + "/checkout",

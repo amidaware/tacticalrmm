@@ -165,9 +165,18 @@
                         <div class="row q-mt-sm">
                             <div class="col-12">
                                 <q-card class="q-mx-sm q-mb-sm">
-                                    <q-card-section class="text-center">
+                                    <q-card-section class="text-center" v-if="!asset.assigned_to">
+                                        <span class="text-h6">Checked In To</span>
+                                        <q-list v-if="asset.location">
+                                            <q-item dense>{{ asset.location.name }}</q-item>
+                                        </q-list>
+                                    </q-card-section>
+                                    <q-card-section class="text-center" v-else>
                                         <span class="text-h6">Checked Out To</span>
-                                        <div>{{ asset.assigned_to }}</div>
+                                        <q-list v-if="asset.assigned_to">
+                                            <q-item dense>{{ asset.assigned_to.name }}</q-item>
+                                            <q-item dense>{{ asset.assigned_to.username }}</q-item>
+                                        </q-list>
                                     </q-card-section>
                                 </q-card>
                             </div>
@@ -253,7 +262,7 @@ export default {
                     const snipeITAssetsModelNumber = []
                     const snipeITAssetTags = []
                     const snipeITAssetHostnames = []
-                    const snipeITAssetSerial = []
+
                     tacticalAgentModels.push(props.agent.wmi_detail.comp_sys[0][0].Model)
                     tacticalAgentModels.push(props.agent.wmi_detail.comp_sys_prod[0][0].Name)
                     tacticalAgentHostname.push(props.agent.hostname)
@@ -388,13 +397,13 @@ export default {
         return {
             tab,
             asset,
+            monthlyDepreciation,
+            currentValue,
+            difference,
             checkout,
             checkin,
             editAsset,
             deleteAsset,
-            monthlyDepreciation,
-            currentValue,
-            difference,
             addMaintenance,
             // quasar dialog
             dialogRef,

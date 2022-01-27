@@ -149,8 +149,6 @@ export default {
         const assetOptions = ref([])
         const location = ref("")
         const locationOptions = ref([])
-        const snipeitAssetTag = ref([])
-        const agentAssetTag = ref([])
         const notes = ref("")
 
         function getUsers() {
@@ -191,11 +189,31 @@ export default {
                 });
         }
 
+        function getHardware() {
+            axios
+                .get(`/snipeit/hardware/`, { params: { status: 'All' } })
+                .then(r => {
+                    assetOptions.value = []
+                    for (let asset of r.data.rows) {
+                        let assetObj = {
+                            label: asset.name,
+                            value: asset.id
+                        }
+                        assetOptions.value.push(assetObj)
+                    }
+                    assetOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+                })
+                .catch(e => {
+                    console.log(e)
+                });
+        }
 
         function checkout() {
             let data = {
                 id: props.asset.id,
-                assigned_user: user.value.value,
+                assigned_user: user.value ? user.value.value : null,
+                assigned_location: location.value ? location.value.value : null,
+                assigned_asset: asset.value ? asset.value.value : null,
                 checkout_to_type: checkoutToType.value,
                 checkout_at: date.formatDate(checkoutDate.value, 'YYYY-MM-DD'),
                 expected_checkin: checkinDate.value ? date.formatDate(checkinDate.value, 'YYYY-MM-DD') : null,
@@ -212,13 +230,17 @@ export default {
                     }
                 })
                 .catch(e => {
-                    console.log(e.response.data)
+                    console.log(e)
                 });
         }
+
         watch(checkoutToType, (selection, prevSelection) => {
             if (selection === 'location') [
                 getLocations()
             ]
+            if (selection === 'asset') {
+                getHardware()
+            }
         })
 
         onMounted(() => {
@@ -228,7 +250,6 @@ export default {
         return {
             checkoutDate,
             checkinDate,
-            checkout,
             checkoutToType,
             user,
             userOptions,
@@ -237,6 +258,7 @@ export default {
             location,
             locationOptions,
             notes,
+            checkout,
             // quasar dialog plugin
             dialogRef,
             onDialogHide,

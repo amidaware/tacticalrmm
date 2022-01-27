@@ -155,6 +155,9 @@
         <q-td key="lastSeen" :props="props">{{ props.row.lastSeen }}</q-td>
         <q-td key="os" :props="props">{{ props.row.os }}</q-td>
         <q-td key="vlan" :props="props">{{ props.row.vlan }}</q-td>
+        <q-td key="recentDeviceName" :props="props">{{ props.row.recentDeviceName }}</q-td>
+        <q-td key="recentDeviceMac" :props="props">{{ props.row.recentDeviceMac }}</q-td>
+        <q-td key="recentDeviceSerial" :props="props">{{ props.row.recentDeviceSerial }}</q-td>
       </q-tr>
     </template>
   </q-table>
@@ -246,6 +249,27 @@ const columns = [
     field: "vlan",
     align: "left",
     sortable: true,
+  },
+  {
+    name: "recentDeviceName",
+    label: "Recent Device Name",
+    field: "recentDeviceName",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "recentDeviceMac",
+    label: "Recent Device MAC",
+    field: "recentDeviceMac",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "recentDeviceSerial",
+    label: "Recent Device Serial",
+    field: "recentDeviceSerial",
+    align: "left",
+    sortable: true,
   }
 ];
 
@@ -313,6 +337,7 @@ export default {
       axios
         .get(`/meraki/` + props.networkID + `/clients/traffic/` + timespan.value.value + `/`)
         .then(r => {
+          console.log(r.data)
           rows.value = []
           totalUsage.value = 0
           totalRecv.value = 0
@@ -330,12 +355,14 @@ export default {
               name: client.name,
               user: client.user,
               description: client.description,
+              mac: client.mac,
               ip: client.ip,
               mac: client.mac,
               usage: { total: returnedUsage, recv: client.usage.recv, sent: client.usage.sent },
               totalUsage: client.usage.recv + client.usage.sent,
               recentDeviceMac: client.recentDeviceMac,
               recentDeviceName: client.recentDeviceName,
+              recentDeviceSerial: client.recentDeviceSerial,
               firstSeen: date.formatDate(client.firstSeen, "MMM DD, YYYY @ h:mm A"),
               lastSeen: date.formatDate(client.lastSeen, "MMM DD, YYYY @ h:mm A"),
               os: client.os,
@@ -378,7 +405,7 @@ export default {
         page: 1,
         rowsPerPage: 10
       },
-      visibleColumns: ref(['status', 'id', 'user', 'description', 'ip', 'usageTotal', 'firstSeen', 'lastSeen', 'os', 'vlan']),
+      visibleColumns: ref(['status', 'id', 'user', 'description', 'ip', 'usageTotal', 'firstSeen', 'lastSeen', 'recentDeviceName', 'recentDeviceMac', 'recentDeviceSerial', 'os', 'vlan']),
       timespanMenu,
       timespan,
       columns,

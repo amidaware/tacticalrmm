@@ -2,12 +2,16 @@ import asyncio
 import base64
 import re
 import time
+import nats
+from nats.errors import TimeoutError
+
 from collections import Counter
 from distutils.version import LooseVersion
 from typing import Any
 
 import msgpack
 import validators
+from asgiref.sync import sync_to_async
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA3_384
 from Crypto.Random import get_random_bytes
@@ -16,8 +20,6 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone as djangotime
-from nats.aio.client import Client as NATS
-from nats.aio.errors import ErrTimeout
 
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel, DebugLog
@@ -718,8 +720,10 @@ class Agent(BaseAuditModel):
         except Exception:
             return "err"
 
+    def _do_nats_debug(self, agent, message):
+        DebugLog.error(agent=agent, log_type="agent_issues", message=message)
+
     async def nats_cmd(self, data: dict, timeout: int = 30, wait: bool = True):
-        nc = NATS()
         options = {
             "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
             "user": "tacticalrmm",
@@ -727,8 +731,9 @@ class Agent(BaseAuditModel):
             "connect_timeout": 3,
             "max_reconnect_attempts": 2,
         }
+
         try:
-            await nc.connect(**options)
+            nc = await nats.connect(**options)
         except:
             return "natsdown"
 
@@ -737,14 +742,16 @@ class Agent(BaseAuditModel):
                 msg = await nc.request(
                     self.agent_id, msgpack.dumps(data), timeout=timeout
                 )
-            except ErrTimeout:
+            except TimeoutError:
                 ret = "timeout"
             else:
                 try:
                     ret = msgpack.loads(msg.data)  # type: ignore
                 except Exception as e:
                     ret = str(e)
-                    DebugLog.error(agent=self, log_type="agent_issues", message=ret)
+                    await sync_to_async(self._do_nats_debug, thread_sensitive=False)(
+                        agent=self, message=ret
+                    )
 
             await nc.close()
             return ret

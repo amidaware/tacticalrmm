@@ -47,13 +47,20 @@
       </q-menu>
     </q-item>
 
+    <!-- integrations -->
+    <q-item clickable v-close-popup @click="getAgentIntegrations(agent.agent_id)">
+      <q-item-section side>
+        <q-icon size="xs" name="vertical_split" />
+      </q-item-section>
+      <q-item-section>Integrations</q-item-section>
+    </q-item> 
+
     <q-item clickable v-ripple v-close-popup @click="showSendCommand(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
       </q-item-section>
       <q-item-section>Send Command</q-item-section>
     </q-item>
-
     <q-item clickable v-ripple v-close-popup @click="showRunScript(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
@@ -183,10 +190,11 @@
 </template>
 
 <script>
+import axios from "axios";
 // composition imports
 import { ref, inject } from "vue";
 import { useStore } from "vuex";
-import { useQuasar } from "quasar";
+import { useQuasar, openURL } from "quasar";
 import { fetchURLActions, runURLAction } from "@/api/core";
 import {
   editAgent,
@@ -195,11 +203,13 @@ import {
   removeAgent,
   runRemoteBackground,
   runTakeControl,
+  getAgentIntegrations,
 } from "@/api/agents";
 import { runAgentUpdateScan, runAgentUpdateInstall } from "@/api/winupdates";
 import { runAgentChecks } from "@/api/checks";
 import { fetchScripts } from "@/api/scripts";
 import { notifySuccess, notifyWarning, notifyError } from "@/utils/notify";
+import { router } from "@/router"
 
 // ui imports
 import PendingActions from "@/components/logs/PendingActions";
@@ -448,7 +458,6 @@ export default {
       // reactive data
       urlActions,
       favoriteScripts,
-
       // methods
       showEditAgent,
       showPendingActionsModal,
@@ -456,6 +465,7 @@ export default {
       runRemoteBackground,
       getURLActions,
       runURLAction,
+      getAgentIntegrations,
       showSendCommand,
       showRunScript,
       getFavoriteScripts,

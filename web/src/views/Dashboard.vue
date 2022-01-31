@@ -117,7 +117,13 @@
                           </q-list>
                         </q-menu>
                       </q-item>
-
+                      <!-- integrations -->
+                      <q-item clickable v-close-popup @click="getClientIntegrations(props.node)">
+                        <q-item-section side>
+                          <q-icon size="xs" name="vertical_split" />
+                        </q-item-section>
+                        <q-item-section>Integrations</q-item-section>
+                      </q-item> 
                       <q-separator></q-separator>
 
                       <q-item clickable v-close-popup>
@@ -310,6 +316,7 @@
 import mixins from "@/mixins/mixins";
 import { openURL } from "quasar";
 import { mapState } from "vuex";
+import { router } from "@/router"
 import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
@@ -678,6 +685,17 @@ export default {
         })
         .catch(() => {});
     },
+    getClientIntegrations(node){
+      this.$axios
+        .get("clients/" + node.id + "/")
+        .then(r => {
+          const url = router.resolve(`/integrations/clients/${node.id}`).href;
+          window.open(url, null, { popup: true, location: false, status: false, toolbar: false, menubar: false, width: 1800, height: 900 });
+          })
+        .catch((e) => {
+            console.log(e)
+        });
+    }
   },
   computed: {
     ...mapState({

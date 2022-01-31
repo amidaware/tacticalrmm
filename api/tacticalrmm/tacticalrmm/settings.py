@@ -105,6 +105,8 @@ INSTALLED_APPS = [
     "scripts",
     "alerts",
     "drf_spectacular",
+    "integrations",
+
 ]
 
 if not "AZPIPELINE" in os.environ:

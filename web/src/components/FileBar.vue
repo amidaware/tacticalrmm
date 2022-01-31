@@ -82,6 +82,10 @@
               <q-item clickable v-close-popup @click="showPermissionsManager">
                 <q-item-section>Permissions Manager</q-item-section>
               </q-item>
+              <!-- integrations manager-->
+              <q-item clickable v-close-popup @click="showIntegrationsManager">
+                <q-item-section>Integrations Manager</q-item-section>
+              </q-item>
               <!-- admin manager -->
               <q-item clickable v-close-popup @click="showAdminManager = true">
                 <q-item-section>User Administration</q-item-section>
@@ -198,6 +202,7 @@ import Deployment from "@/components/clients/Deployment";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
 import CodeSign from "@/components/modals/coresettings/CodeSign";
 import PermissionsManager from "@/components/accounts/PermissionsManager";
+import IntegrationsManager from "@/components/integrations/IntegrationsManager";
 
 export default {
   name: "FileBar",
@@ -209,6 +214,7 @@ export default {
     ServerMaintenance,
     CodeSign,
     PermissionsManager,
+    IntegrationsManager
   },
   data() {
     return {
@@ -281,6 +287,11 @@ export default {
     showPermissionsManager() {
       this.$q.dialog({
         component: PermissionsManager,
+      });
+    },
+    showIntegrationsManager() {
+      this.$q.dialog({
+        component: IntegrationsManager,
       });
     },
     showAuditManager() {

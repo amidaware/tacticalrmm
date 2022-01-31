@@ -37,6 +37,10 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
+    path("integrations/", include("integrations.urls")),
+    path("meraki/", include("integrations.meraki.urls")),
+    path("snipeit/", include("integrations.snipeit.urls")),
+    path("bitdefender/", include("integrations.bitdefender.urls")),
 ]
 
 if getattr(settings, "ADMIN_ENABLED", False):

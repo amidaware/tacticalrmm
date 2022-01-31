@@ -37,6 +37,22 @@ Restart django: `sudo systemctl restart rmm.service`
 
 Then visit `https://api.example.com/api/schema/swagger-ui/` to see it in action.
 
+### Authentication
+
+If you want to use Swagger to query the API, you need to provide an access token. The access token is stored in the
+local storage of your browser after logging into `rmm.example.com`.
+
+- Firefox: F12 > Storage tab > expand Local Storage on the left > click on the domain > copy the `access_token`.
+- Chrome: F12 > Application tab > expand Local Storage on the left > click on the domain > copy the `access_token`.
+
+![API Swagger Access_Token browser](../images/api-swagger-access-token1.png)
+
+In Swagger, click on the lock at the top and paste the access token as `Token 0123456789`.
+
+![API Swagger Access_Token entry](../images/api-swagger-access-token2.png)
+
+You can now use the Swagger API to query the backend.
+
 ???+ abstract "Example Code"
 
     === ":fontawesome-brands-python: Python"

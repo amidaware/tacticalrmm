@@ -479,7 +479,7 @@ After=nats.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/nats-api  -config /rmm/api/tacticalrmm/nats-api.conf
+ExecStart=/usr/local/bin/nats-api
 User=${USER}
 Group=${USER}
 Restart=always

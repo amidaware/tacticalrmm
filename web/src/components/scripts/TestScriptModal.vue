@@ -46,7 +46,7 @@ export default {
     async function runTestScript() {
       loading.value = true;
       const data = {
-        code: props.script.code,
+        code: props.script.script_body,
         timeout: props.script.default_timeout,
         args: props.script.args,
         shell: props.script.shell,

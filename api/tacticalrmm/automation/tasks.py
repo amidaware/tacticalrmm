@@ -54,6 +54,8 @@ def generate_agent_checks_task(
         if create_tasks:
             agent.generate_tasks_from_policies()
 
+        agent.set_alert_template()
+
     return "ok"
 
 

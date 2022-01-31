@@ -1,1 +1,0 @@
-sudo softwareupdate -ia

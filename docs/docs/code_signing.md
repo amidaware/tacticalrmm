@@ -4,7 +4,7 @@
 
 Tactical RMM agents are now [code signed](https://comodosslstore.com/resources/what-is-microsoft-authenticode-code-signing-certificate/)!
 
-To get access to code signed agents, you must be a [Github Sponsor](https://github.com/sponsors/wh1te909) with a minumum monthly donation of $50.00
+To get access to code signed agents, you must be a [Github Sponsor](https://github.com/sponsors/wh1te909) with a minumum **monthly** donation of $50.00. If you signup for the $50, and then downgrade your auth token _**will be**_ invalidated and stop working.
 
 Once you have become a sponsor, please email **support@amidaware.com** with your Github username (and Discord username if you're on our [Discord](https://discord.gg/upGTkWp))
 

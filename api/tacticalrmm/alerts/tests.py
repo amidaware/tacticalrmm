@@ -9,7 +9,7 @@ from model_bakery import baker, seq
 from tacticalrmm.test import TacticalTestCase
 
 from alerts.tasks import cache_agents_alert_template
-from agents.tasks import handle_agents_task
+from core.tasks import cache_db_fields_task
 
 from .models import Alert, AlertTemplate
 from .serializers import (
@@ -684,7 +684,7 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_email.last_seen = djangotime.now()
         agent_template_email.save()
 
-        handle_agents_task()
+        cache_db_fields_task()
 
         recovery_sms.assert_called_with(
             pk=Alert.objects.get(agent=agent_template_text).pk
@@ -1355,7 +1355,7 @@ class TestAlertTasks(TacticalTestCase):
         agent.last_seen = djangotime.now()
         agent.save()
 
-        handle_agents_task()
+        cache_db_fields_task()
 
         # this is what data should be
         data = {

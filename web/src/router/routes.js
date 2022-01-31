@@ -1,11 +1,26 @@
 const routes = [
   {
     path: "/",
-    name: "Dashboard",
-    component: () => import("@/views/Dashboard"),
-    meta: {
-      requireAuth: true
-    }
+    name: "MainLayout",
+    component: () => import("@/layouts/MainLayout"),
+    children: [
+      {
+        path: "agents/:agent_id",
+        name: "Agent",
+        component: () => import("@/views/Agent"),
+        meta: {
+          requireAuth: true
+        }
+      },
+      {
+        path: "",
+        name: "Dashboard",
+        component: () => import("@/views/Dashboard"),
+        meta: {
+          requireAuth: true
+        }
+      },
+    ]
   },
   {
     path: "/setup",

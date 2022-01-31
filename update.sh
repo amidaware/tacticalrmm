@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="126"
+SCRIPT_VERSION="129"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -8,6 +8,8 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
+
+SCRIPTS_DIR="/opt/trmm-community-scripts"
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -41,12 +43,6 @@ if [ "$ORIGUSER" != "$USER" ]; then
   exit 1
 fi
 
-CHECK_TOO_OLD=$(grep natsapi /etc/nginx/sites-available/rmm.conf)
-if ! [[ $CHECK_TOO_OLD ]]; then
-  printf >&2 "${RED}Your version of TRMM is no longer supported. Refusing to update.${NC}\n"
-  exit 1
-fi
-
 TMP_SETTINGS=$(mktemp -p "" "rmmsettings_XXXXXXXXXX")
 curl -s -L "${LATEST_SETTINGS_URL}" > ${TMP_SETTINGS}
 SETTINGS_FILE="/rmm/api/tacticalrmm/tacticalrmm/settings.py"
@@ -68,27 +64,39 @@ NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{prin
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-
-if [ -f /etc/systemd/system/natsapi.service ]; then
-  printf >&2 "${GREEN}Removing natsapi.service${NC}\n"
-  sudo systemctl stop natsapi.service
-  sudo systemctl disable natsapi.service
-  sudo rm -f /etc/systemd/system/natsapi.service
-  sudo systemctl daemon-reload
-fi
-
 cls() {
   printf "\033c"
 }
 
-CHECK_HAS_DAPHNE=$(grep daphne.sock /etc/nginx/sites-available/rmm.conf)
-if ! [[ $CHECK_HAS_DAPHNE ]]; then
-  cls
-  echo -ne "${RED}Nginx config changes required before continuing.${NC}\n"
-  echo -ne "${RED}Please check the v0.5.0 release notes on github for instructions, then re-run this script.${NC}\n"
-  echo -ne "${YELLOW}https://github.com/wh1te909/tacticalrmm/releases/tag/v0.5.0${NC}\n"
-  echo -ne "${RED}Aborting...${NC}\n"
-  exit 1
+
+CHECK_NATS_LIMITNOFILE=$(grep LimitNOFILE /etc/systemd/system/nats.service)
+if ! [[ $CHECK_NATS_LIMITNOFILE ]]; then
+
+sudo rm -f /etc/systemd/system/nats.service
+
+natsservice="$(cat << EOF
+[Unit]
+Description=NATS Server
+After=network.target
+
+[Service]
+PrivateTmp=true
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecReload=/usr/bin/kill -s HUP \$MAINPID
+ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
+User=${USER}
+Group=www-data
+Restart=always
+RestartSec=5s
+LimitNOFILE=1000000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
+sudo systemctl daemon-reload
 fi
 
 if ! sudo nginx -t > /dev/null 2>&1; then
@@ -97,30 +105,6 @@ if ! sudo nginx -t > /dev/null 2>&1; then
   echo -ne "${RED}You have syntax errors in your nginx configs. See errors above. Please fix them and re-run this script.${NC}\n"
   echo -ne "${RED}Aborting...${NC}\n"
   exit 1
-fi
-
-if ! [ -f /etc/systemd/system/daphne.service ]; then
-daphneservice="$(cat << EOF
-[Unit]
-Description=django channels daemon
-After=network.target
-
-[Service]
-User=${USER}
-Group=www-data
-WorkingDirectory=/rmm/api/tacticalrmm
-Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
-Restart=always
-RestartSec=3s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable daphne.service
 fi
 
 if [ ! -f /etc/systemd/system/nats-api.service ]; then
@@ -192,6 +176,8 @@ if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
   sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
 fi
 
+sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
+
 HAS_PY39=$(which python3.9)
 if ! [[ $HAS_PY39 ]]; then
   printf >&2 "${GREEN}Updating to Python 3.9${NC}\n"
@@ -242,6 +228,7 @@ fi
 
 sudo npm install -g npm
 
+# update from main repo
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -251,11 +238,31 @@ git reset --hard FETCH_HEAD
 git clean -df
 git pull
 
+# update from community-scripts repo
+if [[ ! -d ${SCRIPTS_DIR} ]]; then
+  sudo mkdir -p ${SCRIPTS_DIR}
+  sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
+  git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+  cd ${SCRIPTS_DIR}
+  git config user.email "admin@example.com"
+  git config user.name "Bob"
+else
+  cd ${SCRIPTS_DIR}
+  git config user.email "admin@example.com"
+  git config user.name "Bob"
+  git fetch
+  git checkout main
+  git reset --hard FETCH_HEAD
+  git clean -df
+  git pull
+fi
+
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 
 sudo chown ${USER}:${USER} -R /rmm
+sudo chown ${USER}:${USER} -R ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 sudo chown -R $USER:$GROUP /home/${USER}/.npm

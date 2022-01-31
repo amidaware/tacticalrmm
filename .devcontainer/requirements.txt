@@ -4,7 +4,7 @@ celery
 channels
 channels_redis
 django-ipware
-Django
+Django==3.2.10
 django-cors-headers
 django-rest-knox
 djangorestframework
@@ -35,3 +35,5 @@ Pygments
 mypy
 pysnooper
 isort
+drf_spectacular
+pandas

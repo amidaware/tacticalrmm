@@ -456,7 +456,8 @@ class Alert(models.Model):
             if match:
                 name = match.group(1)
 
-                if hasattr(self, name):
+                # check if attr exists and isn't a function
+                if hasattr(self, name) and not callable(getattr(self, name)):
                     value = f"'{getattr(self, name)}'"
                 else:
                     continue

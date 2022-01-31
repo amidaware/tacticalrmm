@@ -39,12 +39,12 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
 ]
 
-if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:
+if getattr(settings, "ADMIN_ENABLED", False):
     from django.contrib import admin
 
     urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)
 
-if hasattr(settings, "SWAGGER_ENABLED") and settings.SWAGGER_ENABLED:
+if getattr(settings, "SWAGGER_ENABLED", False):
     from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
     urlpatterns += (

@@ -5,10 +5,15 @@ set -e
 : "${WORKER_CONNECTIONS:=2048}"
 : "${APP_PORT:=80}"
 : "${API_PORT:=80}"
+: "${NGINX_RESOLVER:=127.0.0.11}"
+: "${BACKEND_SERVICE:=tactical-backend}"
+: "${FRONTEND_SERVICE:=tactical-frontend}"
+: "${MESH_SERVICE:=tactical-meshcentral}"
+: "${WEBSOCKETS_SERVICE:=tactical-websockets}"
 : "${DEV:=0}"
 
-CERT_PRIV_PATH=${TACTICAL_DIR}/certs/privkey.pem
-CERT_PUB_PATH=${TACTICAL_DIR}/certs/fullchain.pem
+: "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
+: "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
 
 mkdir -p "${TACTICAL_DIR}/certs"
 
@@ -34,7 +39,7 @@ fi
 if [[ $DEV -eq 1 ]]; then
     API_NGINX="
         #Using variable to disable start checks
-        set \$api http://tactical-backend:${API_PORT};
+        set \$api http://${BACKEND_SERVICE}:${API_PORT};
         proxy_pass \$api;
         proxy_http_version  1.1;
         proxy_cache_bypass  \$http_upgrade;
@@ -51,7 +56,7 @@ if [[ $DEV -eq 1 ]]; then
 else
     API_NGINX="
         #Using variable to disable start checks
-        set \$api tactical-backend:${API_PORT};
+        set \$api ${BACKEND_SERVICE}:${API_PORT};
 
         include         uwsgi_params;
         uwsgi_pass      \$api;
@@ -61,7 +66,7 @@ fi
 nginx_config="$(cat << EOF
 # backend config
 server  {
-    resolver 127.0.0.11 valid=30s;
+    resolver ${NGINX_RESOLVER} valid=30s;
 
     server_name ${API_HOST};
 
@@ -80,7 +85,7 @@ server  {
     }
 
     location ~ ^/ws/ {
-        set \$api http://tactical-websockets:8383;
+        set \$api http://${WEBSOCKETS_SERVICE}:8383;
         proxy_pass \$api;
 
         proxy_http_version 1.1;
@@ -111,13 +116,13 @@ server {
 
 # frontend config
 server  {
-    resolver 127.0.0.11 valid=30s;
+    resolver ${NGINX_RESOLVER} valid=30s;
     
     server_name ${APP_HOST};
 
     location / {
         #Using variable to disable start checks
-        set \$app http://tactical-frontend:${APP_PORT};
+        set \$app http://${FRONTEND_SERVICE}:${APP_PORT};
 
         proxy_pass \$app;
         proxy_http_version  1.1;
@@ -149,7 +154,7 @@ server {
 
 # meshcentral config
 server {
-    resolver 127.0.0.11 valid=30s;
+    resolver ${NGINX_RESOLVER} valid=30s;
 
     listen 443 ssl;
     proxy_send_timeout 330s;
@@ -163,7 +168,7 @@ server {
 
     location / {
         #Using variable to disable start checks
-        set \$meshcentral http://tactical-meshcentral:443;
+        set \$meshcentral http://${MESH_SERVICE}:443;
 
         proxy_pass \$meshcentral;
         proxy_http_version 1.1;
@@ -180,7 +185,7 @@ server {
 }
 
 server {
-    resolver 127.0.0.11 valid=30s;
+    resolver ${NGINX_RESOLVER} valid=30s;
 
     listen 80;
     server_name ${MESH_HOST};

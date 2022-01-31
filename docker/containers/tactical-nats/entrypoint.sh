@@ -3,6 +3,7 @@
 set -e
 
 : "${DEV:=0}"
+: "${NATS_CONFIG_CHECK_INTERVAL:=1}"
 
 if [ "${DEV}" = 1 ]; then
   NATS_CONFIG=/workspace/api/tacticalrmm/nats-rmm.conf
@@ -17,6 +18,27 @@ until [ -f "${TACTICAL_READY_FILE}" ]; do
   echo "waiting for init container to finish install or update..."
   sleep 10
 done
+
+config_watcher="$(cat << EOF
+while true; do
+    sleep ${NATS_CONFIG_CHECK_INTERVAL};
+    if [[ ! -z \${NATS_CHECK} ]]; then
+        NATS_RELOAD=\$(date -r '${NATS_CONFIG}')
+        if [[ \$NATS_RELOAD == \$NATS_CHECK ]]; then
+            :
+        else
+            nats-server --signal reload;
+            NATS_CHECK=\$(date -r '${NATS_CONFIG}');
+        fi
+    else NATS_CHECK=\$(date -r '${NATS_CONFIG}');
+    fi
+done
+
+EOF
+)"
+
+echo "${config_watcher}" > /usr/local/bin/config_watcher.sh
+chmod +x /usr/local/bin/config_watcher.sh
 
 mkdir -p /var/log/supervisor
 mkdir -p /etc/supervisor/conf.d
@@ -34,7 +56,10 @@ stdout_logfile_maxbytes=0
 redirect_stderr=true
 
 [program:config-watcher]
-command=/bin/bash -c "inotifywait -mq -e modify "${NATS_CONFIG}" | while read event; do nats-server --signal reload; done;"
+command=/bin/bash /usr/local/bin/config_watcher.sh
+startsecs=10
+autorestart=true
+startretries=1
 stdout_logfile=/dev/fd/1
 stdout_logfile_maxbytes=0
 redirect_stderr=true

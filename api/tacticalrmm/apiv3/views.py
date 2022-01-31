@@ -15,12 +15,11 @@ from rest_framework.views import APIView
 
 from accounts.models import User
 from agents.models import Agent, AgentHistory
-from agents.serializers import WinAgentSerializer, AgentHistorySerializer
+from agents.serializers import AgentHistorySerializer
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
 from checks.serializers import CheckRunnerGetSerializer
-from checks.utils import bytes2human
 from logs.models import PendingAction, DebugLog
 from software.models import InstalledSoftware
 from tacticalrmm.utils import notify_error, reload_nats
@@ -31,54 +30,6 @@ class CheckIn(APIView):
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-
-    def put(self, request):
-        """
-        !!! DEPRECATED AS OF AGENT 1.7.0 !!!
-        Endpoint be removed in a future release
-        """
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
-
-        if request.data["func"] == "disks":
-            disks = request.data["disks"]
-            new = []
-            for disk in disks:
-                tmp = {}
-                for _, _ in disk.items():
-                    tmp["device"] = disk["device"]
-                    tmp["fstype"] = disk["fstype"]
-                    tmp["total"] = bytes2human(disk["total"])
-                    tmp["used"] = bytes2human(disk["used"])
-                    tmp["free"] = bytes2human(disk["free"])
-                    tmp["percent"] = int(disk["percent"])
-                new.append(tmp)
-
-            serializer.is_valid(raise_exception=True)
-            serializer.save(disks=new)
-            return Response("ok")
-
-        if request.data["func"] == "loggedonuser":
-            if request.data["logged_in_username"] != "None":
-                serializer.is_valid(raise_exception=True)
-                serializer.save(last_logged_in_user=request.data["logged_in_username"])
-                return Response("ok")
-
-        if request.data["func"] == "software":
-            sw = request.data["software"]
-
-            if not InstalledSoftware.objects.filter(agent=agent).exists():
-                InstalledSoftware(agent=agent, software=sw).save()
-            else:
-                s = agent.installedsoftware_set.first()  # type: ignore
-                s.software = sw
-                s.save(update_fields=["software"])
-
-            return Response("ok")
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response("ok")
 
     # called once during tacticalagent windows service startup
     def post(self, request):
@@ -121,18 +72,18 @@ class WinUpdates(APIView):
 
     def put(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+
+        needs_reboot: bool = request.data["needs_reboot"]
+        agent.needs_reboot = needs_reboot
+        agent.save(update_fields=["needs_reboot"])
+
         reboot_policy: str = agent.get_patch_policy().reboot_after_install
         reboot = False
 
         if reboot_policy == "always":
             reboot = True
-
-        if request.data["needs_reboot"]:
-            if reboot_policy == "required":
-                reboot = True
-            elif reboot_policy == "never":
-                agent.needs_reboot = True
-                agent.save(update_fields=["needs_reboot"])
+        elif needs_reboot and reboot_policy == "required":
+            reboot = True
 
         if reboot:
             asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
@@ -202,14 +153,6 @@ class WinUpdates(APIView):
                 ).save()
 
         agent.delete_superseded_updates()
-
-        # more superseded updates cleanup
-        if pyver.parse(agent.version) <= pyver.parse("1.4.2"):
-            for u in agent.winupdates.filter(  # type: ignore
-                date_installed__isnull=True, result="failed"
-            ).exclude(installed=True):
-                u.delete()
-
         return Response("ok")
 
 
@@ -279,8 +222,6 @@ class CheckRunner(APIView):
 
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
-        if pyver.parse(check.agent.version) < pyver.parse("1.5.7"):
-            return notify_error("unsupported")
 
         check.last_run = djangotime.now()
         check.save(update_fields=["last_run"])

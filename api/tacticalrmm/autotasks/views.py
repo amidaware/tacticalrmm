@@ -6,7 +6,6 @@ from rest_framework.exceptions import PermissionDenied
 
 from agents.models import Agent
 from automation.models import Policy
-from tacticalrmm.utils import get_bit_days
 from tacticalrmm.permissions import _has_perm_on_agent
 
 from .models import AutomatedTask
@@ -44,17 +43,10 @@ class GetAddAutoTasks(APIView):
 
             data["agent"] = agent.pk
 
-        bit_weekdays = None
-        if "run_time_days" in data.keys():
-            if data["run_time_days"]:
-                bit_weekdays = get_bit_days(data["run_time_days"])
-            data.pop("run_time_days")
-
         serializer = TaskSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save(
             win_task_name=AutomatedTask.generate_task_name(),
-            run_time_bit_weekdays=bit_weekdays,
         )
 
         if task.agent:

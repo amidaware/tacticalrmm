@@ -9,7 +9,8 @@ set -e
 : "${POSTGRES_USER:=tactical}"
 : "${POSTGRES_PASS:=tactical}"
 : "${POSTGRES_DB:=tacticalrmm}"
-: "${MESH_CONTAINER:=tactical-meshcentral}"
+: "${MESH_SERVICE:=tactical-meshcentral}"
+: "${MESH_WS_URL:=ws://${MESH_SERVICE}:443}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
 : "${MESH_HOST:=tactical-meshcentral}"
@@ -19,6 +20,9 @@ set -e
 : "${HTTP_PROTOCOL:=http}"
 : "${APP_PORT:=8080}"
 : "${API_PORT:=8000}"
+
+: "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
+: "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
 
 # Add python venv to path
 export PATH="${VIRTUAL_ENV}/bin:$PATH"
@@ -37,7 +41,7 @@ function django_setup {
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${MESH_CONTAINER}"/443) &> /dev/null; do
+  until (echo > /dev/tcp/"${MESH_SERVICE}"/443) &> /dev/null; do
     echo "waiting for meshcentral container to be ready..."
     sleep 5
   done
@@ -56,8 +60,8 @@ DEBUG = True
 
 DOCKER_BUILD = True
 
-CERT_FILE = '/opt/tactical/certs/fullchain.pem'
-KEY_FILE = '/opt/tactical/certs/privkey.pem'
+CERT_FILE = '${CERT_PUB_PATH}'
+KEY_FILE = '${CERT_PRIV_PATH}'
 
 SCRIPTS_DIR = '${WORKSPACE_DIR}/scripts'
 
@@ -82,6 +86,7 @@ MESH_USERNAME = '${MESH_USER}'
 MESH_SITE = 'https://${MESH_HOST}'
 MESH_TOKEN_KEY = '${MESH_TOKEN}'
 REDIS_HOST    = '${REDIS_HOST}'
+MESH_WS_URL = '${MESH_WS_URL}'
 ADMIN_ENABLED = True
 EOF
 )"
@@ -98,6 +103,8 @@ EOF
   "${VIRTUAL_ENV}"/bin/python manage.py reload_nats
   "${VIRTUAL_ENV}"/bin/python manage.py create_natsapi_conf
   "${VIRTUAL_ENV}"/bin/python manage.py create_installer_user
+    "${VIRTUAL_ENV}"/bin/python manage.py post_update_tasks
+  
 
   # create super user 
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell

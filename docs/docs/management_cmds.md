@@ -7,6 +7,32 @@ cd /rmm/api/tacticalrmm
 source ../env/bin/activate
 ```
 
+or docker version:
+
+```bash
+docker exec -it trmm-backend /bin/bash
+/opt/venv/bin/python /opt/tactical/api/manage.py shell
+```
+
+!!!tip
+    The Dev Docker version it would be `docker exec -it trmm-api-dev env/bin/python manage.py shell`
+
+## Bulk Delete old agents by last checkin date or agent version
+
+Test to see what will happen
+
+```bash
+python manage.py bulk_delete_agents --days 60
+python manage.py bulk_delete_agents --agentver 1.5.0
+```
+
+Do the delete
+
+```bash
+python manage.py bulk_delete_agents --days 60 --delete
+python manage.py bulk_delete_agents --agentver 1.5.0 --delete
+```
+
 ## Reset a user's password
 
 ```bash
@@ -23,6 +49,13 @@ python manage.py reset_2fa <username>
 
 ```bash
 python manage.py find_software "adobe"
+```
+
+## Set specific Windows update to not install
+
+```bash
+from winupdate.models import WinUpdate
+WinUpdate.objects.filter(kb="KB5007186").update(action="ignore", date_installed=None)
 ```
 
 ## Show outdated online agents

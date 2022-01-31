@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="56"
+SCRIPT_VERSION="58"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -10,6 +10,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
+
+SCRIPTS_DIR="/opt/trmm-community-scripts"
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -243,6 +245,14 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
 
+sudo mkdir -p ${SCRIPTS_DIR}
+sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
+git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+cd ${SCRIPTS_DIR}
+git config user.email "admin@example.com"
+git config user.name "Bob"
+git checkout main
+
 print_green 'Downloading NATS'
 
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
@@ -454,6 +464,7 @@ User=${USER}
 Group=www-data
 Restart=always
 RestartSec=5s
+LimitNOFILE=1000000
 
 [Install]
 WantedBy=multi-user.target

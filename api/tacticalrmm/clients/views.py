@@ -126,15 +126,16 @@ class GetUpdateDeleteClient(APIView):
         from automation.tasks import generate_agent_checks_task
 
         client = get_object_or_404(Client, pk=pk)
+        agent_count = client.live_agent_count
 
         # only run tasks if it affects clients
-        if client.agent_count > 0 and "move_to_site" in request.query_params.keys():
+        if agent_count > 0 and "move_to_site" in request.query_params.keys():
             agents = Agent.objects.filter(site__client=client)
             site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
             agents.update(site=site)
             generate_agent_checks_task.delay(all=True, create_tasks=True)
 
-        elif client.agent_count > 0:
+        elif agent_count > 0:
             return notify_error(
                 "Agents exist under this client. There needs to be a site specified to move existing agents to"
             )
@@ -230,13 +231,14 @@ class GetUpdateDeleteSite(APIView):
             return notify_error("A client must have at least 1 site.")
 
         # only run tasks if it affects clients
-        if site.agent_count > 0 and "move_to_site" in request.query_params.keys():
+        agent_count = site.live_agent_count
+        if agent_count > 0 and "move_to_site" in request.query_params.keys():
             agents = Agent.objects.filter(site=site)
             new_site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
             agents.update(site=new_site)
             generate_agent_checks_task.delay(all=True, create_tasks=True)
 
-        elif site.agent_count > 0:
+        elif agent_count > 0:
             return notify_error(
                 "There needs to be a site specified to move the agents to"
             )

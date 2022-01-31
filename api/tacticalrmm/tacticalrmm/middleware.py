@@ -21,6 +21,7 @@ EXCLUDE_PATHS = (
     f"/{settings.ADMIN_URL}",
     "/logout",
     "/agents/installer",
+    "/api/schema",
 )
 
 
@@ -92,3 +93,61 @@ class LogIPMiddleware:
         request._client_ip = client_ip
         response = self.get_response(request)
         return response
+
+
+class DemoMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+        self.not_allowed = [
+            {"name": "AgentProcesses", "methods": ["DELETE"]},
+            {"name": "AgentMeshCentral", "methods": ["GET", "POST"]},
+            {"name": "update_agents", "methods": ["POST"]},
+            {"name": "send_raw_cmd", "methods": ["POST"]},
+            {"name": "install_agent", "methods": ["POST"]},
+            {"name": "get_mesh_exe", "methods": ["POST"]},
+            {"name": "GenerateAgent", "methods": ["GET"]},
+            {"name": "UploadMeshAgent", "methods": ["PUT"]},
+            {"name": "email_test", "methods": ["POST"]},
+            {"name": "server_maintenance", "methods": ["POST"]},
+            {"name": "CodeSign", "methods": ["PATCH", "POST"]},
+            {"name": "TwilioSMSTest", "methods": ["POST"]},
+            {"name": "GetEditActionService", "methods": ["PUT", "POST"]},
+            {"name": "TestScript", "methods": ["POST"]},
+            {"name": "GetUpdateDeleteAgent", "methods": ["DELETE"]},
+            {"name": "Reboot", "methods": ["POST", "PATCH"]},
+            {"name": "recover", "methods": ["POST"]},
+            {"name": "run_script", "methods": ["POST"]},
+            {"name": "bulk", "methods": ["POST"]},
+            {"name": "WMI", "methods": ["POST"]},
+            {"name": "PolicyAutoTask", "methods": ["POST"]},
+            {"name": "RunAutoTask", "methods": ["POST"]},
+            {"name": "run_checks", "methods": ["POST"]},
+            {"name": "GetSoftware", "methods": ["POST", "PUT"]},
+            {"name": "ScanWindowsUpdates", "methods": ["POST"]},
+            {"name": "InstallWindowsUpdates", "methods": ["POST"]},
+            {"name": "PendingActions", "methods": ["DELETE"]},
+        ]
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def drf_mock_response(self, request, resp):
+        from rest_framework.views import APIView
+
+        view = APIView()
+        view.headers = view.default_response_headers
+        return view.finalize_response(request, resp).render()  # type: ignore
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        from .utils import notify_error
+
+        err = "Not available in demo"
+        excludes = ("/api/v3",)
+
+        if request.path.startswith(excludes):
+            return self.drf_mock_response(request, notify_error(err))
+
+        for i in self.not_allowed:
+            if view_func.__name__ == i["name"] and request.method in i["methods"]:
+                return self.drf_mock_response(request, notify_error(err))

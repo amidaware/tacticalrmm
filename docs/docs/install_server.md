@@ -6,13 +6,17 @@
 
 #### Hardware / OS
 
-A fresh linux VM running either Ubuntu 20.04 LTS or Debian 10/11 with 3GB RAM
+A fresh linux VM running either Ubuntu 20.04 LTS or Debian 10/11 with 2GB RAM
 
 !!!warning
     The provided install script assumes a fresh server with no software installed on it. Attempting to run it on an existing server with other services **will** break things and the install will fail.
 
 !!!note
     The install script has been tested on the following public cloud providers: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzner, AWS, Google Cloud and Azure, as well as behind NAT on Hyper-V, Proxmox and ESXi.
+
+!!!note
+    CPU: 1 core is fine for < 200 agents with limited checks/tasks.<br><br>
+    Disk space and speed are dependent on your use case. Of course faster is better SSD/NVMe. Space is dependent on how long you're keeping historical data, and how many checks/script runs and their output size. 50GB should be fine for < 12months of history on < 200 agents with < 30 checks/tasks run at reasonable time intervals.
 
 #### Network Requirements
 
@@ -32,7 +36,7 @@ Install on a VPS: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzn
 
 Use something that meets [minimum specs](install_server.md#hardware-os)
 
-### Run updates and setup the linux user
+### Run Updates on OS
 
 SSH into the server as **root**.
 
@@ -45,6 +49,8 @@ apt -y upgrade
 ```
 
 If a new kernel is installed, then reboot the server with the `reboot` command
+
+### Create a linux user
 
 Create a linux user named `tactical` to run the rmm and add it to the sudoers group.
 
@@ -63,11 +69,8 @@ usermod -a -G sudo tactical
 ```
 
 !!!tip
-    [Enable passwordless sudo to make your life easier](https://linuxconfig.org/configure-sudo-without-password-on-ubuntu-20-04-focal-fossa-linux)
+    [Enable passwordless sudo to make your life easier in the future](https://linuxconfig.org/configure-sudo-without-password-on-ubuntu-20-04-focal-fossa-linux)
 
-!!!note
-    You will never login to the server again as `root` again unless something has gone horribly wrong, and you're working with the developers.
-    
 ### Setup the firewall (optional but highly recommended)
 
 !!!info
@@ -101,12 +104,15 @@ Enable and activate the firewall
 ufw enable && ufw reload
 ```
 
+!!!note
+    You will never login to the server again as `root` again unless something has gone horribly wrong, and you're working with the developers.
+
 ### Create the A records
 
 We'll be using `example.com` as our domain for this example.
 
 !!!info
-    The RMM uses 3 different sites. The Vue frontend e.g. `rmm.example.com` which is where you'll be accesing your RMM from the browser, the REST backend e.g. `api.example.com` and Meshcentral e.g. `mesh.example.com`
+    The RMM uses 3 different sites. The Vue frontend e.g. `rmm.example.com` which is where you'll be accessing your RMM from the browser, the REST backend e.g. `api.example.com` and Meshcentral e.g. `mesh.example.com`
 
 1. Get the public IP of your server with `curl https://icanhazip.tacticalrmm.io`
 2. Open the DNS manager of wherever the domain you purchased is hosted.
@@ -137,7 +143,7 @@ Answer the initial questions when prompted. Replace `example.com` with your doma
 ### Deploy the TXT record in your DNS manager for Lets Encrypt wildcard certs
 
 !!!warning
-    TXT records can take anywhere from 1 minute to a few hours to propogate depending on your DNS provider.<br/>
+    TXT records can take anywhere from 1 minute to a few hours to propagate depending on your DNS provider.<br/>
     You should verify the TXT record has been deployed first before pressing Enter.<br/>
     A quick way to check is with the following command:<br/> `dig -t txt _acme-challenge.example.com`<br/>
     or test using: <https://viewdns.info/dnsrecord/> Enter: `_acme-challenge.example.com`
@@ -184,9 +190,9 @@ If you have agents outside your local network: Make sure the public DNS servers 
 
 Login to your router/NAT device.
 
-1. Set your TRMM server as a static IP (Use a DHCP reservation is usually safer)
+1. Set your TRMM server as a static IP (Using a DHCP reservation is usually safer)
 2. Create 2 port forwarding rules. `TCP Port 443` and `TCP Port 4222` to your TRMM servers private IP address.
-   
+
 !!!note
     <https://portforward.com/> can help with Port Forwarding setup
 
@@ -220,6 +226,6 @@ We've said it before, we'll say it again.
 
 - We recommend regular updates.
 
-    - Every 3 months.
+    - Every 2-3 months.
 
         - Do it when you update your SSL certs.

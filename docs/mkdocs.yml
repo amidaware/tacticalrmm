@@ -14,6 +14,7 @@ nav:
       - "Agent Installation": install_agent.md
       - "Updating Agents": update_agents.md
   - Functionality:
+      - "How it all Works": howitallworks.md
       - "Alerting": functions/alerting.md
       - "API Access": functions/api.md
       - "Automated Tasks": functions/automated_tasks.md
@@ -28,9 +29,11 @@ nav:
       - "Scripting": functions/scripting.md
       - "URL Actions": functions/url_actions.md
       - "User Interface Preferences": functions/user_ui.md
+      - "Reference: Script Variables": script_variables.md
       - "Examples": functions/examples.md
   - Backup: backup.md
   - Restore: restore.md
+  - Antivirus Exclusions: av.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
   - Management Commands: management_cmds.md
@@ -39,11 +42,12 @@ nav:
       - "Grafana": 3rdparty_grafana.md
       - "AnyDesk": 3rdparty_anydesk.md
       - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
+      - "Splashtop": 3rdparty_splashtop.md
       - "TeamViewer": 3rdparty_teamviewer.md
       - "BitDefender GravityZone": 3rdparty_bitdefender_gravityzone.md
   - Unsupported Extras:
       - "Unsupported Guidelines": unsupported_guidelines.md
-      - "Unsupported Scripts": unsupported_scripts.md
+      - "Unsupported Configs": unsupported_scripts.md
       - "Securing nginx": securing_nginx.md
       - "Installing in Synology docker": unsupported_synology_docker_install.md
   - Tips n' Tricks: tipsntricks.md
@@ -74,16 +78,26 @@ theme:
   palette:
     primary: "white"
     accent: "indigo"
+  features:
 extra_css:
   - stylesheets/extra.css
 extra:
   social:
     - icon: fontawesome/brands/github
       link: "https://github.com/wh1te909/tacticalrmm"
+
 markdown_extensions:
+  - pymdownx.keys
   - pymdownx.inlinehilite
   - admonition
+  - pymdownx.details
   - codehilite:
       guess_lang: false
   - toc:
       permalink: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true

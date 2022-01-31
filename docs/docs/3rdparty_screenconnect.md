@@ -42,7 +42,7 @@ Navigate to an agent with ConnectWise Service running (or apply using **Settings
 Go to Tasks.</br>
 Add Task</br>
 **Select Script** = `ScreenConnect - Get GUID for client` (this is a builtin script from script library)</br>
-**Script argument** = `-serviceName{{client.ScreenConnectService}}`</br>
+**Script argument** = `-serviceName {{client.ScreenConnectService}}`</br>
 **Descriptive name of task** = `Collects the Machine GUID for ScreenConnect.`</br>
 **Collector Task** = `CHECKED`</br>
 **Custom Field to update** = `ScreenConectGUID`</br>
@@ -60,6 +60,12 @@ Give it a second to execute then right click the agent that you are working with
 It should ask you to sign into your Connectwise Control server if you are not already logged in and launch the session.
 
 *****
+
+## Install Screenconnect via Tactical
+
+Use the [Screenconnect AIO script](https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_ScreenConnectAIO.ps1)
+
+![AIO](images/3rdparty_sc_aio.png)
 
 ## Install Tactical RMM via Screeconnect commands window
 

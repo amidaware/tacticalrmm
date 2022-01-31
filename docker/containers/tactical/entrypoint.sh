@@ -9,7 +9,8 @@ set -e
 : "${POSTGRES_USER:=tactical}"
 : "${POSTGRES_PASS:=tactical}"
 : "${POSTGRES_DB:=tacticalrmm}"
-: "${MESH_CONTAINER:=tactical-meshcentral}"
+: "${MESH_SERVICE:=tactical-meshcentral}"
+: "${MESH_WS_URL:=ws://${MESH_SERVICE}:443}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
 : "${MESH_HOST:=tactical-meshcentral}"
@@ -17,6 +18,8 @@ set -e
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
 
+: "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
+: "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
 
 function check_tactical_ready {
   sleep 15
@@ -44,7 +47,7 @@ if [ "$1" = 'tactical-init' ]; then
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${MESH_CONTAINER}"/443) &> /dev/null; do
+  until (echo > /dev/tcp/"${MESH_SERVICE}"/443) &> /dev/null; do
     echo "waiting for meshcentral container to be ready..."
     sleep 5
   done
@@ -61,13 +64,13 @@ DEBUG = False
 
 DOCKER_BUILD = True
 
-CERT_FILE = '/opt/tactical/certs/fullchain.pem'
-KEY_FILE = '/opt/tactical/certs/privkey.pem'
+CERT_FILE = '${CERT_PUB_PATH}'
+KEY_FILE = '${CERT_PRIV_PATH}'
 
 EXE_DIR = '/opt/tactical/api/tacticalrmm/private/exe'
 LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'
 
-SCRIPTS_DIR = '/opt/tactical/scripts'
+SCRIPTS_DIR = '/opt/tactical/community-scripts'
 
 ALLOWED_HOSTS = ['${API_HOST}', 'tactical-backend']
 
@@ -92,7 +95,7 @@ MESH_USERNAME = '${MESH_USER}'
 MESH_SITE = 'https://${MESH_HOST}'
 MESH_TOKEN_KEY = '${MESH_TOKEN}'
 REDIS_HOST    = '${REDIS_HOST}'
-MESH_WS_URL = 'ws://${MESH_CONTAINER}:443'
+MESH_WS_URL = '${MESH_WS_URL}'
 ADMIN_ENABLED = False
 EOF
 )"
@@ -131,14 +134,18 @@ EOF
   python manage.py reload_nats
   python manage.py create_natsapi_conf
   python manage.py create_installer_user
+  python manage.py post_update_tasks
 
   # create super user 
+  echo "Creating dashboard user if it doesn't exist"
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
 
   # chown everything to tactical user
+  echo "Updating permissions on files"
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
 
   # create install ready file
+  echo "Creating install ready file"
   su -c "echo 'tactical-init' > ${TACTICAL_READY_FILE}" "${TACTICAL_USER}"
 
 fi

@@ -399,7 +399,7 @@ export default {
         const result = await resetCheck(check.id);
         await getChecks();
         notifySuccess(result);
-        refreshDashboard();
+        refreshDashboard(false /* clearTreeSelected */, false /* clearSubTable */);
       } catch (e) {
         console.error(e);
       }

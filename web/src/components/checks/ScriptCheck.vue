@@ -23,6 +23,7 @@
             label="Select script"
             mapOptions
             :disable="!!check"
+            filterable
           />
         </q-card-section>
         <q-card-section>

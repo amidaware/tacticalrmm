@@ -87,7 +87,8 @@ npm install -g @quasar/cli
 quasar dev
 ```
 
-!!!info If you receive a CORS error when trying to log into your server via localhost or IP, try the following
+!!!info 
+    If you receive a CORS error when trying to log into your server via localhost or IP, try the following
 ```bash
 rm -rf node_modules .quasar
 npm install

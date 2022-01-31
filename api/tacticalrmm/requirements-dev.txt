@@ -8,4 +8,3 @@ Pygments
 isort
 mypy
 types-pytz
-types-pytz

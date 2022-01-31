@@ -4,7 +4,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SCRIPTS_DIR = "/srv/salt/scripts"
+SCRIPTS_DIR = "/opt/trmm-community-scripts"
 
 DOCKER_BUILD = False
 
@@ -15,25 +15,25 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.10.2"
+TRMM_VERSION = "0.11.3"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.152"
+APP_VER = "0.0.157"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.7.0"
+LATEST_AGENT_VER = "1.8.0"
 
-MESH_VER = "0.9.51"
+MESH_VER = "0.9.74"
 
-NATS_SERVER_VER = "2.3.3"
+NATS_SERVER_VER = "2.7.0"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "24"
-NPM_VER = "25"
+PIP_VER = "26"
+NPM_VER = "28"
 
-SETUPTOOLS_VER = "58.5.3"
-WHEEL_VER = "0.37.0"
+SETUPTOOLS_VER = "59.6.0"
+WHEEL_VER = "0.37.1"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
@@ -145,6 +145,11 @@ MIDDLEWARE = [
 if ADMIN_ENABLED:  # type: ignore
     MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
 
+try:
+    if DEMO:  # type: ignore
+        MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
+except:
+    pass
 
 ROOT_URLCONF = "tacticalrmm.urls"
 

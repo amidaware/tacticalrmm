@@ -2,12 +2,16 @@ import asyncio
 import base64
 import re
 import time
+import nats
+from nats.errors import TimeoutError
+
 from collections import Counter
 from distutils.version import LooseVersion
 from typing import Any
 
 import msgpack
 import validators
+from asgiref.sync import sync_to_async
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA3_384
 from Crypto.Random import get_random_bytes
@@ -16,9 +20,6 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone as djangotime
-from nats.aio.client import Client as NATS
-from nats.aio.errors import ErrTimeout
-from packaging import version as pyver
 
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel, DebugLog
@@ -98,7 +99,7 @@ class Agent(BaseAuditModel):
 
         # check if new agent has been created
         # or check if policy have changed on agent
-        # or if site has changed on agent and if so generate-policies
+        # or if site has changed on agent and if so generate policies
         # or if agent was changed from server or workstation
         if (
             not old_agent
@@ -108,10 +109,6 @@ class Agent(BaseAuditModel):
             or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
         ):
             generate_agent_checks_task.delay(agents=[self.pk], create_tasks=True)
-
-        # calculate alert template for new agents
-        if not old_agent:
-            self.set_alert_template()
 
     def __str__(self):
         return self.hostname
@@ -349,7 +346,7 @@ class Agent(BaseAuditModel):
             },
         }
 
-        if history_pk != 0 and pyver.parse(self.version) >= pyver.parse("1.6.0"):
+        if history_pk != 0:
             data["id"] = history_pk
 
         running_agent = self
@@ -723,8 +720,10 @@ class Agent(BaseAuditModel):
         except Exception:
             return "err"
 
+    def _do_nats_debug(self, agent, message):
+        DebugLog.error(agent=agent, log_type="agent_issues", message=message)
+
     async def nats_cmd(self, data: dict, timeout: int = 30, wait: bool = True):
-        nc = NATS()
         options = {
             "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
             "user": "tacticalrmm",
@@ -732,8 +731,9 @@ class Agent(BaseAuditModel):
             "connect_timeout": 3,
             "max_reconnect_attempts": 2,
         }
+
         try:
-            await nc.connect(**options)
+            nc = await nats.connect(**options)
         except:
             return "natsdown"
 
@@ -742,14 +742,16 @@ class Agent(BaseAuditModel):
                 msg = await nc.request(
                     self.agent_id, msgpack.dumps(data), timeout=timeout
                 )
-            except ErrTimeout:
+            except TimeoutError:
                 ret = "timeout"
             else:
                 try:
                     ret = msgpack.loads(msg.data)  # type: ignore
                 except Exception as e:
                     ret = str(e)
-                    DebugLog.error(agent=self, log_type="agent_issues", message=ret)
+                    await sync_to_async(self._do_nats_debug, thread_sensitive=False)(
+                        agent=self, message=ret
+                    )
 
             await nc.close()
             return ret
@@ -930,7 +932,7 @@ class AgentCustomField(models.Model):
     )
 
     def __str__(self):
-        return self.field
+        return self.field.name
 
     @property
     def value(self):

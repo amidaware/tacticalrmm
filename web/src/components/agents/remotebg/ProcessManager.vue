@@ -95,7 +95,7 @@ const columns = [
     field: "cpu_percent",
     align: "left",
     sortable: true,
-    sort: (a, b, rowA, rowB) => parseInt(b) < parseInt(a),
+    sort: (a, b, rowA, rowB) => parseFloat(b) < parseFloat(a),
   },
   {
     name: "membytes",

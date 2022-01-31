@@ -1,4 +1,3 @@
-import base64
 import asyncio
 
 from django.shortcuts import get_object_or_404
@@ -37,6 +36,8 @@ class GetAddScripts(APIView):
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
 
+        # obj.hash_script_body()
+
         return Response(f"{obj.name} was added!")
 
 
@@ -63,6 +64,8 @@ class GetUpdateDeleteScript(APIView):
         serializer = ScriptSerializer(data=data, instance=script, partial=True)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
+
+        # obj.hash_script_body()
 
         return Response(f"{obj.name} was edited!")
 

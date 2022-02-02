@@ -10,7 +10,7 @@ set -e
 : "${POSTGRES_PASS:=tactical}"
 : "${POSTGRES_DB:=tacticalrmm}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
-: "${MESH_WS_URL:=ws://${MESH_SERVICE}:443}"
+: "${MESH_WS_URL:=ws://${MESH_SERVICE}:4443}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
 : "${MESH_HOST:=tactical-meshcentral}"
@@ -37,7 +37,16 @@ if [ "$1" = 'tactical-init' ]; then
   # copy container data to volume
   rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
+  mkdir -p /meshcentral-data
   mkdir -p ${TACTICAL_DIR}/tmp
+  mkdir -p ${TACTICAL_DIR}/certs
+  mkdir -p /mongo/data/db
+  mkdir -p /redis/data
+  touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
+  touch ${TACTICAL_DIR}/tmp/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}
+  touch ${TACTICAL_DIR}/certs/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}/certs
+  touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
+  touch /redis/data/.initialized && chown -R 1000:1000 /redis/data
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
   touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
@@ -47,7 +56,7 @@ if [ "$1" = 'tactical-init' ]; then
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${MESH_SERVICE}"/443) &> /dev/null; do
+  until (echo > /dev/tcp/"${MESH_SERVICE}"/4443) &> /dev/null; do
     echo "waiting for meshcentral container to be ready..."
     sleep 5
   done
@@ -112,7 +121,7 @@ master = true
 processes = 8
 threads = 2
 enable-threads = true
-socket = 0.0.0.0:80
+socket = 0.0.0.0:8080
 chmod-socket = 660
 buffer-size = 65535
 vacuum = true

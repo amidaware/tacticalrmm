@@ -13,9 +13,13 @@ COPY api/tacticalrmm/tacticalrmm/settings.py /tmp/settings.py
 RUN grep -o 'MESH_VER.*' /tmp/settings.py | cut -d'"' -f 2 > /tmp/MESH_VER && \
     npm install meshcentral@$(cat /tmp/MESH_VER)
 
+RUN chown -R node:node /home/node
+
 COPY docker/containers/tactical-meshcentral/entrypoint.sh /
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 80 443
+EXPOSE 8080 4443
+
+USER node
 
 ENTRYPOINT [ "/entrypoint.sh" ] 

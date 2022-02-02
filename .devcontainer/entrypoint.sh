@@ -10,7 +10,7 @@ set -e
 : "${POSTGRES_PASS:=tactical}"
 : "${POSTGRES_DB:=tacticalrmm}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
-: "${MESH_WS_URL:=ws://${MESH_SERVICE}:443}"
+: "${MESH_WS_URL:=ws://${MESH_SERVICE}:4443}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
 : "${MESH_HOST:=tactical-meshcentral}"
@@ -41,7 +41,7 @@ function django_setup {
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${MESH_SERVICE}"/443) &> /dev/null; do
+  until (echo > /dev/tcp/"${MESH_SERVICE}"/4443) &> /dev/null; do
     echo "waiting for meshcentral container to be ready..."
     sleep 5
   done
@@ -63,7 +63,7 @@ DOCKER_BUILD = True
 CERT_FILE = '${CERT_PUB_PATH}'
 KEY_FILE = '${CERT_PRIV_PATH}'
 
-SCRIPTS_DIR = '${WORKSPACE_DIR}/scripts'
+SCRIPTS_DIR = '/community-scripts'
 
 ALLOWED_HOSTS = ['${API_HOST}', '*']
 
@@ -103,7 +103,7 @@ EOF
   "${VIRTUAL_ENV}"/bin/python manage.py reload_nats
   "${VIRTUAL_ENV}"/bin/python manage.py create_natsapi_conf
   "${VIRTUAL_ENV}"/bin/python manage.py create_installer_user
-    "${VIRTUAL_ENV}"/bin/python manage.py post_update_tasks
+  "${VIRTUAL_ENV}"/bin/python manage.py post_update_tasks
   
 
   # create super user 
@@ -116,6 +116,20 @@ if [ "$1" = 'tactical-init-dev' ]; then
   mkdir -p "${TACTICAL_DIR}/tmp"
 
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
+
+  mkdir -p /meshcentral-data
+  mkdir -p ${TACTICAL_DIR}/tmp
+  mkdir -p ${TACTICAL_DIR}/certs
+  mkdir -p /mongo/data/db
+  mkdir -p /redis/data
+  touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
+  touch ${TACTICAL_DIR}/tmp/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}
+  touch ${TACTICAL_DIR}/certs/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}/certs
+  touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
+  touch /redis/data/.initialized && chown -R 1000:1000 /redis/data
+  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
+  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
+  touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
 
   # setup Python virtual env and install dependencies
   ! test -e "${VIRTUAL_ENV}" && python -m venv ${VIRTUAL_ENV}

@@ -175,8 +175,3 @@ if [ "$1" = 'tactical-websockets-dev' ]; then
   check_tactical_ready
   "${VIRTUAL_ENV}"/bin/daphne tacticalrmm.asgi:application --port 8383 -b 0.0.0.0
 fi
-
-if [ "$1" = 'tactical-mkdocs-dev' ]; then
-  cd "${WORKSPACE_DIR}/docs"
-  "${VIRTUAL_ENV}"/bin/mkdocs serve
-fi

@@ -11,7 +11,7 @@ export function useScriptDropdown(setScript = null, { onMount = false } = {}) {
   const script = ref(setScript)
   const syntax = ref("")
   const link = ref("")
-  const baseUrl = "https://github.com/wh1te909/tacticalrmm/blob/master/scripts/"
+  const baseUrl = "https://github.com/amidaware/community-scripts/blob/main/scripts/"
 
   // specifing flat returns an array of script names versus {value:id, label: hostname}
   async function getScriptOptions(showCommunityScripts = false, flat = false) {

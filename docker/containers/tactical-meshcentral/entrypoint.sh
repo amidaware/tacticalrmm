@@ -21,9 +21,9 @@ set -e
 
 if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 0 ]]; then
 
-encoded_uri=$(node -p "encodeURI('mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}')")
+  encoded_uri=$(node -p "encodeURI('mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}')")
 
-mesh_config="$(cat << EOF
+  mesh_config="$(cat << EOF
 {
   "settings": {
     "mongodb": "${encoded_uri}",
@@ -71,7 +71,13 @@ mesh_config="$(cat << EOF
 EOF
 )"
 
-echo "${mesh_config}" > /home/node/app/meshcentral-data/config.json
+  echo "${mesh_config}" > /home/node/app/meshcentral-data/config.json
+
+else
+  # replace persistent mesh configuration with new ports
+  sed -i 's/"Port": 443/"Port": 4443/' /home/node/app/meshcentral-data/config.json
+  sed -i 's/"RedirPort": 80/"RedirPort": 8080/' /home/node/app/meshcentral-data/config.json
+  sed -i "s/\"CertUrl\": \".*\"/\"CertUrl\": \"https:\/\/${NGINX_HOST_IP}:${NGINX_HOST_PORT}\"/" /home/node/app/meshcentral-data/config.json
 
 fi
 

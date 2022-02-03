@@ -133,7 +133,6 @@ export default {
     const latestTRMMVersion = computed(() => store.state.latestTRMMVersion);
     const needRefresh = computed(() => store.state.needrefresh);
     const user = computed(() => store.state.username);
-    const token = computed(() => store.state.token);
 
     const latestReleaseURL = computed(() => {
       return latestTRMMVersion.value
@@ -159,6 +158,9 @@ export default {
     const ws = ref(null);
 
     function setupWS() {
+      // moved computed token inside the function since it is not refreshing
+      // when ws is closed causing ws to connect with expired token
+      const token = computed(() => store.state.token);
       console.log("Starting websocket");
       const proto = process.env.NODE_ENV === "production" || process.env.DOCKER_BUILD ? "wss" : "ws";
       ws.value = new WebSocket(`${proto}://${wsUrl()}/ws/dashinfo/?access_token=${token.value}`);
@@ -175,12 +177,10 @@ export default {
       ws.value.onclose = e => {
         try {
           console.log(`Closed code: ${e.code}`);
-          if (e.code !== 1000 && e.code) {
-            console.log("Retrying websocket connection...");
-            setTimeout(() => {
-              setupWS();
-            }, 2 * 1000);
-          }
+          console.log("Retrying websocket connection...");
+          setTimeout(() => {
+            setupWS();
+          }, 3 * 1000);
         } catch (e) {
           console.log("Websocket connection closed");
         }

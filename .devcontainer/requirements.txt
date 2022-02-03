@@ -4,11 +4,10 @@ celery
 channels
 channels_redis
 django-ipware
-Django==3.2.10
+Django==3.2.12
 django-cors-headers
 django-rest-knox
 djangorestframework
-loguru
 msgpack
 psycopg2-binary
 pycparser

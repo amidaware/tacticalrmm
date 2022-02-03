@@ -7,10 +7,10 @@ channels_redis==3.3.1
 chardet==4.0.0
 cryptography==36.0.1
 daphne==3.0.2
-Django==3.2.11
+Django==3.2.12
 django-cors-headers==3.11.0
 django-ipware==4.0.2
-django-rest-knox==4.1.0
+django-rest-knox==4.2.0
 djangorestframework==3.13.1
 future==0.18.2
 msgpack==1.0.3
@@ -18,7 +18,7 @@ nats-py==2.0.0
 packaging==21.3
 psycopg2-binary==2.9.3
 pycparser==2.21
-pycryptodome==3.13.0
+pycryptodome==3.14.0
 pyotp==2.6.0
 pyparsing==3.0.7
 pytz==2021.3
@@ -34,4 +34,4 @@ validators==0.18.2
 vine==5.0.0
 websockets==10.1
 zipp==3.7.0
-drf_spectacular==0.21.1
+drf_spectacular==0.21.2

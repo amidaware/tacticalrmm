@@ -10,12 +10,12 @@
     "test:e2e:ci": "cross-env E2E_TEST=true start-test \"quasar dev\" http-get://localhost:8080 \"cypress run\""
   },
   "dependencies": {
-    "@quasar/extras": "^1.12.4",
+    "@quasar/extras": "^1.12.5",
     "apexcharts": "^3.33.0",
     "axios": "^0.25.0",
     "dotenv": "^14.3.2",
     "qrcode.vue": "^3.3.3",
-    "quasar": "^2.5.2",
+    "quasar": "^2.5.4",
     "vue3-ace-editor": "^2.2.2",
     "vue3-apexcharts": "^1.4.1",
     "vuedraggable": "^4.1.0",

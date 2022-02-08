@@ -18,7 +18,9 @@
         </q-btn>
         <q-toolbar-title>
           Tactical RMM<span class="text-overline q-ml-sm">v{{ currentTRMMVersion }}</span>
-          <span class="text-overline q-ml-md" v-if="latestTRMMVersion && currentTRMMVersion !== latestTRMMVersion"
+          <span
+            class="text-overline q-ml-md"
+            v-if="latestTRMMVersion !== 'error' && currentTRMMVersion !== latestTRMMVersion"
             ><q-badge color="warning"
               ><a :href="latestReleaseURL" target="_blank">v{{ latestTRMMVersion }} available</a></q-badge
             ></span

@@ -6,5 +6,4 @@ mkdocs-material
 pymdown-extensions
 Pygments
 isort
-mypy
 types-pytz

@@ -31,7 +31,6 @@ mkdocs
 mkdocs-material
 pymdown-extensions
 Pygments
-mypy
 pysnooper
 isort
 drf_spectacular

@@ -12,7 +12,7 @@
   "dependencies": {
     "@quasar/extras": "^1.12.5",
     "apexcharts": "^3.33.1",
-    "axios": "^0.25.0",
+    "axios": "^0.26.0",
     "dotenv": "^16.0.0",
     "qrcode.vue": "^3.3.3",
     "quasar": "^2.5.5",

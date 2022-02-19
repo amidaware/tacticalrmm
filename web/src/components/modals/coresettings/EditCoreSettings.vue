@@ -302,14 +302,19 @@
                 <div class="text-subtitle2">MeshCentral Settings</div>
                 <q-separator />
                 <q-card-section class="row">
-                  <div class="col-4">Username:</div>
-                  <div class="col-2"></div>
-                  <q-input dense outlined v-model="settings.mesh_username" class="col-6" />
-                </q-card-section>
-                <q-card-section class="row">
                   <div class="col-4">Mesh Site:</div>
                   <div class="col-2"></div>
                   <q-input dense outlined v-model="settings.mesh_site" class="col-6" />
+                </q-card-section>
+                <q-card-section class="row">
+                  <q-checkbox v-model="settings.mesh_auto_login" label="Automatically log into MeshCentral">
+                    <q-tooltip>Use the following global credentials to automatically log into MeshCentral </q-tooltip>
+                  </q-checkbox>
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Username:</div>
+                  <div class="col-2"></div>
+                  <q-input dense outlined v-model="settings.mesh_username" class="col-6" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Token:</div>

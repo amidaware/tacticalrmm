@@ -210,7 +210,10 @@ class AgentMeshCentral(APIView):
         if token == "err":
             return notify_error("Invalid mesh token")
 
-        control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
+        if core.mesh_auto_login is True:
+            control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
+        else:
+            control = f"{core.mesh_site}/?gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
         terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"  # type:ignore
         file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"  # type:ignore
 

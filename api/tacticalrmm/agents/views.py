@@ -27,7 +27,7 @@ from tacticalrmm.utils import (
     reload_nats,
 )
 from tacticalrmm.constants import AGENT_DEFER
-from core.utils import get_mesh_ws_url, send_command_with_mesh
+from core.utils import get_mesh_ws_url, send_command_with_mesh, remove_mesh_agent
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 from tacticalrmm.permissions import (
@@ -165,8 +165,11 @@ class GetUpdateDeleteAgent(APIView):
 
         asyncio.run(agent.nats_cmd({"func": "uninstall", "code": code}, wait=False))
         name = agent.hostname
+        mesh_id = agent.mesh_node_id
         agent.delete()
         reload_nats()
+        uri = get_mesh_ws_url()
+        asyncio.run(remove_mesh_agent(uri, mesh_id))
         return Response(f"{name} will now be uninstalled.")
 
 

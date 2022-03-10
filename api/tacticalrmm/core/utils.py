@@ -86,3 +86,16 @@ async def send_command_with_mesh(
                 }
             )
         )
+
+async def remove_mesh_agent(uri: str, mesh_node_id: str):
+    node_id = _b64_to_hex(mesh_node_id)
+    async with websockets.connect(uri) as ws:  # type: ignore
+        await ws.send(
+            json.dumps(
+                {
+                    "action": "removedevices",
+                    "nodeids": [f"node//{node_id}"],
+                    "responseid": "trmm",
+                }
+            )
+        )

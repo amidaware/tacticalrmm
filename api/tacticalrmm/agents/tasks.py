@@ -13,7 +13,7 @@ from scripts.models import Script
 from tacticalrmm.celery import app
 
 from agents.models import Agent
-from agents.utils import get_winagent_url
+from agents.utils import get_agent_url
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:
@@ -34,7 +34,7 @@ def agent_update(agent_id: str, force: bool = False) -> str:
 
     version = settings.LATEST_AGENT_VER
     inno = agent.win_inno_exe
-    url = get_winagent_url(agent.arch)
+    url = get_agent_url(agent.arch, agent.plat)
 
     if not force:
         if agent.pendingactions.filter(

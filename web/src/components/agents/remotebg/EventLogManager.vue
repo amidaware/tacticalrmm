@@ -1,5 +1,8 @@
 <template>
-  <div>
+  <div v-if="agentPlatform.toLowerCase() !== 'windows'" class="q-pa-sm">
+    Only supported for Windows agents at this time
+  </div>
+  <div v-else>
     <div class="row q-pt-sm q-pl-sm">
       <div class="col-2">
         <q-select dense options-dense outlined v-model="days" :options="lastDaysOptions" :label="showDays" />
@@ -90,6 +93,7 @@ export default {
   },
   props: {
     agent_id: !String,
+    agentPlatform: !String,
   },
   setup(props) {
     // quasar setup
@@ -121,7 +125,9 @@ export default {
     }
 
     // vue lifecycle hooks
-    onMounted(getEventLog);
+    onMounted(() => {
+      if (props.agentPlatform === "windows") getEventLog();
+    });
 
     return {
       // reactive data

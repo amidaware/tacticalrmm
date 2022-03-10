@@ -133,6 +133,8 @@ if [ "$1" = 'tactical-init-dev' ]; then
 
   # setup Python virtual env and install dependencies
   ! test -e "${VIRTUAL_ENV}" && python -m venv ${VIRTUAL_ENV}
+  "${VIRTUAL_ENV}"/bin/python -m pip install --upgrade pip
+  "${VIRTUAL_ENV}"/bin/pip install --no-cache-dir setuptools wheel
   "${VIRTUAL_ENV}"/bin/pip install --no-cache-dir -r /requirements.txt
 
   django_setup

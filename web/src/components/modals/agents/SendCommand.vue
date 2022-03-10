@@ -12,9 +12,28 @@
         <q-card-section>
           <p>Shell</p>
           <div class="q-gutter-sm">
-            <q-radio dense v-model="state.shell" val="cmd" label="CMD" />
-            <q-radio dense v-model="state.shell" val="powershell" label="Powershell" />
+            <q-radio
+              v-if="agent.plat !== 'windows'"
+              dense
+              v-model="state.shell"
+              val="/bin/bash"
+              label="Bash"
+              @update:model-value="state.custom_shell = null"
+            />
+            <q-radio v-if="agent.plat !== 'windows'" dense v-model="state.shell" val="custom" label="Custom" />
+            <q-radio v-if="agent.plat === 'windows'" dense v-model="state.shell" val="cmd" label="CMD" />
+            <q-radio v-if="agent.plat === 'windows'" dense v-model="state.shell" val="powershell" label="Powershell" />
           </div>
+        </q-card-section>
+        <q-card-section v-if="state.shell === 'custom'">
+          <q-input
+            v-model="state.custom_shell"
+            outlined
+            label="Custom shell"
+            stack-label
+            placeholder="/usr/bin/python3"
+            :rules="[val => !!val || '*Required']"
+          />
         </q-card-section>
         <q-card-section>
           <q-input
@@ -38,11 +57,7 @@
             outlined
             label="Command"
             stack-label
-            :placeholder="
-              state.shell === 'cmd'
-                ? 'rmdir /S /Q C:\\Windows\\System32'
-                : 'Remove-Item -Recurse -Force C:\\Windows\\System32'
-            "
+            :placeholder="cmdPlaceholder(state.shell)"
             :rules="[val => !!val || '*Required']"
           />
         </q-card-section>
@@ -63,6 +78,7 @@
 import { ref } from "vue";
 import { useDialogPluginComponent } from "quasar";
 import { sendAgentCommand } from "@/api/agents";
+import { cmdPlaceholder } from "@/composables/agents";
 
 export default {
   name: "SendCommand",
@@ -76,9 +92,10 @@ export default {
 
     // run command logic
     const state = ref({
-      shell: "cmd",
+      shell: props.agent.plat === "windows" ? "cmd" : "/bin/bash",
       cmd: null,
       timeout: 30,
+      custom_shell: null,
     });
 
     const loading = ref(false);
@@ -103,6 +120,7 @@ export default {
 
       // methods
       submit,
+      cmdPlaceholder,
 
       // quasar dialog
       dialogRef,

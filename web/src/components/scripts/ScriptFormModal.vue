@@ -84,7 +84,7 @@
           <v-ace-editor
             v-model:value="formScript.script_body"
             class="col-8"
-            :lang="formScript.shell === 'cmd' ? 'batchfile' : formScript.shell"
+            :lang="lang"
             :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
             :style="{ height: `${maximized ? '87vh' : '64vh'}` }"
             wrap
@@ -127,7 +127,7 @@
 
 <script>
 // composable imports
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { saveScript, editScript, downloadScript } from "@/api/scripts";
 import { useAgentDropdown } from "@/composables/agents";
@@ -142,6 +142,7 @@ import { VAceEditor } from "vue3-ace-editor";
 import "ace-builds/src-noconflict/mode-powershell";
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/mode-batchfile";
+import "ace-builds/src-noconflict/mode-sh";
 import "ace-builds/src-noconflict/theme-tomorrow_night_eighties";
 import "ace-builds/src-noconflict/theme-tomorrow";
 
@@ -185,6 +186,16 @@ export default {
     const loading = ref(false);
     const agentLoading = ref(false);
 
+    // watch(script.value, (newValue, oldValue) => {
+    //   if (!props.script && script.value.script_body === "") {
+    //     if (newValue.shell === "shell") {
+    //       script.value.script_body = "#!/bin/bash\n\n# don't forget to include the shebang above!\n\n";
+    //     } else if (newValue.shell === "python") {
+    //       script.value.script_body = "#!/usr/bin/python3\n\n# don't forget to include the shebang above!\n\n";
+    //     }
+    //   }
+    // });
+
     const title = computed(() => {
       if (props.script) {
         return props.readonly
@@ -195,6 +206,15 @@ export default {
       } else {
         return "Adding new script";
       }
+    });
+
+    // convert highlighter language to match what ace expects
+    const lang = computed(() => {
+      if (script.value.shell === "cmd") return "batchfile";
+      else if (script.value.shell === "powershell") return "powershell";
+      else if (script.value.shell === "python") return "python";
+      else if (script.value.shell === "shell") return "sh";
+      else return "";
     });
 
     // get code if editing or cloning script
@@ -218,7 +238,9 @@ export default {
 
         onDialogOK();
         notifySuccess(result);
-      } catch (e) {}
+      } catch (e) {
+        console.error(e);
+      }
 
       loading.value = false;
     }
@@ -248,6 +270,7 @@ export default {
       agentOptions,
       agent,
       agentLoading,
+      lang,
 
       // non-reactive data
       shellOptions,

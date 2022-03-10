@@ -1428,7 +1428,7 @@ class TestAgentTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    @patch("agents.utils.get_winagent_url")
+    @patch("agents.utils.get_agent_url")
     @patch("agents.models.Agent.nats_cmd")
     def test_agent_update(self, nats_cmd, get_url):
         get_url.return_value = "https://exe.tacticalrmm.io"

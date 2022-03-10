@@ -19,7 +19,7 @@
           <tactical-dropdown
             :rules="[val => !!val || '*Required']"
             v-model="state.script"
-            :options="scriptOptions"
+            :options="filteredScriptOptions"
             label="Select script"
             outlined
             mapOptions
@@ -102,13 +102,14 @@
 
 <script>
 // composition imports
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useDialogPluginComponent, openURL } from "quasar";
 import { useScriptDropdown } from "@/composables/scripts";
 import { useCustomFieldDropdown } from "@/composables/core";
 import { runScript } from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
-import { formatScriptSyntax } from "@/utils/format";
+import { formatScriptSyntax, removeExtraOptionCategories } from "@/utils/format";
+
 //ui imports
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
 
@@ -136,13 +137,14 @@ export default {
     // setup dropdowns
     const { script, scriptOptions, defaultTimeout, defaultArgs, syntax, link } = useScriptDropdown(props.script, {
       onMount: true,
+      filterByPlatform: props.agent.plat,
     });
     const { customFieldOptions } = useCustomFieldDropdown({ onMount: true });
 
     // main run script functionaity
     const state = ref({
       output: "wait",
-      email: [],
+      emails: [],
       emailMode: "default",
       custom_field: null,
       save_all_output: false,
@@ -171,6 +173,17 @@ export default {
       link.value ? openURL(link.value) : null;
     }
 
+    const filteredScriptOptions = computed(() => {
+      if (props.agent.plat === "linux")
+        return removeExtraOptionCategories(
+          scriptOptions.value.filter(script => script.category || script.shell === "shell" || script.shell === "python")
+        );
+      else
+        return removeExtraOptionCategories(
+          scriptOptions.value.filter(script => script.category || script.shell !== "shell")
+        );
+    });
+
     // watchers
     watch([() => state.value.output, () => state.value.emailMode], () => (state.value.emails = []));
 
@@ -178,7 +191,7 @@ export default {
       // reactive data
       state,
       loading,
-      scriptOptions,
+      filteredScriptOptions,
       link,
       syntax,
       ret,

@@ -5,7 +5,8 @@ from django.utils import timezone as djangotime
 from packaging import version as pyver
 
 from agents.models import Agent
-from tacticalrmm.utils import AGENT_DEFER, reload_nats
+from tacticalrmm.utils import reload_nats
+from tacticalrmm.constants import AGENT_DEFER
 
 
 class Command(BaseCommand):

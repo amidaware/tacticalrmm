@@ -40,5 +40,4 @@ urlpatterns = [
     path("versions/", views.get_agent_versions),
     path("update/", views.update_agents),
     path("installer/", views.install_agent),
-    path("<str:arch>/getmeshexe/", views.get_mesh_exe),
 ]

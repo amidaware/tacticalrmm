@@ -27,6 +27,28 @@
         </q-card-section>
         <q-card-section>
           <div class="q-gutter-sm">
+            <q-radio
+              v-model="agentOS"
+              val="windows"
+              label="Windows"
+              @update:model-value="
+                installMethod = 'exe';
+                arch = '64';
+              "
+            />
+            <q-radio
+              v-model="agentOS"
+              val="linux"
+              label="Linux"
+              @update:model-value="
+                installMethod = 'linux';
+                arch = 'amd64';
+              "
+            />
+          </div>
+        </q-card-section>
+        <q-card-section>
+          <div class="q-gutter-sm">
             <q-radio v-model="agenttype" val="server" label="Server" @update:model-value="power = false" />
             <q-radio v-model="agenttype" val="workstation" label="Workstation" />
           </div>
@@ -44,7 +66,7 @@
             />
           </div>
         </q-card-section>
-        <q-card-section>
+        <q-card-section v-show="agentOS === 'windows'">
           <div class="q-gutter-sm">
             <q-checkbox v-model="rdp" dense label="Enable RDP" />
             <q-checkbox v-model="ping" dense label="Enable Ping">
@@ -54,18 +76,27 @@
           </div>
         </q-card-section>
         <q-card-section>
-          OS
+          Arch
           <div class="q-gutter-sm">
-            <q-radio v-model="arch" val="64" label="64 bit" />
-            <q-radio v-model="arch" val="32" label="32 bit" />
+            <q-radio v-model="arch" val="64" label="64 bit" v-show="agentOS === 'windows'" />
+            <q-radio v-model="arch" val="32" label="32 bit" v-show="agentOS === 'windows'" />
+            <q-radio v-model="arch" val="amd64" label="64 bit" v-show="agentOS !== 'windows'" />
+            <q-radio v-model="arch" val="386" label="32 bit" v-show="agentOS !== 'windows'" />
+            <q-radio v-model="arch" val="arm64" label="ARM 64 bit" v-show="agentOS !== 'windows'" />
+            <q-radio v-model="arch" val="arm" label="ARM 32 bit (Rasp Pi)" v-show="agentOS !== 'windows'" />
           </div>
         </q-card-section>
         <q-card-section>
           Installation Method
           <div class="q-gutter-sm">
-            <q-radio v-model="installMethod" val="exe" label="Dynamically generated exe" />
-            <q-radio v-model="installMethod" val="powershell" label="Powershell" />
-            <q-radio v-model="installMethod" val="manual" label="Manual" />
+            <q-radio
+              v-model="installMethod"
+              val="exe"
+              v-show="agentOS === 'windows'"
+              label="Dynamically generated exe"
+            />
+            <q-radio v-model="installMethod" val="powershell" v-show="agentOS === 'windows'" label="Powershell" />
+            <q-radio v-model="installMethod" val="manual" v-show="agentOS === 'windows'" label="Manual" />
           </div>
         </q-card-section>
         <q-card-actions align="left">
@@ -105,6 +136,7 @@ export default {
       info: {},
       installMethod: "exe",
       arch: "64",
+      agentOS: "windows",
     };
   },
   methods: {
@@ -161,6 +193,7 @@ export default {
         arch: this.arch,
         api,
         fileName,
+        os: this.agentOS,
       };
 
       if (this.installMethod === "manual") {
@@ -192,19 +225,24 @@ export default {
           .catch(() => {
             this.$q.loading.hide();
           });
-      } else if (this.installMethod === "powershell") {
-        const psName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.ps1`;
+      } else if (this.installMethod === "powershell" || this.installMethod === "linux") {
+        this.$q.loading.show();
+        let ext = this.installMethod === "powershell" ? "ps1" : "sh";
+        const scriptName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.${ext}`;
         this.$axios
           .post("/agents/installer/", data, { responseType: "blob" })
           .then(({ data }) => {
+            this.$q.loading.hide();
             const blob = new Blob([data], { type: "text/plain" });
             let link = document.createElement("a");
             link.href = window.URL.createObjectURL(blob);
-            link.download = psName;
+            link.download = scriptName;
             link.click();
-            this.showDLMessage();
+            if (this.installMethod === "powershell") this.showDLMessage();
           })
-          .catch(e => {});
+          .catch(() => {
+            this.$q.loading.hide();
+          });
       }
     },
     showDLMessage() {
@@ -229,6 +267,9 @@ export default {
           break;
         case "manual":
           text = "Show manual installation instructions";
+          break;
+        case "linux":
+          text = "Download linux install script";
           break;
       }
 

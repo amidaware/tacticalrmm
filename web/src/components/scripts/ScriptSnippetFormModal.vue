@@ -40,7 +40,7 @@
 
         <v-ace-editor
           v-model:value="formSnippet.code"
-          :lang="formSnippet.shell === 'cmd' ? 'batchfile' : formSnippet.shell"
+          :lang="lang"
           :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
           :style="{ height: `${maximized ? '80vh' : '70vh'}` }"
           wrap
@@ -70,6 +70,7 @@ import { VAceEditor } from "vue3-ace-editor";
 import "ace-builds/src-noconflict/mode-powershell";
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/mode-batchfile";
+import "ace-builds/src-noconflict/mode-sh";
 import "ace-builds/src-noconflict/theme-tomorrow_night_eighties";
 import "ace-builds/src-noconflict/theme-tomorrow";
 
@@ -104,6 +105,15 @@ export default {
       }
     });
 
+    // convert highlighter language to match what ace expects
+    const lang = computed(() => {
+      if (snippet.value.shell === "cmd") return "batchfile";
+      else if (snippet.value.shell === "powershell") return "powershell";
+      else if (snippet.value.shell === "python") return "python";
+      else if (snippet.value.shell === "shell") return "sh";
+      else return "";
+    });
+
     async function submitForm() {
       loading.value = true;
       try {
@@ -121,6 +131,7 @@ export default {
       // reactive data
       formSnippet: snippet.value,
       maximized,
+      lang,
       loading,
 
       // non-reactive data

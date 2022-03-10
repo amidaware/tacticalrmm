@@ -168,7 +168,6 @@ class Command(BaseCommand):
         public_ips = ["65.234.22.4", "74.123.43.5", "44.21.134.45"]
 
         total_rams = [4, 8, 16, 32, 64, 128]
-        used_rams = [10, 13, 60, 25, 76, 34, 56, 34, 39]
 
         now = dt.datetime.now()
 
@@ -285,7 +284,6 @@ class Command(BaseCommand):
 
             agent.hostname = random.choice(hostnames)
             agent.version = settings.LATEST_AGENT_VER
-            agent.salt_ver = "1.1.0"
             agent.site = Site.objects.get(name=site)
             agent.agent_id = self.rand_string(25)
             agent.description = random.choice(descriptions)
@@ -295,10 +293,8 @@ class Command(BaseCommand):
             agent.plat = "windows"
             agent.plat_release = "windows-2019Server"
             agent.total_ram = random.choice(total_rams)
-            agent.used_ram = random.choice(used_rams)
             agent.boot_time = random.choice(boot_times)
             agent.logged_in_username = random.choice(user_names)
-            agent.antivirus = "windowsdefender"
             agent.mesh_node_id = (
                 "3UiLhe420@kaVQ0rswzBeonW$WY0xrFFUDBQlcYdXoriLXzvPmBpMrV99vRHXFlb"
             )
@@ -308,7 +304,6 @@ class Command(BaseCommand):
             agent.wmi_detail = random.choice(wmi_details)
             agent.services = services
             agent.disks = random.choice(disks)
-            agent.salt_id = "not-used"
 
             agent.save()
 
@@ -329,9 +324,7 @@ class Command(BaseCommand):
                     agent=agent,
                     guid=i,
                     kb=windows_updates[i]["KBs"][0],
-                    mandatory=windows_updates[i]["Mandatory"],
                     title=windows_updates[i]["Title"],
-                    needs_reboot=windows_updates[i]["NeedsReboot"],
                     installed=windows_updates[i]["Installed"],
                     downloaded=windows_updates[i]["Downloaded"],
                     description=windows_updates[i]["Description"],

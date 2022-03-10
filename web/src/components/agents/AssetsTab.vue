@@ -1,5 +1,8 @@
 <template>
   <div v-if="!selectedAgent" class="q-pa-sm">No agent selected</div>
+  <div v-else-if="agentPlatform.toLowerCase() !== 'windows'" class="q-pa-sm">
+    Only supported for Windows agents at this time
+  </div>
   <div v-else>
     <q-tabs
       v-model="tab"
@@ -88,6 +91,7 @@ export default {
     // setup vuex
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
+    const agentPlatform = computed(() => store.state.agentPlatform);
     const loading = ref(false);
 
     // assets tab logic
@@ -116,6 +120,7 @@ export default {
       assets,
       tab,
       selectedAgent,
+      agentPlatform,
     };
   },
 };

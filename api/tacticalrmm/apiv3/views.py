@@ -1,9 +1,7 @@
 import asyncio
-import os
 import time
 
 from django.conf import settings
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from packaging import version as pyver
@@ -24,6 +22,9 @@ from logs.models import PendingAction, DebugLog
 from software.models import InstalledSoftware
 from tacticalrmm.utils import notify_error, reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
+from core.models import CoreSettings
+from core.utils import get_mesh_ws_url, get_mesh_device_id, download_mesh_agent
+from tacticalrmm.constants import MeshAgentIdent
 
 
 class CheckIn(APIView):
@@ -315,25 +316,18 @@ class MeshExe(APIView):
     """Sends the mesh exe to the installer"""
 
     def post(self, request):
-        exe = "meshagent.exe" if request.data["arch"] == "64" else "meshagent-x86.exe"
-        mesh_exe = os.path.join(settings.EXE_DIR, exe)
+        match request.data:
+            case {"arch": "64", "plat": "windows"}:
+                arch = MeshAgentIdent.WIN64
+            case {"arch": "32", "plat": "windows"}:
+                arch = MeshAgentIdent.WIN32
 
-        if not os.path.exists(mesh_exe):
-            return notify_error("Mesh Agent executable not found")
+        core: CoreSettings = CoreSettings.objects.first()  # type: ignore
 
-        if settings.DEBUG:
-            with open(mesh_exe, "rb") as f:
-                response = HttpResponse(
-                    f.read(),
-                    content_type="application/vnd.microsoft.portable-executable",
-                )
-                response["Content-Disposition"] = f"inline; filename={exe}"
-                return response
-        else:
-            response = HttpResponse()
-            response["Content-Disposition"] = f"attachment; filename={exe}"
-            response["X-Accel-Redirect"] = f"/private/exe/{exe}"
-            return response
+        uri = get_mesh_ws_url()
+        mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
+        dl_url = f"{core.mesh_site}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"  # type: ignore
+        return download_mesh_agent(dl_url)
 
 
 class NewAgent(APIView):
@@ -354,11 +348,11 @@ class NewAgent(APIView):
             monitoring_type=request.data["monitoring_type"],
             description=request.data["description"],
             mesh_node_id=request.data["mesh_node_id"],
+            goarch=request.data["goarch"],
+            plat=request.data["plat"],
             last_seen=djangotime.now(),
         )
         agent.save()
-        agent.salt_id = f"{agent.hostname}-{agent.pk}"
-        agent.save(update_fields=["salt_id"])
 
         user = User.objects.create_user(  # type: ignore
             username=request.data["agent_id"],
@@ -386,13 +380,8 @@ class NewAgent(APIView):
             debug_info={"ip": request._client_ip},
         )
 
-        return Response(
-            {
-                "pk": agent.pk,
-                "saltid": f"{agent.hostname}-{agent.pk}",
-                "token": token.key,
-            }
-        )
+        ret = {"pk": agent.pk, "token": token.key}
+        return Response(ret)
 
 
 class Software(APIView):

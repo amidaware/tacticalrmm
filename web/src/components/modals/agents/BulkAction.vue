@@ -55,6 +55,18 @@
           />
         </q-card-section>
 
+        <q-card-section>
+          <p>Agent OS</p>
+          <q-option-group
+            v-model="state.osType"
+            :options="osTypeOptions"
+            color="primary"
+            dense
+            inline
+            class="q-pl-sm"
+          />
+        </q-card-section>
+
         <q-card-section v-show="state.target !== 'agents'">
           <p>Agent Type</p>
           <q-option-group
@@ -71,7 +83,7 @@
           <tactical-dropdown
             :rules="[val => !!val || '*Required']"
             v-model="state.script"
-            :options="scriptOptions"
+            :options="filteredScriptOptions"
             label="Select Script"
             outlined
             mapOptions
@@ -93,7 +105,25 @@
 
         <q-card-section v-if="mode === 'command'">
           <p>Shell</p>
-          <q-option-group v-model="state.shell" :options="shellOptions" color="primary" dense inline class="q-pl-sm" />
+          <q-option-group
+            v-model="state.shell"
+            :options="shellOptions"
+            color="primary"
+            dense
+            inline
+            class="q-pl-sm"
+            @update:model-value="state.custom_shell = null"
+          />
+        </q-card-section>
+        <q-card-section v-if="state.shell === 'custom'">
+          <q-input
+            v-model="state.custom_shell"
+            outlined
+            label="Custom shell"
+            stack-label
+            placeholder="/usr/bin/python3"
+            :rules="[val => !!val || '*Required']"
+          />
         </q-card-section>
         <q-card-section v-if="mode === 'command'">
           <q-input
@@ -101,11 +131,7 @@
             outlined
             label="Command"
             stack-label
-            :placeholder="
-              state.shell === 'cmd'
-                ? 'rmdir /S /Q C:\\Windows\\System32'
-                : 'Remove-Item -Recurse -Force C:\\Windows\\System32'
-            "
+            :placeholder="cmdPlaceholder(state.shell)"
             :rules="[val => !!val || '*Required']"
           />
         </q-card-section>
@@ -160,6 +186,8 @@ import { useAgentDropdown } from "@/composables/agents";
 import { useClientDropdown, useSiteDropdown } from "@/composables/clients";
 import { runBulkAction } from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
+import { cmdPlaceholder } from "@/composables/agents";
+import { removeExtraOptionCategories } from "@/utils/format";
 
 // ui imports
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
@@ -171,16 +199,16 @@ const monTypeOptions = [
   { label: "Workstations", value: "workstations" },
 ];
 
+const osTypeOptions = [
+  { label: "Windows", value: "windows" },
+  { label: "Linux", value: "linux" },
+];
+
 const targetOptions = [
   { label: "Client", value: "client" },
   { label: "Site", value: "site" },
   { label: "Selected Agents", value: "agents" },
   { label: "All", value: "all" },
-];
-
-const shellOptions = [
-  { label: "CMD", value: "cmd" },
-  { label: "Powershell", value: "powershell" },
 ];
 
 const patchModeOptions = [
@@ -200,6 +228,20 @@ export default {
     const store = useStore();
     const showCommunityScripts = computed(() => store.state.showCommunityScripts);
 
+    const shellOptions = computed(() => {
+      if (state.value.osType === "windows") {
+        return [
+          { label: "CMD", value: "cmd" },
+          { label: "Powershell", value: "powershell" },
+        ];
+      } else {
+        return [
+          { label: "Bash", value: "/bin/bash" },
+          { label: "Custom", value: "custom" },
+        ];
+      }
+    });
+
     // quasar dialog setup
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
@@ -214,8 +256,10 @@ export default {
       mode: props.mode,
       target: "client",
       monType: "all",
+      osType: "windows",
       cmd: "",
       shell: "cmd",
+      custom_shell: null,
       patchMode: "scan",
       offlineAgents: false,
       client,
@@ -233,6 +277,19 @@ export default {
         client.value = null;
         site.value = null;
         agents.value = [];
+      }
+    );
+
+    watch(
+      () => state.value.osType,
+      (newValue, oldValue) => {
+        state.value.custom_shell = null;
+
+        if (newValue === "windows") {
+          state.value.shell = "cmd";
+        } else {
+          state.value.shell = "/bin/bash";
+        }
       }
     );
 
@@ -259,6 +316,19 @@ export default {
         : "";
     });
 
+    const filteredScriptOptions = computed(() => {
+      if (props.mode !== "script") return [];
+
+      if (state.value.osType === "linux")
+        return removeExtraOptionCategories(
+          scriptOptions.value.filter(script => script.category || script.shell === "shell" || script.shell === "python")
+        );
+      else
+        return removeExtraOptionCategories(
+          scriptOptions.value.filter(script => script.category || script.shell !== "shell")
+        );
+    });
+
     // component lifecycle hooks
     onMounted(() => {
       getAgentOptions();
@@ -273,13 +343,14 @@ export default {
       agentOptions,
       clientOptions,
       siteOptions,
-      scriptOptions,
+      filteredScriptOptions,
       loading,
+      shellOptions,
 
       // non-reactive data
       monTypeOptions,
+      osTypeOptions,
       targetOptions,
-      shellOptions,
       patchModeOptions,
 
       //computed
@@ -287,6 +358,7 @@ export default {
 
       //methods
       submit,
+      cmdPlaceholder,
 
       // quasar dialog plugin
       dialogRef,

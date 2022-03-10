@@ -13,9 +13,9 @@ export function useScriptDropdown(setScript = null, { onMount = false } = {}) {
   const link = ref("")
   const baseUrl = "https://github.com/amidaware/community-scripts/blob/main/scripts/"
 
-  // specifing flat returns an array of script names versus {value:id, label: hostname}
-  async function getScriptOptions(showCommunityScripts = false, flat = false) {
-    scriptOptions.value = Object.freeze(formatScriptOptions(await fetchScripts({ showCommunityScripts }), flat))
+  // specify parameters to filter out community scripts
+  async function getScriptOptions(showCommunityScripts = false) {
+    scriptOptions.value = Object.freeze(formatScriptOptions(await fetchScripts({ showCommunityScripts })))
   }
 
   // watch scriptPk for changes and update the default timeout and args
@@ -25,7 +25,7 @@ export function useScriptDropdown(setScript = null, { onMount = false } = {}) {
       defaultTimeout.value = tmpScript.timeout;
       defaultArgs.value = tmpScript.args;
       syntax.value = tmpScript.syntax
-      link.value = `${baseUrl}${tmpScript.filename}`
+      link.value = tmpScript.script_type === "builtin" ? `${baseUrl}${tmpScript.filename}` : null
     }
   })
 
@@ -53,4 +53,5 @@ export const shellOptions = [
   { label: "Powershell", value: "powershell" },
   { label: "Batch", value: "cmd" },
   { label: "Python", value: "python" },
+  { label: "Shell", value: "shell" }
 ];

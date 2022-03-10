@@ -105,9 +105,7 @@ class DemoMiddleware:
             {"name": "update_agents", "methods": ["POST"]},
             {"name": "send_raw_cmd", "methods": ["POST"]},
             {"name": "install_agent", "methods": ["POST"]},
-            {"name": "get_mesh_exe", "methods": ["POST"]},
             {"name": "GenerateAgent", "methods": ["GET"]},
-            {"name": "UploadMeshAgent", "methods": ["PUT"]},
             {"name": "email_test", "methods": ["POST"]},
             {"name": "server_maintenance", "methods": ["POST"]},
             {"name": "CodeSign", "methods": ["PATCH", "POST"]},
@@ -151,3 +149,42 @@ class DemoMiddleware:
         for i in self.not_allowed:
             if view_func.__name__ == i["name"] and request.method in i["methods"]:
                 return self.drf_mock_response(request, notify_error(err))
+
+
+class LinuxMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+        self.not_implemented = [
+            {"name": "ScanWindowsUpdates", "methods": ["POST"]},
+            {"name": "GetSoftware", "methods": ["POST", "PUT"]},
+        ]
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def drf_mock_response(self, request, resp):
+        from rest_framework.views import APIView
+
+        view = APIView()
+        view.headers = view.default_response_headers
+        return view.finalize_response(request, resp).render()  # type: ignore
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if not request.path.startswith(EXCLUDE_PATHS):
+            if "agent_id" in view_kwargs.keys():
+                from agents.models import Agent
+
+                err = "Not currently implemented for linux"
+                agent = Agent.objects.only("id", "agent_id", "plat").get(
+                    agent_id=view_kwargs["agent_id"]
+                )
+                if agent.plat == "linux":
+                    from .utils import notify_error
+
+                    for i in self.not_implemented:
+                        if (
+                            view_func.__name__ == i["name"]
+                            and request.method in i["methods"]
+                        ):
+                            return self.drf_mock_response(request, notify_error(err))

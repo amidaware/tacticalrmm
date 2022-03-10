@@ -30,24 +30,20 @@ class Agent(BaseAuditModel):
     objects = PermissionQuerySet.as_manager()
 
     version = models.CharField(default="0.1.0", max_length=255)
-    salt_ver = models.CharField(default="1.0.3", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
     plat = models.CharField(max_length=255, null=True, blank=True)
+    goarch = models.CharField(max_length=255, null=True, blank=True)
     plat_release = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
-    salt_id = models.CharField(null=True, blank=True, max_length=255)
-    local_ip = models.TextField(null=True, blank=True)  # deprecated
     agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)
     services = models.JSONField(null=True, blank=True)
     public_ip = models.CharField(null=True, max_length=255)
     total_ram = models.IntegerField(null=True, blank=True)
-    used_ram = models.IntegerField(null=True, blank=True)  # deprecated
     disks = models.JSONField(null=True, blank=True)
     boot_time = models.FloatField(null=True, blank=True)
     logged_in_username = models.CharField(null=True, blank=True, max_length=255)
     last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
-    antivirus = models.CharField(default="n/a", max_length=255)  # deprecated
     monitoring_type = models.CharField(max_length=30)
     description = models.CharField(null=True, blank=True, max_length=255)
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
@@ -91,8 +87,6 @@ class Agent(BaseAuditModel):
     )
 
     def save(self, *args, **kwargs):
-        from automation.tasks import generate_agent_checks_task
-
         # get old agent if exists
         old_agent = Agent.objects.get(pk=self.pk) if self.pk else None
         super(Agent, self).save(old_model=old_agent, *args, **kwargs)
@@ -108,6 +102,8 @@ class Agent(BaseAuditModel):
             or (old_agent.monitoring_type != self.monitoring_type)
             or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
         ):
+            from automation.tasks import generate_agent_checks_task
+
             generate_agent_checks_task.delay(agents=[self.pk], create_tasks=True)
 
     def __str__(self):
@@ -129,6 +125,9 @@ class Agent(BaseAuditModel):
 
     @property
     def arch(self):
+        if self.plat != "windows":
+            return self.goarch
+
         if self.operating_system is not None:
             if "64 bit" in self.operating_system or "64bit" in self.operating_system:
                 return "64"
@@ -196,6 +195,12 @@ class Agent(BaseAuditModel):
 
     @property
     def cpu_model(self):
+        if self.plat == "linux":
+            try:
+                return self.wmi_detail["cpus"]
+            except:
+                return ["unknown cpu model"]
+
         ret = []
         try:
             cpus = self.wmi_detail["cpu"]
@@ -207,6 +212,14 @@ class Agent(BaseAuditModel):
 
     @property
     def graphics(self):
+        if self.plat == "linux":
+            try:
+                if not self.wmi_detail["gpus"]:
+                    return "No graphics cards"
+                return self.wmi_detail["gpus"]
+            except:
+                return "Error getting graphics cards"
+
         ret, mrda = [], []
         try:
             graphics = self.wmi_detail["graphics"]
@@ -228,6 +241,12 @@ class Agent(BaseAuditModel):
 
     @property
     def local_ips(self):
+        if self.plat == "linux":
+            try:
+                return ", ".join(self.wmi_detail["local_ips"])
+            except:
+                return "error getting local ips"
+
         ret = []
         try:
             ips = self.wmi_detail["network_config"]
@@ -254,6 +273,12 @@ class Agent(BaseAuditModel):
 
     @property
     def make_model(self):
+        if self.plat == "linux":
+            try:
+                return self.wmi_detail["make_model"]
+            except:
+                return "error getting make/model"
+
         try:
             comp_sys = self.wmi_detail["comp_sys"][0]
             comp_sys_prod = self.wmi_detail["comp_sys_prod"][0]
@@ -284,6 +309,12 @@ class Agent(BaseAuditModel):
 
     @property
     def physical_disks(self):
+        if self.plat == "linux":
+            try:
+                return self.wmi_detail["disks"]
+            except:
+                return ["unknown disk"]
+
         try:
             disks = self.wmi_detail["disk"]
             ret = []
@@ -304,6 +335,42 @@ class Agent(BaseAuditModel):
             return ret
         except:
             return ["unknown disk"]
+
+    def is_supported_script(self, shell: str) -> bool:
+        if self.plat.lower() == "windows" and shell in ["cmd", "powershell", "python"]:
+            return True
+        elif self.plat.lower() == "linux" and shell in ["shell", "python"]:
+            return True
+        else:
+            return False
+
+    def get_agent_policies(self):
+        site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
+        client_policy = getattr(self.client, f"{self.monitoring_type}_policy", None)
+        default_policy = getattr(
+            CoreSettings.objects.first(), f"{self.monitoring_type}_policy", None
+        )
+
+        return {
+            "agent_policy": self.policy
+            if self.policy and not self.policy.is_agent_excluded(self)
+            else None,
+            "site_policy": site_policy
+            if (site_policy and not site_policy.is_agent_excluded(self))
+            and not self.block_policy_inheritance
+            else None,
+            "client_policy": client_policy
+            if (client_policy and not client_policy.is_agent_excluded(self))
+            and not self.block_policy_inheritance
+            and not self.site.block_policy_inheritance
+            else None,
+            "default_policy": default_policy
+            if (default_policy and not default_policy.is_agent_excluded(self))
+            and not self.block_policy_inheritance
+            and not self.site.block_policy_inheritance
+            and not self.client.block_policy_inheritance
+            else None,
+        }
 
     def check_run_interval(self) -> int:
         interval = self.check_interval

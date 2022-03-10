@@ -368,6 +368,13 @@ export default {
           align: "left",
         },
         {
+          name: "plat",
+          label: "",
+          field: "plat",
+          sortable: true,
+          align: "left",
+        },
+        {
           name: "checks-status",
           align: "left",
           field: "checks",
@@ -458,6 +465,7 @@ export default {
       ],
       visibleColumns: [
         "smsalert",
+        "plat",
         "emailalert",
         "dashboardalert",
         "checks-status",

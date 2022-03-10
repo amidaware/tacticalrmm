@@ -116,6 +116,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "italic",
             "policy",
             "block_policy_inheritance",
+            "plat",
+            "goarch",
         ]
         depth = 2
 

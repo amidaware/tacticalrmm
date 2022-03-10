@@ -13,6 +13,7 @@ SCRIPT_SHELLS = [
     ("powershell", "Powershell"),
     ("cmd", "Batch (CMD)"),
     ("python", "Python"),
+    ("shell", "Shell")
 ]
 
 SCRIPT_TYPES = [

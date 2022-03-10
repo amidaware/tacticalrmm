@@ -3,6 +3,17 @@ import { validateTimePeriod } from "@/utils/validation"
 
 // dropdown options formatting
 
+export function removeExtraOptionCategories(array) {
+  let tmp = []
+  for (let i = 0; i < array.length; i++) {
+    if (!(array[i].category && array[i + 1].category)) {
+      tmp.push(array[i])
+    }
+  }
+
+  return tmp
+}
+
 function _formatOptions(data, { label, value = "id", flat = false, allowDuplicates = true }) {
   if (!flat)
     // returns array of options in object format [{label: label, value: 1}]
@@ -21,41 +32,35 @@ function _formatOptions(data, { label, value = "id", flat = false, allowDuplicat
     }
 }
 
-export function formatScriptOptions(data, flat = false) {
-  if (flat) {
-    // returns just script names in array
-    return _formatOptions(data, { label: "name", value: "pk", flat: true, allowDuplicates: false })
-  } else {
+export function formatScriptOptions(data) {
+  let options = [];
+  let categories = [];
+  let create_unassigned = false
+  data.forEach(script => {
+    if (!!script.category && !categories.includes(script.category)) {
+      categories.push(script.category);
+    } else if (!script.category) {
+      create_unassigned = true
+    }
+  });
 
-    let options = [];
-    let categories = [];
-    let create_unassigned = false
+  if (create_unassigned) categories.push("Unassigned")
+
+  categories.sort().forEach(cat => {
+    options.push({ category: cat });
+    let tmp = [];
     data.forEach(script => {
-      if (!!script.category && !categories.includes(script.category)) {
-        categories.push(script.category);
-      } else if (!script.category) {
-        create_unassigned = true
+      if (script.category === cat) {
+        tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax, script_type: script.script_type, shell: script.shell });
+      } else if (cat === "Unassigned" && !script.category) {
+        tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax, script_type: script.script_type, shell: script.shell });
       }
-    });
+    })
+    const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
+    options.push(...sorted);
+  });
 
-    if (create_unassigned) categories.push("Unassigned")
-
-    categories.sort().forEach(cat => {
-      options.push({ category: cat });
-      let tmp = [];
-      data.forEach(script => {
-        if (script.category === cat) {
-          tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax });
-        } else if (cat === "Unassigned" && !script.category) {
-          tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax });
-        }
-      })
-      const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
-      options.push(...sorted);
-    });
-
-    return options;
-  }
+  return options;
 }
 
 export function formatAgentOptions(data, flat = false, value_field = "agent_id") {

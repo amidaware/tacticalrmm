@@ -14,7 +14,6 @@ def get_debug_level():
 
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
-    ("taskaction", "Scheduled Task Action"),  # deprecated
     ("agentupdate", "Agent Update"),
     ("chocoinstall", "Chocolatey Software Install"),
     ("runcmd", "Run Command"),

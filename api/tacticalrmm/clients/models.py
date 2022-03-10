@@ -6,7 +6,7 @@ from django.db import models
 from agents.models import Agent
 from logs.models import BaseAuditModel
 from tacticalrmm.models import PermissionQuerySet
-from tacticalrmm.utils import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER
 
 
 def _default_failing_checks_data():

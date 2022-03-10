@@ -36,28 +36,6 @@ from .serializers import (
 )
 
 
-class UploadMeshAgent(APIView):
-    permission_classes = [IsAuthenticated, CoreSettingsPerms]
-    parser_class = (FileUploadParser,)
-
-    def put(self, request, format=None):
-        if "meshagent" not in request.data and "arch" not in request.data:
-            raise ParseError("Empty content")
-
-        arch = request.data["arch"]
-        f = request.data["meshagent"]
-        mesh_exe = os.path.join(
-            settings.EXE_DIR, "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
-        )
-        with open(mesh_exe, "wb+") as j:
-            for chunk in f.chunks():
-                j.write(chunk)
-
-        return Response(
-            "Mesh Agent uploaded successfully", status=status.HTTP_201_CREATED
-        )
-
-
 class GetEditCoreSettings(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
 
@@ -232,23 +210,15 @@ class CodeSign(APIView):
     def patch(self, request):
         import requests
 
-        errors = []
-        for url in settings.EXE_GEN_URLS:
-            try:
-                r = requests.post(
-                    f"{url}/api/v1/checktoken",
-                    json={"token": request.data["token"]},
-                    headers={"Content-type": "application/json"},
-                    timeout=15,
-                )
-            except Exception as e:
-                errors.append(str(e))
-            else:
-                errors = []
-                break
-
-        if errors:
-            return notify_error(", ".join(errors))
+        try:
+            r = requests.post(
+                f"{settings.EXE_GEN_URL}/api/v1/checktoken",
+                json={"token": request.data["token"]},
+                headers={"Content-type": "application/json"},
+                timeout=15,
+            )
+        except Exception as e:
+            return notify_error(str(e))
 
         if r.status_code == 400 or r.status_code == 401:  # type: ignore
             return notify_error(r.json()["ret"])  # type: ignore

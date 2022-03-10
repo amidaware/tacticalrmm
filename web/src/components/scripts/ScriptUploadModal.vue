@@ -34,11 +34,11 @@
           <q-file
             label="Script Upload"
             v-model="file"
-            hint="Supported file types: .ps1, .bat, .py"
+            hint="Supported file types: .ps1, .bat, .py, .sh"
             filled
             dense
             counter
-            accept=".ps1, .bat, .py"
+            accept=".ps1, .bat, .py, .sh"
           >
             <template v-slot:prepend>
               <q-icon name="attach_file" />

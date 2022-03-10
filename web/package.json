@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.12.5",
-    "apexcharts": "^3.33.1",
+    "apexcharts": "^3.33.2",
     "axios": "^0.26.0",
     "dotenv": "^16.0.0",
     "qrcode.vue": "^3.3.3",

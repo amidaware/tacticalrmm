@@ -61,6 +61,9 @@ class CoreSettings(BaseAuditModel):
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")
+    mesh_device_group = models.CharField(
+        max_length=255, null=True, blank=True, default="TacticalRMM"
+    )
     agent_auto_update = models.BooleanField(default=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
@@ -319,22 +322,14 @@ class CodeSignToken(models.Model):
         if not self.token:
             return False
 
-        errors = []
-        for url in settings.EXE_GEN_URLS:
-            try:
-                r = requests.post(
-                    f"{url}/api/v1/checktoken",
-                    json={"token": self.token},
-                    headers={"Content-type": "application/json"},
-                    timeout=15,
-                )
-            except Exception as e:
-                errors.append(str(e))
-            else:
-                errors = []
-                break
-
-        if errors:
+        try:
+            r = requests.post(
+                f"{settings.EXE_GEN_URL}/api/v1/checktoken",
+                json={"token": self.token},
+                headers={"Content-type": "application/json"},
+                timeout=15,
+            )
+        except:
             return False
 
         return r.status_code == 200

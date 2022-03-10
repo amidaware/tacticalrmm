@@ -9,7 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
-from tacticalrmm.utils import notify_error, get_default_timezone, AGENT_DEFER
+from tacticalrmm.utils import notify_error, get_default_timezone
+from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
 
 from .models import AuditLog, PendingAction, DebugLog

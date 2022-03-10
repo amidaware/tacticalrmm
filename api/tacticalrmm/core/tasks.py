@@ -11,7 +11,7 @@ from alerts.tasks import prune_resolved_alerts
 from core.models import CoreSettings
 from logs.tasks import prune_debug_log, prune_audit_log
 from tacticalrmm.celery import app
-from tacticalrmm.utils import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER
 from agents.models import Agent
 from clients.models import Client, Site
 from alerts.models import Alert

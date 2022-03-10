@@ -56,9 +56,6 @@
             <q-td v-if="props.row.action_type === 'schedreboot'">
               <q-icon name="power_settings_new" size="sm" />
             </q-td>
-            <q-td v-else-if="props.row.action_type === 'taskaction'">
-              <q-icon name="fas fa-tasks" size="sm" />
-            </q-td>
             <q-td v-else-if="props.row.action_type === 'agentupdate'">
               <q-icon name="update" size="sm" />
             </q-td>

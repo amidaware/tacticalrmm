@@ -12,7 +12,6 @@
         <q-card-section>
           <div class="q-gutter-sm">
             <q-radio dense v-model="state.mode" val="mesh" label="Mesh Agent" />
-            <q-radio dense v-model="state.mode" val="rpc" label="Tactical RPC" />
             <q-radio dense v-model="state.mode" val="tacagent" label="Tactical Agent" />
             <q-radio dense v-model="state.mode" val="command" label="Shell Command" />
           </div>
@@ -21,16 +20,12 @@
           Fix issues with the Mesh Agent which handles take control, live terminal and file browser.
         </q-card-section>
         <q-card-section v-else-if="state.mode === 'tacagent'">
-          Fix issues with the TacticalAgent windows service which handles agent check-in.
-        </q-card-section>
-        <q-card-section v-else-if="state.mode === 'rpc'">
-          Fix issues with the Tactical RPC service which handles most of the agent's realtime functions and scheduled
-          tasks.
+          Fix issues with the Tactical RMM Agent windows service.
         </q-card-section>
         <q-card-section v-else-if="state.mode === 'command'">
           <p>Run a shell command on the agent.</p>
           <p>You should use the 'Send Command' feature from the agent's context menu for sending shell commands.</p>
-          <p>Only use this as a last resort if unable to recover the Tactical RPC service.</p>
+          <p>Only use this as a last resort if unable to recover the Tactical RMM Agent service.</p>
           <q-input
             ref="input"
             v-model="state.cmd"

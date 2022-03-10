@@ -9,8 +9,8 @@ from .utils import (
     generate_winagent_exe,
     get_bit_days,
     reload_nats,
-    AGENT_DEFER,
 )
+from tacticalrmm.constants import AGENT_DEFER
 
 
 class TestUtils(TacticalTestCase):

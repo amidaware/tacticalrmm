@@ -24,7 +24,7 @@ jobs:
           SETTINGS_FILE="/myagent/_work/1/s/api/tacticalrmm/tacticalrmm/settings.py"
           rm -rf /myagent/_work/1/s/api/env
           cd /myagent/_work/1/s/api
-          python3.9 -m venv env
+          python3.10 -m venv env
           source env/bin/activate
           cd /myagent/_work/1/s/api/tacticalrmm
           pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip

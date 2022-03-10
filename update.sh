@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="129"
+SCRIPT_VERSION="130"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -10,6 +10,7 @@ NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR="/opt/trmm-community-scripts"
+PYTHON_VER="3.10.2"
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -107,29 +108,6 @@ if ! sudo nginx -t > /dev/null 2>&1; then
   exit 1
 fi
 
-if [ ! -f /etc/systemd/system/nats-api.service ]; then
-natsapi="$(cat << EOF
-[Unit]
-Description=TacticalRMM Nats Api v1
-After=nats.service
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/nats-api
-User=${USER}
-Group=${USER}
-Restart=always
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service > /dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable nats-api.service
-fi
-
 for i in nginx nats-api nats rmm daphne celery celerybeat
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
@@ -178,20 +156,20 @@ fi
 
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
 
-HAS_PY39=$(which python3.9)
-if ! [[ $HAS_PY39 ]]; then
-  printf >&2 "${GREEN}Updating to Python 3.9${NC}\n"
+HAS_PY310=$(python3.10 --version | grep ${PYTHON_VER})
+if ! [[ $HAS_PY310 ]]; then
+  printf >&2 "${GREEN}Updating to ${PYTHON_VER}${NC}\n"
   sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
   numprocs=$(nproc)
   cd ~
-  wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz
-  tar -xf Python-3.9.9.tgz
-  cd Python-3.9.9
+  wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
+  tar -xf Python-${PYTHON_VER}.tgz
+  cd Python-${PYTHON_VER}
   ./configure --enable-optimizations
   make -j $numprocs
   sudo make altinstall
   cd ~
-  sudo rm -rf Python-3.9.9 Python-3.9.9.tgz
+  sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 fi
 
 HAS_LATEST_NATS=$(/usr/local/bin/nats-server -version | grep "${NATS_SERVER_VER}")
@@ -207,15 +185,26 @@ if ! [[ $HAS_LATEST_NATS ]]; then
   rm -rf ${nats_tmp}
 fi
 
-HAS_NODE14=$(/usr/bin/node --version | grep v14)
-if ! [[ $HAS_NODE14 ]]; then
-  printf >&2 "${GREEN}Updating NodeJS to v14${NC}\n"
+if [ -d ~/.npm ]; then
+  sudo rm -rf ~/.npm
+fi
+
+if [ -d ~/.cache ]; then
+  sudo rm -rf ~/.cache
+fi
+
+if [ -d ~/.config ]; then
+  sudo chown -R $USER:$GROUP ~/.config
+fi
+
+HAS_NODE16=$(node --version | grep v16)
+if ! [[ $HAS_NODE16 ]]; then
+  printf >&2 "${GREEN}Updating NodeJS to v16${NC}\n"
   rm -rf /rmm/web/node_modules
   sudo systemctl stop meshcentral
   sudo apt remove -y nodejs
   sudo rm -rf /usr/lib/node_modules
-  sudo rm -rf /home/${USER}/.npm/*
-  curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+  curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
   sudo apt update
   sudo apt install -y nodejs
   sudo npm install -g npm
@@ -265,9 +254,6 @@ sudo chown ${USER}:${USER} -R /rmm
 sudo chown ${USER}:${USER} -R ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
-sudo chown -R $USER:$GROUP /home/${USER}/.npm
-sudo chown -R $USER:$GROUP /home/${USER}/.config
-sudo chown -R $USER:$GROUP /home/${USER}/.cache
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
@@ -287,7 +273,7 @@ sudo chmod +x /usr/local/bin/nats-api
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/api/env
   cd /rmm/api
-  python3.9 -m venv env
+  python3.10 -m venv env
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip
@@ -342,10 +328,6 @@ if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]];
   npm install meshcentral@${LATEST_MESH_VER}
   sudo systemctl start meshcentral
 fi
-
-# apply redis configuration
-sudo redis-cli config set appendonly yes
-sudo redis-cli config rewrite
 
 rm -f $TMP_SETTINGS
 printf >&2 "${GREEN}Update finished!${NC}\n"

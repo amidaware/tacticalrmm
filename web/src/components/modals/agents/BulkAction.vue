@@ -59,7 +59,7 @@
           <p>Agent OS</p>
           <q-option-group
             v-model="state.osType"
-            :options="osTypeOptions"
+            :options="filteredOsTypeOptions"
             color="primary"
             dense
             inline
@@ -202,6 +202,7 @@ const monTypeOptions = [
 const osTypeOptions = [
   { label: "Windows", value: "windows" },
   { label: "Linux", value: "linux" },
+  { label: "All", value: "all" },
 ];
 
 const targetOptions = [
@@ -240,6 +241,12 @@ export default {
           { label: "Custom", value: "custom" },
         ];
       }
+    });
+
+    const filteredOsTypeOptions = computed(() => {
+      if (props.mode === "command") return osTypeOptions.filter(i => i.value !== "all");
+      else if (props.mode === "patch") return osTypeOptions.filter(i => i.value === "windows");
+      return osTypeOptions;
     });
 
     // quasar dialog setup
@@ -318,6 +325,7 @@ export default {
 
     const filteredScriptOptions = computed(() => {
       if (props.mode !== "script") return [];
+      if (state.value.osType === "all") return scriptOptions.value;
 
       return removeExtraOptionCategories(
         scriptOptions.value.filter(
@@ -347,6 +355,7 @@ export default {
       filteredScriptOptions,
       loading,
       shellOptions,
+      filteredOsTypeOptions,
 
       // non-reactive data
       monTypeOptions,

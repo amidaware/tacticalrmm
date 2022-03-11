@@ -829,7 +829,7 @@ def bulk(request):
 
     if request.data["osType"] == "windows":
         q = q.filter(plat="windows")
-    else:
+    elif request.data["osType"] == "linux":
         q = q.filter(plat="linux")
 
     agents: list[int] = [agent.pk for agent in q]

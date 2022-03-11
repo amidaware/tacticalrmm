@@ -15,6 +15,11 @@
         </q-btn>
       </q-bar>
       <q-form @submit="submitForm">
+        <q-banner v-if="missingShebang" dense inline-actions class="text-black bg-warning">
+          <template v-slot:avatar> <q-icon class="text-center" name="warning" color="black" /> </template>Shell/Python
+          scripts on Linux/Mac need a shebang at the top of the script e.g. <code>#!/bin/bash</code> or
+          <code>#!/usr/bin/python3</code><br />Add one to get rid of this warning. Ignore if windows.
+        </q-banner>
         <div class="row q-pa-sm">
           <div class="col-4 q-gutter-sm q-pr-sm">
             <q-input
@@ -196,6 +201,12 @@ export default {
     const loading = ref(false);
     const agentLoading = ref(false);
 
+    const missingShebang = computed(() => {
+      if (script.value.shell === "shell" || script.value.shell === "python") {
+        return !script.value.script_body.includes("#!");
+      }
+    });
+
     const title = computed(() => {
       if (props.script) {
         return props.readonly
@@ -271,6 +282,7 @@ export default {
       agent,
       agentLoading,
       lang,
+      missingShebang,
 
       // non-reactive data
       shellOptions,

@@ -124,8 +124,12 @@ class Agent(BaseAuditModel):
             return CoreSettings.objects.first().default_time_zone  # type: ignore
 
     @property
+    def is_posix(self):
+        return self.plat == "linux" or self.plat == "darwin"
+
+    @property
     def arch(self):
-        if self.plat != "windows":
+        if self.is_posix:
             return self.goarch
 
         if self.operating_system is not None:
@@ -195,7 +199,7 @@ class Agent(BaseAuditModel):
 
     @property
     def cpu_model(self):
-        if self.plat == "linux":
+        if self.is_posix:
             try:
                 return self.wmi_detail["cpus"]
             except:
@@ -212,7 +216,7 @@ class Agent(BaseAuditModel):
 
     @property
     def graphics(self):
-        if self.plat == "linux":
+        if self.is_posix:
             try:
                 if not self.wmi_detail["gpus"]:
                     return "No graphics cards"
@@ -241,7 +245,7 @@ class Agent(BaseAuditModel):
 
     @property
     def local_ips(self):
-        if self.plat == "linux":
+        if self.is_posix:
             try:
                 return ", ".join(self.wmi_detail["local_ips"])
             except:
@@ -273,7 +277,7 @@ class Agent(BaseAuditModel):
 
     @property
     def make_model(self):
-        if self.plat == "linux":
+        if self.is_posix:
             try:
                 return self.wmi_detail["make_model"]
             except:
@@ -309,7 +313,7 @@ class Agent(BaseAuditModel):
 
     @property
     def physical_disks(self):
-        if self.plat == "linux":
+        if self.is_posix:
             try:
                 return self.wmi_detail["disks"]
             except:

@@ -3,6 +3,7 @@ import threading
 from django.conf import settings
 from rest_framework.exceptions import AuthenticationFailed
 from ipware import get_client_ip
+from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED
 
 request_local = threading.local()
 
@@ -99,33 +100,7 @@ class DemoMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
-        self.not_allowed = [
-            {"name": "AgentProcesses", "methods": ["DELETE"]},
-            {"name": "AgentMeshCentral", "methods": ["GET", "POST"]},
-            {"name": "update_agents", "methods": ["POST"]},
-            {"name": "send_raw_cmd", "methods": ["POST"]},
-            {"name": "install_agent", "methods": ["POST"]},
-            {"name": "GenerateAgent", "methods": ["GET"]},
-            {"name": "email_test", "methods": ["POST"]},
-            {"name": "server_maintenance", "methods": ["POST"]},
-            {"name": "CodeSign", "methods": ["PATCH", "POST"]},
-            {"name": "TwilioSMSTest", "methods": ["POST"]},
-            {"name": "GetEditActionService", "methods": ["PUT", "POST"]},
-            {"name": "TestScript", "methods": ["POST"]},
-            {"name": "GetUpdateDeleteAgent", "methods": ["DELETE"]},
-            {"name": "Reboot", "methods": ["POST", "PATCH"]},
-            {"name": "recover", "methods": ["POST"]},
-            {"name": "run_script", "methods": ["POST"]},
-            {"name": "bulk", "methods": ["POST"]},
-            {"name": "WMI", "methods": ["POST"]},
-            {"name": "PolicyAutoTask", "methods": ["POST"]},
-            {"name": "RunAutoTask", "methods": ["POST"]},
-            {"name": "run_checks", "methods": ["POST"]},
-            {"name": "GetSoftware", "methods": ["POST", "PUT"]},
-            {"name": "ScanWindowsUpdates", "methods": ["POST"]},
-            {"name": "InstallWindowsUpdates", "methods": ["POST"]},
-            {"name": "PendingActions", "methods": ["DELETE"]},
-        ]
+        self.not_allowed = DEMO_NOT_ALLOWED
 
     def __call__(self, request):
         return self.get_response(request)
@@ -155,10 +130,7 @@ class LinuxMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
-        self.not_implemented = [
-            {"name": "ScanWindowsUpdates", "methods": ["POST"]},
-            {"name": "GetSoftware", "methods": ["POST", "PUT"]},
-        ]
+        self.not_implemented = LINUX_NOT_IMPLEMENTED
 
     def __call__(self, request):
         return self.get_response(request)

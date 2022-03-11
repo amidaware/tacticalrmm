@@ -5,7 +5,6 @@ if [ $EUID -ne 0 ]; then
   exit 1
 fi
 
-####
 agentDL='agentDLChange'
 meshDL='meshDLChange'
 
@@ -21,13 +20,13 @@ binName='tacticalagent'
 agentBin="${agentBinPath}/${binName}"
 agentConf='/etc/tacticalagent'
 agentSvcName='tacticalagent.service'
-agentSysD="/etc/systemd/system/${agentSvcName}"
-meshDir='/opt/tacmesh'
+agentSysD="/usr/lib/systemd/system/${agentSvcName}"
+meshDir='/opt/tacticalmesh'
 meshSystemBin="${meshDir}/meshagent"
 
 RemoveOldAgent() {
     if [ -f "${agentSysD}" ]; then
-        systemctl disable --now tacticalagent.service
+        systemctl disable --now ${agentSvcName}
         rm -f ${agentSysD}
         systemctl daemon-reload
     fi

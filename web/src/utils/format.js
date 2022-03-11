@@ -51,9 +51,9 @@ export function formatScriptOptions(data) {
     let tmp = [];
     data.forEach(script => {
       if (script.category === cat) {
-        tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax, script_type: script.script_type, shell: script.shell });
+        tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax, script_type: script.script_type, shell: script.shell, supported_platforms: script.supported_platforms });
       } else if (cat === "Unassigned" && !script.category) {
-        tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax, script_type: script.script_type, shell: script.shell });
+        tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax, script_type: script.script_type, shell: script.shell, supported_platforms: script.supported_platforms });
       }
     })
     const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));

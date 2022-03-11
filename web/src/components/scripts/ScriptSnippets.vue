@@ -72,7 +72,7 @@
               <q-icon v-else-if="props.row.shell === 'cmd'" name="mdi-microsoft-windows" color="primary" size="sm">
                 <q-tooltip> Batch </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.row.shell === 'shell'" name="mdi-bash" color="primary">
+              <q-icon v-else-if="props.row.shell === 'shell'" name="mdi-bash" color="primary" size="sm">
                 <q-tooltip> Shell </q-tooltip>
               </q-icon>
             </q-td>

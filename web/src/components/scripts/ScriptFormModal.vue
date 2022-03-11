@@ -39,6 +39,16 @@
               label="Shell Type"
             />
             <tactical-dropdown
+              v-model="formScript.supported_platforms"
+              :options="agentPlatformOptions"
+              label="Supported Platforms (All supported if blank)"
+              clearable
+              mapOptions
+              filled
+              multiple
+              :readonly="readonly"
+            />
+            <tactical-dropdown
               filled
               v-model="formScript.category"
               :options="categories"
@@ -127,10 +137,10 @@
 
 <script>
 // composable imports
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { saveScript, editScript, downloadScript } from "@/api/scripts";
-import { useAgentDropdown } from "@/composables/agents";
+import { useAgentDropdown, agentPlatformOptions } from "@/composables/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
@@ -185,16 +195,6 @@ export default {
     const maximized = ref(false);
     const loading = ref(false);
     const agentLoading = ref(false);
-
-    // watch(script.value, (newValue, oldValue) => {
-    //   if (!props.script && script.value.script_body === "") {
-    //     if (newValue.shell === "shell") {
-    //       script.value.script_body = "#!/bin/bash\n\n# don't forget to include the shebang above!\n\n";
-    //     } else if (newValue.shell === "python") {
-    //       script.value.script_body = "#!/usr/bin/python3\n\n# don't forget to include the shebang above!\n\n";
-    //     }
-    //   }
-    // });
 
     const title = computed(() => {
       if (props.script) {
@@ -274,6 +274,7 @@ export default {
 
       // non-reactive data
       shellOptions,
+      agentPlatformOptions,
 
       //computed
       title,

@@ -13,7 +13,7 @@ SCRIPT_SHELLS = [
     ("powershell", "Powershell"),
     ("cmd", "Batch (CMD)"),
     ("python", "Python"),
-    ("shell", "Shell")
+    ("shell", "Shell"),
 ]
 
 SCRIPT_TYPES = [
@@ -46,6 +46,10 @@ class Script(BaseAuditModel):
     script_hash = models.CharField(max_length=100, null=True, blank=True)
     code_base64 = models.TextField(blank=True, default="")  # deprecated
     default_timeout = models.PositiveIntegerField(default=90)
+    hidden = models.BooleanField(default=False)
+    supported_platforms = ArrayField(
+        models.CharField(max_length=20), null=True, blank=True, default=list
+    )
 
     def __str__(self):
         return self.name
@@ -119,6 +123,8 @@ class Script(BaseAuditModel):
 
                 syntax = script["syntax"] if "syntax" in script.keys() else ""
 
+                supported_platforms = script["supported_platforms"] if "supported_platforms" in script.keys() else []
+
                 # if community script exists update it
                 if s.exists():
                     i: Script = s.get()
@@ -130,6 +136,7 @@ class Script(BaseAuditModel):
                     i.args = args
                     i.syntax = syntax
                     i.filename = script["filename"]
+                    i.supported_platforms = supported_platforms,
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         i.script_body = f.read().decode("utf-8")
@@ -157,6 +164,7 @@ class Script(BaseAuditModel):
                             args=args,
                             filename=script["filename"],
                             syntax=syntax,
+                            supported_platforms=supported_platforms,
                         )
                         # new_script.hash_script_body()  # also saves script
                         new_script.save()

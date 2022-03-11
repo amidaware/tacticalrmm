@@ -336,13 +336,8 @@ class Agent(BaseAuditModel):
         except:
             return ["unknown disk"]
 
-    def is_supported_script(self, shell: str) -> bool:
-        if self.plat.lower() == "windows" and shell in ["cmd", "powershell", "python"]:
-            return True
-        elif self.plat.lower() == "linux" and shell in ["shell", "python"]:
-            return True
-        else:
-            return False
+    def is_supported_script(self, platforms: list) -> bool:
+        return self.plat.lower() in platforms if platforms else True
 
     def get_agent_policies(self):
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)

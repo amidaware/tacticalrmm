@@ -23,8 +23,15 @@ class GetAddScripts(APIView):
     def get(self, request):
 
         showCommunityScripts = request.GET.get("showCommunityScripts", True)
+        showHiddenScripts = request.GET.get("showHiddenScripts", False)
+
         if not showCommunityScripts or showCommunityScripts == "false":
             scripts = Script.objects.filter(script_type="userdefined")
+        else:
+            scripts = Script.objects.all()
+
+        if not showHiddenScripts or showHiddenScripts != "true":
+            scripts = scripts.filter(hidden=False)
         else:
             scripts = Script.objects.all()
 
@@ -58,6 +65,8 @@ class GetUpdateDeleteScript(APIView):
             if "favorite" in data:
                 # overwrite request data
                 data = {"favorite": data["favorite"]}
+            elif "hidden" in data:
+                data = {"hidden": data["hidden"]}
             else:
                 return notify_error("Community scripts cannot be edited.")
 

@@ -162,7 +162,11 @@ class Policy(BaseAuditModel):
                     tasks.append(task)
 
         # remove policy tasks that use scripts that aren't compatible with the agent platform
-        tasks = [task for task in tasks if agent.is_supported_script(task.script.shell)]
+        tasks = [
+            task
+            for task in tasks
+            if agent.is_supported_script(task.script.supported_platforms)
+        ]
 
         # remove policy tasks from agent not included in policy
         for task in agent.autotasks.filter(
@@ -311,7 +315,7 @@ class Policy(BaseAuditModel):
                     check.save()
 
             if check.check_type == "script" and agent.is_supported_script(
-                check.script.shell
+                check.script.supported_platforms
             ):
                 # Check if script id was already added
                 if check.script.id not in added_script_checks:

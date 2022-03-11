@@ -52,6 +52,18 @@
 
         <q-card-section>
           <tactical-dropdown
+            v-model="script.supported_platforms"
+            :options="agentPlatformOptions"
+            label="Supported Platforms (All supported if blank)"
+            clearable
+            mapOptions
+            filled
+            multiple
+          />
+        </q-card-section>
+
+        <q-card-section>
+          <tactical-dropdown
             v-model="script.args"
             label="Script Arguments"
             placeholder="(press Enter after typing each argument)"
@@ -90,6 +102,7 @@
 import { ref, watch } from "vue";
 import { useDialogPluginComponent } from "quasar";
 import { saveScript } from "@/api/scripts";
+import { agentPlatformOptions } from "@/composables/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
@@ -149,6 +162,7 @@ export default {
 
       // non-reactive data
       shellOptions,
+      agentPlatformOptions,
 
       // methods
       submitForm,

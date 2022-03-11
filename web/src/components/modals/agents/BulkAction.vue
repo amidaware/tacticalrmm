@@ -319,14 +319,15 @@ export default {
     const filteredScriptOptions = computed(() => {
       if (props.mode !== "script") return [];
 
-      if (state.value.osType === "linux")
-        return removeExtraOptionCategories(
-          scriptOptions.value.filter(script => script.category || script.shell === "shell" || script.shell === "python")
-        );
-      else
-        return removeExtraOptionCategories(
-          scriptOptions.value.filter(script => script.category || script.shell !== "shell")
-        );
+      return removeExtraOptionCategories(
+        scriptOptions.value.filter(
+          script =>
+            script.category ||
+            !script.supported_platforms ||
+            !script.supported_platforms.length === 0 ||
+            script.supported_platforms.includes(state.value.osType)
+        )
+      );
     });
 
     // component lifecycle hooks

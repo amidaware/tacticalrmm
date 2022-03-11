@@ -174,14 +174,12 @@ export default {
     }
 
     const filteredScriptOptions = computed(() => {
-      if (props.agent.plat === "linux")
-        return removeExtraOptionCategories(
-          scriptOptions.value.filter(script => script.category || script.shell === "shell" || script.shell === "python")
-        );
-      else
-        return removeExtraOptionCategories(
-          scriptOptions.value.filter(script => script.category || script.shell !== "shell")
-        );
+      return removeExtraOptionCategories(
+        scriptOptions.value.filter(
+          script =>
+            script.category || !script.supported_platforms || script.supported_platforms.includes(props.agent.plat)
+        )
+      );
     });
 
     // watchers

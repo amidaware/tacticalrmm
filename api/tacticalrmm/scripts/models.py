@@ -119,11 +119,11 @@ class Script(BaseAuditModel):
                     else 90
                 )
 
-                args = script["args"] if "args" in script.keys() else []
+                args = script["args"] if "args" in script.keys() else list()
 
                 syntax = script["syntax"] if "syntax" in script.keys() else ""
 
-                supported_platforms = script["supported_platforms"] if "supported_platforms" in script.keys() else []
+                supported_platforms = script["supported_platforms"] if "supported_platforms" in script.keys() else list()
 
                 # if community script exists update it
                 if s.exists():

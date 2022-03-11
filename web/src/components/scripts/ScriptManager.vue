@@ -330,9 +330,15 @@
             </q-td>
             <!-- supported platforms -->
             <q-td>
-              <q-badge v-for="plat in props.row.supported_platforms" :key="plat" color="primary" class="q-pr-xs">{{
-                capitalize(plat)
-              }}</q-badge>
+              <q-badge v-if="!props.row.supported_platforms || props.row.supported_platforms.length === 0">All</q-badge>
+              <q-badge
+                v-else
+                v-for="plat in props.row.supported_platforms"
+                :key="plat"
+                color="primary"
+                class="q-pr-xs"
+                >{{ capitalize(plat) }}</q-badge
+              >
             </q-td>
             <!-- name -->
             <q-td :style="{ color: props.row.hidden ? 'grey' : '' }">

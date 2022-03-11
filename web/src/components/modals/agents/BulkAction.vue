@@ -324,7 +324,7 @@ export default {
           script =>
             script.category ||
             !script.supported_platforms ||
-            !script.supported_platforms.length === 0 ||
+            script.supported_platforms.length === 0 ||
             script.supported_platforms.includes(state.value.osType)
         )
       );

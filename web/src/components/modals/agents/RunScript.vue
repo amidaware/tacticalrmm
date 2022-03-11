@@ -177,7 +177,10 @@ export default {
       return removeExtraOptionCategories(
         scriptOptions.value.filter(
           script =>
-            script.category || !script.supported_platforms || script.supported_platforms.includes(props.agent.plat)
+            script.category ||
+            !script.supported_platforms ||
+            script.supported_platforms.length === 0 ||
+            script.supported_platforms.includes(props.agent.plat)
         )
       );
     });

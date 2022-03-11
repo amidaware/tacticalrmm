@@ -5,11 +5,10 @@ import { validateTimePeriod } from "@/utils/validation"
 
 export function removeExtraOptionCategories(array) {
   let tmp = []
-
   // loop through options and if two categories are next to each other remove the top one
   for (let i = 0; i < array.length; i++) {
-    if (i === array.length - 1 && !array[i].category) { // check if last item is not a category and add it
-      tmp.push(array[i])
+    if (i === array.length - 1) { // check if last item is not a category and add it
+      if (!array[i].category) tmp.push(array[i])
     } else if (!(array[i].category && array[i + 1].category)) {
       tmp.push(array[i])
     }

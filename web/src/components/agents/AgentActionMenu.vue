@@ -185,6 +185,7 @@
 <script>
 // composition imports
 import { ref, inject } from "vue";
+import { useStore } from "vuex";
 import { useQuasar } from "quasar";
 import { fetchURLActions, runURLAction } from "@/api/core";
 import {
@@ -215,7 +216,11 @@ export default {
     agent: !Object,
   },
   setup(props) {
+    // setup quasar
     const $q = useQuasar();
+
+    // setup vuex
+    const store = useStore();
 
     const refreshDashboard = inject("refreshDashboard");
 

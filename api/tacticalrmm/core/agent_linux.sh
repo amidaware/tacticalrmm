@@ -5,6 +5,13 @@ if [ $EUID -ne 0 ]; then
   exit 1
 fi
 
+HAS_SYSTEMD=$(ps --no-headers -o comm 1)
+if [ "${HAS_SYSTEMD}" != 'systemd1' ]; then
+    echo "This install script only supports systemd"
+    echo "Please install systemd or manually create the service using your systems's service manager"
+    exit 1
+fi
+
 agentDL='agentDLChange'
 meshDL='meshDLChange'
 
@@ -20,9 +27,11 @@ binName='tacticalagent'
 agentBin="${agentBinPath}/${binName}"
 agentConf='/etc/tacticalagent'
 agentSvcName='tacticalagent.service'
-agentSysD="/usr/lib/systemd/system/${agentSvcName}"
+agentSysD="/etc/systemd/system/${agentSvcName}"
 meshDir='/opt/tacticalmesh'
 meshSystemBin="${meshDir}/meshagent"
+meshSvcName='meshagent.service'
+meshSysD="/lib/systemd/system/${meshSvcName}"
 
 RemoveOldAgent() {
     if [ -f "${agentSysD}" ]; then
@@ -52,8 +61,16 @@ InstallMesh() {
 }
 
 RemoveMesh() {
-    ${meshSystemBin} -uninstall
-    sleep 1
+    if [ -f "${meshSystemBin}" ]; then
+        ${meshSystemBin} -uninstall
+        sleep 1
+    fi
+
+    if [ -f "${meshSysD}" ]; then
+        systemctl disable --now ${meshSvcName} > /dev/null 2>&1
+        rm -f ${meshSysD}
+    fi
+
     rm -rf ${meshDir}
     systemctl daemon-reload
 }

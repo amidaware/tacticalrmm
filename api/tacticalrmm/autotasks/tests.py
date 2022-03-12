@@ -496,147 +496,147 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         ret = run_win_task.s(self.task1.pk).apply()
         self.assertEqual(ret.status, "SUCCESS")
 
-    @patch("agents.models.Agent.nats_cmd")
-    def test_create_win_task_schedule(self, nats_cmd):
-        self.agent = baker.make_recipe("agents.agent")
+    # @patch("agents.models.Agent.nats_cmd")
+    # def test_create_win_task_schedule(self, nats_cmd):
+    #     self.agent = baker.make_recipe("agents.agent")
 
-        task_name = AutomatedTask.generate_task_name()
-        # test scheduled task
-        self.task1 = AutomatedTask.objects.create(
-            agent=self.agent,
-            name="test task 1",
-            win_task_name=task_name,
-            task_type="scheduled",
-            run_time_bit_weekdays=127,
-            run_time_minute="21:55",
-        )
-        self.assertEqual(self.task1.sync_status, "initial")
-        nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task1.pk).apply()
-        self.assertEqual(nats_cmd.call_count, 1)
-        nats_cmd.assert_called_with(
-            {
-                "func": "schedtask",
-                "schedtaskpayload": {
-                    "type": "rmm",
-                    "trigger": "weekly",
-                    "weekdays": 127,
-                    "pk": self.task1.pk,
-                    "name": task_name,
-                    "hour": 21,
-                    "min": 55,
-                },
-            },
-            timeout=5,
-        )
-        self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
-        self.assertEqual(self.task1.sync_status, "synced")
+    #     task_name = AutomatedTask.generate_task_name()
+    #     # test scheduled task
+    #     self.task1 = AutomatedTask.objects.create(
+    #         agent=self.agent,
+    #         name="test task 1",
+    #         win_task_name=task_name,
+    #         task_type="scheduled",
+    #         run_time_bit_weekdays=127,
+    #         run_time_minute="21:55",
+    #     )
+    #     self.assertEqual(self.task1.sync_status, "initial")
+    #     nats_cmd.return_value = "ok"
+    #     ret = create_win_task_schedule.s(pk=self.task1.pk).apply()
+    #     self.assertEqual(nats_cmd.call_count, 1)
+    #     nats_cmd.assert_called_with(
+    #         {
+    #             "func": "schedtask",
+    #             "schedtaskpayload": {
+    #                 "type": "rmm",
+    #                 "trigger": "weekly",
+    #                 "weekdays": 127,
+    #                 "pk": self.task1.pk,
+    #                 "name": task_name,
+    #                 "hour": 21,
+    #                 "min": 55,
+    #             },
+    #         },
+    #         timeout=5,
+    #     )
+    #     self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
+    #     self.assertEqual(self.task1.sync_status, "synced")
 
-        nats_cmd.return_value = "timeout"
-        ret = create_win_task_schedule.s(pk=self.task1.pk).apply()
-        self.assertEqual(ret.status, "SUCCESS")
-        self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
-        self.assertEqual(self.task1.sync_status, "initial")
+    #     nats_cmd.return_value = "timeout"
+    #     ret = create_win_task_schedule.s(pk=self.task1.pk).apply()
+    #     self.assertEqual(ret.status, "SUCCESS")
+    #     self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
+    #     self.assertEqual(self.task1.sync_status, "initial")
 
-        # test runonce with future date
-        nats_cmd.reset_mock()
-        task_name = AutomatedTask.generate_task_name()
-        run_time_date = djangotime.now() + djangotime.timedelta(hours=22)
-        self.task2 = AutomatedTask.objects.create(
-            agent=self.agent,
-            name="test task 2",
-            win_task_name=task_name,
-            task_type="runonce",
-            run_time_date=run_time_date,
-        )
-        nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task2.pk).apply()
-        nats_cmd.assert_called_with(
-            {
-                "func": "schedtask",
-                "schedtaskpayload": {
-                    "type": "rmm",
-                    "trigger": "once",
-                    "pk": self.task2.pk,
-                    "name": task_name,
-                    "year": int(dt.datetime.strftime(self.task2.run_time_date, "%Y")),
-                    "month": dt.datetime.strftime(self.task2.run_time_date, "%B"),
-                    "day": int(dt.datetime.strftime(self.task2.run_time_date, "%d")),
-                    "hour": int(dt.datetime.strftime(self.task2.run_time_date, "%H")),
-                    "min": int(dt.datetime.strftime(self.task2.run_time_date, "%M")),
-                },
-            },
-            timeout=5,
-        )
-        self.assertEqual(ret.status, "SUCCESS")
+    #     # test runonce with future date
+    #     nats_cmd.reset_mock()
+    #     task_name = AutomatedTask.generate_task_name()
+    #     run_time_date = djangotime.now() + djangotime.timedelta(hours=22)
+    #     self.task2 = AutomatedTask.objects.create(
+    #         agent=self.agent,
+    #         name="test task 2",
+    #         win_task_name=task_name,
+    #         task_type="runonce",
+    #         run_time_date=run_time_date,
+    #     )
+    #     nats_cmd.return_value = "ok"
+    #     ret = create_win_task_schedule.s(pk=self.task2.pk).apply()
+    #     nats_cmd.assert_called_with(
+    #         {
+    #             "func": "schedtask",
+    #             "schedtaskpayload": {
+    #                 "type": "rmm",
+    #                 "trigger": "once",
+    #                 "pk": self.task2.pk,
+    #                 "name": task_name,
+    #                 "year": int(dt.datetime.strftime(self.task2.run_time_date, "%Y")),
+    #                 "month": dt.datetime.strftime(self.task2.run_time_date, "%B"),
+    #                 "day": int(dt.datetime.strftime(self.task2.run_time_date, "%d")),
+    #                 "hour": int(dt.datetime.strftime(self.task2.run_time_date, "%H")),
+    #                 "min": int(dt.datetime.strftime(self.task2.run_time_date, "%M")),
+    #             },
+    #         },
+    #         timeout=5,
+    #     )
+    #     self.assertEqual(ret.status, "SUCCESS")
 
-        # test runonce with date in the past
-        nats_cmd.reset_mock()
-        task_name = AutomatedTask.generate_task_name()
-        run_time_date = djangotime.now() - djangotime.timedelta(days=13)
-        self.task3 = AutomatedTask.objects.create(
-            agent=self.agent,
-            name="test task 3",
-            win_task_name=task_name,
-            task_type="runonce",
-            run_time_date=run_time_date,
-        )
-        nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task3.pk).apply()
-        self.task3 = AutomatedTask.objects.get(pk=self.task3.pk)
-        self.assertEqual(ret.status, "SUCCESS")
+    #     # test runonce with date in the past
+    #     nats_cmd.reset_mock()
+    #     task_name = AutomatedTask.generate_task_name()
+    #     run_time_date = djangotime.now() - djangotime.timedelta(days=13)
+    #     self.task3 = AutomatedTask.objects.create(
+    #         agent=self.agent,
+    #         name="test task 3",
+    #         win_task_name=task_name,
+    #         task_type="runonce",
+    #         run_time_date=run_time_date,
+    #     )
+    #     nats_cmd.return_value = "ok"
+    #     ret = create_win_task_schedule.s(pk=self.task3.pk).apply()
+    #     self.task3 = AutomatedTask.objects.get(pk=self.task3.pk)
+    #     self.assertEqual(ret.status, "SUCCESS")
 
-        # test checkfailure
-        nats_cmd.reset_mock()
-        self.check = baker.make_recipe("checks.diskspace_check", agent=self.agent)
-        task_name = AutomatedTask.generate_task_name()
-        self.task4 = AutomatedTask.objects.create(
-            agent=self.agent,
-            name="test task 4",
-            win_task_name=task_name,
-            task_type="checkfailure",
-            assigned_check=self.check,
-        )
-        nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task4.pk).apply()
-        nats_cmd.assert_called_with(
-            {
-                "func": "schedtask",
-                "schedtaskpayload": {
-                    "type": "rmm",
-                    "trigger": "manual",
-                    "pk": self.task4.pk,
-                    "name": task_name,
-                },
-            },
-            timeout=5,
-        )
-        self.assertEqual(ret.status, "SUCCESS")
+    #     # test checkfailure
+    #     nats_cmd.reset_mock()
+    #     self.check = baker.make_recipe("checks.diskspace_check", agent=self.agent)
+    #     task_name = AutomatedTask.generate_task_name()
+    #     self.task4 = AutomatedTask.objects.create(
+    #         agent=self.agent,
+    #         name="test task 4",
+    #         win_task_name=task_name,
+    #         task_type="checkfailure",
+    #         assigned_check=self.check,
+    #     )
+    #     nats_cmd.return_value = "ok"
+    #     ret = create_win_task_schedule.s(pk=self.task4.pk).apply()
+    #     nats_cmd.assert_called_with(
+    #         {
+    #             "func": "schedtask",
+    #             "schedtaskpayload": {
+    #                 "type": "rmm",
+    #                 "trigger": "manual",
+    #                 "pk": self.task4.pk,
+    #                 "name": task_name,
+    #             },
+    #         },
+    #         timeout=5,
+    #     )
+    #     self.assertEqual(ret.status, "SUCCESS")
 
-        # test manual
-        nats_cmd.reset_mock()
-        task_name = AutomatedTask.generate_task_name()
-        self.task5 = AutomatedTask.objects.create(
-            agent=self.agent,
-            name="test task 5",
-            win_task_name=task_name,
-            task_type="manual",
-        )
-        nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task5.pk).apply()
-        nats_cmd.assert_called_with(
-            {
-                "func": "schedtask",
-                "schedtaskpayload": {
-                    "type": "rmm",
-                    "trigger": "manual",
-                    "pk": self.task5.pk,
-                    "name": task_name,
-                },
-            },
-            timeout=5,
-        )
-        self.assertEqual(ret.status, "SUCCESS")
+    #     # test manual
+    #     nats_cmd.reset_mock()
+    #     task_name = AutomatedTask.generate_task_name()
+    #     self.task5 = AutomatedTask.objects.create(
+    #         agent=self.agent,
+    #         name="test task 5",
+    #         win_task_name=task_name,
+    #         task_type="manual",
+    #     )
+    #     nats_cmd.return_value = "ok"
+    #     ret = create_win_task_schedule.s(pk=self.task5.pk).apply()
+    #     nats_cmd.assert_called_with(
+    #         {
+    #             "func": "schedtask",
+    #             "schedtaskpayload": {
+    #                 "type": "rmm",
+    #                 "trigger": "manual",
+    #                 "pk": self.task5.pk,
+    #                 "name": task_name,
+    #             },
+    #         },
+    #         timeout=5,
+    #     )
+    #     self.assertEqual(ret.status, "SUCCESS")
 
 
 class TestTaskPermissions(TacticalTestCase):

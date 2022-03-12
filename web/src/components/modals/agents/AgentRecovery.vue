@@ -20,7 +20,7 @@
           Fix issues with the Mesh Agent which handles take control, live terminal and file browser.
         </q-card-section>
         <q-card-section v-else-if="state.mode === 'tacagent'">
-          Fix issues with the Tactical RMM Agent windows service.
+          Fix issues with the Tactical RMM Agent service.
         </q-card-section>
         <q-card-section v-else-if="state.mode === 'command'">
           <p>Run a shell command on the agent.</p>

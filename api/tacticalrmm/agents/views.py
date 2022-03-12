@@ -607,9 +607,14 @@ def recover(request, agent_id):
     mode = request.data["mode"]
 
     if mode == "tacagent":
-        cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
+        if agent.is_posix:
+            cmd = "systemctl restart tacticalagent.service"
+            shell = 3
+        else:
+            cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
+            shell = 1
         uri = get_mesh_ws_url()
-        asyncio.run(send_command_with_mesh(cmd, uri, agent.mesh_node_id, 1, 0))
+        asyncio.run(send_command_with_mesh(cmd, uri, agent.mesh_node_id, shell, 0))
         return Response("Recovery will be attempted shortly")
 
     elif mode == "mesh":

@@ -33,6 +33,7 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "WANonly": true,
     "Minify": 1,
     "Port": 4443,
+    "AgentPort": 443,
     "AllowLoginToken": true,
     "AllowFraming": true,
     "_AgentPing": 60,

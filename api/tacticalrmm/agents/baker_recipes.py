@@ -28,7 +28,7 @@ agent = Recipe(
     "agents.Agent",
     site=foreign_key(site),
     hostname="DESKTOP-TEST123",
-    version=settings.LATEST_AGENT_VER,
+    version="1.3.0",
     monitoring_type=cycle(["workstation", "server"]),
     agent_id=seq(generate_agent_id("DESKTOP-TEST123")),
     last_seen=djangotime.now() - djangotime.timedelta(days=5),

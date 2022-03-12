@@ -451,41 +451,6 @@ class ChocoResult(APIView):
         return Response("ok")
 
 
-class AgentRecovery(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, agentid):
-        agent = get_object_or_404(
-            Agent.objects.prefetch_related("recoveryactions").only(
-                "pk", "agent_id", "last_seen"
-            ),
-            agent_id=agentid,
-        )
-
-        # TODO remove these 2 lines after agent v1.7.0 has been out for a while
-        # this is handled now by nats-api service
-        agent.last_seen = djangotime.now()
-        agent.save(update_fields=["last_seen"])
-
-        recovery = agent.recoveryactions.filter(last_run=None).last()  # type: ignore
-        ret = {"mode": "pass", "shellcmd": ""}
-        if recovery is None:
-            return Response(ret)
-
-        recovery.last_run = djangotime.now()
-        recovery.save(update_fields=["last_run"])
-
-        ret["mode"] = recovery.mode
-
-        if recovery.mode == "command":
-            ret["shellcmd"] = recovery.command
-        elif recovery.mode == "rpc":
-            reload_nats()
-
-        return Response(ret)
-
-
 class AgentHistoryResult(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]

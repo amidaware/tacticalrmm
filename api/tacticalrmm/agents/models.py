@@ -926,31 +926,6 @@ class Agent(BaseAuditModel):
         )
 
 
-RECOVERY_CHOICES = [
-    ("salt", "Salt"),
-    ("mesh", "Mesh"),
-    ("command", "Command"),
-    ("rpc", "Nats RPC"),
-    ("checkrunner", "Checkrunner"),
-]
-
-
-class RecoveryAction(models.Model):
-    objects = PermissionQuerySet.as_manager()
-
-    agent = models.ForeignKey(
-        Agent,
-        related_name="recoveryactions",
-        on_delete=models.CASCADE,
-    )
-    mode = models.CharField(max_length=50, choices=RECOVERY_CHOICES, default="mesh")
-    command = models.TextField(null=True, blank=True)
-    last_run = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.agent.hostname} - {self.mode}"
-
-
 class Note(models.Model):
     objects = PermissionQuerySet.as_manager()
 

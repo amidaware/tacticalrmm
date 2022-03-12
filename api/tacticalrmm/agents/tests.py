@@ -513,61 +513,6 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("asyncio.run")
-    @patch("core.utils.get_mesh_ws_url")
-    @patch("agents.models.Agent.nats_cmd")
-    def test_recover(self, nats_cmd, get_mesh_ws_url, asyncio_run):
-        from agents.models import RecoveryAction
-
-        get_mesh_ws_url.return_value = "ok"
-
-        RecoveryAction.objects.all().delete()
-        agent = baker.make_recipe("agents.online_agent")
-        url = f"{base_url}/{agent.agent_id}/recover/"
-
-        # test mesh realtime
-        data = {"cmd": None, "mode": "mesh"}
-        nats_cmd.return_value = "ok"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(RecoveryAction.objects.count(), 0)
-        nats_cmd.assert_called_with(
-            {"func": "recover", "payload": {"mode": "mesh"}}, timeout=20
-        )
-        nats_cmd.reset_mock()
-
-        # test mesh with agent rpc not working
-        data = {"cmd": None, "mode": "mesh"}
-        nats_cmd.return_value = "timeout"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(RecoveryAction.objects.count(), 1)
-        mesh_recovery = RecoveryAction.objects.first()
-        self.assertEqual(mesh_recovery.mode, "mesh")  # type: ignore
-        nats_cmd.reset_mock()
-        RecoveryAction.objects.all().delete()
-
-        # test tacagent realtime
-        data = {"cmd": None, "mode": "tacagent"}
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(RecoveryAction.objects.count(), 0)
-
-        # test shell cmd without command
-        data = {"cmd": None, "mode": "command"}
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-        self.assertEqual(RecoveryAction.objects.count(), 0)
-
-        # test shell cmd
-        data = {"cmd": "shutdown /r /t 10 /f", "mode": "command"}
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(RecoveryAction.objects.count(), 1)
-        cmd_recovery = RecoveryAction.objects.first()
-        self.assertEqual(cmd_recovery.mode, "command")  # type: ignore
-        self.assertEqual(cmd_recovery.command, "shutdown /r /t 10 /f")  # type: ignore
-
     @patch("agents.models.Agent.get_login_token")
     def test_meshcentral_tabs(self, mock_token):
         url = f"{base_url}/{self.agent.agent_id}/meshcentral/"

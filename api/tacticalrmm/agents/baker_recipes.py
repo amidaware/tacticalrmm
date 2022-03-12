@@ -28,11 +28,11 @@ agent = Recipe(
     "agents.Agent",
     site=foreign_key(site),
     hostname="DESKTOP-TEST123",
-    version="1.3.0",
+    version=settings.LATEST_AGENT_VER,
     monitoring_type=cycle(["workstation", "server"]),
     agent_id=seq(generate_agent_id("DESKTOP-TEST123")),
     last_seen=djangotime.now() - djangotime.timedelta(days=5),
-    plat="windows"
+    plat="windows",
 )
 
 server_agent = agent.extend(

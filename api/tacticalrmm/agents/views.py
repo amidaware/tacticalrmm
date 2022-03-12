@@ -36,7 +36,7 @@ from tacticalrmm.permissions import (
     _has_perm_on_site,
 )
 
-from .models import Agent, AgentCustomField, Note, RecoveryAction, AgentHistory
+from .models import Agent, AgentCustomField, Note, AgentHistory
 from .permissions import (
     AgentHistoryPerms,
     AgentPerms,
@@ -623,22 +623,7 @@ def recover(request, agent_id):
         if r == "ok":
             return Response("Successfully completed recovery")
 
-    if agent.recoveryactions.filter(last_run=None).exists():  # type: ignore
-        return notify_error(
-            "A recovery action is currently pending. Please wait for the next agent check-in."
-        )
-
-    if mode == "command" and not request.data["cmd"]:
-        return notify_error("Command is required")
-
-    # we should only get here if all other methods fail
-    RecoveryAction(
-        agent=agent,
-        mode=mode,
-        command=request.data["cmd"] if mode == "command" else None,
-    ).save()
-
-    return Response("Recovery will be attempted on the agent's next check-in")
+    return notify_error("Something went wrong")
 
 
 @api_view(["POST"])

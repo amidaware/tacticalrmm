@@ -1,21 +1,21 @@
+import hashlib
+import hmac
 import json
 import os
-import hmac
-import hashlib
-
 from pathlib import Path
 from unittest.mock import patch
 
-from django.test import override_settings
 from django.conf import settings
+from django.test import override_settings
 from model_bakery import baker
+
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Script, ScriptSnippet
 from .serializers import (
     ScriptSerializer,
-    ScriptTableSerializer,
     ScriptSnippetSerializer,
+    ScriptTableSerializer,
 )
 
 

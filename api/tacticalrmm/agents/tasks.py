@@ -4,16 +4,16 @@ import random
 from time import sleep
 from typing import Union
 
+from agents.models import Agent
+from agents.utils import get_agent_url
 from core.models import CoreSettings
 from django.conf import settings
 from django.utils import timezone as djangotime
 from logs.models import DebugLog, PendingAction
 from packaging import version as pyver
 from scripts.models import Script
-from tacticalrmm.celery import app
 
-from agents.models import Agent
-from agents.utils import get_agent_url
+from tacticalrmm.celery import app
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:

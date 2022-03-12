@@ -1,15 +1,15 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch
 from itertools import cycle
+from unittest.mock import patch
 
+from alerts.tasks import cache_agents_alert_template
 from core.models import CoreSettings
+from core.tasks import cache_db_fields_task
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
-from tacticalrmm.test import TacticalTestCase
 
-from alerts.tasks import cache_agents_alert_template
-from core.tasks import cache_db_fields_task
+from tacticalrmm.test import TacticalTestCase
 
 from .models import Alert, AlertTemplate
 from .serializers import (
@@ -515,7 +515,6 @@ class TestAlertTasks(TacticalTestCase):
             agent_recovery_email_task,
             agent_recovery_sms_task,
         )
-
         from alerts.models import Alert
 
         agent_dashboard_alert = baker.make_recipe("agents.overdue_agent")
@@ -718,6 +717,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
+        from alerts.tasks import cache_agents_alert_template
         from checks.models import Check
         from checks.tasks import (
             handle_check_email_alert_task,
@@ -725,8 +725,6 @@ class TestAlertTasks(TacticalTestCase):
             handle_resolved_check_email_alert_task,
             handle_resolved_check_sms_alert_task,
         )
-
-        from alerts.tasks import cache_agents_alert_template
 
         # create test data
         agent = baker.make_recipe("agents.agent")
@@ -1003,6 +1001,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
+        from alerts.tasks import cache_agents_alert_template
         from autotasks.models import AutomatedTask
         from autotasks.tasks import (
             handle_resolved_task_email_alert,
@@ -1010,8 +1009,6 @@ class TestAlertTasks(TacticalTestCase):
             handle_task_email_alert,
             handle_task_sms_alert,
         )
-
-        from alerts.tasks import cache_agents_alert_template
 
         # create test data
         agent = baker.make_recipe("agents.agent")

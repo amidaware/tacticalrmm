@@ -1,12 +1,11 @@
 import pytz
 import validators as _v
-from rest_framework import serializers
-
 from autotasks.models import AutomatedTask
+from rest_framework import serializers
+from scripts.models import Script
 from scripts.serializers import ScriptCheckSerializer
 
 from .models import Check, CheckHistory
-from scripts.models import Script
 
 
 class AssignedTaskField(serializers.ModelSerializer):

@@ -4,8 +4,9 @@ from unittest.mock import patch
 from agents.models import Agent
 from core.models import CoreSettings
 from model_bakery import baker, seq
-from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
+
+from tacticalrmm.test import TacticalTestCase
 
 from .serializers import (
     PolicyCheckStatusSerializer,
@@ -901,7 +902,7 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     @patch("autotasks.models.AutomatedTask.run_win_task")
     def test_run_policy_task(self, run_win_task, create_task):
-        from .tasks import run_win_policy_autotasks_task, generate_agent_checks_task
+        from .tasks import generate_agent_checks_task, run_win_policy_autotasks_task
 
         policy = baker.make("automation.Policy", active=True)
         tasks = baker.make_recipe("autotasks.task", policy=policy, _quantity=3)
@@ -917,8 +918,8 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.modify_task_on_agent")
     def test_update_policy_tasks(self, modify_task_on_agent, create_task):
         from .tasks import (
-            update_policy_autotasks_fields_task,
             generate_agent_checks_task,
+            update_policy_autotasks_fields_task,
         )
 
         # setup data

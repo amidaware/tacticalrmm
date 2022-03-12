@@ -1,11 +1,11 @@
 import uuid
+
+from accounts.models import User
+from core.models import CoreSettings
 from django.test import TestCase, override_settings
 from model_bakery import baker, seq
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
-
-from accounts.models import User
-from core.models import CoreSettings
 
 
 class TacticalTestCase(TestCase):

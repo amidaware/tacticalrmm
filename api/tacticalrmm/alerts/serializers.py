@@ -1,8 +1,8 @@
+from automation.serializers import PolicySerializer
+from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer, ReadOnlyField
 
-from automation.serializers import PolicySerializer
-from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from tacticalrmm.utils import get_default_timezone
 
 from .models import Alert, AlertTemplate

@@ -1,28 +1,28 @@
 import json
 import os
-import pytz
-from django.utils import timezone as djangotime
-from unittest.mock import patch
 from itertools import cycle
+from unittest.mock import patch
 
+import pytz
 from django.conf import settings
 from django.test import modify_settings
+from django.utils import timezone as djangotime
 from logs.models import PendingAction
 from model_bakery import baker
 from packaging import version as pyver
-from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
+
+from tacticalrmm.test import TacticalTestCase
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
 from .serializers import (
     AgentHistorySerializer,
-    AgentSerializer,
     AgentHostnameSerializer,
     AgentNoteSerializer,
+    AgentSerializer,
 )
 from .tasks import auto_self_agent_update_task
-
 
 base_url = "/agents"
 
@@ -577,8 +577,9 @@ class TestAgentViews(TacticalTestCase):
     @patch("agents.tasks.run_script_email_results_task.delay")
     @patch("agents.models.Agent.run_script")
     def test_run_script(self, run_script, email_task):
-        from .models import AgentCustomField, Note, AgentHistory
         from clients.models import ClientCustomField, SiteCustomField
+
+        from .models import AgentCustomField, AgentHistory, Note
 
         run_script.return_value = "ok"
         url = f"/agents/{self.agent.agent_id}/runscript/"

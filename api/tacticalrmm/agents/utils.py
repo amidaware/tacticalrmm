@@ -1,13 +1,13 @@
 import asyncio
-import urllib.parse
 import tempfile
+import urllib.parse
 
+from core.models import CodeSignToken, CoreSettings
+from core.utils import get_mesh_device_id, get_mesh_ws_url
 from django.conf import settings
 from django.http import FileResponse
 
-from core.models import CoreSettings, CodeSignToken
 from tacticalrmm.constants import MeshAgentIdent
-from core.utils import get_mesh_ws_url, get_mesh_device_id
 
 
 def get_agent_url(arch: str, plat: str) -> str:

@@ -1,30 +1,29 @@
+import datetime as dt
 import json
 import random
 import string
-import datetime as dt
-
-from django.core.management.base import BaseCommand
-from django.utils import timezone as djangotime
-from django.conf import settings
-from django.core.management import call_command
 
 from accounts.models import User
 from agents.models import Agent, AgentHistory
+from automation.models import Policy
+from autotasks.models import AutomatedTask
+from checks.models import Check, CheckHistory
 from clients.models import Client, Site
+from django.conf import settings
+from django.core.management import call_command
+from django.core.management.base import BaseCommand
+from django.utils import timezone as djangotime
+from logs.models import AuditLog, PendingAction
+from scripts.models import Script
 from software.models import InstalledSoftware
 from winupdate.models import WinUpdate, WinUpdatePolicy
-from checks.models import Check, CheckHistory
-from scripts.models import Script
-from autotasks.models import AutomatedTask
-from automation.models import Policy
-from logs.models import PendingAction, AuditLog
 
 from tacticalrmm.demo_data import (
     disks,
-    temp_dir_stdout,
-    spooler_stdout,
     ping_fail_output,
     ping_success_output,
+    spooler_stdout,
+    temp_dir_stdout,
 )
 
 AGENTS_TO_GENERATE = 250

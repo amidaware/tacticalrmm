@@ -1,9 +1,9 @@
+from autotasks.views import GetAddAutoTasks
+from checks.views import GetAddChecks
 from django.urls import path
+from logs.views import PendingActions
 
 from . import views
-from checks.views import GetAddChecks
-from autotasks.views import GetAddAutoTasks
-from logs.views import PendingActions
 
 urlpatterns = [
     # agent views

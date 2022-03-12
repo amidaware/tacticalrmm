@@ -1,8 +1,9 @@
 import threading
 
 from django.conf import settings
-from rest_framework.exceptions import AuthenticationFailed
 from ipware import get_client_ip
+from rest_framework.exceptions import AuthenticationFailed
+
 from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED
 
 request_local = threading.local()

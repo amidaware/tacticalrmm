@@ -1,10 +1,9 @@
 import asyncio
 
+from agents.models import Agent
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
-
-from agents.models import Agent
 
 
 class DashInfo(AsyncJsonWebsocketConsumer):

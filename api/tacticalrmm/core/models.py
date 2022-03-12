@@ -1,16 +1,15 @@
-import requests
 import smtplib
 from email.message import EmailMessage
 
 import pytz
+import requests
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
-from twilio.rest import Client as TwClient
+from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
 from twilio.base.exceptions import TwilioRestException
-
-from logs.models import BaseAuditModel, DebugLog, LOG_LEVEL_CHOICES
+from twilio.rest import Client as TwClient
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 

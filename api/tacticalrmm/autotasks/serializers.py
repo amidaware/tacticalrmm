@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from scripts.models import Script
 
 from .models import AutomatedTask

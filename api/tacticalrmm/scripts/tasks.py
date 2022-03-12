@@ -1,8 +1,8 @@
 import asyncio
 
-
 from agents.models import Agent, AgentHistory
 from scripts.models import Script
+
 from tacticalrmm.celery import app
 
 

@@ -1,7 +1,6 @@
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
-
 from agents.models import Agent
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
 
 def _has_perm(request, perm):

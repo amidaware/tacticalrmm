@@ -2,6 +2,7 @@ import datetime as dt
 from abc import abstractmethod
 
 from django.db import models
+
 from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet
 

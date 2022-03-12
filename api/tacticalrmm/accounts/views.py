@@ -10,10 +10,11 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from tacticalrmm.utils import notify_error
 
 from .models import APIKey, Role, User
-from .permissions import APIKeyPerms, AccountsPerms, RolesPerms
+from .permissions import AccountsPerms, APIKeyPerms, RolesPerms
 from .serializers import (
     APIKeySerializer,
     RoleSerializer,

@@ -1,12 +1,12 @@
 import uuid
 
+from agents.models import Agent
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-
-from agents.models import Agent
 from logs.models import BaseAuditModel
-from tacticalrmm.models import PermissionQuerySet
+
 from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.models import PermissionQuerySet
 
 
 def _default_failing_checks_data():

@@ -1,10 +1,10 @@
+from agents.models import Agent
+from agents.tasks import send_agent_update_task
+from core.models import CoreSettings
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from packaging import version as pyver
 
-from agents.models import Agent
-from core.models import CoreSettings
-from agents.tasks import send_agent_update_task
 from tacticalrmm.constants import AGENT_DEFER
 
 

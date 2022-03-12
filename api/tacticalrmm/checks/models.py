@@ -8,6 +8,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from logs.models import BaseAuditModel
+
 from tacticalrmm.models import PermissionQuerySet
 
 CHECK_TYPE_CHOICES = [

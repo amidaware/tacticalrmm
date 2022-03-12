@@ -1,14 +1,14 @@
-import time
 import json
-import requests
 import tempfile
-import websockets
+import time
 from base64 import b64encode
+
+import requests
+import websockets
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
-
-from django.http import FileResponse
 from django.conf import settings
+from django.http import FileResponse
 
 
 def get_auth_token(user, key):

@@ -3,24 +3,20 @@ import re
 import uuid
 
 import pytz
+from agents.models import Agent
+from core.models import CoreSettings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
 
-from agents.models import Agent
-from core.models import CoreSettings
-from tacticalrmm.utils import notify_error
 from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
+from tacticalrmm.utils import notify_error
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
-from .permissions import (
-    ClientsPerms,
-    DeploymentPerms,
-    SitesPerms,
-)
+from .permissions import ClientsPerms, DeploymentPerms, SitesPerms
 from .serializers import (
     ClientCustomFieldSerializer,
     ClientSerializer,
@@ -255,8 +251,8 @@ class AgentDeployment(APIView):
         return Response(DeploymentSerializer(deps, many=True).data)
 
     def post(self, request):
-        from knox.models import AuthToken
         from accounts.models import User
+        from knox.models import AuthToken
 
         site = get_object_or_404(Site, pk=request.data["site"])
 

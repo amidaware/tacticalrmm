@@ -1,11 +1,11 @@
+from agents.models import Agent
+from automation.models import Policy
 from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
 
-from agents.models import Agent
-from automation.models import Policy
 from tacticalrmm.permissions import _has_perm_on_agent
 
 from .models import AutomatedTask

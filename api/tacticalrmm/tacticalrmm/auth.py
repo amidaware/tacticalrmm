@@ -1,9 +1,8 @@
+from accounts.models import APIKey
 from django.utils import timezone as djangotime
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions
-from rest_framework.authentication import BaseAuthentication, HTTP_HEADER_ENCODING
-
-from accounts.models import APIKey
+from rest_framework.authentication import HTTP_HEADER_ENCODING, BaseAuthentication
 
 
 def get_authorization_header(request):

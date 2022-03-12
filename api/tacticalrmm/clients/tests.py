@@ -1,19 +1,15 @@
 import uuid
-from unittest.mock import patch
 from itertools import cycle
+from unittest.mock import patch
 
 from model_bakery import baker
-from rest_framework.serializers import ValidationError
 from rest_framework.response import Response
+from rest_framework.serializers import ValidationError
 
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
-from .serializers import (
-    ClientSerializer,
-    DeploymentSerializer,
-    SiteSerializer,
-)
+from .serializers import ClientSerializer, DeploymentSerializer, SiteSerializer
 
 base_url = "/clients"
 

@@ -1,9 +1,8 @@
+from accounts.views import CheckCreds, LoginView
+from core.consumers import DashInfo
 from django.conf import settings
 from django.urls import include, path, register_converter
 from knox import views as knox_views
-
-from accounts.views import CheckCreds, LoginView
-from core.consumers import DashInfo
 
 
 class AgentIDConverter:

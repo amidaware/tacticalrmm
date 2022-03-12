@@ -1,9 +1,9 @@
 from unittest.mock import patch
 
-from model_bakery import baker
-from django.test import modify_settings
-
 from agents.models import Agent
+from django.test import modify_settings
+from model_bakery import baker
+
 from tacticalrmm.test import TacticalTestCase
 
 base_url = "/services"

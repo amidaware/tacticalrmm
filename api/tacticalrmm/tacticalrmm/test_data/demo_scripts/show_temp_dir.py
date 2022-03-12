@@ -1,6 +1,5 @@
 import os
 
-
 temp_dir = "C:\\Windows\\Temp"
 files = []
 total = 0

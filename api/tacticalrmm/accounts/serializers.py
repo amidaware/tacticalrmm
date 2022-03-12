@@ -1,11 +1,11 @@
 import pyotp
 from rest_framework.serializers import (
     ModelSerializer,
-    SerializerMethodField,
     ReadOnlyField,
+    SerializerMethodField,
 )
 
-from .models import APIKey, User, Role
+from .models import APIKey, Role, User
 
 
 class UserUISerializer(ModelSerializer):

@@ -1,7 +1,6 @@
-from django.db import models
-
 from agents.models import Agent
 from core.models import CoreSettings
+from django.db import models
 from logs.models import BaseAuditModel
 
 

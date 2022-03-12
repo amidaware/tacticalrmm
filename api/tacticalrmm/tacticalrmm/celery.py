@@ -50,7 +50,7 @@ def setup_periodic_tasks(sender, **kwargs):
 
     from agents.tasks import agent_outages_task
     from alerts.tasks import unsnooze_alerts
-    from core.tasks import core_maintenance_tasks, cache_db_fields_task
+    from core.tasks import cache_db_fields_task, core_maintenance_tasks
 
     sender.add_periodic_task(60.0, agent_outages_task.s())
     sender.add_periodic_task(60.0 * 30, core_maintenance_tasks.s())

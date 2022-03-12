@@ -1,10 +1,10 @@
 # import datetime as dt
 import random
 
-from django.core.management.base import BaseCommand
-from django.utils import timezone as djangotime
 from agents.models import Agent
 from core.tasks import cache_db_fields_task
+from django.core.management.base import BaseCommand
+from django.utils import timezone as djangotime
 
 
 class Command(BaseCommand):

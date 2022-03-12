@@ -5,61 +5,57 @@ import random
 import string
 import time
 
+from core.models import CodeSignToken, CoreSettings
+from core.utils import get_mesh_ws_url, remove_mesh_agent, send_command_with_mesh
 from django.conf import settings
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
 from django.utils import timezone as djangotime
+from logs.models import AuditLog, DebugLog, PendingAction
 from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
-
-from core.models import CoreSettings, CodeSignToken
-from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.utils import (
-    get_default_timezone,
-    notify_error,
-    reload_nats,
-)
-from tacticalrmm.constants import AGENT_DEFER
-from core.utils import get_mesh_ws_url, send_command_with_mesh, remove_mesh_agent
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
+
+from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
     _has_perm_on_site,
 )
+from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 
-from .models import Agent, AgentCustomField, Note, AgentHistory
+from .models import Agent, AgentCustomField, AgentHistory, Note
 from .permissions import (
     AgentHistoryPerms,
+    AgentNotesPerms,
     AgentPerms,
     EvtLogPerms,
     InstallAgentPerms,
-    RecoverAgentPerms,
-    AgentNotesPerms,
     ManageProcPerms,
     MeshPerms,
+    PingAgentPerms,
     RebootAgentPerms,
+    RecoverAgentPerms,
     RunBulkPerms,
     RunScriptPerms,
     SendCMDPerms,
-    PingAgentPerms,
     UpdateAgentPerms,
 )
 from .serializers import (
     AgentCustomFieldSerializer,
     AgentHistorySerializer,
     AgentHostnameSerializer,
+    AgentNoteSerializer,
     AgentSerializer,
     AgentTableSerializer,
-    AgentNoteSerializer,
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
 
@@ -441,10 +437,9 @@ class Reboot(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
-    from knox.models import AuthToken
     from accounts.models import User
-
     from agents.utils import get_agent_url
+    from knox.models import AuthToken
 
     client_id = request.data["client"]
     site_id = request.data["site"]

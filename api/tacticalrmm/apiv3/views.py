@@ -1,16 +1,6 @@
 import asyncio
 import time
 
-from django.conf import settings
-from django.shortcuts import get_object_or_404
-from django.utils import timezone as djangotime
-from packaging import version as pyver
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
@@ -18,13 +8,23 @@ from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
 from checks.serializers import CheckRunnerGetSerializer
-from logs.models import PendingAction, DebugLog
-from software.models import InstalledSoftware
-from tacticalrmm.utils import notify_error, reload_nats
-from winupdate.models import WinUpdate, WinUpdatePolicy
 from core.models import CoreSettings
-from core.utils import get_mesh_ws_url, get_mesh_device_id, download_mesh_agent
+from core.utils import download_mesh_agent, get_mesh_device_id, get_mesh_ws_url
+from django.conf import settings
+from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
+from logs.models import DebugLog, PendingAction
+from packaging import version as pyver
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from software.models import InstalledSoftware
+from winupdate.models import WinUpdate, WinUpdatePolicy
+
 from tacticalrmm.constants import MeshAgentIdent
+from tacticalrmm.utils import notify_error, reload_nats
 
 
 class CheckIn(APIView):

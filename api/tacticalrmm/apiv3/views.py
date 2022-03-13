@@ -321,13 +321,26 @@ class MeshExe(APIView):
                 arch = MeshAgentIdent.WIN64
             case {"arch": "32", "plat": "windows"}:
                 arch = MeshAgentIdent.WIN32
+            case _:
+                return notify_error("Arch not specified")
 
         core: CoreSettings = CoreSettings.objects.first()  # type: ignore
 
-        uri = get_mesh_ws_url()
-        mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
-        dl_url = f"{core.mesh_site}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"  # type: ignore
-        return download_mesh_agent(dl_url)
+        try:
+            uri = get_mesh_ws_url()
+            mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
+        except:
+            return notify_error("Unable to connect to mesh to get group id information")
+
+        if settings.DOCKER_BUILD:
+            dl_url = f"{settings.MESH_WS_URL.replace('ws://', 'http://')}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
+        else:
+            dl_url = f"{core.mesh_site}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
+
+        try:
+            return download_mesh_agent(dl_url)
+        except:
+            return notify_error("Unable to download mesh agent exe")
 
 
 class NewAgent(APIView):

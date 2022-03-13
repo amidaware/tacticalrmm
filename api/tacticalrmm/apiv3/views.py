@@ -335,7 +335,9 @@ class MeshExe(APIView):
         if settings.DOCKER_BUILD:
             dl_url = f"{settings.MESH_WS_URL.replace('ws://', 'http://')}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
         else:
-            dl_url = f"{core.mesh_site}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
+            dl_url = (
+                f"{core.mesh_site}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
+            )
 
         try:
             return download_mesh_agent(dl_url)

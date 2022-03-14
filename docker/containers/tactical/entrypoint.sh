@@ -111,6 +111,13 @@ EOF
 
   echo "${localvars}" > ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
 
+  numprocs=$(nproc)
+  uwsgiprocs=4
+  if [[ "$numprocs" == "1" ]]; then
+    uwsgiprocs=2
+  else
+    uwsgiprocs=$numprocs
+  fi
 
 uwsgiconf="$(cat << EOF
 [uwsgi]
@@ -118,8 +125,8 @@ chdir = /opt/tactical/api
 module = tacticalrmm.wsgi
 home = /opt/venv
 master = true
-processes = 8
-threads = 2
+processes = ${uwsgiprocs}
+threads = ${uwsgiprocs}
 enable-threads = true
 socket = 0.0.0.0:8080
 chmod-socket = 660

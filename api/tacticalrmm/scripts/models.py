@@ -141,7 +141,7 @@ class Script(BaseAuditModel):
                     i.args = args
                     i.syntax = syntax
                     i.filename = script["filename"]
-                    i.supported_platforms = (supported_platforms,)
+                    i.supported_platforms = supported_platforms
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         i.script_body = f.read().decode("utf-8")

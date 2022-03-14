@@ -6,7 +6,7 @@ if [ $EUID -ne 0 ]; then
 fi
 
 HAS_SYSTEMD=$(ps --no-headers -o comm 1)
-if [ "${HAS_SYSTEMD}" != 'systemd1' ]; then
+if [ "${HAS_SYSTEMD}" != 'systemd' ]; then
     echo "This install script only supports systemd"
     echo "Please install systemd or manually create the service using your systems's service manager"
     exit 1

@@ -732,6 +732,9 @@ class GetAddNotes(APIView):
         if not _has_perm_on_agent(request.user, agent.agent_id):
             raise PermissionDenied()
 
+        if "note" not in request.data.keys():
+            return notify_error("Cannot add an empty note")
+
         data = {
             "note": request.data["note"],
             "agent": agent.pk,

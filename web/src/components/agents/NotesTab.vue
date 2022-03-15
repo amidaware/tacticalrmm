@@ -111,6 +111,7 @@ export default {
     const $q = useQuasar();
 
     // notes tab logic
+    const noteText = ref("");
     const notes = ref([]);
     const loading = ref(false);
     const pagination = ref({
@@ -126,17 +127,21 @@ export default {
     }
 
     function addNote() {
+      noteText.value = "";
       $q.dialog({
         title: "Add Note",
         prompt: {
+          model: noteText,
           type: "textarea",
+          isValid: val => !!val,
         },
         style: "width: 30vw; max-width: 50vw;",
         ok: { label: "Add" },
-      }).onOk(async data => {
+        cancel: true,
+      }).onOk(async () => {
         loading.value = true;
         try {
-          const result = await saveAgentNote({ agent_id: selectedAgent.value, note: data });
+          const result = await saveAgentNote({ agent_id: selectedAgent.value, note: noteText.value });
           notifySuccess(result);
           await getNotes();
         } catch (e) {
@@ -152,6 +157,7 @@ export default {
         prompt: {
           model: note.note,
           type: "textarea",
+          isValid: val => !!val,
         },
         style: "width: 30vw; max-width: 50vw;",
         ok: { label: "Save" },
@@ -204,6 +210,7 @@ export default {
       pagination,
       selectedAgent,
       tabHeight,
+      noteText,
 
       // non-reactive data
       columns,

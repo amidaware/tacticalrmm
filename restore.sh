@@ -251,7 +251,7 @@ npm install meshcentral@${MESH_VER}
 
 print_green 'Restoring the backend'
 
-print_grey 'Optimize for number of processors'
+echo 'Optimize for number of processors'
 numprocs=$(nproc)
 uwsgiprocs=4
 if [[ "$numprocs" == "1" ]]; then

@@ -384,7 +384,7 @@ read -n 1 -s -r -p "Press any key to continue..."
 
 print_green 'Installing the backend'
 
-print_grey 'Optimizing for number of processors'
+echo 'Optimizing for number of processors'
 uwsgiprocs=4
 if [[ "$numprocs" == "1" ]]; then
   uwsgiprocs=2

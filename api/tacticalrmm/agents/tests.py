@@ -964,6 +964,7 @@ class TestAgentPermissions(TacticalTestCase):
         self.client.force_authenticate(user=user)  # type: ignore
 
         agent = baker.make_recipe("agents.agent")
+        baker.make_recipe("winupdate.winupdate_policy", agent=agent)
         methods = ["get", "put", "delete"]
         url = f"{base_url}/{agent.agent_id}/"
 

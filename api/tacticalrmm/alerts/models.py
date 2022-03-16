@@ -598,6 +598,17 @@ class AlertTemplate(BaseAuditModel):
     def __str__(self):
         return self.name
 
+    def is_agent_excluded(self, agent):
+        return (
+            agent in self.excluded_agents.all()
+            or agent.site in self.excluded_sites.all()
+            or agent.client in self.excluded_clients.all()
+            or agent.monitoring_type == "workstation"
+            and self.exclude_workstations
+            or agent.monitoring_type == "server"
+            and self.exclude_servers
+        )
+
     @staticmethod
     def serialize(alert_template):
         # serializes the agent and returns json

@@ -7,6 +7,7 @@
             <q-tab name="general" label="General" />
             <q-tab name="customfields" label="Custom Fields" />
             <q-tab name="patch" label="Patches" />
+            <q-tab name="policies" label="Automation Policies" />
           </q-tabs>
         </template>
         <template v-slot:after>
@@ -122,6 +123,142 @@
                 <q-tab-panel name="patch">
                   <PatchPolicyForm :agent="agent" />
                 </q-tab-panel>
+
+                <!-- automation policies -->
+                <q-tab-panel name="policies">
+                  <div class="text-subtitle2">Policies</div>
+                  <q-list separator padding dense>
+                    <q-item v-for="(policy, key) in agent.applied_policies" :key="key">
+                      <q-item-section>
+                        <q-item-label overline>
+                          {{ capitalize(key).split("_").join(" ") }}
+                        </q-item-label>
+                        <q-item-label>{{ policy ? policy.name : "None" }}</q-item-label>
+                      </q-item-section>
+                      <q-item-section side v-if="policy">
+                        <q-item-label>
+                          <i>{{ policy.active ? "" : "disabled" }}</i>
+                        </q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+
+                  <div class="text-subtitle2">Alert Template</div>
+                  <q-list dense padding>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label>{{ agent.alert_template ? alert_template.name : "None" }}</q-item-label>
+                      </q-item-section>
+                      <q-item-section side v-if="agent.alert_template">
+                        <q-item-label>
+                          <i>{{ agent.alert_template.active ? "" : "disabled" }}</i>
+                        </q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                  <div class="text-subtitle2">Effective Patch Policy</div>
+                  <q-list separator padding dense>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>Critical</q-item-label>
+                        <q-item-label>{{
+                          agent.effective_patch_policy.critical !== "inherit"
+                            ? capitalize(agent.effective_patch_policy.critical)
+                            : "Do Nothing"
+                        }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>Important</q-item-label>
+                        <q-item-label>{{
+                          agent.effective_patch_policy.important !== "inherit"
+                            ? capitalize(agent.effective_patch_policy.important)
+                            : "Do Nothing"
+                        }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>Moderate</q-item-label>
+                        <q-item-label>{{
+                          agent.effective_patch_policy.moderate !== "inherit"
+                            ? capitalize(agent.effective_patch_policy.moderate)
+                            : "Do Nothing"
+                        }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>Low</q-item-label>
+                        <q-item-label>{{
+                          agent.effective_patch_policy.low !== "inherit"
+                            ? capitalize(agent.effective_patch_policy.low)
+                            : "Do Nothing"
+                        }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>Other</q-item-label>
+                        <q-item-label>{{
+                          agent.effective_patch_policy.other !== "inherit"
+                            ? capitalize(agent.effective_patch_policy.other)
+                            : "Do Nothing"
+                        }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>Run Time Frequency</q-item-label>
+                        <q-item-label>{{ capitalize(agent.effective_patch_policy.run_time_frequency) }}</q-item-label>
+                      </q-item-section>
+                      <q-item-section v-if="agent.effective_patch_policy.run_time_frequency === 'daily'">
+                        <q-item-label>
+                          <b>week days:</b>
+                          {{ weekDaystoString(agent.effective_patch_policy.run_time_days) }} <b>at hour:</b>
+                          {{ agent.effective_patch_policy.run_time_hour }}
+                        </q-item-label>
+                      </q-item-section>
+                      <q-item-section v-else-if="agent.effective_patch_policy.run_time_frequency === 'monthly'">
+                        <q-item-label>
+                          <b>Every month on day:</b> {{ agent.effective_patch_policy.run_time_day }} <b>at hour:</b>
+                          {{ agent.effective_patch_policy.run_time_hour }}
+                        </q-item-label>
+                      </q-item-section>
+                      <q-item-section v-else>
+                        <q-item-label>None</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>Reboot after installation</q-item-label>
+                        <q-item-label>{{
+                          agent.effective_patch_policy.reboot_after_install !== "inherit"
+                            ? capitalize(agent.effective_patch_policy.reboot_after_install)
+                            : "Do Nothing"
+                        }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>Failed patch options</q-item-label>
+                        <q-item-label v-if="agent.effective_patch_policy.reprocess_failed_inherit"
+                          >Do Nothing</q-item-label
+                        >
+                        <q-item-label v-else>
+                          <b>Reprocess failed patches:</b>
+                          {{
+                            agent.effective_patch_policy.reprocess_failed
+                              ? agent.effective_patch_policy.reprocess_failed_times
+                              : "Never"
+                          }}
+                          <b>Email on fail:</b> {{ agent.effective_patch_policy.email_if_fail ? "Yes" : "Never" }}
+                        </q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-tab-panel>
               </q-tab-panels>
             </div>
             <q-card-section class="row items-center">
@@ -140,6 +277,7 @@ import mixins from "@/mixins/mixins";
 import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
 import CustomField from "@/components/ui/CustomField";
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import { capitalize } from "@/utils/format";
 
 export default {
   name: "EditAgent",
@@ -154,6 +292,10 @@ export default {
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
     return {
+      // methods
+      capitalize,
+
+      // dialog
       dialogRef,
       onDialogHide,
     };
@@ -165,7 +307,7 @@ export default {
       agent: {},
       monTypes: ["server", "workstation"],
       client_options: [],
-      splitterModel: 15,
+      splitterModel: 25,
       tab: "general",
       timezone: null,
       tz_inherited: true,
@@ -180,6 +322,7 @@ export default {
         .get(`/agents/${this.agent_id}/`)
         .then(r => {
           this.agent = r.data;
+          console.log(r.data);
           this.allTimezones = Object.freeze(r.data.all_timezones);
 
           // r.data.time_zone is the actual db column from the agent
@@ -245,6 +388,22 @@ export default {
           this.notifySuccess("Agent was edited!");
         })
         .catch(e => {});
+    },
+    weekDaystoString(array) {
+      if (array.length === 0) return "not set";
+
+      let result = "";
+      for (day in array) {
+        if (day === 1) result += "Mon, ";
+        else if (day === 2) result += "Tue, ";
+        else if (day === 3) result += "Wed, ";
+        else if (day === 4) result += "Thur, ";
+        else if (day === 5) result += "Fri, ";
+        else if (day === 6) result += "Sat, ";
+        else if (day === 0) result += "Sun, ";
+      }
+
+      return result.trimRight(",");
     },
   },
   mounted() {

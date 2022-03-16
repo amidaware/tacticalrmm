@@ -40,6 +40,25 @@ class AgentSerializer(serializers.ModelSerializer):
     custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
     patches_last_installed = serializers.ReadOnlyField()
     last_seen = serializers.ReadOnlyField()
+    applied_policies = serializers.SerializerMethodField()
+    effective_patch_policy = serializers.SerializerMethodField()
+
+    def get_effective_patch_policy(self, obj):
+        from winupdate.serializers import WinUpdatePolicySerializer
+
+        return WinUpdatePolicySerializer(obj.get_patch_policy()).data
+
+    def get_applied_policies(self, obj):
+        from automation.serializers import PolicySerializer
+
+        policies = obj.get_agent_policies()
+
+        # need to serialize model objects manually
+        for key, policy in policies.items():
+            if policy:
+                policies[key] = PolicySerializer(policy).data
+
+        return policies
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones

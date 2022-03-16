@@ -142,22 +142,12 @@ class Policy(BaseAuditModel):
         # Get policies applied to agent and agent site and client
         policies = agent.get_agent_policies()
 
-        if policies["agent_policy"] and policies["agent_policy"].active:
-            for task in policies["agent_policy"].autotasks.all():
-                if task.pk not in [task.pk for task in tasks]:
-                    tasks.append(task)
-        if policies["site_policy"] and policies["site_policy"].active:
-            for task in policies["site_policy"].autotasks.all():
-                if task.pk not in [task.pk for task in tasks]:
-                    tasks.append(task)
-        if policies["client_policy"] and policies["client_policy"].active:
-            for task in policies["client_policy"].autotasks.all():
-                if task.pk not in [task.pk for task in tasks]:
-                    tasks.append(task)
+        processed_policies = list()
 
-        if policies["default_policy"] and policies["default_policy"].active:
-            for task in policies["default_policy"].autotasks.all():
-                if task.pk not in [task.pk for task in tasks]:
+        for _, policy in policies.items():
+            if policy and policy.active and policy.pk not in processed_policies:
+                processed_policies.append(policy.pk)
+                for task in policy.autotasks.all():
                     tasks.append(task)
 
         # remove policy tasks that use scripts that aren't compatible with the agent platform
@@ -206,37 +196,17 @@ class Policy(BaseAuditModel):
         enforced_checks = list()
         policy_checks = list()
 
-        if policies["agent_policy"] and policies["agent_policy"].active:
-            if policies["agent_policy"].enforced:
-                for check in policies["agent_policy"].policychecks.all():
-                    enforced_checks.append(check)
-            else:
-                for check in policies["agent_policy"].policychecks.all():
-                    policy_checks.append(check)
+        processed_policies = list()
 
-        if policies["site_policy"] and policies["site_policy"].active:
-            if policies["site_policy"].enforced:
-                for check in policies["site_policy"].policychecks.all():
-                    enforced_checks.append(check)
-            else:
-                for check in policies["site_policy"].policychecks.all():
-                    policy_checks.append(check)
-
-        if policies["client_policy"] and policies["client_policy"].active:
-            if policies["client_policy"].enforced:
-                for check in policies["client_policy"].policychecks.all():
-                    enforced_checks.append(check)
-            else:
-                for check in policies["client_policy"].policychecks.all():
-                    policy_checks.append(check)
-
-        if policies["default_policy"] and policies["default_policy"].active:
-            if policies["default_policy"].enforced:
-                for check in policies["default_policy"].policychecks.all():
-                    enforced_checks.append(check)
-            else:
-                for check in policies["default_policy"].policychecks.all():
-                    policy_checks.append(check)
+        for _, policy in policies.items():
+            if policy and policy.active and policy.pk not in processed_policies:
+                processed_policies.append(policy.pk)
+                if policy.enforced:
+                    for check in policy.policychecks.all():
+                        enforced_checks.append(check)
+                else:
+                    for check in policy.policychecks.all():
+                        policy_checks.append(check)
 
         # Sorted Checks already added
         added_diskspace_checks = list()

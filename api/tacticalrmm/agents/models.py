@@ -486,86 +486,20 @@ class Agent(BaseAuditModel):
     def get_patch_policy(self):
 
         # check if site has a patch policy and if so use it
-        site = self.site
-        core_settings = CoreSettings.objects.first()
         patch_policy = None
-        agent_policy = self.winupdatepolicy.get()  # type: ignore
+        agent_policy = self.winupdatepolicy.first()  # type: ignore
 
-        if self.monitoring_type == "server":
-            # check agent policy first which should override client or site policy
-            if self.policy and self.policy.winupdatepolicy.exists():
-                patch_policy = self.policy.winupdatepolicy.get()
+        policies = self.get_agent_policies()
 
-            # check site policy if agent policy doesn't have one
-            elif site.server_policy and site.server_policy.winupdatepolicy.exists():
-                # make sure agent isn;t blocking policy inheritance
-                if not self.block_policy_inheritance:
-                    patch_policy = site.server_policy.winupdatepolicy.get()
-
-            # if site doesn't have a patch policy check the client
-            elif (
-                site.client.server_policy
-                and site.client.server_policy.winupdatepolicy.exists()
+        processed_policies = list()
+        for _, policy in policies.items():
+            if (
+                policy
+                and policy.active
+                and policy.pk not in processed_policies
+                and policy.winupdatepolicy.exists()
             ):
-                # make sure agent and site are not blocking inheritance
-                if (
-                    not self.block_policy_inheritance
-                    and not site.block_policy_inheritance
-                ):
-                    patch_policy = site.client.server_policy.winupdatepolicy.get()
-
-            # if patch policy still doesn't exist check default policy
-            elif (
-                core_settings.server_policy  # type: ignore
-                and core_settings.server_policy.winupdatepolicy.exists()  # type: ignore
-            ):
-                # make sure agent site and client are not blocking inheritance
-                if (
-                    not self.block_policy_inheritance
-                    and not site.block_policy_inheritance
-                    and not site.client.block_policy_inheritance
-                ):
-                    patch_policy = core_settings.server_policy.winupdatepolicy.get()  # type: ignore
-
-        elif self.monitoring_type == "workstation":
-            # check agent policy first which should override client or site policy
-            if self.policy and self.policy.winupdatepolicy.exists():
-                patch_policy = self.policy.winupdatepolicy.get()
-
-            elif (
-                site.workstation_policy
-                and site.workstation_policy.winupdatepolicy.exists()
-            ):
-                # make sure agent isn;t blocking policy inheritance
-                if not self.block_policy_inheritance:
-                    patch_policy = site.workstation_policy.winupdatepolicy.get()
-
-            # if site doesn't have a patch policy check the client
-            elif (
-                site.client.workstation_policy
-                and site.client.workstation_policy.winupdatepolicy.exists()
-            ):
-                # make sure agent and site are not blocking inheritance
-                if (
-                    not self.block_policy_inheritance
-                    and not site.block_policy_inheritance
-                ):
-                    patch_policy = site.client.workstation_policy.winupdatepolicy.get()
-
-            # if patch policy still doesn't exist check default policy
-            elif (
-                core_settings.workstation_policy  # type: ignore
-                and core_settings.workstation_policy.winupdatepolicy.exists()  # type: ignore
-            ):
-                # make sure agent site and client are not blocking inheritance
-                if (
-                    not self.block_policy_inheritance
-                    and not site.block_policy_inheritance
-                    and not site.client.block_policy_inheritance
-                ):
-                    patch_policy = (
-                        core_settings.workstation_policy.winupdatepolicy.get()  # type: ignore
-                    )
+                patch_policy = policy.winupdatepolicy.first()
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:
@@ -612,137 +546,55 @@ class Agent(BaseAuditModel):
     # sets alert template assigned in the following order: policy, site, client, global
     # sets None if nothing is found
     def set_alert_template(self):
-
-        site = self.site
-        client = self.client
         core = CoreSettings.objects.first()
+        policies = self.get_agent_policies()
 
-        templates = list()
-        # check if alert template is on a policy assigned to agent
-        if (
-            self.policy
-            and self.policy.alert_template
-            and self.policy.alert_template.is_active
-        ):
-            templates.append(self.policy.alert_template)
-
-        # check if policy with alert template is assigned to the site
-        if (
-            self.monitoring_type == "server"
-            and site.server_policy
-            and site.server_policy.alert_template
-            and site.server_policy.alert_template.is_active
-            and not self.block_policy_inheritance
-        ):
-            templates.append(site.server_policy.alert_template)
-        if (
-            self.monitoring_type == "workstation"
-            and site.workstation_policy
-            and site.workstation_policy.alert_template
-            and site.workstation_policy.alert_template.is_active
-            and not self.block_policy_inheritance
-        ):
-            templates.append(site.workstation_policy.alert_template)
-
-        # check if alert template is assigned to site
-        if site.alert_template and site.alert_template.is_active:
-            templates.append(site.alert_template)
-
-        # check if policy with alert template is assigned to the client
-        if (
-            self.monitoring_type == "server"
-            and client.server_policy
-            and client.server_policy.alert_template
-            and client.server_policy.alert_template.is_active
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-        ):
-            templates.append(client.server_policy.alert_template)
-        if (
-            self.monitoring_type == "workstation"
-            and client.workstation_policy
-            and client.workstation_policy.alert_template
-            and client.workstation_policy.alert_template.is_active
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-        ):
-            templates.append(client.workstation_policy.alert_template)
-
-        # check if alert template is on client and return
-        if (
-            client.alert_template
-            and client.alert_template.is_active
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-        ):
-            templates.append(client.alert_template)
-
-        # check if alert template is applied globally and return
-        if (
-            core.alert_template  # type: ignore
-            and core.alert_template.is_active  # type: ignore
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-            and not client.block_policy_inheritance
-        ):
-            templates.append(core.alert_template)  # type: ignore
-
-        # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
-        if (
-            self.monitoring_type == "server"
-            and core.server_policy  # type: ignore
-            and core.server_policy.alert_template  # type: ignore
-            and core.server_policy.alert_template.is_active  # type: ignore
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-            and not client.block_policy_inheritance
-        ):
-            templates.append(core.server_policy.alert_template)  # type: ignore
-        if (
-            self.monitoring_type == "workstation"
-            and core.workstation_policy  # type: ignore
-            and core.workstation_policy.alert_template  # type: ignore
-            and core.workstation_policy.alert_template.is_active  # type: ignore
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-            and not client.block_policy_inheritance
-        ):
-            templates.append(core.workstation_policy.alert_template)  # type: ignore
-
-        # go through the templates and return the first one that isn't excluded
-        for template in templates:
-            # check if client, site, or agent has been excluded from template
+        # loop through all policies applied to agent and return an alert_template if found
+        processed_policies = list()
+        for key, policy in policies.items():
+            # default alert_template will override a default policy with alert template applied
             if (
-                client.pk
-                in template.excluded_clients.all().values_list("pk", flat=True)
-                or site.pk in template.excluded_sites.all().values_list("pk", flat=True)
-                or self.pk
-                in template.excluded_agents.all()
-                .only("pk")
-                .values_list("pk", flat=True)
+                "default" in key
+                and core.alert_template
+                and core.alert_template.is_active
+                and not core.alert_template.is_agent_excluded(self)
             ):
-                continue
-
-            # check if template is excluding desktops
+                self.alert_template = core.alert_template
+                self.save(update_fields=["alert_template"])
+                return core.alert_template
             elif (
-                self.monitoring_type == "workstation" and template.exclude_workstations
+                policy
+                and policy.active
+                and policy.pk not in processed_policies
+                and policy.alert_template
+                and policy.alert_template.is_active
+                and not policy.alert_template.is_agent_excluded(self)
             ):
-                continue
-
-            # check if template is excluding servers
-            elif self.monitoring_type == "server" and template.exclude_servers:
-                continue
-
-            else:
-                # save alert_template to agent cache field
-                self.alert_template = template
-                self.save()
-
-                return template
+                self.alert_template = policy.alert_template
+                self.save(update_fields=["alert_template"])
+                return policy.alert_template
+            elif (
+                "site" in key
+                and self.site.alert_template
+                and self.site.alert_template.is_active
+                and not self.site.alert_template.is_agent_excluded(self)
+            ):
+                self.alert_template = self.site.alert_template
+                self.save(update_fields=["alert_template"])
+                return self.site.alert_template
+            elif (
+                "client" in key
+                and self.site.client.alert_template
+                and self.site.client.alert_template.is_active
+                and not self.site.client.alert_template.is_agent_excluded(self)
+            ):
+                self.alert_template = self.site.client.alert_template
+                self.save(update_fields=["alert_template"])
+                return self.site.client.alert_template
 
         # no alert templates found or agent has been excluded
         self.alert_template = None
-        self.save()
+        self.save(update_fields=["alert_template"])
 
         return None
 

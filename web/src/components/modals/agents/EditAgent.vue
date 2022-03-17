@@ -392,7 +392,7 @@ export default {
       if (array.length === 0) return "not set";
 
       let result = "";
-      for (day in array) {
+      for (let day in array) {
         if (day === 1) result += "Mon, ";
         else if (day === 2) result += "Tue, ";
         else if (day === 3) result += "Wed, ";

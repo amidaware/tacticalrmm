@@ -224,7 +224,15 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
                 )
         if actions_to_remove:
             task = AutomatedTask.objects.get(pk=obj.pk)
-            task.actions = [action for action in task.actions if action["type"] == "cmd" or ("script" in action.keys() and action["script"] not in actions_to_remove)]
+            task.actions = [
+                action
+                for action in task.actions
+                if action["type"] == "cmd"
+                or (
+                    "script" in action.keys()
+                    and action["script"] not in actions_to_remove
+                )
+            ]
             task.save(update_fields=["actions"])
         return tmp
 

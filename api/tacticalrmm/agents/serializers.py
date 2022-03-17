@@ -42,15 +42,20 @@ class AgentSerializer(serializers.ModelSerializer):
     last_seen = serializers.ReadOnlyField()
     applied_policies = serializers.SerializerMethodField()
     effective_patch_policy = serializers.SerializerMethodField()
+    alert_template = serializers.SerializerMethodField()
+
+    def get_alert_template(self, obj):
+        from alerts.serializers import AlertTemplateSerializer
+        if obj.alert_template:
+            return AlertTemplateSerializer(obj.alert_template).data
+        else:
+            None
 
     def get_effective_patch_policy(self, obj):
-        from winupdate.serializers import WinUpdatePolicySerializer
-
         return WinUpdatePolicySerializer(obj.get_patch_policy()).data
 
     def get_applied_policies(self, obj):
         from automation.serializers import PolicySerializer
-
         policies = obj.get_agent_policies()
 
         # need to serialize model objects manually

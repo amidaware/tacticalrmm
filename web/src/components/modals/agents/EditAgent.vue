@@ -147,11 +147,11 @@
                   <q-list dense padding>
                     <q-item>
                       <q-item-section>
-                        <q-item-label>{{ agent.alert_template ? alert_template.name : "None" }}</q-item-label>
+                        <q-item-label>{{ agent.alert_template ? agent.alert_template.name : "None" }}</q-item-label>
                       </q-item-section>
                       <q-item-section side v-if="agent.alert_template">
                         <q-item-label>
-                          <i>{{ agent.alert_template.active ? "" : "disabled" }}</i>
+                          <i>{{ agent.alert_template.is_active ? "" : "disabled" }}</i>
                         </q-item-label>
                       </q-item-section>
                     </q-item>
@@ -322,7 +322,6 @@ export default {
         .get(`/agents/${this.agent_id}/`)
         .then(r => {
           this.agent = r.data;
-          console.log(r.data);
           this.allTimezones = Object.freeze(r.data.all_timezones);
 
           // r.data.time_zone is the actual db column from the agent

@@ -29,20 +29,6 @@
         <q-inner-loading showing color="primary" />
       </template>
 
-      <template v-slot:body-cell-command="props">
-        <q-td :props="props">
-          <span v-if="props.row.type === 'script_run' || props.row.type === 'task_run'">{{
-            props.row.script_name
-          }}</span>
-          <span v-else-if="props.row.type === 'cmd_run'"
-            >{{ truncateText(props.row.command, 30) }}
-            <q-tooltip v-if="props.row.command.length >= 30" style="font-size: 12px">
-              {{ props.row.command }}
-            </q-tooltip>
-          </span>
-        </q-td>
-      </template>
-
       <template v-slot:body-cell-output="props">
         <q-td :props="props">
           <span
@@ -50,7 +36,7 @@
             class="text-primary"
             @click="
               props.row.type === 'cmd_run'
-                ? showCommandOutput(props.row.results)
+                ? showCommandOutput(props.row.command, props.row.results)
                 : showScriptOutput(props.row.script_results)
             "
             >Output
@@ -103,14 +89,10 @@ const columns = [
   {
     name: "command",
     label: "Script/Command",
-    field: "command",
+    field: row => (row.type === "script_run" || row.type === "task_run" ? row.script_name : row.command),
     align: "left",
-    sort: (a, b, rowa, rowb) => {
-      let tmp1 = rowa.type === "script_run" || rowa.type === "task_run" ? rowa.script_name : a;
-      let tmp2 = rowb.type === "script_run" || rowb.type === "task_run" ? rowb.script_name : b;
-      return tmp1.localeCompare(tmp2);
-    },
     sortable: true,
+    format: (val, row) => truncateText(val, 30),
   },
   { name: "username", label: "Initiated By", field: "username", align: "left", sortable: true },
   { name: "output", label: "Output", field: "output", align: "left", sortable: true },
@@ -155,8 +137,9 @@ export default {
       });
     }
 
-    function showCommandOutput(output) {
+    function showCommandOutput(title, output) {
       $q.dialog({
+        title: title,
         style: "width: 70vw; max-width: 80vw",
         message: `<pre>${output}</pre>`,
         html: true,

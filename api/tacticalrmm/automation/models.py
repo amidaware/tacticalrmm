@@ -150,13 +150,6 @@ class Policy(BaseAuditModel):
                 for task in policy.autotasks.all():
                     tasks.append(task)
 
-        # remove policy tasks that use scripts that aren't compatible with the agent platform
-        tasks = [
-            task
-            for task in tasks
-            if agent.is_supported_script(task.script.supported_platforms)
-        ]
-
         # remove policy tasks from agent not included in policy
         for task in agent.autotasks.filter(
             parent_task__in=[

@@ -46,16 +46,19 @@ class AgentSerializer(serializers.ModelSerializer):
 
     def get_alert_template(self, obj):
         from alerts.serializers import AlertTemplateSerializer
-        if obj.alert_template:
-            return AlertTemplateSerializer(obj.alert_template).data
-        else:
-            None
+
+        return (
+            AlertTemplateSerializer(obj.alert_template).data
+            if obj.alert_template
+            else None
+        )
 
     def get_effective_patch_policy(self, obj):
         return WinUpdatePolicySerializer(obj.get_patch_policy()).data
 
     def get_applied_policies(self, obj):
         from automation.serializers import PolicySerializer
+
         policies = obj.get_agent_policies()
 
         # need to serialize model objects manually

@@ -66,7 +66,7 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
-import { formatDate, formatTableColumnText, truncateText } from "@/utils/format";
+import { formatDate, formatTableColumnText, truncateText, dateStringToUnix } from "@/utils/format";
 import { fetchAgentHistory } from "@/api/agents";
 
 // ui imports
@@ -81,6 +81,7 @@ const columns = [
     field: "time",
     align: "left",
     sortable: true,
+    sort: (a, b, rowA, rowB) => dateStringToUnix(a) - dateStringToUnix(b),
     format: (val, row) => formatDate(val, true),
   },
   {
@@ -99,7 +100,18 @@ const columns = [
     sortable: true,
     format: (val, row) => formatTableColumnText(val),
   }, */
-  { name: "command", label: "Script/Command", field: "command", align: "left", sortable: true },
+  {
+    name: "command",
+    label: "Script/Command",
+    field: "command",
+    align: "left",
+    sort: (a, b, rowa, rowb) => {
+      let tmp1 = rowa.type === "script_run" || rowa.type === "task_run" ? rowa.script_name : a;
+      let tmp2 = rowb.type === "script_run" || rowb.type === "task_run" ? rowb.script_name : b;
+      return tmp1.localeCompare(tmp2);
+    },
+    sortable: true,
+  },
   { name: "username", label: "Initiated By", field: "username", align: "left", sortable: true },
   { name: "output", label: "Output", field: "output", align: "left", sortable: true },
 ];

@@ -873,7 +873,7 @@ class AgentHistory(models.Model):
     type = models.CharField(
         max_length=50, choices=AGENT_HISTORY_TYPES, default="cmd_run"
     )
-    command = models.TextField(null=True, blank=True)
+    command = models.TextField(null=True, blank=True, default="")
     status = models.CharField(
         max_length=50, choices=AGENT_HISTORY_STATUS, default="success"
     )

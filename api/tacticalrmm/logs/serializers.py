@@ -12,8 +12,11 @@ class AuditLogSerializer(serializers.ModelSerializer):
     def get_site(self, obj):
         from agents.models import Agent
         from clients.serializers import SiteMinimumSerializer
+
         if obj.agent_id and Agent.objects.filter(agent_id=obj.agent_id).exists():
-            return SiteMinimumSerializer(Agent.objects.get(agent_id=obj.agent_id).site).data
+            return SiteMinimumSerializer(
+                Agent.objects.get(agent_id=obj.agent_id).site
+            ).data
         else:
             return None
 

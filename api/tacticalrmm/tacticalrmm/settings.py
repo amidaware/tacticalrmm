@@ -58,7 +58,7 @@ except ImportError:
     pass
 
 REST_FRAMEWORK = {
-    "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
+#    "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",
@@ -71,6 +71,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Tactical RMM API",
     "DESCRIPTION": "Simple and Fast remote monitoring and management tool",
     "VERSION": TRMM_VERSION,
+    'AUTHENTICATION_WHITELIST': ["tacticalrmm.auth.APIAuthentication"],
 }
 
 if not "AZPIPELINE" in os.environ:

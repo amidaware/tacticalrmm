@@ -271,7 +271,7 @@ def run_script_email_results_task(
 
 @app.task
 def clear_faults_task(older_than_days: int) -> None:
-    # https://github.com/wh1te909/tacticalrmm/issues/484
+    # https://github.com/amidaware/tacticalrmm/issues/484
     agents = Agent.objects.exclude(last_seen__isnull=True).filter(
         last_seen__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     )

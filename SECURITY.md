@@ -9,4 +9,4 @@
 
 ## Reporting a Vulnerability
 
-https://wh1te909.github.io/tacticalrmm/security/
+https://docs.tacticalrmm.com/security

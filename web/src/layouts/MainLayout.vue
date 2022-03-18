@@ -138,7 +138,7 @@ export default {
 
     const latestReleaseURL = computed(() => {
       return latestTRMMVersion.value
-        ? `https://github.com/wh1te909/tacticalrmm/releases/tag/v${latestTRMMVersion.value}`
+        ? `https://github.com/amidaware/tacticalrmm/releases/tag/v${latestTRMMVersion.value}`
         : "";
     });
 

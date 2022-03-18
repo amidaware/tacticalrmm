@@ -1430,7 +1430,7 @@ class TestAgentTasks(TacticalTestCase):
         self.assertEqual(action.status, "pending")
         self.assertEqual(
             action.details["url"],
-            f"https://github.com/wh1te909/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
+            f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
         )
         self.assertEqual(
             action.details["inno"], f"winagent-v{settings.LATEST_AGENT_VER}.exe"
@@ -1440,7 +1440,7 @@ class TestAgentTasks(TacticalTestCase):
             {
                 "func": "agentupdate",
                 "payload": {
-                    "url": f"https://github.com/wh1te909/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
+                    "url": f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
                     "version": settings.LATEST_AGENT_VER,
                     "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
                 },

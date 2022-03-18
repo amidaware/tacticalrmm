@@ -12,7 +12,7 @@ Demo database resets every hour. A lot of features are disabled for obvious reas
 
 ### [Discord Chat](https://discord.gg/upGTkWp)
 
-### [Documentation](https://wh1te909.github.io/tacticalrmm/)
+### [Documentation](https://docs.tacticalrmm.com)
 
 ## Features
 
@@ -34,4 +34,4 @@ Demo database resets every hour. A lot of features are disabled for obvious reas
 
 ## Installation / Backup / Restore / Usage
 
-### Refer to the [documentation](https://wh1te909.github.io/tacticalrmm/)
+### Refer to the [documentation](https://docs.tacticalrmm.com)

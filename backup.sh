@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_VERSION="17"
-SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh'
+SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

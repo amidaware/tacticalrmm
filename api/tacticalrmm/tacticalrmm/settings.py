@@ -23,8 +23,8 @@ TRMM_VERSION = "0.12.0"
 # to alert user they need to manually refresh their browser
 APP_VER = "0.0.157"
 
-# https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "2.0.1"
+# https://github.com/amidaware/rmmagent
+LATEST_AGENT_VER = "2.0.0"
 
 MESH_VER = "0.9.98"
 
@@ -37,8 +37,8 @@ NPM_VER = "29"
 SETUPTOOLS_VER = "59.6.0"
 WHEEL_VER = "0.37.1"
 
-DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
-DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
+DL_64 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
+DL_32 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
 
 EXE_GEN_URL = "https://agents.tacticalrmm.com"
 

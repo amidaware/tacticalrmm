@@ -1,9 +1,5 @@
 black
 Werkzeug
 django-extensions
-mkdocs
-mkdocs-material
-pymdown-extensions
-Pygments
 isort
 types-pytz

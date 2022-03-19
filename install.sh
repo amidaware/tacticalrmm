@@ -382,8 +382,6 @@ python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
-print_green 'Installing the backend'
-
 echo 'Optimizing for number of processors'
 uwsgiprocs=4
 if [[ "$numprocs" == "1" ]]; then

@@ -1,6 +1,7 @@
 import { createStore } from 'vuex'
 import { Screen, Dark, LoadingBar } from 'quasar'
 import axios from "axios";
+import { formatDate } from "@/utils/format"
 
 export default function () {
   const Store = new createStore({
@@ -29,7 +30,8 @@ export default function () {
         hosted: false,
         clearSearchWhenSwitching: false,
         currentTRMMVersion: null,
-        latestTRMMVersion: null
+        latestTRMMVersion: null,
+        dateFormat: "MMM-DD-YYYY - HH:mm"
       }
     },
     getters: {
@@ -48,6 +50,9 @@ export default function () {
       allClientsSelected(state) {
         return !state.selectedTree;
       },
+      formatDate: (state, getters) => (date) => {
+        return formatDate(date, state.dateFormat)
+      }
     },
     mutations: {
       AGENT_TABLE_LOADING(state, visible) {
@@ -122,6 +127,9 @@ export default function () {
       },
       setSelectedTree(state, val) {
         state.selectedTree = val
+      },
+      setDateFormat(state, val) {
+        state.dateFormat = val
       }
     },
     actions: {
@@ -184,6 +192,7 @@ export default function () {
         context.commit("SET_URL_ACTION", data.url_action);
         context.commit("setShowCommunityScripts", data.show_community_scripts);
         context.commit("SET_HOSTED", data.hosted);
+        context.commit("setDateFormat", data.date_format)
       },
       loadTree({ commit, state }) {
         axios.get("/clients/").then(r => {

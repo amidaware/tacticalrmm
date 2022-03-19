@@ -9,13 +9,13 @@ class TaskSerializer(serializers.ModelSerializer):
 
     check_name = serializers.ReadOnlyField(source="assigned_check.readable_desc")
     schedule = serializers.ReadOnlyField()
-    last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     alert_template = serializers.SerializerMethodField()
+    run_time_date = serializers.SerializerMethodField()
     run_time_date = serializers.DateTimeField(format="iso-8601", required=False)
     expire_date = serializers.DateTimeField(
         format="iso-8601", allow_null=True, required=False
     )
-
+    
     def validate_actions(self, value):
 
         if not value:

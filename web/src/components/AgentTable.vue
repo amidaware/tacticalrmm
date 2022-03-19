@@ -211,7 +211,7 @@
               <q-tooltip>Agent online</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td key="last_seen" :props="props">{{ formatDjangoDate(props.row.last_seen) }}</q-td>
+          <q-td key="last_seen" :props="props">{{ formatDate(props.row.last_seen) }}</q-td>
           <q-td key="boot_time" :props="props">{{ bootTime(props.row.boot_time) }}</q-td>
         </q-tr>
       </template>
@@ -398,6 +398,9 @@ export default {
     },
     agentTableLoading() {
       return this.$store.state.agentTableLoading;
+    },
+    formatDate() {
+      return this.$store.getters.formatDate;
     },
   },
 };

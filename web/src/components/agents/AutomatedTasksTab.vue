@@ -226,7 +226,7 @@
             >
           </q-td>
           <q-td v-else>Awaiting output</q-td>
-          <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
+          <q-td v-if="props.row.last_run">{{ formatDate(props.row.last_run) }}</q-td>
           <q-td v-else>Has not run yet</q-td>
           <q-td>{{ props.row.schedule }}</q-td>
           <q-td>
@@ -304,6 +304,7 @@ export default {
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
     const agentPlatform = computed(() => store.state.agentPlatform);
+    const formatDate = computed(() => store.getters.formatDate);
 
     // setup quasar
     const $q = useQuasar();
@@ -438,6 +439,7 @@ export default {
       columns,
 
       // methods
+      formatDate,
       getTasks,
       editTask,
       runWinTask,
@@ -446,6 +448,7 @@ export default {
       showEditTask,
       showScriptOutput,
 
+      // helpers
       truncateText,
     };
   },

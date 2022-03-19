@@ -86,6 +86,25 @@ class Alert(models.Model):
     def __str__(self):
         return self.message
 
+    @property
+    def assigned_agent(self):
+        if self.alert_type == "availability":
+            return self.agent
+        elif self.alert_type == "check":
+            return self.assigned_check.agent
+        elif self.alert_type == "task":
+            return self.assigned_task.agent
+
+    @property
+    def site(self):
+        if self.assigned_agent:
+            return self.assigned_agent.site
+
+    @property
+    def client(self):
+        if self.assigned_agent:
+            return self.assigned_agent.client
+
     def resolve(self):
         self.resolved = True
         self.resolved_on = djangotime.now()

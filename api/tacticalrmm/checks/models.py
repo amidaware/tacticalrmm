@@ -220,15 +220,6 @@ class Check(BaseAuditModel):
         if self.check_type == "cpuload" or self.check_type == "memory":
             return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
-    @property
-    def last_run_as_timezone(self):
-        if self.last_run is not None and self.agent is not None:
-            return self.last_run.astimezone(
-                pytz.timezone(self.agent.timezone)
-            ).strftime("%b-%d-%Y - %H:%M")
-
-        return self.last_run
-
     @staticmethod
     def non_editable_fields() -> list[str]:
         return [

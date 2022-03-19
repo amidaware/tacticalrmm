@@ -64,7 +64,9 @@
             </q-td>
             <q-td v-if="props.row.status !== 'completed'">
               <span v-if="props.row.action_type === 'agentupdate'">{{ getNextAgentUpdateTime() }}</span>
-              <span v-else>{{ props.row.due }}</span>
+              <span v-else>{{
+                props.row.action_type === "schedreboot" ? formatDate(props.row.due) : props.row.due
+              }}</span>
             </q-td>
             <q-td v-else>Completed</q-td>
             <q-td>{{ props.row.description }}</q-td>
@@ -123,6 +125,7 @@ export default {
 
     // vuex store
     const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
 
     // pending actions logic
     const actions = ref([]);
@@ -203,6 +206,7 @@ export default {
       getPendingActions,
       cancelPendingAction,
       getNextAgentUpdateTime,
+      formatDate,
 
       // non-reactive data
       columns,

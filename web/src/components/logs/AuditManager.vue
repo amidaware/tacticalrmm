@@ -123,6 +123,12 @@
           <span v-if="props.value">{{ props.value.name }}</span>
         </q-td>
       </template>
+
+      <template v-slot:body-cell-entry_time="props">
+        <q-td :props="props">
+          {{ formatDate(props.value) }}
+        </q-td>
+      </template>
     </q-table>
   </q-card>
 </template>
@@ -130,12 +136,13 @@
 <script>
 // composition imports
 import { ref, computed, watch, onMounted } from "vue";
+import { useStore } from "vuex";
 import { useClientDropdown } from "@/composables/clients";
 import { useAgentDropdown } from "@/composables/agents";
 import { useUserDropdown } from "@/composables/accounts";
 import { useQuasar } from "quasar";
 import { fetchAuditLog } from "@/api/logs";
-import { formatDate, formatTableColumnText } from "@/utils/format";
+import { formatTableColumnText } from "@/utils/format";
 
 // ui imported
 import AuditLogDetailModal from "@/components/logs/AuditLogDetailModal";
@@ -150,7 +157,6 @@ const columns = [
     field: "entry_time",
     align: "left",
     sortable: true,
-    format: (val, row) => formatDate(val, true),
   },
   { name: "username", label: "Username", field: "username", align: "left", sortable: true },
   { name: "agent", label: "Agent", field: "agent", align: "left", sortable: true },
@@ -247,6 +253,10 @@ export default {
     },
   },
   setup(props) {
+    // setup vuex
+    const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
+
     // setup dropdowns
     const { clientOptions, getClientOptions } = useClientDropdown();
     const { agentOptions, getAgentOptions } = useAgentDropdown();
@@ -392,6 +402,7 @@ export default {
       onRequest,
       openAuditDetail,
       formatActionColor,
+      formatDate,
     };
   },
 };

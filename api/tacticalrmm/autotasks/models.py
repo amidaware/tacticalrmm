@@ -234,15 +234,6 @@ class AutomatedTask(BaseAuditModel):
             days = bitdays_to_string(self.run_time_bit_weekdays)
             return f"Runs on {months} on {weeks} on {days} at {run_time_nice}"
 
-    @property
-    def last_run_as_timezone(self):
-        if self.last_run is not None and self.agent is not None:
-            return self.last_run.astimezone(
-                pytz.timezone(self.agent.timezone)
-            ).strftime("%b-%d-%Y - %H:%M")
-
-        return self.last_run
-
     # These fields will be duplicated on the agent tasks that are managed by a policy
     @property
     def policy_fields_to_copy(self) -> List[str]:

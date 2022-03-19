@@ -270,7 +270,7 @@
               props.row.more_info
             }}</span>
           </q-td>
-          <q-td>{{ props.row.last_run || "Never" }}</q-td>
+          <q-td>{{ props.row.last_run ? formatDate(props.row.last_run) : "Never" }}</q-td>
           <q-td v-if="!!props.row.assigned_task && props.row.assigned_task.length > 1"
             >{{ props.row.assigned_task.length }} Tasks</q-td
           >
@@ -337,6 +337,7 @@ export default {
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
     const agentPlatform = computed(() => store.state.agentPlatform);
+    const formatDate = computed(() => store.getters.formatDate);
 
     // setup quasar
     const $q = useQuasar();
@@ -494,6 +495,7 @@ export default {
       deleteCheck,
       resetCheckStatus,
       truncateText,
+      formatDate,
 
       // dialogs
       showScriptOutput,

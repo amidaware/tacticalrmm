@@ -31,7 +31,7 @@
           <q-card-section>
             <div class="row">
               <div class="col">
-                <div class="text-subtitle2">{{ props.row.entry_time }}</div>
+                <div class="text-subtitle2">{{ formatDate(props.row.entry_time) }}</div>
                 <div class="text-caption">{{ props.row.username }}</div>
               </div>
               <div class="col-auto">
@@ -106,6 +106,7 @@ export default {
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
+    const formatDate = computed(() => store.getters.formatDate);
 
     // setup quasar
     const $q = useQuasar();
@@ -216,6 +217,7 @@ export default {
       columns,
 
       // methods
+      formatDate,
       getNotes,
       addNote,
       editNote,

@@ -45,6 +45,11 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
+                  <div class="col-4">Default date format:</div>
+                  <div class="col-2"></div>
+                  <q-input outlined dense v-model="settings.date_format" class="col-6" />
+                </q-card-section>
+                <q-card-section class="row">
                   <div class="col-4">Default server policy:</div>
                   <div class="col-2"></div>
                   <q-select

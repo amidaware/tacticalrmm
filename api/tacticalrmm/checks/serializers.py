@@ -18,9 +18,9 @@ class CheckSerializer(serializers.ModelSerializer):
 
     readable_desc = serializers.ReadOnlyField()
     assigned_task = serializers.SerializerMethodField()
-    last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     history_info = serializers.ReadOnlyField()
     alert_template = serializers.SerializerMethodField()
+    last_run = serializers.ReadOnlyField()
 
     def get_alert_template(self, obj):
         if obj.agent:
@@ -214,11 +214,6 @@ class CheckResultsSerializer(serializers.ModelSerializer):
 
 
 class CheckHistorySerializer(serializers.ModelSerializer):
-    x = serializers.SerializerMethodField()
-
-    def get_x(self, obj):
-        return obj.x.astimezone(pytz.timezone(self.context["timezone"])).isoformat()
-
     # used for return large amounts of graph data
     class Meta:
         model = CheckHistory

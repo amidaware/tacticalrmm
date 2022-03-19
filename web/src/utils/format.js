@@ -1,6 +1,5 @@
 import { date } from "quasar";
 import { validateTimePeriod } from "@/utils/validation"
-
 // dropdown options formatting
 
 export function removeExtraOptionCategories(array) {
@@ -180,10 +179,36 @@ export function formatScriptSyntax(syntax) {
 
 // date formatting
 
-export function formatDate(dateString) {
+export function getTimeLapse(unixtime) {
+  if (date.inferDateFormat(unixtime) === "string") {
+    unixtime = date.formatDate(unixtime, "X")
+  }
+  var previous = unixtime * 1000;
+  var current = new Date();
+  var msPerMinute = 60 * 1000;
+  var msPerHour = msPerMinute * 60;
+  var msPerDay = msPerHour * 24;
+  var msPerMonth = msPerDay * 30;
+  var msPerYear = msPerDay * 365;
+  var elapsed = current - previous;
+  if (elapsed < msPerMinute) {
+    return Math.round(elapsed / 1000) + " seconds ago";
+  } else if (elapsed < msPerHour) {
+    return Math.round(elapsed / msPerMinute) + " minutes ago";
+  } else if (elapsed < msPerDay) {
+    return Math.round(elapsed / msPerHour) + " hours ago";
+  } else if (elapsed < msPerMonth) {
+    return Math.round(elapsed / msPerDay) + " days ago";
+  } else if (elapsed < msPerYear) {
+    return Math.round(elapsed / msPerMonth) + " months ago";
+  } else {
+    return Math.round(elapsed / msPerYear) + " years ago";
+  }
+}
+
+export function formatDate(dateString, format = "MM/DD/YYYY HH:mm") {
   if (!dateString) return "";
-  const d = date.extractDate(dateString, "MM DD YYYY HH:mm");
-  return date.formatDate(d, "MMM-DD-YYYY - HH:mm");
+  return date.formatDate(dateString, format);
 }
 
 export function getNextAgentUpdateTime() {
@@ -198,12 +223,6 @@ export function getNextAgentUpdateTime() {
   const a = date.formatDate(ret, "MMM D, YYYY");
   const b = date.formatDate(ret, "h:mm A");
   return `${a} at ${b}`;
-}
-
-export function dateStringToUnix(drfString) {
-  if (!drfString) return 0;
-  const d = date.extractDate(drfString, "MM DD YYYY HH:mm");
-  return parseInt(date.formatDate(d, "X"));
 }
 
 // takes a unix timestamp and converts it to quasar datetime field value YYYY-MM-DD HH:mm:ss

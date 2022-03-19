@@ -97,7 +97,7 @@
               <q-td>{{ props.row.username }}</q-td>
               <q-td>{{ props.row.first_name }} {{ props.row.last_name }}</q-td>
               <q-td>{{ props.row.email }}</q-td>
-              <q-td v-if="props.row.last_login">{{ props.row.last_login }}</q-td>
+              <q-td v-if="props.row.last_login">{{ formatDate(props.row.last_login) }}</q-td>
               <q-td v-else>Never</q-td>
               <q-td>{{ props.row.last_login_ip }}</q-td>
             </q-tr>
@@ -110,13 +110,23 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapState } from "vuex";
+import { computed } from "vue";
+import { mapState, useStore } from "vuex";
 import UserForm from "@/components/modals/admin/UserForm";
 import UserResetPasswordForm from "@/components/modals/admin/UserResetPasswordForm";
 
 export default {
   name: "AdminManager",
   mixins: [mixins],
+  setup(props) {
+    // setup vuex
+    const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
+
+    return {
+      formatDate,
+    };
+  },
   data() {
     return {
       users: [],

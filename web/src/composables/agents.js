@@ -24,3 +24,14 @@ export function useAgentDropdown() {
     getAgentOptions
   }
 }
+
+export function cmdPlaceholder(shell) {
+  if (shell === "cmd") return "rmdir /S /Q C:\\Windows\\System32";
+  else if (shell === "powershell") return "Remove-Item -Recurse -Force C:\\Windows\\System32";
+  else return "rm -rf --no-preserve-root /";
+}
+
+export const agentPlatformOptions = [
+  { value: "windows", label: "Windows" },
+  { value: "linux", label: "Linux" }
+]

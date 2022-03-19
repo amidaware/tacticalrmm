@@ -40,12 +40,7 @@
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
             <code>-local-mesh "C:\\&lt;some folder or path&gt;\\meshagent.exe"</code>
           </q-badge>
-          <span>
-            To skip downloading the Mesh Agent during the install. Download it
-            <span style="cursor: pointer; text-decoration: underline" class="text-primary" @click="downloadMesh"
-              >here</span
-            >
-          </span>
+          <span> To skip downloading the Mesh Agent during the install.</span>
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
@@ -92,20 +87,5 @@ export default {
   name: "AgentDownload",
   mixins: [mixins],
   props: ["info"],
-  methods: {
-    downloadMesh() {
-      const fileName = this.info.arch === "64" ? "meshagent.exe" : "meshagent-x86.exe";
-      this.$axios
-        .post(`/agents/${this.info.arch}/getmeshexe/`, {}, { responseType: "blob" })
-        .then(({ data }) => {
-          const blob = new Blob([data], { type: "application/vnd.microsoft.portable-executable" });
-          let link = document.createElement("a");
-          link.href = window.URL.createObjectURL(blob);
-          link.download = fileName;
-          link.click();
-        })
-        .catch(e => {});
-    },
-  },
 };
 </script>

@@ -1,18 +1,20 @@
-import re
-import hmac
 import hashlib
+import hmac
+import re
 from typing import List
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import CharField, TextField
 from logs.models import BaseAuditModel
+
 from tacticalrmm.utils import replace_db_values
 
 SCRIPT_SHELLS = [
     ("powershell", "Powershell"),
     ("cmd", "Batch (CMD)"),
     ("python", "Python"),
+    ("shell", "Shell"),
 ]
 
 SCRIPT_TYPES = [
@@ -45,6 +47,10 @@ class Script(BaseAuditModel):
     script_hash = models.CharField(max_length=100, null=True, blank=True)
     code_base64 = models.TextField(blank=True, default="")  # deprecated
     default_timeout = models.PositiveIntegerField(default=90)
+    hidden = models.BooleanField(default=False)
+    supported_platforms = ArrayField(
+        models.CharField(max_length=20), null=True, blank=True, default=list
+    )
 
     def __str__(self):
         return self.name
@@ -86,22 +92,15 @@ class Script(BaseAuditModel):
     def load_community_scripts(cls):
         import json
         import os
-        from pathlib import Path
 
         from django.conf import settings
 
         # load community uploaded scripts into the database
         # skip ones that already exist, only updating name / desc in case it changes
         # for install script
-        if not settings.DOCKER_BUILD:
-            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
-        # for docker
-        else:
-            scripts_dir = settings.SCRIPTS_DIR
+        scripts_dir = os.path.join(settings.SCRIPTS_DIR, "scripts")
 
-        with open(
-            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
-        ) as f:
+        with open(os.path.join(settings.SCRIPTS_DIR, "community_scripts.json")) as f:
             info = json.load(f)
 
         # used to remove scripts from DB that are removed from the json file and file system
@@ -121,9 +120,15 @@ class Script(BaseAuditModel):
                     else 90
                 )
 
-                args = script["args"] if "args" in script.keys() else []
+                args = script["args"] if "args" in script.keys() else list()
 
                 syntax = script["syntax"] if "syntax" in script.keys() else ""
+
+                supported_platforms = (
+                    script["supported_platforms"]
+                    if "supported_platforms" in script.keys()
+                    else list()
+                )
 
                 # if community script exists update it
                 if s.exists():
@@ -136,6 +141,7 @@ class Script(BaseAuditModel):
                     i.args = args
                     i.syntax = syntax
                     i.filename = script["filename"]
+                    i.supported_platforms = supported_platforms
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         i.script_body = f.read().decode("utf-8")
@@ -163,6 +169,7 @@ class Script(BaseAuditModel):
                             args=args,
                             filename=script["filename"],
                             syntax=syntax,
+                            supported_platforms=supported_platforms,
                         )
                         # new_script.hash_script_body()  # also saves script
                         new_script.save()

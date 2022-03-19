@@ -4,8 +4,9 @@ from unittest.mock import patch
 from agents.models import Agent
 from core.models import CoreSettings
 from model_bakery import baker, seq
-from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
+
+from tacticalrmm.test import TacticalTestCase
 
 from .serializers import (
     PolicyCheckStatusSerializer,
@@ -69,7 +70,7 @@ class TestPolicyViews(TacticalTestCase):
         # create policy with tasks and checks
         policy = baker.make("automation.Policy")
         checks = self.create_checks(policy=policy)
-        tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
+        tasks = baker.make_recipe("autotasks.task", policy=policy, _quantity=3)
 
         # assign a task to a check
         tasks[0].assigned_check = checks[0]  # type: ignore
@@ -248,11 +249,11 @@ class TestPolicyViews(TacticalTestCase):
 
         # policy with a task
         policy = baker.make("automation.Policy")
-        task = baker.make("autotasks.AutomatedTask", policy=policy)
+        task = baker.make_recipe("autotasks.task", policy=policy)
 
         # create policy managed tasks
-        policy_tasks = baker.make(
-            "autotasks.AutomatedTask", parent_task=task.id, _quantity=5  # type: ignore
+        policy_tasks = baker.make_recipe(
+            "autotasks.task", parent_task=task.id, _quantity=5  # type: ignore
         )
 
         url = f"/automation/tasks/{task.id}/status/"  # type: ignore
@@ -269,8 +270,8 @@ class TestPolicyViews(TacticalTestCase):
     def test_run_win_task(self, mock_task):
 
         # create managed policy tasks
-        tasks = baker.make(
-            "autotasks.AutomatedTask",
+        tasks = baker.make_recipe(
+            "autotasks.task",
             managed_by_policy=True,
             parent_task=1,
             _quantity=6,
@@ -577,8 +578,8 @@ class TestPolicyTasks(TacticalTestCase):
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(policy=policy)
 
-        baker.make(
-            "autotasks.AutomatedTask", policy=policy, name=seq("Task"), _quantity=3
+        baker.make_recipe(
+            "autotasks.task", policy=policy, name=seq("Task"), _quantity=3
         )
 
         server_agent = baker.make_recipe("agents.server_agent")
@@ -859,8 +860,8 @@ class TestPolicyTasks(TacticalTestCase):
 
         # create test data
         policy = baker.make("automation.Policy", active=True)
-        tasks = baker.make(
-            "autotasks.AutomatedTask", policy=policy, name=seq("Task"), _quantity=3
+        tasks = baker.make_recipe(
+            "autotasks.task", policy=policy, name=seq("Task"), _quantity=3
         )
         agent = baker.make_recipe("agents.server_agent", policy=policy)
 
@@ -889,7 +890,7 @@ class TestPolicyTasks(TacticalTestCase):
         from .tasks import delete_policy_autotasks_task, generate_agent_checks_task
 
         policy = baker.make("automation.Policy", active=True)
-        tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
+        tasks = baker.make_recipe("autotasks.task", policy=policy, _quantity=3)
         agent = baker.make_recipe("agents.server_agent", policy=policy)
 
         generate_agent_checks_task(agents=[agent.pk], create_tasks=True)
@@ -901,10 +902,10 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     @patch("autotasks.models.AutomatedTask.run_win_task")
     def test_run_policy_task(self, run_win_task, create_task):
-        from .tasks import run_win_policy_autotasks_task, generate_agent_checks_task
+        from .tasks import generate_agent_checks_task, run_win_policy_autotasks_task
 
         policy = baker.make("automation.Policy", active=True)
-        tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
+        tasks = baker.make_recipe("autotasks.task", policy=policy, _quantity=3)
         agent = baker.make_recipe("agents.server_agent", policy=policy)
 
         generate_agent_checks_task(agents=[agent.pk], create_tasks=True)
@@ -917,14 +918,14 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.modify_task_on_agent")
     def test_update_policy_tasks(self, modify_task_on_agent, create_task):
         from .tasks import (
-            update_policy_autotasks_fields_task,
             generate_agent_checks_task,
+            update_policy_autotasks_fields_task,
         )
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
-        tasks = baker.make(
-            "autotasks.AutomatedTask",
+        tasks = baker.make_recipe(
+            "autotasks.task",
             enabled=True,
             policy=policy,
             _quantity=3,
@@ -977,7 +978,7 @@ class TestPolicyTasks(TacticalTestCase):
         # setup data
         policy = baker.make("automation.Policy", active=True)
         baker.make_recipe("checks.memory_check", policy=policy)
-        task = baker.make("autotasks.AutomatedTask", policy=policy)
+        task = baker.make_recipe("autotasks.task", policy=policy)
         agent = baker.make_recipe(
             "agents.agent", policy=policy, monitoring_type="server"
         )
@@ -1072,7 +1073,7 @@ class TestPolicyTasks(TacticalTestCase):
         # setup data
         policy = baker.make("automation.Policy", active=True)
         baker.make_recipe("checks.memory_check", policy=policy)
-        baker.make("autotasks.AutomatedTask", policy=policy)
+        baker.make_recipe("autotasks.task", policy=policy)
         agent = baker.make_recipe("agents.agent", monitoring_type="server")
 
         core = CoreSettings.objects.first()

@@ -1,14 +1,16 @@
-import os
 import json
+import os
 
-from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
     help = "Generate conf for nats-api"
 
     def handle(self, *args, **kwargs):
+
+        self.stdout.write("Creating configuration for nats-api...")
         db = settings.DATABASES["default"]
         config = {
             "key": settings.SECRET_KEY,
@@ -22,3 +24,5 @@ class Command(BaseCommand):
         conf = os.path.join(settings.BASE_DIR, "nats-api.conf")
         with open(conf, "w") as f:
             json.dump(config, f)
+
+        self.stdout.write("Configuration for nats-api created successfully")

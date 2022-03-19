@@ -1,5 +1,9 @@
 <template>
+  <div v-if="agentPlatform.toLowerCase() !== 'windows'" class="q-pa-sm">
+    Only supported for Windows agents at this time
+  </div>
   <q-table
+    v-else
     dense
     :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
     class="remote-bg-tbl-sticky"
@@ -150,6 +154,7 @@ export default {
   },
   props: {
     agent_id: !String,
+    agentPlatform: !String,
   },
   setup(props) {
     // quasar setup
@@ -190,8 +195,9 @@ export default {
     }
 
     // vue lifecycle hooks
-    onMounted(getServices);
-
+    onMounted(() => {
+      if (props.agentPlatform === "windows") getServices();
+    });
     return {
       // reactive data
       services,

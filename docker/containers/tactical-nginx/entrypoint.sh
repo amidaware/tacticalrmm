@@ -3,8 +3,8 @@
 set -e
 
 : "${WORKER_CONNECTIONS:=2048}"
-: "${APP_PORT:=80}"
-: "${API_PORT:=80}"
+: "${APP_PORT:=8080}"
+: "${API_PORT:=8080}"
 : "${NGINX_RESOLVER:=127.0.0.11}"
 : "${BACKEND_SERVICE:=tactical-backend}"
 : "${FRONTEND_SERVICE:=tactical-frontend}"
@@ -14,8 +14,6 @@ set -e
 
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
 : "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
-
-mkdir -p "${TACTICAL_DIR}/certs"
 
 # remove default config
 rm -f /etc/nginx/conf.d/default.conf
@@ -101,15 +99,22 @@ server  {
 
     client_max_body_size 300M;
 
-    listen 443 ssl;
+    listen 4443 ssl;
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
-    ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
     
 }
 
 server {
-    listen 80;
+    listen 8080;
     server_name ${API_HOST};
     return 301 https://\$server_name\$request_uri;
 }
@@ -138,16 +143,23 @@ server  {
         proxy_set_header X-Forwarded-Port  \$server_port;
     }
 
-    listen 443 ssl;
+    listen 4443 ssl;
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
-    ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
     
 }
 
 server {
 
-    listen 80;
+    listen 8080;
     server_name ${APP_HOST};
     return 301 https://\$server_name\$request_uri;
 }
@@ -156,19 +168,26 @@ server {
 server {
     resolver ${NGINX_RESOLVER} valid=30s;
 
-    listen 443 ssl;
+    listen 4443 ssl;
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
     server_name ${MESH_HOST};
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
+    
     ssl_session_cache shared:WEBSSL:10m;
-    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
 
     location / {
         #Using variable to disable start checks
-        set \$meshcentral http://${MESH_SERVICE}:443;
+        set \$meshcentral http://${MESH_SERVICE}:4443;
 
         proxy_pass \$meshcentral;
         proxy_http_version 1.1;
@@ -187,7 +206,7 @@ server {
 server {
     resolver ${NGINX_RESOLVER} valid=30s;
 
-    listen 80;
+    listen 8080;
     server_name ${MESH_HOST};
     return 301 https://\$server_name\$request_uri;
 }

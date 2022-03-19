@@ -1,16 +1,15 @@
-import requests
 import smtplib
 from email.message import EmailMessage
 
 import pytz
+import requests
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
-from twilio.rest import Client as TwClient
+from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
 from twilio.base.exceptions import TwilioRestException
-
-from logs.models import BaseAuditModel, DebugLog, LOG_LEVEL_CHOICES
+from twilio.rest import Client as TwClient
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
@@ -61,6 +60,9 @@ class CoreSettings(BaseAuditModel):
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")
+    mesh_device_group = models.CharField(
+        max_length=255, null=True, blank=True, default="TacticalRMM"
+    )
     agent_auto_update = models.BooleanField(default=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
@@ -319,22 +321,14 @@ class CodeSignToken(models.Model):
         if not self.token:
             return False
 
-        errors = []
-        for url in settings.EXE_GEN_URLS:
-            try:
-                r = requests.post(
-                    f"{url}/api/v1/checktoken",
-                    json={"token": self.token},
-                    headers={"Content-type": "application/json"},
-                    timeout=15,
-                )
-            except Exception as e:
-                errors.append(str(e))
-            else:
-                errors = []
-                break
-
-        if errors:
+        try:
+            r = requests.post(
+                f"{settings.EXE_GEN_URL}/api/v1/checktoken",
+                json={"token": self.token},
+                headers={"Content-type": "application/json"},
+                timeout=15,
+            )
+        except:
             return False
 
         return r.status_code == 200

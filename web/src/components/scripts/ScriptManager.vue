@@ -66,6 +66,16 @@
           @click="setShowCommunityScripts(!showCommunityScripts)"
         />
 
+        <q-btn
+          dense
+          flat
+          no-caps
+          class="q-ml-sm"
+          :label="showHiddenScripts ? 'Hide Hidden Scripts' : 'Show Hidden Scripts'"
+          :icon="showHiddenScripts ? 'visibility_off' : 'visibility'"
+          @click="showHiddenScripts = !showHiddenScripts"
+        />
+
         <q-space />
         <q-input v-model="search" style="width: 300px" label="Search" dense outlined clearable class="q-pr-md q-pb-xs">
           <template v-slot:prepend>
@@ -106,8 +116,13 @@
               <q-icon v-else-if="props.node.shell === 'cmd'" name="mdi-microsoft-windows" color="primary">
                 <q-tooltip> Batch </q-tooltip>
               </q-icon>
+              <q-icon v-else-if="props.node.shell === 'shell'" name="mdi-bash" color="primary">
+                <q-tooltip> Shell </q-tooltip>
+              </q-icon>
 
-              <span class="q-pl-xs text-weight-bold">{{ props.node.name }}</span>
+              <span class="q-pl-xs text-weight-bold" :style="{ color: props.node.hidden ? 'grey' : '' }">{{
+                props.node.name
+              }}</span>
               <span class="q-pl-xs">{{ props.node.description }}</span>
             </div>
 
@@ -166,6 +181,15 @@
                     <q-icon name="cloud_download" />
                   </q-item-section>
                   <q-item-section>Download Script</q-item-section>
+                </q-item>
+
+                <q-separator />
+
+                <q-item clickable v-close-popup @click="hideScript(props.node)">
+                  <q-item-section side>
+                    <q-icon :name="props.node.hidden ? 'visibility' : 'visibility_off'" />
+                  </q-item-section>
+                  <q-item-section>{{ props.node.hidden ? "Show Script" : "Hide Script" }}</q-item-section>
                 </q-item>
 
                 <q-separator></q-separator>
@@ -269,6 +293,15 @@
                   <q-item-section>Download Script</q-item-section>
                 </q-item>
 
+                <q-separator />
+
+                <q-item clickable v-close-popup @click="hideScript(props.row)">
+                  <q-item-section side>
+                    <q-icon :name="props.row.hidden ? 'visibility' : 'visibility_off'" />
+                  </q-item-section>
+                  <q-item-section>{{ props.row.hidden ? "Show Script" : "Hide Script" }}</q-item-section>
+                </q-item>
+
                 <q-separator></q-separator>
 
                 <q-item clickable v-close-popup>
@@ -276,9 +309,11 @@
                 </q-item>
               </q-list>
             </q-menu>
+            <!-- favorite -->
             <q-td>
               <q-icon v-if="props.row.favorite" color="yellow-8" name="star" size="sm" />
             </q-td>
+            <!-- shell icon -->
             <q-td>
               <q-icon v-if="props.row.shell === 'powershell'" name="mdi-powershell" color="primary" size="sm">
                 <q-tooltip> Powershell </q-tooltip>
@@ -289,9 +324,24 @@
               <q-icon v-else-if="props.row.shell === 'cmd'" name="mdi-microsoft-windows" color="primary" size="sm">
                 <q-tooltip> Batch </q-tooltip>
               </q-icon>
+              <q-icon v-else-if="props.row.shell === 'shell'" size="sm" name="mdi-bash" color="primary">
+                <q-tooltip> Shell </q-tooltip>
+              </q-icon>
+            </q-td>
+            <!-- supported platforms -->
+            <q-td>
+              <q-badge v-if="!props.row.supported_platforms || props.row.supported_platforms.length === 0">All</q-badge>
+              <q-badge
+                v-else
+                v-for="plat in props.row.supported_platforms"
+                :key="plat"
+                color="primary"
+                class="q-pr-xs"
+                >{{ capitalize(plat) }}</q-badge
+              >
             </q-td>
             <!-- name -->
-            <q-td>
+            <q-td :style="{ color: props.row.hidden ? 'grey' : '' }">
               {{ truncateText(props.row.name, 50) }}
               <q-tooltip v-if="props.row.name.length >= 50" style="font-size: 12px">
                 {{ props.row.name }}
@@ -328,6 +378,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar, useDialogPluginComponent, exportFile } from "quasar";
 import { fetchScripts, editScript, downloadScript, removeScript } from "@/api/scripts";
+import { capitalize } from "@/utils/format";
 import { truncateText } from "@/utils/format";
 import { notifySuccess } from "@/utils/notify";
 
@@ -349,6 +400,13 @@ const columns = [
     name: "shell",
     label: "Shell",
     field: "shell",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "supported_platforms",
+    label: "Platforms",
+    field: "supported_platforms",
     align: "left",
     sortable: true,
   },
@@ -403,11 +461,12 @@ export default {
 
     // script manager logic
     const scripts = ref([]);
+    const showHiddenScripts = ref(false);
 
     async function getScripts() {
       loading.value = true;
       try {
-        scripts.value = await fetchScripts();
+        scripts.value = await fetchScripts({ showHiddenScripts: true });
       } catch (e) {
         console.error(e);
       }
@@ -419,6 +478,18 @@ export default {
       const notifyText = !script.favorite ? "Script was favorited!" : "Script was removed as a favorite!";
       try {
         const result = await editScript({ id: script.id, favorite: !script.favorite });
+        await getScripts();
+        notifySuccess(notifyText);
+      } catch (e) {}
+
+      loading.value = false;
+    }
+
+    async function hideScript(script) {
+      loading.value = true;
+      const notifyText = !script.hidden ? "Script was hidden!" : "Script was unhidden!";
+      try {
+        const result = await editScript({ id: script.id, hidden: !script.hidden });
         await getScripts();
         notifySuccess(notifyText);
       } catch (e) {}
@@ -461,9 +532,15 @@ export default {
     const expanded = ref([]);
     const loading = ref(false);
 
-    const visibleScripts = computed(() =>
-      showCommunityScripts.value ? scripts.value : scripts.value.filter(i => i.script_type !== "builtin")
-    );
+    const visibleScripts = computed(() => {
+      if (showHiddenScripts.value) {
+        return showCommunityScripts.value ? scripts.value : scripts.value.filter(i => i.script_type !== "builtin");
+      } else {
+        return showCommunityScripts.value
+          ? scripts.value.filter(i => !i.hidden)
+          : scripts.value.filter(i => i.script_type !== "builtin" && !i.hidden);
+      }
+    });
 
     const categories = computed(() => {
       let list = [];
@@ -611,6 +688,7 @@ export default {
       expanded,
       loading,
       showCommunityScripts,
+      showHiddenScripts,
 
       // computed
       visibleScripts,
@@ -622,6 +700,7 @@ export default {
       getScripts,
       deleteScript,
       favoriteScript,
+      hideScript,
       exportScript,
 
       // dialog methods
@@ -638,6 +717,7 @@ export default {
 
       // helper methods
       truncateText,
+      capitalize,
 
       // quasar dialog plugin
       dialogRef,
@@ -645,4 +725,4 @@ export default {
     };
   },
 };
-</script> 
+</script>

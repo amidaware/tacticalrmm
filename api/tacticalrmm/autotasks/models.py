@@ -3,19 +3,20 @@ import datetime as dt
 import random
 import string
 from typing import List
-from django.db.models.fields.json import JSONField
 
 import pytz
 from alerts.models import SEVERITY_CHOICES
 from django.contrib.postgres.fields import ArrayField
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.fields import DateTimeField
+from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone as djangotime
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.models import PermissionQuerySet
 from packaging import version as pyver
+
+from tacticalrmm.models import PermissionQuerySet
 from tacticalrmm.utils import (
     bitdays_to_string,
     bitmonthdays_to_string,
@@ -169,8 +170,8 @@ class AutomatedTask(BaseAuditModel):
         return self.name
 
     def save(self, *args, **kwargs):
-        from autotasks.tasks import modify_win_task
         from automation.tasks import update_policy_autotasks_fields_task
+        from autotasks.tasks import modify_win_task
 
         # get old agent if exists
         old_task = AutomatedTask.objects.get(pk=self.pk) if self.pk else None

@@ -4,7 +4,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SCRIPTS_DIR = "/srv/salt/scripts"
+SCRIPTS_DIR = "/opt/trmm-community-scripts"
 
 DOCKER_BUILD = False
 
@@ -12,36 +12,35 @@ LOG_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/log")
 
 EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 
+LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
+
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.11.3"
+TRMM_VERSION = "0.12.0"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.157"
+APP_VER = "0.0.158"
 
-# https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.8.0"
+# https://github.com/amidaware/rmmagent
+LATEST_AGENT_VER = "2.0.0"
 
-MESH_VER = "0.9.67"
+MESH_VER = "0.9.98"
 
-NATS_SERVER_VER = "2.6.6"
+NATS_SERVER_VER = "2.7.4"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "26"
-NPM_VER = "28"
+PIP_VER = "27"
+NPM_VER = "29"
 
 SETUPTOOLS_VER = "59.6.0"
 WHEEL_VER = "0.37.1"
 
-DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
-DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
+DL_64 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
+DL_32 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
 
-EXE_GEN_URLS = [
-    "https://exe2.tacticalrmm.io",
-    "https://exe.tacticalrmm.io",
-]
+EXE_GEN_URL = "https://agents.tacticalrmm.com"
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
@@ -72,6 +71,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Tactical RMM API",
     "DESCRIPTION": "Simple and Fast remote monitoring and management tool",
     "VERSION": TRMM_VERSION,
+    "AUTHENTICATION_WHITELIST": ["tacticalrmm.auth.APIAuthentication"],
 }
 
 if not "AZPIPELINE" in os.environ:
@@ -139,6 +139,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
+    "tacticalrmm.middleware.LinuxMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -207,11 +208,18 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "datefmt": "%d/%b/%Y %H:%M:%S",
+        },
+    },
     "handlers": {
         "file": {
             "level": "ERROR",
             "class": "logging.FileHandler",
             "filename": os.path.join(LOG_DIR, "django_debug.log"),
+            "formatter": "verbose",
         }
     },
     "loggers": {

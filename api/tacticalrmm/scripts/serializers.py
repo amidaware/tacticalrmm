@@ -18,6 +18,8 @@ class ScriptTableSerializer(ModelSerializer):
             "default_timeout",
             "syntax",
             "filename",
+            "hidden",
+            "supported_platforms",
         ]
 
 
@@ -39,6 +41,8 @@ class ScriptSerializer(ModelSerializer):
             "default_timeout",
             "syntax",
             "filename",
+            "hidden",
+            "supported_platforms",
         ]
 
 

@@ -1,8 +1,8 @@
 from rest_framework.serializers import (
     ModelSerializer,
     ReadOnlyField,
-    ValidationError,
     SerializerMethodField,
+    ValidationError,
 )
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField

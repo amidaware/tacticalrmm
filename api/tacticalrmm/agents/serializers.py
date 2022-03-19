@@ -2,7 +2,7 @@ import pytz
 from rest_framework import serializers
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, AgentCustomField, Note, AgentHistory
+from .models import Agent, AgentCustomField, AgentHistory, Note
 
 
 class AgentCustomFieldSerializer(serializers.ModelSerializer):
@@ -40,6 +40,33 @@ class AgentSerializer(serializers.ModelSerializer):
     custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
     patches_last_installed = serializers.ReadOnlyField()
     last_seen = serializers.ReadOnlyField()
+    applied_policies = serializers.SerializerMethodField()
+    effective_patch_policy = serializers.SerializerMethodField()
+    alert_template = serializers.SerializerMethodField()
+
+    def get_alert_template(self, obj):
+        from alerts.serializers import AlertTemplateSerializer
+
+        return (
+            AlertTemplateSerializer(obj.alert_template).data
+            if obj.alert_template
+            else None
+        )
+
+    def get_effective_patch_policy(self, obj):
+        return WinUpdatePolicySerializer(obj.get_patch_policy()).data
+
+    def get_applied_policies(self, obj):
+        from automation.serializers import PolicySerializer
+
+        policies = obj.get_agent_policies()
+
+        # need to serialize model objects manually
+        for key, policy in policies.items():
+            if policy:
+                policies[key] = PolicySerializer(policy).data
+
+        return policies
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones
@@ -116,6 +143,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "italic",
             "policy",
             "block_policy_inheritance",
+            "plat",
+            "goarch",
         ]
         depth = 2
 

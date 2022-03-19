@@ -12,20 +12,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from tacticalrmm.utils import notify_error
 from tacticalrmm.permissions import (
-    _has_perm_on_client,
     _has_perm_on_agent,
+    _has_perm_on_client,
     _has_perm_on_site,
 )
+from tacticalrmm.utils import notify_error
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
 from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
+    CustomFieldPerms,
     ServerMaintPerms,
     URLActionPerms,
-    CustomFieldPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -34,28 +34,6 @@ from .serializers import (
     KeyStoreSerializer,
     URLActionSerializer,
 )
-
-
-class UploadMeshAgent(APIView):
-    permission_classes = [IsAuthenticated, CoreSettingsPerms]
-    parser_class = (FileUploadParser,)
-
-    def put(self, request, format=None):
-        if "meshagent" not in request.data and "arch" not in request.data:
-            raise ParseError("Empty content")
-
-        arch = request.data["arch"]
-        f = request.data["meshagent"]
-        mesh_exe = os.path.join(
-            settings.EXE_DIR, "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
-        )
-        with open(mesh_exe, "wb+") as j:
-            for chunk in f.chunks():
-                j.write(chunk)
-
-        return Response(
-            "Mesh Agent uploaded successfully", status=status.HTTP_201_CREATED
-        )
 
 
 class GetEditCoreSettings(APIView):
@@ -232,23 +210,15 @@ class CodeSign(APIView):
     def patch(self, request):
         import requests
 
-        errors = []
-        for url in settings.EXE_GEN_URLS:
-            try:
-                r = requests.post(
-                    f"{url}/api/v1/checktoken",
-                    json={"token": request.data["token"]},
-                    headers={"Content-type": "application/json"},
-                    timeout=15,
-                )
-            except Exception as e:
-                errors.append(str(e))
-            else:
-                errors = []
-                break
-
-        if errors:
-            return notify_error(", ".join(errors))
+        try:
+            r = requests.post(
+                f"{settings.EXE_GEN_URL}/api/v1/checktoken",
+                json={"token": request.data["token"]},
+                headers={"Content-type": "application/json"},
+                timeout=15,
+            )
+        except Exception as e:
+            return notify_error(str(e))
 
         if r.status_code == 400 or r.status_code == 401:  # type: ignore
             return notify_error(r.json()["ret"])  # type: ignore
@@ -360,10 +330,10 @@ class RunURLAction(APIView):
     permission_classes = [IsAuthenticated, URLActionPerms]
 
     def patch(self, request):
-        from requests.utils import requote_uri
-
         from agents.models import Agent
         from clients.models import Client, Site
+        from requests.utils import requote_uri
+
         from tacticalrmm.utils import replace_db_values
 
         if "agent_id" in request.data.keys():

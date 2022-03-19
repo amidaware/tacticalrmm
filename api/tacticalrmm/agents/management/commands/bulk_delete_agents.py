@@ -1,11 +1,12 @@
 import asyncio
 
+from agents.models import Agent
 from django.core.management.base import BaseCommand
 from django.utils import timezone as djangotime
 from packaging import version as pyver
 
-from agents.models import Agent
-from tacticalrmm.utils import AGENT_DEFER, reload_nats
+from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.utils import reload_nats
 
 
 class Command(BaseCommand):

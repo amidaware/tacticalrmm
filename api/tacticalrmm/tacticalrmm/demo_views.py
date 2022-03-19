@@ -1,6 +1,7 @@
 import json
-from django.conf import settings
 import random
+
+from django.conf import settings
 from rest_framework.response import Response
 
 SVC_FILE = settings.BASE_DIR.joinpath("tacticalrmm/test_data/winsvcs.json")

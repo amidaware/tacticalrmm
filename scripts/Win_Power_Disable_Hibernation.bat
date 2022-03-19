@@ -1,1 +1,0 @@
-%SYSTEMROOT%\System32\powercfg.exe -H OFF

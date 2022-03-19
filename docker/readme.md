@@ -25,8 +25,8 @@ You will need to add DNS entries so that the three subdomains resolve to the IP 
 Get the docker-compose and .env.example file on the host you which to install on
 
 ```
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/docker/docker-compose.yml
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/docker/.env.example
+wget https://raw.githubusercontent.com/amidaware/tacticalrmm/master/docker/docker-compose.yml
+wget https://raw.githubusercontent.com/amidaware/tacticalrmm/master/docker/.env.example
 mv .env.example .env
 ```
 

@@ -113,6 +113,16 @@
           </div>
         </q-td>
       </template>
+      <template v-slot:body-cell-client="props">
+        <q-td :props="props">
+          <span v-if="props.value">{{ props.value.client_name }}</span>
+        </q-td>
+      </template>
+      <template v-slot:body-cell-site="props">
+        <q-td :props="props">
+          <span v-if="props.value">{{ props.value.name }}</span>
+        </q-td>
+      </template>
     </q-table>
   </q-card>
 </template>
@@ -144,6 +154,8 @@ const columns = [
   },
   { name: "username", label: "Username", field: "username", align: "left", sortable: true },
   { name: "agent", label: "Agent", field: "agent", align: "left", sortable: true },
+  { name: "client", label: "Client", field: "site", align: "left", sortable: true },
+  { name: "site", label: "Site", field: "site", align: "left", sortable: true },
   {
     name: "action",
     label: "Action",

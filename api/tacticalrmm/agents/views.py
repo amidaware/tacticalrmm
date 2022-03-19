@@ -5,60 +5,57 @@ import random
 import string
 import time
 
+from core.models import CodeSignToken, CoreSettings
+from core.utils import get_mesh_ws_url, remove_mesh_agent, send_command_with_mesh
 from django.conf import settings
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
 from django.utils import timezone as djangotime
+from logs.models import AuditLog, DebugLog, PendingAction
 from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
-
-from core.models import CoreSettings
-from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.utils import (
-    get_default_timezone,
-    notify_error,
-    reload_nats,
-    AGENT_DEFER,
-)
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
+
+from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
     _has_perm_on_site,
 )
+from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 
-from .models import Agent, AgentCustomField, Note, RecoveryAction, AgentHistory
+from .models import Agent, AgentCustomField, AgentHistory, Note
 from .permissions import (
     AgentHistoryPerms,
+    AgentNotesPerms,
     AgentPerms,
     EvtLogPerms,
     InstallAgentPerms,
-    RecoverAgentPerms,
-    AgentNotesPerms,
     ManageProcPerms,
     MeshPerms,
+    PingAgentPerms,
     RebootAgentPerms,
+    RecoverAgentPerms,
     RunBulkPerms,
     RunScriptPerms,
     SendCMDPerms,
-    PingAgentPerms,
     UpdateAgentPerms,
 )
 from .serializers import (
     AgentCustomFieldSerializer,
     AgentHistorySerializer,
     AgentHostnameSerializer,
+    AgentNoteSerializer,
     AgentSerializer,
     AgentTableSerializer,
-    AgentNoteSerializer,
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
 
@@ -156,10 +153,19 @@ class GetUpdateDeleteAgent(APIView):
     # uninstall agent
     def delete(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
-        asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
+
+        code = "foo"
+        if agent.plat == "linux":
+            with open(settings.LINUX_AGENT_SCRIPT, "r") as f:
+                code = f.read()
+
+        asyncio.run(agent.nats_cmd({"func": "uninstall", "code": code}, wait=False))
         name = agent.hostname
+        mesh_id = agent.mesh_node_id
         agent.delete()
         reload_nats()
+        uri = get_mesh_ws_url()
+        asyncio.run(remove_mesh_agent(uri, mesh_id))
         return Response(f"{name} will now be uninstalled.")
 
 
@@ -327,12 +333,17 @@ def get_event_log(request, agent_id, logtype, days):
 def send_raw_cmd(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
     timeout = int(request.data["timeout"])
+    if request.data["shell"] == "custom" and request.data["custom_shell"]:
+        shell = request.data["custom_shell"]
+    else:
+        shell = request.data["shell"]
+
     data = {
         "func": "rawcmd",
         "timeout": timeout,
         "payload": {
             "command": request.data["cmd"],
-            "shell": request.data["shell"],
+            "shell": shell,
         },
     }
 
@@ -353,7 +364,7 @@ def send_raw_cmd(request, agent_id):
         username=request.user.username,
         agent=agent,
         cmd=request.data["cmd"],
-        shell=request.data["shell"],
+        shell=shell,
         debug_info={"ip": request._client_ip},
     )
 
@@ -426,10 +437,9 @@ class Reboot(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
-    from knox.models import AuthToken
     from accounts.models import User
-
-    from agents.utils import get_winagent_url
+    from agents.utils import get_agent_url
+    from knox.models import AuthToken
 
     client_id = request.data["client"]
     site_id = request.data["site"]
@@ -439,26 +449,15 @@ def install_agent(request):
     if not _has_perm_on_site(request.user, site_id):
         raise PermissionDenied()
 
-    # response type is blob so we have to use
-    # status codes and render error message on the frontend
-    if arch == "64" and not os.path.exists(
-        os.path.join(settings.EXE_DIR, "meshagent.exe")
-    ):
-        return notify_error(
-            "Missing 64 bit meshagent.exe. Upload it from Settings > Global Settings > MeshCentral"
-        )
-
-    if arch == "32" and not os.path.exists(
-        os.path.join(settings.EXE_DIR, "meshagent-x86.exe")
-    ):
-        return notify_error(
-            "Missing 32 bit meshagent.exe. Upload it from Settings > Global Settings > MeshCentral"
-        )
-
     inno = (
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )
-    download_url = get_winagent_url(arch)
+    if request.data["installMethod"] == "linux":
+        plat = "linux"
+    else:
+        plat = "windows"
+
+    download_url = get_agent_url(arch, plat)
 
     installer_user = User.objects.filter(is_installer_user=True).first()
 
@@ -480,6 +479,33 @@ def install_agent(request):
             token=token,
             api=request.data["api"],
             file_name=request.data["fileName"],
+        )
+
+    elif request.data["installMethod"] == "linux":
+        # TODO
+        # linux agents are in beta for now, only available for sponsors for testing
+        # remove this after it's out of beta
+
+        try:
+            t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
+        except:
+            return notify_error("Something went wrong")
+
+        if t is None:
+            return notify_error("Missing code signing token")
+        if not t.is_valid:
+            return notify_error("Code signing token is not valid")
+
+        from agents.utils import generate_linux_install
+
+        return generate_linux_install(
+            client=str(client_id),
+            site=str(site_id),
+            agent_type=request.data["agenttype"],
+            arch=arch,
+            token=token,
+            api=request.data["api"],
+            download_url=download_url,
         )
 
     elif request.data["installMethod"] == "manual":
@@ -575,36 +601,24 @@ def recover(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
     mode = request.data["mode"]
 
-    # attempt a realtime recovery, otherwise fall back to old recovery method
-    if mode == "tacagent" or mode == "mesh":
+    if mode == "tacagent":
+        if agent.is_posix:
+            cmd = "systemctl restart tacticalagent.service"
+            shell = 3
+        else:
+            cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
+            shell = 1
+        uri = get_mesh_ws_url()
+        asyncio.run(send_command_with_mesh(cmd, uri, agent.mesh_node_id, shell, 0))
+        return Response("Recovery will be attempted shortly")
+
+    elif mode == "mesh":
         data = {"func": "recover", "payload": {"mode": mode}}
-        r = asyncio.run(agent.nats_cmd(data, timeout=10))
+        r = asyncio.run(agent.nats_cmd(data, timeout=20))
         if r == "ok":
             return Response("Successfully completed recovery")
 
-    if agent.recoveryactions.filter(last_run=None).exists():  # type: ignore
-        return notify_error(
-            "A recovery action is currently pending. Please wait for the next agent check-in."
-        )
-
-    if mode == "command" and not request.data["cmd"]:
-        return notify_error("Command is required")
-
-    # if we've made it this far and realtime recovery didn't work,
-    # tacagent service is the fallback recovery so we obv can't use that to recover itself if it's down
-    if mode == "tacagent":
-        return notify_error(
-            "Requires RPC service to be functional. Please recover that first"
-        )
-
-    # we should only get here if all other methods fail
-    RecoveryAction(
-        agent=agent,
-        mode=mode,
-        command=request.data["cmd"] if mode == "command" else None,
-    ).save()
-
-    return Response("Recovery will be attempted on the agent's next check-in")
+    return notify_error("Something went wrong")
 
 
 @api_view(["POST"])
@@ -701,27 +715,6 @@ def run_script(request, agent_id):
     return Response(f"{script.name} will now be run on {agent.hostname}")
 
 
-@api_view(["POST"])
-def get_mesh_exe(request, arch):
-    filename = "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
-    mesh_exe = os.path.join(settings.EXE_DIR, filename)
-    if not os.path.exists(mesh_exe):
-        return notify_error(f"File {filename} has not been uploaded.")
-
-    if settings.DEBUG:
-        with open(mesh_exe, "rb") as f:
-            response = HttpResponse(
-                f.read(), content_type="application/vnd.microsoft.portable-executable"
-            )
-            response["Content-Disposition"] = f"inline; filename={filename}"
-            return response
-    else:
-        response = HttpResponse()
-        response["Content-Disposition"] = f"attachment; filename={filename}"
-        response["X-Accel-Redirect"] = f"/private/exe/{filename}"
-        return response
-
-
 class GetAddNotes(APIView):
     permission_classes = [IsAuthenticated, AgentNotesPerms]
 
@@ -738,6 +731,9 @@ class GetAddNotes(APIView):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         if not _has_perm_on_agent(request.user, agent.agent_id):
             raise PermissionDenied()
+
+        if "note" not in request.data.keys():
+            return notify_error("Cannot add an empty note")
 
         data = {
             "note": request.data["note"],
@@ -819,6 +815,11 @@ def bulk(request):
     elif request.data["monType"] == "workstations":
         q = q.filter(monitoring_type="workstation")
 
+    if request.data["osType"] == "windows":
+        q = q.filter(plat="windows")
+    elif request.data["osType"] == "linux":
+        q = q.filter(plat="linux")
+
     agents: list[int] = [agent.pk for agent in q]
 
     if not agents:
@@ -832,10 +833,15 @@ def bulk(request):
     )
 
     if request.data["mode"] == "command":
+        if request.data["shell"] == "custom" and request.data["custom_shell"]:
+            shell = request.data["custom_shell"]
+        else:
+            shell = request.data["shell"]
+
         handle_bulk_command_task.delay(
             agents,
             request.data["cmd"],
-            request.data["shell"],
+            shell,
             request.data["timeout"],
             request.user.username[:50],
             run_on_offline=request.data["offlineAgents"],

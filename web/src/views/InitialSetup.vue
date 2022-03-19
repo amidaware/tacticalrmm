@@ -28,24 +28,6 @@
               <div>Default timezone for agents:</div>
               <q-select dense options-dense outlined v-model="timezone" :options="allTimezones" />
             </q-card-section>
-            <q-card-section>
-              <div class="row">
-                <q-file
-                  v-model="meshagent"
-                  :rules="[val => !!val || '*Required']"
-                  label="Upload MeshAgent"
-                  stack-label
-                  filled
-                  counter
-                  class="full-width"
-                  accept=".exe"
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="attach_file" />
-                  </template>
-                </q-file>
-              </div>
-            </q-card-section>
             <q-card-actions align="center">
               <q-btn label="Finish" color="primary" class="full-width" type="submit" />
             </q-card-actions>
@@ -71,7 +53,6 @@ export default {
       site: {
         name: "",
       },
-      meshagent: null,
       allTimezones: [],
       timezone: null,
       arch: "64",
@@ -88,19 +69,11 @@ export default {
       };
       this.$axios
         .post("/clients/", data)
-        .then(r => {
-          let formData = new FormData();
-          formData.append("arch", this.arch);
-          formData.append("meshagent", this.meshagent);
-          this.$axios
-            .put("/core/uploadmesh/", formData)
-            .then(() => {
-              this.$q.loading.hide();
-              this.$router.push({ name: "Dashboard" });
-            })
-            .catch(e => this.$q.loading.hide());
+        .then(() => {
+          this.$q.loading.hide();
+          this.$router.push({ name: "Dashboard" });
         })
-        .catch(e => this.$q.loading.hide());
+        .catch(() => this.$q.loading.hide());
     },
     getSettings() {
       this.$axios
@@ -109,7 +82,7 @@ export default {
           this.allTimezones = Object.freeze(r.data.all_timezones);
           this.timezone = r.data.default_time_zone;
         })
-        .catch(e => {});
+        .catch(() => {});
     },
   },
   mounted() {

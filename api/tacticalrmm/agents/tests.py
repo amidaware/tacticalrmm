@@ -1,31 +1,37 @@
 import json
 import os
-import pytz
-from django.utils import timezone as djangotime
-from unittest.mock import patch
 from itertools import cycle
+from unittest.mock import patch
 
+import pytz
 from django.conf import settings
+from django.test import modify_settings
+from django.utils import timezone as djangotime
 from logs.models import PendingAction
 from model_bakery import baker
 from packaging import version as pyver
-from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
+
+from tacticalrmm.test import TacticalTestCase
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
 from .serializers import (
     AgentHistorySerializer,
-    AgentSerializer,
     AgentHostnameSerializer,
     AgentNoteSerializer,
+    AgentSerializer,
 )
 from .tasks import auto_self_agent_update_task
-
 
 base_url = "/agents"
 
 
+@modify_settings(
+    MIDDLEWARE={
+        "remove": "tacticalrmm.middleware.LinuxMiddleware",
+    }
+)
 class TestAgentsList(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -91,6 +97,11 @@ class TestAgentsList(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
 
+@modify_settings(
+    MIDDLEWARE={
+        "remove": "tacticalrmm.middleware.LinuxMiddleware",
+    }
+)
 class TestAgentViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -184,15 +195,23 @@ class TestAgentViews(TacticalTestCase):
         )
         self.check_not_authenticated("put", url)
 
+    @patch("asyncio.run")
+    @patch("asyncio.run")
+    @patch("core.utils._b64_to_hex")
     @patch("agents.models.Agent.nats_cmd")
     @patch("agents.views.reload_nats")
-    def test_agent_uninstall(self, reload_nats, nats_cmd):
+    def test_agent_uninstall(
+        self, reload_nats, nats_cmd, b64_to_hex, asyncio_run1, asyncio_run2
+    ):
+        asyncio_run1.return_value = "ok"
+        asyncio_run2.return_value = "ok"
+        b64_to_hex.return_value = "nodeid"
         url = f"{base_url}/{self.agent.agent_id}/"
 
         r = self.client.delete(url, format="json")
         self.assertEqual(r.status_code, 200)
 
-        nats_cmd.assert_called_with({"func": "uninstall"}, wait=False)
+        nats_cmd.assert_called_with({"func": "uninstall", "code": "foo"}, wait=False)
         reload_nats.assert_called_once()
 
         self.check_not_authenticated("delete", url)
@@ -464,8 +483,7 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("patch", url)
 
-    @patch("os.path.exists")
-    def test_install_agent(self, mock_file_exists):
+    def test_install_agent(self):
         url = f"{base_url}/installer/"
 
         site = baker.make("clients.Site")
@@ -483,21 +501,10 @@ class TestAgentViews(TacticalTestCase):
             "fileName": "rmm-client-site-server.exe",
         }
 
-        mock_file_exists.return_value = False
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        mock_file_exists.return_value = True
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
-        data["arch"] = "32"
-        mock_file_exists.return_value = False
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
         data["arch"] = "64"
-        mock_file_exists.return_value = True
         r = self.client.post(url, data, format="json")
         self.assertIn("rdp", r.json()["cmd"])
         self.assertNotIn("power", r.json()["cmd"])
@@ -511,70 +518,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("post", url)
-
-    @patch("agents.models.Agent.nats_cmd")
-    def test_recover(self, nats_cmd):
-        from agents.models import RecoveryAction
-
-        RecoveryAction.objects.all().delete()
-        agent = baker.make_recipe("agents.online_agent")
-        url = f"{base_url}/{agent.agent_id}/recover/"
-
-        # test mesh realtime
-        data = {"cmd": None, "mode": "mesh"}
-        nats_cmd.return_value = "ok"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(RecoveryAction.objects.count(), 0)
-        nats_cmd.assert_called_with(
-            {"func": "recover", "payload": {"mode": "mesh"}}, timeout=10
-        )
-        nats_cmd.reset_mock()
-
-        # test mesh with agent rpc not working
-        data = {"cmd": None, "mode": "mesh"}
-        nats_cmd.return_value = "timeout"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(RecoveryAction.objects.count(), 1)
-        mesh_recovery = RecoveryAction.objects.first()
-        self.assertEqual(mesh_recovery.mode, "mesh")  # type: ignore
-        nats_cmd.reset_mock()
-        RecoveryAction.objects.all().delete()
-
-        # test tacagent realtime
-        data = {"cmd": None, "mode": "tacagent"}
-        nats_cmd.return_value = "ok"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(RecoveryAction.objects.count(), 0)
-        nats_cmd.assert_called_with(
-            {"func": "recover", "payload": {"mode": "tacagent"}}, timeout=10
-        )
-        nats_cmd.reset_mock()
-
-        # test tacagent with rpc not working
-        data = {"cmd": None, "mode": "tacagent"}
-        nats_cmd.return_value = "timeout"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-        self.assertEqual(RecoveryAction.objects.count(), 0)
-        nats_cmd.reset_mock()
-
-        # test shell cmd without command
-        data = {"cmd": None, "mode": "command"}
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-        self.assertEqual(RecoveryAction.objects.count(), 0)
-
-        # test shell cmd
-        data = {"cmd": "shutdown /r /t 10 /f", "mode": "command"}
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(RecoveryAction.objects.count(), 1)
-        cmd_recovery = RecoveryAction.objects.first()
-        self.assertEqual(cmd_recovery.mode, "command")  # type: ignore
-        self.assertEqual(cmd_recovery.command, "shutdown /r /t 10 /f")  # type: ignore
 
     @patch("agents.models.Agent.get_login_token")
     def test_meshcentral_tabs(self, mock_token):
@@ -634,8 +577,9 @@ class TestAgentViews(TacticalTestCase):
     @patch("agents.tasks.run_script_email_results_task.delay")
     @patch("agents.models.Agent.run_script")
     def test_run_script(self, run_script, email_task):
-        from .models import AgentCustomField, Note, AgentHistory
         from clients.models import ClientCustomField, SiteCustomField
+
+        from .models import AgentCustomField, AgentHistory, Note
 
         run_script.return_value = "ok"
         url = f"/agents/{self.agent.agent_id}/runscript/"
@@ -922,6 +866,11 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.data, data)  # type:ignore
 
 
+@modify_settings(
+    MIDDLEWARE={
+        "remove": "tacticalrmm.middleware.LinuxMiddleware",
+    }
+)
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -956,6 +905,11 @@ class TestAgentViewsNew(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
 
+@modify_settings(
+    MIDDLEWARE={
+        "remove": "tacticalrmm.middleware.LinuxMiddleware",
+    }
+)
 class TestAgentPermissions(TacticalTestCase):
     def setUp(self):
         self.client_setup()
@@ -997,14 +951,20 @@ class TestAgentPermissions(TacticalTestCase):
         # make sure superusers work
         self.check_authorized_superuser("get", url)
 
+    @patch("asyncio.run")
+    @patch("core.utils._b64_to_hex")
     @patch("agents.models.Agent.nats_cmd")
     @patch("agents.views.reload_nats")
-    def test_get_edit_uninstall_permissions(self, reload_nats, nats_cmd):
+    def test_get_edit_uninstall_permissions(
+        self, reload_nats, nats_cmd, b64_to_hex, asyncio_run
+    ):
+        b64_to_hex.return_value = "nodeid"
         # create user with empty role
         user = self.create_user_with_roles([])
         self.client.force_authenticate(user=user)  # type: ignore
 
         agent = baker.make_recipe("agents.agent")
+        baker.make_recipe("winupdate.winupdate_policy", agent=agent)
         methods = ["get", "put", "delete"]
         url = f"{base_url}/{agent.agent_id}/"
 
@@ -1176,23 +1136,23 @@ class TestAgentPermissions(TacticalTestCase):
         update_task.reset_mock()
 
         # limit to client
-        user.role.can_view_clients.set([agents[0].client])
-        self.check_authorized("post", url, data)
-        update_task.assert_called_with(agent_ids=[agent.agent_id for agent in agents])
-        update_task.reset_mock()
+        # user.role.can_view_clients.set([agents[0].client])
+        # self.check_authorized("post", url, data)
+        # update_task.assert_called_with(agent_ids=[agent.agent_id for agent in agents])
+        # update_task.reset_mock()
 
         # add site
-        user.role.can_view_sites.set([other_agents[0].site])
-        self.check_authorized("post", url, data)
-        update_task.assert_called_with(agent_ids=data["agent_ids"])
-        update_task.reset_mock()
+        # user.role.can_view_sites.set([other_agents[0].site])
+        # self.check_authorized("post", url, data)
+        # update_task.assert_called_with(agent_ids=data["agent_ids"])
+        # update_task.reset_mock()
 
         # remove client permissions
-        user.role.can_view_clients.clear()
-        self.check_authorized("post", url, data)
-        update_task.assert_called_with(
-            agent_ids=[agent.agent_id for agent in other_agents]
-        )
+        # user.role.can_view_clients.clear()
+        # self.check_authorized("post", url, data)
+        # update_task.assert_called_with(
+        #     agent_ids=[agent.agent_id for agent in other_agents]
+        # )
 
     def test_get_agent_version_permissions(self):
         agents = baker.make_recipe("agents.agent", _quantity=5)
@@ -1423,12 +1383,17 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized_superuser("get", unauthorized_url)
 
 
+@modify_settings(
+    MIDDLEWARE={
+        "remove": "tacticalrmm.middleware.LinuxMiddleware",
+    }
+)
 class TestAgentTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
 
-    @patch("agents.utils.get_winagent_url")
+    @patch("agents.utils.get_agent_url")
     @patch("agents.models.Agent.nats_cmd")
     def test_agent_update(self, nats_cmd, get_url):
         get_url.return_value = "https://exe.tacticalrmm.io"
@@ -1465,7 +1430,7 @@ class TestAgentTasks(TacticalTestCase):
         self.assertEqual(action.status, "pending")
         self.assertEqual(
             action.details["url"],
-            f"https://github.com/wh1te909/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
+            f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
         )
         self.assertEqual(
             action.details["inno"], f"winagent-v{settings.LATEST_AGENT_VER}.exe"
@@ -1475,7 +1440,7 @@ class TestAgentTasks(TacticalTestCase):
             {
                 "func": "agentupdate",
                 "payload": {
-                    "url": f"https://github.com/wh1te909/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
+                    "url": f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
                     "version": settings.LATEST_AGENT_VER,
                     "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
                 },

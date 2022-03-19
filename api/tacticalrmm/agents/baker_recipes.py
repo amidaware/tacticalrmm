@@ -32,6 +32,7 @@ agent = Recipe(
     monitoring_type=cycle(["workstation", "server"]),
     agent_id=seq(generate_agent_id("DESKTOP-TEST123")),
     last_seen=djangotime.now() - djangotime.timedelta(days=5),
+    plat="windows",
 )
 
 server_agent = agent.extend(

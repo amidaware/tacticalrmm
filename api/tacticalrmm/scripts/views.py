@@ -1,19 +1,20 @@
 import asyncio
 
+from agents.permissions import RunScriptPerms
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from tacticalrmm.utils import notify_error
 
 from .models import Script, ScriptSnippet
 from .permissions import ScriptsPerms
-from agents.permissions import RunScriptPerms
 from .serializers import (
     ScriptSerializer,
-    ScriptTableSerializer,
     ScriptSnippetSerializer,
+    ScriptTableSerializer,
 )
 
 
@@ -23,8 +24,15 @@ class GetAddScripts(APIView):
     def get(self, request):
 
         showCommunityScripts = request.GET.get("showCommunityScripts", True)
+        showHiddenScripts = request.GET.get("showHiddenScripts", False)
+
         if not showCommunityScripts or showCommunityScripts == "false":
             scripts = Script.objects.filter(script_type="userdefined")
+        else:
+            scripts = Script.objects.all()
+
+        if not showHiddenScripts or showHiddenScripts != "true":
+            scripts = scripts.filter(hidden=False)
         else:
             scripts = Script.objects.all()
 
@@ -58,6 +66,8 @@ class GetUpdateDeleteScript(APIView):
             if "favorite" in data:
                 # overwrite request data
                 data = {"favorite": data["favorite"]}
+            elif "hidden" in data:
+                data = {"hidden": data["hidden"]}
             else:
                 return notify_error("Community scripts cannot be edited.")
 
@@ -125,8 +135,9 @@ class TestScript(APIView):
     permission_classes = [IsAuthenticated, RunScriptPerms]
 
     def post(self, request, agent_id):
-        from .models import Script
         from agents.models import Agent
+
+        from .models import Script
 
         agent = get_object_or_404(Agent, agent_id=agent_id)
 

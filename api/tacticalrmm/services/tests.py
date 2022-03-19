@@ -1,13 +1,19 @@
 from unittest.mock import patch
 
+from agents.models import Agent
+from django.test import modify_settings
 from model_bakery import baker
 
-from agents.models import Agent
 from tacticalrmm.test import TacticalTestCase
 
 base_url = "/services"
 
 
+@modify_settings(
+    MIDDLEWARE={
+        "remove": "tacticalrmm.middleware.LinuxMiddleware",
+    }
+)
 class TestServiceViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()

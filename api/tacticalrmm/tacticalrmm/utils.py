@@ -7,58 +7,21 @@ from typing import List, Optional, Union
 
 import pytz
 import requests
+from agents.models import Agent
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
+from core.models import CodeSignToken
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import FileResponse
 from knox.auth import TokenAuthentication
+from logs.models import DebugLog
 from rest_framework import status
 from rest_framework.response import Response
 
-from core.models import CodeSignToken
-from logs.models import DebugLog
-from agents.models import Agent
+from tacticalrmm.constants import MONTH_DAYS, MONTHS, WEEK_DAYS, WEEKS
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
-
-AGENT_DEFER = ["wmi_detail", "services"]
-
-WEEK_DAYS = {
-    "Sunday": 0x1,
-    "Monday": 0x2,
-    "Tuesday": 0x4,
-    "Wednesday": 0x8,
-    "Thursday": 0x10,
-    "Friday": 0x20,
-    "Saturday": 0x40,
-}
-
-MONTHS = {
-    "January": 0x1,
-    "February": 0x2,
-    "March": 0x4,
-    "April": 0x8,
-    "May": 0x10,
-    "June": 0x20,
-    "July": 0x40,
-    "August": 0x80,
-    "September": 0x100,
-    "October": 0x200,
-    "November": 0x400,
-    "December": 0x800,
-}
-
-WEEKS = {
-    "First Week": 0x1,
-    "Second Week": 0x2,
-    "Third Week": 0x4,
-    "Fourth Week": 0x8,
-    "Last Week": 0x10,
-}
-
-MONTH_DAYS = {f"{b}": 0x1 << a for a, b in enumerate(range(1, 32))}
-MONTH_DAYS["Last Day"] = 0x80000000
 
 
 def generate_winagent_exe(
@@ -74,7 +37,7 @@ def generate_winagent_exe(
     file_name: str,
 ) -> Union[Response, FileResponse]:
 
-    from agents.utils import get_winagent_url
+    from agents.utils import get_agent_url
 
     inno = (
         f"winagent-v{settings.LATEST_AGENT_VER}.exe"
@@ -82,7 +45,7 @@ def generate_winagent_exe(
         else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
     )
 
-    dl_url = get_winagent_url(arch)
+    dl_url = get_agent_url(arch, "windows")
 
     try:
         codetoken = CodeSignToken.objects.first().token  # type:ignore
@@ -105,25 +68,18 @@ def generate_winagent_exe(
     }
     headers = {"Content-type": "application/json"}
 
-    errors = []
     with tempfile.NamedTemporaryFile() as fp:
-        for url in settings.EXE_GEN_URLS:
-            try:
-                r = requests.post(
-                    f"{url}/api/v1/exe",
-                    json=data,
-                    headers=headers,
-                    stream=True,
-                    timeout=900,
-                )
-            except Exception as e:
-                errors.append(str(e))
-            else:
-                errors = []
-                break
 
-        if errors:
-            DebugLog.error(message=errors)
+        try:
+            r = requests.post(
+                f"{settings.EXE_GEN_URL}/api/v1/exe",
+                json=data,
+                headers=headers,
+                stream=True,
+                timeout=900,
+            )
+        except Exception as e:
+            DebugLog.error(message=str(e))
             return notify_error(
                 "Something went wrong. Check debug error log for exact error message"
             )
@@ -276,7 +232,7 @@ KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(
 
 
 def get_latest_trmm_ver() -> str:
-    url = "https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py"
+    url = "https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py"
     try:
         r = requests.get(url, timeout=5)
     except:
@@ -295,8 +251,8 @@ def get_latest_trmm_ver() -> str:
 def replace_db_values(
     string: str, instance=None, shell: str = None, quotes=True  # type:ignore
 ) -> Union[str, None]:
-    from core.models import CustomField, GlobalKVStore
     from clients.models import Client, Site
+    from core.models import CustomField, GlobalKVStore
 
     # split by period if exists. First should be model and second should be property i.e {{client.name}}
     temp = string.split(".")

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_VERSION="57"
-SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
+SCRIPT_VERSION="59"
+SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
 
@@ -10,6 +10,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
+
+SCRIPTS_DIR="/opt/trmm-community-scripts"
+PYTHON_VER="3.10.2"
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -175,7 +178,7 @@ sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 6
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
@@ -190,19 +193,19 @@ sudo apt install -y mongodb-org
 sudo systemctl enable mongod
 sudo systemctl restart mongod
 
-print_green 'Installing Python 3.9'
+print_green 'Installing Python 3.10.2'
 
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)
 cd ~
-wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz
-tar -xf Python-3.9.9.tgz
-cd Python-3.9.9
+wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
+tar -xf Python-${PYTHON_VER}.tgz
+cd Python-${PYTHON_VER}
 ./configure --enable-optimizations
 make -j $numprocs
 sudo make altinstall
 cd ~
-sudo rm -rf Python-3.9.9 Python-3.9.9.tgz
+sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 
 print_green 'Installing redis and git'
@@ -218,7 +221,7 @@ echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-13
+sudo apt install -y postgresql-14
 sleep 2
 sudo systemctl enable postgresql
 sudo systemctl restart postgresql
@@ -237,11 +240,19 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
+git clone https://github.com/amidaware/tacticalrmm.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
+
+sudo mkdir -p ${SCRIPTS_DIR}
+sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
+git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+cd ${SCRIPTS_DIR}
+git config user.email "admin@example.com"
+git config user.name "Bob"
+git checkout main
 
 print_green 'Downloading NATS'
 
@@ -345,7 +356,7 @@ SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" /rmm/api/tacticalrmm/tacticalrmm/setting
 WHEEL_VER=$(grep "^WHEEL_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
 
 cd /rmm/api
-python3.9 -m venv env
+python3.10 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
@@ -371,6 +382,7 @@ python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
+echo 'Optimizing for number of processors'
 uwsgiprocs=4
 if [[ "$numprocs" == "1" ]]; then
   uwsgiprocs=2
@@ -510,8 +522,15 @@ server {
     error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
-    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
-
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
+    
     location /static/ {
         root /rmm/api/tacticalrmm;
     }
@@ -574,9 +593,16 @@ server {
     server_name ${meshdomain};
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
+
     ssl_session_cache shared:WEBSSL:10m;
-    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
 
     location / {
         proxy_pass http://127.0.0.1:4430/;
@@ -631,7 +657,7 @@ CELERY_APP="tacticalrmm"
 
 CELERYD_MULTI="multi"
 
-CELERYD_OPTS="--time-limit=9999 --autoscale=100,5"
+CELERYD_OPTS="--time-limit=86400 --autoscale=50,3"
 
 CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
@@ -726,7 +752,14 @@ server {
     listen [::]:443 ssl;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
-    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
 }
 
 server {
@@ -786,11 +819,11 @@ echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settin
 print_green 'Creating meshcentral account and group'
 
 sudo systemctl stop meshcentral
-sleep 3
+sleep 1
 cd /meshcentral
 
 node node_modules/meshcentral --createaccount ${meshusername} --pass ${MESHPASSWD} --email ${letsemail}
-sleep 2
+sleep 1
 node node_modules/meshcentral --adminaccount ${meshusername}
 
 sudo systemctl start meshcentral
@@ -803,8 +836,7 @@ while ! [[ $CHECK_MESH_READY2 ]]; do
 done
 
 node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
-sleep 5
-MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
+sleep 1
 
 sudo systemctl enable nats.service
 cd /rmm/api/tacticalrmm
@@ -831,11 +863,8 @@ done
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
-printf >&2 "${YELLOW}Download the meshagent 64 bit EXE from:\n\n${GREEN}"
-echo ${MESHEXE} | sed 's/{.*}//'
-printf >&2 "${NC}\n\n"
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
-printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
+printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral username: ${GREEN}${meshusername}${NC}\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
 

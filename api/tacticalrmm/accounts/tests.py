@@ -1,11 +1,11 @@
 from unittest.mock import patch
 
+from accounts.models import APIKey, User
+from accounts.serializers import APIKeySerializer
 from django.test import override_settings
 from model_bakery import baker, seq
-from accounts.models import User, APIKey
-from tacticalrmm.test import TacticalTestCase
 
-from accounts.serializers import APIKeySerializer
+from tacticalrmm.test import TacticalTestCase
 
 
 class TestAccounts(TacticalTestCase):

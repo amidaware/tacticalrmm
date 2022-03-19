@@ -1,20 +1,21 @@
 import base64
-from django.core.management.base import BaseCommand
-from django.utils.timezone import make_aware
 import datetime as dt
 
-from logs.models import PendingAction
-from scripts.models import Script
-from autotasks.models import AutomatedTask
 from accounts.models import User
+from agents.models import Agent
+from autotasks.models import AutomatedTask
+from django.core.management.base import BaseCommand
+from django.utils.timezone import make_aware
+from scripts.models import Script
+
+from tacticalrmm.constants import AGENT_DEFER
 
 
 class Command(BaseCommand):
     help = "Collection of tasks to run after updating the rmm, after migrations"
 
     def handle(self, *args, **kwargs):
-        # remove task pending actions. deprecated 4/20/2021
-        PendingAction.objects.filter(action_type="taskaction").delete()
+        self.stdout.write("Running post update tasks")
 
         # load community scripts into the db
         Script.load_community_scripts()
@@ -68,3 +69,17 @@ class Command(BaseCommand):
                     task.save()
             except:
                 continue
+
+        # set goarch for older windows agents
+        for agent in Agent.objects.defer(*AGENT_DEFER):
+            if not agent.goarch:
+                if agent.arch == "64":
+                    agent.goarch = "amd64"
+                elif agent.arch == "32":
+                    agent.goarch = "386"
+                else:
+                    agent.goarch = "amd64"
+
+                agent.save(update_fields=["goarch"])
+
+        self.stdout.write("Post update tasks finished")

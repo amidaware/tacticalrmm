@@ -3,7 +3,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("uploadmesh/", views.UploadMeshAgent.as_view()),
     path("settings/", views.GetEditCoreSettings.as_view()),
     path("version/", views.version),
     path("emailtest/", views.email_test),

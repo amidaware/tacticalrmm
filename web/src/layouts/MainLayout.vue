@@ -18,7 +18,9 @@
         </q-btn>
         <q-toolbar-title>
           Tactical RMM<span class="text-overline q-ml-sm">v{{ currentTRMMVersion }}</span>
-          <span class="text-overline q-ml-md" v-if="latestTRMMVersion && currentTRMMVersion !== latestTRMMVersion"
+          <span
+            class="text-overline q-ml-md"
+            v-if="latestTRMMVersion !== 'error' && currentTRMMVersion !== latestTRMMVersion"
             ><q-badge color="warning"
               ><a :href="latestReleaseURL" target="_blank">v{{ latestTRMMVersion }} available</a></q-badge
             ></span
@@ -131,13 +133,12 @@ export default {
 
     const currentTRMMVersion = computed(() => store.state.currentTRMMVersion);
     const latestTRMMVersion = computed(() => store.state.latestTRMMVersion);
-    const needRefresh = computed(() => store.state.needRefresh);
+    const needRefresh = computed(() => store.state.needrefresh);
     const user = computed(() => store.state.username);
-    const token = computed(() => store.state.token);
 
     const latestReleaseURL = computed(() => {
       return latestTRMMVersion.value
-        ? `https://github.com/wh1te909/tacticalrmm/releases/tag/v${latestTRMMVersion.value}`
+        ? `https://github.com/amidaware/tacticalrmm/releases/tag/v${latestTRMMVersion.value}`
         : "";
     });
 
@@ -159,6 +160,9 @@ export default {
     const ws = ref(null);
 
     function setupWS() {
+      // moved computed token inside the function since it is not refreshing
+      // when ws is closed causing ws to connect with expired token
+      const token = computed(() => store.state.token);
       console.log("Starting websocket");
       const proto = process.env.NODE_ENV === "production" || process.env.DOCKER_BUILD ? "wss" : "ws";
       ws.value = new WebSocket(`${proto}://${wsUrl()}/ws/dashinfo/?access_token=${token.value}`);
@@ -175,12 +179,10 @@ export default {
       ws.value.onclose = e => {
         try {
           console.log(`Closed code: ${e.code}`);
-          if (e.code !== 1000 && e.code) {
-            console.log("Retrying websocket connection...");
-            setTimeout(() => {
-              setupWS();
-            }, 2 * 1000);
-          }
+          console.log("Retrying websocket connection...");
+          setTimeout(() => {
+            setupWS();
+          }, 3 * 1000);
         } catch (e) {
           console.log("Websocket connection closed");
         }

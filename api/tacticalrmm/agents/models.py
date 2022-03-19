@@ -7,7 +7,10 @@ from distutils.version import LooseVersion
 from typing import Any
 
 import msgpack
+import nats
 import validators
+from asgiref.sync import sync_to_async
+from core.models import TZ_CHOICES, CoreSettings
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA3_384
 from Crypto.Random import get_random_bytes
@@ -16,11 +19,9 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone as djangotime
-from nats.aio.client import Client as NATS
-from nats.aio.errors import ErrTimeout
-
-from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel, DebugLog
+from nats.errors import TimeoutError
+
 from tacticalrmm.models import PermissionQuerySet
 
 
@@ -28,24 +29,20 @@ class Agent(BaseAuditModel):
     objects = PermissionQuerySet.as_manager()
 
     version = models.CharField(default="0.1.0", max_length=255)
-    salt_ver = models.CharField(default="1.0.3", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
     plat = models.CharField(max_length=255, null=True, blank=True)
+    goarch = models.CharField(max_length=255, null=True, blank=True)
     plat_release = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
-    salt_id = models.CharField(null=True, blank=True, max_length=255)
-    local_ip = models.TextField(null=True, blank=True)  # deprecated
     agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)
     services = models.JSONField(null=True, blank=True)
     public_ip = models.CharField(null=True, max_length=255)
     total_ram = models.IntegerField(null=True, blank=True)
-    used_ram = models.IntegerField(null=True, blank=True)  # deprecated
     disks = models.JSONField(null=True, blank=True)
     boot_time = models.FloatField(null=True, blank=True)
     logged_in_username = models.CharField(null=True, blank=True, max_length=255)
     last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
-    antivirus = models.CharField(default="n/a", max_length=255)  # deprecated
     monitoring_type = models.CharField(max_length=30)
     description = models.CharField(null=True, blank=True, max_length=255)
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
@@ -89,8 +86,6 @@ class Agent(BaseAuditModel):
     )
 
     def save(self, *args, **kwargs):
-        from automation.tasks import generate_agent_checks_task
-
         # get old agent if exists
         old_agent = Agent.objects.get(pk=self.pk) if self.pk else None
         super(Agent, self).save(old_model=old_agent, *args, **kwargs)
@@ -106,6 +101,8 @@ class Agent(BaseAuditModel):
             or (old_agent.monitoring_type != self.monitoring_type)
             or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
         ):
+            from automation.tasks import generate_agent_checks_task
+
             generate_agent_checks_task.delay(agents=[self.pk], create_tasks=True)
 
     def __str__(self):
@@ -126,7 +123,14 @@ class Agent(BaseAuditModel):
             return CoreSettings.objects.first().default_time_zone  # type: ignore
 
     @property
+    def is_posix(self):
+        return self.plat == "linux" or self.plat == "darwin"
+
+    @property
     def arch(self):
+        if self.is_posix:
+            return self.goarch
+
         if self.operating_system is not None:
             if "64 bit" in self.operating_system or "64bit" in self.operating_system:
                 return "64"
@@ -194,6 +198,12 @@ class Agent(BaseAuditModel):
 
     @property
     def cpu_model(self):
+        if self.is_posix:
+            try:
+                return self.wmi_detail["cpus"]
+            except:
+                return ["unknown cpu model"]
+
         ret = []
         try:
             cpus = self.wmi_detail["cpu"]
@@ -205,6 +215,14 @@ class Agent(BaseAuditModel):
 
     @property
     def graphics(self):
+        if self.is_posix:
+            try:
+                if not self.wmi_detail["gpus"]:
+                    return "No graphics cards"
+                return self.wmi_detail["gpus"]
+            except:
+                return "Error getting graphics cards"
+
         ret, mrda = [], []
         try:
             graphics = self.wmi_detail["graphics"]
@@ -226,6 +244,12 @@ class Agent(BaseAuditModel):
 
     @property
     def local_ips(self):
+        if self.is_posix:
+            try:
+                return ", ".join(self.wmi_detail["local_ips"])
+            except:
+                return "error getting local ips"
+
         ret = []
         try:
             ips = self.wmi_detail["network_config"]
@@ -252,6 +276,12 @@ class Agent(BaseAuditModel):
 
     @property
     def make_model(self):
+        if self.is_posix:
+            try:
+                return self.wmi_detail["make_model"]
+            except:
+                return "error getting make/model"
+
         try:
             comp_sys = self.wmi_detail["comp_sys"][0]
             comp_sys_prod = self.wmi_detail["comp_sys_prod"][0]
@@ -282,6 +312,12 @@ class Agent(BaseAuditModel):
 
     @property
     def physical_disks(self):
+        if self.is_posix:
+            try:
+                return self.wmi_detail["disks"]
+            except:
+                return ["unknown disk"]
+
         try:
             disks = self.wmi_detail["disk"]
             ret = []
@@ -302,6 +338,37 @@ class Agent(BaseAuditModel):
             return ret
         except:
             return ["unknown disk"]
+
+    def is_supported_script(self, platforms: list) -> bool:
+        return self.plat.lower() in platforms if platforms else True
+
+    def get_agent_policies(self):
+        site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
+        client_policy = getattr(self.client, f"{self.monitoring_type}_policy", None)
+        default_policy = getattr(
+            CoreSettings.objects.first(), f"{self.monitoring_type}_policy", None
+        )
+
+        return {
+            "agent_policy": self.policy
+            if self.policy and not self.policy.is_agent_excluded(self)
+            else None,
+            "site_policy": site_policy
+            if (site_policy and not site_policy.is_agent_excluded(self))
+            and not self.block_policy_inheritance
+            else None,
+            "client_policy": client_policy
+            if (client_policy and not client_policy.is_agent_excluded(self))
+            and not self.block_policy_inheritance
+            and not self.site.block_policy_inheritance
+            else None,
+            "default_policy": default_policy
+            if (default_policy and not default_policy.is_agent_excluded(self))
+            and not self.block_policy_inheritance
+            and not self.site.block_policy_inheritance
+            and not self.client.block_policy_inheritance
+            else None,
+        }
 
     def check_run_interval(self) -> int:
         interval = self.check_interval
@@ -419,86 +486,20 @@ class Agent(BaseAuditModel):
     def get_patch_policy(self):
 
         # check if site has a patch policy and if so use it
-        site = self.site
-        core_settings = CoreSettings.objects.first()
         patch_policy = None
-        agent_policy = self.winupdatepolicy.get()  # type: ignore
+        agent_policy = self.winupdatepolicy.first()  # type: ignore
 
-        if self.monitoring_type == "server":
-            # check agent policy first which should override client or site policy
-            if self.policy and self.policy.winupdatepolicy.exists():
-                patch_policy = self.policy.winupdatepolicy.get()
+        policies = self.get_agent_policies()
 
-            # check site policy if agent policy doesn't have one
-            elif site.server_policy and site.server_policy.winupdatepolicy.exists():
-                # make sure agent isn;t blocking policy inheritance
-                if not self.block_policy_inheritance:
-                    patch_policy = site.server_policy.winupdatepolicy.get()
-
-            # if site doesn't have a patch policy check the client
-            elif (
-                site.client.server_policy
-                and site.client.server_policy.winupdatepolicy.exists()
+        processed_policies = list()
+        for _, policy in policies.items():
+            if (
+                policy
+                and policy.active
+                and policy.pk not in processed_policies
+                and policy.winupdatepolicy.exists()
             ):
-                # make sure agent and site are not blocking inheritance
-                if (
-                    not self.block_policy_inheritance
-                    and not site.block_policy_inheritance
-                ):
-                    patch_policy = site.client.server_policy.winupdatepolicy.get()
-
-            # if patch policy still doesn't exist check default policy
-            elif (
-                core_settings.server_policy  # type: ignore
-                and core_settings.server_policy.winupdatepolicy.exists()  # type: ignore
-            ):
-                # make sure agent site and client are not blocking inheritance
-                if (
-                    not self.block_policy_inheritance
-                    and not site.block_policy_inheritance
-                    and not site.client.block_policy_inheritance
-                ):
-                    patch_policy = core_settings.server_policy.winupdatepolicy.get()  # type: ignore
-
-        elif self.monitoring_type == "workstation":
-            # check agent policy first which should override client or site policy
-            if self.policy and self.policy.winupdatepolicy.exists():
-                patch_policy = self.policy.winupdatepolicy.get()
-
-            elif (
-                site.workstation_policy
-                and site.workstation_policy.winupdatepolicy.exists()
-            ):
-                # make sure agent isn;t blocking policy inheritance
-                if not self.block_policy_inheritance:
-                    patch_policy = site.workstation_policy.winupdatepolicy.get()
-
-            # if site doesn't have a patch policy check the client
-            elif (
-                site.client.workstation_policy
-                and site.client.workstation_policy.winupdatepolicy.exists()
-            ):
-                # make sure agent and site are not blocking inheritance
-                if (
-                    not self.block_policy_inheritance
-                    and not site.block_policy_inheritance
-                ):
-                    patch_policy = site.client.workstation_policy.winupdatepolicy.get()
-
-            # if patch policy still doesn't exist check default policy
-            elif (
-                core_settings.workstation_policy  # type: ignore
-                and core_settings.workstation_policy.winupdatepolicy.exists()  # type: ignore
-            ):
-                # make sure agent site and client are not blocking inheritance
-                if (
-                    not self.block_policy_inheritance
-                    and not site.block_policy_inheritance
-                    and not site.client.block_policy_inheritance
-                ):
-                    patch_policy = (
-                        core_settings.workstation_policy.winupdatepolicy.get()  # type: ignore
-                    )
+                patch_policy = policy.winupdatepolicy.first()
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:
@@ -545,137 +546,55 @@ class Agent(BaseAuditModel):
     # sets alert template assigned in the following order: policy, site, client, global
     # sets None if nothing is found
     def set_alert_template(self):
-
-        site = self.site
-        client = self.client
         core = CoreSettings.objects.first()
+        policies = self.get_agent_policies()
 
-        templates = list()
-        # check if alert template is on a policy assigned to agent
-        if (
-            self.policy
-            and self.policy.alert_template
-            and self.policy.alert_template.is_active
-        ):
-            templates.append(self.policy.alert_template)
-
-        # check if policy with alert template is assigned to the site
-        if (
-            self.monitoring_type == "server"
-            and site.server_policy
-            and site.server_policy.alert_template
-            and site.server_policy.alert_template.is_active
-            and not self.block_policy_inheritance
-        ):
-            templates.append(site.server_policy.alert_template)
-        if (
-            self.monitoring_type == "workstation"
-            and site.workstation_policy
-            and site.workstation_policy.alert_template
-            and site.workstation_policy.alert_template.is_active
-            and not self.block_policy_inheritance
-        ):
-            templates.append(site.workstation_policy.alert_template)
-
-        # check if alert template is assigned to site
-        if site.alert_template and site.alert_template.is_active:
-            templates.append(site.alert_template)
-
-        # check if policy with alert template is assigned to the client
-        if (
-            self.monitoring_type == "server"
-            and client.server_policy
-            and client.server_policy.alert_template
-            and client.server_policy.alert_template.is_active
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-        ):
-            templates.append(client.server_policy.alert_template)
-        if (
-            self.monitoring_type == "workstation"
-            and client.workstation_policy
-            and client.workstation_policy.alert_template
-            and client.workstation_policy.alert_template.is_active
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-        ):
-            templates.append(client.workstation_policy.alert_template)
-
-        # check if alert template is on client and return
-        if (
-            client.alert_template
-            and client.alert_template.is_active
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-        ):
-            templates.append(client.alert_template)
-
-        # check if alert template is applied globally and return
-        if (
-            core.alert_template  # type: ignore
-            and core.alert_template.is_active  # type: ignore
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-            and not client.block_policy_inheritance
-        ):
-            templates.append(core.alert_template)  # type: ignore
-
-        # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
-        if (
-            self.monitoring_type == "server"
-            and core.server_policy  # type: ignore
-            and core.server_policy.alert_template  # type: ignore
-            and core.server_policy.alert_template.is_active  # type: ignore
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-            and not client.block_policy_inheritance
-        ):
-            templates.append(core.server_policy.alert_template)  # type: ignore
-        if (
-            self.monitoring_type == "workstation"
-            and core.workstation_policy  # type: ignore
-            and core.workstation_policy.alert_template  # type: ignore
-            and core.workstation_policy.alert_template.is_active  # type: ignore
-            and not self.block_policy_inheritance
-            and not site.block_policy_inheritance
-            and not client.block_policy_inheritance
-        ):
-            templates.append(core.workstation_policy.alert_template)  # type: ignore
-
-        # go through the templates and return the first one that isn't excluded
-        for template in templates:
-            # check if client, site, or agent has been excluded from template
+        # loop through all policies applied to agent and return an alert_template if found
+        processed_policies = list()
+        for key, policy in policies.items():
+            # default alert_template will override a default policy with alert template applied
             if (
-                client.pk
-                in template.excluded_clients.all().values_list("pk", flat=True)
-                or site.pk in template.excluded_sites.all().values_list("pk", flat=True)
-                or self.pk
-                in template.excluded_agents.all()
-                .only("pk")
-                .values_list("pk", flat=True)
+                "default" in key
+                and core.alert_template
+                and core.alert_template.is_active
+                and not core.alert_template.is_agent_excluded(self)
             ):
-                continue
-
-            # check if template is excluding desktops
+                self.alert_template = core.alert_template
+                self.save(update_fields=["alert_template"])
+                return core.alert_template
             elif (
-                self.monitoring_type == "workstation" and template.exclude_workstations
+                policy
+                and policy.active
+                and policy.pk not in processed_policies
+                and policy.alert_template
+                and policy.alert_template.is_active
+                and not policy.alert_template.is_agent_excluded(self)
             ):
-                continue
-
-            # check if template is excluding servers
-            elif self.monitoring_type == "server" and template.exclude_servers:
-                continue
-
-            else:
-                # save alert_template to agent cache field
-                self.alert_template = template
-                self.save()
-
-                return template
+                self.alert_template = policy.alert_template
+                self.save(update_fields=["alert_template"])
+                return policy.alert_template
+            elif (
+                "site" in key
+                and self.site.alert_template
+                and self.site.alert_template.is_active
+                and not self.site.alert_template.is_agent_excluded(self)
+            ):
+                self.alert_template = self.site.alert_template
+                self.save(update_fields=["alert_template"])
+                return self.site.alert_template
+            elif (
+                "client" in key
+                and self.site.client.alert_template
+                and self.site.client.alert_template.is_active
+                and not self.site.client.alert_template.is_agent_excluded(self)
+            ):
+                self.alert_template = self.site.client.alert_template
+                self.save(update_fields=["alert_template"])
+                return self.site.client.alert_template
 
         # no alert templates found or agent has been excluded
         self.alert_template = None
-        self.save()
+        self.save(update_fields=["alert_template"])
 
         return None
 
@@ -718,8 +637,10 @@ class Agent(BaseAuditModel):
         except Exception:
             return "err"
 
+    def _do_nats_debug(self, agent, message):
+        DebugLog.error(agent=agent, log_type="agent_issues", message=message)
+
     async def nats_cmd(self, data: dict, timeout: int = 30, wait: bool = True):
-        nc = NATS()
         options = {
             "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
             "user": "tacticalrmm",
@@ -727,8 +648,9 @@ class Agent(BaseAuditModel):
             "connect_timeout": 3,
             "max_reconnect_attempts": 2,
         }
+
         try:
-            await nc.connect(**options)
+            nc = await nats.connect(**options)
         except:
             return "natsdown"
 
@@ -737,14 +659,16 @@ class Agent(BaseAuditModel):
                 msg = await nc.request(
                     self.agent_id, msgpack.dumps(data), timeout=timeout
                 )
-            except ErrTimeout:
+            except TimeoutError:
                 ret = "timeout"
             else:
                 try:
                     ret = msgpack.loads(msg.data)  # type: ignore
                 except Exception as e:
                     ret = str(e)
-                    DebugLog.error(agent=self, log_type="agent_issues", message=ret)
+                    await sync_to_async(self._do_nats_debug, thread_sensitive=False)(
+                        agent=self, message=ret
+                    )
 
             await nc.close()
             return ret
@@ -853,31 +777,6 @@ class Agent(BaseAuditModel):
         )
 
 
-RECOVERY_CHOICES = [
-    ("salt", "Salt"),
-    ("mesh", "Mesh"),
-    ("command", "Command"),
-    ("rpc", "Nats RPC"),
-    ("checkrunner", "Checkrunner"),
-]
-
-
-class RecoveryAction(models.Model):
-    objects = PermissionQuerySet.as_manager()
-
-    agent = models.ForeignKey(
-        Agent,
-        related_name="recoveryactions",
-        on_delete=models.CASCADE,
-    )
-    mode = models.CharField(max_length=50, choices=RECOVERY_CHOICES, default="mesh")
-    command = models.TextField(null=True, blank=True)
-    last_run = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.agent.hostname} - {self.mode}"
-
-
 class Note(models.Model):
     objects = PermissionQuerySet.as_manager()
 
@@ -974,7 +873,7 @@ class AgentHistory(models.Model):
     type = models.CharField(
         max_length=50, choices=AGENT_HISTORY_TYPES, default="cmd_run"
     )
-    command = models.TextField(null=True, blank=True)
+    command = models.TextField(null=True, blank=True, default="")
     status = models.CharField(
         max_length=50, choices=AGENT_HISTORY_STATUS, default="success"
     )

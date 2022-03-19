@@ -230,16 +230,16 @@ export default {
       let url;
       switch (mode) {
         case "github":
-          url = "https://github.com/wh1te909/tacticalrmm/";
+          url = "https://github.com/amidaware/tacticalrmm/";
           break;
         case "docs":
-          url = "https://wh1te909.github.io/tacticalrmm/";
+          url = "https://docs.tacticalrmm.com";
           break;
         case "bug":
-          url = "https://github.com/wh1te909/tacticalrmm/issues/new?template=bug_report.md";
+          url = "https://github.com/amidaware/tacticalrmm/issues/new?template=bug_report.md";
           break;
         case "feature":
-          url = "https://github.com/wh1te909/tacticalrmm/issues/new?template=feature_request.md";
+          url = "https://github.com/amidaware/tacticalrmm/issues/new?template=feature_request.md";
           break;
         case "discord":
           url = "https://discord.gg/upGTkWp";

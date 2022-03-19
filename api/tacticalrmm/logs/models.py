@@ -2,6 +2,7 @@ import datetime as dt
 from abc import abstractmethod
 
 from django.db import models
+
 from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet
 
@@ -14,7 +15,6 @@ def get_debug_level():
 
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
-    ("taskaction", "Scheduled Task Action"),  # deprecated
     ("agentupdate", "Agent Update"),
     ("chocoinstall", "Chocolatey Software Install"),
     ("runcmd", "Run Command"),

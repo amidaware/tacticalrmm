@@ -9,6 +9,7 @@ set -e
 : "${MONGODB_HOST:=tactical-mongodb}"
 : "${MONGODB_PORT:=27017}"
 : "${NGINX_HOST_IP:=172.20.0.20}"
+: "${NGINX_HOST_PORT:=4443}"
 : "${MESH_PERSISTENT_CONFIG:=0}"
 : "${WS_MASK_OVERRIDE:=0}"
 : "${SMTP_HOST:=smtp.example.com}"
@@ -18,23 +19,21 @@ set -e
 : "${SMTP_PASS:=mesh-smtp-pass}"
 : "${SMTP_TLS:=false}"
 
-mkdir -p /home/node/app/meshcentral-data
-mkdir -p ${TACTICAL_DIR}/tmp
-
 if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 0 ]]; then
 
-encoded_uri=$(node -p "encodeURI('mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}')")
+  encoded_uri=$(node -p "encodeURI('mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}')")
 
-mesh_config="$(cat << EOF
+  mesh_config="$(cat << EOF
 {
   "settings": {
     "mongodb": "${encoded_uri}",
     "Cert": "${MESH_HOST}",
     "TLSOffload": "${NGINX_HOST_IP}",
-    "RedirPort": 80,
+    "RedirPort": 8080,
     "WANonly": true,
     "Minify": 1,
-    "Port": 443,
+    "Port": 4443,
+    "AgentPort": 443,
     "AllowLoginToken": true,
     "AllowFraming": true,
     "_AgentPing": 60,
@@ -57,7 +56,7 @@ mesh_config="$(cat << EOF
       "NewAccounts": false,
       "mstsc": true,
       "GeoLocation": true,
-      "CertUrl": "https://${NGINX_HOST_IP}:443",
+      "CertUrl": "https://${NGINX_HOST_IP}:${NGINX_HOST_PORT}",
       "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]
     }
   },
@@ -73,7 +72,13 @@ mesh_config="$(cat << EOF
 EOF
 )"
 
-echo "${mesh_config}" > /home/node/app/meshcentral-data/config.json
+  echo "${mesh_config}" > /home/node/app/meshcentral-data/config.json
+
+else
+  # replace persistent mesh configuration with new ports
+  sed -i 's/"Port": 443/"Port": 4443/' /home/node/app/meshcentral-data/config.json
+  sed -i 's/"RedirPort": 80/"RedirPort": 8080/' /home/node/app/meshcentral-data/config.json
+  sed -i "s/\"CertUrl\": \".*\"/\"CertUrl\": \"https:\/\/${NGINX_HOST_IP}:${NGINX_HOST_PORT}\"/" /home/node/app/meshcentral-data/config.json
 
 fi
 
@@ -91,7 +96,7 @@ if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
 fi
 
 # wait for nginx container
-until (echo > /dev/tcp/"${NGINX_HOST_IP}"/443) &> /dev/null; do
+until (echo > /dev/tcp/"${NGINX_HOST_IP}"/${NGINX_HOST_PORT}) &> /dev/null; do
   echo "waiting for nginx to start..."
   sleep 5
 done

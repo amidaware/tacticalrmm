@@ -1,14 +1,14 @@
 import asyncio
 
+from agents.models import Agent
 from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.views import APIView
 
-from agents.models import Agent
-from tacticalrmm.utils import get_default_timezone
 from tacticalrmm.permissions import _has_perm_on_agent
+from tacticalrmm.utils import get_default_timezone
 
 from .models import WinUpdate
 from .permissions import AgentWinUpdatePerms

@@ -34,11 +34,11 @@
           <q-file
             label="Script Upload"
             v-model="file"
-            hint="Supported file types: .ps1, .bat, .py"
+            hint="Supported file types: .ps1, .bat, .py, .sh"
             filled
             dense
             counter
-            accept=".ps1, .bat, .py"
+            accept=".ps1, .bat, .py, .sh"
           >
             <template v-slot:prepend>
               <q-icon name="attach_file" />
@@ -48,6 +48,18 @@
 
         <q-card-section>
           <tactical-dropdown v-model="script.shell" :options="shellOptions" label="Type" outlined mapOptions />
+        </q-card-section>
+
+        <q-card-section>
+          <tactical-dropdown
+            v-model="script.supported_platforms"
+            :options="agentPlatformOptions"
+            label="Supported Platforms (All supported if blank)"
+            clearable
+            mapOptions
+            filled
+            multiple
+          />
         </q-card-section>
 
         <q-card-section>
@@ -90,6 +102,7 @@
 import { ref, watch } from "vue";
 import { useDialogPluginComponent } from "quasar";
 import { saveScript } from "@/api/scripts";
+import { agentPlatformOptions } from "@/composables/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
@@ -149,6 +162,7 @@ export default {
 
       // non-reactive data
       shellOptions,
+      agentPlatformOptions,
 
       // methods
       submitForm,

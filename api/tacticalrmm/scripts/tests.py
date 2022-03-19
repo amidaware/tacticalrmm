@@ -1,21 +1,21 @@
+import hashlib
+import hmac
 import json
 import os
-import hmac
-import hashlib
-
 from pathlib import Path
 from unittest.mock import patch
 
-from django.test import override_settings
 from django.conf import settings
+from django.test import override_settings
 from model_bakery import baker
+
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Script, ScriptSnippet
 from .serializers import (
     ScriptSerializer,
-    ScriptTableSerializer,
     ScriptSnippetSerializer,
+    ScriptTableSerializer,
 )
 
 
@@ -210,101 +210,6 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(resp.data, {"filename": f"{script.name}.py", "code": "Test Script Body"})  # type: ignore
 
         self.check_not_authenticated("get", url)
-
-    def test_community_script_json_file(self):
-        valid_shells = ["powershell", "python", "cmd"]
-
-        if not settings.DOCKER_BUILD:
-            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
-        else:
-            scripts_dir = settings.SCRIPTS_DIR
-
-        with open(
-            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
-        ) as f:
-            info = json.load(f)
-
-        guids = []
-        for script in info:
-            fn: str = script["filename"]
-            self.assertTrue(os.path.exists(os.path.join(scripts_dir, fn)))
-            self.assertTrue(script["filename"])
-            self.assertTrue(script["name"])
-            self.assertTrue(script["description"])
-            self.assertTrue(script["shell"])
-            self.assertIn(script["shell"], valid_shells)
-
-            if fn.endswith(".ps1"):
-                self.assertEqual(script["shell"], "powershell")
-            elif fn.endswith(".bat"):
-                self.assertEqual(script["shell"], "cmd")
-            elif fn.endswith(".py"):
-                self.assertEqual(script["shell"], "python")
-
-            if "args" in script.keys():
-                self.assertIsInstance(script["args"], list)
-
-            # allows strings as long as they can be type casted to int
-            if "default_timeout" in script.keys():
-                self.assertIsInstance(int(script["default_timeout"]), int)
-
-            self.assertIn("guid", script.keys())
-            guids.append(script["guid"])
-
-        # check guids are unique
-        self.assertEqual(len(guids), len(set(guids)))
-
-    def test_load_community_scripts(self):
-        with open(
-            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
-        ) as f:
-            info = json.load(f)
-
-        Script.load_community_scripts()
-
-        community_scripts_count = Script.objects.filter(script_type="builtin").count()
-        if len(info) != community_scripts_count:
-            raise Exception(
-                f"There are {len(info)} scripts in json file but only {community_scripts_count} in database"
-            )
-
-        # test updating already added community scripts
-        Script.load_community_scripts()
-        community_scripts_count2 = Script.objects.filter(script_type="builtin").count()
-        self.assertEqual(len(info), community_scripts_count2)
-
-    def test_community_script_has_jsonfile_entry(self):
-        with open(
-            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
-        ) as f:
-            info = json.load(f)
-
-        filenames = [i["filename"] for i in info]
-
-        # normal
-        if not settings.DOCKER_BUILD:
-            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
-        # docker
-        else:
-            scripts_dir = settings.SCRIPTS_DIR
-
-        with os.scandir(scripts_dir) as it:
-            for f in it:
-                if not f.name.startswith(".") and f.is_file():
-                    if f.name not in filenames:
-                        raise Exception(
-                            f"{f.name} is missing an entry in community_scripts.json"
-                        )
-
-    def test_script_filenames_do_not_contain_spaces(self):
-        with open(
-            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
-        ) as f:
-            info = json.load(f)
-            for script in info:
-                fn: str = script["filename"]
-                if " " in fn:
-                    raise Exception(f"{fn} must not contain spaces in filename")
 
     def test_script_arg_variable_replacement(self):
 

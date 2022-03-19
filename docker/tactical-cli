@@ -150,7 +150,7 @@ FIRST_ARG="$1"
 
 # defaults
 DOCKER_REPO="tacticalrmm/"
-REPO="wh1te909"
+REPO="amidaware"
 BRANCH="master"
 VERSION="latest"
 

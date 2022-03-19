@@ -1,29 +1,29 @@
+import datetime as dt
 import json
 import random
 import string
-import datetime as dt
-
-from django.core.management.base import BaseCommand
-from django.utils import timezone as djangotime
-from django.conf import settings
 
 from accounts.models import User
 from agents.models import Agent, AgentHistory
+from automation.models import Policy
+from autotasks.models import AutomatedTask
+from checks.models import Check, CheckHistory
 from clients.models import Client, Site
+from django.conf import settings
+from django.core.management import call_command
+from django.core.management.base import BaseCommand
+from django.utils import timezone as djangotime
+from logs.models import AuditLog, PendingAction
+from scripts.models import Script
 from software.models import InstalledSoftware
 from winupdate.models import WinUpdate, WinUpdatePolicy
-from checks.models import Check, CheckHistory
-from scripts.models import Script
-from autotasks.models import AutomatedTask
-from automation.models import Policy
-from logs.models import PendingAction, AuditLog
 
 from tacticalrmm.demo_data import (
     disks,
-    temp_dir_stdout,
-    spooler_stdout,
     ping_fail_output,
     ping_success_output,
+    spooler_stdout,
+    temp_dir_stdout,
 )
 
 AGENTS_TO_GENERATE = 250
@@ -63,7 +63,7 @@ class Command(BaseCommand):
         AuditLog.objects.all().delete()
         PendingAction.objects.all().delete()
 
-        Script.load_community_scripts()
+        call_command("load_community_scripts")
 
         # policies
         check_policy = Policy()
@@ -167,7 +167,6 @@ class Command(BaseCommand):
         public_ips = ["65.234.22.4", "74.123.43.5", "44.21.134.45"]
 
         total_rams = [4, 8, 16, 32, 64, 128]
-        used_rams = [10, 13, 60, 25, 76, 34, 56, 34, 39]
 
         now = dt.datetime.now()
 
@@ -284,7 +283,6 @@ class Command(BaseCommand):
 
             agent.hostname = random.choice(hostnames)
             agent.version = settings.LATEST_AGENT_VER
-            agent.salt_ver = "1.1.0"
             agent.site = Site.objects.get(name=site)
             agent.agent_id = self.rand_string(25)
             agent.description = random.choice(descriptions)
@@ -294,10 +292,8 @@ class Command(BaseCommand):
             agent.plat = "windows"
             agent.plat_release = "windows-2019Server"
             agent.total_ram = random.choice(total_rams)
-            agent.used_ram = random.choice(used_rams)
             agent.boot_time = random.choice(boot_times)
             agent.logged_in_username = random.choice(user_names)
-            agent.antivirus = "windowsdefender"
             agent.mesh_node_id = (
                 "3UiLhe420@kaVQ0rswzBeonW$WY0xrFFUDBQlcYdXoriLXzvPmBpMrV99vRHXFlb"
             )
@@ -307,7 +303,6 @@ class Command(BaseCommand):
             agent.wmi_detail = random.choice(wmi_details)
             agent.services = services
             agent.disks = random.choice(disks)
-            agent.salt_id = "not-used"
 
             agent.save()
 
@@ -328,9 +323,7 @@ class Command(BaseCommand):
                     agent=agent,
                     guid=i,
                     kb=windows_updates[i]["KBs"][0],
-                    mandatory=windows_updates[i]["Mandatory"],
                     title=windows_updates[i]["Title"],
-                    needs_reboot=windows_updates[i]["NeedsReboot"],
                     installed=windows_updates[i]["Installed"],
                     downloaded=windows_updates[i]["Downloaded"],
                     description=windows_updates[i]["Description"],
@@ -510,7 +503,16 @@ class Command(BaseCommand):
 
             nla_task = AutomatedTask()
             nla_task.agent = agent
-            nla_task.script = restart_nla
+            actions = [
+                {
+                    "name": restart_nla.name,
+                    "type": "script",
+                    "script": restart_nla.pk,
+                    "timeout": 90,
+                    "script_args": [],
+                }
+            ]
+            nla_task.actions = actions
             nla_task.assigned_check = check6
             nla_task.name = "Restart NLA"
             nla_task.task_type = "checkfailure"
@@ -524,11 +526,27 @@ class Command(BaseCommand):
 
             spool_task = AutomatedTask()
             spool_task.agent = agent
-            spool_task.script = clear_spool
+            actions = [
+                {
+                    "name": clear_spool.name,
+                    "type": "script",
+                    "script": clear_spool.pk,
+                    "timeout": 90,
+                    "script_args": [],
+                }
+            ]
+            spool_task.actions = actions
             spool_task.name = "Clear the print spooler"
-            spool_task.task_type = "scheduled"
-            spool_task.run_time_bit_weekdays = 127
-            spool_task.run_time_minute = "04:45"
+            spool_task.task_type = "daily"
+            spool_task.run_time_date = djangotime.now() + djangotime.timedelta(
+                minutes=10
+            )
+            spool_task.expire_date = djangotime.now() + djangotime.timedelta(days=753)
+            spool_task.daily_interval = 1
+            spool_task.weekly_interval = 1
+            spool_task.task_repetition_duration = "2h"
+            spool_task.task_repetition_interval = "25m"
+            spool_task.random_task_delay = "3m"
             spool_task.win_task_name = "demospool123"
             spool_task.last_run = djangotime.now()
             spool_task.retcode = 0
@@ -539,7 +557,16 @@ class Command(BaseCommand):
             tmp_dir_task = AutomatedTask()
             tmp_dir_task.agent = agent
             tmp_dir_task.name = "show temp dir files"
-            tmp_dir_task.script = show_tmp_dir_script
+            actions = [
+                {
+                    "name": show_tmp_dir_script.name,
+                    "type": "script",
+                    "script": show_tmp_dir_script.pk,
+                    "timeout": 90,
+                    "script_args": [],
+                }
+            ]
+            tmp_dir_task.actions = actions
             tmp_dir_task.task_type = "manual"
             tmp_dir_task.win_task_name = "demotemp"
             tmp_dir_task.last_run = djangotime.now()
@@ -665,4 +692,5 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.SUCCESS(f"Added agent # {count_agents + 1}"))
 
+        call_command("load_demo_scripts")
         self.stdout.write("done")

@@ -66,7 +66,6 @@
         <q-td>{{ bytes2Human(props.row.membytes) }}</q-td>
         <q-td>{{ props.row.username }}</q-td>
         <q-td>{{ props.row.pid }}</q-td>
-        <q-td>{{ props.row.status }}</q-td>
       </q-tr>
     </template>
   </q-table>
@@ -115,13 +114,6 @@ const columns = [
     name: "pid",
     label: "PID",
     field: "pid",
-    align: "left",
-    sortable: true,
-  },
-  {
-    name: "status",
-    label: "Status",
-    field: "status",
     align: "left",
     sortable: true,
   },

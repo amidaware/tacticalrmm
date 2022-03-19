@@ -2,15 +2,11 @@ from unittest.mock import mock_open, patch
 
 import requests
 from django.test import override_settings
+
+from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.test import TacticalTestCase
 
-from .utils import (
-    bitdays_to_string,
-    generate_winagent_exe,
-    get_bit_days,
-    reload_nats,
-    AGENT_DEFER,
-)
+from .utils import bitdays_to_string, generate_winagent_exe, get_bit_days, reload_nats
 
 
 class TestUtils(TacticalTestCase):

@@ -1,20 +1,20 @@
 import pytz
-from django.utils import timezone as djangotime
-from django.conf import settings
-from packaging import version as pyver
-
+from agents.models import Agent
+from agents.tasks import clear_faults_task, prune_agent_history
+from alerts.models import Alert
+from alerts.tasks import prune_resolved_alerts
 from autotasks.models import AutomatedTask
 from autotasks.tasks import delete_win_task_schedule
 from checks.tasks import prune_check_history
-from agents.tasks import clear_faults_task, prune_agent_history
-from alerts.tasks import prune_resolved_alerts
-from core.models import CoreSettings
-from logs.tasks import prune_debug_log, prune_audit_log
-from tacticalrmm.celery import app
-from tacticalrmm.utils import AGENT_DEFER
-from agents.models import Agent
 from clients.models import Client, Site
-from alerts.models import Alert
+from core.models import CoreSettings
+from django.conf import settings
+from django.utils import timezone as djangotime
+from logs.tasks import prune_audit_log, prune_debug_log
+from packaging import version as pyver
+
+from tacticalrmm.celery import app
+from tacticalrmm.constants import AGENT_DEFER
 
 
 @app.task

@@ -7,8 +7,8 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
-
 from logs.models import BaseAuditModel, DebugLog
+
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -597,6 +597,17 @@ class AlertTemplate(BaseAuditModel):
 
     def __str__(self):
         return self.name
+
+    def is_agent_excluded(self, agent):
+        return (
+            agent in self.excluded_agents.all()
+            or agent.site in self.excluded_sites.all()
+            or agent.client in self.excluded_clients.all()
+            or agent.monitoring_type == "workstation"
+            and self.exclude_workstations
+            or agent.monitoring_type == "server"
+            and self.exclude_servers
+        )
 
     @staticmethod
     def serialize(alert_template):

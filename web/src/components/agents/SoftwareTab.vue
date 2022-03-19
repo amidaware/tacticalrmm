@@ -1,5 +1,8 @@
 <template>
   <div v-if="!selectedAgent" class="q-pa-sm">No agent selected</div>
+  <div v-else-if="agentPlatform.toLowerCase() !== 'windows'" class="q-pa-sm">
+    Only supported for Windows agents at this time
+  </div>
   <div v-else>
     <q-table
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
@@ -103,6 +106,7 @@ export default {
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
+    const agentPlatform = computed(() => store.state.agentPlatform);
 
     // software tab logic
     const software = ref([]);
@@ -154,6 +158,7 @@ export default {
       pagination,
       selectedAgent,
       tabHeight,
+      agentPlatform,
 
       // non-reactive data
       columns,

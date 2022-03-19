@@ -13,6 +13,7 @@ export default function () {
         treeReady: false,
         selectedTree: "",
         selectedRow: null,
+        agentPlatform: "windows",
         agentTableLoading: false,
         needrefresh: false,
         refreshSummaryTab: false,
@@ -54,6 +55,9 @@ export default function () {
       },
       setActiveRow(state, agent_id) {
         state.selectedRow = agent_id;
+      },
+      setAgentPlatform(state, agentPlatform) {
+        state.agentPlatform = agentPlatform;
       },
       retrieveToken(state, { token, username }) {
         state.token = token;

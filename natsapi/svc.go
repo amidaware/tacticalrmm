@@ -83,6 +83,15 @@ func Svc(logger *logrus.Logger, cfg string) {
 						logger.Errorln(err)
 					}
 
+					// TODO add this to main stmt once agent 2.0.0 has been out for a while
+					if r.GoArch != "" {
+						stmt = `UPDATE agents_agent SET goarch=$1 WHERE agents_agent.agent_id=$2;`
+						_, err = db.Exec(stmt, r.GoArch, r.Agentid)
+						if err != nil {
+							logger.Errorln(err)
+						}
+					}
+
 					if r.Username != "None" {
 						stmt = `UPDATE agents_agent SET last_logged_in_user=$1 WHERE agents_agent.agent_id=$2;`
 						logger.Debugln("Updating last logged in user:", r.Username)

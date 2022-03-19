@@ -85,7 +85,7 @@
       </q-menu>
     </q-item>
 
-    <q-item clickable v-close-popup @click="runRemoteBackground(agent.agent_id)">
+    <q-item clickable v-close-popup @click="runRemoteBackground(agent.agent_id, agent.plat)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-cogs" />
       </q-item-section>
@@ -216,7 +216,10 @@ export default {
     agent: !Object,
   },
   setup(props) {
+    // setup quasar
     const $q = useQuasar();
+
+    // setup vuex
     const store = useStore();
 
     const refreshDashboard = inject("refreshDashboard");

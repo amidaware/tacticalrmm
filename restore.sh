@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_VERSION="32"
-SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
+SCRIPT_VERSION="34"
+SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -11,6 +11,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
+
+SCRIPTS_DIR="/opt/trmm-community-scripts"
+PYTHON_VER="3.10.2"
 
 TMP_FILE=$(mktemp -p "" "rmmrestore_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -109,7 +112,7 @@ sudo apt update
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
@@ -161,19 +164,19 @@ print_green 'Restoring systemd services'
 sudo cp $tmp_dir/systemd/* /etc/systemd/system/
 sudo systemctl daemon-reload
 
-print_green 'Installing Python 3.9'
+print_green 'Installing Python 3.10.2'
 
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)
 cd ~
-wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz
-tar -xf Python-3.9.9.tgz
-cd Python-3.9.9
+wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
+tar -xf Python-${PYTHON_VER}.tgz
+cd Python-${PYTHON_VER}
 ./configure --enable-optimizations
 make -j $numprocs
 sudo make altinstall
 cd ~
-sudo rm -rf Python-3.9.9 Python-3.9.9.tgz
+sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 
 print_green 'Installing redis and git'
@@ -191,7 +194,7 @@ print_green 'Installing postgresql'
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-13
+sudo apt install -y postgresql-14
 sleep 2
 sudo systemctl enable postgresql
 sudo systemctl restart postgresql
@@ -212,11 +215,19 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
+git clone https://github.com/amidaware/tacticalrmm.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
+
+sudo mkdir -p ${SCRIPTS_DIR}
+sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
+git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+cd ${SCRIPTS_DIR}
+git config user.email "admin@example.com"
+git config user.name "Bob"
+git checkout main
 
 print_green 'Restoring NATS'
 
@@ -240,6 +251,7 @@ npm install meshcentral@${MESH_VER}
 
 print_green 'Restoring the backend'
 
+echo 'Optimize for number of processors'
 numprocs=$(nproc)
 uwsgiprocs=4
 if [[ "$numprocs" == "1" ]]; then
@@ -272,7 +284,6 @@ cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
 cp $tmp_dir/rmm/env /rmm/web/.env
 gzip -d $tmp_dir/rmm/debug.log.gz
 cp $tmp_dir/rmm/django_debug.log /rmm/api/tacticalrmm/tacticalrmm/private/log/
-cp $tmp_dir/rmm/mesh*.exe /rmm/api/tacticalrmm/tacticalrmm/private/exe/
 
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
@@ -298,7 +309,7 @@ SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" /rmm/api/tacticalrmm/tacticalrmm/setting
 WHEEL_VER=$(grep "^WHEEL_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
 
 cd /rmm/api
-python3.9 -m venv env
+python3.10 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
@@ -308,6 +319,7 @@ python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
 python manage.py reload_nats
+python manage.py post_update_tasks
 deactivate
 
 sudo systemctl enable nats.service

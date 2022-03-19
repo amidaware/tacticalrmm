@@ -19,6 +19,5 @@ urlpatterns = [
     path("winupdates/", views.WinUpdates.as_view()),
     path("superseded/", views.SupersededWinUpdate.as_view()),
     path("<int:pk>/chocoresult/", views.ChocoResult.as_view()),
-    path("<str:agentid>/recovery/", views.AgentRecovery.as_view()),
     path("<int:pk>/<str:agentid>/histresult/", views.AgentHistoryResult.as_view()),
 ]

@@ -29,20 +29,6 @@
         <q-inner-loading showing color="primary" />
       </template>
 
-      <template v-slot:body-cell-command="props">
-        <q-td :props="props">
-          <span v-if="props.row.type === 'script_run' || props.row.type === 'task_run'">{{
-            props.row.script_name
-          }}</span>
-          <span v-else-if="props.row.type === 'cmd_run'"
-            >{{ truncateText(props.row.command, 30) }}
-            <q-tooltip v-if="props.row.command.length >= 30" style="font-size: 12px">
-              {{ props.row.command }}
-            </q-tooltip>
-          </span>
-        </q-td>
-      </template>
-
       <template v-slot:body-cell-output="props">
         <q-td :props="props">
           <span
@@ -50,7 +36,7 @@
             class="text-primary"
             @click="
               props.row.type === 'cmd_run'
-                ? showCommandOutput(props.row.results)
+                ? showCommandOutput(props.row.command, props.row.results)
                 : showScriptOutput(props.row.script_results)
             "
             >Output
@@ -66,7 +52,7 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
-import { formatDate, formatTableColumnText, truncateText } from "@/utils/format";
+import { formatDate, formatTableColumnText, truncateText, dateStringToUnix } from "@/utils/format";
 import { fetchAgentHistory } from "@/api/agents";
 
 // ui imports
@@ -81,6 +67,7 @@ const columns = [
     field: "time",
     align: "left",
     sortable: true,
+    sort: (a, b, rowA, rowB) => dateStringToUnix(a) - dateStringToUnix(b),
     format: (val, row) => formatDate(val, true),
   },
   {
@@ -99,7 +86,14 @@ const columns = [
     sortable: true,
     format: (val, row) => formatTableColumnText(val),
   }, */
-  { name: "command", label: "Script/Command", field: "command", align: "left", sortable: true },
+  {
+    name: "command",
+    label: "Script/Command",
+    field: row => (row.type === "script_run" || row.type === "task_run" ? row.script_name : row.command),
+    align: "left",
+    sortable: true,
+    format: (val, row) => truncateText(val, 30),
+  },
   { name: "username", label: "Initiated By", field: "username", align: "left", sortable: true },
   { name: "output", label: "Output", field: "output", align: "left", sortable: true },
 ];
@@ -143,8 +137,9 @@ export default {
       });
     }
 
-    function showCommandOutput(output) {
+    function showCommandOutput(title, output) {
       $q.dialog({
+        title: title,
         style: "width: 70vw; max-width: 80vw",
         message: `<pre>${output}</pre>`,
         html: true,

@@ -25,7 +25,7 @@
         <q-btn class="q-mr-sm" dense flat push @click="getChecks" icon="refresh" />
         <q-btn-dropdown icon="add" label="New" no-caps dense flat>
           <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="showCheckModal('diskspace')">
+            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('diskspace')">
               <q-item-section side>
                 <q-icon size="xs" name="far fa-hdd" />
               </q-item-section>
@@ -37,19 +37,19 @@
               </q-item-section>
               <q-item-section>Ping Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('cpuload')">
+            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('cpuload')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-microchip" />
               </q-item-section>
               <q-item-section>CPU Load Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('memory')">
+            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('memory')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-memory" />
               </q-item-section>
               <q-item-section>Memory Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('winsvc')">
+            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('winsvc')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-cogs" />
               </q-item-section>
@@ -61,7 +61,7 @@
               </q-item-section>
               <q-item-section>Script Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('eventlog')">
+            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('eventlog')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-clipboard-list" />
               </q-item-section>
@@ -336,6 +336,7 @@ export default {
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
+    const agentPlatform = computed(() => store.state.agentPlatform);
 
     // setup quasar
     const $q = useQuasar();
@@ -482,6 +483,7 @@ export default {
       pagination,
       tabHeight,
       selectedAgent,
+      agentPlatform,
 
       // non-reactive data
       columns,

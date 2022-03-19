@@ -10,7 +10,7 @@ set -e
 : "${POSTGRES_PASS:=tactical}"
 : "${POSTGRES_DB:=tacticalrmm}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
-: "${MESH_WS_URL:=ws://${MESH_SERVICE}:443}"
+: "${MESH_WS_URL:=ws://${MESH_SERVICE}:4443}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
 : "${MESH_HOST:=tactical-meshcentral}"
@@ -37,7 +37,16 @@ if [ "$1" = 'tactical-init' ]; then
   # copy container data to volume
   rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
+  mkdir -p /meshcentral-data
   mkdir -p ${TACTICAL_DIR}/tmp
+  mkdir -p ${TACTICAL_DIR}/certs
+  mkdir -p /mongo/data/db
+  mkdir -p /redis/data
+  touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
+  touch ${TACTICAL_DIR}/tmp/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}
+  touch ${TACTICAL_DIR}/certs/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}/certs
+  touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
+  touch /redis/data/.initialized && chown -R 1000:1000 /redis/data
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
   touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
@@ -47,7 +56,7 @@ if [ "$1" = 'tactical-init' ]; then
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${MESH_SERVICE}"/443) &> /dev/null; do
+  until (echo > /dev/tcp/"${MESH_SERVICE}"/4443) &> /dev/null; do
     echo "waiting for meshcentral container to be ready..."
     sleep 5
   done
@@ -70,7 +79,7 @@ KEY_FILE = '${CERT_PRIV_PATH}'
 EXE_DIR = '/opt/tactical/api/tacticalrmm/private/exe'
 LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'
 
-SCRIPTS_DIR = '/opt/tactical/scripts'
+SCRIPTS_DIR = '/opt/tactical/community-scripts'
 
 ALLOWED_HOSTS = ['${API_HOST}', 'tactical-backend']
 
@@ -102,6 +111,13 @@ EOF
 
   echo "${localvars}" > ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
 
+  numprocs=$(nproc)
+  uwsgiprocs=4
+  if [[ "$numprocs" == "1" ]]; then
+    uwsgiprocs=2
+  else
+    uwsgiprocs=$numprocs
+  fi
 
 uwsgiconf="$(cat << EOF
 [uwsgi]
@@ -109,10 +125,10 @@ chdir = /opt/tactical/api
 module = tacticalrmm.wsgi
 home = /opt/venv
 master = true
-processes = 8
-threads = 2
+processes = ${uwsgiprocs}
+threads = ${uwsgiprocs}
 enable-threads = true
-socket = 0.0.0.0:80
+socket = 0.0.0.0:8080
 chmod-socket = 660
 buffer-size = 65535
 vacuum = true
@@ -137,12 +153,15 @@ EOF
   python manage.py post_update_tasks
 
   # create super user 
+  echo "Creating dashboard user if it doesn't exist"
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
 
   # chown everything to tactical user
+  echo "Updating permissions on files"
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
 
   # create install ready file
+  echo "Creating install ready file"
   su -c "echo 'tactical-init' > ${TACTICAL_READY_FILE}" "${TACTICAL_USER}"
 
 fi

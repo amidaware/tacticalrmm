@@ -12,9 +12,14 @@
     >
       <q-tab name="terminal" icon="fas fa-terminal" label="Terminal" />
       <q-tab name="filebrowser" icon="far fa-folder-open" label="File Browser" />
-      <q-tab name="services" icon="fas fa-cogs" label="Services" />
+      <q-tab v-if="$route.query.agentPlatform === 'windows'" name="services" icon="fas fa-cogs" label="Services" />
       <q-tab name="processes" icon="fas fa-chart-area" label="Processes" />
-      <q-tab name="eventlog" icon="fas fa-clipboard-list" label="Event Log" />
+      <q-tab
+        v-if="$route.query.agentPlatform === 'windows'"
+        name="eventlog"
+        icon="fas fa-clipboard-list"
+        label="Event Log"
+      />
     </q-tabs>
     <q-separator />
     <q-tab-panels v-model="tab">
@@ -27,11 +32,11 @@
       <q-tab-panel name="processes" class="q-pa-none">
         <ProcessManager :agent_id="agent_id" />
       </q-tab-panel>
-      <q-tab-panel name="services" class="q-pa-none">
-        <ServicesManager :agent_id="agent_id" />
+      <q-tab-panel v-if="$route.query.agentPlatform === 'windows'" name="services" class="q-pa-none">
+        <ServicesManager :agent_id="agent_id" :agentPlatform="$route.query.agentPlatform" />
       </q-tab-panel>
-      <q-tab-panel name="eventlog" class="q-pa-none">
-        <EventLogManager :agent_id="agent_id" />
+      <q-tab-panel v-if="$route.query.agentPlatform === 'windows'" name="eventlog" class="q-pa-none">
+        <EventLogManager :agent_id="agent_id" :agentPlatform="$route.query.agentPlatform" />
       </q-tab-panel>
       <q-tab-panel name="filebrowser" class="q-pa-none">
         <iframe :src="file" :style="{ height: `${$q.screen.height - 30}px`, width: `${$q.screen.width}px` }"></iframe>

@@ -1,7 +1,6 @@
+from agents.models import Agent
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
-from agents.models import Agent
 
 
 class Command(BaseCommand):

@@ -5,11 +5,11 @@ go 1.17
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmoiron/sqlx v1.3.4
-	github.com/lib/pq v1.10.2
+	github.com/lib/pq v1.10.4
 	github.com/nats-io/nats-server/v2 v2.4.0 // indirect
-	github.com/nats-io/nats.go v1.12.3
+	github.com/nats-io/nats.go v1.13.0
 	github.com/ugorji/go/codec v1.2.6
-	github.com/wh1te909/trmm-shared v0.0.0-20211112185254-e9c45faf2b83
+	github.com/wh1te909/trmm-shared v0.0.0-20220227075846-f9f757361139
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 

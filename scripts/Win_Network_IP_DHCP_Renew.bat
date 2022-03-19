@@ -1,1 +1,0 @@
-ipconfig /release && ipconfig /renew

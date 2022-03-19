@@ -4,16 +4,16 @@ import random
 from time import sleep
 from typing import Union
 
+from agents.models import Agent
+from agents.utils import get_agent_url
 from core.models import CoreSettings
 from django.conf import settings
 from django.utils import timezone as djangotime
 from logs.models import DebugLog, PendingAction
 from packaging import version as pyver
 from scripts.models import Script
-from tacticalrmm.celery import app
 
-from agents.models import Agent
-from agents.utils import get_winagent_url
+from tacticalrmm.celery import app
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:
@@ -34,7 +34,7 @@ def agent_update(agent_id: str, force: bool = False) -> str:
 
     version = settings.LATEST_AGENT_VER
     inno = agent.win_inno_exe
-    url = get_winagent_url(agent.arch)
+    url = get_agent_url(agent.arch, agent.plat)
 
     if not force:
         if agent.pendingactions.filter(
@@ -271,7 +271,7 @@ def run_script_email_results_task(
 
 @app.task
 def clear_faults_task(older_than_days: int) -> None:
-    # https://github.com/wh1te909/tacticalrmm/issues/484
+    # https://github.com/amidaware/tacticalrmm/issues/484
     agents = Agent.objects.exclude(last_seen__isnull=True).filter(
         last_seen__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     )

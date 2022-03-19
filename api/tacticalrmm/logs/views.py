@@ -1,19 +1,21 @@
 import asyncio
 from datetime import datetime as dt
 
+from agents.models import Agent
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
-from tacticalrmm.utils import notify_error, get_default_timezone, AGENT_DEFER
-from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
 
-from .models import AuditLog, PendingAction, DebugLog
-from agents.models import Agent
+from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
+from tacticalrmm.utils import get_default_timezone, notify_error
+
+from .models import AuditLog, DebugLog, PendingAction
 from .permissions import AuditLogPerms, DebugLogPerms, PendingActionPerms
 from .serializers import AuditLogSerializer, DebugLogSerializer, PendingActionSerializer
 

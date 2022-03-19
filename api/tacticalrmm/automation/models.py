@@ -1,7 +1,6 @@
-from django.db import models
-
 from agents.models import Agent
 from core.models import CoreSettings
+from django.db import models
 from logs.models import BaseAuditModel
 
 
@@ -135,86 +134,28 @@ class Policy(BaseAuditModel):
 
         # List of all tasks to be applied
         tasks = list()
-        added_task_pks = list()
 
         agent_tasks_parent_pks = [
             task.parent_task for task in agent.autotasks.filter(managed_by_policy=True)
         ]
 
         # Get policies applied to agent and agent site and client
-        client = agent.client
-        site = agent.site
+        policies = agent.get_agent_policies()
 
-        default_policy = None
-        client_policy = None
-        site_policy = None
-        agent_policy = agent.policy
+        processed_policies = list()
 
-        # Get the Client/Site policy based on if the agent is server or workstation
-        if agent.monitoring_type == "server":
-            default_policy = CoreSettings.objects.first().server_policy
-            client_policy = client.server_policy
-            site_policy = site.server_policy
-        elif agent.monitoring_type == "workstation":
-            default_policy = CoreSettings.objects.first().workstation_policy
-            client_policy = client.workstation_policy
-            site_policy = site.workstation_policy
-
-        # check if client/site/agent is blocking inheritance and blank out policies
-        if agent.block_policy_inheritance:
-            site_policy = None
-            client_policy = None
-            default_policy = None
-        elif site.block_policy_inheritance:
-            client_policy = None
-            default_policy = None
-        elif client.block_policy_inheritance:
-            default_policy = None
-
-        if (
-            agent_policy
-            and agent_policy.active
-            and not agent_policy.is_agent_excluded(agent)
-        ):
-            for task in agent_policy.autotasks.all():
-                if task.pk not in added_task_pks:
+        for _, policy in policies.items():
+            if policy and policy.active and policy.pk not in processed_policies:
+                processed_policies.append(policy.pk)
+                for task in policy.autotasks.all():
                     tasks.append(task)
-                    added_task_pks.append(task.pk)
-        if (
-            site_policy
-            and site_policy.active
-            and not site_policy.is_agent_excluded(agent)
-        ):
-            for task in site_policy.autotasks.all():
-                if task.pk not in added_task_pks:
-                    tasks.append(task)
-                    added_task_pks.append(task.pk)
-        if (
-            client_policy
-            and client_policy.active
-            and not client_policy.is_agent_excluded(agent)
-        ):
-            for task in client_policy.autotasks.all():
-                if task.pk not in added_task_pks:
-                    tasks.append(task)
-                    added_task_pks.append(task.pk)
-
-        if (
-            default_policy
-            and default_policy.active
-            and not default_policy.is_agent_excluded(agent)
-        ):
-            for task in default_policy.autotasks.all():
-                if task.pk not in added_task_pks:
-                    tasks.append(task)
-                    added_task_pks.append(task.pk)
 
         # remove policy tasks from agent not included in policy
         for task in agent.autotasks.filter(
             parent_task__in=[
                 taskpk
                 for taskpk in agent_tasks_parent_pks
-                if taskpk not in added_task_pks
+                if taskpk not in [task.pk for task in tasks]
             ]
         ):
             if task.sync_status == "initial":
@@ -225,7 +166,7 @@ class Policy(BaseAuditModel):
 
         # change tasks from pendingdeletion to notsynced if policy was added or changed
         agent.autotasks.filter(sync_status="pendingdeletion").filter(
-            parent_task__in=[taskpk for taskpk in added_task_pks]
+            parent_task__in=[taskpk for taskpk in [task.pk for task in tasks]]
         ).update(sync_status="notsynced")
 
         return [task for task in tasks if task.pk not in agent_tasks_parent_pks]
@@ -241,86 +182,24 @@ class Policy(BaseAuditModel):
         ]
 
         # Get policies applied to agent and agent site and client
-        client = agent.client
-        site = agent.site
-
-        default_policy = None
-        client_policy = None
-        site_policy = None
-        agent_policy = agent.policy
-
-        if agent.monitoring_type == "server":
-            default_policy = CoreSettings.objects.first().server_policy
-            client_policy = client.server_policy
-            site_policy = site.server_policy
-        elif agent.monitoring_type == "workstation":
-            default_policy = CoreSettings.objects.first().workstation_policy
-            client_policy = client.workstation_policy
-            site_policy = site.workstation_policy
-
-        # check if client/site/agent is blocking inheritance and blank out policies
-        if agent.block_policy_inheritance:
-            site_policy = None
-            client_policy = None
-            default_policy = None
-        elif site.block_policy_inheritance:
-            client_policy = None
-            default_policy = None
-        elif client.block_policy_inheritance:
-            default_policy = None
+        policies = agent.get_agent_policies()
 
         # Used to hold the policies that will be applied and the order in which they are applied
         # Enforced policies are applied first
         enforced_checks = list()
         policy_checks = list()
 
-        if (
-            agent_policy
-            and agent_policy.active
-            and not agent_policy.is_agent_excluded(agent)
-        ):
-            if agent_policy.enforced:
-                for check in agent_policy.policychecks.all():
-                    enforced_checks.append(check)
-            else:
-                for check in agent_policy.policychecks.all():
-                    policy_checks.append(check)
+        processed_policies = list()
 
-        if (
-            site_policy
-            and site_policy.active
-            and not site_policy.is_agent_excluded(agent)
-        ):
-            if site_policy.enforced:
-                for check in site_policy.policychecks.all():
-                    enforced_checks.append(check)
-            else:
-                for check in site_policy.policychecks.all():
-                    policy_checks.append(check)
-
-        if (
-            client_policy
-            and client_policy.active
-            and not client_policy.is_agent_excluded(agent)
-        ):
-            if client_policy.enforced:
-                for check in client_policy.policychecks.all():
-                    enforced_checks.append(check)
-            else:
-                for check in client_policy.policychecks.all():
-                    policy_checks.append(check)
-
-        if (
-            default_policy
-            and default_policy.active
-            and not default_policy.is_agent_excluded(agent)
-        ):
-            if default_policy.enforced:
-                for check in default_policy.policychecks.all():
-                    enforced_checks.append(check)
-            else:
-                for check in default_policy.policychecks.all():
-                    policy_checks.append(check)
+        for _, policy in policies.items():
+            if policy and policy.active and policy.pk not in processed_policies:
+                processed_policies.append(policy.pk)
+                if policy.enforced:
+                    for check in policy.policychecks.all():
+                        enforced_checks.append(check)
+                else:
+                    for check in policy.policychecks.all():
+                        policy_checks.append(check)
 
         # Sorted Checks already added
         added_diskspace_checks = list()
@@ -342,7 +221,7 @@ class Policy(BaseAuditModel):
 
         # Loop over checks in with enforced policies first, then non-enforced policies
         for check in enforced_checks + agent_checks + policy_checks:
-            if check.check_type == "diskspace":
+            if check.check_type == "diskspace" and agent.plat == "windows":
                 # Check if drive letter was already added
                 if check.disk not in added_diskspace_checks:
                     added_diskspace_checks.append(check.disk)
@@ -364,7 +243,7 @@ class Policy(BaseAuditModel):
                     check.overriden_by_policy = True
                     check.save()
 
-            if check.check_type == "cpuload":
+            if check.check_type == "cpuload" and agent.plat == "windows":
                 # Check if cpuload list is empty
                 if not added_cpuload_checks:
                     added_cpuload_checks.append(check)
@@ -375,7 +254,7 @@ class Policy(BaseAuditModel):
                     check.overriden_by_policy = True
                     check.save()
 
-            if check.check_type == "memory":
+            if check.check_type == "memory" and agent.plat == "windows":
                 # Check if memory check list is empty
                 if not added_memory_checks:
                     added_memory_checks.append(check)
@@ -386,7 +265,7 @@ class Policy(BaseAuditModel):
                     check.overriden_by_policy = True
                     check.save()
 
-            if check.check_type == "winsvc":
+            if check.check_type == "winsvc" and agent.plat == "windows":
                 # Check if service name was already added
                 if check.svc_name not in added_winsvc_checks:
                     added_winsvc_checks.append(check.svc_name)
@@ -397,7 +276,9 @@ class Policy(BaseAuditModel):
                     check.overriden_by_policy = True
                     check.save()
 
-            if check.check_type == "script":
+            if check.check_type == "script" and agent.is_supported_script(
+                check.script.supported_platforms
+            ):
                 # Check if script id was already added
                 if check.script.id not in added_script_checks:
                     added_script_checks.append(check.script.id)
@@ -408,7 +289,7 @@ class Policy(BaseAuditModel):
                     check.overriden_by_policy = True
                     check.save()
 
-            if check.check_type == "eventlog":
+            if check.check_type == "eventlog" and agent.plat == "windows":
                 # Check if events were already added
                 if [check.log_name, check.event_id] not in added_eventlog_checks:
                     added_eventlog_checks.append([check.log_name, check.event_id])

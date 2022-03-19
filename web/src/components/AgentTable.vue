@@ -40,6 +40,9 @@
           </q-icon>
         </q-th>
       </template>
+      <template v-slot:header-cell-plat="props">
+        <q-th auto-width :props="props"></q-th>
+      </template>
       <template v-slot:header-cell-checks-status="props">
         <q-th :props="props">
           <q-icon name="fas fa-check-double" size="1.2em">
@@ -78,10 +81,10 @@
       <!-- body slots -->
       <template v-slot:body="props">
         <q-tr
-          @contextmenu="agentRowSelected(props.row.agent_id)"
+          @contextmenu="agentRowSelected(props.row.agent_id, props.row.plat)"
           :props="props"
           :class="rowSelectedClass(props.row.agent_id)"
-          @click="agentRowSelected(props.row.agent_id)"
+          @click="agentRowSelected(props.row.agent_id, props.row.plat)"
           @dblclick="rowDoubleClicked(props.row.agent_id)"
         >
           <q-menu context-menu>
@@ -138,6 +141,16 @@
               v-model="props.row.overdue_dashboard_alert"
             />
           </q-td>
+
+          <q-td key="plat" :props="props">
+            <q-icon v-if="props.row.plat === 'windows'" name="mdi-microsoft-windows" size="sm" color="primary">
+              <q-tooltip>Microsoft Windows</q-tooltip>
+            </q-icon>
+            <q-icon v-else-if="props.row.plat === 'linux'" name="mdi-linux" size="sm" color="primary">
+              <q-tooltip>Linux</q-tooltip>
+            </q-icon>
+          </q-td>
+
           <q-td key="checks-status" :props="props">
             <q-icon v-if="props.row.maintenance_mode" name="construction" size="1.2em" color="green">
               <q-tooltip>Maintenance Mode Enabled</q-tooltip>
@@ -155,9 +168,9 @@
               <q-tooltip>Checks passing</q-tooltip>
             </q-icon>
           </q-td>
+
           <q-td key="client_name" :props="props">{{ props.row.client_name }}</q-td>
           <q-td key="site_name" :props="props">{{ props.row.site_name }}</q-td>
-
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
           <q-td key="user" :props="props">
@@ -286,7 +299,7 @@ export default {
         });
       });
     },
-    rowDoubleClicked(agent_id) {
+    rowDoubleClicked(agent_id, agentPlatform) {
       this.$store.commit("setActiveRow", agent_id);
       this.$q.loading.show();
       // give time for store to change active row
@@ -300,7 +313,7 @@ export default {
             runTakeControl(agent_id);
             break;
           case "remotebg":
-            runRemoteBackground(agent_id);
+            runRemoteBackground(agent_id, agentPlatform);
             break;
           case "urlaction":
             runURLAction({ agent_id: agent_id, action: this.agentUrlAction });
@@ -316,8 +329,9 @@ export default {
         },
       });
     },
-    agentRowSelected(agent_id) {
+    agentRowSelected(agent_id, agentPlatform) {
       this.$store.commit("setActiveRow", agent_id);
+      this.$store.commit("setAgentPlatform", agentPlatform);
     },
     overdueAlert(category, agent, alert_action) {
       let db_field = "";

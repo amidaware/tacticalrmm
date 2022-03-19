@@ -1,7 +1,6 @@
-from django.core.management.base import BaseCommand
-
 from agents.models import Agent
 from clients.models import Client, Site
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

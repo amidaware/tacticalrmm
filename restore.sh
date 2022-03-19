@@ -319,6 +319,7 @@ python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
 python manage.py reload_nats
+python manage.py post_update_tasks
 deactivate
 
 sudo systemctl enable nats.service

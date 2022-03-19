@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="17"
+SCRIPT_VERSION="18"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -44,10 +44,6 @@ if [ -d /meshcentral/meshcentral-coredumps ]; then
     rm -f /meshcentral/meshcentral-coredumps/*
 fi
 
-printf >&2 "${GREEN}Running postgres vacuum${NC}\n"
-sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
-sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_pendingaction"
-
 dt_now=$(date '+%Y_%m_%d__%H_%M_%S')
 tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
 sysd="/etc/systemd/system"
@@ -81,7 +77,7 @@ if [ -f "${sysd}/nats-api.service" ]; then
 fi
 
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
-cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py /rmm/api/tacticalrmm/app.ini ${tmp_dir}/rmm/
+cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
 cp /rmm/web/.env ${tmp_dir}/rmm/env
 
 tar -cf /rmmbackups/rmm-backup-${dt_now}.tar -C ${tmp_dir} .

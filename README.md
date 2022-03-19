@@ -4,8 +4,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/wh1te909/tacticalrmm/badge.png?branch=develop&kill_cache=1)](https://coveralls.io/github/wh1te909/tacticalrmm?branch=develop)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
-Tactical RMM is a remote monitoring & management tool for Windows computers, built with Django and Vue.\
-It uses an [agent](https://github.com/wh1te909/rmmagent) written in golang and integrates with [MeshCentral](https://github.com/Ylianst/MeshCentral)
+Tactical RMM is a remote monitoring & management tool, built with Django and Vue.\
+It uses an [agent](https://github.com/amidaware/rmmagent) written in golang and integrates with [MeshCentral](https://github.com/Ylianst/MeshCentral)
 
 # [LIVE DEMO](https://rmm.tacticalrmm.io/)
 Demo database resets every hour. A lot of features are disabled for obvious reasons due to the nature of this app.

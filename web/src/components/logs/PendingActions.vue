@@ -38,7 +38,7 @@
             <q-menu context-menu auto-close>
               <q-list dense>
                 <q-item
-                  :disable="props.row.status === 'completed' || props.row.action_type !== 'schedreboot'"
+                  :disable="props.row.status === 'completed' || props.row.action_type === 'agentinstall'"
                   clickable
                   @click="cancelPendingAction(props.row)"
                 >
@@ -149,6 +149,7 @@ export default {
 
     function showOutput(details) {
       $q.dialog({
+        title: "Pending Action Output Details",
         style: "width: 75vw; max-width: 85vw; max-height: 65vh;",
         class: "scroll",
         message: `<pre>${details}</pre>`,

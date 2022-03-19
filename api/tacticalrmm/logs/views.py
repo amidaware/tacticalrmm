@@ -114,13 +114,14 @@ class PendingActions(APIView):
         if not _has_perm_on_agent(request.user, action.agent.agent_id):
             raise PermissionDenied()
 
-        nats_data = {
-            "func": "delschedtask",
-            "schedtaskpayload": {"name": action.details["taskname"]},
-        }
-        r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
-        if r != "ok":
-            return notify_error(r)
+        if action.action_type == "schedreboot":
+            nats_data = {
+                "func": "delschedtask",
+                "schedtaskpayload": {"name": action.details["taskname"]},
+            }
+            r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
+            if r != "ok":
+                return notify_error(r)
 
         action.delete()
         return Response(f"{action.agent.hostname}: {action.description} was cancelled")

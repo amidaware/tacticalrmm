@@ -123,7 +123,19 @@ class Alert(models.Model):
                 hidden=True,
             )
         else:
-            return cls.objects.get(agent=agent, resolved=False)
+            try:
+                return cls.objects.get(agent=agent, resolved=False)
+            except cls.MultipleObjectsReturned:
+                alerts = cls.objects.filter(agent=agent, resolved=False)
+                last_alert = alerts[-1]
+
+                # cycle through other alerts and resolve
+                for alert in alerts:
+                    if alert.id != last_alert.id:
+                        alert.resolve()
+
+                return last_alert
+                
 
     @classmethod
     def create_or_return_check_alert(cls, check):
@@ -137,7 +149,18 @@ class Alert(models.Model):
                 hidden=True,
             )
         else:
-            return cls.objects.get(assigned_check=check, resolved=False)
+            try:
+                return cls.objects.get(assigned_check=check, resolved=False)
+            except cls.MultipleObjectsReturned:
+                alerts = cls.objects.filter(assigned_check=check, resolved=False)
+                last_alert = alerts[-1]
+
+                # cycle through other alerts and resolve
+                for alert in alerts:
+                    if alert.id != last_alert.id:
+                        alert.resolve()
+
+                return last_alert
 
     @classmethod
     def create_or_return_task_alert(cls, task):
@@ -151,7 +174,18 @@ class Alert(models.Model):
                 hidden=True,
             )
         else:
-            return cls.objects.get(assigned_task=task, resolved=False)
+            try:
+                return cls.objects.get(assigned_task=task, resolved=False)
+            except cls.MultipleObjectsReturned:
+                alerts = cls.objects.filter(assigned_task=task, resolved=False)
+                last_alert = alerts[-1]
+
+                # cycle through other alerts and resolve
+                for alert in alerts:
+                    if alert.id != last_alert.id:
+                        alert.resolve()
+
+                return last_alert
 
     @classmethod
     def handle_alert_failure(cls, instance: Union[Agent, AutomatedTask, Check]) -> None:

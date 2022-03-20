@@ -51,7 +51,8 @@ export default function () {
         return !state.selectedTree;
       },
       formatDate: (state, getters) => (date) => {
-        return formatDate(date, state.dateFormat)
+        if (!state.dateFormat) return formatDate(date)
+        else return formatDate(date, state.dateFormat)
       }
     },
     mutations: {

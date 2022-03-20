@@ -206,7 +206,7 @@ export function getTimeLapse(unixtime) {
   }
 }
 
-export function formatDate(dateString, format = "MM/DD/YYYY HH:mm") {
+export function formatDate(dateString, format = "MMM-DD-YYYY-HH:mm") {
   if (!dateString) return "";
   return date.formatDate(dateString, format);
 }

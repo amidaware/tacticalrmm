@@ -75,24 +75,6 @@ class AutomatedTask(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
-    # deprecated
-    script = models.ForeignKey(
-        "scripts.Script",
-        null=True,
-        blank=True,
-        related_name="autoscript",
-        on_delete=models.SET_NULL,
-    )
-    # deprecated
-    script_args = ArrayField(
-        models.CharField(max_length=255, null=True, blank=True),
-        null=True,
-        blank=True,
-        default=list,
-    )
-    # deprecated
-    timeout = models.PositiveIntegerField(blank=True, default=120)
-
     # format -> {"actions": [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]}
     actions = JSONField(default=list)
     assigned_check = models.ForeignKey(
@@ -104,8 +86,6 @@ class AutomatedTask(BaseAuditModel):
     )
     name = models.CharField(max_length=255)
     collector_all_output = models.BooleanField(default=False)
-    managed_by_policy = models.BooleanField(default=False)
-    parent_task = models.PositiveIntegerField(null=True, blank=True)
     retvalue = models.TextField(null=True, blank=True)
     retcode = models.IntegerField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
@@ -170,7 +150,6 @@ class AutomatedTask(BaseAuditModel):
         return self.name
 
     def save(self, *args, **kwargs):
-        from automation.tasks import update_policy_autotasks_fields_task
         from autotasks.tasks import modify_win_task
 
         # get old agent if exists
@@ -188,18 +167,6 @@ class AutomatedTask(BaseAuditModel):
         # check if automated task was enabled/disabled and send celery task
         if old_task and old_task.agent and update_agent:
             modify_win_task.delay(pk=self.pk)
-
-        # check if policy task was edited and then check if it was a field worth copying to rest of agent tasks
-        elif old_task and old_task.policy:
-            if update_agent:
-                update_policy_autotasks_fields_task.delay(
-                    task=self.pk, update_agent=update_agent
-                )
-            else:
-                for field in self.policy_fields_to_copy:
-                    if getattr(self, field) != getattr(old_task, field):
-                        update_policy_autotasks_fields_task.delay(task=self.pk)
-                        break
 
     @property
     def schedule(self):
@@ -234,41 +201,6 @@ class AutomatedTask(BaseAuditModel):
             days = bitdays_to_string(self.run_time_bit_weekdays)
             return f"Runs on {months} on {weeks} on {days} at {run_time_nice}"
 
-    # These fields will be duplicated on the agent tasks that are managed by a policy
-    @property
-    def policy_fields_to_copy(self) -> List[str]:
-        return [
-            "alert_severity",
-            "email_alert",
-            "text_alert",
-            "dashboard_alert",
-            "assigned_check",
-            "name",
-            "actions",
-            "run_time_bit_weekdays",
-            "run_time_date",
-            "expire_date",
-            "daily_interval",
-            "weekly_interval",
-            "task_type",
-            "win_task_name",
-            "enabled",
-            "remove_if_not_scheduled",
-            "run_asap_after_missed",
-            "custom_field",
-            "collector_all_output",
-            "monthly_days_of_month",
-            "monthly_months_of_year",
-            "monthly_weeks_of_month",
-            "task_repetition_duration",
-            "task_repetition_interval",
-            "stop_task_at_duration_end",
-            "random_task_delay",
-            "run_asap_after_missed",
-            "task_instance_policy",
-            "continue_on_error",
-        ]
-
     @property
     def fields_that_trigger_task_update_on_agent(self) -> List[str]:
         return [
@@ -302,44 +234,6 @@ class AutomatedTask(BaseAuditModel):
         from .serializers import TaskAuditSerializer
 
         return TaskAuditSerializer(task).data
-
-    def create_policy_task(self, agent=None, policy=None, assigned_check=None):
-
-        # added to allow new policy tasks to be assigned to check only when the agent check exists already
-        if (
-            self.assigned_check
-            and agent
-            and agent.agentchecks.filter(parent_check=self.assigned_check.id).exists()
-        ):
-            assigned_check = agent.agentchecks.get(parent_check=self.assigned_check.id)
-
-        # if policy is present, then this task is being copied to another policy
-        # if agent is present, then this task is being created on an agent from a policy
-        # exit if neither are set or if both are set
-        # also exit if assigned_check is set because this task will be created when the check is
-        if (
-            (not agent and not policy)
-            or (agent and policy)
-            or (self.assigned_check and not assigned_check)
-        ):
-            return
-
-        task = AutomatedTask.objects.create(
-            agent=agent,
-            policy=policy,
-            managed_by_policy=bool(agent),
-            parent_task=(self.pk if agent else None),
-            assigned_check=assigned_check,
-        )
-
-        for field in self.policy_fields_to_copy:
-            if field != "assigned_check":
-                setattr(task, field, getattr(self, field))
-
-        task.save()
-
-        if agent:
-            task.create_task_on_agent()
 
     # agent version >= 1.8.0
     def generate_nats_task_payload(self, editing=False):
@@ -694,3 +588,37 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
         CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore
+
+class PolicyTaskResult(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
+    agent = models.ForeignKey(
+        "agents.Agent",
+        related_name="policytaskhistory",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    policy_task = models.ForeignKey(
+        "autotasks.AutomatedTask",
+        related_name="policytaskresults",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE
+    )
+
+    retvalue = models.TextField(null=True, blank=True)
+    retcode = models.IntegerField(null=True, blank=True)
+    stdout = models.TextField(null=True, blank=True)
+    stderr = models.TextField(null=True, blank=True)
+    execution_time = models.CharField(max_length=100, default="0.0000")
+    last_run = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(
+        max_length=30, choices=TASK_STATUS_CHOICES, default="pending"
+    )
+    sync_status = models.CharField(
+        max_length=100, choices=SYNC_STATUS_CHOICES, default="initial"
+    )
+
+    def __str__(self):
+        return f"{self.agent.hostname} - {self.policy_task}" 

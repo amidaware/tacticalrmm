@@ -110,14 +110,14 @@
                 clickable
                 v-close-popup
                 @click="showCheckModal(props.row.check_type, props.row)"
-                :disable="props.row.managed_by_policy"
+                :disable="!!props.row.policy"
               >
                 <q-item-section side>
                   <q-icon name="edit" />
                 </q-item-section>
                 <q-item-section>Edit</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="deleteCheck(props.row)" :disable="props.row.managed_by_policy">
+              <q-item clickable v-close-popup @click="deleteCheck(props.row)" :disable="!!props.row.policy">
                 <q-item-section side>
                   <q-icon name="delete" />
                 </q-item-section>
@@ -153,7 +153,7 @@
               dense
               @update:model-value="editCheck(props.row, { text_alert: !props.row.text_alert })"
               v-model="props.row.text_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- email alert -->
@@ -172,7 +172,7 @@
               dense
               @update:model-value="editCheck(props.row, { email_alert: !props.row.email_alert })"
               v-model="props.row.email_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- dashboard alert -->
@@ -191,11 +191,11 @@
               dense
               @update:model-value="editCheck(props.row, { dashboard_alert: !props.row.dashboard_alert })"
               v-model="props.row.dashboard_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- policy check icon -->
-          <q-td v-if="props.row.managed_by_policy">
+          <q-td v-if="props.row.policy">
             <q-icon style="font-size: 1.3rem" name="policy">
               <q-tooltip>This check is managed by a policy</q-tooltip>
             </q-icon>
@@ -361,7 +361,7 @@ export default {
     }
 
     async function editCheck(check, data) {
-      if (check.managed_by_policy) return;
+      if (check.policy) return;
 
       loading.value = false;
       try {
@@ -445,7 +445,7 @@ export default {
     }
 
     function showCheckModal(type, check) {
-      if (check && check.managed_by_policy) return;
+      if (check && check.policy) return;
 
       let component;
 

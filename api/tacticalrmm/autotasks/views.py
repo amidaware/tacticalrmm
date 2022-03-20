@@ -20,7 +20,7 @@ class GetAddAutoTasks(APIView):
 
         if agent_id:
             agent = get_object_or_404(Agent, agent_id=agent_id)
-            tasks = AutomatedTask.objects.filter(agent=agent)
+            tasks = agent.get_tasks_with_policies()
         elif policy:
             policy = get_object_or_404(Policy, id=policy)
             tasks = AutomatedTask.objects.filter(policy=policy)
@@ -29,7 +29,6 @@ class GetAddAutoTasks(APIView):
         return Response(TaskSerializer(tasks, many=True).data)
 
     def post(self, request):
-        from automation.tasks import generate_agent_autotasks_task
         from autotasks.tasks import create_win_task_schedule
 
         data = request.data.copy()
@@ -51,9 +50,6 @@ class GetAddAutoTasks(APIView):
 
         if task.agent:
             create_win_task_schedule.delay(pk=task.pk)
-
-        elif task.policy:
-            generate_agent_autotasks_task.delay(policy=task.policy.pk)
 
         return Response(
             "The task has been created. It will show up on the agent on next checkin"
@@ -86,7 +82,6 @@ class GetEditDeleteAutoTask(APIView):
         return Response("The task was updated")
 
     def delete(self, request, pk):
-        from automation.tasks import delete_policy_autotasks_task
         from autotasks.tasks import delete_win_task_schedule
 
         task = get_object_or_404(AutomatedTask, pk=pk)
@@ -96,9 +91,6 @@ class GetEditDeleteAutoTask(APIView):
 
         if task.agent:
             delete_win_task_schedule.delay(pk=task.pk)
-        elif task.policy:
-            delete_policy_autotasks_task.delay(task=task.pk)
-            task.delete()
 
         return Response(f"{task.name} will be deleted shortly")
 

@@ -18,7 +18,7 @@ def unsnooze_alerts() -> str:
 def cache_agents_alert_template():
     from agents.models import Agent
 
-    for agent in Agent.objects.only("pk"):
+    for agent in Agent.objects.only("pk", "site", "policy", "alert_template").select_related("site", "policy", "alert_template"):
         agent.set_alert_template()
 
     return "ok"

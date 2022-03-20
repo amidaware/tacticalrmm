@@ -44,10 +44,9 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 4)
 
-    @patch("automation.tasks.generate_agent_autotasks_task.delay")
     @patch("autotasks.tasks.create_win_task_schedule.delay")
     def test_add_autotask(
-        self, create_win_task_schedule, generate_agent_autotasks_task
+        self, create_win_task_schedule
     ):
         url = f"{base_url}/"
 
@@ -238,20 +237,6 @@ class TestAutotaskViews(TacticalTestCase):
         create_win_task_schedule.assert_called()
         create_win_task_schedule.reset_mock()
 
-        # test add task to policy
-        data = {
-            "policy": policy.id,  # type: ignore
-            "name": "Test Task Manual",
-            "enabled": True,
-            "task_type": "manual",
-            "actions": actions,
-        }
-
-        resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        generate_agent_autotasks_task.assert_called_with(policy=policy.id)  # type: ignore
-
         self.check_not_authenticated("post", url)
 
     def test_get_autotask(self):
@@ -271,9 +256,8 @@ class TestAutotaskViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     @patch("autotasks.tasks.modify_win_task.delay")
-    @patch("automation.tasks.update_policy_autotasks_fields_task.delay")
     def test_update_autotask(
-        self, update_policy_autotasks_fields_task, modify_win_task
+        self, modify_win_task
     ):
         # setup data
         agent = baker.make_recipe("agents.agent")
@@ -351,32 +335,11 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 400)
         modify_win_task.assert_not_called  # type: ignore
 
-        # test editing policy tasks
-        url = f"{base_url}/{policy_task.id}/"  # type: ignore
-
-        # test editing policy task
-        data = {"enabled": False}
-
-        resp = self.client.put(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        update_policy_autotasks_fields_task.assert_called_with(
-            task=policy_task.id, update_agent=True  # type: ignore
-        )
-        update_policy_autotasks_fields_task.reset_mock()
-
-        # test editing policy task with no agent update
-        data = {"name": "New Name"}
-
-        resp = self.client.put(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        update_policy_autotasks_fields_task.assert_called_with(task=policy_task.id)
-
         self.check_not_authenticated("put", url)
 
     @patch("autotasks.tasks.delete_win_task_schedule.delay")
-    @patch("automation.tasks.delete_policy_autotasks_task.delay")
     def test_delete_autotask(
-        self, delete_policy_autotasks_task, delete_win_task_schedule
+        self, delete_win_task_schedule
     ):
         # setup data
         agent = baker.make_recipe("agents.agent")
@@ -393,13 +356,6 @@ class TestAutotaskViews(TacticalTestCase):
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
         delete_win_task_schedule.assert_called_with(pk=agent_task.id)  # type: ignore
-
-        # test delete policy task
-        url = f"{base_url}/{policy_task.id}/"  # type: ignore
-        resp = self.client.delete(url, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertFalse(AutomatedTask.objects.filter(pk=policy_task.id))  # type: ignore
-        delete_policy_autotasks_task.assert_called_with(task=policy_task.id)  # type: ignore
 
         self.check_not_authenticated("delete", url)
 

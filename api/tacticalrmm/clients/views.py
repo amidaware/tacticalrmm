@@ -119,8 +119,6 @@ class GetUpdateDeleteClient(APIView):
         return Response("{client} was updated")
 
     def delete(self, request, pk):
-        from automation.tasks import generate_agent_checks_task
-
         client = get_object_or_404(Client, pk=pk)
         agent_count = client.live_agent_count
 
@@ -129,7 +127,6 @@ class GetUpdateDeleteClient(APIView):
             agents = Agent.objects.filter(site__client=client)
             site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
             agents.update(site=site)
-            generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         elif agent_count > 0:
             return notify_error(
@@ -220,8 +217,6 @@ class GetUpdateDeleteSite(APIView):
         return Response("Site was edited")
 
     def delete(self, request, pk):
-        from automation.tasks import generate_agent_checks_task
-
         site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
             return notify_error("A client must have at least 1 site.")
@@ -232,7 +227,6 @@ class GetUpdateDeleteSite(APIView):
             agents = Agent.objects.filter(site=site)
             new_site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
             agents.update(site=new_site)
-            generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         elif agent_count > 0:
             return notify_error(

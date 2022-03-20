@@ -27,7 +27,6 @@ class Policy(BaseAuditModel):
 
     def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
-        from automation.tasks import generate_agent_checks_task
 
         # get old policy if exists
         old_policy = type(self).objects.get(pk=self.pk) if self.pk else None
@@ -35,22 +34,8 @@ class Policy(BaseAuditModel):
 
         # generate agent checks only if active and enforced were changed
         if old_policy:
-            if old_policy.active != self.active or old_policy.enforced != self.enforced:
-                generate_agent_checks_task.delay(
-                    policy=self.pk,
-                    create_tasks=True,
-                )
-
             if old_policy.alert_template != self.alert_template:
                 cache_agents_alert_template.delay()
-
-    def delete(self, *args, **kwargs):
-        from automation.tasks import generate_agent_checks_task
-
-        agents = list(self.related_agents().only("pk").values_list("pk", flat=True))
-        super(Policy, self).delete(*args, **kwargs)
-
-        generate_agent_checks_task.delay(agents=agents, create_tasks=True)
 
     def __str__(self):
         return self.name
@@ -129,14 +114,10 @@ class Policy(BaseAuditModel):
         return PolicyAuditSerializer(policy).data
 
     @staticmethod
-    def cascade_policy_tasks(agent):
+    def get_policy_tasks(agent):
 
         # List of all tasks to be applied
         tasks = list()
-
-        agent_tasks_parent_pks = [
-            task.parent_task for task in agent.autotasks.filter(managed_by_policy=True)
-        ]
 
         # Get policies applied to agent and agent site and client
         policies = agent.get_agent_policies()
@@ -149,36 +130,12 @@ class Policy(BaseAuditModel):
                 for task in policy.autotasks.all():
                     tasks.append(task)
 
-        # remove policy tasks from agent not included in policy
-        for task in agent.autotasks.filter(
-            parent_task__in=[
-                taskpk
-                for taskpk in agent_tasks_parent_pks
-                if taskpk not in [task.pk for task in tasks]
-            ]
-        ):
-            if task.sync_status == "initial":
-                task.delete()
-            else:
-                task.sync_status = "pendingdeletion"
-                task.save()
-
-        # change tasks from pendingdeletion to notsynced if policy was added or changed
-        agent.autotasks.filter(sync_status="pendingdeletion").filter(
-            parent_task__in=[taskpk for taskpk in [task.pk for task in tasks]]
-        ).update(sync_status="notsynced")
-
-        return [task for task in tasks if task.pk not in agent_tasks_parent_pks]
+        return tasks
 
     @staticmethod
-    def cascade_policy_checks(agent):
+    def get_policy_checks(agent):
         # Get checks added to agent directly
-        agent_checks = list(agent.agentchecks.filter(managed_by_policy=False))
-
-        agent_checks_parent_pks = [
-            check.parent_check
-            for check in agent.agentchecks.filter(managed_by_policy=True)
-        ]
+        agent_checks = list(agent.agentchecks.all())
 
         # Get policies applied to agent and agent site and client
         policies = agent.get_agent_policies()
@@ -209,7 +166,7 @@ class Policy(BaseAuditModel):
         added_cpuload_checks = list()
         added_memory_checks = list()
 
-        # Lists all agent and policy checks that will be created
+        # Lists all agent and policy checks that will be returned
         diskspace_checks = list()
         ping_checks = list()
         winsvc_checks = list()
@@ -298,7 +255,7 @@ class Policy(BaseAuditModel):
                     check.overriden_by_policy = True
                     check.save()
 
-        final_list = (
+        return (
             diskspace_checks
             + ping_checks
             + cpuload_checks
@@ -307,33 +264,3 @@ class Policy(BaseAuditModel):
             + script_checks
             + eventlog_checks
         )
-
-        # remove policy checks from agent that fell out of policy scope
-        agent.agentchecks.filter(
-            managed_by_policy=True,
-            parent_check__in=[
-                checkpk
-                for checkpk in agent_checks_parent_pks
-                if checkpk not in [check.pk for check in final_list]
-            ],
-        ).delete()
-
-        return [
-            check for check in final_list if check.pk not in agent_checks_parent_pks
-        ]
-
-    @staticmethod
-    def generate_policy_checks(agent):
-        checks = Policy.cascade_policy_checks(agent)
-
-        if checks:
-            for check in checks:
-                check.create_policy_check(agent)
-
-    @staticmethod
-    def generate_policy_tasks(agent):
-        tasks = Policy.cascade_policy_tasks(agent)
-
-        if tasks:
-            for task in tasks:
-                task.create_policy_task(agent)

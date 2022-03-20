@@ -26,7 +26,7 @@ class GetAddChecks(APIView):
     def get(self, request, agent_id=None, policy=None):
         if agent_id:
             agent = get_object_or_404(Agent, agent_id=agent_id)
-            checks = Check.objects.filter(agent=agent)
+            checks = agent.get_checks_with_policies()
         elif policy:
             policy = get_object_or_404(Policy, id=policy)
             checks = Check.objects.filter(policy=policy)
@@ -35,7 +35,6 @@ class GetAddChecks(APIView):
         return Response(CheckSerializer(checks, many=True).data)
 
     def post(self, request):
-        from automation.tasks import generate_agent_checks_task
 
         data = request.data.copy()
         # Determine if adding check to Agent and replace agent_id with pk
@@ -55,10 +54,7 @@ class GetAddChecks(APIView):
         serializer.is_valid(raise_exception=True)
         new_check = serializer.save()
 
-        # Generate policy Checks
-        if "policy" in data.keys():
-            generate_agent_checks_task.delay(policy=data["policy"])
-        elif "agent" in data.keys():
+        if "agent" in data.keys():
             checks = agent.agentchecks.filter(  # type: ignore
                 check_type=new_check.check_type, managed_by_policy=True
             )
@@ -90,8 +86,6 @@ class GetUpdateDeleteCheck(APIView):
         return Response(CheckSerializer(check).data)
 
     def put(self, request, pk):
-        from automation.tasks import update_policy_check_fields_task
-
         check = get_object_or_404(Check, pk=pk)
 
         data = request.data.copy()
@@ -117,32 +111,15 @@ class GetUpdateDeleteCheck(APIView):
         serializer.is_valid(raise_exception=True)
         check = serializer.save()
 
-        if check.policy:
-            update_policy_check_fields_task.delay(check=check.pk)
-
         return Response(f"{check.readable_desc} was edited!")
 
     def delete(self, request, pk):
-        from automation.tasks import generate_agent_checks_task
-
         check = get_object_or_404(Check, pk=pk)
 
         if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
             raise PermissionDenied()
 
         check.delete()
-
-        # Policy check deleted
-        if check.policy:
-            Check.objects.filter(managed_by_policy=True, parent_check=pk).delete()
-
-            # Re-evaluate agent checks is policy was enforced
-            if check.policy.enforced:
-                generate_agent_checks_task.delay(policy=check.policy.pk)
-
-        # Agent check deleted
-        elif check.agent:
-            generate_agent_checks_task.delay(agents=[check.agent.pk])
 
         return Response(f"{check.readable_desc} was deleted!")
 

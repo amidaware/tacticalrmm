@@ -89,13 +89,13 @@
                 </q-item-section>
                 <q-item-section>Run task now</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showEditTask(props.row)" v-if="!props.row.managed_by_policy">
+              <q-item clickable v-close-popup @click="showEditTask(props.row)" v-if="!props.row.policy">
                 <q-item-section side>
                   <q-icon name="edit" />
                 </q-item-section>
                 <q-item-section>Edit</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="deleteTask(props.row)" v-if="!props.row.managed_by_policy">
+              <q-item clickable v-close-popup @click="deleteTask(props.row)" v-if="!props.row.policy">
                 <q-item-section side>
                   <q-icon name="delete" />
                 </q-item-section>
@@ -113,7 +113,7 @@
               dense
               @update:model-value="editTask(props.row, { enabled: !props.row.enabled })"
               v-model="props.row.enabled"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- text alert -->
@@ -132,7 +132,7 @@
               dense
               @update:model-value="editTask(props.row, { text_alert: !props.row.text_alert })"
               v-model="props.row.text_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- email alert -->
@@ -151,7 +151,7 @@
               dense
               @update:model-value="editTask(props.row, { email_alert: !props.row.email_alert })"
               v-model="props.row.email_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- dashboard alert -->
@@ -170,12 +170,12 @@
               dense
               @update:model-value="editTask(props.row, { dashboard_alert: !props.row.dashboard_alert })"
               v-model="props.row.dashboard_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- policy check icon -->
           <q-td>
-            <q-icon v-if="props.row.managed_by_policy" style="font-size: 1.3rem" name="policy">
+            <q-icon v-if="props.row.policy" style="font-size: 1.3rem" name="policy">
               <q-tooltip>This task is managed by a policy</q-tooltip>
             </q-icon>
           </q-td>
@@ -331,7 +331,7 @@ export default {
     }
 
     async function editTask(task, data) {
-      if (task.managed_by_policy) return;
+      if (task.policy) return;
 
       loading.value = true;
       try {
@@ -346,7 +346,7 @@ export default {
     }
 
     function deleteTask(task) {
-      if (task.managed_by_policy) return;
+      if (task.policy) return;
 
       $q.dialog({
         title: "Are you sure?",
@@ -394,7 +394,7 @@ export default {
     }
 
     function showEditTask(task) {
-      if (task.managed_by_policy) return;
+      if (task.policy) return;
 
       $q.dialog({
         component: AutomatedTaskForm,

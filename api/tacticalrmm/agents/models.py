@@ -79,26 +79,6 @@ class Agent(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
-    def save(self, *args, **kwargs):
-        # get old agent if exists
-        old_agent = Agent.objects.get(pk=self.pk) if self.pk else None
-        super(Agent, self).save(old_model=old_agent, *args, **kwargs)
-
-        # check if new agent has been created
-        # or check if policy have changed on agent
-        # or if site has changed on agent and if so generate policies
-        # or if agent was changed from server or workstation
-        if (
-            not old_agent
-            or (old_agent and old_agent.policy != self.policy)
-            or (old_agent.site != self.site)
-            or (old_agent.monitoring_type != self.monitoring_type)
-            or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
-        ):
-            from automation.tasks import generate_agent_checks_task
-
-            generate_agent_checks_task.delay(agents=[self.pk], create_tasks=True)
-
     def __str__(self):
         return self.hostname
 
@@ -335,6 +315,12 @@ class Agent(BaseAuditModel):
 
     def is_supported_script(self, platforms: list) -> bool:
         return self.plat.lower() in platforms if platforms else True
+
+    def get_checks_with_policies(self):
+        return list(self.agentchecks.all()) + self.get_checks_from_policies()
+
+    def get_tasks_with_policies(self):
+        return list(self.autotasks.all()) + self.get_tasks_from_policies()
 
     def get_agent_policies(self):
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
@@ -592,20 +578,67 @@ class Agent(BaseAuditModel):
 
         return None
 
-    def generate_checks_from_policies(self):
+    def get_checks_from_policies(self):
         from automation.models import Policy
+        from checks.models import PolicyCheckResult
 
-        # Clear agent checks that have overriden_by_policy set
+        # clear agent checks that have overriden_by_policy set
         self.agentchecks.update(overriden_by_policy=False)  # type: ignore
 
-        # Generate checks based on policies
-        Policy.generate_policy_checks(self)
+        # get agent checks based on policies
+        checks = Policy.get_policy_checks(self)
 
-    def generate_tasks_from_policies(self):
+        # inject check results
+        for check in checks:
+            try:
+                result = PolicyCheckResult.objects.get(policy_check=check, agent=self)
+            except PolicyCheckResult.DoesNotExist:
+                result = PolicyCheckResult(policy_check=check, agent=self)
+                result.save()
+                continue
+            
+            # just adding the agent result properties to the policy check and not saving
+            check.status = result.status
+            check.more_info = result.more_info
+            check.last_run = result.last_run
+            check.fail_count = result.fail_count
+            check.outage_history = result.outage_history
+            check.extra_details = result.extra_details
+            check.stdout = result.stdout
+            check.stderr = result.stderr
+            check.retcode = result.retcode
+            check.execution_time = result.execution_time
+            check.history = result.history
+
+        return checks
+
+    def get_tasks_from_policies(self):
         from automation.models import Policy
+        from autotasks.models import PolicyTaskResult
 
-        # Generate tasks based on policies
-        Policy.generate_policy_tasks(self)
+        # get agent tasks based on policies
+        tasks = Policy.get_policy_tasks(self)
+
+        # inject task history results
+        for task in tasks:
+            try:
+                result = PolicyTaskResult.objects.get(policy_task=task, agent=self)
+            except PolicyTaskResult.DoesNotExist:
+                result = PolicyTaskResult(policy_task=task, agent=self)
+                result.save()
+                continue
+            
+            # just adding the agent result properties to the policy check and not saving
+            task.status = result.status
+            task.sync_status = result.sync_status
+            task.last_run = result.last_run
+            task.stdout = result.stdout
+            task.stderr = result.stderr
+            task.retcode = result.retcode
+            task.retvalue = result.retvalue
+            task.execution_time = result.execution_time
+
+        return tasks
 
     def _do_nats_debug(self, agent, message):
         DebugLog.error(agent=agent, log_type="agent_issues", message=message)

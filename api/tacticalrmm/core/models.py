@@ -89,7 +89,6 @@ class CoreSettings(BaseAuditModel):
 
     def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
-        from automation.tasks import generate_agent_checks_task
 
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")
@@ -105,12 +104,6 @@ class CoreSettings(BaseAuditModel):
 
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
         super(BaseAuditModel, self).save(*args, **kwargs)
-
-        # check if server polcies have changed and initiate task to reapply policies if so
-        if (old_settings and old_settings.server_policy != self.server_policy) or (
-            old_settings and old_settings.workstation_policy != self.workstation_policy
-        ):
-            generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         if old_settings and old_settings.alert_template != self.alert_template:
             cache_agents_alert_template.delay()

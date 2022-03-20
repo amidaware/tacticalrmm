@@ -90,21 +90,6 @@ class GetUpdateDeletePolicy(APIView):
 
         return Response("ok")
 
-
-class PolicySync(APIView):
-    def post(self, request):
-        if "policy" in request.data.keys():
-            from automation.tasks import generate_agent_checks_task
-
-            generate_agent_checks_task.delay(
-                policy=request.data["policy"], create_tasks=True
-            )
-            return Response("ok")
-
-        else:
-            return notify_error("The request was invalid")
-
-
 class PolicyAutoTask(APIView):
 
     # get status of all tasks

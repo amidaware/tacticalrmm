@@ -7,6 +7,7 @@ from core.models import CoreSettings
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models.fields.json import JSONField
 from logs.models import BaseAuditModel
 
 from tacticalrmm.models import PermissionQuerySet
@@ -246,42 +247,6 @@ class Check(BaseAuditModel):
             "modified_time",
         ]
 
-    @property
-    def policy_fields_to_copy(self) -> list[str]:
-        return [
-            "warning_threshold",
-            "error_threshold",
-            "alert_severity",
-            "name",
-            "run_interval",
-            "disk",
-            "fails_b4_alert",
-            "ip",
-            "script",
-            "script_args",
-            "info_return_codes",
-            "warning_return_codes",
-            "timeout",
-            "svc_name",
-            "svc_display_name",
-            "svc_policy_mode",
-            "pass_if_start_pending",
-            "pass_if_svc_not_exist",
-            "restart_if_stopped",
-            "log_name",
-            "event_id",
-            "event_id_is_wildcard",
-            "event_type",
-            "event_source",
-            "event_message",
-            "fail_when",
-            "search_last_days",
-            "number_of_events_b4_alert",
-            "email_alert",
-            "text_alert",
-            "dashboard_alert",
-        ]
-
     def should_create_alert(self, alert_template=None):
 
         return (
@@ -465,33 +430,6 @@ class Check(BaseAuditModel):
 
         return CheckAuditSerializer(check).data
 
-    def create_policy_check(self, agent=None, policy=None):
-
-        if (not agent and not policy) or (agent and policy):
-            return
-
-        check = Check.objects.create(
-            agent=agent,
-            policy=policy,
-            managed_by_policy=bool(agent),
-            parent_check=(self.pk if agent else None),
-            check_type=self.check_type,
-            script=self.script,
-        )
-
-        for task in self.assignedtask.all():  # type: ignore
-            if policy or (
-                agent and not agent.autotasks.filter(parent_task=task.pk).exists()
-            ):
-                task.create_policy_task(
-                    agent=agent, policy=policy, assigned_check=check
-                )
-
-        for field in self.policy_fields_to_copy:
-            setattr(check, field, getattr(self, field))
-
-        check.save()
-
     def is_duplicate(self, check):
         if self.check_type == "diskspace":
             return self.disk == check.disk
@@ -656,6 +594,45 @@ class Check(BaseAuditModel):
 
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         CORE.send_sms(subject, alert_template=self.agent.alert_template)
+
+
+class PolicyCheckResult(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
+    agent = models.ForeignKey(
+        "agents.Agent",
+        related_name="policycheckhistory",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    policy_check = models.ForeignKey(
+        "checks.Check",
+        related_name="policycheckresults",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE
+    )
+    status = models.CharField(
+        max_length=100, choices=CHECK_STATUS_CHOICES, default="pending"
+    )
+    more_info = models.TextField(null=True, blank=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+    fail_count = models.PositiveIntegerField(default=0)
+    outage_history = models.JSONField(null=True, blank=True)  # store
+    extra_details = models.JSONField(null=True, blank=True)
+    stdout = models.TextField(null=True, blank=True)
+    stderr = models.TextField(null=True, blank=True)
+    retcode = models.IntegerField(null=True, blank=True)
+    execution_time = models.CharField(max_length=100, null=True, blank=True)
+    # cpu and mem check history
+    history = ArrayField(
+        models.IntegerField(blank=True), null=True, blank=True, default=list
+    )
+
+    def __str__(self):
+        return f"{self.agent.hostname} - {self.policy_check}" 
 
 
 class CheckHistory(models.Model):

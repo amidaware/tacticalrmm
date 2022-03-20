@@ -286,6 +286,7 @@ else
 fi
 
 python manage.py pre_update_tasks
+celery -A tacticalrmm purge -f
 python manage.py migrate
 python manage.py delete_tokens
 python manage.py collectstatic --no-input

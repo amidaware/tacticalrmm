@@ -2,7 +2,7 @@ from rest_framework import serializers
 from scripts.models import Script
 from django.core.exceptions import ObjectDoesNotExist
 
-from .models import AutomatedTask
+from .models import AutomatedTask, PolicyTaskResult
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -10,10 +10,9 @@ class TaskSerializer(serializers.ModelSerializer):
     check_name = serializers.ReadOnlyField(source="assigned_check.readable_desc")
     schedule = serializers.ReadOnlyField()
     alert_template = serializers.SerializerMethodField()
-    run_time_date = serializers.SerializerMethodField()
-    run_time_date = serializers.DateTimeField(format="iso-8601", required=False)
+    run_time_date = serializers.DateTimeField(required=False)
     expire_date = serializers.DateTimeField(
-        format="iso-8601", allow_null=True, required=False
+        allow_null=True, required=False
     )
     
     def validate_actions(self, value):
@@ -245,6 +244,18 @@ class TaskRunnerPatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = AutomatedTask
         fields = "__all__"
+
+class TaskRunnerPatchPolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PolicyTaskResult
+        fields = (
+            "pk",
+            "retvalue",
+            "retcode",
+            "stdout",
+            "stderr",
+            "execution_time",    
+        )
 
 
 class TaskAuditSerializer(serializers.ModelSerializer):

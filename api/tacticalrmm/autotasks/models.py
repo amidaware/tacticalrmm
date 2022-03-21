@@ -2,7 +2,7 @@ import asyncio
 import datetime as dt
 import random
 import string
-from typing import List
+from typing import TYPE_CHECKING, List, Tuple, Optional
 
 import pytz
 from alerts.models import SEVERITY_CHOICES
@@ -25,6 +25,8 @@ from tacticalrmm.utils import (
     convert_to_iso_duration,
 )
 
+# if TYPE_CHECKING:
+#     from autotasks.models import AutomatedTask, PolicyTaskResult
 TASK_TYPE_CHOICES = [
     ("daily", "Daily"),
     ("weekly", "Weekly"),
@@ -234,6 +236,47 @@ class AutomatedTask(BaseAuditModel):
         from .serializers import TaskAuditSerializer
 
         return TaskAuditSerializer(task).data
+
+    def merge_task_with_results(self, agent):
+        try:
+            result = PolicyTaskResult.objects.get(policy_task=self, agent=agent)
+        except PolicyTaskResult.DoesNotExist:
+            result = PolicyTaskResult(policy_task=self, agent=agent)
+            result.save()
+
+        # just adding the agent result properties to the policy check and not saving
+        self.agent = agent
+        self.status = result.status
+        self.sync_status = result.sync_status
+        self.last_run = result.last_run
+        self.stdout = result.stdout
+        self.stderr = result.stderr
+        self.retcode = result.retcode
+        self.retvalue = result.retvalue
+        self.execution_time = result.execution_time
+
+        return self
+
+    def save_task_results(self, data, agent) -> 'Tuple[AutomatedTask, Optional[PolicyTaskResult]]':
+        from .serializers import TaskRunnerPatchSerializer, TaskRunnerPatchPolicySerializer
+        task_result = None
+        task = None
+        if self.policy:
+            from autotasks.models import PolicyTaskResult
+            task_result = PolicyTaskResult.objects.get(policy_task=self, agent=agent)
+            serializer = TaskRunnerPatchPolicySerializer(
+                instance=task_result, data=data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            task = serializer.save(last_run=djangotime.now())
+        else:
+            serializer = TaskRunnerPatchSerializer(
+                instance=self, data=data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            task = serializer.save(last_run=djangotime.now())
+
+        return (task, task_result)
 
     # agent version >= 1.8.0
     def generate_nats_task_payload(self, editing=False):

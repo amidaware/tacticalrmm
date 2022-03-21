@@ -177,9 +177,7 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
         model = Check
         exclude = [
             "policy",
-            "managed_by_policy",
             "overriden_by_policy",
-            "parent_check",
             "name",
             "more_info",
             "last_run",

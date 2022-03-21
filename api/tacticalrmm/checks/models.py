@@ -1,13 +1,12 @@
 from statistics import mean
 from typing import Any
 
-import pytz
 from alerts.models import SEVERITY_CHOICES
 from core.models import CoreSettings
+from django.utils import timezone as djangotime
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models.fields.json import JSONField
 from logs.models import BaseAuditModel
 
 from tacticalrmm.models import PermissionQuerySet
@@ -67,9 +66,7 @@ class Check(BaseAuditModel):
         blank=True,
         on_delete=models.CASCADE,
     )
-    managed_by_policy = models.BooleanField(default=False)
     overriden_by_policy = models.BooleanField(default=False)
-    parent_check = models.PositiveIntegerField(null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)
     check_type = models.CharField(
         max_length=50, choices=CHECK_TYPE_CHOICES, default="diskspace"
@@ -247,6 +244,43 @@ class Check(BaseAuditModel):
             "modified_time",
         ]
 
+    def merge_check_with_results(self, agent):
+        try:
+            result = PolicyCheckResult.objects.get(policy_check=self, agent=agent)
+        except PolicyCheckResult.DoesNotExist:
+            result = PolicyCheckResult(policy_check=self, agent=self)
+            result.save()
+        
+        # just adding the agent result properties to the policy check and not saving
+        if self.check_type == "cpuload" or self.check_type == "memcheck":
+            self.alert_severity = result.alert_severity
+        self.agent = agent
+        self.status = result.status
+        self.more_info = result.more_info
+        self.last_run = result.last_run
+        self.fail_count = result.fail_count
+        self.outage_history = result.outage_history
+        self.extra_details = result.extra_details
+        self.stdout = result.stdout
+        self.stderr = result.stderr
+        self.retcode = result.retcode
+        self.execution_time = result.execution_time
+        self.history = result.history
+
+        return self
+
+    def save_check_result(self, data, agent) -> str:
+        if self.policy:
+            from checks.models import PolicyCheckResult
+            check_result = PolicyCheckResult.objects.get(agent=agent, policy_check=self)
+            check_result.last_run = djangotime.now()
+            check_result.save(update_fields=["last_run"])
+            return self.handle_check(data, check_result)
+        else:
+            self.last_run = djangotime.now()
+            self.save(update_fields=["last_run"])
+            return self.handle_check(data)
+
     def should_create_alert(self, alert_template=None):
 
         return (
@@ -266,11 +300,18 @@ class Check(BaseAuditModel):
     def add_check_history(self, value: int, more_info: Any = None) -> None:
         CheckHistory.objects.create(check_id=self.pk, y=value, results=more_info)
 
-    def handle_check(self, data):
+    def handle_check(self, data, policy_check_result=None):
         from alerts.models import Alert
 
+        # save reference to the check
+        check = self if not policy_check_result else self.merge_check_with_results(policy_check_result.agent)
+
+        # change self to policy_check_result if it is a policy check
+        if policy_check_result:
+            self = policy_check_result
+
         # cpuload or mem checks
-        if self.check_type == "cpuload" or self.check_type == "memory":
+        if check.check_type == "cpuload" or check.check_type == "memory":
 
             self.history.append(data["percent"])
 
@@ -281,28 +322,28 @@ class Check(BaseAuditModel):
 
             avg = int(mean(self.history))
 
-            if self.error_threshold and avg > self.error_threshold:
+            if check.error_threshold and avg > check.error_threshold:
                 self.status = "failing"
                 self.alert_severity = "error"
-            elif self.warning_threshold and avg > self.warning_threshold:
+            elif check.warning_threshold and avg > check.warning_threshold:
                 self.status = "failing"
                 self.alert_severity = "warning"
             else:
                 self.status = "passing"
 
             # add check history
-            self.add_check_history(data["percent"])
+            check.add_check_history(data["percent"])
 
         # diskspace checks
-        elif self.check_type == "diskspace":
+        elif check.check_type == "diskspace":
             if data["exists"]:
                 percent_used = round(data["percent_used"])
-                if self.error_threshold and (100 - percent_used) < self.error_threshold:
+                if check.error_threshold and (100 - percent_used) < check.error_threshold:
                     self.status = "failing"
                     self.alert_severity = "error"
                 elif (
-                    self.warning_threshold
-                    and (100 - percent_used) < self.warning_threshold
+                    check.warning_threshold
+                    and (100 - percent_used) < check.warning_threshold
                 ):
                     self.status = "failing"
                     self.alert_severity = "warning"
@@ -313,25 +354,25 @@ class Check(BaseAuditModel):
                 self.more_info = data["more_info"]
 
                 # add check history
-                self.add_check_history(100 - percent_used)
+                check.add_check_history(100 - percent_used)
             else:
                 self.status = "failing"
                 self.alert_severity = "error"
-                self.more_info = f"Disk {self.disk} does not exist"
+                self.more_info = f"Disk {check.disk} does not exist"
 
             self.save(update_fields=["more_info"])
 
         # script checks
-        elif self.check_type == "script":
+        elif check.check_type == "script":
             self.stdout = data["stdout"]
             self.stderr = data["stderr"]
             self.retcode = data["retcode"]
             self.execution_time = "{:.4f}".format(data["runtime"])
 
-            if data["retcode"] in self.info_return_codes:
+            if data["retcode"] in check.info_return_codes:
                 self.alert_severity = "info"
                 self.status = "failing"
-            elif data["retcode"] in self.warning_return_codes:
+            elif data["retcode"] in check.warning_return_codes:
                 self.alert_severity = "warning"
                 self.status = "failing"
             elif data["retcode"] != 0:
@@ -350,7 +391,7 @@ class Check(BaseAuditModel):
             )
 
             # add check history
-            self.add_check_history(
+            check.add_check_history(
                 1 if self.status == "failing" else 0,
                 {
                     "retcode": data["retcode"],
@@ -361,35 +402,35 @@ class Check(BaseAuditModel):
             )
 
         # ping checks
-        elif self.check_type == "ping":
+        elif check.check_type == "ping":
             self.status = data["status"]
             self.more_info = data["output"]
             self.save(update_fields=["more_info"])
 
-            self.add_check_history(
+            check.add_check_history(
                 1 if self.status == "failing" else 0, self.more_info[:60]
             )
 
         # windows service checks
-        elif self.check_type == "winsvc":
+        elif check.check_type == "winsvc":
             self.status = data["status"]
             self.more_info = data["more_info"]
             self.save(update_fields=["more_info"])
 
-            self.add_check_history(
+            check.add_check_history(
                 1 if self.status == "failing" else 0, self.more_info[:60]
             )
 
-        elif self.check_type == "eventlog":
+        elif check.check_type == "eventlog":
             log = data["log"]
-            if self.fail_when == "contains":
-                if log and len(log) >= self.number_of_events_b4_alert:
+            if check.fail_when == "contains":
+                if log and len(log) >= check.number_of_events_b4_alert:
                     self.status = "failing"
                 else:
                     self.status = "passing"
 
-            elif self.fail_when == "not_contains":
-                if log and len(log) >= self.number_of_events_b4_alert:
+            elif check.fail_when == "not_contains":
+                if log and len(log) >= check.number_of_events_b4_alert:
                     self.status = "passing"
                 else:
                     self.status = "failing"
@@ -397,7 +438,7 @@ class Check(BaseAuditModel):
             self.extra_details = {"log": log}
             self.save(update_fields=["extra_details"])
 
-            self.add_check_history(
+            check.add_check_history(
                 1 if self.status == "failing" else 0,
                 "Events Found:" + str(len(self.extra_details["log"])),
             )
@@ -407,14 +448,15 @@ class Check(BaseAuditModel):
             self.fail_count += 1
             self.save(update_fields=["status", "fail_count", "alert_severity"])
 
-            if self.fail_count >= self.fails_b4_alert:
-                Alert.handle_alert_failure(self)
+            if self.fail_count >= check.fails_b4_alert:
+                Alert.handle_alert_failure(check)
 
         elif self.status == "passing":
             self.fail_count = 0
             self.save()
+            # TODO handle policy check results
             if Alert.objects.filter(assigned_check=self, resolved=False).exists():
-                Alert.handle_alert_resolve(self)
+                Alert.handle_alert_resolve(check)
 
         return self.status
 
@@ -616,6 +658,14 @@ class PolicyCheckResult(models.Model):
     )
     status = models.CharField(
         max_length=100, choices=CHECK_STATUS_CHOICES, default="pending"
+    )
+    # for memory and cpu checks where severity changes
+    alert_severity = models.CharField(
+        max_length=15,
+        choices=SEVERITY_CHOICES,
+        default="warning",
+        null=True,
+        blank=True,
     )
     more_info = models.TextField(null=True, blank=True)
     last_run = models.DateTimeField(null=True, blank=True)

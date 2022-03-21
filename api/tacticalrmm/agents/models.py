@@ -145,6 +145,7 @@ class Agent(BaseAuditModel):
 
     @property
     def checks(self):
+        # TODO: include policy checks here
         total, passing, failing, warning, info = 0, 0, 0, 0, 0
 
         if self.agentchecks.exists():  # type: ignore
@@ -580,7 +581,6 @@ class Agent(BaseAuditModel):
 
     def get_checks_from_policies(self):
         from automation.models import Policy
-        from checks.models import PolicyCheckResult
 
         # clear agent checks that have overriden_by_policy set
         self.agentchecks.update(overriden_by_policy=False)  # type: ignore
@@ -590,53 +590,19 @@ class Agent(BaseAuditModel):
 
         # inject check results
         for check in checks:
-            try:
-                result = PolicyCheckResult.objects.get(policy_check=check, agent=self)
-            except PolicyCheckResult.DoesNotExist:
-                result = PolicyCheckResult(policy_check=check, agent=self)
-                result.save()
-                continue
-            
-            # just adding the agent result properties to the policy check and not saving
-            check.status = result.status
-            check.more_info = result.more_info
-            check.last_run = result.last_run
-            check.fail_count = result.fail_count
-            check.outage_history = result.outage_history
-            check.extra_details = result.extra_details
-            check.stdout = result.stdout
-            check.stderr = result.stderr
-            check.retcode = result.retcode
-            check.execution_time = result.execution_time
-            check.history = result.history
+            check.merge_check_with_results(self)
 
         return checks
 
     def get_tasks_from_policies(self):
         from automation.models import Policy
-        from autotasks.models import PolicyTaskResult
 
         # get agent tasks based on policies
         tasks = Policy.get_policy_tasks(self)
 
         # inject task history results
-        for task in tasks:
-            try:
-                result = PolicyTaskResult.objects.get(policy_task=task, agent=self)
-            except PolicyTaskResult.DoesNotExist:
-                result = PolicyTaskResult(policy_task=task, agent=self)
-                result.save()
-                continue
-            
-            # just adding the agent result properties to the policy check and not saving
-            task.status = result.status
-            task.sync_status = result.sync_status
-            task.last_run = result.last_run
-            task.stdout = result.stdout
-            task.stderr = result.stderr
-            task.retcode = result.retcode
-            task.retvalue = result.retvalue
-            task.execution_time = result.execution_time
+        for task in tasks:            
+            task.merge_task_with_results(self)
 
         return tasks
 

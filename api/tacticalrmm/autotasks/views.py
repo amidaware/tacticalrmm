@@ -91,6 +91,8 @@ class GetEditDeleteAutoTask(APIView):
 
         if task.agent:
             delete_win_task_schedule.delay(pk=task.pk)
+        else:
+            task.delete()
 
         return Response(f"{task.name} will be deleted shortly")
 
@@ -98,6 +100,7 @@ class GetEditDeleteAutoTask(APIView):
 class RunAutoTask(APIView):
     permission_classes = [IsAuthenticated, RunAutoTaskPerms]
 
+    # TODO: Need to provide the agent id for policy tasks
     def post(self, request, pk):
         from autotasks.tasks import run_win_task
 

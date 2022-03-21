@@ -5,7 +5,7 @@ from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
 from autotasks.models import AutomatedTask
-from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
+from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer, TaskRunnerPatchPolicySerializer
 from checks.models import Check
 from checks.serializers import CheckRunnerGetSerializer
 from core.models import CoreSettings
@@ -176,7 +176,7 @@ class RunChecks(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        checks = Check.objects.filter(agent__pk=agent.pk, overriden_by_policy=False)
+        checks = [check for check in agent.get_checks_with_policies() if not check.overriden_by_policy]
         ret = {
             "agent": agent.pk,
             "check_interval": agent.check_interval,
@@ -191,7 +191,7 @@ class CheckRunner(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        checks = agent.agentchecks.filter(overriden_by_policy=False)  # type: ignore
+        checks = [check for check in agent.get_checks_with_policies() if not check.overriden_by_policy]  # type: ignore
 
         run_list = [
             check
@@ -223,11 +223,13 @@ class CheckRunner(APIView):
 
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
 
-        check.last_run = djangotime.now()
-        check.save(update_fields=["last_run"])
-        status = check.handle_check(request.data)
+        status = check.save_check_result(request.data, agent)
+
         if status == "failing" and check.assignedtask.exists():  # type: ignore
+            if check.policy:
+                check = check.merge_check_with_results(agent)
             check.handle_assigned_task()
 
         return Response("ok")
@@ -260,12 +262,9 @@ class TaskRunner(APIView):
         agent = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
 
-        serializer = TaskRunnerPatchSerializer(
-            instance=task, data=request.data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        new_task = serializer.save(last_run=djangotime.now())
+        task, task_result = task.save_task_results(request.data, agent)
 
+        # TODO: Change task.script since field not in use anymore
         AgentHistory.objects.create(
             agent=agent,
             type="task_run",
@@ -285,14 +284,23 @@ class TaskRunner(APIView):
         else:
             status = "failing" if task.retcode != 0 else "passing"
 
-        new_task.status = status
-        new_task.save()
-
-        if status == "passing":
-            if Alert.objects.filter(assigned_task=new_task, resolved=False).exists():
-                Alert.handle_alert_resolve(new_task)
+        if task_result:
+            task_result.status = status
+            task_result.save(update_fields=["status"])
         else:
-            Alert.handle_alert_failure(new_task)
+            task.status = status
+            task.save(update_fields=["status"])
+
+        # TODO: Rework alert handling to use policy task result
+        if status == "passing":
+            if Alert.objects.filter(assigned_task=task, resolved=False).exists():
+                if task.policy:
+                    task = task.merge_task_with_results(agent)
+                Alert.handle_alert_resolve(task)
+        else:
+            if task.policy:
+                task = task.merge_task_with_results(agent)
+            Alert.handle_alert_failure(task)
 
         return Response("ok")
 

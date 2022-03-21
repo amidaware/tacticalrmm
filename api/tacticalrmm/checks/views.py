@@ -166,7 +166,7 @@ class GetCheckHistory(APIView):
 
         return Response(
             CheckHistorySerializer(
-                check_history, context={"timezone": check.agent.timezone}, many=True
+                check_history, many=True
             ).data
         )
 

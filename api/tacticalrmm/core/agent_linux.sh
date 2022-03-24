@@ -51,6 +51,10 @@ RemoveOldAgent() {
 
 InstallMesh() {
     meshTmpDir=$(mktemp -d -t "mesh-XXXXXXXXX")
+    if [ $? -ne 0 ]; then
+        meshTmpDir='meshtemp'
+        mkdir -p ${meshTmpDir}
+    fi
     meshTmpBin="${meshTmpDir}/meshagent"
     wget --no-check-certificate -q -O ${meshTmpBin} ${meshDL}
     chmod +x ${meshTmpBin}

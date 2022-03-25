@@ -33,6 +33,21 @@ meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
 meshSysD="/lib/systemd/system/${meshSvcName}"
 
+deb=(ubuntu debian raspbian kali)
+rhe=(fedora rocky centos rhel amzn arch opensuse)
+
+set_locale_deb() {
+locale-gen "en_US.UTF-8"
+localectl set-locale LANG=en_US.UTF-8
+. /etc/default/locale
+}
+
+set_locale_rhel() {
+localedef -c -i en_US -f UTF-8 en_US.UTF-8 > /dev/null 2>&1
+localectl set-locale LANG=en_US.UTF-8
+. /etc/locale.conf
+}
+
 RemoveOldAgent() {
     if [ -f "${agentSysD}" ]; then
         systemctl disable --now ${agentSvcName}
@@ -50,12 +65,27 @@ RemoveOldAgent() {
 }
 
 InstallMesh() {
+    if [ -f /etc/os-release ]; then
+        distroID=$(. /etc/os-release; echo $ID)
+        if [[ " ${deb[*]} " =~ " ${distroID} " ]]; then
+            set_locale_deb
+        elif [[ " ${rhe[*]} " =~ " ${distroID} " ]]; then
+            set_locale_rhel
+        else
+            set_locale_rhel
+        fi
+    fi
+
     meshTmpDir=$(mktemp -d -t "mesh-XXXXXXXXX")
+    if [ $? -ne 0 ]; then
+        meshTmpDir='meshtemp'
+        mkdir -p ${meshTmpDir}
+    fi
     meshTmpBin="${meshTmpDir}/meshagent"
-    wget -q -O ${meshTmpBin} ${meshDL}
+    wget --no-check-certificate -q -O ${meshTmpBin} ${meshDL}
     chmod +x ${meshTmpBin}
     mkdir -p ${meshDir}
-    ${meshTmpBin} -install --installPath=${meshDir}
+    env LC_ALL=en_US.UTF-8 LANGUAGE=en_US ${meshTmpBin} -install --installPath=${meshDir}
     sleep 1
     rm -rf ${meshTmpDir}
 }
@@ -111,7 +141,11 @@ if [ ! -d "${agentBinPath}" ]; then
     mkdir -p ${agentBinPath}
 fi
 
-INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"
+if [ $# -ne 0 ] && [ $1 == '--debug' ]; then
+    INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token} -log debug"
+else
+    INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"
+fi
 
 if [ "${MESH_NODE_ID}" != '' ]; then
     INSTALL_CMD+=" -meshnodeid ${MESH_NODE_ID}"

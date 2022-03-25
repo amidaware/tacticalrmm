@@ -20,15 +20,15 @@ def get_agent_url(arch: str, plat: str) -> str:
         dl_url = ""
 
     try:
-        t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
-        if t.is_valid:
-            base_url = settings.EXE_GEN_URL + f"/api/v1/{endpoint}/?"
-            params = {
-                "version": settings.LATEST_AGENT_VER,
-                "arch": arch,
-                "token": t.token,
-            }
-            dl_url = base_url + urllib.parse.urlencode(params)
+        # t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
+        # if t.is_valid:
+        base_url = settings.EXE_GEN_URL + f"/api/v1/{endpoint}/?"
+        params = {
+            "version": settings.LATEST_AGENT_VER,
+            "arch": arch,
+            "token": t.token,
+        }
+        dl_url = base_url + urllib.parse.urlencode(params)
     except:
         pass
 

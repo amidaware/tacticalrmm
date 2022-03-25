@@ -433,6 +433,10 @@ class Reboot(APIView):
             {"time": nice_time, "agent": agent.hostname, "task_name": task_name}
         )
 
+@api_view(["GET"])
+def linux(request):
+    return "This is my return"
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])
@@ -486,27 +490,49 @@ def install_agent(request):
         # linux agents are in beta for now, only available for sponsors for testing
         # remove this after it's out of beta
 
-        try:
-            t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
-        except:
-            return notify_error("Something went wrong")
+        # try:
+        #     t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
+        # except:
+        #     return notify_error("Something went wrong")
 
-        if t is None:
-            return notify_error("Missing code signing token")
-        if not t.is_valid:
-            return notify_error("Code signing token is not valid")
+        # if t is None:
+        #     return notify_error("Missing code signing token")
+        # if not t.is_valid:
+        #     return notify_error("Code signing token is not valid")
 
-        from agents.utils import generate_linux_install
+        # from agents.utils import generate_linux_install
 
-        return generate_linux_install(
-            client=str(client_id),
-            site=str(site_id),
-            agent_type=request.data["agenttype"],
-            arch=arch,
-            token=token,
-            api=request.data["api"],
-            download_url=download_url,
-        )
+        # return generate_linux_install(
+        #     client=str(client_id),
+        #     site=str(site_id),
+        #     agent_type=request.data["agenttype"],
+        #     arch=arch,
+        #     token=token,
+        #     api=request.data["api"],
+        #     download_url=download_url,
+        # )
+
+        cmd = [
+            "curl -s https://api.rmm.com/agents/linux/agent_linux.sh | bash -s",
+            "-a",
+            download_url,
+            "-d",
+            request.data["api"],
+            "-t",
+            token,
+            "-c",
+            client_id,
+            "-s",
+            site_id,
+            "-n",
+            request.data["agenttype"],
+        ]
+
+        resp = {
+            "cmd": " ".join(str(i) for i in cmd),
+        }
+
+        return Response(resp)
 
     elif request.data["installMethod"] == "manual":
         cmd = [

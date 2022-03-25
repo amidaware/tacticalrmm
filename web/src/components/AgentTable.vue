@@ -85,7 +85,7 @@
           :props="props"
           :class="rowSelectedClass(props.row.agent_id)"
           @click="agentRowSelected(props.row.agent_id, props.row.plat)"
-          @dblclick="rowDoubleClicked(props.row.agent_id)"
+          @dblclick="rowDoubleClicked(props.row.agent_id, props.row.plat)"
         >
           <q-menu context-menu>
             <AgentActionMenu :agent="props.row" />

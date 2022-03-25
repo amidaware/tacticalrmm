@@ -12,6 +12,21 @@ if [ "${HAS_SYSTEMD}" != 'systemd' ]; then
     exit 1
 fi
 
+deb=(ubuntu debian raspbian kali)
+rhe=(fedora rocky centos rhel amzn arch opensuse)
+
+set_locale_deb() {
+locale-gen "en_US.UTF-8"
+localectl set-locale LANG=en_US.UTF-8
+. /etc/default/locale
+}
+
+set_locale_rhel() {
+localedef -c -i en_US -f UTF-8 en_US.UTF-8 > /dev/null 2>&1
+localectl set-locale LANG=en_US.UTF-8
+. /etc/locale.conf
+}
+
 RemoveOldAgent() {
     if [ -f "${agentSysD}" ]; then
         systemctl disable --now ${agentSvcName}

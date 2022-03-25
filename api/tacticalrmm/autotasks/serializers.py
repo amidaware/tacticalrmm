@@ -2,7 +2,7 @@ from rest_framework import serializers
 from scripts.models import Script
 from django.core.exceptions import ObjectDoesNotExist
 
-from .models import AutomatedTask, PolicyTaskResult
+from .models import AutomatedTask, TaskResult
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -240,22 +240,10 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
         fields = ["id", "continue_on_error", "enabled", "task_actions"]
 
 
-class TaskRunnerPatchSerializer(serializers.ModelSerializer):
+class TaskResultSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AutomatedTask
+        model = TaskResult
         fields = "__all__"
-
-class TaskRunnerPatchPolicySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PolicyTaskResult
-        fields = (
-            "pk",
-            "retvalue",
-            "retcode",
-            "stdout",
-            "stderr",
-            "execution_time",    
-        )
 
 
 class TaskAuditSerializer(serializers.ModelSerializer):

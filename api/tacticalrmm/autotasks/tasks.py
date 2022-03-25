@@ -66,7 +66,7 @@ def remove_orphaned_win_tasks(agentpk):
         )
         return "notlist"
 
-    agent_task_names = list(agent.autotasks.values_list("win_task_name", flat=True))
+    agent_task_names = [task.win_task_name for task in agent.get_tasks_with_policies()]
 
     exclude_tasks = (
         "TacticalRMM_fixmesh",

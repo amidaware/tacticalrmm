@@ -4,9 +4,10 @@ import time
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
-from autotasks.models import AutomatedTask
-from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer, TaskRunnerPatchPolicySerializer
-from checks.models import Check
+from autotasks import serializers
+from autotasks.models import AutomatedTask, TaskResult
+from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
+from checks.models import Check, CheckResult
 from checks.serializers import CheckRunnerGetSerializer
 from core.models import CoreSettings
 from core.utils import download_mesh_agent, get_mesh_device_id, get_mesh_ws_url
@@ -224,12 +225,11 @@ class CheckRunner(APIView):
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        check_result = get_object_or_404(CheckResult, check=check, agent=agent)
 
-        status = check.save_check_result(request.data, agent)
+        status = check_result.handle_check(request.data)
 
         if status == "failing" and check.assignedtask.exists():  # type: ignore
-            if check.policy:
-                check = check.merge_check_with_results(agent)
             check.handle_assigned_task()
 
         return Response("ok")
@@ -261,46 +261,44 @@ class TaskRunner(APIView):
 
         agent = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
+        task_result = get_object_or_404(TaskResult, task=task, agent=agent)
 
-        task, task_result = task.save_task_results(request.data, agent)
+        serializer = TaskResultSerializer(task_result, partial=True)
+        serializer.is_valid(raise_exception=True)
+        task_result = serializer.save()
 
         # TODO: Change task.script since field not in use anymore
         AgentHistory.objects.create(
             agent=agent,
             type="task_run",
-            script=task.script,
+            script=task.actions,
             script_results=request.data,
         )
 
         # check if task is a collector and update the custom field
         if task.custom_field:
-            if not task.stderr:
+            if not task_result.stderr:
 
-                task.save_collector_results()
+                task_result.save_collector_results()
 
                 status = "passing"
             else:
                 status = "failing"
         else:
-            status = "failing" if task.retcode != 0 else "passing"
+            status = "failing" if task_result.retcode != 0 else "passing"
 
         if task_result:
             task_result.status = status
             task_result.save(update_fields=["status"])
         else:
-            task.status = status
+            task_result.status = status
             task.save(update_fields=["status"])
 
-        # TODO: Rework alert handling to use policy task result
         if status == "passing":
-            if Alert.objects.filter(assigned_task=task, resolved=False).exists():
-                if task.policy:
-                    task = task.merge_task_with_results(agent)
-                Alert.handle_alert_resolve(task)
+            if Alert.create_or_return_task_alert(task, skip_create=True):
+                Alert.handle_alert_resolve(task_result)
         else:
-            if task.policy:
-                task = task.merge_task_with_results(agent)
-            Alert.handle_alert_failure(task)
+            Alert.handle_alert_failure(task_result)
 
         return Response("ok")
 

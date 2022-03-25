@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Optional
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -13,8 +13,8 @@ from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from agents.models import Agent
-    from autotasks.models import AutomatedTask
-    from checks.models import Check
+    from autotasks.models import AutomatedTask, TaskResult
+    from checks.models import Check, CheckResult
 
 
 SEVERITY_CHOICES = [
@@ -88,7 +88,7 @@ class Alert(models.Model):
 
     @property
     def assigned_agent(self):
-        if self.alert_type == "availability":
+        if self.agent:
             return self.agent
         elif self.alert_type == "check":
             return self.assigned_check.agent
@@ -113,8 +113,11 @@ class Alert(models.Model):
         self.save()
 
     @classmethod
-    def create_or_return_availability_alert(cls, agent):
+    def create_or_return_availability_alert(cls, agent: Agent, skip_create: bool = False) -> Optional[Alert]:
         if not cls.objects.filter(agent=agent, resolved=False).exists():
+            if skip_create:
+                return None
+
             return cls.objects.create(
                 agent=agent,
                 alert_type="availability",
@@ -135,14 +138,20 @@ class Alert(models.Model):
                         alert.resolve()
 
                 return last_alert
+            except cls.DoesNotExist:
+                return None
                 
 
     @classmethod
-    def create_or_return_check_alert(cls, check):
+    def create_or_return_check_alert(cls, check: Check, skip_create: bool = False) -> Optional[Alert]:
 
-        if not cls.objects.filter(assigned_check=check, resolved=False).exists():
+        if not cls.objects.filter(assigned_check=check, agent=check.agent if check.policy else None, resolved=False).exists():
+            if skip_create:
+                return None
+
             return cls.objects.create(
                 assigned_check=check,
+                agent=check.agent if check.policy else None, 
                 alert_type="check",
                 severity=check.alert_severity,
                 message=f"{check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
@@ -150,9 +159,9 @@ class Alert(models.Model):
             )
         else:
             try:
-                return cls.objects.get(assigned_check=check, resolved=False)
+                return cls.objects.get(assigned_check=check, agent=check.agent if check.policy else None, resolved=False)
             except cls.MultipleObjectsReturned:
-                alerts = cls.objects.filter(assigned_check=check, resolved=False)
+                alerts = cls.objects.filter(assigned_check=check, agent=check.agent if check.policy else None, resolved=False)
                 last_alert = alerts[-1]
 
                 # cycle through other alerts and resolve
@@ -161,13 +170,19 @@ class Alert(models.Model):
                         alert.resolve()
 
                 return last_alert
+            except cls.DoesNotExist:
+                return None
 
     @classmethod
-    def create_or_return_task_alert(cls, task):
+    def create_or_return_task_alert(cls, task: AutomatedTask, skip_create: bool = False) -> Optional[Alert]:
 
-        if not cls.objects.filter(assigned_task=task, resolved=False).exists():
+        if not cls.objects.filter(assigned_task=task, agent=task.agent if task.policy else None, resolved=False).exists():
+            if skip_create:
+                return None
+    
             return cls.objects.create(
                 assigned_task=task,
+                agent=task.agent if task.policy else None,
                 alert_type="task",
                 severity=task.alert_severity,
                 message=f"{task.agent.hostname} has task: {task.name} that failed.",
@@ -175,9 +190,9 @@ class Alert(models.Model):
             )
         else:
             try:
-                return cls.objects.get(assigned_task=task, resolved=False)
+                return cls.objects.get(assigned_task=task, agent=task.agent if task.policy else None, resolved=False)
             except cls.MultipleObjectsReturned:
-                alerts = cls.objects.filter(assigned_task=task, resolved=False)
+                alerts = cls.objects.filter(assigned_task=task, agent=task.agent if task.policy else None, resolved=False)
                 last_alert = alerts[-1]
 
                 # cycle through other alerts and resolve
@@ -186,12 +201,14 @@ class Alert(models.Model):
                         alert.resolve()
 
                 return last_alert
+            except cls.DoesNotExist:
+                return None
 
     @classmethod
-    def handle_alert_failure(cls, instance: Union[Agent, AutomatedTask, Check]) -> None:
+    def handle_alert_failure(cls, instance: Union[Agent, TaskResult, CheckResult]) -> None:
         from agents.models import Agent
-        from autotasks.models import AutomatedTask
-        from checks.models import Check
+        from autotasks.models import TaskResult
+        from checks.models import CheckResult
 
         # set variables
         dashboard_severities = None
@@ -230,16 +247,7 @@ class Alert(models.Model):
                 alert_interval = alert_template.agent_periodic_alert_days
                 run_script_action = alert_template.agent_script_actions
 
-            if instance.should_create_alert(alert_template):
-                alert = cls.create_or_return_availability_alert(instance)
-            else:
-                # check if there is an alert that exists
-                if cls.objects.filter(agent=instance, resolved=False).exists():
-                    alert = cls.objects.get(agent=instance, resolved=False)
-                else:
-                    alert = None
-
-        elif isinstance(instance, Check):
+        elif isinstance(instance, CheckResult):
             from checks.tasks import (
                 handle_check_email_alert_task,
                 handle_check_sms_alert_task,
@@ -248,12 +256,12 @@ class Alert(models.Model):
             email_task = handle_check_email_alert_task
             text_task = handle_check_sms_alert_task
 
-            email_alert = instance.email_alert
-            text_alert = instance.text_alert
-            dashboard_alert = instance.dashboard_alert
+            email_alert = instance.assigned_check.email_alert
+            text_alert = instance.assigned_check.text_alert
+            dashboard_alert = instance.assigned_check.dashboard_alert
             alert_template = instance.agent.alert_template
             maintenance_mode = instance.agent.maintenance_mode
-            alert_severity = instance.alert_severity
+            alert_severity = instance.alert_severity if instance.assigned_check.check_type not in ["memcheck", "cpuload"] else instance.alert_severity
             agent = instance.agent
 
             # set alert_template settings
@@ -267,27 +275,18 @@ class Alert(models.Model):
                 alert_interval = alert_template.check_periodic_alert_days
                 run_script_action = alert_template.check_script_actions
 
-            if instance.should_create_alert(alert_template):
-                alert = cls.create_or_return_check_alert(instance)
-            else:
-                # check if there is an alert that exists
-                if cls.objects.filter(assigned_check=instance, resolved=False).exists():
-                    alert = cls.objects.get(assigned_check=instance, resolved=False)
-                else:
-                    alert = None
-
-        elif isinstance(instance, AutomatedTask):
+        elif isinstance(instance, TaskResult):
             from autotasks.tasks import handle_task_email_alert, handle_task_sms_alert
 
             email_task = handle_task_email_alert
             text_task = handle_task_sms_alert
 
-            email_alert = instance.email_alert
-            text_alert = instance.text_alert
-            dashboard_alert = instance.dashboard_alert
+            email_alert = instance.task.email_alert
+            text_alert = instance.task.text_alert
+            dashboard_alert = instance.task.dashboard_alert
             alert_template = instance.agent.alert_template
             maintenance_mode = instance.agent.maintenance_mode
-            alert_severity = instance.alert_severity
+            alert_severity = instance.task.alert_severity
             agent = instance.agent
 
             # set alert_template settings
@@ -301,16 +300,10 @@ class Alert(models.Model):
                 alert_interval = alert_template.task_periodic_alert_days
                 run_script_action = alert_template.task_script_actions
 
-            if instance.should_create_alert(alert_template):
-                alert = cls.create_or_return_task_alert(instance)
-            else:
-                # check if there is an alert that exists
-                if cls.objects.filter(assigned_task=instance, resolved=False).exists():
-                    alert = cls.objects.get(assigned_task=instance, resolved=False)
-                else:
-                    alert = None
         else:
             return
+
+        alert = instance.get_or_create_alert_if_needed(alert_template)
 
         # return if agent is in maintenance mode
         if maintenance_mode or not alert:
@@ -373,16 +366,16 @@ class Alert(models.Model):
                 alert.save()
             else:
                 DebugLog.error(
-                    agent=agent,
+                     agent=agent,
                     log_type="scripting",
                     message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
                 )
 
     @classmethod
-    def handle_alert_resolve(cls, instance: Union[Agent, AutomatedTask, Check]) -> None:
+    def handle_alert_resolve(cls, instance: Union[Agent, TaskResult, CheckResult]) -> None:
         from agents.models import Agent
-        from autotasks.models import AutomatedTask
-        from checks.models import Check
+        from autotasks.models import TaskResult
+        from checks.models import CheckResult
 
         # set variables
         email_on_resolved = False
@@ -398,7 +391,6 @@ class Alert(models.Model):
             resolved_text_task = agent_recovery_sms_task
 
             alert_template = instance.alert_template
-            alert = cls.objects.get(agent=instance, resolved=False)
             maintenance_mode = instance.maintenance_mode
             agent = instance
 
@@ -407,7 +399,7 @@ class Alert(models.Model):
                 text_on_resolved = alert_template.agent_text_on_resolved
                 run_script_action = alert_template.agent_script_actions
 
-        elif isinstance(instance, Check):
+        elif isinstance(instance, CheckResult):
             from checks.tasks import (
                 handle_resolved_check_email_alert_task,
                 handle_resolved_check_sms_alert_task,
@@ -417,7 +409,6 @@ class Alert(models.Model):
             resolved_text_task = handle_resolved_check_sms_alert_task
 
             alert_template = instance.agent.alert_template
-            alert = cls.objects.get(assigned_check=instance, resolved=False)
             maintenance_mode = instance.agent.maintenance_mode
             agent = instance.agent
 
@@ -426,7 +417,7 @@ class Alert(models.Model):
                 text_on_resolved = alert_template.check_text_on_resolved
                 run_script_action = alert_template.check_script_actions
 
-        elif isinstance(instance, AutomatedTask):
+        elif isinstance(instance, TaskResult):
             from autotasks.tasks import (
                 handle_resolved_task_email_alert,
                 handle_resolved_task_sms_alert,
@@ -436,7 +427,6 @@ class Alert(models.Model):
             resolved_text_task = handle_resolved_task_sms_alert
 
             alert_template = instance.agent.alert_template
-            alert = cls.objects.get(assigned_task=instance, resolved=False)
             maintenance_mode = instance.agent.maintenance_mode
             agent = instance.agent
 
@@ -447,9 +437,11 @@ class Alert(models.Model):
 
         else:
             return
+        
+        alert = instance.get_or_create_alert_if_needed(alert_template)
 
         # return if agent is in maintenance mode
-        if maintenance_mode:
+        if not alert or maintenance_mode:
             return
 
         alert.resolve()

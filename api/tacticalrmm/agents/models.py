@@ -2,7 +2,7 @@ import asyncio
 import re
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any
+from typing import Any, Optional, TYPE_CHECKING
 
 import msgpack
 import nats
@@ -18,7 +18,8 @@ from nats.errors import TimeoutError
 
 from tacticalrmm.models import PermissionQuerySet
 
-
+if TYPE_CHECKING:
+    from alerts.models import AlertTemplate, Alert
 class Agent(BaseAuditModel):
     objects = PermissionQuerySet.as_manager()
 
@@ -145,21 +146,19 @@ class Agent(BaseAuditModel):
 
     @property
     def checks(self):
-        # TODO: include policy checks here
         total, passing, failing, warning, info = 0, 0, 0, 0, 0
 
-        if self.agentchecks.exists():  # type: ignore
-            for i in self.agentchecks.all():  # type: ignore
-                total += 1
-                if i.status == "passing":
-                    passing += 1
-                elif i.status == "failing":
-                    if i.alert_severity == "error":
-                        failing += 1
-                    elif i.alert_severity == "warning":
-                        warning += 1
-                    elif i.alert_severity == "info":
-                        info += 1
+        for i in self.get_checks_with_policies():  # type: ignore
+            total += 1
+            if i.status == "passing":
+                passing += 1
+            elif i.status == "failing":
+                if i.alert_severity == "error":
+                    failing += 1
+                elif i.alert_severity == "warning":
+                    warning += 1
+                elif i.alert_severity == "info":
+                    info += 1
 
         ret = {
             "total": total,
@@ -579,6 +578,10 @@ class Agent(BaseAuditModel):
 
         return None
 
+    def get_or_create_alert_if_needed(self, alert_template: "Optional[AlertTemplate]") -> "Optional[Alert]":
+        from alerts.models import Alert
+        return Alert.create_or_return_availability_alert(self, skip_create=self.should_create_alert(alert_template))
+
     def get_checks_from_policies(self):
         from automation.models import Policy
 
@@ -586,25 +589,13 @@ class Agent(BaseAuditModel):
         self.agentchecks.update(overriden_by_policy=False)  # type: ignore
 
         # get agent checks based on policies
-        checks = Policy.get_policy_checks(self)
-
-        # inject check results
-        for check in checks:
-            check.merge_check_with_results(self)
-
-        return checks
+        return Policy.get_policy_checks(self)
 
     def get_tasks_from_policies(self):
         from automation.models import Policy
 
         # get agent tasks based on policies
-        tasks = Policy.get_policy_tasks(self)
-
-        # inject task history results
-        for task in tasks:            
-            task.merge_task_with_results(self)
-
-        return tasks
+        return Policy.get_policy_tasks(self)
 
     def _do_nats_debug(self, agent, message):
         DebugLog.error(agent=agent, log_type="agent_issues", message=message)

@@ -55,9 +55,7 @@ class GetAddChecks(APIView):
         new_check = serializer.save()
 
         if "agent" in data.keys():
-            checks = agent.agentchecks.filter(  # type: ignore
-                check_type=new_check.check_type, managed_by_policy=True
-            )
+            checks = new_check.agent.get_checks_from_policies()
 
             # Should only be one
             duplicate_check = [
@@ -65,12 +63,10 @@ class GetAddChecks(APIView):
             ]
 
             if duplicate_check:
-                policy = Check.objects.get(pk=duplicate_check[0].parent_check).policy
+                policy = duplicate_check[0].policy
                 if policy.enforced:
                     new_check.overriden_by_policy = True
-                    new_check.save()
-                else:
-                    duplicate_check[0].delete()
+                    new_check.save(update_fields=["overriden_by_policy"])
 
         return Response(f"{new_check.readable_desc} was added!")
 
@@ -128,6 +124,7 @@ class ResetCheck(APIView):
     permission_classes = [IsAuthenticated, ChecksPerms]
 
     def post(self, request, pk):
+        # TODO: Need to pass the agent_id
         check = get_object_or_404(Check, pk=pk)
 
         if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
@@ -137,6 +134,7 @@ class ResetCheck(APIView):
         check.save()
 
         # resolve any alerts that are open
+        # TODO: need to test if multiple alerts are returned and filter by agent if this is a policy check
         if check.alert.filter(resolved=False).exists():
             check.alert.get(resolved=False).resolve()
 
@@ -144,6 +142,7 @@ class ResetCheck(APIView):
 
 
 class GetCheckHistory(APIView):
+    # TODO: Need to fix agent history for policy checks
     permission_classes = [IsAuthenticated, ChecksPerms]
 
     def patch(self, request, pk):

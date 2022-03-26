@@ -4,6 +4,7 @@ import os
 import random
 import string
 import time
+import urllib.parse as urlparse
 
 from core.models import CodeSignToken, CoreSettings
 from core.utils import get_mesh_ws_url, remove_mesh_agent, send_command_with_mesh
@@ -16,7 +17,7 @@ from logs.models import AuditLog, DebugLog, PendingAction
 from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from scripts.models import Script
@@ -434,8 +435,35 @@ class Reboot(APIView):
         )
 
 @api_view(["GET"])
-def linux(request):
-    return "This is my return"
+@permission_classes([AllowAny])
+def install_linux(request):
+    sh = os.path.join(settings.BASE_DIR, "core/agent_linux.sh")
+
+    with open(sh, "r") as f:
+        text = f.read()
+
+    file_name = "agent_linux.sh"
+    shfile = os.path.join(settings.EXE_DIR, file_name)
+
+    if os.path.exists(shfile):
+        try:
+            os.remove(shfile)
+        except Exception as e:
+            DebugLog.error(message=str(e))
+
+    with open(shfile, "w") as f:
+        f.write(text)
+
+    if settings.DEBUG:
+        with open(shfile, "r") as f:
+            response = HttpResponse(f.read(), content_type="text/plain")
+            response["Content-Disposition"] = f"inline; filename={file_name}"
+            return response
+    else:
+        response = HttpResponse()
+        response["Content-Disposition"] = f"attachment; filename={file_name}"
+        response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
+        return response
 
 
 @api_view(["POST"])
@@ -486,40 +514,14 @@ def install_agent(request):
         )
 
     elif request.data["installMethod"] == "linux":
-        # TODO
-        # linux agents are in beta for now, only available for sponsors for testing
-        # remove this after it's out of beta
-
-        # try:
-        #     t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
-        # except:
-        #     return notify_error("Something went wrong")
-
-        # if t is None:
-        #     return notify_error("Missing code signing token")
-        # if not t.is_valid:
-        #     return notify_error("Code signing token is not valid")
-
-        # from agents.utils import generate_linux_install
-
-        # return generate_linux_install(
-        #     client=str(client_id),
-        #     site=str(site_id),
-        #     agent_type=request.data["agenttype"],
-        #     arch=arch,
-        #     token=token,
-        #     api=request.data["api"],
-        #     download_url=download_url,
-        # )
-
         cmd = [
-            "curl -s https://api.rmm.com/agents/linux/agent_linux.sh | bash -s",
+            "curl -s %s/agents/agent_linux.sh | bash -s --" % (request.data["api"]),
             "-a",
-            download_url,
+            "\"%s\"" % download_url,
             "-d",
-            request.data["api"],
+            urlparse.urlparse(request.data["api"]).hostname.replace("api.", ""),
             "-t",
-            token,
+            "\"%s\"" % token,
             "-c",
             client_id,
             "-s",

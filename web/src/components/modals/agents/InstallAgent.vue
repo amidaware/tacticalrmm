@@ -107,18 +107,22 @@
     <q-dialog v-model="showAgentDownload">
       <AgentDownload :info="info" @close="showAgentDownload = false" />
     </q-dialog>
+    <q-dialog v-model="showLinuxAgentDownload">
+      <LinuxAgent :info="info" @close="showLinuxAgentDownload = false" />
+    </q-dialog>
   </q-card>
 </template>
 
 <script>
 import mixins from "@/mixins/mixins";
 import AgentDownload from "@/components/modals/agents/AgentDownload";
+import LinuxAgent from "@/components/modals/agents/LinuxAgent";
 import { getBaseUrl } from "@/boot/axios";
 
 export default {
   name: "InstallAgent",
   mixins: [mixins],
-  components: { AgentDownload },
+  components: { AgentDownload, LinuxAgent },
   props: {
     sitepk: Number,
   },
@@ -133,6 +137,7 @@ export default {
       rdp: false,
       ping: false,
       showAgentDownload: false,
+      showLinuxAgentDownload: false,
       info: {},
       installMethod: "exe",
       arch: "64",
@@ -225,7 +230,7 @@ export default {
           .catch(() => {
             this.$q.loading.hide();
           });
-      } else if (this.installMethod === "powershell" || this.installMethod === "linux") {
+      } else if (this.installMethod === "powershell") {
         this.$q.loading.show();
         let ext = this.installMethod === "powershell" ? "ps1" : "sh";
         const scriptName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.${ext}`;
@@ -243,6 +248,18 @@ export default {
           .catch(() => {
             this.$q.loading.hide();
           });
+      } else if (this.installMethod === "linux") {
+        this.$axios
+          .post("/agents/installer/", data)
+          .then(r => {
+            this.info = {
+              expires: this.expires,
+              data: r.data,
+              arch: this.arch,
+            };
+            this.showLinuxAgentDownload = true;
+          })
+          .catch(e => {});
       }
     },
     showDLMessage() {
@@ -269,7 +286,7 @@ export default {
           text = "Show manual installation instructions";
           break;
         case "linux":
-          text = "Download linux install script";
+          text = "Show installation instructions";
           break;
       }
 

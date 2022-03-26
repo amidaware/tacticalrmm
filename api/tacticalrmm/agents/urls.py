@@ -40,4 +40,5 @@ urlpatterns = [
     path("versions/", views.get_agent_versions),
     path("update/", views.update_agents),
     path("installer/", views.install_agent),
+    path("agent_linux.sh", views.install_linux),
 ]

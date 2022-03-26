@@ -12,25 +12,44 @@ from tacticalrmm.constants import MeshAgentIdent
 
 def get_agent_url(arch: str, plat: str) -> str:
 
+    print(arch)
+    print(plat)
     if plat == "windows":
         endpoint = "winagents"
         dl_url = settings.DL_32 if arch == "32" else settings.DL_64
-    else:
+    elif plat == "linux":
         endpoint = "linuxagents"
+        if arch == "amd64":
+            dl_url = settings.LINUX_64
+        elif arch == "386":
+            dl_url = settings.LINUX_32
+        elif arch == "arm64":
+            dl_url = settings.LINUX_ARM64
+        elif arch == "arm":
+            dl_url = settings.LINUX_ARM32
+        else:
+            dl_url = ""
+    elif plat == "macos":
+        endpoint = "macos"
+        dl_url = ""
+    else:
         dl_url = ""
 
     try:
-        # t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
-        # if t.is_valid:
-        base_url = settings.EXE_GEN_URL + f"/api/v1/{endpoint}/?"
-        params = {
-            "version": settings.LATEST_AGENT_VER,
-            "arch": arch,
-            "token": t.token,
-        }
-        dl_url = base_url + urllib.parse.urlencode(params)
+        t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
+        if t.is_valid:
+            base_url = settings.EXE_GEN_URL + f"/api/v1/{endpoint}/?"
+            params = {
+                "version": settings.LATEST_AGENT_VER,
+                "arch": arch,
+                "token": t.token,
+            }
+            dl_url = base_url + urllib.parse.urlencode(params)
     except:
         pass
+
+    print("DL URL")
+    print(dl_url)
 
     return dl_url
 

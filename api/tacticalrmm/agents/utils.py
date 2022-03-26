@@ -16,7 +16,22 @@ def get_agent_url(arch: str, plat: str) -> str:
         endpoint = "winagents"
         dl_url = settings.DL_32 if arch == "32" else settings.DL_64
     else:
+        elif plat == "linux":
         endpoint = "linuxagents"
+        if arch == "amd64":
+            dl_url = settings.LINUX_64
+        elif arch == "386":
+            dl_url = settings.LINUX_32
+        elif arch == "arm64":
+            dl_url = settings.LINUX_ARM64
+        elif arch == "arm":
+            dl_url = settings.LINUX_ARM32
+        else:
+            dl_url = ""
+    elif plat == "macos":
+        endpoint = "macos"
+        dl_url = ""
+    else:
         dl_url = ""
 
     try:

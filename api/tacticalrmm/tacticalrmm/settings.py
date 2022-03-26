@@ -40,6 +40,11 @@ WHEEL_VER = "0.37.1"
 DL_64 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
 
+LINUX_64 = f"https://github.com/redanthrax/rmmagent/releases/download/0.0.1/linuxagent"
+LINUX_32 = f"https://github.com/redanthrax/rmmagent/releases/download/0.0.1/linuxagent-x86"
+LINUX_ARM64 = f"https://github.com/redanthrax/rmmagent/releases/download/0.0.1/linuxagent-arm64"
+LINUX_ARM32 = f"https://github.com/redanthrax/rmmagent/releases/download/0.0.1/linuxagent-arm"
+
 EXE_GEN_URL = "https://agents.tacticalrmm.com"
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"

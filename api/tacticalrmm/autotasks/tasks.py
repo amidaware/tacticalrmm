@@ -2,45 +2,60 @@ import asyncio
 import datetime as dt
 import random
 from time import sleep
-from typing import Union
+from typing import Union, Optional
 
 from autotasks.models import AutomatedTask
+from agents.models import Agent
 from django.utils import timezone as djangotime
 from logs.models import DebugLog
 
 from tacticalrmm.celery import app
 
-
 @app.task
-def create_win_task_schedule(pk):
+def create_win_task_schedule(pk: int, agent_id: Optional[str]) -> str:
     task = AutomatedTask.objects.get(pk=pk)
 
-    task.create_task_on_agent()
+    if agent_id:
+        task.create_task_on_agent(Agent.objects.get(agent_id=agent_id))
+    else:
+        task.create_task_on_agent()
 
     return "ok"
 
 
 @app.task
-def modify_win_task(pk):
+def modify_win_task(pk: int, agent_id: Optional[str]) -> str:
     task = AutomatedTask.objects.get(pk=pk)
 
-    task.modify_task_on_agent()
+    if agent_id:
+        task.modify_task_on_agent(Agent.objects.get(agent_id=agent_id))
+    else:
+        task.modify_task_on_agent()
 
     return "ok"
 
 
 @app.task
-def delete_win_task_schedule(pk):
+def delete_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
     task = AutomatedTask.objects.get(pk=pk)
 
-    task.delete_task_on_agent()
+    if agent_id:
+        task.delete_task_on_agent(Agent.objects.get(agent_id=agent_id))
+    else:
+        task.delete_task_on_agent()
+
     return "ok"
 
 
 @app.task
-def run_win_task(pk):
+def run_win_task(pk: int, agent_id: Optional[str] = None) -> str:
     task = AutomatedTask.objects.get(pk=pk)
-    task.run_win_task()
+
+    if agent_id:
+        task.run_win_task(Agent.objects.get(agent_id=agent_id))
+    else:
+        task.run_win_task()
+
     return "ok"
 
 

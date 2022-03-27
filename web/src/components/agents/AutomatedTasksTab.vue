@@ -188,7 +188,7 @@
           </q-td>
           <!-- status icon -->
           <q-td v-if="Object.keys(props.row.task_result).length === 0"></q-td>
-          <q-td v-if="props.row.task_result.status === 'passing'">
+          <q-td v-else-if="props.row.task_result.status === 'passing'">
             <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
               <q-tooltip>Passing</q-tooltip>
             </q-icon>
@@ -230,7 +230,7 @@
             >
           </q-td>
           <q-td v-else>Awaiting output</q-td>
-          <q-td v-if="props.row.last_run">{{ formatDate(props.row.task_result.last_run) }}</q-td>
+          <q-td v-if="props.row.task_result.last_run">{{ formatDate(props.row.task_result.last_run) }}</q-td>
           <q-td v-else>Has not run yet</q-td>
           <q-td>{{ props.row.schedule }}</q-td>
           <q-td>
@@ -378,7 +378,7 @@ export default {
 
       loading.value = true;
       try {
-        const result = await runTask(task.id);
+        const result = await runTask(task.id, task.policy ? { agent_id: selectedAgent.value } : {});
         notifySuccess(result);
       } catch (e) {
         console.error(e);

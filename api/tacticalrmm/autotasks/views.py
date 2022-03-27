@@ -100,7 +100,6 @@ class GetEditDeleteAutoTask(APIView):
 class RunAutoTask(APIView):
     permission_classes = [IsAuthenticated, RunAutoTaskPerms]
 
-    # TODO: Need to provide the agent id for policy tasks
     def post(self, request, pk):
         from autotasks.tasks import run_win_task
 
@@ -109,5 +108,14 @@ class RunAutoTask(APIView):
         if task.agent and not _has_perm_on_agent(request.user, task.agent.agent_id):
             raise PermissionDenied()
 
-        run_win_task.delay(pk=pk)
+        # run policy task on agent
+        if "agent_id" in request.data.keys():
+            if not _has_perm_on_agent(request.user, request.data["agent_id"]):
+                raise PermissionDenied()
+
+            run_win_task.delay(pk=pk, agent_id=request.data["agent_id"])
+        
+        # run normal task on agent
+        else:
+            run_win_task.delay(pk=pk)
         return Response(f"{task.name} will now be run on {task.agent.hostname}")

@@ -639,7 +639,7 @@ class CheckHistory(models.Model):
     objects = PermissionQuerySet.as_manager()
 
     check_id = models.PositiveIntegerField(default=0)
-    agent_id = models.CharField(max_length=40, null=True, blank=True)
+    agent_id = models.CharField(max_length=200, null=True, blank=True)
     x = models.DateTimeField(auto_now_add=True)
     y = models.PositiveIntegerField(null=True, blank=True, default=None)
     results = models.JSONField(null=True, blank=True)

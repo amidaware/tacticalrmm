@@ -85,6 +85,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
     italic = serializers.SerializerMethodField()
     policy = serializers.ReadOnlyField(source="policy.id")
     alert_template = serializers.SerializerMethodField()
+    last_seen = serializers.ReadOnlyField()
 
     def get_alert_template(self, obj):
 

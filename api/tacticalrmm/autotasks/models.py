@@ -1,7 +1,7 @@
 import asyncio
 import random
 import string
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Dict, Optional
 
 from alerts.models import SEVERITY_CHOICES
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -9,11 +9,13 @@ from django.db import models
 from django.db.models.fields import DateTimeField
 from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
+from checks.models import CheckResult
 from logs.models import BaseAuditModel, DebugLog
 
 if TYPE_CHECKING:
     from autotasks.models import AutomatedTask
     from alerts.models import Alert, AlertTemplate
+    from agents.models import Agent
 
 from tacticalrmm.models import PermissionQuerySet
 from tacticalrmm.utils import (
@@ -74,7 +76,7 @@ class AutomatedTask(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
-    # format -> {"actions": [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]}
+    # format -> [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]
     actions = JSONField(default=list)
     assigned_check = models.ForeignKey(
         "checks.Check",
@@ -137,23 +139,18 @@ class AutomatedTask(BaseAuditModel):
         return self.name
 
     def save(self, *args, **kwargs):
-        from autotasks.tasks import modify_win_task
-
-        # get old agent if exists
+        # get old task if exists
         old_task = AutomatedTask.objects.get(pk=self.pk) if self.pk else None
         super(AutomatedTask, self).save(old_model=old_task, *args, **kwargs)
 
-        # check if fields were updated that require a sync to the agent
-        update_agent = False
+        # check if fields were updated that require a sync to the agent and set status to notsynced
         if old_task:
             for field in self.fields_that_trigger_task_update_on_agent:
                 if getattr(self, field) != getattr(old_task, field):
-                    update_agent = True
-                    break
-
-        # check if automated task was enabled/disabled and send celery task
-        if old_task and old_task.agent and update_agent:
-            modify_win_task.delay(pk=self.pk)
+                    if self.policy:
+                        CheckResult.objects.exclude(sync_status="inital").filter(assigned_check__policy_id=self.policy.id).update(sync_status="notsynced")
+                    else:
+                        CheckResult.objects.filter(agent=self.agent, task=self).update(sync_status="notsynced")
 
     @property
     def schedule(self):
@@ -223,7 +220,7 @@ class AutomatedTask(BaseAuditModel):
         return TaskAuditSerializer(task).data
 
     # agent version >= 1.8.0
-    def generate_nats_task_payload(self, editing: bool = False):
+    def generate_nats_task_payload(self, editing: bool = False) -> Dict:
         task = {
             "pk": self.pk,
             "type": "rmm",
@@ -295,105 +292,114 @@ class AutomatedTask(BaseAuditModel):
 
         return task
 
-    def create_task_on_agent(self):
-        from agents.models import Agent
+    def create_task_on_agent(self, agent: 'Optional[Agent]' = None) -> str:
+        if self.policy and not agent:
+            return "agent parameter needs to be passed with policy task"
+        else:
+            agent = agent if self.policy else self.agent
 
-        agent = (
-            Agent.objects.filter(pk=self.agent.pk)
-            .only("pk", "version", "hostname", "agent_id")
-            .get()
-        )
+        try:
+            task_result = TaskResult.objects.get(agent=agent, task=self)
+        except TaskResult.DoesNotExist:
+            task_result = TaskResult(agent=agent, task=self)
+            task_result.save()
 
         nats_data = {
             "func": "schedtask",
             "schedtaskpayload": self.generate_nats_task_payload(),
         }
 
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=5))
+        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=5))
 
         if r != "ok":
-            self.sync_status = "initial"
-            self.save(update_fields=["sync_status"])
+            task_result.sync_status = "initial"
+            task_result.save(update_fields=["sync_status"])
             DebugLog.warning(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"Unable to create scheduled task {self.name} on {agent.hostname}. It will be created when the agent checks in.",
+                message=f"Unable to create scheduled task {self.name} on {task_result.agent.hostname}. It will be created when the agent checks in.",
             )
             return "timeout"
         else:
-            self.sync_status = "synced"
-            self.save(update_fields=["sync_status"])
+            task_result.sync_status = "synced"
+            task_result.save(update_fields=["sync_status"])
             DebugLog.info(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"{agent.hostname} task {self.name} was successfully created",
+                message=f"{task_result.agent.hostname} task {self.name} was successfully created",
             )
 
         return "ok"
 
-    def modify_task_on_agent(self):
-        from agents.models import Agent
+    def modify_task_on_agent(self, agent: 'Optional[Agent]' = None) -> str:
+        if self.policy and not agent:
+            return "agent parameter needs to be passed with policy task"
+        else:
+            agent = agent if self.policy else self.agent
 
-        agent = (
-            Agent.objects.filter(pk=self.agent.pk)
-            .only("pk", "version", "hostname", "agent_id")
-            .get()
-        )
+        try:
+            task_result = TaskResult.objects.get(agent=agent, task=self)
+        except TaskResult.DoesNotExist:
+            task_result = TaskResult(agent=agent, task=self)
+            task_result.save()
 
         nats_data = {
             "func": "schedtask",
             "schedtaskpayload": self.generate_nats_task_payload(editing=True),
         }
  
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=5))
+        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=5))
 
         if r != "ok":
-            self.sync_status = "notsynced"
-            self.save(update_fields=["sync_status"])
+            task_result.sync_status = "notsynced"
+            task_result.save(update_fields=["sync_status"])
             DebugLog.warning(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"Unable to modify scheduled task {self.name} on {agent.hostname}({agent.pk}). It will try again on next agent checkin",
+                message=f"Unable to modify scheduled task {self.name} on {task_result.agent.hostname}({task_result.agent.agent_id}). It will try again on next agent checkin",
             )
             return "timeout"
         else:
-            self.sync_status = "synced"
-            self.save(update_fields=["sync_status"])
+            task_result.sync_status = "synced"
+            task_result.save(update_fields=["sync_status"])
             DebugLog.info(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"{agent.hostname} task {self.name} was successfully modified",
+                message=f"{task_result.agent.hostname} task {self.name} was successfully modified",
             )
 
         return "ok"
 
-    def delete_task_on_agent(self):
-        from agents.models import Agent
+    def delete_task_on_agent(self, agent: 'Optional[Agent]' = None) -> str:
+        if self.policy and not agent:
+            return "agent parameter needs to be passed with policy task"
+        else:
+            agent = agent if self.policy else self.agent
 
-        agent = (
-            Agent.objects.filter(pk=self.agent.pk)
-            .only("pk", "version", "hostname", "agent_id")
-            .get()
-        )
+        try:
+            task_result = TaskResult.objects.get(agent=agent, task=self)
+        except TaskResult.DoesNotExist:
+            task_result = TaskResult(agent=agent, task=self)
+            task_result.save()
 
         nats_data = {
             "func": "delschedtask",
             "schedtaskpayload": {"name": self.win_task_name},
         }
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
+        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=10))
 
         if r != "ok" and "The system cannot find the file specified" not in r:
-            self.sync_status = "pendingdeletion"
+            task_result.sync_status = "pendingdeletion"
 
             try:
-                self.save(update_fields=["sync_status"])
+                task_result.save(update_fields=["sync_status"])
             except DatabaseError:
                 pass
 
             DebugLog.warning(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"{agent.hostname} task {self.name} will be deleted on next checkin",
+                message=f"{task_result.agent.hostname} task {self.name} will be deleted on next checkin",
             )
             return "timeout"
         else:
@@ -401,21 +407,24 @@ class AutomatedTask(BaseAuditModel):
             DebugLog.info(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"{agent.hostname}({agent.pk}) task {self.name} was deleted",
+                message=f"{task_result.agent.hostname}({task_result.agent.agent_id}) task {self.name} was deleted",
             )
 
         return "ok"
 
-    def run_win_task(self):
-        from agents.models import Agent
+    def run_win_task(self, agent: 'Optional[Agent]' = None) -> str:
+        if self.policy and not agent:
+            return "agent parameter needs to be passed with policy task"
+        else:
+            agent = agent if self.policy else self.agent
 
-        agent = (
-            Agent.objects.filter(pk=self.agent.pk)
-            .only("pk", "version", "hostname", "agent_id")
-            .get()
-        )
+        try:
+            task_result = TaskResult.objects.get(agent=agent, task=self)
+        except TaskResult.DoesNotExist:
+            task_result = TaskResult(agent=agent, task=self)
+            task_result.save()
 
-        asyncio.run(agent.nats_cmd({"func": "runtask", "taskpk": self.pk}, wait=False))
+        asyncio.run(task_result.agent.nats_cmd({"func": "runtask", "taskpk": self.pk}, wait=False))
         return "ok"
 
     def should_create_alert(self, alert_template=None):

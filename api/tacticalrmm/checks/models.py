@@ -240,11 +240,11 @@ class Check(BaseAuditModel):
             )
         )
 
-    def add_check_history(self, value: int, more_info: Any = None) -> None:
-        CheckHistory.objects.create(check_id=self.pk, y=value, results=more_info)
+    def add_check_history(self, value: int, agent_id: str, more_info: Any = None) -> None:
+        CheckHistory.objects.create(check_id=self.pk, y=value, results=more_info, agent_id=agent_id)
 
     def handle_assigned_task(self) -> None:
-        for task in self.assignedtask.all():  # type: ignore
+        for task in self.assignedtasks.all():  # type: ignore
             if task.enabled:
                 task.run_win_task()
 
@@ -363,7 +363,7 @@ class CheckResult(models.Model):
                 self.status = "passing"
 
             # add check history
-            check.add_check_history(data["percent"])
+            check.add_check_history(data["percent"], self.agent.agent_id)
 
         # diskspace checks
         elif check.check_type == "diskspace":
@@ -385,7 +385,7 @@ class CheckResult(models.Model):
                 self.more_info = data["more_info"]
 
                 # add check history
-                check.add_check_history(100 - percent_used)
+                check.add_check_history(100 - percent_used, self.agent.agent_id)
             else:
                 self.status = "failing"
                 self.alert_severity = "error"
@@ -424,6 +424,7 @@ class CheckResult(models.Model):
             # add check history
             check.add_check_history(
                 1 if self.status == "failing" else 0,
+                self.agent.agent_id,
                 {
                     "retcode": data["retcode"],
                     "stdout": data["stdout"][:60],
@@ -439,7 +440,7 @@ class CheckResult(models.Model):
             self.save(update_fields=["more_info"])
 
             check.add_check_history(
-                1 if self.status == "failing" else 0, self.more_info[:60]
+                1 if self.status == "failing" else 0, self.agent.agent_id, self.more_info[:60],
             )
 
         # windows service checks
@@ -449,7 +450,7 @@ class CheckResult(models.Model):
             self.save(update_fields=["more_info"])
 
             check.add_check_history(
-                1 if self.status == "failing" else 0, self.more_info[:60]
+                1 if self.status == "failing" else 0, self.agent.agent_id, self.more_info[:60],
             )
 
         elif check.check_type == "eventlog":
@@ -471,6 +472,7 @@ class CheckResult(models.Model):
 
             check.add_check_history(
                 1 if self.status == "failing" else 0,
+                self.agent.agent_id,
                 "Events Found:" + str(len(self.extra_details["log"])),
             )
 
@@ -637,6 +639,7 @@ class CheckHistory(models.Model):
     objects = PermissionQuerySet.as_manager()
 
     check_id = models.PositiveIntegerField(default=0)
+    agent_id = models.CharField(max_length=40, null=True, blank=True)
     x = models.DateTimeField(auto_now_add=True)
     y = models.PositiveIntegerField(null=True, blank=True, default=None)
     results = models.JSONField(null=True, blank=True)

@@ -187,12 +187,13 @@
             </q-icon>
           </q-td>
           <!-- status icon -->
-          <q-td v-if="props.row.status === 'passing'">
+          <q-td v-if="Object.keys(props.row.task_result).length === 0"></q-td>
+          <q-td v-if="props.row.task_result.status === 'passing'">
             <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
               <q-tooltip>Passing</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td v-else-if="props.row.status === 'failing'">
+          <q-td v-else-if="props.row.task_result.status === 'failing'">
             <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
               <q-tooltip>Informational</q-tooltip>
             </q-icon>
@@ -212,12 +213,15 @@
           <!-- name -->
           <q-td>{{ props.row.name }}</q-td>
           <!-- sync status -->
-          <q-td v-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
-          <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
-          <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
-          <q-td v-else-if="props.row.sync_status === 'initial'">Waiting for task creation on agent</q-td>
-          <q-td v-else></q-td>
-          <q-td v-if="props.row.retcode !== null || props.row.stdout || props.row.stderr">
+          <q-td v-if="props.row.task_result.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
+          <q-td v-else-if="props.row.task_result.sync_status === 'synced'">Synced with agent</q-td>
+          <q-td v-else-if="props.row.task_result.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
+          <q-td v-else>Waiting for task creation on agent</q-td>
+          <q-td
+            v-if="
+              props.row.task_result.retcode !== null || props.row.task_result.stdout || props.row.task_result.stderr
+            "
+          >
             <span
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
@@ -226,7 +230,7 @@
             >
           </q-td>
           <q-td v-else>Awaiting output</q-td>
-          <q-td v-if="props.row.last_run">{{ formatDate(props.row.last_run) }}</q-td>
+          <q-td v-if="props.row.last_run">{{ formatDate(props.row.task_result.last_run) }}</q-td>
           <q-td v-else>Has not run yet</q-td>
           <q-td>{{ props.row.schedule }}</q-td>
           <q-td>
@@ -411,7 +415,7 @@ export default {
       $q.dialog({
         component: ScriptOutput,
         componentProps: {
-          scriptInfo: script,
+          scriptInfo: script.task_result,
         },
       });
     }

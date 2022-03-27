@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime as dt
 
 from agents.models import Agent
+from alerts.models import Alert
 from automation.models import Policy
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -15,7 +16,7 @@ from rest_framework.views import APIView
 from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.utils import notify_error
 
-from .models import Check, CheckHistory
+from .models import Check, CheckHistory, CheckResult
 from .permissions import ChecksPerms, RunChecksPerms
 from .serializers import CheckHistorySerializer, CheckSerializer
 
@@ -124,31 +125,29 @@ class ResetCheck(APIView):
     permission_classes = [IsAuthenticated, ChecksPerms]
 
     def post(self, request, pk):
-        # TODO: Need to pass the agent_id
-        check = get_object_or_404(Check, pk=pk)
+        result = get_object_or_404(CheckResult, pk=pk)
 
-        if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
+        if result.agent and not _has_perm_on_agent(request.user, result.agent.agent_id):
             raise PermissionDenied()
 
-        check.status = "passing"
-        check.save()
+        result.status = "passing"
+        result.save()
 
         # resolve any alerts that are open
-        # TODO: need to test if multiple alerts are returned and filter by agent if this is a policy check
-        if check.alert.filter(resolved=False).exists():
-            check.alert.get(resolved=False).resolve()
+        alert = Alert.create_or_return_check_alert(result.assigned_check, agent=result.agent, skip_create=True)
+        if alert:
+            alert.resolve()
 
         return Response("The check status was reset")
 
 
 class GetCheckHistory(APIView):
-    # TODO: Need to fix agent history for policy checks
     permission_classes = [IsAuthenticated, ChecksPerms]
 
     def patch(self, request, pk):
-        check = get_object_or_404(Check, pk=pk)
+        result = get_object_or_404(CheckResult, pk=pk)
 
-        if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
+        if result.agent and not _has_perm_on_agent(request.user, result.agent.agent_id):
             raise PermissionDenied()
 
         timeFilter = Q()
@@ -161,7 +160,7 @@ class GetCheckHistory(APIView):
                     - djangotime.timedelta(days=request.data["timeFilter"]),
                 )
 
-        check_history = CheckHistory.objects.filter(check_id=pk).filter(timeFilter).order_by("-x")  # type: ignore
+        check_history = CheckHistory.objects.filter(check_id=result.assigned_check.id, agent_id=result.agent.agent_id).filter(timeFilter).order_by("-x")  # type: ignore
 
         return Response(
             CheckHistorySerializer(

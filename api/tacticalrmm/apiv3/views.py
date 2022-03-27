@@ -230,11 +230,13 @@ class CheckRunner(APIView):
             check_result = CheckResult.objects.get(assigned_check=check, agent=agent)
         except CheckResult.DoesNotExist:
             check_result = CheckResult(assigned_check=check, agent=agent)
-            check_result.save()
+        
+        check_result.last_run=djangotime.now()
+        check_result.save()
 
         status = check_result.handle_check(request.data)
 
-        if status == "failing" and check.assignedtask.exists():  # type: ignore
+        if status == "failing" and check.assignedtasks.exists():  # type: ignore
             check.handle_assigned_task()
 
         return Response("ok")
@@ -275,7 +277,7 @@ class TaskRunner(APIView):
             serializer = TaskResultSerializer(data=request.data, partial=True)
 
         serializer.is_valid(raise_exception=True)
-        task_result = serializer.save()
+        task_result = serializer.save(last_run=djangotime.now())
 
         # TODO: Change task.script since field not in use anymore
         AgentHistory.objects.create(

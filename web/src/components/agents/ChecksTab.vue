@@ -257,7 +257,7 @@
               v-else-if="props.row.check_type === 'script'"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
-              @click="showScriptOutput(props.row)"
+              @click="showScriptOutput(props.row.check_result)"
               >Last Output</span
             >
             <span
@@ -289,7 +289,7 @@ import { useQuasar } from "quasar";
 import { updateCheck, removeCheck, resetCheck } from "@/api/checks";
 import { fetchAgentChecks } from "@/api/agents";
 import { truncateText } from "@/utils/format";
-import { notifySuccess } from "@/utils/notify";
+import { notifySuccess, notifyWarning } from "@/utils/notify";
 
 // ui imports
 import DiskSpaceCheck from "@/components/checks/DiskSpaceCheck";
@@ -403,9 +403,16 @@ export default {
     }
 
     async function resetCheckStatus(check) {
+      // make sure there is a check result before sending
+      if (!check.check_result.status) {
+        notifyWarning("Check hasn't run yet");
+      } else if (check.check_result.status === "passing") {
+        notifyWarning("Check is already passing");
+      }
+
       loading.value = true;
       try {
-        const result = await resetCheck(check.id);
+        const result = await resetCheck(check.check_result.id);
         await getChecks();
         notifySuccess(result);
         refreshDashboard(false /* clearTreeSelected */, false /* clearSubTable */);
@@ -446,7 +453,7 @@ export default {
       $q.dialog({
         title: check.readable_desc,
         style: "width: 50vw; max-width: 60vw",
-        message: `<pre>${check.more_info}</pre>`,
+        message: `<pre>${check.check_result.more_info}</pre>`,
         html: true,
       });
     }
@@ -477,7 +484,6 @@ export default {
     watch(selectedAgent, (newValue, oldValue) => {
       if (newValue) {
         getChecks();
-        console.log(checks.value);
       }
     });
 

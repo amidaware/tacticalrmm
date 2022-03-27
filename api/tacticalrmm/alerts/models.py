@@ -155,7 +155,7 @@ class Alert(models.Model):
                 agent=agent if check.policy else None, 
                 alert_type="check",
                 severity=check.alert_severity,
-                message=f"{check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
+                message=f"{check.agent.hostname if check.agent else agent} has a {check.check_type} check: {check.readable_desc} that failed.",
                 hidden=True,
             )
         else:
@@ -186,7 +186,7 @@ class Alert(models.Model):
                 agent=agent if task.policy else None,
                 alert_type="task",
                 severity=task.alert_severity,
-                message=f"{task.agent.hostname} has task: {task.name} that failed.",
+                message=f"{task.agent.hostname if task.agent else agent.hostname} has task: {task.name} that failed.",
                 hidden=True,
             )
         else:

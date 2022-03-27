@@ -5,6 +5,13 @@ from django.core.exceptions import ObjectDoesNotExist
 from .models import AutomatedTask, TaskResult
 
 
+
+class TaskResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskResult
+        fields = "__all__"
+
+
 class TaskSerializer(serializers.ModelSerializer):
 
     check_name = serializers.ReadOnlyField(source="assigned_check.readable_desc")
@@ -14,6 +21,11 @@ class TaskSerializer(serializers.ModelSerializer):
     expire_date = serializers.DateTimeField(
         allow_null=True, required=False
     )
+    task_result = serializers.SerializerMethodField()
+
+    # use select_related("taskresults") on the query set to make this go faster
+    def get_task_result(self, obj):
+        return TaskResultSerializer(obj.task_result).data if hasattr(obj, "task_result") else {}
     
     def validate_actions(self, value):
 
@@ -238,12 +250,6 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = AutomatedTask
         fields = ["id", "continue_on_error", "enabled", "task_actions"]
-
-
-class TaskResultSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TaskResult
-        fields = "__all__"
 
 
 class TaskAuditSerializer(serializers.ModelSerializer):

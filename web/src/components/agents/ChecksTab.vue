@@ -207,17 +207,18 @@
           </q-td>
           <q-td v-else></q-td>
           <!-- status icon -->
-          <q-td v-if="props.row.status === 'passing'">
+          <q-td v-if="Object.keys(props.row.check_result).length === 0"></q-td>
+          <q-td v-else-if="props.row.check_result.status === 'passing'">
             <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
               <q-tooltip>Passing</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td v-else-if="props.row.status === 'failing'">
-            <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
+          <q-td v-else-if="props.row.check_result.status === 'failing'">
+            <q-icon v-if="getAlertSeverity(props.row) === 'info'" style="font-size: 1.3rem" color="info" name="info">
               <q-tooltip>Informational</q-tooltip>
             </q-icon>
             <q-icon
-              v-else-if="props.row.alert_severity === 'warning'"
+              v-else-if="getAlertSeverity(props.row) === 'warning'"
               style="font-size: 1.3rem"
               color="warning"
               name="warning"
@@ -270,11 +271,9 @@
               props.row.more_info
             }}</span>
           </q-td>
-          <q-td>{{ props.row.last_run ? formatDate(props.row.last_run) : "Never" }}</q-td>
-          <q-td v-if="!!props.row.assigned_task && props.row.assigned_task.length > 1"
-            >{{ props.row.assigned_task.length }} Tasks</q-td
-          >
-          <q-td v-else-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
+          <q-td>{{ props.row.check_result.last_run ? formatDate(props.row.check_result.last_run) : "Never" }}</q-td>
+          <q-td v-if="props.row.assignedtasks.length > 1">{{ props.row.assignedtasks.length }} Tasks</q-td>
+          <q-td v-else-if="props.row.assignedtasks.length === 1">{{ props.row.assignedtasks[0].name }}</q-td>
           <q-td v-else></q-td>
         </q-tr>
       </template>
@@ -353,6 +352,14 @@ export default {
       sortBy: "status",
       descending: false,
     });
+
+    function getAlertSeverity(check) {
+      if (check.check_result.alert_severity) {
+        return check.check_result.alert_severity;
+      } else {
+        return check.alert_severity;
+      }
+    }
 
     async function getChecks() {
       loading.value = true;
@@ -470,6 +477,7 @@ export default {
     watch(selectedAgent, (newValue, oldValue) => {
       if (newValue) {
         getChecks();
+        console.log(checks.value);
       }
     });
 
@@ -496,6 +504,7 @@ export default {
       resetCheckStatus,
       truncateText,
       formatDate,
+      getAlertSeverity,
 
       // dialogs
       showScriptOutput,

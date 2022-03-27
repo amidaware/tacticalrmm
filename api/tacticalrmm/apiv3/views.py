@@ -4,7 +4,6 @@ import time
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
-from autotasks import serializers
 from autotasks.models import AutomatedTask, TaskResult
 from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
 from checks.models import Check, CheckResult
@@ -198,12 +197,12 @@ class CheckRunner(APIView):
             check
             for check in checks
             # always run if check hasn't run yet
-            if not check.last_run
+            if not hasattr(check.check_result, "last_run") or not check.check_result.last_run # type: ignore
             # if a check interval is set, see if the correct amount of seconds have passed
             or (
                 check.run_interval
                 and (
-                    check.last_run
+                    check.check_result.last_run # type: ignore
                     < djangotime.now()
                     - djangotime.timedelta(seconds=check.run_interval)
                 )
@@ -211,7 +210,7 @@ class CheckRunner(APIView):
             # if check interval isn't set, make sure the agent's check interval has passed before running
             or (
                 not check.run_interval
-                and check.last_run
+                and check.check_result.last_run # type: ignore
                 < djangotime.now() - djangotime.timedelta(seconds=agent.check_interval)
             )
         ]
@@ -225,7 +224,13 @@ class CheckRunner(APIView):
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        check_result = get_object_or_404(CheckResult, check=check, agent=agent)
+
+        # check check result or create if doesn't exist
+        try:
+            check_result = CheckResult.objects.get(assigned_check=check, agent=agent)
+        except CheckResult.DoesNotExist:
+            check_result = CheckResult(assigned_check=check, agent=agent)
+            check_result.save()
 
         status = check_result.handle_check(request.data)
 
@@ -261,9 +266,14 @@ class TaskRunner(APIView):
 
         agent = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
-        task_result = get_object_or_404(TaskResult, task=task, agent=agent)
 
-        serializer = TaskResultSerializer(task_result, partial=True)
+        # check check result or create if doesn't exist
+        try:
+            task_result = TaskResult.objects.get(task=task, agent=agent)
+            serializer = TaskResultSerializer(data=request.data, instance=task_result, partial=True)
+        except TaskResult.DoesNotExist:
+            serializer = TaskResultSerializer(data=request.data, partial=True)
+
         serializer.is_valid(raise_exception=True)
         task_result = serializer.save()
 
@@ -271,7 +281,7 @@ class TaskRunner(APIView):
         AgentHistory.objects.create(
             agent=agent,
             type="task_run",
-            script=task.actions,
+            command="multiple",
             script_results=request.data,
         )
 

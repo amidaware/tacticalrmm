@@ -19,20 +19,6 @@ from tacticalrmm.constants import AGENT_DEFER
 
 @app.task
 def core_maintenance_tasks():
-    # cleanup expired runonce tasks
-    tasks = AutomatedTask.objects.filter(
-        task_type="runonce",
-        remove_if_not_scheduled=True,
-    ).exclude(last_run=None)
-
-    for task in tasks:
-        agent_tz = pytz.timezone(task.agent.timezone)
-        task_time_utc = task.run_time_date.replace(tzinfo=agent_tz).astimezone(pytz.utc)
-        now = djangotime.now()
-
-        if now > task_time_utc:
-            delete_win_task_schedule.delay(task.pk)
-
     core = CoreSettings.objects.first()
 
     # remove old CheckHistory data

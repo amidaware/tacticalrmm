@@ -143,15 +143,16 @@ class Alert(models.Model):
                 
 
     @classmethod
-    def create_or_return_check_alert(cls, check: Check, skip_create: bool = False) -> Optional[Alert]:
+    def create_or_return_check_alert(cls, check: Check, agent: Optional[Agent] = None, skip_create: bool = False) -> Optional[Alert]:
 
-        if not cls.objects.filter(assigned_check=check, agent=check.agent if check.policy else None, resolved=False).exists():
+        # need to pass agent if the check is a policy
+        if not cls.objects.filter(assigned_check=check, agent=agent if check.policy else None, resolved=False).exists():
             if skip_create:
                 return None
 
             return cls.objects.create(
                 assigned_check=check,
-                agent=check.agent if check.policy else None, 
+                agent=agent if check.policy else None, 
                 alert_type="check",
                 severity=check.alert_severity,
                 message=f"{check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
@@ -159,9 +160,9 @@ class Alert(models.Model):
             )
         else:
             try:
-                return cls.objects.get(assigned_check=check, agent=check.agent if check.policy else None, resolved=False)
+                return cls.objects.get(assigned_check=check, agent=agent if check.policy else None, resolved=False)
             except cls.MultipleObjectsReturned:
-                alerts = cls.objects.filter(assigned_check=check, agent=check.agent if check.policy else None, resolved=False)
+                alerts = cls.objects.filter(assigned_check=check, agent=agent if check.policy else None, resolved=False)
                 last_alert = alerts[-1]
 
                 # cycle through other alerts and resolve
@@ -174,15 +175,15 @@ class Alert(models.Model):
                 return None
 
     @classmethod
-    def create_or_return_task_alert(cls, task: AutomatedTask, skip_create: bool = False) -> Optional[Alert]:
+    def create_or_return_task_alert(cls, task: AutomatedTask, agent: Optional[Agent] = None, skip_create: bool = False) -> Optional[Alert]:
 
-        if not cls.objects.filter(assigned_task=task, agent=task.agent if task.policy else None, resolved=False).exists():
+        if not cls.objects.filter(assigned_task=task, agent=agent if task.policy else None, resolved=False).exists():
             if skip_create:
                 return None
     
             return cls.objects.create(
                 assigned_task=task,
-                agent=task.agent if task.policy else None,
+                agent=agent if task.policy else None,
                 alert_type="task",
                 severity=task.alert_severity,
                 message=f"{task.agent.hostname} has task: {task.name} that failed.",
@@ -190,9 +191,9 @@ class Alert(models.Model):
             )
         else:
             try:
-                return cls.objects.get(assigned_task=task, agent=task.agent if task.policy else None, resolved=False)
+                return cls.objects.get(assigned_task=task, agent=agent if task.policy else None, resolved=False)
             except cls.MultipleObjectsReturned:
-                alerts = cls.objects.filter(assigned_task=task, agent=task.agent if task.policy else None, resolved=False)
+                alerts = cls.objects.filter(assigned_task=task, agent=agent if task.policy else None, resolved=False)
                 last_alert = alerts[-1]
 
                 # cycle through other alerts and resolve

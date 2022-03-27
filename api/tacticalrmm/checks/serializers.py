@@ -1,11 +1,10 @@
-import pytz
 import validators as _v
 from autotasks.models import AutomatedTask
 from rest_framework import serializers
 from scripts.models import Script
 from scripts.serializers import ScriptCheckSerializer
 
-from .models import Check, CheckHistory
+from .models import Check, CheckHistory, CheckResult
 
 
 class AssignedTaskField(serializers.ModelSerializer):
@@ -14,13 +13,22 @@ class AssignedTaskField(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class CheckResultSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CheckResult
+        fields = "__all__"
+
+
 class CheckSerializer(serializers.ModelSerializer):
 
     readable_desc = serializers.ReadOnlyField()
-    assigned_task = serializers.SerializerMethodField()
-    history_info = serializers.ReadOnlyField()
+    assignedtasks = AssignedTaskField(many=True)
     alert_template = serializers.SerializerMethodField()
-    last_run = serializers.ReadOnlyField()
+    check_result = serializers.SerializerMethodField()
+
+    def get_check_result(self, obj):
+        return CheckResultSerializer(obj.check_result).data if hasattr(obj, "check_result") else {}
 
     def get_alert_template(self, obj):
         if obj.agent:
@@ -38,14 +46,6 @@ class CheckSerializer(serializers.ModelSerializer):
                 "always_alert": alert_template.check_always_alert,
             }
 
-    ## Change to return only array of tasks after 9/25/2020
-    def get_assigned_task(self, obj):
-        if obj.assignedtask.exists():
-            tasks = obj.assignedtask.all()
-            if len(tasks) == 1:
-                return AssignedTaskField(tasks[0]).data
-            else:
-                return AssignedTaskField(tasks, many=True).data
 
     class Meta:
         model = Check
@@ -70,7 +70,6 @@ class CheckSerializer(serializers.ModelSerializer):
                 checks = (
                     Check.objects.filter(**filter)
                     .filter(check_type="diskspace")
-                    .exclude(managed_by_policy=True)
                 )
                 for check in checks:
                     if val["disk"] in check.disk:
@@ -106,7 +105,6 @@ class CheckSerializer(serializers.ModelSerializer):
         if check_type == "cpuload" and not self.instance:
             if (
                 Check.objects.filter(**filter, check_type="cpuload")
-                .exclude(managed_by_policy=True)
                 .exists()
             ):
                 raise serializers.ValidationError(
@@ -130,7 +128,6 @@ class CheckSerializer(serializers.ModelSerializer):
         if check_type == "memory" and not self.instance:
             if (
                 Check.objects.filter(**filter, check_type="memory")
-                .exclude(managed_by_policy=True)
                 .exists()
             ):
                 raise serializers.ValidationError(
@@ -179,36 +176,17 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
             "policy",
             "overriden_by_policy",
             "name",
-            "more_info",
-            "last_run",
             "email_alert",
             "text_alert",
             "fails_b4_alert",
-            "fail_count",
-            "outage_history",
-            "extra_details",
-            "stdout",
-            "stderr",
-            "retcode",
-            "execution_time",
             "svc_display_name",
             "svc_policy_mode",
             "created_by",
             "created_time",
             "modified_by",
             "modified_time",
-            "history",
             "dashboard_alert",
         ]
-
-
-class CheckResultsSerializer(serializers.ModelSerializer):
-    # used when patching results from the windows agent
-    # no validation needed
-
-    class Meta:
-        model = Check
-        fields = "__all__"
 
 
 class CheckHistorySerializer(serializers.ModelSerializer):

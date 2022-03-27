@@ -2,7 +2,7 @@ import asyncio
 import re
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional, List, TYPE_CHECKING
 
 import msgpack
 import nats
@@ -20,6 +20,8 @@ from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate, Alert
+    from autotasks.models import AutomatedTask
+    from checks.models import Check
 class Agent(BaseAuditModel):
     objects = PermissionQuerySet.as_manager()
 
@@ -148,7 +150,7 @@ class Agent(BaseAuditModel):
     def checks(self):
         total, passing, failing, warning, info = 0, 0, 0, 0, 0
 
-        for i in self.get_checks_with_policies():  # type: ignore
+        for i in self.checkresults.filter(assigned_check__overriden_by_policy=False):  # type: ignore
             total += 1
             if i.status == "passing":
                 passing += 1
@@ -317,10 +319,12 @@ class Agent(BaseAuditModel):
         return self.plat.lower() in platforms if platforms else True
 
     def get_checks_with_policies(self):
-        return list(self.agentchecks.all()) + self.get_checks_from_policies()
+        checks = list(self.agentchecks.all()) + self.get_checks_from_policies() # type: ignore
+        return self.add_check_results(checks)
 
     def get_tasks_with_policies(self):
-        return list(self.autotasks.all()) + self.get_tasks_from_policies()
+        tasks = list(self.autotasks.all()) + self.get_tasks_from_policies() # type: ignore
+        return self.add_task_results(tasks)
 
     def get_agent_policies(self):
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
@@ -535,13 +539,13 @@ class Agent(BaseAuditModel):
             # default alert_template will override a default policy with alert template applied
             if (
                 "default" in key
-                and core.alert_template
-                and core.alert_template.is_active
-                and not core.alert_template.is_agent_excluded(self)
+                and core.alert_template # type: ignore
+                and core.alert_template.is_active # type: ignore
+                and not core.alert_template.is_agent_excluded(self) # type: ignore
             ):
-                self.alert_template = core.alert_template
+                self.alert_template = core.alert_template # type: ignore
                 self.save(update_fields=["alert_template"])
-                return core.alert_template
+                return core.alert_template # type: ignore
             elif (
                 policy
                 and policy.active
@@ -581,6 +585,36 @@ class Agent(BaseAuditModel):
     def get_or_create_alert_if_needed(self, alert_template: "Optional[AlertTemplate]") -> "Optional[Alert]":
         from alerts.models import Alert
         return Alert.create_or_return_availability_alert(self, skip_create=self.should_create_alert(alert_template))
+
+    def add_task_results(self, tasks: 'List[AutomatedTask]') -> 'List[AutomatedTask]':
+
+        results = self.taskresults.all() # type: ignore
+
+        for task in tasks:
+            for result in results:
+                if result.task.id == task.id: # type: ignore
+                    task.task_result = result # type: ignore
+                    break
+            
+            if not hasattr(task, "task_result"):
+                task.task_result = None # type: ignore
+        
+        return tasks
+
+    def add_check_results(self, checks: 'List[Check]') -> 'List[Check]':
+
+        results = self.checkresults.all() # type: ignore
+
+        for check in checks:
+            for result in results:
+                if result.assigned_check.id == check.id: # type: ignore
+                    check.check_result = result # type: ignore
+                    break
+            
+            if not hasattr(check, "check_result"): # type: ignore
+                check.check_result = None # type: ignore
+        
+        return checks
 
     def get_checks_from_policies(self):
         from automation.models import Policy

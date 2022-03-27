@@ -80,7 +80,7 @@ class AutomatedTask(BaseAuditModel):
         "checks.Check",
         null=True,
         blank=True,
-        related_name="assignedtask",
+        related_name="assignedtasks",
         on_delete=models.SET_NULL,
     )
     name = models.CharField(max_length=255)
@@ -442,14 +442,14 @@ class TaskResult(models.Model):
 
     agent = models.ForeignKey(
         "agents.Agent",
-        related_name="policytaskhistory",
+        related_name="taskresults",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
     )
     task = models.ForeignKey(
         "autotasks.AutomatedTask",
-        related_name="policytaskresults",
+        related_name="taskresults",
         null=True,
         blank=True,
         on_delete=models.CASCADE
@@ -473,7 +473,7 @@ class TaskResult(models.Model):
 
     def get_or_create_alert_if_needed(self, alert_template: "Optional[AlertTemplate]") -> "Optional[Alert]":
         from alerts.models import Alert
-        return Alert.create_or_return_task_alert(self.task, skip_create=self.task.should_create_alert(alert_template))
+        return Alert.create_or_return_task_alert(self.task, agent=self.agent, skip_create=self.task.should_create_alert(alert_template))
 
     def save_collector_results(self) -> None:
 

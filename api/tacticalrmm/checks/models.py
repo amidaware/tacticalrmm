@@ -12,6 +12,7 @@ from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate
+    from agents.models import Agent
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -333,7 +334,7 @@ class CheckResult(models.Model):
 
     def get_or_create_alert_if_needed(self, alert_template: "Optional[AlertTemplate]") -> "Optional[Alert]":
         from alerts.models import Alert
-        return Alert.create_or_return_check_alert(self.assigned_check, skip_create=self.assigned_check.should_create_alert(alert_template))
+        return Alert.create_or_return_check_alert(self.assigned_check, agent=self.agent, skip_create=self.assigned_check.should_create_alert(alert_template))
 
     def handle_check(self, data):
         from alerts.models import Alert
@@ -484,7 +485,7 @@ class CheckResult(models.Model):
         elif self.status == "passing":
             self.fail_count = 0
             self.save()
-            if Alert.objects.filter(assigned_check=self, resolved=False).exists():
+            if Alert.objects.filter(assigned_check=check, resolved=False).exists():
                 Alert.handle_alert_resolve(self)
 
         return self.status

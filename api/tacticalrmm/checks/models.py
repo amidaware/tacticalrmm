@@ -212,7 +212,7 @@ class Check(BaseAuditModel):
             "modified_time",
         ]
 
-    def create_policy_check(self, policy: 'Policy') -> None:
+    def create_policy_check(self, policy: "Policy") -> None:
 
         fields_to_copy = [
             "warning_threshold",
@@ -253,9 +253,7 @@ class Check(BaseAuditModel):
         )
 
         for task in self.assignedtasks.all():  # type: ignore
-            task.create_policy_task(
-                policy=policy, assigned_check=check
-            )
+            task.create_policy_task(policy=policy, assigned_check=check)
 
         for field in fields_to_copy:
             setattr(check, field, getattr(self, field))
@@ -278,8 +276,12 @@ class Check(BaseAuditModel):
             )
         )
 
-    def add_check_history(self, value: int, agent_id: str, more_info: Any = None) -> None:
-        CheckHistory.objects.create(check_id=self.pk, y=value, results=more_info, agent_id=agent_id)
+    def add_check_history(
+        self, value: int, agent_id: str, more_info: Any = None
+    ) -> None:
+        CheckHistory.objects.create(
+            check_id=self.pk, y=value, results=more_info, agent_id=agent_id
+        )
 
     def handle_assigned_task(self) -> None:
         for task in self.assignedtasks.all():  # type: ignore
@@ -320,7 +322,7 @@ class CheckResult(models.Model):
     objects = PermissionQuerySet.as_manager()
 
     class Meta:
-        unique_together = (('agent', 'assigned_check'),)
+        unique_together = (("agent", "assigned_check"),)
 
     agent = models.ForeignKey(
         "agents.Agent",
@@ -335,7 +337,7 @@ class CheckResult(models.Model):
         related_name="checkresults",
         null=True,
         blank=True,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     status = models.CharField(
         max_length=100, choices=CHECK_STATUS_CHOICES, default="pending"
@@ -363,16 +365,26 @@ class CheckResult(models.Model):
     )
 
     def __str__(self):
-        return f"{self.agent.hostname} - {self.assigned_check}" 
+        return f"{self.agent.hostname} - {self.assigned_check}"
 
     @property
     def history_info(self):
-        if self.assigned_check.check_type == "cpuload" or self.assigned_check.check_type == "memory":
+        if (
+            self.assigned_check.check_type == "cpuload"
+            or self.assigned_check.check_type == "memory"
+        ):
             return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
-    def get_or_create_alert_if_needed(self, alert_template: "Optional[AlertTemplate]") -> "Optional[Alert]":
+    def get_or_create_alert_if_needed(
+        self, alert_template: "Optional[AlertTemplate]"
+    ) -> "Optional[Alert]":
         from alerts.models import Alert
-        return Alert.create_or_return_check_alert(self.assigned_check, agent=self.agent, skip_create=self.assigned_check.should_create_alert(alert_template))
+
+        return Alert.create_or_return_check_alert(
+            self.assigned_check,
+            agent=self.agent,
+            skip_create=self.assigned_check.should_create_alert(alert_template),
+        )
 
     def handle_check(self, data):
         from alerts.models import Alert
@@ -407,7 +419,10 @@ class CheckResult(models.Model):
         elif check.check_type == "diskspace":
             if data["exists"]:
                 percent_used = round(data["percent_used"])
-                if check.error_threshold and (100 - percent_used) < check.error_threshold:
+                if (
+                    check.error_threshold
+                    and (100 - percent_used) < check.error_threshold
+                ):
                     self.status = "failing"
                     self.alert_severity = "error"
                 elif (
@@ -478,7 +493,9 @@ class CheckResult(models.Model):
             self.save(update_fields=["more_info"])
 
             check.add_check_history(
-                1 if self.status == "failing" else 0, self.agent.agent_id, self.more_info[:60],
+                1 if self.status == "failing" else 0,
+                self.agent.agent_id,
+                self.more_info[:60],
             )
 
         # windows service checks
@@ -488,7 +505,9 @@ class CheckResult(models.Model):
             self.save(update_fields=["more_info"])
 
             check.add_check_history(
-                1 if self.status == "failing" else 0, self.agent.agent_id, self.more_info[:60],
+                1 if self.status == "failing" else 0,
+                self.agent.agent_id,
+                self.more_info[:60],
             )
 
         elif check.check_type == "eventlog":
@@ -549,7 +568,9 @@ class CheckResult(models.Model):
 
             try:
                 percent_used = [
-                    d["percent"] for d in self.agent.disks if d["device"] == self.assigned_check.disk
+                    d["percent"]
+                    for d in self.agent.disks
+                    if d["device"] == self.assigned_check.disk
                 ][0]
                 percent_free = 100 - percent_used
 
@@ -568,7 +589,10 @@ class CheckResult(models.Model):
 
             body = self.more_info
 
-        elif self.assigned_check.check_type == "cpuload" or self.assigned_check.check_type == "memory":
+        elif (
+            self.assigned_check.check_type == "cpuload"
+            or self.assigned_check.check_type == "memory"
+        ):
             text = ""
             if self.assigned_check.warning_threshold:
                 text += f" Warning Threshold: {self.assigned_check.warning_threshold}%"
@@ -593,9 +617,7 @@ class CheckResult(models.Model):
             elif self.assigned_check.event_source:
                 start = f"Event ID {self.assigned_check.event_id}, source {self.assigned_check.event_source} "
             elif self.assigned_check.event_message:
-                start = (
-                    f"Event ID {self.assigned_check.event_id}, containing string {self.assigned_check.event_message} "
-                )
+                start = f"Event ID {self.assigned_check.event_id}, containing string {self.assigned_check.event_message} "
             else:
                 start = f"Event ID {self.assigned_check.event_id} "
 
@@ -608,7 +630,7 @@ class CheckResult(models.Model):
                 except:
                     continue
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template) # type: ignore
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)  # type: ignore
 
     def send_sms(self):
 
@@ -629,7 +651,9 @@ class CheckResult(models.Model):
 
             try:
                 percent_used = [
-                    d["percent"] for d in self.agent.disks if d["device"] == self.assigned_check.disk
+                    d["percent"]
+                    for d in self.agent.disks
+                    if d["device"] == self.assigned_check.disk
                 ][0]
                 percent_free = 100 - percent_used
                 body = subject + f" - Free: {percent_free}%, {text}"
@@ -640,7 +664,10 @@ class CheckResult(models.Model):
             body = subject + f" - Return code: {self.retcode}"
         elif self.assigned_check.check_type == "ping":
             body = subject
-        elif self.assigned_check.check_type == "cpuload" or self.assigned_check.check_type == "memory":
+        elif (
+            self.assigned_check.check_type == "cpuload"
+            or self.assigned_check.check_type == "memory"
+        ):
             text = ""
             if self.assigned_check.warning_threshold:
                 text += f" Warning Threshold: {self.assigned_check.warning_threshold}%"
@@ -657,7 +684,7 @@ class CheckResult(models.Model):
         elif self.assigned_check.check_type == "eventlog":
             body = subject
 
-        CORE.send_sms(body, alert_template=self.agent.alert_template) # type: ignore
+        CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore
 
     def send_resolved_email(self):
         CORE = CoreSettings.objects.first()
@@ -665,13 +692,14 @@ class CheckResult(models.Model):
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = f"{self} is now back to normal"
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template) # type: ignore
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)  # type: ignore
 
     def send_resolved_sms(self):
         CORE = CoreSettings.objects.first()
 
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
-        CORE.send_sms(subject, alert_template=self.agent.alert_template) # type: ignore
+        CORE.send_sms(subject, alert_template=self.agent.alert_template)  # type: ignore
+
 
 class CheckHistory(models.Model):
     objects = PermissionQuerySet.as_manager()

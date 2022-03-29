@@ -11,6 +11,7 @@ from logs.models import DebugLog
 
 from tacticalrmm.celery import app
 
+
 @app.task
 def create_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
     task = AutomatedTask.objects.get(pk=pk)

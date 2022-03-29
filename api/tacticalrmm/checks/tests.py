@@ -254,8 +254,15 @@ class TestCheckViews(TacticalTestCase):
         # setup data
         agent = baker.make_recipe("agents.agent")
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
-        check_result = baker.make("checks.CheckResult", assigned_check=check, agent=agent)
-        baker.make("checks.CheckHistory", check_id=check.id, agent_id=agent.agent_id, _quantity=30)
+        check_result = baker.make(
+            "checks.CheckResult", assigned_check=check, agent=agent
+        )
+        baker.make(
+            "checks.CheckHistory",
+            check_id=check.id,
+            agent_id=agent.agent_id,
+            _quantity=30,
+        )
         check_history_data = baker.make(
             "checks.CheckHistory",
             check_id=check.id,
@@ -689,7 +696,12 @@ class TestCheckTasks(TacticalTestCase):
         )
 
         # test failing info
-        data = {"id": check.id, "agent_id": self.agent.agent_id, "status": "failing", "output": "reply from a.com"}
+        data = {
+            "id": check.id,
+            "agent_id": self.agent.agent_id,
+            "status": "failing",
+            "output": "reply from a.com",
+        }
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -729,7 +741,12 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(check.alert_severity, "error")
 
         # test passing
-        data = {"id": check.id, "agent_id": self.agent.agent_id, "status": "passing", "output": "reply from a.com"}
+        data = {
+            "id": check.id,
+            "agent_id": self.agent.agent_id,
+            "status": "passing",
+            "output": "reply from a.com",
+        }
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -746,7 +763,12 @@ class TestCheckTasks(TacticalTestCase):
         )
 
         # test passing running
-        data = {"id": check.id,"agent_id": self.agent.agent_id, "status": "passing", "more_info": "ok"}
+        data = {
+            "id": check.id,
+            "agent_id": self.agent.agent_id,
+            "status": "passing",
+            "more_info": "ok",
+        }
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -755,7 +777,12 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(check_result.status, "passing")
 
         # test failing
-        data = {"id": check.id, "agent_id": self.agent.agent_id, "status": "failing", "more_info": "ok"}
+        data = {
+            "id": check.id,
+            "agent_id": self.agent.agent_id,
+            "status": "failing",
+            "more_info": "ok",
+        }
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -1023,14 +1050,22 @@ class TestCheckPermissions(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
         check = baker.make("checks.Check", agent=agent)
-        check_result = baker.make("checks.CheckResult", agent=agent, assigned_check=check)
+        check_result = baker.make(
+            "checks.CheckResult", agent=agent, assigned_check=check
+        )
         unauthorized_check = baker.make("checks.Check", agent=unauthorized_agent)
-        unauthorized_check_result = baker.make("checks.CheckResult", agent=unauthorized_agent, assigned_check=unauthorized_check)
+        unauthorized_check_result = baker.make(
+            "checks.CheckResult",
+            agent=unauthorized_agent,
+            assigned_check=unauthorized_check,
+        )
 
         for action in ["reset", "run"]:
             if action == "reset":
                 url = f"{base_url}/{check_result.id}/{action}/"
-                unauthorized_url = f"{base_url}/{unauthorized_check_result.id}/{action}/"
+                unauthorized_url = (
+                    f"{base_url}/{unauthorized_check_result.id}/{action}/"
+                )
             else:
                 url = f"{base_url}/{agent.agent_id}/{action}/"
                 unauthorized_url = f"{base_url}/{unauthorized_agent.agent_id}/{action}/"
@@ -1067,9 +1102,15 @@ class TestCheckPermissions(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
         check = baker.make("checks.Check", agent=agent)
-        check_result = baker.make("checks.CheckResult", agent=agent, assigned_check=check)
+        check_result = baker.make(
+            "checks.CheckResult", agent=agent, assigned_check=check
+        )
         unauthorized_check = baker.make("checks.Check", agent=unauthorized_agent)
-        unauthorized_check_result = baker.make("checks.CheckResult", agent=unauthorized_agent, assigned_check=unauthorized_check)
+        unauthorized_check_result = baker.make(
+            "checks.CheckResult",
+            agent=unauthorized_agent,
+            assigned_check=unauthorized_check,
+        )
 
         url = f"{base_url}/{check_result.id}/history/"
         unauthorized_url = f"{base_url}/{unauthorized_check_result.id}/history/"

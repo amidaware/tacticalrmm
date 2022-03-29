@@ -81,7 +81,7 @@ except ImportError:
     pass
 
 REST_FRAMEWORK = {
-    #"DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
+    # "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",

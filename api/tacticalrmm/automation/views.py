@@ -80,6 +80,7 @@ class GetUpdateDeletePolicy(APIView):
 
         return Response("ok")
 
+
 class PolicyAutoTask(APIView):
 
     # get status of all tasks
@@ -170,7 +171,7 @@ class ResetPatchPolicy(APIView):
                 raise PermissionDenied()
 
             agents = (
-                Agent.objects.filter_by_role(request.user) # type: ignore
+                Agent.objects.filter_by_role(request.user)  # type: ignore
                 .prefetch_related("winupdatepolicy")
                 .filter(site__client_id=request.data["client"])
             )
@@ -179,13 +180,13 @@ class ResetPatchPolicy(APIView):
                 raise PermissionDenied()
 
             agents = (
-                Agent.objects.filter_by_role(request.user)# type: ignore
+                Agent.objects.filter_by_role(request.user)  # type: ignore
                 .prefetch_related("winupdatepolicy")
                 .filter(site_id=request.data["site"])
             )
         else:
             agents = (
-                Agent.objects.filter_by_role(request.user)# type: ignore
+                Agent.objects.filter_by_role(request.user)  # type: ignore
                 .prefetch_related("winupdatepolicy")
                 .only("pk")
             )

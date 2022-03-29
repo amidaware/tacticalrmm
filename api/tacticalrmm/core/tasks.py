@@ -69,7 +69,10 @@ def _get_failing_data(agents):
         for task in agent.get_tasks_with_policies():
             if not task.task_result:
                 continue
-            elif task.task_result.status == "failing" and task.task_result.alert_severity == "error":
+            elif (
+                task.task_result.status == "failing"
+                and task.task_result.alert_severity == "error"
+            ):
                 data["error"] = True
                 break
 
@@ -110,7 +113,10 @@ def cache_db_fields_task():
             # sync scheduled tasks
             for task in agent.get_tasks_with_policies(exclude_synced=True):
                 try:
-                    if not task.task_result or task.task_result.sync_status == "initial":
+                    if (
+                        not task.task_result
+                        or task.task_result.sync_status == "initial"
+                    ):
                         task.create_task_on_agent(agent=agent if task.policy else None)
                     if task.task_result.sync_status == "pendingdeletion":
                         task.delete_task_on_agent(agent=agent if task.policy else None)

@@ -21,7 +21,9 @@ class TestAPIv3(TacticalTestCase):
 
         # add a check
         check1 = baker.make_recipe("checks.ping_check", agent=agent)
-        check_result1 = baker.make("checks.CheckResult", agent=agent, assigned_check=check1)
+        check_result1 = baker.make(
+            "checks.CheckResult", agent=agent, assigned_check=check1
+        )
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["check_interval"], self.agent.check_interval)  # type: ignore
@@ -31,13 +33,15 @@ class TestAPIv3(TacticalTestCase):
         check2 = baker.make_recipe(
             "checks.diskspace_check", agent=agent, run_interval=20
         )
-        check_result2 = baker.make("checks.CheckResult", agent=agent, assigned_check=check2)
+        check_result2 = baker.make(
+            "checks.CheckResult", agent=agent, assigned_check=check2
+        )
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["checks"]), 2)  # type: ignore
         self.assertEqual(r.data["check_interval"], 20)  # type: ignore
-        
+
         # Set last_run on both checks and should return an empty list
         check_result1.last_run = djangotime.now()
         check_result1.save()
@@ -143,7 +147,12 @@ class TestAPIv3(TacticalTestCase):
         # setup data
         task_actions = [
             {"type": "cmd", "command": "whoami", "timeout": 10, "shell": "cmd"},
-            {"type": "script", "script": script.id, "script_args": ["test"], "timeout": 30},
+            {
+                "type": "script",
+                "script": script.id,
+                "script_args": ["test"],
+                "timeout": 30,
+            },
             {"type": "script", "script": 3, "script_args": [], "timeout": 30},
         ]
 

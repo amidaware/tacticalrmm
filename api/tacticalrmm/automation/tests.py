@@ -82,7 +82,7 @@ class TestPolicyViews(TacticalTestCase):
             "desc": "policy desc",
             "active": True,
             "enforced": False,
-            "copyId": policy.pk, 
+            "copyId": policy.pk,
         }
 
         resp = self.client.post(f"/automation/policies/", data, format="json")
@@ -91,7 +91,7 @@ class TestPolicyViews(TacticalTestCase):
         copied_policy = Policy.objects.get(name=data["name"])
 
         self.assertEqual(copied_policy.autotasks.count(), 3)
-        self.assertEqual(copied_policy.policychecks.count(), 7) 
+        self.assertEqual(copied_policy.policychecks.count(), 7)
 
         self.check_not_authenticated("post", url)
 
@@ -102,7 +102,7 @@ class TestPolicyViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         policy = baker.make("automation.Policy", active=True, enforced=False)
-        url = f"/automation/policies/{policy.pk}/" 
+        url = f"/automation/policies/{policy.pk}/"
 
         data = {
             "name": "Test Policy Update",
@@ -118,7 +118,7 @@ class TestPolicyViews(TacticalTestCase):
         data = {
             "name": "Test Policy Update",
             "desc": "policy desc Update",
-            "alert_template": alert_template.pk
+            "alert_template": alert_template.pk,
         }
 
         resp = self.client.put(url, data, format="json")
@@ -148,7 +148,9 @@ class TestPolicyViews(TacticalTestCase):
         policy = baker.make("automation.Policy")
         agent = baker.make_recipe("agents.agent", policy=policy)
         policy_diskcheck = baker.make_recipe("checks.diskspace_check", policy=policy)
-        result = baker.make("checks.CheckResult", agent=agent, assigned_check=policy_diskcheck)
+        result = baker.make(
+            "checks.CheckResult", agent=agent, assigned_check=policy_diskcheck
+        )
 
         url = f"/automation/checks/{policy_diskcheck.pk}/status/"
 
@@ -229,16 +231,13 @@ class TestPolicyViews(TacticalTestCase):
 
         policy = baker.make("automation.Policy")
         # create managed policy tasks
-        task = baker.make_recipe(
-            "autotasks.task",
-            policy=policy
-        )
+        task = baker.make_recipe("autotasks.task", policy=policy)
 
         url = f"/automation/tasks/{task.id}/run/"
         resp = self.client.post(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        mock_task.assert_called_with(task=task.id)  
+        mock_task.assert_called_with(task=task.id)
 
         self.check_not_authenticated("post", url)
 
@@ -431,7 +430,7 @@ class TestPolicyTasks(TacticalTestCase):
         policy.agents.add(server_agents[2])  # type: ignore
         policy.agents.add(workstation_agents[2])  # type: ignore
         resp = self.client.get(
-            f"/automation/policies/{policy.pk}/related/", format="json" 
+            f"/automation/policies/{policy.pk}/related/", format="json"
         )
         self.assertEquals(len(resp.data["agents"]), 2)  # type: ignore
 
@@ -450,7 +449,7 @@ class TestPolicyTasks(TacticalTestCase):
         policy = baker.make("automation.Policy", active=True, enforced=True)
         script = baker.make_recipe("scripts.script")
         self.create_checks(policy=policy, script=script)
-        
+
         site = baker.make("clients.Site")
         agent = baker.make_recipe("agents.agent", site=site, policy=policy)
         self.create_checks(agent=agent, script=script)
@@ -490,27 +489,35 @@ class TestPolicyTasks(TacticalTestCase):
 
     def test_update_policy_tasks(self):
         from autotasks.models import TaskResult
+
         # setup data
         policy = baker.make("automation.Policy", active=True)
-        task = baker.make_recipe(
-            "autotasks.task",
-            enabled=True,
-            policy=policy
-        )
+        task = baker.make_recipe("autotasks.task", enabled=True, policy=policy)
 
         agent = baker.make_recipe("agents.server_agent", policy=policy)
-        task_result = baker.make("autotasks.TaskResult", task=task, agent=agent, sync_status="synced")
+        task_result = baker.make(
+            "autotasks.TaskResult", task=task, agent=agent, sync_status="synced"
+        )
 
         # this change shouldn't trigger the task_result field to sync_status = "notsynced"
-        task.actions = {"type": "cmd", "command": "whoami", "timeout": 90, "shell": "cmd"}
-        task.save() 
+        task.actions = {
+            "type": "cmd",
+            "command": "whoami",
+            "timeout": 90,
+            "shell": "cmd",
+        }
+        task.save()
 
-        self.assertEqual(TaskResult.objects.get(pk=task_result.id).sync_status, "synced")
+        self.assertEqual(
+            TaskResult.objects.get(pk=task_result.id).sync_status, "synced"
+        )
 
         # task result should now be "notsynced"
         task.enabled = False
         task.save()
-        self.assertEqual(TaskResult.objects.get(pk=task_result.id).sync_status, "notsynced")
+        self.assertEqual(
+            TaskResult.objects.get(pk=task_result.id).sync_status, "notsynced"
+        )
 
     def test_policy_exclusions(self):
 
@@ -527,8 +534,8 @@ class TestPolicyTasks(TacticalTestCase):
 
         # make sure related agents on policy returns correctly
         self.assertEqual(policy.related_agents().count(), 1)
-        self.assertEqual(len(checks), 1) 
-        self.assertEqual(len(tasks), 1) 
+        self.assertEqual(len(checks), 1)
+        self.assertEqual(len(tasks), 1)
 
         # add agent to policy exclusions
         policy.excluded_agents.set([agent])
@@ -536,20 +543,20 @@ class TestPolicyTasks(TacticalTestCase):
         checks = agent.get_checks_with_policies()
         tasks = agent.get_tasks_with_policies()
 
-        self.assertEqual(policy.related_agents().count(), 0)  
-        self.assertEqual(len(checks), 0) 
-        self.assertEqual(len(tasks), 0)  
+        self.assertEqual(policy.related_agents().count(), 0)
+        self.assertEqual(len(checks), 0)
+        self.assertEqual(len(tasks), 0)
 
         # delete agent tasks
-        policy.excluded_agents.clear() 
+        policy.excluded_agents.clear()
 
         checks = agent.get_checks_with_policies()
         tasks = agent.get_tasks_with_policies()
 
         # make sure related agents on policy returns correctly
         self.assertEqual(policy.related_agents().count(), 1)
-        self.assertEqual(len(checks), 1) 
-        self.assertEqual(len(tasks), 1)  
+        self.assertEqual(len(checks), 1)
+        self.assertEqual(len(tasks), 1)
 
         # add policy exclusions to site
         policy.excluded_sites.set([agent.site])
@@ -557,30 +564,30 @@ class TestPolicyTasks(TacticalTestCase):
         checks = agent.get_checks_with_policies()
         tasks = agent.get_tasks_with_policies()
 
-        self.assertEqual(policy.related_agents().count(), 0) 
-        self.assertEqual(len(checks), 0) 
-        self.assertEqual(len(tasks), 0) 
+        self.assertEqual(policy.related_agents().count(), 0)
+        self.assertEqual(len(checks), 0)
+        self.assertEqual(len(tasks), 0)
 
         # delete agent tasks and reset
-        policy.excluded_sites.clear() 
+        policy.excluded_sites.clear()
 
         checks = agent.get_checks_with_policies()
         tasks = agent.get_tasks_with_policies()
 
         # make sure related agents on policy returns correctly
-        self.assertEqual(policy.related_agents().count(), 1) 
-        self.assertEqual(len(checks), 1) 
-        self.assertEqual(len(tasks), 1) 
+        self.assertEqual(policy.related_agents().count(), 1)
+        self.assertEqual(len(checks), 1)
+        self.assertEqual(len(tasks), 1)
 
         # add policy exclusions to client
-        policy.excluded_clients.set([agent.client])  
+        policy.excluded_clients.set([agent.client])
 
         checks = agent.get_checks_with_policies()
         tasks = agent.get_tasks_with_policies()
 
         self.assertEqual(policy.related_agents().count(), 0)
-        self.assertEqual(len(checks), 0) 
-        self.assertEqual(len(tasks), 0) 
+        self.assertEqual(len(checks), 0)
+        self.assertEqual(len(tasks), 0)
 
         # delete agent tasks and reset
         policy.excluded_clients.clear()
@@ -589,16 +596,16 @@ class TestPolicyTasks(TacticalTestCase):
 
         # test on default policy
         core = CoreSettings.objects.first()
-        core.server_policy = policy # type: ignore
-        core.save() # type: ignore
+        core.server_policy = policy  # type: ignore
+        core.save()  # type: ignore
 
         checks = agent.get_checks_with_policies()
         tasks = agent.get_tasks_with_policies()
 
         # make sure related agents on policy returns correctly
-        self.assertEqual(policy.related_agents().count(), 1) 
-        self.assertEqual(len(checks), 1) 
-        self.assertEqual(len(tasks), 1) 
+        self.assertEqual(policy.related_agents().count(), 1)
+        self.assertEqual(len(checks), 1)
+        self.assertEqual(len(tasks), 1)
 
         # add policy exclusions to client
         policy.excluded_clients.set([agent.client])
@@ -606,9 +613,9 @@ class TestPolicyTasks(TacticalTestCase):
         checks = agent.get_checks_with_policies()
         tasks = agent.get_tasks_with_policies()
 
-        self.assertEqual(policy.related_agents().count(), 0) 
-        self.assertEqual(len(checks), 0) 
-        self.assertEqual(len(tasks), 0) 
+        self.assertEqual(policy.related_agents().count(), 0)
+        self.assertEqual(len(checks), 0)
+        self.assertEqual(len(tasks), 0)
 
     def test_policy_inheritance_blocking(self):
         # setup data
@@ -618,8 +625,8 @@ class TestPolicyTasks(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", monitoring_type="server")
 
         core = CoreSettings.objects.first()
-        core.server_policy = policy # type: ignore
-        core.save() # type: ignore
+        core.server_policy = policy  # type: ignore
+        core.save()  # type: ignore
 
         checks = agent.get_checks_with_policies()
         tasks = agent.get_tasks_with_policies()

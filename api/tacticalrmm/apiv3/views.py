@@ -197,11 +197,16 @@ class CheckRunner(APIView):
             check
             for check in checks
             # always run if check hasn't run yet
-            if not hasattr(check.check_result, "last_run") or not check.check_result.last_run # type: ignore
+            if not hasattr(check.check_result, "last_run") or not check.check_result.last_run  # type: ignore
             # see if the correct amount of seconds have passed
             or (
-                check.check_result.last_run # type: ignore
-                < djangotime.now() - djangotime.timedelta(seconds=check.run_interval if check.run_interval else agent.check_interval)
+                check.check_result.last_run  # type: ignore
+                < djangotime.now()
+                - djangotime.timedelta(
+                    seconds=check.run_interval
+                    if check.run_interval
+                    else agent.check_interval
+                )
             )
         ]
 
@@ -221,8 +226,8 @@ class CheckRunner(APIView):
             check_result = CheckResult.objects.get(assigned_check=check, agent=agent)
         except CheckResult.DoesNotExist:
             check_result = CheckResult(assigned_check=check, agent=agent)
-        
-        check_result.last_run=djangotime.now()
+
+        check_result.last_run = djangotime.now()
         check_result.save()
 
         status = check_result.handle_check(request.data)
@@ -263,7 +268,9 @@ class TaskRunner(APIView):
         # check check result or create if doesn't exist
         try:
             task_result = TaskResult.objects.get(task=task, agent=agent)
-            serializer = TaskResultSerializer(data=request.data, instance=task_result, partial=True)
+            serializer = TaskResultSerializer(
+                data=request.data, instance=task_result, partial=True
+            )
         except TaskResult.DoesNotExist:
             serializer = TaskResultSerializer(data=request.data, partial=True)
 

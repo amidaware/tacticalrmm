@@ -34,7 +34,11 @@ class AlertTemplateSerializer(ModelSerializer):
         fields = "__all__"
 
     def get_applied_count(self, instance):
-        return instance.policies.count() + instance.clients.count() + instance.sites.count()
+        return (
+            instance.policies.count()
+            + instance.clients.count()
+            + instance.sites.count()
+        )
 
 
 class AlertTemplateRelationSerializer(ModelSerializer):

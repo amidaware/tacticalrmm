@@ -120,7 +120,9 @@ class ResetCheck(APIView):
         result.save()
 
         # resolve any alerts that are open
-        alert = Alert.create_or_return_check_alert(result.assigned_check, agent=result.agent, skip_create=True)
+        alert = Alert.create_or_return_check_alert(
+            result.assigned_check, agent=result.agent, skip_create=True
+        )
         if alert:
             alert.resolve()
 
@@ -148,11 +150,7 @@ class GetCheckHistory(APIView):
 
         check_history = CheckHistory.objects.filter(check_id=result.assigned_check.id, agent_id=result.agent.agent_id).filter(timeFilter).order_by("-x")  # type: ignore
 
-        return Response(
-            CheckHistorySerializer(
-                check_history, many=True
-            ).data
-        )
+        return Response(CheckHistorySerializer(check_history, many=True).data)
 
 
 @api_view(["POST"])

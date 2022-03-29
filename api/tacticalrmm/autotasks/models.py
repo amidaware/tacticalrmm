@@ -149,9 +149,13 @@ class AutomatedTask(BaseAuditModel):
             for field in self.fields_that_trigger_task_update_on_agent:
                 if getattr(self, field) != getattr(old_task, field):
                     if self.policy:
-                        TaskResult.objects.exclude(sync_status="inital").filter(task__policy_id=self.policy.id).update(sync_status="notsynced")
+                        TaskResult.objects.exclude(sync_status="inital").filter(
+                            task__policy_id=self.policy.id
+                        ).update(sync_status="notsynced")
                     else:
-                        TaskResult.objects.filter(agent=self.agent, task=self).update(sync_status="notsynced")
+                        TaskResult.objects.filter(agent=self.agent, task=self).update(
+                            sync_status="notsynced"
+                        )
 
     @property
     def schedule(self):
@@ -220,8 +224,9 @@ class AutomatedTask(BaseAuditModel):
 
         return TaskAuditSerializer(task).data
 
-    
-    def create_policy_task(self, policy: 'Policy', assigned_check: 'Optional[Check]' = None) -> None:
+    def create_policy_task(
+        self, policy: "Policy", assigned_check: "Optional[Check]" = None
+    ) -> None:
         ### Copies certain properties on this task (self) to a new task and sets it to the supplied Policy
         fields_to_copy = [
             "alert_severity",
@@ -337,7 +342,7 @@ class AutomatedTask(BaseAuditModel):
 
         return task
 
-    def create_task_on_agent(self, agent: 'Optional[Agent]' = None) -> str:
+    def create_task_on_agent(self, agent: "Optional[Agent]" = None) -> str:
         if self.policy and not agent:
             return "agent parameter needs to be passed with policy task"
         else:
@@ -376,7 +381,7 @@ class AutomatedTask(BaseAuditModel):
 
         return "ok"
 
-    def modify_task_on_agent(self, agent: 'Optional[Agent]' = None) -> str:
+    def modify_task_on_agent(self, agent: "Optional[Agent]" = None) -> str:
         if self.policy and not agent:
             return "agent parameter needs to be passed with policy task"
         else:
@@ -392,7 +397,7 @@ class AutomatedTask(BaseAuditModel):
             "func": "schedtask",
             "schedtaskpayload": self.generate_nats_task_payload(editing=True),
         }
- 
+
         r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=5))
 
         if r != "ok":
@@ -415,7 +420,7 @@ class AutomatedTask(BaseAuditModel):
 
         return "ok"
 
-    def delete_task_on_agent(self, agent: 'Optional[Agent]' = None) -> str:
+    def delete_task_on_agent(self, agent: "Optional[Agent]" = None) -> str:
         if self.policy and not agent:
             return "agent parameter needs to be passed with policy task"
         else:
@@ -457,7 +462,7 @@ class AutomatedTask(BaseAuditModel):
 
         return "ok"
 
-    def run_win_task(self, agent: 'Optional[Agent]' = None) -> str:
+    def run_win_task(self, agent: "Optional[Agent]" = None) -> str:
         if self.policy and not agent:
             return "agent parameter needs to be passed with policy task"
         else:
@@ -469,7 +474,11 @@ class AutomatedTask(BaseAuditModel):
             task_result = TaskResult(agent=agent, task=self)
             task_result.save()
 
-        asyncio.run(task_result.agent.nats_cmd({"func": "runtask", "taskpk": self.pk}, wait=False))
+        asyncio.run(
+            task_result.agent.nats_cmd(
+                {"func": "runtask", "taskpk": self.pk}, wait=False
+            )
+        )
         return "ok"
 
     def should_create_alert(self, alert_template=None):
@@ -490,7 +499,7 @@ class AutomatedTask(BaseAuditModel):
 
 class TaskResult(models.Model):
     class Meta:
-        unique_together = (('agent', 'task'),)
+        unique_together = (("agent", "task"),)
 
     objects = PermissionQuerySet.as_manager()
 
@@ -506,7 +515,7 @@ class TaskResult(models.Model):
         related_name="taskresults",
         null=True,
         blank=True,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
 
     retvalue = models.TextField(null=True, blank=True)
@@ -523,11 +532,18 @@ class TaskResult(models.Model):
     )
 
     def __str__(self):
-        return f"{self.agent.hostname} - {self.task}" 
+        return f"{self.agent.hostname} - {self.task}"
 
-    def get_or_create_alert_if_needed(self, alert_template: "Optional[AlertTemplate]") -> "Optional[Alert]":
+    def get_or_create_alert_if_needed(
+        self, alert_template: "Optional[AlertTemplate]"
+    ) -> "Optional[Alert]":
         from alerts.models import Alert
-        return Alert.create_or_return_task_alert(self.task, agent=self.agent, skip_create=self.task.should_create_alert(alert_template))
+
+        return Alert.create_or_return_task_alert(
+            self.task,
+            agent=self.agent,
+            skip_create=self.task.should_create_alert(alert_template),
+        )
 
     def save_collector_results(self) -> None:
 

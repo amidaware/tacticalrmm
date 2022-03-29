@@ -53,7 +53,9 @@ class Policy(BaseAuditModel):
 
     def is_agent_excluded(self, agent):
         # will prefetch the many to many relations in a single query versus 3. esults are cached on the object
-        models.prefetch_related_objects([self], "excluded_agents", "excluded_sites", "excluded_clients")
+        models.prefetch_related_objects(
+            [self], "excluded_agents", "excluded_sites", "excluded_clients"
+        )
 
         return (
             agent in self.excluded_agents.all()
@@ -61,8 +63,20 @@ class Policy(BaseAuditModel):
             or agent.client in self.excluded_clients.all()
         )
 
-    def related_agents(self, mon_type: Optional[str] = None) -> 'models.QuerySet[Agent]':
-        models.prefetch_related_objects([self], "excluded_agents", "excluded_sites", "excluded_clients", "workstation_clients", "server_clients", "workstation_sites", "server_sites", "agents")
+    def related_agents(
+        self, mon_type: Optional[str] = None
+    ) -> "models.QuerySet[Agent]":
+        models.prefetch_related_objects(
+            [self],
+            "excluded_agents",
+            "excluded_sites",
+            "excluded_clients",
+            "workstation_clients",
+            "server_clients",
+            "workstation_sites",
+            "server_sites",
+            "agents",
+        )
 
         agent_filter = {}
         filtered_agents_ids = Agent.objects.none()
@@ -70,9 +84,13 @@ class Policy(BaseAuditModel):
         if mon_type:
             agent_filter["monitoring_type"] = mon_type
 
-        excluded_clients_ids = self.excluded_clients.only("pk").values_list("id", flat=True)
+        excluded_clients_ids = self.excluded_clients.only("pk").values_list(
+            "id", flat=True
+        )
         excluded_sites_ids = self.excluded_sites.only("pk").values_list("id", flat=True)
-        excluded_agents_ids = self.excluded_agents.only("pk").values_list("id", flat=True)
+        excluded_agents_ids = self.excluded_agents.only("pk").values_list(
+            "id", flat=True
+        )
 
         if self.is_default_server_policy:
             filtered_agents_ids |= (
@@ -85,7 +103,7 @@ class Policy(BaseAuditModel):
                 .filter(monitoring_type="server")
                 .only("id")
                 .values_list("id", flat=True)
-            )     
+            )
 
         if self.is_default_workstation_policy:
             filtered_agents_ids |= (
@@ -98,17 +116,15 @@ class Policy(BaseAuditModel):
                 .filter(monitoring_type="workstation")
                 .only("id")
                 .values_list("id", flat=True)
-            )     
+            )
 
         # if this is the default policy for servers and workstations and skip the other calculations
         if self.is_default_server_policy and self.is_default_workstation_policy:
             return Agent.objects.filter(models.Q(id__in=filtered_agents_ids))
 
         explicit_agents = (
-            self.agents.filter(**agent_filter) # type: ignore
-            .exclude(
-                id__in=excluded_agents_ids
-            )
+            self.agents.filter(**agent_filter)  # type: ignore
+            .exclude(id__in=excluded_agents_ids)
             .exclude(site_id__in=excluded_sites_ids)
             .exclude(site__client_id__in=excluded_clients_ids)
         )
@@ -120,15 +136,15 @@ class Policy(BaseAuditModel):
             explicit_clients_qs |= self.workstation_clients.exclude(  # type: ignore
                 id__in=excluded_clients_ids
             )
-            explicit_sites_qs |= self.workstation_sites.exclude( # type: ignore
+            explicit_sites_qs |= self.workstation_sites.exclude(  # type: ignore
                 id__in=excluded_sites_ids
             )
-        
+
         if not mon_type or mon_type == "server":
-            explicit_clients_qs |= self.server_clients.exclude( # type: ignore
+            explicit_clients_qs |= self.server_clients.exclude(  # type: ignore
                 id__in=excluded_clients_ids
             )
-            explicit_sites_qs |= self.server_sites.exclude( # type: ignore
+            explicit_sites_qs |= self.server_sites.exclude(  # type: ignore
                 id__in=excluded_sites_ids
             )
 

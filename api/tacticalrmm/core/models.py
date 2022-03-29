@@ -85,7 +85,9 @@ class CoreSettings(BaseAuditModel):
         null=True,
         blank=True,
     )
-    date_format = models.CharField(max_length=30, blank=True, default="MMM-DD-YYYY - HH:mm")
+    date_format = models.CharField(
+        max_length=30, blank=True, default="MMM-DD-YYYY - HH:mm"
+    )
 
     def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template

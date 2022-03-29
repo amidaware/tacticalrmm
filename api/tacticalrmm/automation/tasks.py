@@ -1,8 +1,10 @@
 from tacticalrmm.celery import app
 
+
 @app.task
 def run_win_policy_autotasks_task(task: int) -> str:
     from autotasks.models import AutomatedTask
+
     try:
         policy_task = AutomatedTask.objects.get(pk=task)
     except AutomatedTask.DoesNotExist:

@@ -155,9 +155,9 @@ class Agent(BaseAuditModel):
 
         for check in self.get_checks_with_policies(exclude_overridden=True):
             total += 1
-            if not hasattr(check.check_result, "status") or check.check_result.status == "passing": # type: ignore
+            if not hasattr(check.check_result, "status") or check.check_result.status == "passing":  # type: ignore
                 passing += 1
-            elif check.check_result.status == "failing": # type: ignore
+            elif check.check_result.status == "failing":  # type: ignore
                 if check.alert_severity == "error":
                     failing += 1
                 elif check.alert_severity == "warning":
@@ -321,22 +321,32 @@ class Agent(BaseAuditModel):
     def is_supported_script(self, platforms: list) -> bool:
         return self.plat.lower() in platforms if platforms else True
 
-    def get_checks_with_policies(self, exclude_overridden: bool = False) -> 'List[Check]':
+    def get_checks_with_policies(
+        self, exclude_overridden: bool = False
+    ) -> "List[Check]":
         if exclude_overridden:
-            checks = list(self.agentchecks.filter(overridden_by_policy=False)) + self.get_checks_from_policies() # type: ignore
+            checks = list(self.agentchecks.filter(overridden_by_policy=False)) + self.get_checks_from_policies()  # type: ignore
         else:
-            checks = list(self.agentchecks.all()) + self.get_checks_from_policies() # type: ignore
+            checks = list(self.agentchecks.all()) + self.get_checks_from_policies()  # type: ignore
         return self.add_check_results(checks)
 
-    def get_tasks_with_policies(self, exclude_synced: bool = False) -> 'List[AutomatedTask]':
-        tasks = list(self.autotasks.all()) + self.get_tasks_from_policies() # type: ignore
+    def get_tasks_with_policies(
+        self, exclude_synced: bool = False
+    ) -> "List[AutomatedTask]":
+        tasks = list(self.autotasks.all()) + self.get_tasks_from_policies()  # type: ignore
 
         if exclude_synced:
-            return [task for task in self.add_task_results(tasks) if not task.task_result or task.task_result and task.task_result.sync_status != "synced"]
+            return [
+                task
+                for task in self.add_task_results(tasks)
+                if not task.task_result
+                or task.task_result
+                and task.task_result.sync_status != "synced"
+            ]
         else:
             return self.add_task_results(tasks)
 
-    def get_agent_policies(self) -> 'Dict[str, Policy]':
+    def get_agent_policies(self) -> "Dict[str, Policy]":
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
         client_policy = getattr(self.client, f"{self.monitoring_type}_policy", None)
         default_policy = getattr(
@@ -488,9 +498,9 @@ class Agent(BaseAuditModel):
                 policy
                 and policy.active
                 and policy.pk not in processed_policies
-                and policy.winupdatepolicy.exists() # type: ignore
+                and policy.winupdatepolicy.exists()  # type: ignore
             ):
-                patch_policy = policy.winupdatepolicy.first() # type: ignore
+                patch_policy = policy.winupdatepolicy.first()  # type: ignore
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:
@@ -546,13 +556,13 @@ class Agent(BaseAuditModel):
             # default alert_template will override a default policy with alert template applied
             if (
                 "default" in key
-                and core.alert_template # type: ignore
-                and core.alert_template.is_active # type: ignore
-                and not core.alert_template.is_agent_excluded(self) # type: ignore
+                and core.alert_template  # type: ignore
+                and core.alert_template.is_active  # type: ignore
+                and not core.alert_template.is_agent_excluded(self)  # type: ignore
             ):
-                self.alert_template = core.alert_template # type: ignore
+                self.alert_template = core.alert_template  # type: ignore
                 self.save(update_fields=["alert_template"])
-                return core.alert_template # type: ignore
+                return core.alert_template  # type: ignore
             elif (
                 policy
                 and policy.active
@@ -589,38 +599,43 @@ class Agent(BaseAuditModel):
 
         return None
 
-    def get_or_create_alert_if_needed(self, alert_template: "Optional[AlertTemplate]") -> "Optional[Alert]":
+    def get_or_create_alert_if_needed(
+        self, alert_template: "Optional[AlertTemplate]"
+    ) -> "Optional[Alert]":
         from alerts.models import Alert
-        return Alert.create_or_return_availability_alert(self, skip_create=self.should_create_alert(alert_template))
 
-    def add_task_results(self, tasks: 'List[AutomatedTask]') -> 'List[AutomatedTask]':
+        return Alert.create_or_return_availability_alert(
+            self, skip_create=self.should_create_alert(alert_template)
+        )
 
-        results = self.taskresults.all() # type: ignore
+    def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":
+
+        results = self.taskresults.all()  # type: ignore
 
         for task in tasks:
             for result in results:
-                if result.task.id == task.id: # type: ignore
-                    task.task_result = result # type: ignore
+                if result.task.id == task.id:  # type: ignore
+                    task.task_result = result  # type: ignore
                     break
-            
+
             if not hasattr(task, "task_result"):
-                task.task_result = None # type: ignore
-        
+                task.task_result = None  # type: ignore
+
         return tasks
 
-    def add_check_results(self, checks: 'List[Check]') -> 'List[Check]':
+    def add_check_results(self, checks: "List[Check]") -> "List[Check]":
 
-        results = self.checkresults.all() # type: ignore
+        results = self.checkresults.all()  # type: ignore
 
         for check in checks:
             for result in results:
-                if result.assigned_check.id == check.id: # type: ignore
-                    check.check_result = result # type: ignore
+                if result.assigned_check.id == check.id:  # type: ignore
+                    check.check_result = result  # type: ignore
                     break
-            
-            if not hasattr(check, "check_result"): # type: ignore
-                check.check_result = None # type: ignore
-        
+
+            if not hasattr(check, "check_result"):  # type: ignore
+                check.check_result = None  # type: ignore
+
         return checks
 
     def get_checks_from_policies(self):

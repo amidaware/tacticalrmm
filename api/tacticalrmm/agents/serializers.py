@@ -179,6 +179,7 @@ class AgentHistorySerializer(serializers.ModelSerializer):
         model = AgentHistory
         fields = "__all__"
 
+
 class AgentAuditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent

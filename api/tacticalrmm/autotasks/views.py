@@ -114,7 +114,7 @@ class RunAutoTask(APIView):
                 raise PermissionDenied()
 
             run_win_task.delay(pk=pk, agent_id=request.data["agent_id"])
-        
+
         # run normal task on agent
         else:
             run_win_task.delay(pk=pk)

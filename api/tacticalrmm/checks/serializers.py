@@ -14,7 +14,6 @@ class AssignedTaskField(serializers.ModelSerializer):
 
 
 class CheckResultSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = CheckResult
         fields = "__all__"
@@ -28,7 +27,11 @@ class CheckSerializer(serializers.ModelSerializer):
     check_result = serializers.SerializerMethodField()
 
     def get_check_result(self, obj):
-        return CheckResultSerializer(obj.check_result).data if hasattr(obj, "check_result") else {}
+        return (
+            CheckResultSerializer(obj.check_result).data
+            if hasattr(obj, "check_result")
+            else {}
+        )
 
     def get_alert_template(self, obj):
         if obj.agent:
@@ -45,7 +48,6 @@ class CheckSerializer(serializers.ModelSerializer):
                 "always_text": alert_template.check_always_text,
                 "always_alert": alert_template.check_always_alert,
             }
-
 
     class Meta:
         model = Check
@@ -67,10 +69,7 @@ class CheckSerializer(serializers.ModelSerializer):
         # make sure no duplicate diskchecks exist for an agent/policy
         if check_type == "diskspace":
             if not self.instance:  # only on create
-                checks = (
-                    Check.objects.filter(**filter)
-                    .filter(check_type="diskspace")
-                )
+                checks = Check.objects.filter(**filter).filter(check_type="diskspace")
                 for check in checks:
                     if val["disk"] in check.disk:
                         raise serializers.ValidationError(
@@ -103,10 +102,7 @@ class CheckSerializer(serializers.ModelSerializer):
                 )
 
         if check_type == "cpuload" and not self.instance:
-            if (
-                Check.objects.filter(**filter, check_type="cpuload")
-                .exists()
-            ):
+            if Check.objects.filter(**filter, check_type="cpuload").exists():
                 raise serializers.ValidationError(
                     "A cpuload check for this agent already exists"
                 )
@@ -126,10 +122,7 @@ class CheckSerializer(serializers.ModelSerializer):
                 )
 
         if check_type == "memory" and not self.instance:
-            if (
-                Check.objects.filter(**filter, check_type="memory")
-                .exists()
-            ):
+            if Check.objects.filter(**filter, check_type="memory").exists():
                 raise serializers.ValidationError(
                     "A memory check for this agent already exists"
                 )

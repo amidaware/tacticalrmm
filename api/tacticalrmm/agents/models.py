@@ -2,7 +2,7 @@ import asyncio
 import re
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, Optional, List, TYPE_CHECKING
+from typing import Any, Optional, List, Dict, TYPE_CHECKING
 
 import msgpack
 import nats
@@ -19,9 +19,12 @@ from nats.errors import TimeoutError
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
+    from automation.models import Policy
     from alerts.models import AlertTemplate, Alert
     from autotasks.models import AutomatedTask
     from checks.models import Check
+
+
 class Agent(BaseAuditModel):
     objects = PermissionQuerySet.as_manager()
 
@@ -150,16 +153,16 @@ class Agent(BaseAuditModel):
     def checks(self):
         total, passing, failing, warning, info = 0, 0, 0, 0, 0
 
-        for i in self.checkresults.filter(assigned_check__overriden_by_policy=False):  # type: ignore
+        for check in self.get_checks_with_policies(exclude_overridden=True):
             total += 1
-            if i.status == "passing":
+            if not hasattr(check.check_result, "status") or check.check_result.status == "passing": # type: ignore
                 passing += 1
-            elif i.status == "failing":
-                if i.alert_severity == "error":
+            elif check.check_result.status == "failing": # type: ignore
+                if check.alert_severity == "error":
                     failing += 1
-                elif i.alert_severity == "warning":
+                elif check.alert_severity == "warning":
                     warning += 1
-                elif i.alert_severity == "info":
+                elif check.alert_severity == "info":
                     info += 1
 
         ret = {
@@ -318,15 +321,22 @@ class Agent(BaseAuditModel):
     def is_supported_script(self, platforms: list) -> bool:
         return self.plat.lower() in platforms if platforms else True
 
-    def get_checks_with_policies(self):
-        checks = list(self.agentchecks.all()) + self.get_checks_from_policies() # type: ignore
+    def get_checks_with_policies(self, exclude_overridden: bool = False) -> 'List[Check]':
+        if exclude_overridden:
+            checks = list(self.agentchecks.filter(overridden_by_policy=False)) + self.get_checks_from_policies() # type: ignore
+        else:
+            checks = list(self.agentchecks.all()) + self.get_checks_from_policies() # type: ignore
         return self.add_check_results(checks)
 
-    def get_tasks_with_policies(self):
+    def get_tasks_with_policies(self, exclude_synced: bool = False) -> 'List[AutomatedTask]':
         tasks = list(self.autotasks.all()) + self.get_tasks_from_policies() # type: ignore
-        return self.add_task_results(tasks)
 
-    def get_agent_policies(self):
+        if exclude_synced:
+            return [task for task in self.add_task_results(tasks) if not task.task_result or task.task_result and task.task_result.sync_status != "synced"]
+        else:
+            return self.add_task_results(tasks)
+
+    def get_agent_policies(self) -> 'Dict[str, Policy]':
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
         client_policy = getattr(self.client, f"{self.monitoring_type}_policy", None)
         default_policy = getattr(
@@ -357,14 +367,11 @@ class Agent(BaseAuditModel):
     def check_run_interval(self) -> int:
         interval = self.check_interval
         # determine if any agent checks have a custom interval and set the lowest interval
-        for check in self.agentchecks.filter(overriden_by_policy=False):  # type: ignore
+        for check in self.get_checks_with_policies():  # type: ignore
             if check.run_interval and check.run_interval < interval:
 
                 # don't allow check runs less than 15s
-                if check.run_interval < 15:
-                    interval = 15
-                else:
-                    interval = check.run_interval
+                interval = 15 if check.run_interval < 15 else check.run_interval
 
         return interval
 
@@ -481,9 +488,9 @@ class Agent(BaseAuditModel):
                 policy
                 and policy.active
                 and policy.pk not in processed_policies
-                and policy.winupdatepolicy.exists()
+                and policy.winupdatepolicy.exists() # type: ignore
             ):
-                patch_policy = policy.winupdatepolicy.first()
+                patch_policy = policy.winupdatepolicy.first() # type: ignore
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:
@@ -619,8 +626,8 @@ class Agent(BaseAuditModel):
     def get_checks_from_policies(self):
         from automation.models import Policy
 
-        # clear agent checks that have overriden_by_policy set
-        self.agentchecks.update(overriden_by_policy=False)  # type: ignore
+        # clear agent checks that have overridden_by_policy set
+        self.agentchecks.update(overridden_by_policy=False)  # type: ignore
 
         # get agent checks based on policies
         return Policy.get_policy_checks(self)

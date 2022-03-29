@@ -1,6 +1,6 @@
 from agents.models import Agent
-from autotasks.models import AutomatedTask
-from checks.models import Check
+from autotasks.models import TaskResult
+from checks.models import CheckResult
 from clients.models import Client
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied
@@ -51,9 +51,9 @@ class GetAddPolicies(APIView):
                 check.create_policy_check(policy=policy)
 
             tasks = copyPolicy.autotasks.all()
-
             for task in tasks:
-                task.create_policy_task(policy=policy)
+                if not task.assigned_check:
+                    task.create_policy_task(policy=policy)
 
         return Response("ok")
 
@@ -84,7 +84,7 @@ class PolicyAutoTask(APIView):
 
     # get status of all tasks
     def get(self, request, task):
-        tasks = AutomatedTask.objects.filter(parent_task=task)
+        tasks = TaskResult.objects.filter(task=task)
         return Response(PolicyTaskStatusSerializer(tasks, many=True).data)
 
     # bulk run win tasks associated with policy
@@ -99,7 +99,7 @@ class PolicyCheck(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
 
     def get(self, request, check):
-        checks = Check.objects.filter(parent_check=check)
+        checks = CheckResult.objects.filter(assigned_check=check)
         return Response(PolicyCheckStatusSerializer(checks, many=True).data)
 
 
@@ -170,7 +170,7 @@ class ResetPatchPolicy(APIView):
                 raise PermissionDenied()
 
             agents = (
-                Agent.objects.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user) # type: ignore
                 .prefetch_related("winupdatepolicy")
                 .filter(site__client_id=request.data["client"])
             )
@@ -179,13 +179,13 @@ class ResetPatchPolicy(APIView):
                 raise PermissionDenied()
 
             agents = (
-                Agent.objects.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)# type: ignore
                 .prefetch_related("winupdatepolicy")
                 .filter(site_id=request.data["site"])
             )
         else:
             agents = (
-                Agent.objects.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)# type: ignore
                 .prefetch_related("winupdatepolicy")
                 .only("pk")
             )

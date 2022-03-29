@@ -118,4 +118,4 @@ class RunAutoTask(APIView):
         # run normal task on agent
         else:
             run_win_task.delay(pk=pk)
-        return Response(f"{task.name} will now be run on {task.agent.hostname}")
+        return Response(f"{task.name} will now be run.")

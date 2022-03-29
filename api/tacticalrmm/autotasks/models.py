@@ -9,13 +9,14 @@ from django.db import models
 from django.db.models.fields import DateTimeField
 from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
-from checks.models import CheckResult
 from logs.models import BaseAuditModel, DebugLog
 
 if TYPE_CHECKING:
+    from automation.models import Policy
     from autotasks.models import AutomatedTask
     from alerts.models import Alert, AlertTemplate
     from agents.models import Agent
+    from checks.models import Check
 
 from tacticalrmm.models import PermissionQuerySet
 from tacticalrmm.utils import (
@@ -101,7 +102,7 @@ class AutomatedTask(BaseAuditModel):
     task_type = models.CharField(
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
-    win_task_name = models.CharField(max_length=255, null=True, blank=True)
+    win_task_name = models.CharField(max_length=255, unique=True, null=True, blank=True)
     run_time_date = DateTimeField(null=True, blank=True)
     expire_date = DateTimeField(null=True, blank=True)
 
@@ -148,9 +149,9 @@ class AutomatedTask(BaseAuditModel):
             for field in self.fields_that_trigger_task_update_on_agent:
                 if getattr(self, field) != getattr(old_task, field):
                     if self.policy:
-                        CheckResult.objects.exclude(sync_status="inital").filter(assigned_check__policy_id=self.policy.id).update(sync_status="notsynced")
+                        TaskResult.objects.exclude(sync_status="inital").filter(task__policy_id=self.policy.id).update(sync_status="notsynced")
                     else:
-                        CheckResult.objects.filter(agent=self.agent, task=self).update(sync_status="notsynced")
+                        TaskResult.objects.filter(agent=self.agent, task=self).update(sync_status="notsynced")
 
     @property
     def schedule(self):
@@ -218,6 +219,50 @@ class AutomatedTask(BaseAuditModel):
         from .serializers import TaskAuditSerializer
 
         return TaskAuditSerializer(task).data
+
+    
+    def create_policy_task(self, policy: 'Policy', assigned_check: 'Optional[Check]' = None) -> None:
+        ### Copies certain properties on this task (self) to a new task and sets it to the supplied Policy
+        fields_to_copy = [
+            "alert_severity",
+            "email_alert",
+            "text_alert",
+            "dashboard_alert",
+            "name",
+            "actions",
+            "run_time_bit_weekdays",
+            "run_time_date",
+            "expire_date",
+            "daily_interval",
+            "weekly_interval",
+            "task_type",
+            "enabled",
+            "remove_if_not_scheduled",
+            "run_asap_after_missed",
+            "custom_field",
+            "collector_all_output",
+            "monthly_days_of_month",
+            "monthly_months_of_year",
+            "monthly_weeks_of_month",
+            "task_repetition_duration",
+            "task_repetition_interval",
+            "stop_task_at_duration_end",
+            "random_task_delay",
+            "run_asap_after_missed",
+            "task_instance_policy",
+            "continue_on_error",
+        ]
+
+        task = AutomatedTask.objects.create(
+            policy=policy,
+            win_task_name=AutomatedTask.generate_task_name(),
+            assigned_check=assigned_check,
+        )
+
+        for field in fields_to_copy:
+            setattr(task, field, getattr(self, field))
+
+        task.save()
 
     # agent version >= 1.8.0
     def generate_nats_task_payload(self, editing: bool = False) -> Dict:

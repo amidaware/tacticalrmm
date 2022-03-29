@@ -12,7 +12,7 @@ from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate
-    from agents.models import Agent
+    from automation.models import Policy
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -69,7 +69,7 @@ class Check(BaseAuditModel):
         blank=True,
         on_delete=models.CASCADE,
     )
-    overriden_by_policy = models.BooleanField(default=False)
+    overridden_by_policy = models.BooleanField(default=False)
     name = models.CharField(max_length=255, null=True, blank=True)
     check_type = models.CharField(
         max_length=50, choices=CHECK_TYPE_CHOICES, default="diskspace"
@@ -204,25 +204,63 @@ class Check(BaseAuditModel):
     def non_editable_fields() -> list[str]:
         return [
             "check_type",
-            "more_info",
-            "last_run",
-            "fail_count",
-            "outage_history",
-            "extra_details",
-            "status",
-            "stdout",
-            "stderr",
-            "retcode",
-            "execution_time",
-            "history",
             "readable_desc",
-            "history_info",
-            "overriden_by_policy",
+            "overridden_by_policy",
             "created_by",
             "created_time",
             "modified_by",
             "modified_time",
         ]
+
+    def create_policy_check(self, policy: 'Policy') -> None:
+
+        fields_to_copy = [
+            "warning_threshold",
+            "error_threshold",
+            "alert_severity",
+            "name",
+            "run_interval",
+            "disk",
+            "fails_b4_alert",
+            "ip",
+            "script",
+            "script_args",
+            "info_return_codes",
+            "warning_return_codes",
+            "timeout",
+            "svc_name",
+            "svc_display_name",
+            "svc_policy_mode",
+            "pass_if_start_pending",
+            "pass_if_svc_not_exist",
+            "restart_if_stopped",
+            "log_name",
+            "event_id",
+            "event_id_is_wildcard",
+            "event_type",
+            "event_source",
+            "event_message",
+            "fail_when",
+            "search_last_days",
+            "number_of_events_b4_alert",
+            "email_alert",
+            "text_alert",
+            "dashboard_alert",
+        ]
+
+        check = Check.objects.create(
+            policy=policy,
+        )
+
+        for task in self.assignedtasks.all():  # type: ignore
+            task.create_policy_task(
+                policy=policy, assigned_check=check
+            )
+
+        for field in fields_to_copy:
+            setattr(check, field, getattr(self, field))
+
+        check.save()
 
     def should_create_alert(self, alert_template=None):
 

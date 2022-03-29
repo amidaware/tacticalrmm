@@ -97,7 +97,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -114,7 +114,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -131,7 +131,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox

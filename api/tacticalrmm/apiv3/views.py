@@ -176,7 +176,7 @@ class RunChecks(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        checks = [check for check in agent.get_checks_with_policies() if not check.overriden_by_policy]
+        checks = agent.get_checks_with_policies(exclude_overridden=True)
         ret = {
             "agent": agent.pk,
             "check_interval": agent.check_interval,
@@ -191,29 +191,20 @@ class CheckRunner(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        checks = [check for check in agent.get_checks_with_policies() if not check.overriden_by_policy]  # type: ignore
+        checks = agent.get_checks_with_policies(exclude_overridden=True)  # type: ignore
 
         run_list = [
             check
             for check in checks
             # always run if check hasn't run yet
             if not hasattr(check.check_result, "last_run") or not check.check_result.last_run # type: ignore
-            # if a check interval is set, see if the correct amount of seconds have passed
+            # see if the correct amount of seconds have passed
             or (
-                check.run_interval
-                and (
-                    check.check_result.last_run # type: ignore
-                    < djangotime.now()
-                    - djangotime.timedelta(seconds=check.run_interval)
-                )
-            )
-            # if check interval isn't set, make sure the agent's check interval has passed before running
-            or (
-                not check.run_interval
-                and check.check_result.last_run # type: ignore
-                < djangotime.now() - djangotime.timedelta(seconds=agent.check_interval)
+                check.check_result.last_run # type: ignore
+                < djangotime.now() - djangotime.timedelta(seconds=check.run_interval if check.run_interval else agent.check_interval)
             )
         ]
+
         ret = {
             "agent": agent.pk,
             "check_interval": agent.check_run_interval(),

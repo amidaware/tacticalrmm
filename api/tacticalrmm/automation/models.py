@@ -1,6 +1,9 @@
 from agents.models import Agent
+from clients.models import Client, Site
 from django.db import models
 from logs.models import BaseAuditModel
+
+from typing import Optional
 
 
 class Policy(BaseAuditModel):
@@ -32,7 +35,7 @@ class Policy(BaseAuditModel):
         old_policy = type(self).objects.get(pk=self.pk) if self.pk else None
         super(Policy, self).save(old_model=old_policy, *args, **kwargs)
 
-        # generate agent checks only if active and enforced were changed
+        # check if alert template was changes and cache on agents
         if old_policy:
             if old_policy.alert_template != self.alert_template:
                 cache_agents_alert_template.delay()
@@ -49,61 +52,115 @@ class Policy(BaseAuditModel):
         return self.default_workstation_policy.exists()  # type: ignore
 
     def is_agent_excluded(self, agent):
+        # will prefetch the many to many relations in a single query versus 3. esults are cached on the object
+        models.prefetch_related_objects([self], "excluded_agents", "excluded_sites", "excluded_clients")
+
         return (
             agent in self.excluded_agents.all()
             or agent.site in self.excluded_sites.all()
             or agent.client in self.excluded_clients.all()
         )
 
-    def related_agents(self):
-        return self.get_related("server") | self.get_related("workstation")
+    def related_agents(self, mon_type: Optional[str] = None) -> 'models.QuerySet[Agent]':
+        models.prefetch_related_objects([self], "excluded_agents", "excluded_sites", "excluded_clients", "workstation_clients", "server_clients", "workstation_sites", "server_sites", "agents")
 
-    def get_related(self, mon_type):
+        agent_filter = {}
+        filtered_agents_ids = Agent.objects.none()
+
+        if mon_type:
+            agent_filter["monitoring_type"] = mon_type
+
+        excluded_clients_ids = self.excluded_clients.only("pk").values_list("id", flat=True)
+        excluded_sites_ids = self.excluded_sites.only("pk").values_list("id", flat=True)
+        excluded_agents_ids = self.excluded_agents.only("pk").values_list("id", flat=True)
+
+        if self.is_default_server_policy:
+            filtered_agents_ids |= (
+                Agent.objects.exclude(block_policy_inheritance=True)
+                .exclude(site__block_policy_inheritance=True)
+                .exclude(site__client__block_policy_inheritance=True)
+                .exclude(id__in=excluded_agents_ids)
+                .exclude(site_id__in=excluded_sites_ids)
+                .exclude(site__client_id__in=excluded_clients_ids)
+                .filter(monitoring_type="server")
+                .only("id")
+                .values_list("id", flat=True)
+            )     
+
+        if self.is_default_workstation_policy:
+            filtered_agents_ids |= (
+                Agent.objects.exclude(block_policy_inheritance=True)
+                .exclude(site__block_policy_inheritance=True)
+                .exclude(site__client__block_policy_inheritance=True)
+                .exclude(id__in=excluded_agents_ids)
+                .exclude(site_id__in=excluded_sites_ids)
+                .exclude(site__client_id__in=excluded_clients_ids)
+                .filter(monitoring_type="workstation")
+                .only("id")
+                .values_list("id", flat=True)
+            )     
+
+        # if this is the default policy for servers and workstations and skip the other calculations
+        if self.is_default_server_policy and self.is_default_workstation_policy:
+            return Agent.objects.filter(models.Q(id__in=filtered_agents_ids))
+
         explicit_agents = (
-            self.agents.filter(monitoring_type=mon_type)  # type: ignore
+            self.agents.filter(**agent_filter) # type: ignore
             .exclude(
-                pk__in=self.excluded_agents.only("pk").values_list("pk", flat=True)
+                id__in=excluded_agents_ids
             )
-            .exclude(site__in=self.excluded_sites.all())
-            .exclude(site__client__in=self.excluded_clients.all())
+            .exclude(site_id__in=excluded_sites_ids)
+            .exclude(site__client_id__in=excluded_clients_ids)
         )
 
-        explicit_clients = getattr(self, f"{mon_type}_clients").exclude(
-            pk__in=self.excluded_clients.all()
-        )
-        explicit_sites = getattr(self, f"{mon_type}_sites").exclude(
-            pk__in=self.excluded_sites.all()
-        )
+        explicit_clients_qs = Client.objects.none()
+        explicit_sites_qs = Site.objects.none()
 
-        filtered_agents_pks = Policy.objects.none()
+        if not mon_type or mon_type == "workstation":
+            explicit_clients_qs |= self.workstation_clients.exclude(  # type: ignore
+                id__in=excluded_clients_ids
+            )
+            explicit_sites_qs |= self.workstation_sites.exclude( # type: ignore
+                id__in=excluded_sites_ids
+            )
+        
+        if not mon_type or mon_type == "server":
+            explicit_clients_qs |= self.server_clients.exclude( # type: ignore
+                id__in=excluded_clients_ids
+            )
+            explicit_sites_qs |= self.server_sites.exclude( # type: ignore
+                id__in=excluded_sites_ids
+            )
 
-        filtered_agents_pks |= (
+        filtered_agents_ids |= (
             Agent.objects.exclude(block_policy_inheritance=True)
             .filter(
-                site__in=[
-                    site
-                    for site in explicit_sites
-                    if site.client not in explicit_clients
-                    and site.client not in self.excluded_clients.all()
+                site_id__in=[
+                    site.id
+                    for site in explicit_sites_qs
+                    if site.client not in explicit_clients_qs
+                    and site.client.id not in excluded_clients_ids
                 ],
-                monitoring_type=mon_type,
+                **agent_filter,
             )
-            .values_list("pk", flat=True)
+            .only("id")
+            .values_list("id", flat=True)
         )
 
-        filtered_agents_pks |= (
+        filtered_agents_ids |= (
             Agent.objects.exclude(block_policy_inheritance=True)
             .exclude(site__block_policy_inheritance=True)
             .filter(
-                site__client__in=[client for client in explicit_clients],
-                monitoring_type=mon_type,
+                site__client__in=explicit_clients_qs,
+                **agent_filter,
             )
-            .values_list("pk", flat=True)
+            .only("id")
+            .values_list("id", flat=True)
         )
 
         return Agent.objects.filter(
-            models.Q(pk__in=filtered_agents_pks)
-            | models.Q(pk__in=explicit_agents.only("pk"))
+            models.Q(id__in=filtered_agents_ids)
+            | models.Q(id__in=explicit_agents.only("id"))
         )
 
     @staticmethod
@@ -181,25 +238,25 @@ class Policy(BaseAuditModel):
                 # Check if drive letter was already added
                 if check.disk not in added_diskspace_checks:
                     added_diskspace_checks.append(check.disk)
-                    # Dont create the check if it is an agent check
+                    # Dont add if check if it is an agent check
                     if not check.agent:
                         diskspace_checks.append(check)
                 elif check.agent:
-                    check.overriden_by_policy = True
+                    check.overridden_by_policy = True
                     check.save()
 
-            if check.check_type == "ping":
+            elif check.check_type == "ping":
                 # Check if IP/host was already added
                 if check.ip not in added_ping_checks:
                     added_ping_checks.append(check.ip)
-                    # Dont create the check if it is an agent check
+                    # Dont add if the check if it is an agent check
                     if not check.agent:
                         ping_checks.append(check)
                 elif check.agent:
-                    check.overriden_by_policy = True
+                    check.overridden_by_policy = True
                     check.save()
 
-            if check.check_type == "cpuload" and agent.plat == "windows":
+            elif check.check_type == "cpuload" and agent.plat == "windows":
                 # Check if cpuload list is empty
                 if not added_cpuload_checks:
                     added_cpuload_checks.append(check)
@@ -207,10 +264,10 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         cpuload_checks.append(check)
                 elif check.agent:
-                    check.overriden_by_policy = True
+                    check.overridden_by_policy = True
                     check.save()
 
-            if check.check_type == "memory" and agent.plat == "windows":
+            elif check.check_type == "memory" and agent.plat == "windows":
                 # Check if memory check list is empty
                 if not added_memory_checks:
                     added_memory_checks.append(check)
@@ -218,10 +275,10 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         memory_checks.append(check)
                 elif check.agent:
-                    check.overriden_by_policy = True
+                    check.overridden_by_policy = True
                     check.save()
 
-            if check.check_type == "winsvc" and agent.plat == "windows":
+            elif check.check_type == "winsvc" and agent.plat == "windows":
                 # Check if service name was already added
                 if check.svc_name not in added_winsvc_checks:
                     added_winsvc_checks.append(check.svc_name)
@@ -229,10 +286,10 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         winsvc_checks.append(check)
                 elif check.agent:
-                    check.overriden_by_policy = True
+                    check.overridden_by_policy = True
                     check.save()
 
-            if check.check_type == "script" and agent.is_supported_script(
+            elif check.check_type == "script" and agent.is_supported_script(
                 check.script.supported_platforms
             ):
                 # Check if script id was already added
@@ -242,17 +299,17 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         script_checks.append(check)
                 elif check.agent:
-                    check.overriden_by_policy = True
+                    check.overridden_by_policy = True
                     check.save()
 
-            if check.check_type == "eventlog" and agent.plat == "windows":
+            elif check.check_type == "eventlog" and agent.plat == "windows":
                 # Check if events were already added
                 if [check.log_name, check.event_id] not in added_eventlog_checks:
                     added_eventlog_checks.append([check.log_name, check.event_id])
                     if not check.agent:
                         eventlog_checks.append(check)
                 elif check.agent:
-                    check.overriden_by_policy = True
+                    check.overridden_by_policy = True
                     check.save()
 
         return (

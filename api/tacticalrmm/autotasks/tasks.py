@@ -12,7 +12,7 @@ from logs.models import DebugLog
 from tacticalrmm.celery import app
 
 @app.task
-def create_win_task_schedule(pk: int, agent_id: Optional[str]) -> str:
+def create_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
     task = AutomatedTask.objects.get(pk=pk)
 
     if agent_id:
@@ -24,7 +24,7 @@ def create_win_task_schedule(pk: int, agent_id: Optional[str]) -> str:
 
 
 @app.task
-def modify_win_task(pk: int, agent_id: Optional[str]) -> str:
+def modify_win_task(pk: int, agent_id: Optional[str] = None) -> str:
     task = AutomatedTask.objects.get(pk=pk)
 
     if agent_id:

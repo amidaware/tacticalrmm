@@ -66,11 +66,12 @@ def _get_failing_data(agents):
                 data["error"] = True
                 break
 
-        if agent.autotasks.exists():  # type: ignore
-            for i in agent.autotasks.all():  # type: ignore
-                if i.status == "failing" and i.alert_severity == "error":
-                    data["error"] = True
-                    break
+        for task in agent.get_tasks_with_policies():
+            if not task.task_result:
+                continue
+            elif task.task_result.status == "failing" and task.task_result.alert_severity == "error":
+                data["error"] = True
+                break
 
     return data
 
@@ -107,19 +108,17 @@ def cache_db_fields_task():
                 ).update(status="completed")
 
             # sync scheduled tasks
-            if agent.autotasks.exclude(sync_status="synced").exists():  # type: ignore
-                tasks = agent.autotasks.exclude(sync_status="synced")  # type: ignore
+            for task in agent.get_tasks_with_policies(exclude_synced=True):
+                try:
+                    if not task.task_result or task.task_result.sync_status == "initial":
+                        task.create_task_on_agent(agent=agent if task.policy else None)
+                    if task.task_result.sync_status == "pendingdeletion":
+                        task.delete_task_on_agent(agent=agent if task.policy else None)
+                    elif task.task_result.sync_status == "notsynced":
+                        task.modify_task_on_agent(agent=agent if task.policy else None)
 
-                for task in tasks:
-                    try:
-                        if task.sync_status == "pendingdeletion":
-                            task.delete_task_on_agent()
-                        elif task.sync_status == "initial":
-                            task.modify_task_on_agent()
-                        elif task.sync_status == "notsynced":
-                            task.create_task_on_agent()
-                    except:
-                        continue
+                except:
+                    continue
 
             # handles any alerting actions
             if Alert.objects.filter(agent=agent, resolved=False).exists():

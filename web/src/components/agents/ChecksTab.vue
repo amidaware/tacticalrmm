@@ -145,7 +145,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -164,7 +164,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -183,7 +183,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -200,7 +200,7 @@
               <q-tooltip>This check is managed by a policy</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td v-else-if="props.row.overriden_by_policy">
+          <q-td v-else-if="props.row.overridden_by_policy">
             <q-icon style="font-size: 1.3rem" name="remove_circle_outline">
               <q-tooltip>This check is overriden by a policy</q-tooltip>
             </q-icon>
@@ -240,6 +240,7 @@
           <!-- more info -->
           <q-td>
             <span
+              v-if="props.row.check_result.id"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showCheckGraphModal(props.row)"
@@ -247,29 +248,32 @@
             >
             &nbsp;&nbsp;&nbsp;
             <span
-              v-if="props.row.check_type === 'ping'"
+              v-if="props.row.check_type === 'ping' && props.row.check_result.id"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showPingInfo(props.row)"
               >Last Output</span
             >
             <span
-              v-else-if="props.row.check_type === 'script'"
+              v-else-if="props.row.check_type === 'script' && props.row.check_result.id"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showScriptOutput(props.row.check_result)"
               >Last Output</span
             >
             <span
-              v-else-if="props.row.check_type === 'eventlog'"
+              v-else-if="props.row.check_type === 'eventlog' && props.row.check_result.id"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showEventInfo(props.row)"
               >Last Output</span
             >
-            <span v-else-if="props.row.check_type === 'diskspace' || props.row.check_type === 'winsvc'">{{
-              props.row.more_info
-            }}</span>
+            <span
+              v-else-if="
+                props.row.check_type === 'diskspace' || (props.row.check_type === 'winsvc' && props.row.check_result.id)
+              "
+              >{{ props.row.check_result.more_info }}</span
+            >
           </q-td>
           <q-td>{{ props.row.check_result.last_run ? formatDate(props.row.check_result.last_run) : "Never" }}</q-td>
           <q-td v-if="props.row.assignedtasks.length > 1">{{ props.row.assignedtasks.length }} Tasks</q-td>

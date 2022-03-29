@@ -55,20 +55,6 @@ class GetAddChecks(APIView):
         serializer.is_valid(raise_exception=True)
         new_check = serializer.save()
 
-        if "agent" in data.keys():
-            checks = new_check.agent.get_checks_from_policies()
-
-            # Should only be one
-            duplicate_check = [
-                check for check in checks if check.is_duplicate(new_check)
-            ]
-
-            if duplicate_check:
-                policy = duplicate_check[0].policy
-                if policy.enforced:
-                    new_check.overriden_by_policy = True
-                    new_check.save(update_fields=["overriden_by_policy"])
-
         return Response(f"{new_check.readable_desc} was added!")
 
 

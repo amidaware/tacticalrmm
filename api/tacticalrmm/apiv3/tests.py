@@ -1,7 +1,7 @@
 import json
 import os
 
-from autotasks.models import AutomatedTask, TaskResult
+from autotasks.models import TaskResult
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
@@ -16,10 +16,12 @@ class TestAPIv3(TacticalTestCase):
         self.agent = baker.make_recipe("agents.agent")
 
     def test_get_checks(self):
-        url = f"/api/v3/{self.agent.agent_id}/checkrunner/"
+        agent = baker.make_recipe("agents.agent")
+        url = f"/api/v3/{agent.agent_id}/checkrunner/"
 
         # add a check
-        check1 = baker.make_recipe("checks.ping_check", agent=self.agent)
+        check1 = baker.make_recipe("checks.ping_check", agent=agent)
+        check_result1 = baker.make("checks.CheckResult", agent=agent, assigned_check=check1)
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["check_interval"], self.agent.check_interval)  # type: ignore
@@ -27,19 +29,20 @@ class TestAPIv3(TacticalTestCase):
 
         # override check run interval
         check2 = baker.make_recipe(
-            "checks.ping_check", agent=self.agent, run_interval=20
+            "checks.diskspace_check", agent=agent, run_interval=20
         )
+        check_result2 = baker.make("checks.CheckResult", agent=agent, assigned_check=check2)
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["check_interval"], 20)  # type: ignore
         self.assertEqual(len(r.data["checks"]), 2)  # type: ignore
-
+        self.assertEqual(r.data["check_interval"], 20)  # type: ignore
+        
         # Set last_run on both checks and should return an empty list
-        check1.last_run = djangotime.now()
-        check1.save()
-        check2.last_run = djangotime.now()
-        check2.save()
+        check_result1.last_run = djangotime.now()
+        check_result1.save()
+        check_result2.last_run = djangotime.now()
+        check_result2.save()
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
@@ -47,10 +50,10 @@ class TestAPIv3(TacticalTestCase):
         self.assertFalse(r.data["checks"])  # type: ignore
 
         # set last_run greater than interval
-        check1.last_run = djangotime.now() - djangotime.timedelta(seconds=200)
-        check1.save()
-        check2.last_run = djangotime.now() - djangotime.timedelta(seconds=200)
-        check2.save()
+        check_result1.last_run = djangotime.now() - djangotime.timedelta(seconds=200)
+        check_result1.save()
+        check_result2.last_run = djangotime.now() - djangotime.timedelta(seconds=200)
+        check_result2.save()
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
@@ -135,10 +138,17 @@ class TestAPIv3(TacticalTestCase):
         r = self.client.get("/api/v3/500/asdf9df9dfdf/taskrunner/")
         self.assertEqual(r.status_code, 404)
 
+        script = baker.make("scripts.script")
+
         # setup data
+        task_actions = [
+            {"type": "cmd", "command": "whoami", "timeout": 10, "shell": "cmd"},
+            {"type": "script", "script": script.id, "script_args": ["test"], "timeout": 30},
+            {"type": "script", "script": 3, "script_args": [], "timeout": 30},
+        ]
+
         agent = baker.make_recipe("agents.agent")
-        script = baker.make_recipe("scripts.script")
-        task = baker.make("autotasks.AutomatedTask", agent=agent, script=script)
+        task = baker.make("autotasks.AutomatedTask", agent=agent, actions=task_actions)
 
         url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"  # type: ignore
 

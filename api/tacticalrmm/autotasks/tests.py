@@ -1,4 +1,3 @@
-import datetime as dt
 from unittest.mock import call, patch
 
 from django.utils import timezone as djangotime
@@ -8,7 +7,7 @@ from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask
 from .serializers import TaskSerializer
-from .tasks import create_win_task_schedule, remove_orphaned_win_tasks, run_win_task
+from .tasks import remove_orphaned_win_tasks, run_win_task
 
 base_url = "/tasks"
 
@@ -30,19 +29,19 @@ class TestAutotaskViews(TacticalTestCase):
         url = f"{base_url}/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 14)
+        self.assertEqual(len(resp.data), 14) # type: ignore
 
         # test returning tasks for a specific agent
         url = f"/agents/{agent.agent_id}/tasks/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 3)
+        self.assertEqual(len(resp.data), 3) # type: ignore
 
         # test returning tasks for a specific policy
         url = f"/automation/policies/{policy.id}/tasks/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 4)
+        self.assertEqual(len(resp.data), 4) # type: ignore
 
     @patch("autotasks.tasks.create_win_task_schedule.delay")
     def test_add_autotask(
@@ -255,9 +254,8 @@ class TestAutotaskViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("autotasks.tasks.modify_win_task.delay")
     def test_update_autotask(
-        self, modify_win_task
+        self
     ):
         # setup data
         agent = baker.make_recipe("agents.agent")
@@ -283,15 +281,12 @@ class TestAutotaskViews(TacticalTestCase):
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        modify_win_task.not_called()  # type: ignore
 
         # test editing agent task with agent task update
         data = {"enabled": False}
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        modify_win_task.assert_called_with(pk=agent_task.id)  # type: ignore
-        modify_win_task.reset_mock()
 
         # test editing agent task with task_type
         data = {
@@ -312,8 +307,6 @@ class TestAutotaskViews(TacticalTestCase):
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        modify_win_task.assert_called_with(pk=agent_task.id)  # type: ignore
-        modify_win_task.reset_mock()
 
         # test trying to edit with empty actions
         data = {
@@ -333,7 +326,6 @@ class TestAutotaskViews(TacticalTestCase):
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 400)
-        modify_win_task.assert_not_called  # type: ignore
 
         self.check_not_authenticated("put", url)
 
@@ -622,7 +614,7 @@ class TestTaskPermissions(TacticalTestCase):
         )
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)
+        self.client.force_authenticate(user=user) # type: ignore
 
         self.check_not_authorized("get", f"{base_url}/")
         self.check_not_authorized("get", f"/agents/{agent.agent_id}/tasks/")
@@ -636,15 +628,15 @@ class TestTaskPermissions(TacticalTestCase):
         user.role.save()
 
         r = self.check_authorized("get", f"{base_url}/")
-        self.assertEqual(len(r.data), 14)
+        self.assertEqual(len(r.data), 14) # type: ignore
         r = self.check_authorized("get", f"/agents/{agent.agent_id}/tasks/")
-        self.assertEqual(len(r.data), 5)
+        self.assertEqual(len(r.data), 5) # type: ignore
         r = self.check_authorized(
             "get", f"/agents/{unauthorized_agent.agent_id}/tasks/"
         )
-        self.assertEqual(len(r.data), 7)
+        self.assertEqual(len(r.data), 7) # type: ignore
         r = self.check_authorized("get", f"/automation/policies/{policy.id}/tasks/")
-        self.assertEqual(len(r.data), 2)
+        self.assertEqual(len(r.data), 2) # type: ignore
 
         # test limiting to client
         user.role.can_view_clients.set([agent.client])
@@ -656,7 +648,7 @@ class TestTaskPermissions(TacticalTestCase):
 
         # make sure queryset is limited too
         r = self.client.get(f"{base_url}/")
-        self.assertEqual(len(r.data), 7)
+        self.assertEqual(len(r.data), 7) # type: ignore
 
     def test_add_task_permissions(self):
         agent = baker.make_recipe("agents.agent")
@@ -707,7 +699,7 @@ class TestTaskPermissions(TacticalTestCase):
             self.check_authorized_superuser("post", url, data)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)
+            self.client.force_authenticate(user=user) # type: ignore
 
             # test user without role
             self.check_not_authorized("post", url, data)
@@ -750,7 +742,7 @@ class TestTaskPermissions(TacticalTestCase):
             self.check_authorized_superuser(method, policy_url)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)
+            self.client.force_authenticate(user=user) # type: ignore
 
             # test user without role
             self.check_not_authorized(method, url)
@@ -793,7 +785,7 @@ class TestTaskPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", unauthorized_url)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)
+        self.client.force_authenticate(user=user) # type: ignore
 
         # test user without role
         self.check_not_authorized("post", url)
@@ -811,9 +803,3 @@ class TestTaskPermissions(TacticalTestCase):
 
         self.check_authorized("post", url)
         self.check_not_authorized("post", unauthorized_url)
-
-    def test_policy_fields_to_copy_exists(self):
-        fields = [i.name for i in AutomatedTask._meta.get_fields()]
-        task = baker.make("autotasks.AutomatedTask")
-        for i in task.policy_fields_to_copy:  # type: ignore
-            self.assertIn(i, fields)

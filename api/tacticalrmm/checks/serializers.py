@@ -23,7 +23,7 @@ class CheckResultSerializer(serializers.ModelSerializer):
 class CheckSerializer(serializers.ModelSerializer):
 
     readable_desc = serializers.ReadOnlyField()
-    assignedtasks = AssignedTaskField(many=True)
+    assignedtasks = AssignedTaskField(many=True, read_only=True)
     alert_template = serializers.SerializerMethodField()
     check_result = serializers.SerializerMethodField()
 
@@ -174,7 +174,7 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
         model = Check
         exclude = [
             "policy",
-            "overriden_by_policy",
+            "overridden_by_policy",
             "name",
             "email_alert",
             "text_alert",

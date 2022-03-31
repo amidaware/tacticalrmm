@@ -229,6 +229,7 @@ LOGGING = {
 
 if "AZPIPELINE" in os.environ:
     print("PIPELINE")
+    print("test2")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",

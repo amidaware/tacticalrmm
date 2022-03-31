@@ -293,15 +293,14 @@ def clear_faults_task(older_than_days: int) -> None:
         last_seen__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     )
     for agent in agents:
-        if agent.agentchecks.exists():
-            for check in agent.get_checks_from_policies():
-                # reset check status
-                check.check_result.status = "passing"
-                check.check_result.save(update_fields=["status"])
-                if check.alert.filter(agent=agent, resolved=False).exists():
-                    alert = Alert.create_or_return_check_alert(check, agent=agent)
-                    if alert:
-                        alert.resolve()
+        for check in agent.get_checks_with_policies():
+            # reset check status
+            check.check_result.status = "passing"
+            check.check_result.save(update_fields=["status"])
+            if check.alert.filter(agent=agent, resolved=False).exists():
+                alert = Alert.create_or_return_check_alert(check, agent=agent)
+                if alert:
+                    alert.resolve()
 
         # reset overdue alerts
         agent.overdue_email_alert = False

@@ -111,7 +111,10 @@ def auto_self_agent_update_task() -> None:
 def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> str:
     from alerts.models import Alert
 
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     if not alert.email_sent:
         sleep(random.randint(1, 15))
@@ -136,7 +139,12 @@ def agent_recovery_email_task(pk: int) -> str:
     from alerts.models import Alert
 
     sleep(random.randint(1, 15))
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
+
     alert.agent.send_recovery_email()
     alert.resolved_email_sent = djangotime.now()
     alert.save(update_fields=["resolved_email_sent"])
@@ -148,7 +156,10 @@ def agent_recovery_email_task(pk: int) -> str:
 def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> str:
     from alerts.models import Alert
 
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     if not alert.sms_sent:
         sleep(random.randint(1, 15))
@@ -173,7 +184,11 @@ def agent_recovery_sms_task(pk: int) -> str:
     from alerts.models import Alert
 
     sleep(random.randint(1, 3))
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
+
     alert.agent.send_recovery_sms()
     alert.resolved_sms_sent = djangotime.now()
     alert.save(update_fields=["resolved_sms_sent"])
@@ -271,18 +286,22 @@ def run_script_email_results_task(
 
 @app.task
 def clear_faults_task(older_than_days: int) -> None:
+    from alerts.models import Alert
+
     # https://github.com/amidaware/tacticalrmm/issues/484
     agents = Agent.objects.exclude(last_seen__isnull=True).filter(
         last_seen__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     )
     for agent in agents:
         if agent.agentchecks.exists():
-            for check in agent.agentchecks.all():
+            for check in agent.get_checks_from_policies():
                 # reset check status
-                check.status = "passing"
-                check.save(update_fields=["status"])
-                if check.alert.filter(resolved=False).exists():
-                    check.alert.get(resolved=False).resolve()
+                check.check_result.status = "passing"
+                check.check_result.save(update_fields=["status"])
+                if check.alert.filter(agent=agent, resolved=False).exists():
+                    alert = Alert.create_or_return_check_alert(check, agent=agent)
+                    if alert:
+                        alert.resolve()
 
         # reset overdue alerts
         agent.overdue_email_alert = False

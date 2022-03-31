@@ -126,7 +126,11 @@ def remove_orphaned_win_tasks(agentpk):
 
 @app.task
 def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) -> str:
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     # first time sending email
     if not alert.email_sent:
@@ -155,7 +159,11 @@ def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) 
 
 @app.task
 def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) -> str:
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     # first time sending text
     if not alert.sms_sent:
@@ -184,7 +192,11 @@ def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) ->
 
 @app.task
 def handle_resolved_task_sms_alert(pk: int) -> str:
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     # first time sending text
     if not alert.resolved_sms_sent:
@@ -201,7 +213,11 @@ def handle_resolved_task_sms_alert(pk: int) -> str:
 
 @app.task
 def handle_resolved_task_email_alert(pk: int) -> str:
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     # first time sending email
     if not alert.resolved_email_sent:

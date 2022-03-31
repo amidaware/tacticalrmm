@@ -15,7 +15,10 @@ from tacticalrmm.celery import app
 def handle_check_email_alert_task(
     pk: int, alert_interval: Optional[float] = None
 ) -> str:
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     # first time sending email
     if not alert.email_sent:
@@ -44,7 +47,11 @@ def handle_check_email_alert_task(
 
 @app.task
 def handle_check_sms_alert_task(pk: int, alert_interval: Optional[float] = None) -> str:
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     # first time sending text
     if not alert.sms_sent:
@@ -73,7 +80,11 @@ def handle_check_sms_alert_task(pk: int, alert_interval: Optional[float] = None)
 
 @app.task
 def handle_resolved_check_sms_alert_task(pk: int) -> str:
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     # first time sending text
     if not alert.resolved_sms_sent:
@@ -90,7 +101,11 @@ def handle_resolved_check_sms_alert_task(pk: int) -> str:
 
 @app.task
 def handle_resolved_check_email_alert_task(pk: int) -> str:
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     # first time sending email
     if not alert.resolved_email_sent:

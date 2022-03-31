@@ -88,29 +88,22 @@ class Alert(models.Model):
 
     @property
     def assigned_agent(self):
-        if self.agent:
-            return self.agent
-        elif self.alert_type == "check":
-            return self.assigned_check.agent
-        elif self.alert_type == "task":
-            return self.assigned_task.agent
+        return self.agent
 
     @property
     def site(self):
-        if self.assigned_agent:
-            return self.assigned_agent.site
+        return self.agent.site
 
     @property
     def client(self):
-        if self.assigned_agent:
-            return self.assigned_agent.client
+        return self.agent.client
 
     def resolve(self):
         self.resolved = True
         self.resolved_on = djangotime.now()
         self.snoozed = False
         self.snooze_until = None
-        self.save()
+        self.save(update_fields=["resolved", "resolved_on", "snoozed", "snooze_until"])
 
     @classmethod
     def create_or_return_availability_alert(
@@ -149,12 +142,18 @@ class Alert(models.Model):
 
     @classmethod
     def create_or_return_check_alert(
-        cls, check: Check, agent: Optional[Agent] = None, skip_create: bool = False
+        cls,
+        check: Check,
+        agent: Optional[Agent] = None,
+        alert_severity: Optional[str] = None,
+        skip_create: bool = False,
     ) -> Optional[Alert]:
 
         # need to pass agent if the check is a policy
         if not cls.objects.filter(
-            assigned_check=check, agent=agent if check.policy else None, resolved=False
+            assigned_check=check,
+            agent=agent if check.policy else check.agent,
+            resolved=False,
         ).exists():
             if skip_create:
                 return None
@@ -163,7 +162,9 @@ class Alert(models.Model):
                 assigned_check=check,
                 agent=agent if check.policy else check.agent,
                 alert_type="check",
-                severity=check.alert_severity,
+                severity=check.alert_severity
+                if check.check_type not in ["memory", "cpuload", "diskspace", "script"]
+                else alert_severity,
                 message=f"{agent.hostname if agent else check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                 hidden=True,
             )
@@ -171,13 +172,13 @@ class Alert(models.Model):
             try:
                 return cls.objects.get(
                     assigned_check=check,
-                    agent=agent if check.policy else None,
+                    agent=agent if check.policy else check.agent,
                     resolved=False,
                 )
             except cls.MultipleObjectsReturned:
                 alerts = cls.objects.filter(
                     assigned_check=check,
-                    agent=agent if check.policy else None,
+                    agent=agent if check.policy else check.agent,
                     resolved=False,
                 )
                 last_alert = alerts[-1]
@@ -200,7 +201,9 @@ class Alert(models.Model):
     ) -> Optional[Alert]:
 
         if not cls.objects.filter(
-            assigned_task=task, agent=agent if task.policy else None, resolved=False
+            assigned_task=task,
+            agent=agent if task.policy else task.agent,
+            resolved=False,
         ).exists():
             if skip_create:
                 return None
@@ -217,13 +220,13 @@ class Alert(models.Model):
             try:
                 return cls.objects.get(
                     assigned_task=task,
-                    agent=agent if task.policy else None,
+                    agent=agent if task.policy else task.agent,
                     resolved=False,
                 )
             except cls.MultipleObjectsReturned:
                 alerts = cls.objects.filter(
                     assigned_task=task,
-                    agent=agent if task.policy else None,
+                    agent=agent if task.policy else task.agent,
                     resolved=False,
                 )
                 last_alert = alerts[-1]
@@ -299,7 +302,7 @@ class Alert(models.Model):
             alert_severity = (
                 instance.assigned_check.alert_severity
                 if instance.assigned_check.check_type
-                not in ["memory", "cpuload", "diskspace"]
+                not in ["memory", "cpuload", "diskspace", "script"]
                 else instance.alert_severity
             )
             agent = instance.agent

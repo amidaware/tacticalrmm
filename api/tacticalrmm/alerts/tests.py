@@ -11,6 +11,7 @@ from model_bakery import baker, seq
 
 from tacticalrmm.test import TacticalTestCase
 
+from autotasks.models import TaskResult
 from .models import Alert, AlertTemplate
 from .serializers import (
     AlertSerializer,
@@ -900,8 +901,8 @@ class TestAlertTasks(TacticalTestCase):
         outage_sms.assert_not_called
 
         # update check alert severity to error
-        check_template_dashboard_text.alert_severity = "error"
-        check_template_dashboard_text.save()
+        check_template_dashboard_text_result.alert_severity = "error"
+        check_template_dashboard_text_result.save()
 
         # now should trigger alert
         Alert.handle_alert_failure(check_template_dashboard_text_result)
@@ -961,9 +962,11 @@ class TestAlertTasks(TacticalTestCase):
         alert_sms.save()
 
         # refresh checks to get alert template changes
-        check_template_email = Check.objects.get(pk=check_template_email.pk)
-        check_template_dashboard_text = Check.objects.get(
-            pk=check_template_dashboard_text.pk
+        check_template_email_result = CheckResult.objects.get(
+            pk=check_template_email_result.pk
+        )
+        check_template_dashboard_text_result = CheckResult.objects.get(
+            pk=check_template_dashboard_text_result.pk
         )
         check_template_blank = Check.objects.get(pk=check_template_blank.pk)
 
@@ -992,11 +995,15 @@ class TestAlertTasks(TacticalTestCase):
         alert_template_dashboard_text.save()  # type: ignore
 
         # refresh checks to get alert template changes
-        check_template_email = Check.objects.get(pk=check_template_email.pk)
-        check_template_dashboard_text = Check.objects.get(
-            pk=check_template_dashboard_text.pk
+        check_template_email_result = CheckResult.objects.get(
+            pk=check_template_email_result.pk
         )
-        check_template_blank = Check.objects.get(pk=check_template_blank.pk)
+        check_template_dashboard_text_result = CheckResult.objects.get(
+            pk=check_template_dashboard_text_result.pk
+        )
+        check_template_blank_result = CheckResult.objects.get(
+            pk=check_template_blank_result.pk
+        )
 
         Alert.handle_alert_resolve(check_template_email_result)
 
@@ -1125,9 +1132,9 @@ class TestAlertTasks(TacticalTestCase):
 
         # update alert template and pull new checks from DB
         cache_agents_alert_template()
-        task_template_email = AutomatedTask.objects.get(pk=task_template_email.pk)  # type: ignore
-        task_template_dashboard_text = AutomatedTask.objects.get(pk=task_template_dashboard_text.pk)  # type: ignore
-        task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
+        task_template_email_result = TaskResult.objects.get(pk=task_template_email_result.pk)  # type: ignore
+        task_template_dashboard_text_result = TaskResult.objects.get(pk=task_template_dashboard_text_result.pk)  # type: ignore
+        task_template_blank_result = TaskResult.objects.get(pk=task_template_blank_result.pk)  # type: ignore
 
         # test agent with task that has alert settings
         Alert.handle_alert_failure(task_agent_result)  # type: ignore
@@ -1193,6 +1200,10 @@ class TestAlertTasks(TacticalTestCase):
         task_template_dashboard_text.save()  # type: ignore
 
         # now should trigger alert
+        # get fresh task result
+        task_template_dashboard_text_result = TaskResult.objects.get(
+            pk=task_template_dashboard_text_result.pk
+        )
         Alert.handle_alert_failure(task_template_dashboard_text_result)  # type: ignore
         outage_sms.assert_called_with(pk=alertpk, alert_interval=0)
         outage_sms.reset_mock()
@@ -1247,10 +1258,10 @@ class TestAlertTasks(TacticalTestCase):
         alert_sms.sms_sent = djangotime.now() - djangotime.timedelta(days=20)
         alert_sms.save()
 
-        # refresh automated tasks to get new alert templates
-        task_template_email = AutomatedTask.objects.get(pk=task_template_email.pk)  # type: ignore
-        task_template_dashboard_text = AutomatedTask.objects.get(pk=task_template_dashboard_text.pk)  # type: ignore
-        task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
+        # refresh task results to get new alert templates
+        task_template_email_result = TaskResult.objects.get(pk=task_template_email_result.pk)  # type: ignore
+        task_template_dashboard_text_result = TaskResult.objects.get(pk=task_template_dashboard_text_result.pk)  # type: ignore
+        task_template_blank_result = TaskResult.objects.get(pk=task_template_blank_result.pk)  # type: ignore
 
         Alert.handle_alert_failure(task_template_email_result)  # type: ignore
         Alert.handle_alert_failure(task_template_dashboard_text_result)  # type: ignore
@@ -1276,10 +1287,10 @@ class TestAlertTasks(TacticalTestCase):
         alert_template_dashboard_text.task_text_on_resolved = True  # type: ignore
         alert_template_dashboard_text.save()  # type: ignore
 
-        # refresh automated tasks to get new alert templates
-        task_template_email = AutomatedTask.objects.get(pk=task_template_email.pk)  # type: ignore
-        task_template_dashboard_text = AutomatedTask.objects.get(pk=task_template_dashboard_text.pk)  # type: ignore
-        task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
+        # refresh atask results to get new alert templates
+        task_template_email_result = TaskResult.objects.get(pk=task_template_email_result.pk)  # type: ignore
+        task_template_dashboard_text_result = TaskResult.objects.get(pk=task_template_dashboard_text_result.pk)  # type: ignore
+        task_template_blank_result = TaskResult.objects.get(pk=task_template_blank_result.pk)  # type: ignore
 
         Alert.handle_alert_resolve(task_template_email_result)  # type: ignore
 

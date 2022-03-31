@@ -118,7 +118,7 @@ def cache_db_fields_task():
                         or task.task_result.sync_status == "initial"
                     ):
                         task.create_task_on_agent(agent=agent if task.policy else None)
-                    if task.task_result.sync_status == "pendingdeletion":
+                    elif task.task_result.sync_status == "pendingdeletion":
                         task.delete_task_on_agent(agent=agent if task.policy else None)
                     elif task.task_result.sync_status == "notsynced":
                         task.modify_task_on_agent(agent=agent if task.policy else None)
@@ -127,7 +127,9 @@ def cache_db_fields_task():
                     continue
 
             # handles any alerting actions
-            if Alert.objects.filter(agent=agent, resolved=False).exists():
+            if Alert.objects.filter(
+                alert_type="availability", agent=agent, resolved=False
+            ).exists():
                 try:
                     Alert.handle_alert_resolve(agent)
                 except:

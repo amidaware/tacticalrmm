@@ -383,6 +383,7 @@ class CheckResult(models.Model):
         return Alert.create_or_return_check_alert(
             self.assigned_check,
             agent=self.agent,
+            alert_severity=self.alert_severity,
             skip_create=not self.assigned_check.should_create_alert(alert_template),
         )
 
@@ -543,8 +544,10 @@ class CheckResult(models.Model):
 
         elif self.status == "passing":
             self.fail_count = 0
-            self.save()
-            if Alert.objects.filter(assigned_check=check, resolved=False).exists():
+            self.save(update_fields=["status", "fail_count", "alert_severity"])
+            if Alert.objects.filter(
+                assigned_check=check, agent=self.agent, resolved=False
+            ).exists():
                 Alert.handle_alert_resolve(self)
 
         return self.status

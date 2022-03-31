@@ -95,7 +95,7 @@ class Agent(BaseAuditModel):
     @property
     def timezone(self):
         # return the default timezone unless the timezone is explicity set per agent
-        if self.time_zone is not None:
+        if self.time_zone:
             return self.time_zone
         else:
             from core.models import CoreSettings
@@ -605,7 +605,7 @@ class Agent(BaseAuditModel):
         from alerts.models import Alert
 
         return Alert.create_or_return_availability_alert(
-            self, skip_create=self.should_create_alert(alert_template)
+            self, skip_create=not self.should_create_alert(alert_template)
         )
 
     def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":

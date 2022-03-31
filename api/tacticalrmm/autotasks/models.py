@@ -1,10 +1,12 @@
 import asyncio
 import random
 import string
+import pytz
 from typing import TYPE_CHECKING, List, Dict, Optional
 
 from alerts.models import SEVERITY_CHOICES
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils import timezone as djangotime
 from django.db import models
 from django.db.models.fields import DateTimeField
 from django.db.models.fields.json import JSONField
@@ -270,7 +272,9 @@ class AutomatedTask(BaseAuditModel):
         task.save()
 
     # agent version >= 1.8.0
-    def generate_nats_task_payload(self, editing: bool = False) -> Dict:
+    def generate_nats_task_payload(
+        self, agent: "Optional[Agent]" = None, editing: bool = False
+    ) -> Dict:
         task = {
             "pk": self.pk,
             "type": "rmm",
@@ -290,6 +294,18 @@ class AutomatedTask(BaseAuditModel):
         }
 
         if self.task_type in ["runonce", "daily", "weekly", "monthly", "monthlydow"]:
+            # set runonce task in future if creating and run_asap_after_missed is set
+            if (
+                not editing
+                and self.task_type == "runonce"
+                and self.run_asap_after_missed
+                and agent
+                and self.run_time_date
+                < djangotime.now().astimezone(pytz.timezone(agent.timezone))
+            ):
+                self.run_time_date = (
+                    djangotime.now() + djangotime.timedelta(minutes=5)
+                ).astimezone(pytz.timezone(agent.timezone))
 
             task["start_year"] = int(self.run_time_date.strftime("%Y"))
             task["start_month"] = int(self.run_time_date.strftime("%-m"))
@@ -356,7 +372,7 @@ class AutomatedTask(BaseAuditModel):
 
         nats_data = {
             "func": "schedtask",
-            "schedtaskpayload": self.generate_nats_task_payload(),
+            "schedtaskpayload": self.generate_nats_task_payload(agent),
         }
 
         r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=5))
@@ -542,7 +558,7 @@ class TaskResult(models.Model):
         return Alert.create_or_return_task_alert(
             self.task,
             agent=self.agent,
-            skip_create=self.task.should_create_alert(alert_template),
+            skip_create=not self.task.should_create_alert(alert_template),
         )
 
     def save_collector_results(self) -> None:

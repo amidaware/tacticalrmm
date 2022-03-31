@@ -718,7 +718,7 @@ class TestAlertTasks(TacticalTestCase):
         sleep,
     ):
         from alerts.tasks import cache_agents_alert_template
-        from checks.models import Check
+        from checks.models import Check, CheckResult
         from checks.tasks import (
             handle_check_email_alert_task,
             handle_check_sms_alert_task,
@@ -782,36 +782,66 @@ class TestAlertTasks(TacticalTestCase):
             email_alert=True,
             text_alert=True,
             dashboard_alert=True,
+        )
+        check_agent_result = baker.make(
+            "checks.CheckResult",
+            assigned_check=check_agent,
+            agent=agent,
             alert_severity="warning",
         )
         check_template_email = baker.make_recipe(
-            "checks.cpuload_check", agent=agent_template_email, history=[50, 40, 30]
+            "checks.cpuload_check", agent=agent_template_email
+        )
+        check_template_email_result = baker.make(
+            "checks.CheckResult",
+            assigned_check=check_template_email,
+            agent=agent_template_email,
+            history=[50, 40, 30],
         )
         check_template_dashboard_text = baker.make_recipe(
             "checks.memory_check",
+            agent=agent_template_dashboard_text,
+        )
+        check_template_dashboard_text_result = baker.make(
+            "checks.CheckResult",
+            assigned_check=check_template_dashboard_text,
             agent=agent_template_dashboard_text,
             history=[50, 40, 30],
         )
         check_template_blank = baker.make_recipe(
             "checks.ping_check", agent=agent_template_blank
         )
+        check_template_blank_result = baker.make(
+            "checks.CheckResult",
+            agent=agent_template_blank,
+            assigned_check=check_template_blank,
+        )
         check_no_settings = baker.make_recipe(
             "checks.script_check", agent=agent_no_settings
+        )
+        check_no_settings_result = baker.make(
+            "checks.CheckResult",
+            agent=agent_no_settings,
+            assigned_check=check_no_settings,
         )
 
         # update alert template and pull new checks from DB
         cache_agents_alert_template()
-        check_template_email = Check.objects.get(pk=check_template_email.pk)
-        check_template_dashboard_text = Check.objects.get(
-            pk=check_template_dashboard_text.pk
+        check_template_email_result = CheckResult.objects.get(
+            pk=check_template_email_result.pk
         )
-        check_template_blank = Check.objects.get(pk=check_template_blank.pk)
+        check_template_dashboard_text_result = CheckResult.objects.get(
+            pk=check_template_dashboard_text_result.pk
+        )
+        check_template_blank_result = CheckResult.objects.get(
+            pk=check_template_blank_result.pk
+        )
 
         # test agent with check that has alert settings
-        check_agent.alert_severity = "warning"
-        check_agent.status = "failing"
+        check_agent_result.alert_severity = "warning"
+        check_agent_result.status = "failing"
 
-        Alert.handle_alert_failure(check_agent)
+        Alert.handle_alert_failure(check_agent_result)
 
         # alert should have been created and sms, email notifications sent
         self.assertTrue(Alert.objects.filter(assigned_check=check_agent).exists())
@@ -839,9 +869,11 @@ class TestAlertTasks(TacticalTestCase):
         send_sms.reset_mock()
 
         # test check with an agent that has an email always alert template
-        Alert.handle_alert_failure(check_template_email)
+        Alert.handle_alert_failure(check_template_email_result)
 
-        self.assertTrue(Alert.objects.filter(assigned_check=check_template_email))
+        self.assertTrue(
+            Alert.objects.filter(assigned_check=check_template_email).exists()
+        )
         alertpk = Alert.objects.get(assigned_check=check_template_email).pk
         outage_sms.assert_not_called()
         outage_email.assert_called_with(pk=alertpk, alert_interval=0)
@@ -857,7 +889,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email.reset_mock()
 
         # test check with an agent that has an email always alert template
-        Alert.handle_alert_failure(check_template_dashboard_text)
+        Alert.handle_alert_failure(check_template_dashboard_text_result)
 
         self.assertTrue(
             Alert.objects.filter(assigned_check=check_template_dashboard_text).exists()
@@ -867,12 +899,12 @@ class TestAlertTasks(TacticalTestCase):
         # should only trigger when alert with severity of error
         outage_sms.assert_not_called
 
-        # update check alert seveity to error
+        # update check alert severity to error
         check_template_dashboard_text.alert_severity = "error"
         check_template_dashboard_text.save()
 
         # now should trigger alert
-        Alert.handle_alert_failure(check_template_dashboard_text)
+        Alert.handle_alert_failure(check_template_dashboard_text_result)
         outage_sms.assert_called_with(pk=alertpk, alert_interval=0)
         outage_sms.reset_mock()
 
@@ -888,14 +920,14 @@ class TestAlertTasks(TacticalTestCase):
         send_sms.reset_mock()
 
         # test check with an agent that has a blank alert template
-        Alert.handle_alert_failure(check_template_blank)
+        Alert.handle_alert_failure(check_template_blank_result)
 
         self.assertFalse(
             Alert.objects.filter(assigned_check=check_template_blank).exists()
         )
 
         # test check that has no template and no settings
-        Alert.handle_alert_failure(check_no_settings)
+        Alert.handle_alert_failure(check_no_settings_result)
 
         self.assertFalse(
             Alert.objects.filter(assigned_check=check_no_settings).exists()
@@ -904,7 +936,7 @@ class TestAlertTasks(TacticalTestCase):
         # test periodic notifications
 
         # make sure a failing check won't trigger another notification and only create a single alert
-        Alert.handle_alert_failure(check_template_email)
+        Alert.handle_alert_failure(check_template_email_result)
         send_email.assert_not_called()
         send_sms.assert_not_called()
 
@@ -935,8 +967,8 @@ class TestAlertTasks(TacticalTestCase):
         )
         check_template_blank = Check.objects.get(pk=check_template_blank.pk)
 
-        Alert.handle_alert_failure(check_template_email)
-        Alert.handle_alert_failure(check_template_dashboard_text)
+        Alert.handle_alert_failure(check_template_email_result)
+        Alert.handle_alert_failure(check_template_dashboard_text_result)
 
         outage_email.assert_called_with(pk=alert_email.pk, alert_interval=1)
         outage_sms.assert_called_with(pk=alert_sms.pk, alert_interval=1)
@@ -944,7 +976,7 @@ class TestAlertTasks(TacticalTestCase):
         outage_sms.reset_mock()
 
         # test resolving alerts
-        Alert.handle_alert_resolve(check_agent)
+        Alert.handle_alert_resolve(check_agent_result)
 
         self.assertTrue(Alert.objects.get(assigned_check=check_agent).resolved)
         self.assertTrue(Alert.objects.get(assigned_check=check_agent).resolved_on)
@@ -966,13 +998,13 @@ class TestAlertTasks(TacticalTestCase):
         )
         check_template_blank = Check.objects.get(pk=check_template_blank.pk)
 
-        Alert.handle_alert_resolve(check_template_email)
+        Alert.handle_alert_resolve(check_template_email_result)
 
         resolved_email.assert_called_with(pk=alert_email.pk)
         resolved_sms.assert_not_called()
         resolved_email.reset_mock()
 
-        Alert.handle_alert_resolve(check_template_dashboard_text)
+        Alert.handle_alert_resolve(check_template_dashboard_text_result)
 
         resolved_sms.assert_called_with(pk=alert_sms.pk)
         resolved_email.assert_not_called()
@@ -1055,23 +1087,40 @@ class TestAlertTasks(TacticalTestCase):
             dashboard_alert=True,
             alert_severity="warning",
         )
+        task_agent_result = baker.make(
+            "autotasks.TaskResult", agent=agent, task=task_agent
+        )
         task_template_email = baker.make(
             "autotasks.AutomatedTask",
             agent=agent_template_email,
             alert_severity="warning",
+        )
+        task_template_email_result = baker.make(
+            "autotasks.TaskResult", agent=agent_template_email, task=task_template_email
         )
         task_template_dashboard_text = baker.make(
             "autotasks.AutomatedTask",
             agent=agent_template_dashboard_text,
             alert_severity="info",
         )
+        task_template_dashboard_text_result = baker.make(
+            "autotasks.TaskResult",
+            agent=agent_template_dashboard_text,
+            task=task_template_dashboard_text,
+        )
         task_template_blank = baker.make(
             "autotasks.AutomatedTask",
             agent=agent_template_blank,
             alert_severity="error",
         )
+        task_template_blank_result = baker.make(
+            "autotasks.TaskResult", agent=agent_template_blank, task=task_template_blank
+        )
         task_no_settings = baker.make(
             "autotasks.AutomatedTask", agent=agent_no_settings, alert_severity="warning"
+        )
+        task_no_settings_result = baker.make(
+            "autotasks.TaskResult", agent=agent_no_settings, task=task_no_settings
         )
 
         # update alert template and pull new checks from DB
@@ -1081,7 +1130,7 @@ class TestAlertTasks(TacticalTestCase):
         task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
 
         # test agent with task that has alert settings
-        Alert.handle_alert_failure(task_agent)  # type: ignore
+        Alert.handle_alert_failure(task_agent_result)  # type: ignore
 
         # alert should have been created and sms, email notifications sent
         self.assertTrue(Alert.objects.filter(assigned_task=task_agent).exists())
@@ -1109,9 +1158,11 @@ class TestAlertTasks(TacticalTestCase):
         send_sms.reset_mock()
 
         # test task with an agent that has an email always alert template
-        Alert.handle_alert_failure(task_template_email)  # type: ignore
+        Alert.handle_alert_failure(task_template_email_result)  # type: ignore
 
-        self.assertTrue(Alert.objects.filter(assigned_task=task_template_email))
+        self.assertTrue(
+            Alert.objects.filter(assigned_task=task_template_email).exists()
+        )
         alertpk = Alert.objects.get(assigned_task=task_template_email).pk
         outage_sms.assert_not_called()
         outage_email.assert_called_with(pk=alertpk, alert_interval=0)
@@ -1127,7 +1178,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email.reset_mock()
 
         # test task with an agent that has an email always alert template
-        Alert.handle_alert_failure(task_template_dashboard_text)  # type: ignore
+        Alert.handle_alert_failure(task_template_dashboard_text_result)  # type: ignore
 
         self.assertTrue(
             Alert.objects.filter(assigned_task=task_template_dashboard_text).exists()
@@ -1142,7 +1193,7 @@ class TestAlertTasks(TacticalTestCase):
         task_template_dashboard_text.save()  # type: ignore
 
         # now should trigger alert
-        Alert.handle_alert_failure(task_template_dashboard_text)  # type: ignore
+        Alert.handle_alert_failure(task_template_dashboard_text_result)  # type: ignore
         outage_sms.assert_called_with(pk=alertpk, alert_interval=0)
         outage_sms.reset_mock()
 
@@ -1158,21 +1209,21 @@ class TestAlertTasks(TacticalTestCase):
         send_sms.reset_mock()
 
         # test task with an agent that has a blank alert template
-        Alert.handle_alert_failure(task_template_blank)  # type: ignore
+        Alert.handle_alert_failure(task_template_blank_result)  # type: ignore
 
         self.assertFalse(
             Alert.objects.filter(assigned_task=task_template_blank).exists()
         )
 
         # test task that has no template and no settings
-        Alert.handle_alert_failure(task_no_settings)  # type: ignore
+        Alert.handle_alert_failure(task_no_settings_result)  # type: ignore
 
         self.assertFalse(Alert.objects.filter(assigned_task=task_no_settings).exists())
 
         # test periodic notifications
 
         # make sure a failing task won't trigger another notification and only create a single alert
-        Alert.handle_alert_failure(task_template_email)  # type: ignore
+        Alert.handle_alert_failure(task_template_email_result)  # type: ignore
         send_email.assert_not_called()
         send_sms.assert_not_called()
 
@@ -1201,8 +1252,8 @@ class TestAlertTasks(TacticalTestCase):
         task_template_dashboard_text = AutomatedTask.objects.get(pk=task_template_dashboard_text.pk)  # type: ignore
         task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
 
-        Alert.handle_alert_failure(task_template_email)  # type: ignore
-        Alert.handle_alert_failure(task_template_dashboard_text)  # type: ignore
+        Alert.handle_alert_failure(task_template_email_result)  # type: ignore
+        Alert.handle_alert_failure(task_template_dashboard_text_result)  # type: ignore
 
         outage_email.assert_called_with(pk=alert_email.pk, alert_interval=1)
         outage_sms.assert_called_with(pk=alert_sms.pk, alert_interval=1)
@@ -1210,7 +1261,7 @@ class TestAlertTasks(TacticalTestCase):
         outage_sms.reset_mock()
 
         # test resolving alerts
-        Alert.handle_alert_resolve(task_agent)  # type: ignore
+        Alert.handle_alert_resolve(task_agent_result)  # type: ignore
 
         self.assertTrue(Alert.objects.get(assigned_task=task_agent).resolved)
         self.assertTrue(Alert.objects.get(assigned_task=task_agent).resolved_on)
@@ -1230,13 +1281,13 @@ class TestAlertTasks(TacticalTestCase):
         task_template_dashboard_text = AutomatedTask.objects.get(pk=task_template_dashboard_text.pk)  # type: ignore
         task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
 
-        Alert.handle_alert_resolve(task_template_email)  # type: ignore
+        Alert.handle_alert_resolve(task_template_email_result)  # type: ignore
 
         resolved_email.assert_called_with(pk=alert_email.pk)
         resolved_sms.assert_not_called()
         resolved_email.reset_mock()
 
-        Alert.handle_alert_resolve(task_template_dashboard_text)  # type: ignore
+        Alert.handle_alert_resolve(task_template_dashboard_text_result)  # type: ignore
 
         resolved_sms.assert_called_with(pk=alert_sms.pk)
         resolved_email.assert_not_called()

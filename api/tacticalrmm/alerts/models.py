@@ -129,9 +129,13 @@ class Alert(models.Model):
             )
         else:
             try:
-                return cls.objects.get(agent=agent, resolved=False)
+                return cls.objects.get(
+                    agent=agent, alert_type="availability", resolved=False
+                )
             except cls.MultipleObjectsReturned:
-                alerts = cls.objects.filter(agent=agent, resolved=False)
+                alerts = cls.objects.filter(
+                    agent=agent, alert_type="availability", resolved=False
+                )
                 last_alert = alerts[-1]
 
                 # cycle through other alerts and resolve
@@ -157,10 +161,10 @@ class Alert(models.Model):
 
             return cls.objects.create(
                 assigned_check=check,
-                agent=agent if check.policy else None,
+                agent=agent if check.policy else check.agent,
                 alert_type="check",
                 severity=check.alert_severity,
-                message=f"{check.agent.hostname if check.agent else agent} has a {check.check_type} check: {check.readable_desc} that failed.",
+                message=f"{agent.hostname if agent else check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                 hidden=True,
             )
         else:
@@ -203,10 +207,10 @@ class Alert(models.Model):
 
             return cls.objects.create(
                 assigned_task=task,
-                agent=agent if task.policy else None,
+                agent=agent if task.policy else task.agent,
                 alert_type="task",
                 severity=task.alert_severity,
-                message=f"{task.agent.hostname if task.agent else agent.hostname} has task: {task.name} that failed.",
+                message=f"{agent.hostname if agent else task.agent.hostname } has task: {task.name} that failed.",
                 hidden=True,
             )
         else:
@@ -293,8 +297,9 @@ class Alert(models.Model):
             alert_template = instance.agent.alert_template
             maintenance_mode = instance.agent.maintenance_mode
             alert_severity = (
-                instance.alert_severity
-                if instance.assigned_check.check_type not in ["memcheck", "cpuload"]
+                instance.assigned_check.alert_severity
+                if instance.assigned_check.check_type
+                not in ["memory", "cpuload", "diskspace"]
                 else instance.alert_severity
             )
             agent = instance.agent
@@ -341,10 +346,10 @@ class Alert(models.Model):
         alert = instance.get_or_create_alert_if_needed(alert_template)
 
         # return if agent is in maintenance mode
-        if maintenance_mode or not alert:
+        if not alert or maintenance_mode:
             return
 
-        # check if alert severity changed on check and update the alert
+        # check if alert severity changed and update the alert
         if alert_severity != alert.severity:
             alert.severity = alert_severity
             alert.save(update_fields=["severity"])
@@ -353,19 +358,15 @@ class Alert(models.Model):
         if dashboard_alert or always_dashboard:
 
             # check if alert template is set and specific severities are configured
-            if alert_template and alert.severity not in dashboard_severities:  # type: ignore
-                pass
-            else:
+            if not alert_template or alert_template and alert.severity in dashboard_severities:  # type: ignore
                 alert.hidden = False
-                alert.save()
+                alert.save(update_fields=["hidden"])
 
         # send email if enabled
         if email_alert or always_email:
 
             # check if alert template is set and specific severities are configured
-            if alert_template and alert.severity not in email_severities:  # type: ignore
-                pass
-            else:
+            if not alert_template or alert_template and alert.severity in email_severities:  # type: ignore
                 email_task.delay(
                     pk=alert.pk,
                     alert_interval=alert_interval,
@@ -375,9 +376,7 @@ class Alert(models.Model):
         if text_alert or always_text:
 
             # check if alert template is set and specific severities are configured
-            if alert_template and alert.severity not in text_severities:  # type: ignore
-                pass
-            else:
+            if not alert_template or alert_template and alert.severity in text_severities:  # type: ignore
                 text_task.delay(pk=alert.pk, alert_interval=alert_interval)
 
         # check if any scripts should be run

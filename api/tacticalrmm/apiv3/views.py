@@ -277,11 +277,10 @@ class TaskRunner(APIView):
         serializer.is_valid(raise_exception=True)
         task_result = serializer.save(last_run=djangotime.now())
 
-        # TODO: Change task.script since field not in use anymore
         AgentHistory.objects.create(
             agent=agent,
             type="task_run",
-            command="multiple",
+            command="See Output",
             script_results=request.data,
         )
 

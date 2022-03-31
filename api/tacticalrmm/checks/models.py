@@ -383,7 +383,7 @@ class CheckResult(models.Model):
         return Alert.create_or_return_check_alert(
             self.assigned_check,
             agent=self.agent,
-            skip_create=self.assigned_check.should_create_alert(alert_template),
+            skip_create=not self.assigned_check.should_create_alert(alert_template),
         )
 
     def handle_check(self, data):

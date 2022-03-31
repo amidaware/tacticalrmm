@@ -2,7 +2,7 @@ import asyncio
 import datetime as dt
 import random
 from time import sleep
-from typing import Union
+from typing import Optional
 
 from agents.models import Agent
 from agents.utils import get_agent_url
@@ -108,7 +108,7 @@ def auto_self_agent_update_task() -> None:
 
 
 @app.task
-def agent_outage_email_task(pk: int, alert_interval: Union[float, None] = None) -> str:
+def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> str:
     from alerts.models import Alert
 
     alert = Alert.objects.get(pk=pk)
@@ -145,7 +145,7 @@ def agent_recovery_email_task(pk: int) -> str:
 
 
 @app.task
-def agent_outage_sms_task(pk: int, alert_interval: Union[float, None] = None) -> str:
+def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> str:
     from alerts.models import Alert
 
     alert = Alert.objects.get(pk=pk)

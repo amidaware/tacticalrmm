@@ -28,7 +28,7 @@ def get_agent_url(arch: str, plat: str) -> str:
         params = {
             "version": settings.LATEST_AGENT_VER,
             "arch": arch,
-            "token": t.token,
+            "token": token.token,
         }
         dl_url = base_url + urllib.parse.urlencode(params)
 

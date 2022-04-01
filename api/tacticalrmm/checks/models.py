@@ -332,15 +332,11 @@ class CheckResult(models.Model):
         "agents.Agent",
         related_name="checkresults",
         on_delete=models.CASCADE,
-        null=True,
-        blank=True,
     )
 
     assigned_check = models.ForeignKey(
         "checks.Check",
         related_name="checkresults",
-        null=True,
-        blank=True,
         on_delete=models.CASCADE,
     )
     status = models.CharField(

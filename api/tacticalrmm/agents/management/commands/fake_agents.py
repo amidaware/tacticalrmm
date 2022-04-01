@@ -6,8 +6,8 @@ import string
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from automation.models import Policy
-from autotasks.models import AutomatedTask
-from checks.models import Check, CheckHistory
+from autotasks.models import AutomatedTask, TaskResult
+from checks.models import Check, CheckResult, CheckHistory
 from clients.models import Client, Site
 from django.conf import settings
 from django.core.management import call_command
@@ -50,8 +50,9 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
 
         user = User.objects.first()
-        user.totp_key = "ABSA234234"
-        user.save(update_fields=["totp_key"])
+        if user:
+            user.totp_key = "ABSA234234"
+            user.save(update_fields=["totp_key"])
 
         Client.objects.all().delete()
         Agent.objects.all().delete()
@@ -272,6 +273,8 @@ class Command(BaseCommand):
                 site = random.choice(sites5)
             elif client == "Company 6":
                 site = random.choice(sites6)
+            else:
+                site = None
 
             agent = Agent()
 
@@ -354,11 +357,14 @@ class Command(BaseCommand):
 
             # disk space check
             check1 = Check()
+            check_result1 = CheckResult(assigned_check=check1, agent=agent)
             check1.agent = agent
             check1.check_type = "diskspace"
-            check1.status = "passing"
-            check1.last_run = djangotime.now()
-            check1.more_info = "Total: 498.7GB, Free: 287.4GB"
+            check_result1.status = "passing"
+            check_result1.last_run = djangotime.now()
+            check_result1.more_info = "Total: 498.7GB, Free: 287.4GB"
+            check_result1.save()
+
             check1.warning_threshold = 25
             check1.error_threshold = 10
             check1.disk = "C:"
@@ -368,7 +374,8 @@ class Command(BaseCommand):
 
             for i in range(30):
                 check1_history = CheckHistory()
-                check1_history.check_id = check1.id
+                check1_history.check_id = check1.pk
+                check1_history.agent_id = agent.agent_id
                 check1_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )
@@ -377,28 +384,31 @@ class Command(BaseCommand):
 
             # ping check
             check2 = Check()
+            check_result2 = CheckResult(assigned_check=check2, agent=agent)
             check2.agent = agent
             check2.check_type = "ping"
-            check2.last_run = djangotime.now()
+            check_result2.last_run = djangotime.now()
             check2.email_alert = random.choice([True, False])
             check2.text_alert = random.choice([True, False])
 
             if site in sites5:
                 check2.name = "Synology NAS"
-                check2.status = "failing"
+                check_result2.status = "failing"
                 check2.ip = "172.17.14.26"
-                check2.more_info = ping_fail_output
+                check_result2.more_info = ping_fail_output
             else:
                 check2.name = "Google"
-                check2.status = "passing"
+                check_result2.status = "passing"
                 check2.ip = "8.8.8.8"
-                check2.more_info = ping_success_output
+                check_result2.more_info = ping_success_output
 
             check2.save()
+            check_result2.save()
 
             for i in range(30):
                 check2_history = CheckHistory()
-                check2_history.check_id = check2.id
+                check2_history.check_id = check2.pk
+                check2_history.agent_id = agent.agent_id
                 check2_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )
@@ -412,20 +422,38 @@ class Command(BaseCommand):
 
             # cpu load check
             check3 = Check()
+            check_result3 = CheckResult(assigned_check=check3, agent=agent)
             check3.agent = agent
             check3.check_type = "cpuload"
-            check3.status = "passing"
-            check3.last_run = djangotime.now()
+            check_result3.status = "passing"
+            check_result3.last_run = djangotime.now()
             check3.warning_threshold = 70
             check3.error_threshold = 90
-            check3.history = [15, 23, 16, 22, 22, 27, 15, 23, 23, 20, 10, 10, 13, 34]
+            check_result3.history = [
+                15,
+                23,
+                16,
+                22,
+                22,
+                27,
+                15,
+                23,
+                23,
+                20,
+                10,
+                10,
+                13,
+                34,
+            ]
             check3.email_alert = random.choice([True, False])
             check3.text_alert = random.choice([True, False])
             check3.save()
+            check_result3.save()
 
             for i in range(30):
                 check3_history = CheckHistory()
-                check3_history.check_id = check3.id
+                check3_history.check_id = check3.pk
+                check3_history.agent_id = agent.agent_id
                 check3_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )
@@ -434,19 +462,22 @@ class Command(BaseCommand):
 
             # memory check
             check4 = Check()
+            check_result4 = CheckResult(assigned_check=check4, agent=agent)
             check4.agent = agent
             check4.check_type = "memory"
-            check4.status = "passing"
+            check_result4.status = "passing"
             check4.warning_threshold = 70
             check4.error_threshold = 85
-            check4.history = [34, 34, 35, 36, 34, 34, 34, 34, 34, 34]
+            check_result4.history = [34, 34, 35, 36, 34, 34, 34, 34, 34, 34]
             check4.email_alert = random.choice([True, False])
             check4.text_alert = random.choice([True, False])
             check4.save()
+            check_result4.save()
 
             for i in range(30):
                 check4_history = CheckHistory()
-                check4_history.check_id = check4.id
+                check4_history.check_id = check4.pk
+                check4_history.agent_id = agent.agent_id
                 check4_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )
@@ -455,21 +486,24 @@ class Command(BaseCommand):
 
             # script check storage pool
             check5 = Check()
+            check_result5 = CheckResult(assigned_check=check5, agent=agent)
             check5.agent = agent
             check5.check_type = "script"
-            check5.status = "passing"
-            check5.last_run = djangotime.now()
+            check_result5.status = "passing"
+            check_result5.last_run = djangotime.now()
             check5.email_alert = random.choice([True, False])
             check5.text_alert = random.choice([True, False])
             check5.timeout = 120
-            check5.retcode = 0
-            check5.execution_time = "4.0000"
+            check_result5.retcode = 0
+            check_result5.execution_time = "4.0000"
             check5.script = check_pool_health
             check5.save()
+            check_result5.save()
 
             for i in range(30):
                 check5_history = CheckHistory()
-                check5_history.check_id = check5.id
+                check5_history.check_id = check5.pk
+                check5_history.agent_id = agent.agent_id
                 check5_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )
@@ -480,21 +514,24 @@ class Command(BaseCommand):
                 check5_history.save()
 
             check6 = Check()
+            check_result6 = CheckResult(assigned_check=check6, agent=agent)
             check6.agent = agent
             check6.check_type = "script"
-            check6.status = "passing"
-            check6.last_run = djangotime.now()
+            check_result6.status = "passing"
+            check_result6.last_run = djangotime.now()
             check6.email_alert = random.choice([True, False])
             check6.text_alert = random.choice([True, False])
             check6.timeout = 120
-            check6.retcode = 0
-            check6.execution_time = "4.0000"
+            check_result6.retcode = 0
+            check_result6.execution_time = "4.0000"
             check6.script = check_net_aware
             check6.save()
+            check_result6.save()
 
             for i in range(30):
                 check6_history = CheckHistory()
-                check6_history.check_id = check6.id
+                check6_history.check_id = check6.pk
+                check6_history.agent_id = agent.agent_id
                 check6_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )
@@ -502,6 +539,7 @@ class Command(BaseCommand):
                 check6_history.save()
 
             nla_task = AutomatedTask()
+            nla_task_result = TaskResult(task=nla_task, agent=agent)
             nla_task.agent = agent
             actions = [
                 {
@@ -517,14 +555,16 @@ class Command(BaseCommand):
             nla_task.name = "Restart NLA"
             nla_task.task_type = "checkfailure"
             nla_task.win_task_name = "demotask123"
-            nla_task.execution_time = "1.8443"
-            nla_task.last_run = djangotime.now()
-            nla_task.stdout = "no stdout"
-            nla_task.retcode = 0
-            nla_task.sync_status = "synced"
+            nla_task_result.execution_time = "1.8443"
+            nla_task_result.last_run = djangotime.now()
+            nla_task_result.stdout = "no stdout"
+            nla_task_result.retcode = 0
+            nla_task_result.sync_status = "synced"
             nla_task.save()
+            nla_task_result.save()
 
             spool_task = AutomatedTask()
+            spool_task_result = TaskResult(task=spool_task, agent=agent)
             spool_task.agent = agent
             actions = [
                 {
@@ -548,13 +588,15 @@ class Command(BaseCommand):
             spool_task.task_repetition_interval = "25m"
             spool_task.random_task_delay = "3m"
             spool_task.win_task_name = "demospool123"
-            spool_task.last_run = djangotime.now()
-            spool_task.retcode = 0
-            spool_task.stdout = spooler_stdout
-            spool_task.sync_status = "synced"
+            spool_task_result.last_run = djangotime.now()
+            spool_task_result.retcode = 0
+            spool_task_result.stdout = spooler_stdout
+            spool_task_result.sync_status = "synced"
             spool_task.save()
+            spool_task_result.save()
 
             tmp_dir_task = AutomatedTask()
+            tmp_dir_task_result = TaskResult(task=tmp_dir_task, agent=agent)
             tmp_dir_task.agent = agent
             tmp_dir_task.name = "show temp dir files"
             actions = [
@@ -569,29 +611,33 @@ class Command(BaseCommand):
             tmp_dir_task.actions = actions
             tmp_dir_task.task_type = "manual"
             tmp_dir_task.win_task_name = "demotemp"
-            tmp_dir_task.last_run = djangotime.now()
-            tmp_dir_task.stdout = temp_dir_stdout
-            tmp_dir_task.retcode = 0
-            tmp_dir_task.sync_status = "synced"
+            tmp_dir_task_result.last_run = djangotime.now()
+            tmp_dir_task_result.stdout = temp_dir_stdout
+            tmp_dir_task_result.retcode = 0
+            tmp_dir_task_result.sync_status = "synced"
             tmp_dir_task.save()
+            tmp_dir_task_result.save()
 
             check7 = Check()
+            check_result7 = CheckResult(assigned_check=check7, agent=agent)
             check7.agent = agent
             check7.check_type = "script"
-            check7.status = "passing"
-            check7.last_run = djangotime.now()
+            check_result7.status = "passing"
+            check_result7.last_run = djangotime.now()
             check7.email_alert = random.choice([True, False])
             check7.text_alert = random.choice([True, False])
             check7.timeout = 120
-            check7.retcode = 0
-            check7.execution_time = "3.1337"
+            check_result7.retcode = 0
+            check_result7.execution_time = "3.1337"
             check7.script = clear_spool
-            check7.stdout = spooler_stdout
+            check_result7.stdout = spooler_stdout
             check7.save()
+            check_result7.save()
 
             for i in range(30):
                 check7_history = CheckHistory()
-                check7_history.check_id = check7.id
+                check7_history.check_id = check7.pk
+                check7_history.agent_id = agent.agent_id
                 check7_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )
@@ -599,23 +645,26 @@ class Command(BaseCommand):
                 check7_history.save()
 
             check8 = Check()
+            check_result8 = CheckResult(assigned_check=check8, agent=agent)
             check8.agent = agent
             check8.check_type = "winsvc"
-            check8.status = "passing"
-            check8.last_run = djangotime.now()
+            check_result8.status = "passing"
+            check_result8.last_run = djangotime.now()
             check8.email_alert = random.choice([True, False])
             check8.text_alert = random.choice([True, False])
-            check8.more_info = "Status RUNNING"
+            check_result8.more_info = "Status RUNNING"
             check8.fails_b4_alert = 4
             check8.svc_name = "Spooler"
             check8.svc_display_name = "Print Spooler"
             check8.pass_if_start_pending = False
             check8.restart_if_stopped = True
             check8.save()
+            check_result8.save()
 
             for i in range(30):
                 check8_history = CheckHistory()
-                check8_history.check_id = check8.id
+                check8_history.check_id = check8.pk
+                check8_history.agent_id = agent.agent_id
                 check8_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )
@@ -628,21 +677,22 @@ class Command(BaseCommand):
                 check8_history.save()
 
             check9 = Check()
+            check_result9 = CheckResult(assigned_check=check9, agent=agent)
             check9.agent = agent
             check9.check_type = "eventlog"
             check9.name = "unexpected shutdown"
 
-            check9.last_run = djangotime.now()
+            check_result9.last_run = djangotime.now()
             check9.email_alert = random.choice([True, False])
             check9.text_alert = random.choice([True, False])
             check9.fails_b4_alert = 2
 
             if site in sites5:
-                check9.extra_details = eventlog_check_fail_data
-                check9.status = "failing"
+                check_result9.extra_details = eventlog_check_fail_data
+                check_result9.status = "failing"
             else:
-                check9.extra_details = {"log": []}
-                check9.status = "passing"
+                check_result9.extra_details = {"log": []}
+                check_result9.status = "passing"
 
             check9.log_name = "Application"
             check9.event_id = 1001
@@ -651,10 +701,12 @@ class Command(BaseCommand):
             check9.search_last_days = 30
 
             check9.save()
+            check_result9.save()
 
             for i in range(30):
                 check9_history = CheckHistory()
-                check9_history.check_id = check9.id
+                check9_history.check_id = check9.pk
+                check9_history.agent_id = agent.agent_id
                 check9_history.x = djangotime.now() - djangotime.timedelta(
                     minutes=i * 2
                 )

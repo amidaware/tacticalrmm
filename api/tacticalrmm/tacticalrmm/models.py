@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 class PermissionQuerySet(models.QuerySet):
 
     # filters queryset based on permissions. Works different for Agent, Client, and Site
-    def filter_by_role(self, user: User) -> models.QuerySet:
+    def filter_by_role(self, user: "User") -> "models.QuerySet":
 
         role = user.role
 

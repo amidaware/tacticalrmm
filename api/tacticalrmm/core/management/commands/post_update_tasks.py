@@ -4,6 +4,7 @@ import datetime as dt
 from accounts.models import User
 from agents.models import Agent
 from autotasks.models import AutomatedTask
+from checks.models import Check, CheckHistory
 from django.core.management.base import BaseCommand
 from django.utils.timezone import make_aware
 from scripts.models import Script
@@ -69,6 +70,11 @@ class Command(BaseCommand):
                     task.save()
             except:
                 continue
+
+        # Remove policy checks and tasks on agents and check
+        AutomatedTask.objects.filter(managed_by_policy=True).delete()
+        Check.objects.filter(managed_by_policy=True).delete()
+        CheckHistory.objects.filter(agent_id=None).delete()
 
         # set goarch for older windows agents
         for agent in Agent.objects.defer(*AGENT_DEFER):

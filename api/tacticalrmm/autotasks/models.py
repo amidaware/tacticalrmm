@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, List, Dict, Optional, Union
 
 from alerts.models import SEVERITY_CHOICES
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone as djangotime
 from django.db import models
 from django.db.models.fields import DateTimeField
@@ -105,7 +106,9 @@ class AutomatedTask(BaseAuditModel):
     task_type = models.CharField(
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
-    win_task_name = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    win_task_name = models.CharField(
+        max_length=255, null=True, blank=True
+    )  # should be changed to unique=True
     run_time_date = DateTimeField(null=True, blank=True)
     expire_date = DateTimeField(null=True, blank=True)
 
@@ -139,6 +142,24 @@ class AutomatedTask(BaseAuditModel):
     run_asap_after_missed = models.BooleanField(default=False)  # added in agent v1.4.7
     task_instance_policy = models.PositiveSmallIntegerField(blank=True, default=1)
 
+    # deprecated
+    managed_by_policy = models.BooleanField(default=False)
+    script = models.ForeignKey(
+        "scripts.Script",
+        null=True,
+        blank=True,
+        related_name="autoscript",
+        on_delete=models.SET_NULL,
+    )
+    script_args = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    timeout = models.PositiveIntegerField(blank=True, default=120)
+
+    # non-database property
     task_result: "Union[TaskResult, Dict]" = {}
 
     def __str__(self):
@@ -533,7 +554,6 @@ class TaskResult(models.Model):
         on_delete=models.CASCADE,
     )
 
-    retvalue = models.TextField(null=True, blank=True)
     retcode = models.IntegerField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)

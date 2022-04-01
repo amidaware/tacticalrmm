@@ -395,7 +395,6 @@ SCHEDULE_CHOICES = (("daily", "Daily"), ("weekly", "Weekly"), ("monthly", "Month
     )
     timeout = models.PositiveIntegerField(default=120)
     retcode = models.IntegerField(null=True, blank=True)
-    retvalue = models.TextField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)
     execution_time = models.CharField(max_length=100, default="0.0000")

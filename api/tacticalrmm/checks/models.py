@@ -164,6 +164,9 @@ class Check(BaseAuditModel):
         null=True, blank=True, default=1
     )
 
+    # deprecated
+    managed_by_policy = models.BooleanField(default=False)
+
     check_result: "Union[CheckResult, Dict]" = {}
 
     def __str__(self):
@@ -342,7 +345,7 @@ class CheckResult(models.Model):
     status = models.CharField(
         max_length=100, choices=CHECK_STATUS_CHOICES, default="pending"
     )
-    # for memory and cpu checks where severity changes
+    # for memory, diskspace, script, and cpu checks where severity changes
     alert_severity = models.CharField(
         max_length=15,
         choices=SEVERITY_CHOICES,

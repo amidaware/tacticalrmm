@@ -59,5 +59,5 @@ if getattr(settings, "SWAGGER_ENABLED", False):
     )
 
 ws_urlpatterns = [
-    path("ws/dashinfo/", DashInfo.as_asgi()),  # type: ignore
+    path("ws/dashinfo/", DashInfo.as_asgi()),
 ]

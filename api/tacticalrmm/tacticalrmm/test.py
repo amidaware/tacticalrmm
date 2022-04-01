@@ -1,15 +1,26 @@
 import uuid
 
+from typing import Optional, List, Dict, Any, Union, TYPE_CHECKING
 from accounts.models import User
 from core.models import CoreSettings
 from django.test import TestCase, override_settings
-from model_bakery import baker, seq
+from model_bakery import baker
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
+from agents.models import Agent
+from automation.models import Policy
+
+if TYPE_CHECKING:
+    from agents.models import Agent
+    from automation.models import Policy
+    from checks.models import Check
+    from scripts.models import Script
 
 
 class TacticalTestCase(TestCase):
-    def authenticate(self):
+    client: APIClient
+
+    def authenticate(self) -> None:
         self.john = User(username="john")
         self.john.is_superuser = True
         self.john.set_password("hunter2")
@@ -18,7 +29,7 @@ class TacticalTestCase(TestCase):
         self.alice.is_superuser = True
         self.alice.set_password("hunter2")
         self.alice.save()
-        self.client_setup()
+        self.setup_client()
         self.client.force_authenticate(user=self.john)
 
         User.objects.create_user(  # type: ignore
@@ -27,15 +38,15 @@ class TacticalTestCase(TestCase):
             password=User.objects.make_random_password(60),  # type: ignore
         )
 
-    def setup_agent_auth(self, agent):
-        agent_user = User.objects.create_user(
+    def setup_client(self):
+        self.client = APIClient()
+
+    def setup_agent_auth(self, agent: "Agent") -> None:
+        agent_user = User.objects.create_user(  # type: ignore
             username=agent.agent_id,
-            password=User.objects.make_random_password(60),
+            password=User.objects.make_random_password(60),  # type: ignore
         )
         Token.objects.create(user=agent_user)
-
-    def client_setup(self):
-        self.client = APIClient()
 
     # fixes tests waiting 2 minutes for mesh token to appear
     @override_settings(
@@ -44,16 +55,15 @@ class TacticalTestCase(TestCase):
     def setup_coresettings(self):
         self.coresettings = CoreSettings.objects.create()
 
-    def check_not_authenticated(self, method, url):
+    def check_not_authenticated(self, method: str, url: str) -> None:
         self.client.logout()
 
         r = getattr(self.client, method)(url)
         self.assertEqual(r.status_code, 401)
 
-    def create_checks(self, policy=None, agent=None, script=None):
-
-        if not policy and not agent:
-            return
+    def create_checks(
+        self, parent: "Union[Policy, Agent]", script: "Optional[Script]" = None
+    ) -> "List[Check]":
 
         # will create 1 of every check and associate it with the policy object passed
         check_recipes = [
@@ -66,24 +76,29 @@ class TacticalTestCase(TestCase):
             "checks.eventlog_check",
         ]
 
+        parent_obj = {}
+        if isinstance(parent, Policy):
+            parent_obj["policy"] = parent
+        else:
+            parent_obj["agent"] = parent
         checks = list()
         for recipe in check_recipes:
             if not script:
-                checks.append(baker.make_recipe(recipe, policy=policy, agent=agent))
+                checks.append(baker.make_recipe(recipe, **parent_obj))
             else:
-                checks.append(
-                    baker.make_recipe(recipe, policy=policy, agent=agent, script=script)
-                )
+                checks.append(baker.make_recipe(recipe, **parent_obj, script=script))
         return checks
 
-    def check_not_authorized(self, method: str, url: str, data: dict = {}):
+    def check_not_authorized(
+        self, method: str, url: str, data: Optional[Dict] = {}
+    ) -> None:
         try:
             r = getattr(self.client, method)(url, data, format="json")
             self.assertEqual(r.status_code, 403)
         except KeyError:
             pass
 
-    def check_authorized(self, method: str, url: str, data: dict = {}):
+    def check_authorized(self, method: str, url: str, data: Optional[Dict] = {}) -> Any:
         try:
             r = getattr(self.client, method)(url, data, format="json")
             self.assertNotEqual(r.status_code, 403)
@@ -91,7 +106,9 @@ class TacticalTestCase(TestCase):
         except KeyError:
             pass
 
-    def check_authorized_superuser(self, method: str, url: str, data: dict = {}):
+    def check_authorized_superuser(
+        self, method: str, url: str, data: Optional[Dict] = {}
+    ) -> Any:
 
         try:
             # create django superuser and test authorized
@@ -114,7 +131,7 @@ class TacticalTestCase(TestCase):
         except KeyError:
             pass
 
-    def create_user_with_roles(self, roles: list[str]) -> User:
+    def create_user_with_roles(self, roles: List[str]) -> User:
         new_role = baker.make("accounts.Role")
         for role in roles:
             setattr(new_role, role, True)

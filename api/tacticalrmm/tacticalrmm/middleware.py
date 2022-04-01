@@ -111,7 +111,7 @@ class DemoMiddleware:
 
         view = APIView()
         view.headers = view.default_response_headers
-        return view.finalize_response(request, resp).render()  # type: ignore
+        return view.finalize_response(request, resp).render()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         from .utils import notify_error
@@ -141,7 +141,7 @@ class LinuxMiddleware:
 
         view = APIView()
         view.headers = view.default_response_headers
-        return view.finalize_response(request, resp).render()  # type: ignore
+        return view.finalize_response(request, resp).render()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if not request.path.startswith(EXCLUDE_PATHS):

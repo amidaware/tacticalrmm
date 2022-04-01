@@ -20,11 +20,10 @@ class TaskSerializer(serializers.ModelSerializer):
     expire_date = serializers.DateTimeField(allow_null=True, required=False)
     task_result = serializers.SerializerMethodField()
 
-    # use select_related("taskresults") on the query set to make this go faster
     def get_task_result(self, obj):
         return (
             TaskResultSerializer(obj.task_result).data
-            if hasattr(obj, "task_result")
+            if isinstance(obj.task_result, TaskResult)
             else {}
         )
 

@@ -2,7 +2,7 @@ import asyncio
 import random
 import string
 import pytz
-from typing import TYPE_CHECKING, List, Dict, Optional
+from typing import TYPE_CHECKING, List, Dict, Optional, Union
 
 from alerts.models import SEVERITY_CHOICES
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -12,6 +12,7 @@ from django.db.models.fields import DateTimeField
 from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
 from logs.models import BaseAuditModel, DebugLog
+from core.utils import get_core_settings
 
 if TYPE_CHECKING:
     from automation.models import Policy
@@ -137,6 +138,8 @@ class AutomatedTask(BaseAuditModel):
     remove_if_not_scheduled = models.BooleanField(default=False)
     run_asap_after_missed = models.BooleanField(default=False)  # added in agent v1.4.7
     task_instance_policy = models.PositiveSmallIntegerField(blank=True, default=1)
+
+    task_result: "Union[TaskResult, Dict]" = {}
 
     def __str__(self):
         return self.name
@@ -523,14 +526,10 @@ class TaskResult(models.Model):
         "agents.Agent",
         related_name="taskresults",
         on_delete=models.CASCADE,
-        null=True,
-        blank=True,
     )
     task = models.ForeignKey(
         "autotasks.AutomatedTask",
         related_name="taskresults",
-        null=True,
-        blank=True,
         on_delete=models.CASCADE,
     )
 
@@ -573,9 +572,8 @@ class TaskResult(models.Model):
         agent_field.save_to_field(value)
 
     def send_email(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
         # Format of Email sent when Task has email alert
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
@@ -587,12 +585,11 @@ class TaskResult(models.Model):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_mail(subject, body, self.agent.alert_template)  # type: ignore
+        CORE.send_mail(subject, body, self.agent.alert_template)
 
     def send_sms(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
         # Format of SMS sent when Task has SMS alert
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
@@ -604,27 +601,24 @@ class TaskResult(models.Model):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_sms(body, alert_template=self.agent.alert_template)
 
     def send_resolved_email(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = (
             subject
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
 
     def send_resolved_sms(self):
-        from core.models import CoreSettings
-
-        CORE = CoreSettings.objects.first()
+        CORE = get_core_settings()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = (
             subject
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
-        CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_sms(body, alert_template=self.agent.alert_template)

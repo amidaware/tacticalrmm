@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from checks.models import Check, CheckHistory, CheckResult
+from checks.models import CheckHistory, CheckResult
 from django.conf import settings
 from django.test import modify_settings
 from django.utils import timezone as djangotime
@@ -31,13 +31,13 @@ class TestCheckViews(TacticalTestCase):
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 8)  # type: ignore
+        self.assertEqual(len(resp.data), 8)
 
         # test checks agent url
         url = f"/agents/{agent.agent_id}/checks/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 4)  # type: ignore
+        self.assertEqual(len(resp.data), 4)
 
         # test agent doesn't exist
         url = f"/agents/jh3498uf8fkh4ro8hfd8df98/checks/"
@@ -72,7 +72,7 @@ class TestCheckViews(TacticalTestCase):
         serializer = CheckSerializer(disk_check)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(resp.data, serializer.data)
         self.check_not_authenticated("get", url)
 
     def test_add_disk_check(self):
@@ -271,8 +271,8 @@ class TestCheckViews(TacticalTestCase):
         )
 
         # need to manually set the date back 35 days
-        for check_history in check_history_data:  # type: ignore
-            check_history.x = djangotime.now() - djangotime.timedelta(days=35)  # type: ignore
+        for check_history in check_history_data:
+            check_history.x = djangotime.now() - djangotime.timedelta(days=35)
             check_history.save()
 
         # test invalid check pk
@@ -285,13 +285,13 @@ class TestCheckViews(TacticalTestCase):
         data = {"timeFilter": 30}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 30)  # type: ignore
+        self.assertEqual(len(resp.data), 30)
 
         # test with timeFilter equal to 0
         data = {"timeFilter": 0}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 60)  # type: ignore
+        self.assertEqual(len(resp.data), 60)
 
         self.check_not_authenticated("patch", url)
 
@@ -315,8 +315,8 @@ class TestCheckTasks(TacticalTestCase):
         )
 
         # need to manually set the date back 35 days
-        for check_history in check_history_data:  # type: ignore
-            check_history.x = djangotime.now() - djangotime.timedelta(days=35)  # type: ignore
+        for check_history in check_history_data:
+            check_history.x = djangotime.now() - djangotime.timedelta(days=35)
             check_history.save()
 
         # prune data 30 days old
@@ -878,7 +878,7 @@ class TestCheckTasks(TacticalTestCase):
 class TestCheckPermissions(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
-        self.client_setup()
+        self.setup_client()
 
     def test_get_checks_permissions(self):
         agent = baker.make_recipe("agents.agent")
@@ -902,7 +902,7 @@ class TestCheckPermissions(TacticalTestCase):
         )
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         self.check_not_authorized("get", f"{base_url}/")
         self.check_not_authorized("get", f"/agents/{agent.agent_id}/checks/")
@@ -916,15 +916,15 @@ class TestCheckPermissions(TacticalTestCase):
         user.role.save()
 
         r = self.check_authorized("get", f"{base_url}/")
-        self.assertEqual(len(r.data), 14)  # type: ignore
+        self.assertEqual(len(r.data), 14)
         r = self.check_authorized("get", f"/agents/{agent.agent_id}/checks/")
-        self.assertEqual(len(r.data), 5)  # type: ignore
+        self.assertEqual(len(r.data), 5)
         r = self.check_authorized(
             "get", f"/agents/{unauthorized_agent.agent_id}/checks/"
         )
-        self.assertEqual(len(r.data), 7)  # type: ignore
+        self.assertEqual(len(r.data), 7)
         r = self.check_authorized("get", f"/automation/policies/{policy.id}/checks/")
-        self.assertEqual(len(r.data), 2)  # type: ignore
+        self.assertEqual(len(r.data), 2)
 
         # test limiting to client
         user.role.can_view_clients.set([agent.client])
@@ -936,7 +936,7 @@ class TestCheckPermissions(TacticalTestCase):
 
         # make sure queryset is limited too
         r = self.client.get(f"{base_url}/")
-        self.assertEqual(len(r.data), 7)  # type: ignore
+        self.assertEqual(len(r.data), 7)
 
     def test_add_check_permissions(self):
         agent = baker.make_recipe("agents.agent")
@@ -977,7 +977,7 @@ class TestCheckPermissions(TacticalTestCase):
             self.check_authorized_superuser("post", url, data)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)  # type: ignore
+            self.client.force_authenticate(user=user)
 
             # test user without role
             self.check_not_authorized("post", url, data)
@@ -1018,7 +1018,7 @@ class TestCheckPermissions(TacticalTestCase):
             self.check_authorized_superuser(method, policy_url)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)  # type: ignore
+            self.client.force_authenticate(user=user)
 
             # test user without role
             self.check_not_authorized(method, url)
@@ -1075,7 +1075,7 @@ class TestCheckPermissions(TacticalTestCase):
             self.check_authorized_superuser("post", unauthorized_url)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)  # type: ignore
+            self.client.force_authenticate(user=user)
 
             # test user without role
             self.check_not_authorized("post", url)
@@ -1120,7 +1120,7 @@ class TestCheckPermissions(TacticalTestCase):
         self.check_authorized_superuser("patch", unauthorized_url)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         # test user without role
         self.check_not_authorized("patch", url)

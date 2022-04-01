@@ -8,7 +8,7 @@ import msgpack
 import nats
 import validators
 from asgiref.sync import sync_to_async
-from core.models import TZ_CHOICES, CoreSettings
+from core.models import TZ_CHOICES
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -16,6 +16,7 @@ from django.utils import timezone as djangotime
 from logs.models import BaseAuditModel, DebugLog
 from nats.errors import TimeoutError
 
+from core.utils import get_core_settings
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -98,9 +99,7 @@ class Agent(BaseAuditModel):
         if self.time_zone:
             return self.time_zone
         else:
-            from core.models import CoreSettings
-
-            return CoreSettings.objects.first().default_time_zone  # type: ignore
+            return get_core_settings().default_time_zone
 
     @property
     def is_posix(self):
@@ -151,13 +150,22 @@ class Agent(BaseAuditModel):
 
     @property
     def checks(self):
+        from checks.models import CheckResult
+
         total, passing, failing, warning, info = 0, 0, 0, 0, 0
 
         for check in self.get_checks_with_policies(exclude_overridden=True):
             total += 1
-            if not hasattr(check.check_result, "status") or check.check_result.status == "passing":  # type: ignore
+            if (
+                not hasattr(check.check_result, "status")
+                or isinstance(check.check_result, CheckResult)
+                and check.check_result.status == "passing"
+            ):
                 passing += 1
-            elif check.check_result.status == "failing":  # type: ignore
+            elif (
+                isinstance(check.check_result, CheckResult)
+                and check.check_result.status == "failing"
+            ):
                 if check.alert_severity == "error":
                     failing += 1
                 elif check.alert_severity == "warning":
@@ -333,6 +341,8 @@ class Agent(BaseAuditModel):
     def get_tasks_with_policies(
         self, exclude_synced: bool = False
     ) -> "List[AutomatedTask]":
+        from autotasks.models import TaskResult
+
         tasks = list(self.autotasks.all()) + self.get_tasks_from_policies()  # type: ignore
 
         if exclude_synced:
@@ -340,7 +350,7 @@ class Agent(BaseAuditModel):
                 task
                 for task in self.add_task_results(tasks)
                 if not task.task_result
-                or task.task_result
+                or isinstance(task.task_result, TaskResult)
                 and task.task_result.sync_status != "synced"
             ]
         else:
@@ -350,7 +360,7 @@ class Agent(BaseAuditModel):
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
         client_policy = getattr(self.client, f"{self.monitoring_type}_policy", None)
         default_policy = getattr(
-            CoreSettings.objects.first(), f"{self.monitoring_type}_policy", None
+            get_core_settings(), f"{self.monitoring_type}_policy", None
         )
 
         return {
@@ -377,7 +387,7 @@ class Agent(BaseAuditModel):
     def check_run_interval(self) -> int:
         interval = self.check_interval
         # determine if any agent checks have a custom interval and set the lowest interval
-        for check in self.get_checks_with_policies():  # type: ignore
+        for check in self.get_checks_with_policies():
             if check.run_interval and check.run_interval < interval:
 
                 # don't allow check runs less than 15s
@@ -547,7 +557,8 @@ class Agent(BaseAuditModel):
     # sets alert template assigned in the following order: policy, site, client, global
     # sets None if nothing is found
     def set_alert_template(self):
-        core = CoreSettings.objects.first()
+        core = get_core_settings()
+
         policies = self.get_agent_policies()
 
         # loop through all policies applied to agent and return an alert_template if found
@@ -556,13 +567,13 @@ class Agent(BaseAuditModel):
             # default alert_template will override a default policy with alert template applied
             if (
                 "default" in key
-                and core.alert_template  # type: ignore
-                and core.alert_template.is_active  # type: ignore
-                and not core.alert_template.is_agent_excluded(self)  # type: ignore
+                and core.alert_template
+                and core.alert_template.is_active
+                and not core.alert_template.is_agent_excluded(self)
             ):
-                self.alert_template = core.alert_template  # type: ignore
+                self.alert_template = core.alert_template
                 self.save(update_fields=["alert_template"])
-                return core.alert_template  # type: ignore
+                return core.alert_template
             elif (
                 policy
                 and policy.active
@@ -614,12 +625,12 @@ class Agent(BaseAuditModel):
 
         for task in tasks:
             for result in results:
-                if result.task.id == task.id:  # type: ignore
-                    task.task_result = result  # type: ignore
+                if result.task.id == task.pk:
+                    task.task_result = result
                     break
 
             if not hasattr(task, "task_result"):
-                task.task_result = None  # type: ignore
+                task.task_result = {}
 
         return tasks
 
@@ -629,12 +640,12 @@ class Agent(BaseAuditModel):
 
         for check in checks:
             for result in results:
-                if result.assigned_check.id == check.id:  # type: ignore
-                    check.check_result = result  # type: ignore
+                if result.assigned_check.id == check.pk:
+                    check.check_result = result
                     break
 
-            if not hasattr(check, "check_result"):  # type: ignore
-                check.check_result = None  # type: ignore
+            if not hasattr(check, "check_result"):
+                check.check_result = {}
 
         return checks
 
@@ -679,7 +690,7 @@ class Agent(BaseAuditModel):
                 ret = "timeout"
             else:
                 try:
-                    ret = msgpack.loads(msg.data)  # type: ignore
+                    ret = msgpack.loads(msg.data)
                 except Exception as e:
                     ret = str(e)
                     await sync_to_async(self._do_nats_debug, thread_sensitive=False)(
@@ -745,10 +756,9 @@ class Agent(BaseAuditModel):
         )
 
     def send_outage_email(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
-        CORE.send_mail(  # type: ignore
+        CORE.send_mail(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             (
                 f"Data has not been received from client {self.client.name}, "
@@ -760,10 +770,9 @@ class Agent(BaseAuditModel):
         )
 
     def send_recovery_email(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
-        CORE.send_mail(  # type: ignore
+        CORE.send_mail(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             (
                 f"Data has been received from client {self.client.name}, "
@@ -775,19 +784,17 @@ class Agent(BaseAuditModel):
         )
 
     def send_outage_sms(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
-        CORE.send_sms(  # type: ignore
+        CORE.send_sms(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             alert_template=self.alert_template,
         )
 
     def send_recovery_sms(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
-        CORE.send_sms(  # type: ignore
+        CORE.send_sms(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             alert_template=self.alert_template,
         )

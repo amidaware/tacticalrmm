@@ -8,7 +8,7 @@ from autotasks.models import AutomatedTask, TaskResult
 from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
 from checks.models import Check, CheckResult
 from checks.serializers import CheckRunnerGetSerializer
-from core.models import CoreSettings
+from core.utils import get_core_settings
 from core.utils import download_mesh_agent, get_mesh_device_id, get_mesh_ws_url
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -100,6 +100,9 @@ class WinUpdates(APIView):
     def patch(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         u = agent.winupdates.filter(guid=request.data["guid"]).last()  # type: ignore
+        if not u:
+            raise WinUpdate.DoesNotExist
+
         success: bool = request.data["success"]
         if success:
             u.result = "success"
@@ -191,16 +194,17 @@ class CheckRunner(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        checks = agent.get_checks_with_policies(exclude_overridden=True)  # type: ignore
+        checks = agent.get_checks_with_policies(exclude_overridden=True)
 
         run_list = [
             check
             for check in checks
             # always run if check hasn't run yet
-            if not hasattr(check.check_result, "last_run") or not check.check_result.last_run  # type: ignore
+            if not isinstance(check.check_result, CheckResult)
+            or not check.check_result.last_run
             # see if the correct amount of seconds have passed
             or (
-                check.check_result.last_run  # type: ignore
+                check.check_result.last_run
                 < djangotime.now()
                 - djangotime.timedelta(
                     seconds=check.run_interval
@@ -339,7 +343,7 @@ class MeshExe(APIView):
             case _:
                 return notify_error("Arch not specified")
 
-        core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+        core = get_core_settings()
 
         try:
             uri = get_mesh_ws_url()

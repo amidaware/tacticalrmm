@@ -201,7 +201,7 @@ class TestServiceViews(TacticalTestCase):
 class TestServicePermissions(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
-        self.client_setup()
+        self.setup_client()
 
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     def test_services_permissions(self, nats_cmd):

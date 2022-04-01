@@ -26,8 +26,8 @@ class TestAPIv3(TacticalTestCase):
         )
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["check_interval"], self.agent.check_interval)  # type: ignore
-        self.assertEqual(len(r.data["checks"]), 1)  # type: ignore
+        self.assertEqual(r.data["check_interval"], self.agent.check_interval)
+        self.assertEqual(len(r.data["checks"]), 1)
 
         # override check run interval
         check2 = baker.make_recipe(
@@ -39,8 +39,8 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data["checks"]), 2)  # type: ignore
-        self.assertEqual(r.data["check_interval"], 20)  # type: ignore
+        self.assertEqual(len(r.data["checks"]), 2)
+        self.assertEqual(r.data["check_interval"], 20)
 
         # Set last_run on both checks and should return an empty list
         check_result1.last_run = djangotime.now()
@@ -50,8 +50,8 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["check_interval"], 20)  # type: ignore
-        self.assertFalse(r.data["checks"])  # type: ignore
+        self.assertEqual(r.data["check_interval"], 20)
+        self.assertFalse(r.data["checks"])
 
         # set last_run greater than interval
         check_result1.last_run = djangotime.now() - djangotime.timedelta(seconds=200)
@@ -61,8 +61,8 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["check_interval"], 20)  # type: ignore
-        self.assertEquals(len(r.data["checks"]), 2)  # type: ignore
+        self.assertEqual(r.data["check_interval"], 20)
+        self.assertEquals(len(r.data["checks"]), 2)
 
         url = "/api/v3/Maj34ACb324j234asdj2n34kASDjh34-DESKTOPTEST123/checkrunner/"
         r = self.client.get(url)
@@ -159,11 +159,11 @@ class TestAPIv3(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         task = baker.make("autotasks.AutomatedTask", agent=agent, actions=task_actions)
 
-        url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"  # type: ignore
+        url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskGOGetSerializer(task).data, r.data)  # type: ignore
+        self.assertEqual(TaskGOGetSerializer(task).data, r.data)
 
     def test_task_runner_results(self):
         from agents.models import AgentCustomField
@@ -176,7 +176,7 @@ class TestAPIv3(TacticalTestCase):
         task = baker.make("autotasks.AutomatedTask", agent=agent)
         task_result = baker.make("autotasks.TaskResult", agent=agent, task=task)
 
-        url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"  # type: ignore
+        url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"
 
         # test passing task
         data = {
@@ -188,7 +188,7 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "passing")  # type: ignore
+        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "passing")
 
         # test failing task
         data = {
@@ -200,7 +200,7 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "failing")  # type: ignore
+        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "failing")
 
         # test collector task
         text = baker.make("core.CustomField", model="agent", type="text", name="Test")
@@ -212,8 +212,8 @@ class TestAPIv3(TacticalTestCase):
         )
 
         # test text fields
-        task.custom_field = text  # type: ignore
-        task.save()  # type: ignore
+        task.custom_field = text
+        task.save()
 
         # test failing failing with stderr
         data = {
@@ -225,7 +225,7 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "failing")  # type: ignore
+        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "failing")
 
         # test saving to text field
         data = {
@@ -237,12 +237,15 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")  # type: ignore
-        self.assertEqual(AgentCustomField.objects.get(field=text, agent=task.agent).value, "the last line")  # type: ignore
+        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")
+        self.assertEqual(
+            AgentCustomField.objects.get(field=text, agent=task.agent).value,
+            "the last line",
+        )
 
         # test saving to checkbox field
-        task.custom_field = boolean  # type: ignore
-        task.save()  # type: ignore
+        task.custom_field = boolean
+        task.save()
 
         data = {
             "stdout": "1",
@@ -253,12 +256,14 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")  # type: ignore
-        self.assertTrue(AgentCustomField.objects.get(field=boolean, agent=task.agent).value)  # type: ignore
+        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")
+        self.assertTrue(
+            AgentCustomField.objects.get(field=boolean, agent=task.agent).value
+        )
 
         # test saving to multiple field with commas
-        task.custom_field = multiple  # type: ignore
-        task.save()  # type: ignore
+        task.custom_field = multiple
+        task.save()
 
         data = {
             "stdout": "this,is,an,array",
@@ -269,8 +274,11 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")  # type: ignore
-        self.assertEqual(AgentCustomField.objects.get(field=multiple, agent=task.agent).value, ["this", "is", "an", "array"])  # type: ignore
+        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")
+        self.assertEqual(
+            AgentCustomField.objects.get(field=multiple, agent=task.agent).value,
+            ["this", "is", "an", "array"],
+        )
 
         # test mutiple with a single value
         data = {
@@ -282,5 +290,8 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")  # type: ignore
-        self.assertEqual(AgentCustomField.objects.get(field=multiple, agent=task.agent).value, ["this"])  # type: ignore
+        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")
+        self.assertEqual(
+            AgentCustomField.objects.get(field=multiple, agent=task.agent).value,
+            ["this"],
+        )

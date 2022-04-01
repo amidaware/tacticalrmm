@@ -3,29 +3,44 @@ import tempfile
 from base64 import b64encode
 from meshctrl.utils import get_auth_token
 
+from typing import TYPE_CHECKING
 import requests
 import websockets
 from django.conf import settings
 from django.http import FileResponse
 
 
-def get_mesh_ws_url() -> str:
+if TYPE_CHECKING:
     from core.models import CoreSettings
 
-    core = CoreSettings.objects.first()
-    token = get_auth_token(core.mesh_username, core.mesh_token)  # type: ignore
+
+def get_core_settings() -> "CoreSettings":
+    from core.models import CoreSettings
+
+    class CoreSettingsNotFound(Exception):
+        pass
+
+    coresettings = CoreSettings.objects.first()
+    if not coresettings:
+        raise CoreSettingsNotFound("CoreSettings not found.")
+    return coresettings
+
+
+def get_mesh_ws_url() -> str:
+    core = get_core_settings()
+    token = get_auth_token(core.mesh_username, core.mesh_token)
 
     if settings.DOCKER_BUILD:
         uri = f"{settings.MESH_WS_URL}/control.ashx?auth={token}"
     else:
-        site = core.mesh_site.replace("https", "wss")  # type: ignore
+        site = core.mesh_site.replace("https", "wss")
         uri = f"{site}/control.ashx?auth={token}"
 
     return uri
 
 
-async def get_mesh_device_id(uri: str, device_group: str):
-    async with websockets.connect(uri) as ws:  # type: ignore
+async def get_mesh_device_id(uri: str, device_group: str) -> None:
+    async with websockets.connect(uri) as ws:
         payload = {"action": "meshes", "responseid": "meshctrl"}
         await ws.send(json.dumps(payload))
 
@@ -55,9 +70,9 @@ def _b64_to_hex(h):
 
 async def send_command_with_mesh(
     cmd: str, uri: str, mesh_node_id: str, shell: int, run_as_user: int
-):
+) -> None:
     node_id = _b64_to_hex(mesh_node_id)
-    async with websockets.connect(uri) as ws:  # type: ignore
+    async with websockets.connect(uri) as ws:
         await ws.send(
             json.dumps(
                 {
@@ -72,9 +87,9 @@ async def send_command_with_mesh(
         )
 
 
-async def remove_mesh_agent(uri: str, mesh_node_id: str):
+async def remove_mesh_agent(uri: str, mesh_node_id: str) -> None:
     node_id = _b64_to_hex(mesh_node_id)
-    async with websockets.connect(uri) as ws:  # type: ignore
+    async with websockets.connect(uri) as ws:
         await ws.send(
             json.dumps(
                 {

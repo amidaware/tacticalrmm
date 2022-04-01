@@ -29,19 +29,19 @@ class TestAutotaskViews(TacticalTestCase):
         url = f"{base_url}/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 14)  # type: ignore
+        self.assertEqual(len(resp.data), 14)
 
         # test returning tasks for a specific agent
         url = f"/agents/{agent.agent_id}/tasks/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 3)  # type: ignore
+        self.assertEqual(len(resp.data), 3)
 
         # test returning tasks for a specific policy
         url = f"/automation/policies/{policy.id}/tasks/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 4)  # type: ignore
+        self.assertEqual(len(resp.data), 4)
 
     @patch("autotasks.tasks.create_win_task_schedule.delay")
     def test_add_autotask(self, create_win_task_schedule):
@@ -248,7 +248,7 @@ class TestAutotaskViews(TacticalTestCase):
         serializer = TaskSerializer(task)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(resp.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -270,7 +270,7 @@ class TestAutotaskViews(TacticalTestCase):
         resp = self.client.put(f"{base_url}/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
-        url = f"{base_url}/{agent_task.id}/"  # type: ignore
+        url = f"{base_url}/{agent_task.id}/"
 
         # test editing agent task with no task update
         data = {"name": "New Name"}
@@ -338,10 +338,10 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         # test delete agent task
-        url = f"{base_url}/{agent_task.id}/"  # type: ignore
+        url = f"{base_url}/{agent_task.id}/"
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        delete_win_task_schedule.assert_called_with(pk=agent_task.id)  # type: ignore
+        delete_win_task_schedule.assert_called_with(pk=agent_task.id)
 
         self.check_not_authenticated("delete", url)
 
@@ -356,7 +356,7 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         # test run agent task
-        url = f"{base_url}/{task.id}/run/"  # type: ignore
+        url = f"{base_url}/{task.id}/run/"
         resp = self.client.post(url, format="json")
         self.assertEqual(resp.status_code, 200)
         run_win_task.assert_called()
@@ -749,7 +749,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
 class TestTaskPermissions(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
-        self.client_setup()
+        self.setup_client()
 
     def test_get_tasks_permissions(self):
         agent = baker.make_recipe("agents.agent")
@@ -773,7 +773,7 @@ class TestTaskPermissions(TacticalTestCase):
         )
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         self.check_not_authorized("get", f"{base_url}/")
         self.check_not_authorized("get", f"/agents/{agent.agent_id}/tasks/")
@@ -787,15 +787,15 @@ class TestTaskPermissions(TacticalTestCase):
         user.role.save()
 
         r = self.check_authorized("get", f"{base_url}/")
-        self.assertEqual(len(r.data), 14)  # type: ignore
+        self.assertEqual(len(r.data), 14)
         r = self.check_authorized("get", f"/agents/{agent.agent_id}/tasks/")
-        self.assertEqual(len(r.data), 5)  # type: ignore
+        self.assertEqual(len(r.data), 5)
         r = self.check_authorized(
             "get", f"/agents/{unauthorized_agent.agent_id}/tasks/"
         )
-        self.assertEqual(len(r.data), 7)  # type: ignore
+        self.assertEqual(len(r.data), 7)
         r = self.check_authorized("get", f"/automation/policies/{policy.id}/tasks/")
-        self.assertEqual(len(r.data), 2)  # type: ignore
+        self.assertEqual(len(r.data), 2)
 
         # test limiting to client
         user.role.can_view_clients.set([agent.client])
@@ -807,7 +807,7 @@ class TestTaskPermissions(TacticalTestCase):
 
         # make sure queryset is limited too
         r = self.client.get(f"{base_url}/")
-        self.assertEqual(len(r.data), 7)  # type: ignore
+        self.assertEqual(len(r.data), 7)
 
     def test_add_task_permissions(self):
         agent = baker.make_recipe("agents.agent")
@@ -816,7 +816,7 @@ class TestTaskPermissions(TacticalTestCase):
         script = baker.make("scripts.Script")
 
         policy_data = {
-            "policy": policy.id,  # type: ignore
+            "policy": policy.id,
             "name": "Test Task Manual",
             "run_time_days": [],
             "timeout": 120,
@@ -858,7 +858,7 @@ class TestTaskPermissions(TacticalTestCase):
             self.check_authorized_superuser("post", url, data)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)  # type: ignore
+            self.client.force_authenticate(user=user)
 
             # test user without role
             self.check_not_authorized("post", url, data)
@@ -901,7 +901,7 @@ class TestTaskPermissions(TacticalTestCase):
             self.check_authorized_superuser(method, policy_url)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)  # type: ignore
+            self.client.force_authenticate(user=user)
 
             # test user without role
             self.check_not_authorized(method, url)
@@ -944,7 +944,7 @@ class TestTaskPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", unauthorized_url)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         # test user without role
         self.check_not_authorized("post", url)

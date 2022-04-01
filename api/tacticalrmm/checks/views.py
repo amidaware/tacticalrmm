@@ -32,7 +32,7 @@ class GetAddChecks(APIView):
             policy = get_object_or_404(Policy, id=policy)
             checks = Check.objects.filter(policy=policy)
         else:
-            checks = Check.objects.filter_by_role(request.user)
+            checks = Check.objects.filter_by_role(request.user)  # type: ignore
         return Response(CheckSerializer(checks, many=True).data)
 
     def post(self, request):
@@ -148,7 +148,13 @@ class GetCheckHistory(APIView):
                     - djangotime.timedelta(days=request.data["timeFilter"]),
                 )
 
-        check_history = CheckHistory.objects.filter(check_id=result.assigned_check.id, agent_id=result.agent.agent_id).filter(timeFilter).order_by("-x")  # type: ignore
+        check_history = (
+            CheckHistory.objects.filter(
+                check_id=result.assigned_check.id, agent_id=result.agent.agent_id
+            )
+            .filter(timeFilter)
+            .order_by("-x")
+        )
 
         return Response(CheckHistorySerializer(check_history, many=True).data)
 

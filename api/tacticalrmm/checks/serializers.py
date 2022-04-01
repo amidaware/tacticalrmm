@@ -29,7 +29,7 @@ class CheckSerializer(serializers.ModelSerializer):
     def get_check_result(self, obj):
         return (
             CheckResultSerializer(obj.check_result).data
-            if hasattr(obj, "check_result")
+            if isinstance(obj.check_result, CheckResult)
             else {}
         )
 

@@ -6,7 +6,7 @@ from typing import Optional
 
 from agents.models import Agent
 from agents.utils import get_agent_url
-from core.models import CoreSettings
+from core.utils import get_core_settings
 from django.conf import settings
 from django.utils import timezone as djangotime
 from logs.models import DebugLog, PendingAction
@@ -88,8 +88,8 @@ def send_agent_update_task(agent_ids: list[str]) -> None:
 
 @app.task
 def auto_self_agent_update_task() -> None:
-    core = CoreSettings.objects.first()
-    if not core.agent_auto_update:  # type:ignore
+    core = get_core_settings()
+    if not core.agent_auto_update:
         return
 
     q = Agent.objects.only("agent_id", "version")
@@ -243,7 +243,7 @@ def run_script_email_results_task(
         )
         return
 
-    CORE = CoreSettings.objects.first()
+    CORE = get_core_settings()
     subject = f"{agent.hostname} {script.name} Results"
     exec_time = "{:.4f}".format(r["execution_time"])
     body = (
@@ -256,25 +256,21 @@ def run_script_email_results_task(
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = CORE.smtp_from_email  # type:ignore
+    msg["From"] = CORE.smtp_from_email
 
     if emails:
         msg["To"] = ", ".join(emails)
     else:
-        msg["To"] = ", ".join(CORE.email_alert_recipients)  # type:ignore
+        msg["To"] = ", ".join(CORE.email_alert_recipients)
 
     msg.set_content(body)
 
     try:
-        with smtplib.SMTP(
-            CORE.smtp_host, CORE.smtp_port, timeout=20  # type:ignore
-        ) as server:  # type:ignore
-            if CORE.smtp_requires_auth:  # type:ignore
+        with smtplib.SMTP(CORE.smtp_host, CORE.smtp_port, timeout=20) as server:
+            if CORE.smtp_requires_auth:
                 server.ehlo()
                 server.starttls()
-                server.login(
-                    CORE.smtp_host_user, CORE.smtp_host_password  # type:ignore
-                )  # type:ignore
+                server.login(CORE.smtp_host_user, CORE.smtp_host_password)
                 server.send_message(msg)
                 server.quit()
             else:

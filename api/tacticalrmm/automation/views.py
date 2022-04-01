@@ -138,7 +138,7 @@ class UpdatePatchPolicy(APIView):
 
         serializer = WinUpdatePolicySerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.policy = policy  # type: ignore
+        serializer.policy = policy
         serializer.save()
 
         return Response("ok")

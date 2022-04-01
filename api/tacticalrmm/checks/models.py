@@ -1,18 +1,19 @@
 from statistics import mean
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Union, Optional
 
 from alerts.models import SEVERITY_CHOICES
-from core.models import CoreSettings
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from logs.models import BaseAuditModel
 
 from tacticalrmm.models import PermissionQuerySet
+from core.utils import get_core_settings
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate
     from automation.models import Policy
+    from checks.models import CheckResult
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -163,6 +164,8 @@ class Check(BaseAuditModel):
         null=True, blank=True, default=1
     )
 
+    check_result: "Union[CheckResult, Dict]" = {}
+
     def __str__(self):
         if self.agent:
             return f"{self.agent.hostname} - {self.readable_desc}"
@@ -171,6 +174,7 @@ class Check(BaseAuditModel):
 
     @property
     def readable_desc(self):
+        display = self.get_check_type_display()  # type: ignore
         if self.check_type == "diskspace":
 
             text = ""
@@ -179,9 +183,9 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            return f"{self.get_check_type_display()}: Drive {self.disk} - {text}"  # type: ignore
+            return f"{display}: Drive {self.disk} - {text}"
         elif self.check_type == "ping":
-            return f"{self.get_check_type_display()}: {self.name}"  # type: ignore
+            return f"{display}: {self.name}"
         elif self.check_type == "cpuload" or self.check_type == "memory":
 
             text = ""
@@ -190,13 +194,13 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            return f"{self.get_check_type_display()} - {text}"  # type: ignore
+            return f"{display} - {text}"
         elif self.check_type == "winsvc":
-            return f"{self.get_check_type_display()}: {self.svc_display_name}"  # type: ignore
+            return f"{display}: {self.svc_display_name}"
         elif self.check_type == "eventlog":
-            return f"{self.get_check_type_display()}: {self.name}"  # type: ignore
+            return f"{display}: {self.name}"
         elif self.check_type == "script":
-            return f"{self.get_check_type_display()}: {self.script.name}"  # type: ignore
+            return f"{display}: {self.script.name}"
         else:
             return "n/a"
 
@@ -554,7 +558,7 @@ class CheckResult(models.Model):
 
     def send_email(self):
 
-        CORE = CoreSettings.objects.first()
+        CORE = get_core_settings()
 
         body: str = ""
         if self.agent:
@@ -633,11 +637,11 @@ class CheckResult(models.Model):
                 except:
                     continue
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
 
     def send_sms(self):
 
-        CORE = CoreSettings.objects.first()
+        CORE = get_core_settings()
         body: str = ""
 
         if self.agent:
@@ -687,21 +691,21 @@ class CheckResult(models.Model):
         elif self.assigned_check.check_type == "eventlog":
             body = subject
 
-        CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_sms(body, alert_template=self.agent.alert_template)
 
     def send_resolved_email(self):
-        CORE = CoreSettings.objects.first()
+        CORE = get_core_settings()
 
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = f"{self} is now back to normal"
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
 
     def send_resolved_sms(self):
-        CORE = CoreSettings.objects.first()
+        CORE = get_core_settings()
 
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
-        CORE.send_sms(subject, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_sms(subject, alert_template=self.agent.alert_template)
 
 
 class CheckHistory(models.Model):

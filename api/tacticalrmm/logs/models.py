@@ -1,16 +1,14 @@
-import datetime as dt
 from abc import abstractmethod
 
 from django.db import models
+from core.utils import get_core_settings
 
 from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet
 
 
 def get_debug_level():
-    from core.models import CoreSettings
-
-    return CoreSettings.objects.first().agent_debug_level  # type: ignore
+    return get_core_settings().agent_debug_level
 
 
 ACTION_TYPE_CHOICES = [
@@ -390,7 +388,7 @@ class BaseAuditModel(models.Model):
     modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     @abstractmethod
-    def serialize():
+    def serialize(class_name):
         pass
 
     def save(self, old_model=None, *args, **kwargs):
@@ -400,7 +398,7 @@ class BaseAuditModel(models.Model):
             object_class = type(self)
             object_name = object_class.__name__.lower()
             username = get_username()
-            after_value = object_class.serialize(self)  # type: ignore
+            after_value = object_class.serialize(self)
 
             # populate created_by and modified_by fields on instance
             if not getattr(self, "created_by", None):
@@ -413,24 +411,26 @@ class BaseAuditModel(models.Model):
                 AuditLog.audit_object_add(
                     username,
                     object_name,
-                    after_value,  # type: ignore
+                    after_value,
                     self.__str__(),
                     debug_info=get_debug_info(),
                 )
             else:
 
                 if old_model:
-                    before_value = object_class.serialize(old_model)  # type: ignore
+                    before_value = object_class.serialize(old_model)
                 else:
-                    before_value = object_class.serialize(object_class.objects.get(pk=self.pk))  # type: ignore
+                    before_value = object_class.serialize(
+                        object_class.objects.get(pk=self.pk)
+                    )
                 # only create an audit entry if the values have changed
-                if before_value != after_value:  # type: ignore
+                if before_value != after_value:
 
                     AuditLog.audit_object_changed(
                         username,
                         object_class.__name__.lower(),
                         before_value,
-                        after_value,  # type: ignore
+                        after_value,
                         self.__str__(),
                         debug_info=get_debug_info(),
                     )
@@ -446,7 +446,7 @@ class BaseAuditModel(models.Model):
             AuditLog.audit_object_delete(
                 get_username(),
                 object_class.__name__.lower(),
-                object_class.serialize(self),  # type: ignore
+                object_class.serialize(self),
                 self.__str__(),
                 debug_info=get_debug_info(),
             )

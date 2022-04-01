@@ -7,6 +7,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
+from agents.views import run_script
 from logs.models import BaseAuditModel, DebugLog
 
 from tacticalrmm.models import PermissionQuerySet
@@ -258,6 +259,7 @@ class Alert(models.Model):
         alert_interval = None
         email_task = None
         text_task = None
+        run_script_action = None
 
         # check what the instance passed is
         if isinstance(instance, Agent):
@@ -361,7 +363,12 @@ class Alert(models.Model):
         if dashboard_alert or always_dashboard:
 
             # check if alert template is set and specific severities are configured
-            if not alert_template or alert_template and alert.severity in dashboard_severities:  # type: ignore
+            if (
+                not alert_template
+                or alert_template
+                and dashboard_severities
+                and alert.severity in dashboard_severities
+            ):
                 alert.hidden = False
                 alert.save(update_fields=["hidden"])
 
@@ -369,7 +376,12 @@ class Alert(models.Model):
         if email_alert or always_email:
 
             # check if alert template is set and specific severities are configured
-            if not alert_template or alert_template and alert.severity in email_severities:  # type: ignore
+            if (
+                not alert_template
+                or alert_template
+                and email_severities
+                and alert.severity in email_severities
+            ):
                 email_task.delay(
                     pk=alert.pk,
                     alert_interval=alert_interval,
@@ -379,11 +391,21 @@ class Alert(models.Model):
         if text_alert or always_text:
 
             # check if alert template is set and specific severities are configured
-            if not alert_template or alert_template and alert.severity in text_severities:  # type: ignore
+            if (
+                not alert_template
+                or alert_template
+                and text_severities
+                and alert.severity in text_severities
+            ):
                 text_task.delay(pk=alert.pk, alert_interval=alert_interval)
 
         # check if any scripts should be run
-        if alert_template and alert_template.action and run_script_action and not alert.action_run:  # type: ignore
+        if (
+            alert_template
+            and alert_template.action
+            and run_script_action
+            and not alert.action_run
+        ):
             r = agent.run_script(
                 scriptpk=alert_template.action.pk,
                 args=alert.parse_script_args(alert_template.action_args),
@@ -421,6 +443,7 @@ class Alert(models.Model):
         text_on_resolved = False
         resolved_email_task = None
         resolved_text_task = None
+        run_script_action = None
 
         # check what the instance passed is
         if isinstance(instance, Agent):
@@ -497,7 +520,7 @@ class Alert(models.Model):
         if (
             alert_template
             and alert_template.resolved_action
-            and run_script_action  # type: ignore
+            and run_script_action
             and not alert.resolved_action_run
         ):
             r = agent.run_script(
@@ -547,7 +570,7 @@ class Alert(models.Model):
                     continue
 
                 try:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
+                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
                 except Exception as e:
                     DebugLog.error(log_type="scripting", message=str(e))
                     continue

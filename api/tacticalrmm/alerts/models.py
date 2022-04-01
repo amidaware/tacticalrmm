@@ -7,7 +7,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
-from agents.views import run_script
 from logs.models import BaseAuditModel, DebugLog
 
 from tacticalrmm.models import PermissionQuerySet

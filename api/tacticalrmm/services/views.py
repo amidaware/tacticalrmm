@@ -6,10 +6,27 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from tacticalrmm.utils import notify_error
 
+from typing import Union, Dict, Tuple
+
 from .permissions import WinSvcsPerms
+
+
+def process_nats_response(data: Union[str, Dict]) -> Tuple[bool, bool, str]:
+    natserror = True if isinstance(data, str) else False
+    success = (
+        data["success"]
+        if isinstance(data, dict) and isinstance(data["success"], bool)
+        else False
+    )
+    errormsg = (
+        data["errormsg"]
+        if isinstance(data, dict) and isinstance(data["errormsg"], str)
+        else "timeout"
+    )
+
+    return (success, natserror, errormsg)
 
 
 class GetServices(APIView):
@@ -59,27 +76,33 @@ class GetEditActionService(APIView):
         if action == "restart":
             data["payload"]["action"] = "stop"
             r = asyncio.run(agent.nats_cmd(data, timeout=32))
-            if r == "timeout" or r == "natsdown":
+            success, natserror, errormsg = process_nats_response(r)
+
+            if errormsg == "timeout" or natserror:
                 return notify_error("Unable to contact the agent")
-            elif not r["success"] and r["errormsg"]:
-                return notify_error(r["errormsg"])
-            elif r["success"]:
+            elif not success and errormsg:
+                return notify_error(errormsg)
+            elif success:
                 data["payload"]["action"] = "start"
                 r = asyncio.run(agent.nats_cmd(data, timeout=32))
-                if r == "timeout":
+                success, natserror, errormsg = process_nats_response(r)
+
+                if errormsg == "timeout" or natserror:
                     return notify_error("Unable to contact the agent")
-                elif not r["success"] and r["errormsg"]:
-                    return notify_error(r["errormsg"])
-                elif r["success"]:
+                elif not success and errormsg:
+                    return notify_error(errormsg)
+                elif success:
                     return Response("The service was restarted successfully")
         else:
             data["payload"]["action"] = action
             r = asyncio.run(agent.nats_cmd(data, timeout=32))
-            if r == "timeout" or r == "natsdown":
+            success, natserror, errormsg = process_nats_response(r)
+
+            if errormsg == "timeout" or natserror:
                 return notify_error("Unable to contact the agent")
-            elif not r["success"] and r["errormsg"]:
-                return notify_error(r["errormsg"])
-            elif r["success"]:
+            elif not success and errormsg:
+                return notify_error(errormsg)
+            elif success:
                 return Response(
                     f"The service was {'started' if action == 'start' else 'stopped'} successfully"
                 )
@@ -98,12 +121,13 @@ class GetEditActionService(APIView):
         }
 
         r = asyncio.run(agent.nats_cmd(data, timeout=10))
+        success, natserror, errormsg = process_nats_response(r)
         # response struct from agent: {success: bool, errormsg: string}
-        if r == "timeout" or r == "natsdown":
+        if r == "timeout" or natserror:
             return notify_error("Unable to contact the agent")
-        elif not r["success"] and r["errormsg"]:
-            return notify_error(r["errormsg"])
-        elif r["success"]:
+        elif not success and errormsg:
+            return notify_error(errormsg)
+        elif success:
             return Response("The service start type was updated successfully")
 
         return notify_error("Something went wrong")

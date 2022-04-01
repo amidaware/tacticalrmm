@@ -25,7 +25,7 @@ class GetAddAutoTasks(APIView):
             policy = get_object_or_404(Policy, id=policy)
             tasks = AutomatedTask.objects.filter(policy=policy)
         else:
-            tasks = AutomatedTask.objects.filter_by_role(request.user)
+            tasks = AutomatedTask.objects.filter_by_role(request.user)  # type: ignore
         return Response(TaskSerializer(tasks, many=True).data)
 
     def post(self, request):

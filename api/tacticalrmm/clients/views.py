@@ -33,9 +33,9 @@ class GetAddClients(APIView):
     def get(self, request):
         clients = Client.objects.select_related(
             "workstation_policy", "server_policy", "alert_template"
-        ).filter_by_role(
+        ).filter_by_role(  # type: ignore
             request.user
-        )  # type: ignore
+        )
         return Response(
             ClientSerializer(clients, context={"user": request.user}, many=True).data
         )

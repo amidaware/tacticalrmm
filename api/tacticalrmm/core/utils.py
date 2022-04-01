@@ -64,7 +64,7 @@ def download_mesh_agent(dl_url: str) -> FileResponse:
         return FileResponse(open(fp.name, "rb"), as_attachment=True, filename=fp.name)
 
 
-def _b64_to_hex(h):
+def _b64_to_hex(h: str) -> str:
     return b64encode(bytes.fromhex(h)).decode().replace(r"/", "$").replace(r"+", "@")
 
 

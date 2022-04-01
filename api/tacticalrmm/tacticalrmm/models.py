@@ -1,10 +1,15 @@
 from django.db import models
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from accounts.models import User
+
 
 class PermissionQuerySet(models.QuerySet):
 
     # filters queryset based on permissions. Works different for Agent, Client, and Site
-    def filter_by_role(self, user):
+    def filter_by_role(self, user: User) -> models.QuerySet:
 
         role = user.role
 

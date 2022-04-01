@@ -146,7 +146,7 @@ class GetDebugLog(APIView):
 
         debug_logs = (
             DebugLog.objects.prefetch_related("agent")
-            .filter_by_role(request.user)
+            .filter_by_role(request.user)  # type: ignore
             .filter(logLevelFilter)
             .filter(agentFilter)
             .filter(logTypeFilter)

@@ -4,12 +4,12 @@ from agents.models import Agent
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from logs.models import BaseAuditModel
-
+from typing import Dict
 from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.models import PermissionQuerySet
 
 
-def _default_failing_checks_data():
+def _default_failing_checks_data() -> Dict[str, bool]:
     return {"error": False, "warning": False}
 
 

@@ -11,7 +11,6 @@ from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
-from tacticalrmm.utils import notify_error
 
 from .models import Policy
 from .permissions import AutomationPolicyPerms

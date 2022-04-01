@@ -62,7 +62,7 @@ def run_win_task(pk: int, agent_id: Optional[str] = None) -> str:
 
 
 @app.task
-def remove_orphaned_win_tasks(agentpk):
+def remove_orphaned_win_tasks(agentpk) -> None:
     from agents.models import Agent
 
     agent = Agent.objects.get(pk=agentpk)
@@ -81,7 +81,7 @@ def remove_orphaned_win_tasks(agentpk):
             log_type="agent_issues",
             message=f"Unable to clean up scheduled tasks on {agent.hostname}: {r}",
         )
-        return "notlist"
+        return
 
     agent_task_names = [task.win_task_name for task in agent.get_tasks_with_policies()]
 

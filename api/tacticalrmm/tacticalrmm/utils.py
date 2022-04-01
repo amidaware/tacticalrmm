@@ -159,7 +159,7 @@ def convert_to_iso_duration(string: str) -> str:
         return f"PT{tmp}"
 
 
-def reload_nats():
+def reload_nats() -> None:
     users = [
         {
             "user": "tacticalrmm",

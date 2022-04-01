@@ -18,7 +18,11 @@ from .serializers import InstalledSoftwareSerializer
 
 @api_view(["GET"])
 def chocos(request):
-    return Response(ChocoSoftware.objects.last().chocos)
+    chocos = ChocoSoftware.objects.last()
+    if not chocos:
+        return Response({})
+    else:
+        return Response(chocos.chocos)
 
 
 class GetSoftware(APIView):
@@ -35,7 +39,7 @@ class GetSoftware(APIView):
             except Exception:
                 return Response([])
         else:
-            software = InstalledSoftware.objects.filter_by_role(request.user)
+            software = InstalledSoftware.objects.filter_by_role(request.user)  # type: ignore
             return Response(InstalledSoftwareSerializer(software, many=True).data)
 
     # software install

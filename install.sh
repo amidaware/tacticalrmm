@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="59"
+SCRIPT_VERSION="60"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -406,6 +406,7 @@ buffer-size = 65535
 vacuum = true
 die-on-term = true
 max-requests = 500
+disable-logging = true
 EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini

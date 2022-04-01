@@ -223,6 +223,10 @@ class CheckRunner(APIView):
 
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
+
+        if "agent_id" not in request.data.keys():
+            return notify_error("Agent upgrade required")
+
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
 
         # check check result or create if doesn't exist

@@ -75,7 +75,8 @@ def dashboard_info(request):
             "loading_bar_color": request.user.loading_bar_color,
             "clear_search_when_switching": request.user.clear_search_when_switching,
             "hosted": getattr(settings, "HOSTED", False),
-            "date_format": get_core_settings().date_format,
+            "date_format": request.user.date_format,
+            "default_date_format": get_core_settings().date_format,
         }
     )
 

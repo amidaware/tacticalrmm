@@ -193,7 +193,10 @@ export default function () {
         context.commit("SET_URL_ACTION", data.url_action);
         context.commit("setShowCommunityScripts", data.show_community_scripts);
         context.commit("SET_HOSTED", data.hosted);
-        context.commit("setDateFormat", data.date_format)
+
+        if (data.date_format && data.date_format !== "") context.commit("setDateFormat", data.date_format)
+        else context.commit("setDateFormat", data.default_date_format)
+
       },
       loadTree({ commit, state }) {
         axios.get("/clients/").then(r => {

@@ -89,6 +89,11 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
+                  <div class="col-2">Date Format:</div>
+                  <div class="col-2"></div>
+                  <q-input outlined dense v-model="date_format" class="col-8" />
+                </q-card-section>
+                <q-card-section class="row">
                   <q-checkbox
                     v-model="clear_search_when_switching"
                     label="Clear search field when switching client/site"
@@ -127,6 +132,7 @@ export default {
       loading_bar_color: "",
       urlActions: [],
       clear_search_when_switching: true,
+      date_format: "",
       clientTreeSortOptions: [
         {
           label: "Sort alphabetically, moving failing clients to the top",
@@ -201,6 +207,7 @@ export default {
           this.clientTreeSort = r.data.client_tree_sort;
           this.loading_bar_color = r.data.loading_bar_color;
           this.clear_search_when_switching = r.data.clear_search_when_switching;
+          this.date_format = r.data.date_format;
         })
         .catch(e => {});
     },
@@ -216,6 +223,7 @@ export default {
         client_tree_sort: this.clientTreeSort,
         loading_bar_color: this.loading_bar_color,
         clear_search_when_switching: this.clear_search_when_switching,
+        date_format: this.date_format,
       };
       this.$axios
         .patch("/accounts/users/ui/", data)

@@ -47,7 +47,20 @@
                 <q-card-section class="row">
                   <div class="col-4">Default date format:</div>
                   <div class="col-2"></div>
-                  <q-input outlined dense v-model="settings.date_format" class="col-6" />
+                  <q-input outlined dense v-model="settings.date_format" class="col-6">
+                    <template v-slot:after>
+                      <q-btn
+                        round
+                        dense
+                        flat
+                        size="sm"
+                        icon="info"
+                        @click="openURL('https://quasar.dev/quasar-utils/date-utils#format-for-display')"
+                      >
+                        <q-tooltip>Click to see formatting options</q-tooltip>
+                      </q-btn>
+                    </template>
+                  </q-input>
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Default server policy:</div>
@@ -440,6 +453,7 @@
 </template>
 
 <script>
+import { openURL } from "quasar";
 import mixins from "@/mixins/mixins";
 import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
 import CustomFields from "@/components/modals/coresettings/CustomFields";
@@ -486,6 +500,9 @@ export default {
     };
   },
   methods: {
+    openURL(url) {
+      openURL(url);
+    },
     getCoreSettings() {
       this.$axios
         .get("/core/settings/")

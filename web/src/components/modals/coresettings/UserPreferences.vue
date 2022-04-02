@@ -91,7 +91,20 @@
                 <q-card-section class="row">
                   <div class="col-2">Date Format:</div>
                   <div class="col-2"></div>
-                  <q-input outlined dense v-model="date_format" class="col-8" />
+                  <q-input outlined dense v-model="date_format" class="col-8">
+                    <template v-slot:after>
+                      <q-btn
+                        round
+                        dense
+                        flat
+                        size="sm"
+                        icon="info"
+                        @click="openURL('https://quasar.dev/quasar-utils/date-utils#format-for-display')"
+                      >
+                        <q-tooltip>Click to see formatting options</q-tooltip>
+                      </q-btn>
+                    </template>
+                  </q-input>
                 </q-card-section>
                 <q-card-section class="row">
                   <q-checkbox
@@ -113,6 +126,7 @@
 </template>
 
 <script>
+import { openURL } from "quasar";
 import { loadingBarColors } from "@/mixins/data";
 import mixins from "@/mixins/mixins";
 
@@ -185,6 +199,9 @@ export default {
     },
   },
   methods: {
+    openURL(url) {
+      openURL(url);
+    },
     getURLActions() {
       this.$axios
         .get("/core/urlaction/")

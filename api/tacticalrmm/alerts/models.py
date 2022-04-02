@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union, Optional
+from typing import TYPE_CHECKING, Union, Optional, cast
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -129,11 +129,12 @@ class Alert(models.Model):
                 alerts = cls.objects.filter(
                     agent=agent, alert_type="availability", resolved=False
                 )
-                last_alert = alerts[-1]
+
+                last_alert = cast(cls, alerts.last())
 
                 # cycle through other alerts and resolve
                 for alert in alerts:
-                    if alert.id != last_alert.id:
+                    if alert.id != last_alert.pk:
                         alert.resolve()
 
                 return last_alert
@@ -181,11 +182,11 @@ class Alert(models.Model):
                     agent=agent if check.policy else check.agent,
                     resolved=False,
                 )
-                last_alert = alerts[-1]
+                last_alert = cast(cls, alerts.last())
 
                 # cycle through other alerts and resolve
                 for alert in alerts:
-                    if alert.id != last_alert.id:
+                    if alert.id != last_alert.pk:
                         alert.resolve()
 
                 return last_alert
@@ -229,11 +230,11 @@ class Alert(models.Model):
                     agent=agent if task.policy else task.agent,
                     resolved=False,
                 )
-                last_alert = alerts[-1]
+                last_alert = cast(cls, alerts.last())
 
                 # cycle through other alerts and resolve
                 for alert in alerts:
-                    if alert.id != last_alert.id:
+                    if alert.id != last_alert.pk:
                         alert.resolve()
 
                 return last_alert

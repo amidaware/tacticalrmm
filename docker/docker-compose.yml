@@ -10,14 +10,14 @@ networks:
         - subnet: 172.20.0.0/24
   api-db: null
   redis: null
-  mesh-db: null # docker managed persistent volumes
+  mesh-db: null
 
+# docker managed persistent volumes
 volumes:
   tactical_data: null
   postgres_data: null
   mongo_data: null
   mesh_data: null
-  redis_data: null
 
 services:
   # postgres database for api service
@@ -39,10 +39,7 @@ services:
     container_name: trmm-redis
     image: redis:6.0-alpine
     user: 1000:1000
-    command: redis-server --appendonly yes
     restart: always
-    volumes:
-      - redis_data:/data
     networks:
       - redis
 
@@ -71,7 +68,6 @@ services:
       - tactical_data:/opt/tactical
       - mesh_data:/meshcentral-data
       - mongo_data:/mongo/data/db
-      - redis_data:/redis/data
 
   # nats
   tactical-nats:

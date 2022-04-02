@@ -120,10 +120,7 @@ services:
     container_name: trmm-redis-dev
     restart: always
     user: 1000:1000
-    command: redis-server --appendonly yes
     image: redis:6.0-alpine
-    volumes:
-      - redis-data-dev:/data
     networks:
       dev:
         aliases:
@@ -153,7 +150,6 @@ services:
     volumes:
       - tactical-data-dev:/opt/tactical
       - mesh-data-dev:/meshcentral-data
-      - redis-data-dev:/redis/data
       - mongo-dev-data:/mongo/data/db
       - ..:/workspace:cached
 
@@ -236,7 +232,6 @@ volumes:
   postgres-data-dev: null
   mongo-dev-data: null
   mesh-data-dev: null
-  redis-data-dev: null
 
 networks:
   dev:

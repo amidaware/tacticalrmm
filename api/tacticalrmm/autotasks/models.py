@@ -144,20 +144,6 @@ class AutomatedTask(BaseAuditModel):
 
     # deprecated
     managed_by_policy = models.BooleanField(default=False)
-    script = models.ForeignKey(
-        "scripts.Script",
-        null=True,
-        blank=True,
-        related_name="autoscript",
-        on_delete=models.SET_NULL,
-    )
-    script_args = ArrayField(
-        models.CharField(max_length=255, null=True, blank=True),
-        null=True,
-        blank=True,
-        default=list,
-    )
-    timeout = models.PositiveIntegerField(blank=True, default=120)
 
     # non-database property
     task_result: "Union[TaskResult, Dict]" = {}

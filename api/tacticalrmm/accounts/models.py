@@ -48,6 +48,9 @@ class User(AbstractUser, BaseAuditModel):
     client_tree_splitter = models.PositiveIntegerField(default=11)
     loading_bar_color = models.CharField(max_length=255, default="red")
     clear_search_when_switching = models.BooleanField(default=True)
+    date_format = models.CharField(
+        max_length=30, blank=True, default="MMM-DD-YYYY - HH:mm"
+    )
     is_installer_user = models.BooleanField(default=False)
     last_login_ip = models.GenericIPAddressField(default=None, blank=True, null=True)
 

@@ -234,7 +234,7 @@ class KnoxAuthMiddlewareInstance:
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        scope["user"] = get_user(scope["query_string"])
+        scope["user"] = await get_user(scope["query_string"])
 
         return await self.app(scope, receive, send)
 

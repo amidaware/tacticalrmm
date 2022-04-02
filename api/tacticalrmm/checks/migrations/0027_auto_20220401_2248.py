@@ -15,7 +15,7 @@ def migrate_check_results(apps, schema_editor):
             last_run=check.last_run,
             fail_count=check.fail_count,
             outage_history=check.outage_history,
-            extra_detail=check.extra_details,
+            extra_details=check.extra_details,
             stdout=check.stdout,
             stderr=check.stderr,
             retcode=check.retcode,

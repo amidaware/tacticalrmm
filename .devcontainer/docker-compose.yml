@@ -120,6 +120,7 @@ services:
     container_name: trmm-redis-dev
     restart: always
     user: 1000:1000
+    command: chown -R 1000 /data && redis-server
     image: redis:6.0-alpine
     networks:
       dev:

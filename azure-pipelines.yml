@@ -27,11 +27,11 @@ jobs:
           python3.10 -m venv env
           source env/bin/activate
           cd /myagent/_work/1/s/api/tacticalrmm
-          pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
+          pip install --upgrade pip
           SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
           WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-          pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
-          pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -r requirements.txt -r requirements-test.txt -r requirements-dev.txt
+          pip install setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
+          pip install -r requirements.txt -r requirements-test.txt
         displayName: "Install Python Dependencies"
 
       - script: |

@@ -161,14 +161,28 @@ def convert_to_iso_duration(string: str) -> str:
 
 
 def reload_nats():
-    users = [{"user": "tacticalrmm", "password": settings.SECRET_KEY}]
+    users = [
+        {
+            "user": "tacticalrmm",
+            "password": settings.SECRET_KEY,
+            "permissions": {"publish": ">", "subscribe": ">"},
+        }
+    ]
     agents = Agent.objects.prefetch_related("user").only(
         "pk", "agent_id"
     )  # type:ignore
     for agent in agents:
         try:
             users.append(
-                {"user": agent.agent_id, "password": agent.user.auth_token.key}
+                {
+                    "user": agent.agent_id,
+                    "password": agent.user.auth_token.key,
+                    "permissions": {
+                        "publish": {"allow": agent.agent_id},
+                        "subscribe": {"allow": agent.agent_id},
+                        "allow_responses": True,
+                    },
+                }
             )
         except:
             DebugLog.critical(

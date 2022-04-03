@@ -43,6 +43,9 @@ if getattr(settings, "ADMIN_ENABLED", False):
 
     urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)
 
+if getattr(settings, "DEBUG", False):
+    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
+
 if getattr(settings, "SWAGGER_ENABLED", False):
     from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 

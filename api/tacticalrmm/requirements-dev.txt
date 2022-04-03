@@ -3,3 +3,4 @@ Werkzeug
 django-extensions
 isort
 types-pytz
+django-silk

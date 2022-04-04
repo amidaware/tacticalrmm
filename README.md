@@ -1,6 +1,6 @@
 # Tactical RMM
 
-[![Build Status](https://dev.azure.com/dcparsi/Tactical%20RMM/_apis/build/status/wh1te909.tacticalrmm?branchName=develop)](https://dev.azure.com/dcparsi/Tactical%20RMM/_build/latest?definitionId=4&branchName=develop)
+![](https://github.com/amidaware/tacticalrmm/actions/workflows/ci-tests.yml/badge.svg?branch=develop)
 [![Coverage Status](https://coveralls.io/repos/github/wh1te909/tacticalrmm/badge.png?branch=develop&kill_cache=1)](https://coveralls.io/github/wh1te909/tacticalrmm?branch=develop)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
@@ -28,9 +28,12 @@ Demo database resets every hour. A lot of features are disabled for obvious reas
 - Remote software installation via chocolatey
 - Software and hardware inventory
 
-## Windows versions supported
+## Windows agent versions supported
 
-- Windows 7, 8.1, 10, Server 2008R2, 2012R2, 2016, 2019
+- Windows 7, 8.1, 10, 11, Server 2008R2, 2012R2, 2016, 2019, 2022
+
+## Linux agent versions supported
+- Any distro with systemd
 
 ## Installation / Backup / Restore / Usage
 

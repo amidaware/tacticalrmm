@@ -129,11 +129,13 @@ processes = ${uwsgiprocs}
 threads = ${uwsgiprocs}
 enable-threads = true
 socket = 0.0.0.0:8080
+harakiri = 300
 chmod-socket = 660
 buffer-size = 65535
 vacuum = true
 die-on-term = true
-max-requests = 2000
+max-requests = 500
+disable-logging = true
 EOF
 )"
 

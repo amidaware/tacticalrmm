@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="34"
+SCRIPT_VERSION="35"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -276,6 +276,7 @@ buffer-size = 65535
 vacuum = true
 die-on-term = true
 max-requests = 500
+disable-logging = true
 EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini

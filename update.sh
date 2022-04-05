@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="131"
+SCRIPT_VERSION="132"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -144,6 +144,7 @@ buffer-size = 65535
 vacuum = true
 die-on-term = true
 max-requests = 500
+disable-logging = true
 EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini

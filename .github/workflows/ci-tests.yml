@@ -1,0 +1,56 @@
+name: Tests CI
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  test:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup virtual env and install requirements
+        run: |
+          sudo -u postgres psql -c 'DROP DATABASE IF EXISTS pipeline'
+          sudo -u postgres psql -c 'DROP DATABASE IF EXISTS test_pipeline'
+          sudo -u postgres psql -c 'CREATE DATABASE pipeline'
+          sudo -u postgres psql -c "SET client_encoding = 'UTF8'" pipeline
+          pwd
+          rm -rf /actions-runner/_work/trmm-actions/trmm-actions/api/env
+          cd api
+          python3.10 -m venv env
+          source env/bin/activate
+          cd tacticalrmm
+          python --version
+          SETTINGS_FILE="tacticalrmm/settings.py"
+          SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+          WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+          pip install --upgrade pip
+          pip install setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
+          pip install -r requirements.txt -r requirements-test.txt
+
+      - name: Run django tests
+        env:
+          GHACTIONS: "yes"
+        run: |
+          cd api/tacticalrmm
+          source ../env/bin/activate
+          coverage run manage.py test -v 2
+          if [ $? -ne 0 ]; then
+              exit 1
+          fi
+
+      - name: Codestyle black
+        run: |
+          cd api
+          source env/bin/activate
+          black --exclude migrations/ --check tacticalrmm
+          if [ $? -ne 0 ]; then
+              exit 1
+          fi

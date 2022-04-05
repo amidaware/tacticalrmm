@@ -17,16 +17,16 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.12.1"
+TRMM_VERSION = "0.12.2"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
 APP_VER = "0.0.159"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.0.1"
+LATEST_AGENT_VER = "2.0.2"
 
-MESH_VER = "0.9.98"
+MESH_VER = "1.0.2"
 
 NATS_SERVER_VER = "2.7.4"
 
@@ -52,6 +52,29 @@ REST_KNOX = {
     "MIN_REFRESH_INTERVAL": 600,
 }
 
+if "GHACTIONS" in os.environ:
+    print("-----------------------PIPELINE----------------------------")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "pipeline",
+            "USER": "pipeline",
+            "PASSWORD": "pipeline123456",
+            "HOST": "127.0.0.1",
+            "PORT": "",
+        }
+    }
+    SECRET_KEY = "abcdefghijklmnoptravis123456789"
+    DEBUG = False
+    ALLOWED_HOSTS = ["api.example.com"]
+    ADMIN_URL = "abc123456/"
+    CORS_ORIGIN_WHITELIST = ["https://rmm.example.com"]
+    MESH_USERNAME = "pipeline"
+    MESH_SITE = "https://example.com"
+    MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
+    REDIS_HOST = "localhost"
+    ADMIN_ENABLED = False
+
 try:
     from .local_settings import *
 except ImportError:
@@ -74,11 +97,34 @@ SPECTACULAR_SETTINGS = {
     "AUTHENTICATION_WHITELIST": ["tacticalrmm.auth.APIAuthentication"],
 }
 
-if not "AZPIPELINE" in os.environ:
-    if not DEBUG:  # type: ignore
-        REST_FRAMEWORK.update(
-            {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
-        )
+
+if not DEBUG:  # type: ignore
+    REST_FRAMEWORK.update(
+        {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
+    )
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  ##
+    "tacticalrmm.middleware.LogIPMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "tacticalrmm.middleware.AuditMiddleware",
+    "tacticalrmm.middleware.LinuxMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+
+if ADMIN_ENABLED:  # type: ignore
+    MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
+
+try:
+    if DEMO:  # type: ignore
+        MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
+except:
+    pass
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -107,21 +153,23 @@ INSTALLED_APPS = [
     "drf_spectacular",
 ]
 
-if not "AZPIPELINE" in os.environ:
-    if DEBUG:  # type: ignore
-        INSTALLED_APPS += ("django_extensions",)
 
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [(REDIS_HOST, 6379)],  # type: ignore
-            },
+if DEBUG:  # type: ignore
+    INSTALLED_APPS += (
+        "django_extensions",
+        "silk",
+    )
+
+    MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_HOST, 6379)],  # type: ignore
         },
-    }
-
-if "AZPIPELINE" in os.environ:
-    ADMIN_ENABLED = False
+    },
+}
 
 if ADMIN_ENABLED:  # type: ignore
     INSTALLED_APPS += (
@@ -129,28 +177,6 @@ if ADMIN_ENABLED:  # type: ignore
         "django.contrib.messages",
     )
 
-
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  ##
-    "tacticalrmm.middleware.LogIPMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "tacticalrmm.middleware.AuditMiddleware",
-    "tacticalrmm.middleware.LinuxMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-if ADMIN_ENABLED:  # type: ignore
-    MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
-
-try:
-    if DEMO:  # type: ignore
-        MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
-except:
-    pass
 
 ROOT_URLCONF = "tacticalrmm.urls"
 
@@ -226,38 +252,3 @@ LOGGING = {
         "django.request": {"handlers": ["file"], "level": "ERROR", "propagate": True}
     },
 }
-
-if "AZPIPELINE" in os.environ:
-    print("PIPELINE")
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "pipeline",
-            "USER": "pipeline",
-            "PASSWORD": "pipeline123456",
-            "HOST": "127.0.0.1",
-            "PORT": "",
-        }
-    }
-
-    REST_FRAMEWORK = {
-        "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
-        "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-        "DEFAULT_AUTHENTICATION_CLASSES": (
-            "knox.auth.TokenAuthentication",
-            "tacticalrmm.auth.APIAuthentication",
-        ),
-        "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
-    }
-
-    ALLOWED_HOSTS = ["api.example.com"]
-    DEBUG = True
-    SECRET_KEY = "abcdefghijklmnoptravis123456789"
-
-    ADMIN_URL = "abc123456/"
-
-    SCRIPTS_DIR = os.path.join(Path(BASE_DIR).parents[1], "scripts")
-    MESH_USERNAME = "pipeline"
-    MESH_SITE = "https://example.com"
-    MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
-    REDIS_HOST = "localhost"

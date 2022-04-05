@@ -12,6 +12,11 @@ class Command(BaseCommand):
 
         self.stdout.write("Creating configuration for nats-api...")
         db = settings.DATABASES["default"]
+        if hasattr(settings, "DB_SSL"):
+            ssl = settings.DB_SSL
+        else:
+            ssl = "disable"
+
         config = {
             "key": settings.SECRET_KEY,
             "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
@@ -20,6 +25,7 @@ class Command(BaseCommand):
             "host": db["HOST"],
             "port": int(db["PORT"]),
             "dbname": db["NAME"],
+            "sslmode": ssl,
         }
         conf = os.path.join(settings.BASE_DIR, "nats-api.conf")
         with open(conf, "w") as f:

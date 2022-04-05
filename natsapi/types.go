@@ -13,4 +13,5 @@ type DjangoConfig struct {
 	Host    string `json:"host"`
 	Port    int    `json:"port"`
 	DBName  string `json:"dbname"`
+	SSLMode string `json:"sslmode"`
 }

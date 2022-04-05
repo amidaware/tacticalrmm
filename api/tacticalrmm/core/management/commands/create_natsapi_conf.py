@@ -12,7 +12,7 @@ class Command(BaseCommand):
 
         self.stdout.write("Creating configuration for nats-api...")
         db = settings.DATABASES["default"]
-        if hasattr(settings, "DB_SSL"):
+        if hasattr(settings, "DB_SSL") or "DB_SSL" in os.environ:
             ssl = settings.DB_SSL
         else:
             ssl = "disable"

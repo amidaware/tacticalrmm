@@ -65,10 +65,13 @@ from .serializers import (
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
 
+from silk.profiling.profiler import silk_profile
+
 
 class GetAgents(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
+    @silk_profile(name="List Agents")
     def get(self, request):
         if "site" in request.query_params.keys():
             filter = Q(site_id=request.query_params["site"])
@@ -86,10 +89,20 @@ class GetAgents(APIView):
 
             agents = (
                 Agent.objects.filter_by_role(request.user)  # type: ignore
-                .select_related("site", "policy", "alert_template")
-                .prefetch_related("agentchecks")
                 .filter(filter)
                 .defer(*AGENT_DEFER)
+                .select_related(
+                    "site__server_policy",
+                    "site__workstation_policy",
+                    "site__client__server_policy",
+                    "site__client__workstation_policy",
+                    "policy",
+                    "alert_template",
+                )
+                .prefetch_related(
+                    "agentchecks__script",
+                    "checkresults__assigned_check__script",
+                )
             )
             ctx = {"default_tz": get_default_timezone()}
             serializer = AgentTableSerializer(agents, many=True, context=ctx)

@@ -3,6 +3,7 @@ import re
 from collections import Counter
 from distutils.version import LooseVersion
 from typing import Any, Optional, List, Dict, TYPE_CHECKING
+from django.core.cache import cache
 
 import msgpack
 import nats
@@ -363,6 +364,16 @@ class Agent(BaseAuditModel):
             get_core_settings(), f"{self.monitoring_type}_policy", None
         )
 
+        # prefetch excluded objects on polices
+        models.prefetch_related_objects(
+            [self.policy, site_policy, client_policy, default_policy],
+            "excluded_agents",
+            "excluded_sites",
+            "excluded_clients",
+            "policychecks__script",
+            "policytasks",
+        )
+
         return {
             "agent_policy": self.policy
             if self.policy and not self.policy.is_agent_excluded(self)
@@ -465,27 +476,27 @@ class Agent(BaseAuditModel):
 
         updates = list()
         if patch_policy.critical == "approve":
-            updates += self.winupdates.filter(  # type: ignore
+            updates |= self.winupdates.filter(  # type: ignore
                 severity="Critical", installed=False
             ).exclude(action="approve")
 
         if patch_policy.important == "approve":
-            updates += self.winupdates.filter(  # type: ignore
+            updates |= self.winupdates.filter(  # type: ignore
                 severity="Important", installed=False
             ).exclude(action="approve")
 
         if patch_policy.moderate == "approve":
-            updates += self.winupdates.filter(  # type: ignore
+            updates |= self.winupdates.filter(  # type: ignore
                 severity="Moderate", installed=False
             ).exclude(action="approve")
 
         if patch_policy.low == "approve":
-            updates += self.winupdates.filter(severity="Low", installed=False).exclude(  # type: ignore
+            updates |= self.winupdates.filter(severity="Low", installed=False).exclude(  # type: ignore
                 action="approve"
             )
 
         if patch_policy.other == "approve":
-            updates += self.winupdates.filter(severity="", installed=False).exclude(  # type: ignore
+            updates |= self.winupdates.filter(severity="", installed=False).exclude(  # type: ignore
                 action="approve"
             )
 
@@ -649,20 +660,35 @@ class Agent(BaseAuditModel):
 
         return checks
 
-    def get_checks_from_policies(self):
+    def get_checks_from_policies(self) -> "List[Check]":
         from automation.models import Policy
 
-        # clear agent checks that have overridden_by_policy set
-        self.agentchecks.update(overridden_by_policy=False)  # type: ignore
+        cached_checks = cache.get(f"{self.site.name}_checks")
 
-        # get agent checks based on policies
-        return Policy.get_policy_checks(self)
+        if cached_checks and isinstance(cached_checks, list):
+            return cached_checks
+        else:
+            # clear agent checks that have overridden_by_policy set
+            self.agentchecks.update(overridden_by_policy=False)  # type: ignore
 
-    def get_tasks_from_policies(self):
+            # get agent checks based on policies
+            checks = Policy.get_policy_checks(self)
+            cache.set(f"{self.site.name}_checks", checks, 300)
+
+            return checks
+
+    def get_tasks_from_policies(self) -> "List[AutomatedTask]":
         from automation.models import Policy
 
-        # get agent tasks based on policies
-        return Policy.get_policy_tasks(self)
+        cached_tasks = cache.get(f"{self.site.name}_tasks")
+
+        if cached_tasks and isinstance(cached_tasks, list):
+            return cached_tasks
+        else:
+            # get agent tasks based on policies
+            tasks = Policy.get_policy_tasks(self)
+            cache.set(f"{self.site.name}_tasks", tasks, 300)
+            return tasks
 
     def _do_nats_debug(self, agent, message):
         DebugLog.error(agent=agent, log_type="agent_issues", message=message)

@@ -66,12 +66,11 @@ class Client(BaseAuditModel):
         return self.name
 
     @property
-    def has_maintenanace_mode_agents(self):
+    def has_maintenanace_mode_agents(self) -> bool:
         return (
             Agent.objects.defer(*AGENT_DEFER)
             .filter(site__client=self, maintenance_mode=True)
-            .count()
-            > 0
+            .exists()
         )
 
     @property
@@ -141,8 +140,8 @@ class Site(BaseAuditModel):
         return self.name
 
     @property
-    def has_maintenanace_mode_agents(self):
-        return self.agents.defer(*AGENT_DEFER).filter(maintenance_mode=True).count() > 0  # type: ignore
+    def has_maintenanace_mode_agents(self) -> bool:
+        return self.agents.defer(*AGENT_DEFER).filter(maintenance_mode=True).exists()  # type: ignore
 
     @property
     def live_agent_count(self) -> int:

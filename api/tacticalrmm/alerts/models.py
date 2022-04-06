@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union, Optional, cast
+from typing import TYPE_CHECKING, Union, Optional, List, cast
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -549,7 +549,7 @@ class Alert(models.Model):
                     message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
                 )
 
-    def parse_script_args(self, args: list[str]):
+    def parse_script_args(self, args: List[str]) -> List[str]:
 
         if not args:
             return []

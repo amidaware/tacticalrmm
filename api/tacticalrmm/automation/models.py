@@ -52,7 +52,7 @@ class Policy(BaseAuditModel):
         return self.default_workstation_policy.exists()  # type: ignore
 
     def is_agent_excluded(self, agent):
-        # will prefetch the many to many relations in a single query versus 3. esults are cached on the object
+        # will prefetch the many to many relations in a single query versus 3. results are cached on the object
         models.prefetch_related_objects(
             [self], "excluded_agents", "excluded_sites", "excluded_clients"
         )
@@ -248,6 +248,8 @@ class Policy(BaseAuditModel):
         cpuload_checks = list()
         memory_checks = list()
 
+        overridden_checks = list()
+
         # Loop over checks in with enforced policies first, then non-enforced policies
         for check in enforced_checks + agent_checks + policy_checks:
             if check.check_type == "diskspace" and agent.plat == "windows":
@@ -258,8 +260,7 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         diskspace_checks.append(check)
                 elif check.agent:
-                    check.overridden_by_policy = True
-                    check.save()
+                    overridden_checks.append(check.pk)
 
             elif check.check_type == "ping":
                 # Check if IP/host was already added
@@ -269,8 +270,7 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         ping_checks.append(check)
                 elif check.agent:
-                    check.overridden_by_policy = True
-                    check.save()
+                    overridden_checks.append(check.pk)
 
             elif check.check_type == "cpuload" and agent.plat == "windows":
                 # Check if cpuload list is empty
@@ -280,8 +280,7 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         cpuload_checks.append(check)
                 elif check.agent:
-                    check.overridden_by_policy = True
-                    check.save()
+                    overridden_checks.append(check.pk)
 
             elif check.check_type == "memory" and agent.plat == "windows":
                 # Check if memory check list is empty
@@ -291,8 +290,7 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         memory_checks.append(check)
                 elif check.agent:
-                    check.overridden_by_policy = True
-                    check.save()
+                    overridden_checks.append(check.pk)
 
             elif check.check_type == "winsvc" and agent.plat == "windows":
                 # Check if service name was already added
@@ -302,8 +300,7 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         winsvc_checks.append(check)
                 elif check.agent:
-                    check.overridden_by_policy = True
-                    check.save()
+                    overridden_checks.append(check.pk)
 
             elif check.check_type == "script" and agent.is_supported_script(
                 check.script.supported_platforms
@@ -315,8 +312,7 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         script_checks.append(check)
                 elif check.agent:
-                    check.overridden_by_policy = True
-                    check.save()
+                    overridden_checks.append(check.pk)
 
             elif check.check_type == "eventlog" and agent.plat == "windows":
                 # Check if events were already added
@@ -325,8 +321,14 @@ class Policy(BaseAuditModel):
                     if not check.agent:
                         eventlog_checks.append(check)
                 elif check.agent:
-                    check.overridden_by_policy = True
-                    check.save()
+                    overridden_checks.append(check.pk)
+
+            if overridden_checks:
+                from checks.models import Check
+
+                Check.objects.filter(pk__in=overridden_checks).update(
+                    overridden_by_policy=True
+                )
 
         return (
             diskspace_checks

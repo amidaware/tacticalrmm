@@ -34,3 +34,6 @@ Pygments==2.11.2
 isort==5.10.1
 mypy==0.931
 types-pytz==2021.3.4
+model-bakery==1.4.0
+coverage==6.3.2
+django-silk==4.3.0

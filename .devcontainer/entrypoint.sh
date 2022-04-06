@@ -60,6 +60,8 @@ DEBUG = True
 
 DOCKER_BUILD = True
 
+SWAGGER_ENABLED = True
+
 CERT_FILE = '${CERT_PUB_PATH}'
 KEY_FILE = '${CERT_PRIV_PATH}'
 
@@ -88,6 +90,12 @@ MESH_TOKEN_KEY = '${MESH_TOKEN}'
 REDIS_HOST    = '${REDIS_HOST}'
 MESH_WS_URL = '${MESH_WS_URL}'
 ADMIN_ENABLED = True
+
+DEV_MIDDLEWARE = [
+    "silk.middleware.SilkyMiddleware",
+]
+
+DEV_APPS = ["silk"]
 EOF
 )"
 

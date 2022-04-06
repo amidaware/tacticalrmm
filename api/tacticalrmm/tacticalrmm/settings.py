@@ -75,6 +75,9 @@ if "GHACTIONS" in os.environ:
     REDIS_HOST = "localhost"
     ADMIN_ENABLED = False
 
+DEV_MIDDLEWARE = []
+DEV_APPS = []
+
 try:
     from .local_settings import *
 except ImportError:
@@ -151,6 +154,7 @@ INSTALLED_APPS = [
     "scripts",
     "alerts",
     "drf_spectacular",
+    *DEV_APPS,
 ]
 
 
@@ -177,6 +181,29 @@ if ADMIN_ENABLED:  # type: ignore
         "django.contrib.messages",
     )
 
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  ##
+    *DEV_MIDDLEWARE,
+    "tacticalrmm.middleware.LogIPMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "tacticalrmm.middleware.AuditMiddleware",
+    "tacticalrmm.middleware.LinuxMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+if ADMIN_ENABLED:  # type: ignore
+    MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
+
+try:
+    if DEMO:  # type: ignore
+        MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
+except:
+    pass
 
 ROOT_URLCONF = "tacticalrmm.urls"
 

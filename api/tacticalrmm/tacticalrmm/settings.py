@@ -75,9 +75,6 @@ if "GHACTIONS" in os.environ:
     REDIS_HOST = "localhost"
     ADMIN_ENABLED = False
 
-DEV_MIDDLEWARE = []
-DEV_APPS = []
-
 try:
     from .local_settings import *
 except ImportError:
@@ -154,7 +151,6 @@ INSTALLED_APPS = [
     "scripts",
     "alerts",
     "drf_spectacular",
-    *DEV_APPS,
 ]
 
 
@@ -175,6 +171,16 @@ CHANNEL_LAYERS = {
     },
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:6379",  # type: ignore
+    }
+}
+
+if "AZPIPELINE" in os.environ:
+    ADMIN_ENABLED = False
+
 if ADMIN_ENABLED:  # type: ignore
     INSTALLED_APPS += (
         "django.contrib.admin",
@@ -186,7 +192,6 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",  ##
-    *DEV_MIDDLEWARE,
     "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

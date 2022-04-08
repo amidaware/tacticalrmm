@@ -310,7 +310,7 @@
                     v-model="settings.mesh_username"
                     class="col-6"
                     :rules="[
-                      val => (val == val.toLowerCase() && val != val.toUpperCase()) || 'Username be all lowercase',
+                      val => (val == val.toLowerCase() && val != val.toUpperCase()) || 'Username must be all lowercase',
                     ]"
                   />
                 </q-card-section>

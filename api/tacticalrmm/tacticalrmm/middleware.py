@@ -2,6 +2,7 @@ import threading
 
 from django.conf import settings
 from ipware import get_client_ip
+from typing import Dict, Optional, Any
 from rest_framework.exceptions import AuthenticationFailed
 
 from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED
@@ -9,11 +10,11 @@ from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED
 request_local = threading.local()
 
 
-def get_username():
+def get_username() -> Optional[str]:
     return getattr(request_local, "username", None)
 
 
-def get_debug_info():
+def get_debug_info() -> Dict[str, Any]:
     return getattr(request_local, "debug_info", {})
 
 

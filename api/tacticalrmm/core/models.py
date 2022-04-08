@@ -1,6 +1,7 @@
 import smtplib
 from email.message import EmailMessage
 
+from typing import Optional, Union, List, cast, TYPE_CHECKING
 import pytz
 import requests
 from django.conf import settings
@@ -11,19 +12,20 @@ from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwClient
 
+if TYPE_CHECKING:
+    from alerts.models import AlertTemplate
+
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
 
 class CoreSettings(BaseAuditModel):
     email_alert_recipients = ArrayField(
         models.EmailField(null=True, blank=True),
-        null=True,
         blank=True,
         default=list,
     )
     sms_alert_recipients = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
-        null=True,
         blank=True,
         default=list,
     )
@@ -31,18 +33,16 @@ class CoreSettings(BaseAuditModel):
     twilio_account_sid = models.CharField(max_length=255, null=True, blank=True)
     twilio_auth_token = models.CharField(max_length=255, null=True, blank=True)
     smtp_from_email = models.CharField(
-        max_length=255, null=True, blank=True, default="from@example.com"
+        max_length=255, blank=True, default="from@example.com"
     )
-    smtp_host = models.CharField(
-        max_length=255, null=True, blank=True, default="smtp.gmail.com"
-    )
+    smtp_host = models.CharField(max_length=255, blank=True, default="smtp.gmail.com")
     smtp_host_user = models.CharField(
-        max_length=255, null=True, blank=True, default="admin@example.com"
+        max_length=255, blank=True, default="admin@example.com"
     )
     smtp_host_password = models.CharField(
-        max_length=255, null=True, blank=True, default="changeme"
+        max_length=255, blank=True, default="changeme"
     )
-    smtp_port = models.PositiveIntegerField(default=587, null=True, blank=True)
+    smtp_port = models.PositiveIntegerField(default=587, blank=True)
     smtp_requires_auth = models.BooleanField(default=True)
     default_time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, default="America/Los_Angeles"
@@ -89,7 +89,7 @@ class CoreSettings(BaseAuditModel):
         max_length=30, blank=True, default="MMM-DD-YYYY - HH:mm"
     )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template
 
         if not self.pk and CoreSettings.objects.exists():
@@ -110,11 +110,11 @@ class CoreSettings(BaseAuditModel):
         if old_settings and old_settings.alert_template != self.alert_template:
             cache_agents_alert_template.delay()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Global Site Settings"
 
     @property
-    def sms_is_configured(self):
+    def sms_is_configured(self) -> bool:
         return all(
             [
                 self.twilio_auth_token,
@@ -124,7 +124,7 @@ class CoreSettings(BaseAuditModel):
         )
 
     @property
-    def email_is_configured(self):
+    def email_is_configured(self) -> bool:
         # smtp with username/password authentication
         if (
             self.smtp_requires_auth
@@ -146,12 +146,18 @@ class CoreSettings(BaseAuditModel):
 
         return False
 
-    def send_mail(self, subject, body, alert_template=None, test=False):
+    def send_mail(
+        self,
+        subject: str,
+        body: str,
+        alert_template: "Optional[AlertTemplate]" = None,
+        test: bool = False,
+    ) -> Union[bool, str]:
         if test and not self.email_is_configured:
             return "There needs to be at least one email recipient configured"
         # return since email must be configured to continue
         elif not self.email_is_configured:
-            return False
+            return "SMTP messaging not configured."
 
         # override email from if alert_template is passed and is set
         if alert_template and alert_template.email_from:
@@ -162,10 +168,9 @@ class CoreSettings(BaseAuditModel):
         # override email recipients if alert_template is passed and is set
         if alert_template and alert_template.email_recipients:
             email_recipients = ", ".join(alert_template.email_recipients)
+        elif self.email_alert_recipients:
+            email_recipients = ", ".join(cast(List[str], self.email_alert_recipients))
         else:
-            email_recipients = ", ".join(self.email_alert_recipients)
-
-        if not email_recipients:
             return "There needs to be at least one email recipient configured"
 
         try:
@@ -179,7 +184,10 @@ class CoreSettings(BaseAuditModel):
                 if self.smtp_requires_auth:
                     server.ehlo()
                     server.starttls()
-                    server.login(self.smtp_host_user, self.smtp_host_password)
+                    server.login(
+                        self.smtp_host_user,
+                        self.smtp_host_password,
+                    )
                     server.send_message(msg)
                     server.quit()
                 else:
@@ -191,20 +199,24 @@ class CoreSettings(BaseAuditModel):
             DebugLog.error(message=f"Sending email failed with error: {e}")
             if test:
                 return str(e)
-        else:
+        finally:
             return True
 
-    def send_sms(self, body, alert_template=None, test=False):
+    def send_sms(
+        self,
+        body: str,
+        alert_template: "Optional[AlertTemplate]" = None,
+        test: bool = False,
+    ) -> Union[str, bool]:
         if not self.sms_is_configured:
             return "Sms alerting is not setup correctly."
 
         # override email recipients if alert_template is passed and is set
         if alert_template and alert_template.text_recipients:
             text_recipients = alert_template.text_recipients
+        elif self.sms_alert_recipients:
+            text_recipients = cast(List[str], self.sms_alert_recipients)
         else:
-            text_recipients = self.sms_alert_recipients
-
-        if not text_recipients:
             return "No sms recipients found"
 
         tw_client = TwClient(self.twilio_account_sid, self.twilio_auth_token)
@@ -249,7 +261,7 @@ class CustomField(BaseAuditModel):
         blank=True,
         default=list,
     )
-    name = models.TextField(null=True, blank=True)
+    name = models.CharField(max_length=30, blank=True)
     required = models.BooleanField(blank=True, default=False)
     default_value_string = models.TextField(null=True, blank=True)
     default_value_bool = models.BooleanField(default=False)
@@ -264,7 +276,7 @@ class CustomField(BaseAuditModel):
     class Meta:
         unique_together = (("model", "name"),)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     @staticmethod

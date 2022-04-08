@@ -3,7 +3,11 @@ from clients.models import Client, Site
 from django.db import models
 from logs.models import BaseAuditModel
 
-from typing import Optional
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from checks.models import Check
+    from autotasks.models import AutomatedTask
 
 
 class Policy(BaseAuditModel):
@@ -28,11 +32,13 @@ class Policy(BaseAuditModel):
         "agents.Agent", related_name="policy_exclusions", blank=True
     )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         from alerts.tasks import cache_agents_alert_template
 
         # get old policy if exists
-        old_policy = type(self).objects.get(pk=self.pk) if self.pk else None
+        old_policy: Optional[Policy] = (
+            type(self).objects.get(pk=self.pk) if self.pk else None
+        )
         super(Policy, self).save(old_model=old_policy, *args, **kwargs)
 
         # check if alert template was changes and cache on agents
@@ -40,23 +46,18 @@ class Policy(BaseAuditModel):
             if old_policy.alert_template != self.alert_template:
                 cache_agents_alert_template.delay()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     @property
-    def is_default_server_policy(self):
-        return self.default_server_policy.exists()  # type: ignore
+    def is_default_server_policy(self) -> bool:
+        return self.default_server_policy.exists()
 
     @property
-    def is_default_workstation_policy(self):
-        return self.default_workstation_policy.exists()  # type: ignore
+    def is_default_workstation_policy(self) -> bool:
+        return self.default_workstation_policy.exists()
 
-    def is_agent_excluded(self, agent):
-        # will prefetch the many to many relations in a single query versus 3. results are cached on the object
-        models.prefetch_related_objects(
-            [self], "excluded_agents", "excluded_sites", "excluded_clients"
-        )
-
+    def is_agent_excluded(self, agent: "Agent") -> bool:
         return (
             agent in self.excluded_agents.all()
             or agent.site in self.excluded_sites.all()
@@ -180,14 +181,14 @@ class Policy(BaseAuditModel):
         )
 
     @staticmethod
-    def serialize(policy):
+    def serialize(policy: "Policy") -> Dict[str, Any]:
         # serializes the policy and returns json
         from .serializers import PolicyAuditSerializer
 
         return PolicyAuditSerializer(policy).data
 
     @staticmethod
-    def get_policy_tasks(agent):
+    def get_policy_tasks(agent: "Agent") -> "List[AutomatedTask]":
 
         # List of all tasks to be applied
         tasks = list()
@@ -206,7 +207,7 @@ class Policy(BaseAuditModel):
         return tasks
 
     @staticmethod
-    def get_policy_checks(agent):
+    def get_policy_checks(agent: "Agent") -> "List[Check]":
         # Get checks added to agent directly
         agent_checks = list(agent.agentchecks.all())
 
@@ -231,22 +232,22 @@ class Policy(BaseAuditModel):
                         policy_checks.append(check)
 
         # Sorted Checks already added
-        added_diskspace_checks = list()
-        added_ping_checks = list()
-        added_winsvc_checks = list()
-        added_script_checks = list()
-        added_eventlog_checks = list()
-        added_cpuload_checks = list()
-        added_memory_checks = list()
+        added_diskspace_checks: List[str] = list()
+        added_ping_checks: List[str] = list()
+        added_winsvc_checks: List[str] = list()
+        added_script_checks: List[int] = list()
+        added_eventlog_checks: List[List[str]] = list()
+        added_cpuload_checks: List[int] = list()
+        added_memory_checks: List[int] = list()
 
         # Lists all agent and policy checks that will be returned
-        diskspace_checks = list()
-        ping_checks = list()
-        winsvc_checks = list()
-        script_checks = list()
-        eventlog_checks = list()
-        cpuload_checks = list()
-        memory_checks = list()
+        diskspace_checks: "List[Check]" = list()
+        ping_checks: "List[Check]" = list()
+        winsvc_checks: "List[Check]" = list()
+        script_checks: "List[Check]" = list()
+        eventlog_checks: "List[Check]" = list()
+        cpuload_checks: "List[Check]" = list()
+        memory_checks: "List[Check]" = list()
 
         overridden_checks = list()
 
@@ -275,7 +276,7 @@ class Policy(BaseAuditModel):
             elif check.check_type == "cpuload" and agent.plat == "windows":
                 # Check if cpuload list is empty
                 if not added_cpuload_checks:
-                    added_cpuload_checks.append(check)
+                    added_cpuload_checks.append(check.pk)
                     # Dont create the check if it is an agent check
                     if not check.agent:
                         cpuload_checks.append(check)
@@ -285,7 +286,7 @@ class Policy(BaseAuditModel):
             elif check.check_type == "memory" and agent.plat == "windows":
                 # Check if memory check list is empty
                 if not added_memory_checks:
-                    added_memory_checks.append(check)
+                    added_memory_checks.append(check.pk)
                     # Dont create the check if it is an agent check
                     if not check.agent:
                         memory_checks.append(check)

@@ -13,7 +13,7 @@ from tacticalrmm.constants import AGENT_DEFER
 class Command(BaseCommand):
     help = "Collection of tasks to run after updating the rmm, after migrations"
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         self.stdout.write("Running post update tasks")
 
         # load community scripts into the db

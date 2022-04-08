@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union, Optional, List, cast
+from typing import TYPE_CHECKING, Union, Optional, Dict, Any, List, cast
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from agents.models import Agent
     from autotasks.models import AutomatedTask, TaskResult
     from checks.models import Check, CheckResult
+    from clients.models import Client, Site
 
 
 SEVERITY_CHOICES = [
@@ -38,8 +39,6 @@ class Alert(models.Model):
         "agents.Agent",
         related_name="agent",
         on_delete=models.CASCADE,
-        null=True,
-        blank=True,
     )
     assigned_check = models.ForeignKey(
         "checks.Check",
@@ -87,18 +86,18 @@ class Alert(models.Model):
         return self.message
 
     @property
-    def assigned_agent(self):
+    def assigned_agent(self) -> "Agent":
         return self.agent
 
     @property
-    def site(self):
+    def site(self) -> "Site":
         return self.agent.site
 
     @property
-    def client(self):
+    def client(self) -> "Client":
         return self.agent.client
 
-    def resolve(self):
+    def resolve(self) -> None:
         self.resolved = True
         self.resolved_on = djangotime.now()
         self.snoozed = False
@@ -113,24 +112,30 @@ class Alert(models.Model):
             if skip_create:
                 return None
 
-            return cls.objects.create(
-                agent=agent,
-                alert_type="availability",
-                severity="error",
-                message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is overdue.",
-                hidden=True,
+            return cast(
+                Alert,
+                cls.objects.create(
+                    agent=agent,
+                    alert_type="availability",
+                    severity="error",
+                    message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is overdue.",
+                    hidden=True,
+                ),
             )
         else:
             try:
-                return cls.objects.get(
-                    agent=agent, alert_type="availability", resolved=False
+                return cast(
+                    Alert,
+                    cls.objects.get(
+                        agent=agent, alert_type="availability", resolved=False
+                    ),
                 )
             except cls.MultipleObjectsReturned:
                 alerts = cls.objects.filter(
                     agent=agent, alert_type="availability", resolved=False
                 )
 
-                last_alert = cast(cls, alerts.last())
+                last_alert = cast(Alert, alerts.last())
 
                 # cycle through other alerts and resolve
                 for alert in alerts:
@@ -159,22 +164,29 @@ class Alert(models.Model):
             if skip_create:
                 return None
 
-            return cls.objects.create(
-                assigned_check=check,
-                agent=agent if check.policy else check.agent,
-                alert_type="check",
-                severity=check.alert_severity
-                if check.check_type not in ["memory", "cpuload", "diskspace", "script"]
-                else alert_severity,
-                message=f"{agent.hostname if agent else check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
-                hidden=True,
+            return cast(
+                Alert,
+                cls.objects.create(
+                    assigned_check=check,
+                    agent=agent if check.policy else check.agent,
+                    alert_type="check",
+                    severity=check.alert_severity
+                    if check.check_type
+                    not in ["memory", "cpuload", "diskspace", "script"]
+                    else alert_severity,
+                    message=f"{agent.hostname if agent else check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
+                    hidden=True,
+                ),
             )
         else:
             try:
-                return cls.objects.get(
-                    assigned_check=check,
-                    agent=agent if check.policy else check.agent,
-                    resolved=False,
+                return cast(
+                    Alert,
+                    cls.objects.get(
+                        assigned_check=check,
+                        agent=agent if check.policy else check.agent,
+                        resolved=False,
+                    ),
                 )
             except cls.MultipleObjectsReturned:
                 alerts = cls.objects.filter(
@@ -182,7 +194,7 @@ class Alert(models.Model):
                     agent=agent if check.policy else check.agent,
                     resolved=False,
                 )
-                last_alert = cast(cls, alerts.last())
+                last_alert = cast(Alert, alerts.last())
 
                 # cycle through other alerts and resolve
                 for alert in alerts:
@@ -702,10 +714,10 @@ class AlertTemplate(BaseAuditModel):
         "agents.Agent", related_name="alert_exclusions", blank=True
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def is_agent_excluded(self, agent):
+    def is_agent_excluded(self, agent: "Agent") -> bool:
         return (
             agent in self.excluded_agents.all()
             or agent.site in self.excluded_sites.all()
@@ -717,7 +729,7 @@ class AlertTemplate(BaseAuditModel):
         )
 
     @staticmethod
-    def serialize(alert_template):
+    def serialize(alert_template: AlertTemplate) -> Dict[str, Any]:
         # serializes the agent and returns json
         from .serializers import AlertTemplateAuditSerializer
 

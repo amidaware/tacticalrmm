@@ -143,6 +143,7 @@ EOF
 
 
   # run migrations and init scripts
+  python manage.py pre_update_tasks
   python manage.py migrate --no-input
   python manage.py collectstatic --no-input
   python manage.py initial_db_setup

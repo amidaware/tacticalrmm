@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from alerts.models import Alert
 
 
 class Command(BaseCommand):
@@ -6,4 +7,4 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         # adding this now for future updates
-        pass
+        Alert.objects.filter(agent=None).delete()

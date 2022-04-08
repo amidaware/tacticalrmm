@@ -105,7 +105,7 @@ services:
     image: postgres:13-alpine
     restart: always
     environment:
-      POSTGRES_DB: tacticalrmm
+      POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
     volumes:
@@ -145,6 +145,7 @@ services:
       TRMM_PASS: ${TRMM_PASS}
       HTTP_PROTOCOL: ${HTTP_PROTOCOL}
       APP_PORT: ${APP_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
     depends_on:
       - postgres-dev
       - meshcentral-dev

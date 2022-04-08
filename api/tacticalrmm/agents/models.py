@@ -2,7 +2,7 @@ import asyncio
 import re
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, Optional, List, Dict, TYPE_CHECKING
+from typing import Any, Optional, List, Dict, Union, Sequence, cast, TYPE_CHECKING
 from django.core.cache import cache
 
 import msgpack
@@ -25,6 +25,11 @@ if TYPE_CHECKING:
     from alerts.models import AlertTemplate, Alert
     from autotasks.models import AutomatedTask
     from checks.models import Check
+    from clients.models import Client
+    from winupdate.models import WinUpdatePolicy
+
+# type helpers
+Disk = Union[Dict[str, Any], str]
 
 
 class Agent(BaseAuditModel):
@@ -32,7 +37,7 @@ class Agent(BaseAuditModel):
 
     version = models.CharField(default="0.1.0", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
-    plat = models.CharField(max_length=255, null=True, blank=True)
+    plat = models.CharField(max_length=255, default="windows")
     goarch = models.CharField(max_length=255, null=True, blank=True)
     plat_release = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
@@ -75,9 +80,7 @@ class Agent(BaseAuditModel):
     site = models.ForeignKey(
         "clients.Site",
         related_name="agents",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
+        on_delete=models.RESTRICT,
     )
     policy = models.ForeignKey(
         "automation.Policy",
@@ -87,15 +90,15 @@ class Agent(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.hostname
 
     @property
-    def client(self):
+    def client(self) -> "Client":
         return self.site.client
 
     @property
-    def timezone(self):
+    def timezone(self) -> str:
         # return the default timezone unless the timezone is explicity set per agent
         if self.time_zone:
             return self.time_zone
@@ -103,11 +106,11 @@ class Agent(BaseAuditModel):
             return get_core_settings().default_time_zone
 
     @property
-    def is_posix(self):
+    def is_posix(self) -> bool:
         return self.plat == "linux" or self.plat == "darwin"
 
     @property
-    def arch(self):
+    def arch(self) -> Optional[str]:
         if self.is_posix:
             return self.goarch
 
@@ -119,7 +122,7 @@ class Agent(BaseAuditModel):
         return None
 
     @property
-    def winagent_dl(self):
+    def winagent_dl(self) -> Optional[str]:
         if self.arch == "64":
             return settings.DL_64
         elif self.arch == "32":
@@ -127,7 +130,7 @@ class Agent(BaseAuditModel):
         return None
 
     @property
-    def win_inno_exe(self):
+    def win_inno_exe(self) -> Optional[str]:
         if self.arch == "64":
             return f"winagent-v{settings.LATEST_AGENT_VER}.exe"
         elif self.arch == "32":
@@ -135,7 +138,7 @@ class Agent(BaseAuditModel):
         return None
 
     @property
-    def status(self):
+    def status(self) -> str:
         offline = djangotime.now() - djangotime.timedelta(minutes=self.offline_time)
         overdue = djangotime.now() - djangotime.timedelta(minutes=self.overdue_time)
 
@@ -150,7 +153,7 @@ class Agent(BaseAuditModel):
             return "offline"
 
     @property
-    def checks(self):
+    def checks(self) -> Dict[str, Any]:
         from checks.models import CheckResult
 
         total, passing, failing, warning, info = 0, 0, 0, 0, 0
@@ -185,10 +188,10 @@ class Agent(BaseAuditModel):
         return ret
 
     @property
-    def cpu_model(self):
+    def cpu_model(self) -> List[str]:
         if self.is_posix:
             try:
-                return self.wmi_detail["cpus"]
+                return cast(List[str], self.wmi_detail["cpus"])
             except:
                 return ["unknown cpu model"]
 
@@ -202,12 +205,12 @@ class Agent(BaseAuditModel):
             return ["unknown cpu model"]
 
     @property
-    def graphics(self):
+    def graphics(self) -> str:
         if self.is_posix:
             try:
                 if not self.wmi_detail["gpus"]:
                     return "No graphics cards"
-                return self.wmi_detail["gpus"]
+                return cast(str, self.wmi_detail["gpus"])
             except:
                 return "Error getting graphics cards"
 
@@ -231,7 +234,7 @@ class Agent(BaseAuditModel):
             return "Graphics info requires agent v1.4.14"
 
     @property
-    def local_ips(self):
+    def local_ips(self) -> str:
         if self.is_posix:
             try:
                 return ", ".join(self.wmi_detail["local_ips"])
@@ -258,15 +261,15 @@ class Agent(BaseAuditModel):
                     ret.append(ip)
 
         if len(ret) == 1:
-            return ret[0]
+            return cast(str, ret[0])
         else:
             return ", ".join(ret) if ret else "error getting local ips"
 
     @property
-    def make_model(self):
+    def make_model(self) -> str:
         if self.is_posix:
             try:
-                return self.wmi_detail["make_model"]
+                return cast(str, self.wmi_detail["make_model"])
             except:
                 return "error getting make/model"
 
@@ -292,17 +295,17 @@ class Agent(BaseAuditModel):
 
         try:
             comp_sys_prod = self.wmi_detail["comp_sys_prod"][0]
-            return [x["Version"] for x in comp_sys_prod if "Version" in x][0]
+            return cast(str, [x["Version"] for x in comp_sys_prod if "Version" in x][0])
         except:
             pass
 
         return "unknown make/model"
 
     @property
-    def physical_disks(self):
+    def physical_disks(self) -> Sequence[Disk]:
         if self.is_posix:
             try:
-                return self.wmi_detail["disks"]
+                return cast(List[Disk], self.wmi_detail["disks"])
             except:
                 return ["unknown disk"]
 
@@ -327,7 +330,7 @@ class Agent(BaseAuditModel):
         except:
             return ["unknown disk"]
 
-    def is_supported_script(self, platforms: list) -> bool:
+    def is_supported_script(self, platforms: List[str]) -> bool:
         return self.plat.lower() in platforms if platforms else True
 
     def get_checks_with_policies(
@@ -357,21 +360,25 @@ class Agent(BaseAuditModel):
         else:
             return self.add_task_results(tasks)
 
-    def get_agent_policies(self) -> "Dict[str, Policy]":
+    def get_agent_policies(self) -> "Dict[str, Optional[Policy]]":
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
         client_policy = getattr(self.client, f"{self.monitoring_type}_policy", None)
         default_policy = getattr(
             get_core_settings(), f"{self.monitoring_type}_policy", None
         )
 
-        # prefetch excluded objects on polices
+        # prefetch excluded objects on polices only if policy is not None
         models.prefetch_related_objects(
-            [self.policy, site_policy, client_policy, default_policy],
+            [
+                policy
+                for policy in [self.policy, site_policy, client_policy, default_policy]
+                if policy
+            ],
             "excluded_agents",
             "excluded_sites",
             "excluded_clients",
             "policychecks__script",
-            "policytasks",
+            "autotasks",
         )
 
         return {
@@ -471,57 +478,51 @@ class Agent(BaseAuditModel):
         return "ok"
 
     # auto approves updates
-    def approve_updates(self):
+    def approve_updates(self) -> None:
         patch_policy = self.get_patch_policy()
 
-        updates = list()
+        severity_list = list()
         if patch_policy.critical == "approve":
-            updates |= self.winupdates.filter(  # type: ignore
-                severity="Critical", installed=False
-            ).exclude(action="approve")
+            severity_list.append("Critical")
 
         if patch_policy.important == "approve":
-            updates |= self.winupdates.filter(  # type: ignore
-                severity="Important", installed=False
-            ).exclude(action="approve")
+            severity_list.append("Important")
 
         if patch_policy.moderate == "approve":
-            updates |= self.winupdates.filter(  # type: ignore
-                severity="Moderate", installed=False
-            ).exclude(action="approve")
+            severity_list.append("Moderate")
 
         if patch_policy.low == "approve":
-            updates |= self.winupdates.filter(severity="Low", installed=False).exclude(  # type: ignore
-                action="approve"
-            )
+            severity_list.append("Low")
 
         if patch_policy.other == "approve":
-            updates |= self.winupdates.filter(severity="", installed=False).exclude(  # type: ignore
-                action="approve"
-            )
+            severity_list.append("")
 
-        for update in updates:
-            update.action = "approve"
-            update.save(update_fields=["action"])
+        self.winupdates.filter(severity__in=severity_list, installed=False).exclude(
+            action="approve"
+        ).update(action="approve")
 
     # returns agent policy merged with a client or site specific policy
-    def get_patch_policy(self):
+    def get_patch_policy(self) -> "WinUpdatePolicy":
 
         # check if site has a patch policy and if so use it
         patch_policy = None
-        agent_policy = self.winupdatepolicy.first()  # type: ignore
+
+        agent_policy = self.winupdatepolicy.first()
+
+        if not agent_policy:
+            raise WinUpdatePolicy.DoesNotExist
 
         policies = self.get_agent_policies()
 
-        processed_policies = list()
+        processed_policies: "List[int]" = list()
         for _, policy in policies.items():
             if (
                 policy
                 and policy.active
                 and policy.pk not in processed_policies
-                and policy.winupdatepolicy.exists()  # type: ignore
+                and policy.winupdatepolicy.exists()
             ):
-                patch_policy = policy.winupdatepolicy.first()  # type: ignore
+                patch_policy = policy.winupdatepolicy.first()
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:
@@ -567,13 +568,13 @@ class Agent(BaseAuditModel):
 
     # sets alert template assigned in the following order: policy, site, client, global
     # sets None if nothing is found
-    def set_alert_template(self):
+    def set_alert_template(self) -> "Optional[AlertTemplate]":
         core = get_core_settings()
 
         policies = self.get_agent_policies()
 
         # loop through all policies applied to agent and return an alert_template if found
-        processed_policies = list()
+        processed_policies: List[int] = list()
         for key, policy in policies.items():
             # default alert_template will override a default policy with alert template applied
             if (
@@ -663,7 +664,7 @@ class Agent(BaseAuditModel):
     def get_checks_from_policies(self) -> "List[Check]":
         from automation.models import Policy
 
-        cached_checks = cache.get(f"{self.site.name}_checks")
+        cached_checks = cache.get(f"site_{self.site.id}_checks")
 
         if cached_checks and isinstance(cached_checks, list):
             return cached_checks
@@ -673,27 +674,29 @@ class Agent(BaseAuditModel):
 
             # get agent checks based on policies
             checks = Policy.get_policy_checks(self)
-            cache.set(f"{self.site.name}_checks", checks, 300)
+            cache.set(f"site_{self.site.id}_checks", checks, 300)
 
             return checks
 
     def get_tasks_from_policies(self) -> "List[AutomatedTask]":
         from automation.models import Policy
 
-        cached_tasks = cache.get(f"{self.site.name}_tasks")
+        cached_tasks = cache.get(f"site_{self.site.id}_tasks")
 
         if cached_tasks and isinstance(cached_tasks, list):
             return cached_tasks
         else:
             # get agent tasks based on policies
             tasks = Policy.get_policy_tasks(self)
-            cache.set(f"{self.site.name}_tasks", tasks, 300)
+            cache.set(f"site_{self.site.id}_tasks", tasks, 300)
             return tasks
 
     def _do_nats_debug(self, agent, message):
         DebugLog.error(agent=agent, log_type="agent_issues", message=message)
 
-    async def nats_cmd(self, data: dict, timeout: int = 30, wait: bool = True):
+    async def nats_cmd(
+        self, data: Dict[Any, Any], timeout: int = 30, wait: bool = True
+    ) -> Any:
         options = {
             "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
             "user": "tacticalrmm",
@@ -731,13 +734,13 @@ class Agent(BaseAuditModel):
             await nc.close()
 
     @staticmethod
-    def serialize(agent):
+    def serialize(class_name: "Agent") -> Dict[str, Any]:
         # serializes the agent and returns json
         from .serializers import AgentAuditSerializer
 
-        return AgentAuditSerializer(agent).data
+        return AgentAuditSerializer(class_name).data
 
-    def delete_superseded_updates(self):
+    def delete_superseded_updates(self) -> None:
         try:
             pks = []  # list of pks to delete
             kbs = list(self.winupdates.values_list("kb", flat=True))  # type: ignore
@@ -745,12 +748,12 @@ class Agent(BaseAuditModel):
             dupes = [k for k, v in d.items() if v > 1]
 
             for dupe in dupes:
-                titles = self.winupdates.filter(kb=dupe).values_list("title", flat=True)  # type: ignore
+                titles = self.winupdates.filter(kb=dupe).values_list("title", flat=True)
                 # extract the version from the title and sort from oldest to newest
                 # skip if no version info is available therefore nothing to parse
                 try:
                     vers = [
-                        re.search(r"\(Version(.*?)\)", i).group(1).strip()  # type: ignore
+                        re.search(r"\(Version(.*?)\)", i).group(1).strip()
                         for i in titles
                     ]
                     sorted_vers = sorted(vers, key=LooseVersion)
@@ -758,16 +761,18 @@ class Agent(BaseAuditModel):
                     continue
                 # append all but the latest version to our list of pks to delete
                 for ver in sorted_vers[:-1]:
-                    q = self.winupdates.filter(kb=dupe).filter(title__contains=ver)  # type: ignore
+                    q = self.winupdates.filter(kb=dupe).filter(title__contains=ver)
                     pks.append(q.first().pk)
 
             pks = list(set(pks))
-            self.winupdates.filter(pk__in=pks).delete()  # type: ignore
+            self.winupdates.filter(pk__in=pks).delete()
         except:
             pass
 
-    def should_create_alert(self, alert_template=None):
-        return (
+    def should_create_alert(
+        self, alert_template: "Optional[AlertTemplate]" = None
+    ) -> bool:
+        return bool(
             self.overdue_dashboard_alert
             or self.overdue_email_alert
             or self.overdue_text_alert
@@ -781,7 +786,7 @@ class Agent(BaseAuditModel):
             )
         )
 
-    def send_outage_email(self):
+    def send_outage_email(self) -> None:
         CORE = get_core_settings()
 
         CORE.send_mail(
@@ -795,7 +800,7 @@ class Agent(BaseAuditModel):
             alert_template=self.alert_template,
         )
 
-    def send_recovery_email(self):
+    def send_recovery_email(self) -> None:
         CORE = get_core_settings()
 
         CORE.send_mail(
@@ -809,7 +814,7 @@ class Agent(BaseAuditModel):
             alert_template=self.alert_template,
         )
 
-    def send_outage_sms(self):
+    def send_outage_sms(self) -> None:
         CORE = get_core_settings()
 
         CORE.send_sms(
@@ -817,7 +822,7 @@ class Agent(BaseAuditModel):
             alert_template=self.alert_template,
         )
 
-    def send_recovery_sms(self):
+    def send_recovery_sms(self) -> None:
         CORE = get_core_settings()
 
         CORE.send_sms(
@@ -844,7 +849,7 @@ class Note(models.Model):
     note = models.TextField(null=True, blank=True)
     entry_time = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.agent.hostname
 
 
@@ -872,26 +877,26 @@ class AgentCustomField(models.Model):
         default=list,
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.field.name
 
     @property
-    def value(self):
+    def value(self) -> Union[List[Any], bool, str]:
         if self.field.type == "multiple":
-            return self.multiple_value
+            return cast(List[str], self.multiple_value)
         elif self.field.type == "checkbox":
             return self.bool_value
         else:
-            return self.string_value
+            return cast(str, self.string_value)
 
-    def save_to_field(self, value):
+    def save_to_field(self, value: Union[List[Any], bool, str]) -> None:
         if self.field.type in [
             "text",
             "number",
             "single",
             "datetime",
         ]:
-            self.string_value = value
+            self.string_value = cast(str, value)
             self.save()
         elif self.field.type == "multiple":
             self.multiple_value = value.split(",")
@@ -937,5 +942,5 @@ class AgentHistory(models.Model):
     )
     script_results = models.JSONField(null=True, blank=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.agent.hostname} - {self.type}"

@@ -620,7 +620,7 @@ class Agent(BaseAuditModel):
             key1 = key[0:48]
             key2 = key[48:]
             msg = '{{"a":{}, "u":"{}","time":{}}}'.format(
-                action, user.lower(), int(time.time())
+                action, user, int(time.time())
             )
             iv = get_random_bytes(16)
 

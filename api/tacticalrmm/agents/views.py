@@ -210,7 +210,7 @@ class AgentMeshCentral(APIView):
 
         token = agent.get_login_token(
             key=core.mesh_token,
-            user=f"user//{core.mesh_username.lower()}",  # type:ignore
+            user=f"user//{core.mesh_username}",  # type:ignore
         )
 
         if token == "err":

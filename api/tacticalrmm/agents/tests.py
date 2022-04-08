@@ -519,7 +519,7 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.get_login_token")
+    @patch("meshctrl.utils.get_auth_token")
     def test_meshcentral_tabs(self, mock_token):
         url = f"{base_url}/{self.agent.agent_id}/meshcentral/"
         mock_token.return_value = "askjh1k238uasdhk487234jadhsajksdhasd"
@@ -546,10 +546,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(self.agent.site.name, r.data["site"])  # type: ignore
 
         self.assertEqual(r.status_code, 200)
-
-        mock_token.return_value = "err"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("get", url)
 

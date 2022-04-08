@@ -1,7 +1,5 @@
 import asyncio
-import base64
 import re
-import time
 from collections import Counter
 from distutils.version import LooseVersion
 from typing import Any
@@ -11,10 +9,6 @@ import nats
 import validators
 from asgiref.sync import sync_to_async
 from core.models import TZ_CHOICES, CoreSettings
-from Crypto.Cipher import AES
-from Crypto.Hash import SHA3_384
-from Crypto.Random import get_random_bytes
-from Crypto.Util.Padding import pad
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -612,30 +606,6 @@ class Agent(BaseAuditModel):
 
         # Generate tasks based on policies
         Policy.generate_policy_tasks(self)
-
-    # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
-    def get_login_token(self, key, user, action=3):
-        try:
-            key = bytes.fromhex(key)
-            key1 = key[0:48]
-            key2 = key[48:]
-            msg = '{{"a":{}, "u":"{}","time":{}}}'.format(
-                action, user, int(time.time())
-            )
-            iv = get_random_bytes(16)
-
-            # sha
-            h = SHA3_384.new()
-            h.update(key1)
-            hashed_msg = h.digest() + msg.encode()
-
-            # aes
-            cipher = AES.new(key2, AES.MODE_CBC, iv)
-            msg = cipher.encrypt(pad(hashed_msg, 16))
-
-            return base64.b64encode(iv + msg, altchars=b"@$").decode("utf-8")
-        except Exception:
-            return "err"
 
     def _do_nats_debug(self, agent, message):
         DebugLog.error(agent=agent, log_type="agent_issues", message=message)

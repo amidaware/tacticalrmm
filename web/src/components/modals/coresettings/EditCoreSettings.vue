@@ -304,7 +304,15 @@
                 <q-card-section class="row">
                   <div class="col-4">Username:</div>
                   <div class="col-2"></div>
-                  <q-input dense outlined v-model="settings.mesh_username" class="col-6" />
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.mesh_username"
+                    class="col-6"
+                    :rules="[
+                      val => (val == val.toLowerCase() && val != val.toUpperCase()) || 'Username be all lowercase',
+                    ]"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Site:</div>

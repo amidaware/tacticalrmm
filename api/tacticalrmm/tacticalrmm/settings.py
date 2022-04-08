@@ -21,7 +21,7 @@ TRMM_VERSION = "0.12.2"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.159"
+APP_VER = "0.0.160"
 
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.0.2"

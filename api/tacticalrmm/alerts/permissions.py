@@ -1,10 +1,13 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
-
+from typing import TYPE_CHECKING
 from tacticalrmm.permissions import _has_perm, _has_perm_on_agent
 
+if TYPE_CHECKING:
+    from accounts.models import User
 
-def _has_perm_on_alert(user, id: int) -> bool:
+
+def _has_perm_on_alert(user: "User", id: int) -> bool:
     from alerts.models import Alert
 
     role = user.role
@@ -19,10 +22,6 @@ def _has_perm_on_alert(user, id: int) -> bool:
 
     if alert.agent:
         agent_id = alert.agent.agent_id
-    elif alert.assigned_check:
-        agent_id = alert.assigned_check.agent.agent_id
-    elif alert.assigned_task:
-        agent_id = alert.assigned_task.agent.agent_id
     else:
         return True
 

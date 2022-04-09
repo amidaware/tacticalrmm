@@ -7,9 +7,9 @@ from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
-    from agents.models import Agent
     from clients.models import Client, Site
     from core.models import URLAction
+    from agents.models import Agent
 
 
 def get_debug_level() -> str:
@@ -240,6 +240,7 @@ class AuditLog(models.Model):
         instance: "Union[Agent, Client, Site]",
         debug_info: Dict[Any, Any] = {},
     ) -> None:
+        from agents.models import Agent
 
         name = instance.hostname if isinstance(instance, Agent) else instance.name
         classname = type(instance).__name__

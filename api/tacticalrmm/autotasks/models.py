@@ -2,11 +2,10 @@ import asyncio
 import random
 import string
 import pytz
-from typing import TYPE_CHECKING, List, Dict, Optional, Union
+from typing import TYPE_CHECKING, List, Dict, Any, Optional, Union
 
 from alerts.models import SEVERITY_CHOICES
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone as djangotime
 from django.db import models
 from django.db.models.fields import DateTimeField
@@ -17,7 +16,6 @@ from core.utils import get_core_settings
 
 if TYPE_CHECKING:
     from automation.models import Policy
-    from autotasks.models import AutomatedTask
     from alerts.models import Alert, AlertTemplate
     from agents.models import Agent
     from checks.models import Check
@@ -146,12 +144,12 @@ class AutomatedTask(BaseAuditModel):
     managed_by_policy = models.BooleanField(default=False)
 
     # non-database property
-    task_result: "Union[TaskResult, Dict]" = {}
+    task_result: "Union[TaskResult, Dict[None, None]]" = {}
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         # get old task if exists
         old_task = AutomatedTask.objects.get(pk=self.pk) if self.pk else None
         super(AutomatedTask, self).save(old_model=old_task, *args, **kwargs)
@@ -170,7 +168,7 @@ class AutomatedTask(BaseAuditModel):
                         )
 
     @property
-    def schedule(self):
+    def schedule(self) -> Optional[str]:
         if self.task_type == "manual":
             return "Manual"
         elif self.task_type == "checkfailure":
@@ -225,7 +223,7 @@ class AutomatedTask(BaseAuditModel):
         ]
 
     @staticmethod
-    def generate_task_name():
+    def generate_task_name() -> str:
         chars = string.ascii_letters
         return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
 
@@ -284,7 +282,7 @@ class AutomatedTask(BaseAuditModel):
     # agent version >= 1.8.0
     def generate_nats_task_payload(
         self, agent: "Optional[Agent]" = None, editing: bool = False
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         task = {
             "pk": self.pk,
             "type": "rmm",

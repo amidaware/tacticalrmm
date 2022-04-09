@@ -13,7 +13,6 @@ from core.utils import get_core_settings
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate
     from automation.models import Policy
-    from checks.models import CheckResult
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),

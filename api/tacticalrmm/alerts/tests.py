@@ -1506,11 +1506,16 @@ class TestAlertPermissions(TacticalTestCase):
         checks = baker.make("checks.Check", agent=cycle(agents), _quantity=3)
         tasks = baker.make("autotasks.AutomatedTask", agent=cycle(agents), _quantity=3)
         baker.make(
-            "alerts.Alert", alert_type="task", assigned_task=cycle(tasks), _quantity=3
+            "alerts.Alert",
+            alert_type="task",
+            agent=cycle(agents),
+            assigned_task=cycle(tasks),
+            _quantity=3,
         )
         baker.make(
             "alerts.Alert",
             alert_type="check",
+            agent=cycle(agents),
             assigned_check=cycle(checks),
             _quantity=3,
         )
@@ -1560,11 +1565,16 @@ class TestAlertPermissions(TacticalTestCase):
         checks = baker.make("checks.Check", agent=cycle(agents), _quantity=3)
         tasks = baker.make("autotasks.AutomatedTask", agent=cycle(agents), _quantity=3)
         alert_tasks = baker.make(
-            "alerts.Alert", alert_type="task", assigned_task=cycle(tasks), _quantity=3
+            "alerts.Alert",
+            alert_type="task",
+            agent=cycle(agents),
+            assigned_task=cycle(tasks),
+            _quantity=3,
         )
         alert_checks = baker.make(
             "alerts.Alert",
             alert_type="check",
+            agent=cycle(agents),
             assigned_check=cycle(checks),
             _quantity=3,
         )
@@ -1644,72 +1654,75 @@ class TestAlertPermissions(TacticalTestCase):
             for url in unauthorized_urls:
                 self.check_authorized(method, url)
 
+    def test_handling_multiple_availability_alerts_returned(self):
+        agent = baker.make_recipe("agents.agent")
+        alerts = baker.make(
+            "alerts.Alert",
+            alert_type="availability",
+            agent=agent,
+            resolved=False,
+            _quantity=3,
+        )
 
-def test_handling_multiple_availability_alerts_returned(self):
-    agent = baker.make_recipe("agents.agent")
-    alerts = baker.make(
-        "alerts.Alerts",
-        alert_type="availability",
-        agent=agent,
-        resolved=False,
-        _quantity=3,
-    )
+        alert = Alert.create_or_return_availability_alert(agent, skip_create=True)
 
-    alert = Alert.create_or_return_availability_alert(agent, skip_create=True)
+        # make sure last alert is returned
+        self.assertEqual(alert, alerts[-1])
 
-    # make sure last alert is returned
-    self.assertEqual(alert, alerts[-1])
+        # make sure only 1 alert is not resolved
+        self.assertEqual(
+            Alert.objects.filter(
+                alert_type="availability", agent=agent, resolved=False
+            ).count(),
+            1,
+        )
 
-    # make sure only 1 alert is not resolved
-    self.assertEqual(
-        Alert.objects.filter(
-            alert_type="availability", agent=agent, resolved=False
-        ).count(),
-        1,
-    )
+    def test_handling_multiple_check_alerts_returned(self):
+        agent = baker.make_recipe("agents.agent")
+        check = baker.make_recipe("checks.diskspace_check", agent=agent)
+        alerts = baker.make(
+            "alerts.Alert",
+            alert_type="check",
+            assigned_check=check,
+            agent=agent,
+            resolved=False,
+            _quantity=3,
+        )
 
+        alert = Alert.create_or_return_check_alert(check, agent=agent, skip_create=True)
 
-def test_handling_multiple_check_alerts_returned(self):
-    agent = baker.make_recipe("agents.agent")
-    check = baker.make_recipe("checks.diskspace_check", agent=agent)
-    alerts = baker.make(
-        "alerts.Alerts",
-        alert_type="check",
-        assigned_check=check,
-        agent=agent,
-        resolved=False,
-        _quantity=3,
-    )
+        # make sure last alert is returned
+        self.assertEqual(alert, alerts[-1])
 
-    alert = Alert.create_or_return_check_alert(check, skip_create=True)
+        # make sure only 1 alert is not resolved
+        self.assertEqual(
+            Alert.objects.filter(
+                alert_type="check", agent=agent, resolved=False
+            ).count(),
+            1,
+        )
 
-    # make sure last alert is returned
-    self.assertEqual(alert, alerts[-1])
+    def test_handling_multiple_task_alerts_returned(self):
+        agent = baker.make_recipe("agents.agent")
+        task = baker.make("autotasks.AutomatedTask", agent=agent)
+        alerts = baker.make(
+            "alerts.Alert",
+            alert_type="task",
+            assigned_task=task,
+            agent=agent,
+            resolved=False,
+            _quantity=3,
+        )
 
-    # make sure only 1 alert is not resolved
-    self.assertEqual(
-        Alert.objects.filter(alert_type="check", agent=agent, resolved=False).count(), 1
-    )
+        alert = Alert.create_or_return_task_alert(task, agent=agent, skip_create=True)
 
+        # make sure last alert is returned
+        self.assertEqual(alert, alerts[-1])
 
-def test_handling_multiple_task_alerts_returned(self):
-    agent = baker.make_recipe("agents.agent")
-    task = baker.make_recipe("autotasks.AutomatedTask", agent=agent)
-    alerts = baker.make(
-        "alerts.Alerts",
-        alert_type="check",
-        assigned_task=task,
-        agent=agent,
-        resolved=False,
-        _quantity=3,
-    )
-
-    alert = Alert.create_or_return_task_alert(task, skip_create=True)
-
-    # make sure last alert is returned
-    self.assertEqual(alert, alerts[-1])
-
-    # make sure only 1 alert is not resolved
-    self.assertEqual(
-        Alert.objects.filter(alert_type="task", agent=agent, resolved=False).count(), 1
-    )
+        # make sure only 1 alert is not resolved
+        self.assertEqual(
+            Alert.objects.filter(
+                alert_type="task", agent=agent, resolved=False
+            ).count(),
+            1,
+        )

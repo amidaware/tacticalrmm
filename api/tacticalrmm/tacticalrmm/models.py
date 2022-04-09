@@ -63,17 +63,9 @@ class PermissionQuerySet(models.QuerySet):
 
             custom_alert_queryset = models.Q()
             if can_view_clients:
-                clients_queryset = (
-                    models.Q(agent__site__client__in=can_view_clients)
-                    | models.Q(assigned_check__agent__site__client__in=can_view_clients)
-                    | models.Q(assigned_task__agent__site__client__in=can_view_clients)
-                )
+                clients_queryset = models.Q(agent__site__client__in=can_view_clients)
             if can_view_sites:
-                sites_queryset = (
-                    models.Q(agent__site__in=can_view_sites)
-                    | models.Q(assigned_check__agent__site__in=can_view_sites)
-                    | models.Q(assigned_task__agent__site__in=can_view_sites)
-                )
+                sites_queryset = models.Q(agent__site__in=can_view_sites)
             if can_view_clients or can_view_sites:
                 custom_alert_queryset = models.Q(
                     agent=None, assigned_check=None, assigned_task=None

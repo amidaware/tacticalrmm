@@ -261,7 +261,7 @@ class CustomField(BaseAuditModel):
         blank=True,
         default=list,
     )
-    name = models.CharField(max_length=30, blank=True)
+    name = models.CharField(max_length=30)
     required = models.BooleanField(blank=True, default=False)
     default_value_string = models.TextField(null=True, blank=True)
     default_value_bool = models.BooleanField(default=False)

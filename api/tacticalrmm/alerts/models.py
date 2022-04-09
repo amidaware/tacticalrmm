@@ -39,6 +39,8 @@ class Alert(models.Model):
         "agents.Agent",
         related_name="agent",
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
     assigned_check = models.ForeignKey(
         "checks.Check",
@@ -82,7 +84,7 @@ class Alert(models.Model):
         max_length=100, null=True, blank=True
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.message
 
     @property
@@ -149,16 +151,16 @@ class Alert(models.Model):
     @classmethod
     def create_or_return_check_alert(
         cls,
-        check: Check,
-        agent: Optional[Agent] = None,
+        check: "Check",
+        agent: "Agent",
         alert_severity: Optional[str] = None,
         skip_create: bool = False,
-    ) -> Optional[Alert]:
+    ) -> "Optional[Alert]":
 
         # need to pass agent if the check is a policy
         if not cls.objects.filter(
             assigned_check=check,
-            agent=agent if check.policy else check.agent,
+            agent=agent,
             resolved=False,
         ).exists():
             if skip_create:
@@ -168,13 +170,13 @@ class Alert(models.Model):
                 Alert,
                 cls.objects.create(
                     assigned_check=check,
-                    agent=agent if check.policy else check.agent,
+                    agent=agent,
                     alert_type="check",
                     severity=check.alert_severity
                     if check.check_type
                     not in ["memory", "cpuload", "diskspace", "script"]
                     else alert_severity,
-                    message=f"{agent.hostname if agent else check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
+                    message=f"{agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                     hidden=True,
                 ),
             )
@@ -184,14 +186,14 @@ class Alert(models.Model):
                     Alert,
                     cls.objects.get(
                         assigned_check=check,
-                        agent=agent if check.policy else check.agent,
+                        agent=agent,
                         resolved=False,
                     ),
                 )
             except cls.MultipleObjectsReturned:
                 alerts = cls.objects.filter(
                     assigned_check=check,
-                    agent=agent if check.policy else check.agent,
+                    agent=agent,
                     resolved=False,
                 )
                 last_alert = cast(Alert, alerts.last())
@@ -208,41 +210,48 @@ class Alert(models.Model):
     @classmethod
     def create_or_return_task_alert(
         cls,
-        task: AutomatedTask,
-        agent: Optional[Agent] = None,
+        task: "AutomatedTask",
+        agent: "Agent",
         skip_create: bool = False,
-    ) -> Optional[Alert]:
+    ) -> "Optional[Alert]":
 
         if not cls.objects.filter(
             assigned_task=task,
-            agent=agent if task.policy else task.agent,
+            agent=agent,
             resolved=False,
         ).exists():
             if skip_create:
                 return None
 
-            return cls.objects.create(
-                assigned_task=task,
-                agent=agent if task.policy else task.agent,
-                alert_type="task",
-                severity=task.alert_severity,
-                message=f"{agent.hostname if agent else task.agent.hostname } has task: {task.name} that failed.",
-                hidden=True,
+            return cast(
+                Alert,
+                cls.objects.create(
+                    assigned_task=task,
+                    agent=agent,
+                    alert_type="task",
+                    severity=task.alert_severity,
+                    message=f"{agent.hostname} has task: {task.name} that failed.",
+                    hidden=True,
+                ),
             )
+
         else:
             try:
-                return cls.objects.get(
-                    assigned_task=task,
-                    agent=agent if task.policy else task.agent,
-                    resolved=False,
+                return cast(
+                    Alert,
+                    cls.objects.get(
+                        assigned_task=task,
+                        agent=agent,
+                        resolved=False,
+                    ),
                 )
             except cls.MultipleObjectsReturned:
                 alerts = cls.objects.filter(
                     assigned_task=task,
-                    agent=agent if task.policy else task.agent,
+                    agent=agent,
                     resolved=False,
                 )
-                last_alert = cast(cls, alerts.last())
+                last_alert = cast(Alert, alerts.last())
 
                 # cycle through other alerts and resolve
                 for alert in alerts:

@@ -249,7 +249,7 @@ class Policy(BaseAuditModel):
         cpuload_checks: "List[Check]" = list()
         memory_checks: "List[Check]" = list()
 
-        overridden_checks = list()
+        overridden_checks: List[int] = list()
 
         # Loop over checks in with enforced policies first, then non-enforced policies
         for check in enforced_checks + agent_checks + policy_checks:

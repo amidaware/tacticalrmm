@@ -416,7 +416,7 @@ class Agent(BaseAuditModel):
     def run_script(
         self,
         scriptpk: int,
-        args: list[str] = [],
+        args: List[str] = [],
         timeout: int = 120,
         full: bool = False,
         wait: bool = False,
@@ -503,6 +503,7 @@ class Agent(BaseAuditModel):
 
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self) -> "WinUpdatePolicy":
+        from winupdate.models import WinUpdatePolicy
 
         # check if site has a patch policy and if so use it
         patch_policy = None
@@ -510,11 +511,11 @@ class Agent(BaseAuditModel):
         agent_policy = self.winupdatepolicy.first()
 
         if not agent_policy:
-            raise WinUpdatePolicy.DoesNotExist
+            agent_policy = WinUpdatePolicy.objects.create(agent=self)
 
         policies = self.get_agent_policies()
 
-        processed_policies: "List[int]" = list()
+        processed_policies: List[int] = list()
         for _, policy in policies.items():
             if (
                 policy
@@ -664,32 +665,43 @@ class Agent(BaseAuditModel):
     def get_checks_from_policies(self) -> "List[Check]":
         from automation.models import Policy
 
-        cached_checks = cache.get(f"site_{self.site.id}_checks")
+        cache_checks = False
+        if not self.policy and not self.agentchecks.exists():
+            cached_checks = cache.get(f"site_{self.site.id}_checks")
 
-        if cached_checks and isinstance(cached_checks, list):
-            return cached_checks
-        else:
-            # clear agent checks that have overridden_by_policy set
-            self.agentchecks.update(overridden_by_policy=False)  # type: ignore
+            if cached_checks and isinstance(cached_checks, list):
+                return cached_checks
+            else:
+                cached_checks = True
 
-            # get agent checks based on policies
-            checks = Policy.get_policy_checks(self)
+        # clear agent checks that have overridden_by_policy set
+        self.agentchecks.update(overridden_by_policy=False)
+
+        # get agent checks based on policies
+        checks = Policy.get_policy_checks(self)
+
+        if cache_checks:
             cache.set(f"site_{self.site.id}_checks", checks, 300)
 
-            return checks
+        return checks
 
     def get_tasks_from_policies(self) -> "List[AutomatedTask]":
         from automation.models import Policy
 
-        cached_tasks = cache.get(f"site_{self.site.id}_tasks")
+        cache_tasks = False
+        if not self.policy:
+            cached_tasks = cache.get(f"site_{self.site.id}_tasks")
 
-        if cached_tasks and isinstance(cached_tasks, list):
-            return cached_tasks
-        else:
-            # get agent tasks based on policies
-            tasks = Policy.get_policy_tasks(self)
+            if cached_tasks and isinstance(cached_tasks, list):
+                return cached_tasks
+            else:
+                cached_tasks = True
+        # get agent tasks based on policies
+        tasks = Policy.get_policy_tasks(self)
+
+        if cache_tasks:
             cache.set(f"site_{self.site.id}_tasks", tasks, 300)
-            return tasks
+        return tasks
 
     def _do_nats_debug(self, agent, message):
         DebugLog.error(agent=agent, log_type="agent_issues", message=message)
@@ -734,16 +746,16 @@ class Agent(BaseAuditModel):
             await nc.close()
 
     @staticmethod
-    def serialize(class_name: "Agent") -> Dict[str, Any]:
+    def serialize(agent: "Agent") -> Dict[str, Any]:
         # serializes the agent and returns json
         from .serializers import AgentAuditSerializer
 
-        return AgentAuditSerializer(class_name).data
+        return AgentAuditSerializer(agent).data
 
     def delete_superseded_updates(self) -> None:
         try:
             pks = []  # list of pks to delete
-            kbs = list(self.winupdates.values_list("kb", flat=True))  # type: ignore
+            kbs = list(self.winupdates.values_list("kb", flat=True))
             d = Counter(kbs)
             dupes = [k for k, v in d.items() if v > 1]
 

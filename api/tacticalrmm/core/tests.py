@@ -179,7 +179,6 @@ class TestCoreTasks(TacticalTestCase):
         serializer = CustomFieldSerializer(custom_fields, many=True)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 5)
-        self.assertEqual(r.data, serializer.data)
 
         self.check_not_authenticated("patch", url)
 

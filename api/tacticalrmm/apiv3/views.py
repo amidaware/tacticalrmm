@@ -312,7 +312,7 @@ class TaskRunner(APIView):
             task.save(update_fields=["status"])
 
         if status == "passing":
-            if Alert.create_or_return_task_alert(task, skip_create=True):
+            if Alert.create_or_return_task_alert(task, agent=agent, skip_create=True):
                 Alert.handle_alert_resolve(task_result)
         else:
             Alert.handle_alert_failure(task_result)

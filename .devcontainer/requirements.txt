@@ -26,6 +26,7 @@ validators==0.18.2
 websockets==10.2
 drf_spectacular==0.22.0
 meshctrl==0.1.13
+hiredis==2.0.0
 
 # dev
 black==22.3.0

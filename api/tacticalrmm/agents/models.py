@@ -666,13 +666,16 @@ class Agent(BaseAuditModel):
         from automation.models import Policy
 
         cache_checks = False
-        if not self.policy and not self.agentchecks.exists():
-            cached_checks = cache.get(f"site_{self.site.id}_checks")
-
+        if (
+            not self.policy
+            and not self.block_policy_inheritance
+            and not self.agentchecks.exists()
+        ):
+            cached_checks = cache.get(f"site_{self.site_id}_checks")
             if cached_checks and isinstance(cached_checks, list):
                 return cached_checks
             else:
-                cached_checks = True
+                cache_checks = True
 
         # clear agent checks that have overridden_by_policy set
         self.agentchecks.update(overridden_by_policy=False)
@@ -681,7 +684,7 @@ class Agent(BaseAuditModel):
         checks = Policy.get_policy_checks(self)
 
         if cache_checks:
-            cache.set(f"site_{self.site.id}_checks", checks, 300)
+            cache.set(f"site_{self.site_id}_checks", checks, 300)
 
         return checks
 
@@ -689,10 +692,12 @@ class Agent(BaseAuditModel):
         from automation.models import Policy
 
         cache_tasks = False
-        if not self.policy:
-            cached_tasks = cache.get(f"site_{self.site.id}_tasks")
-
+        if not self.policy and not self.block_policy_inheritance:
+            print("Cachin and Stashin")
+            cached_tasks = cache.get(f"site_{self.site_id}_tasks")
+            print(cached_tasks)
             if cached_tasks and isinstance(cached_tasks, list):
+                print("Returning")
                 return cached_tasks
             else:
                 cached_tasks = True
@@ -700,7 +705,7 @@ class Agent(BaseAuditModel):
         tasks = Policy.get_policy_tasks(self)
 
         if cache_tasks:
-            cache.set(f"site_{self.site.id}_tasks", tasks, 300)
+            cache.set(f"site_{self.site_id}_tasks", tasks, 300)
         return tasks
 
     def _do_nats_debug(self, agent, message):

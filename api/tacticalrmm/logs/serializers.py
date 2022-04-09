@@ -38,7 +38,7 @@ class PendingActionSerializer(serializers.ModelSerializer):
 
 class DebugLogSerializer(serializers.ModelSerializer):
     agent = serializers.ReadOnlyField(source="agent.hostname")
-    entry_time = serializers.ReadOnlyField
+    entry_time = serializers.ReadOnlyField()
 
     class Meta:
         model = DebugLog

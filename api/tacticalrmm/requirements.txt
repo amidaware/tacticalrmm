@@ -23,6 +23,7 @@ pyparsing==3.0.7
 pytz==2022.1
 qrcode==7.3.1
 redis==4.2.2
+hiredis==2.0.0
 requests==2.27.1
 six==1.16.0
 sqlparse==0.4.2

@@ -46,11 +46,27 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 ASGI_APPLICATION = "tacticalrmm.asgi.application"
 
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
+
+STATIC_URL = "/static/"
+
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
+
 REST_KNOX = {
     "TOKEN_TTL": timedelta(hours=5),
     "AUTO_REFRESH": True,
     "MIN_REFRESH_INTERVAL": 600,
 }
+
+DEMO = False
+DEBUG = False
+ADMIN_ENABLED = False
+REDIS_HOST = "127.0.0.1"
 
 try:
     from .local_settings import *
@@ -75,7 +91,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 
-if not DEBUG:  # type: ignore
+if not DEBUG:
     REST_FRAMEWORK.update(
         {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
     )
@@ -93,15 +109,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEMO:
+    MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
 
-if ADMIN_ENABLED:  # type: ignore
-    MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
-
-try:
-    if DEMO:  # type: ignore
-        MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
-except:
-    pass
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -134,7 +144,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(REDIS_HOST, 6379)],  # type: ignore
+            "hosts": [(REDIS_HOST, 6379)],
         },
     },
 }
@@ -142,23 +152,14 @@ CHANNEL_LAYERS = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:6379",  # type: ignore
+        "LOCATION": f"redis://{REDIS_HOST}:6379",
         "OPTIONS": {
             "parser_class": "redis.connection.HiredisParser",
             "pool_class": "redis.BlockingConnectionPool",
+            "db": "10",
         },
     }
 }
-
-if "AZPIPELINE" in os.environ:
-    ADMIN_ENABLED = False
-
-if ADMIN_ENABLED:  # type: ignore
-    INSTALLED_APPS += (
-        "django.contrib.admin",
-        "django.contrib.messages",
-    )
-
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -173,7 +174,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-if DEBUG:  # type: ignore
+if DEBUG:
     INSTALLED_APPS += (
         "django_extensions",
         "silk",
@@ -181,14 +182,16 @@ if DEBUG:  # type: ignore
 
     MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
 
-if ADMIN_ENABLED:  # type: ignore
+if ADMIN_ENABLED:
     MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
+    INSTALLED_APPS += (
+        "django.contrib.admin",
+        "django.contrib.messages",
+    )
 
-try:
-    if DEMO:  # type: ignore
-        MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
-except:
-    pass
+if DEMO:
+    MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
+
 
 ROOT_URLCONF = "tacticalrmm.urls"
 
@@ -226,23 +229,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = "UTC"
-
-USE_I18N = True
-
-USE_L10N = True
-
-USE_TZ = True
-
-
-STATIC_URL = "/static/"
-
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
-
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -264,6 +250,9 @@ LOGGING = {
         "django.request": {"handlers": ["file"], "level": "ERROR", "propagate": True}
     },
 }
+
+if "AZPIPELINE" in os.environ:
+    ADMIN_ENABLED = False
 
 if "GHACTIONS" in os.environ:
     print("-----------------------PIPELINE----------------------------")

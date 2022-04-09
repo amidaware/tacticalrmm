@@ -41,7 +41,9 @@ jobs:
         run: |
           cd api/tacticalrmm
           source ../env/bin/activate
-          coverage run manage.py test -v 2 --parallel
+          rm -f .coverage coverage.lcov
+          coverage run --concurrency=multiprocessing manage.py test -v 2 --parallel
+          coverage combine
           coverage lcov
           if [ $? -ne 0 ]; then
               exit 1

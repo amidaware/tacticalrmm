@@ -54,3 +54,8 @@ jobs:
           if [ $? -ne 0 ]; then
               exit 1
           fi
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

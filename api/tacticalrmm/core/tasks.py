@@ -127,28 +127,18 @@ def cache_db_fields_task() -> None:
 
             # sync scheduled tasks
             for task in agent.get_tasks_with_policies(exclude_synced=True):
-                try:
-                    if (
-                        not task.task_result
-                        or task.task_result.sync_status == "initial"
-                    ):
-                        task.create_task_on_agent(agent=agent if task.policy else None)
-                    elif task.task_result.sync_status == "pendingdeletion":
-                        task.delete_task_on_agent(agent=agent if task.policy else None)
-                    elif task.task_result.sync_status == "notsynced":
-                        task.modify_task_on_agent(agent=agent if task.policy else None)
-
-                except:
-                    continue
+                if not task.task_result or task.task_result.sync_status == "initial":
+                    task.create_task_on_agent(agent=agent if task.policy else None)
+                elif task.task_result.sync_status == "pendingdeletion":
+                    task.delete_task_on_agent(agent=agent if task.policy else None)
+                elif task.task_result.sync_status == "notsynced":
+                    task.modify_task_on_agent(agent=agent if task.policy else None)
 
             # handles any alerting actions
             if Alert.objects.filter(
                 alert_type="availability", agent=agent, resolved=False
             ).exists():
-                try:
-                    Alert.handle_alert_resolve(agent)
-                except:
-                    continue
+                Alert.handle_alert_resolve(agent)
 
         # update pending patches and pending action counts
         agent.pending_actions_count = agent.pendingactions.filter(

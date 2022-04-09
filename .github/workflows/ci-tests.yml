@@ -41,7 +41,7 @@ jobs:
         run: |
           cd api/tacticalrmm
           source ../env/bin/activate
-          coverage run manage.py test -v 2
+          coverage run manage.py test -v 2 --parallel
           coverage lcov
           if [ $? -ne 0 ]; then
               exit 1
@@ -61,3 +61,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./api/tacticalrmm/coverage.lcov
+          base-path: ./api/tacticalrmm

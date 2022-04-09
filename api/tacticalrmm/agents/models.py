@@ -213,7 +213,8 @@ class Agent(BaseAuditModel):
             try:
                 if not self.wmi_detail["gpus"]:
                     return "No graphics cards"
-                return self.wmi_detail["gpus"]
+
+                return ", ".join(self.wmi_detail["gpus"])
             except:
                 return "Error getting graphics cards"
 

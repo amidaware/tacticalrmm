@@ -291,8 +291,9 @@ def clear_faults_task(older_than_days: int) -> None:
     for agent in agents:
         for check in agent.get_checks_with_policies():
             # reset check status
-            check.check_result.status = "passing"
-            check.check_result.save(update_fields=["status"])
+            if check.check_result:
+                check.check_result.status = "passing"
+                check.check_result.save(update_fields=["status"])
             if check.alert.filter(agent=agent, resolved=False).exists():
                 alert = Alert.create_or_return_check_alert(check, agent=agent)
                 if alert:

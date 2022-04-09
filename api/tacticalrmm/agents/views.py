@@ -65,13 +65,10 @@ from .serializers import (
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
 
-from silk.profiling.profiler import silk_profile
-
 
 class GetAgents(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
-    @silk_profile(name="List Agents")
     def get(self, request):
         if "site" in request.query_params.keys():
             filter = Q(site_id=request.query_params["site"])

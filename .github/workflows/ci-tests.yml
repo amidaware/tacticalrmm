@@ -57,5 +57,7 @@ jobs:
 
       - name: Coveralls
         uses: coverallsapp/github-action@master
+        run: pwd
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./api/tacticalrmm/coverage.lcov

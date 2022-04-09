@@ -90,12 +90,6 @@ MESH_TOKEN_KEY = '${MESH_TOKEN}'
 REDIS_HOST    = '${REDIS_HOST}'
 MESH_WS_URL = '${MESH_WS_URL}'
 ADMIN_ENABLED = True
-
-DEV_MIDDLEWARE = [
-    "silk.middleware.SilkyMiddleware",
-]
-
-DEV_APPS = ["silk"]
 EOF
 )"
 

@@ -153,15 +153,6 @@ INSTALLED_APPS = [
     "drf_spectacular",
 ]
 
-
-if DEBUG:  # type: ignore
-    INSTALLED_APPS += (
-        "django_extensions",
-        "silk",
-    )
-
-    MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
-
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -200,6 +191,14 @@ MIDDLEWARE = [
     "tacticalrmm.middleware.LinuxMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if DEBUG:  # type: ignore
+    INSTALLED_APPS += (
+        "django_extensions",
+        "silk",
+    )
+
+    MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
 
 if ADMIN_ENABLED:  # type: ignore
     MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)

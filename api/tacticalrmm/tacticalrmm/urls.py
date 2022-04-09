@@ -58,9 +58,6 @@ if getattr(settings, "SWAGGER_ENABLED", False):
         ),
     )
 
-if "silk" in getattr(settings, "DEV_APPS", []):
-    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
-
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),  # type: ignore
 ]

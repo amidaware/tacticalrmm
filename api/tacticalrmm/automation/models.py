@@ -45,6 +45,8 @@ class Policy(BaseAuditModel):
         if old_policy:
             if old_policy.alert_template != self.alert_template:
                 cache_agents_alert_template.delay()
+            elif old_policy.active != self.active and self.alert_template:
+                cache_agents_alert_template.delay()
 
     def __str__(self) -> str:
         return self.name

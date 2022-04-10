@@ -107,8 +107,12 @@ class CoreSettings(BaseAuditModel):
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
         super(BaseAuditModel, self).save(*args, **kwargs)
 
-        if old_settings and old_settings.alert_template != self.alert_template:
-            cache_agents_alert_template.delay()
+        if old_settings:
+            if (
+                old_settings.alert_template != self.alert_template
+                or old_settings.policy != self.policy
+            ):
+                cache_agents_alert_template.delay()
 
     def __str__(self) -> str:
         return "Global Site Settings"

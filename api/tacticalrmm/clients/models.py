@@ -56,7 +56,11 @@ class Client(BaseAuditModel):
 
         # check if polcies have changed and initiate task to reapply policies if so
         if old_client:
-            if old_client.alert_template != self.alert_template:
+            if (
+                old_client.alert_template != self.alert_template
+                or old_client.workstation_policy != self.workstation_policy
+                or old_client.server_policy != self.server_policy
+            ):
                 cache_agents_alert_template.delay()
 
     class Meta:
@@ -129,7 +133,11 @@ class Site(BaseAuditModel):
 
         # check if polcies have changed and initiate task to reapply policies if so
         if old_site:
-            if old_site.alert_template != self.alert_template:
+            if (
+                old_site.alert_template != self.alert_template
+                or old_site.workstation_policy != self.workstation_policy
+                or old_site.server_policy != self.server_policy
+            ):
                 cache_agents_alert_template.delay()
 
     class Meta:

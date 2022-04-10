@@ -693,12 +693,9 @@ class Agent(BaseAuditModel):
 
         cache_tasks = False
         if not self.policy and not self.block_policy_inheritance:
-            print("Cachin and Stashin")
             cached_tasks = cache.get(f"site_{self.site_id}_tasks")
-            print(cached_tasks)
             if cached_tasks and isinstance(cached_tasks, list):
-                print("Returning")
-                return cached_tasks
+                return cache_tasks
             else:
                 cached_tasks = True
         # get agent tasks based on policies

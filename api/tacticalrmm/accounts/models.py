@@ -197,6 +197,12 @@ class Role(BaseAuditModel):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs) -> None:
+
+        # delete cache on save
+        cache.delete(f"{ROLE_CACHE_PREFIX}{self.name}")
+        super(BaseAuditModel, self).save(*args, **kwargs)
+
     @staticmethod
     def serialize(role):
         # serializes the agent and returns json

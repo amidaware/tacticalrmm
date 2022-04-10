@@ -11,8 +11,8 @@ from tacticalrmm.models import PermissionQuerySet
 from core.utils import get_core_settings
 
 if TYPE_CHECKING:
-    from alerts.models import Alert, AlertTemplate
-    from automation.models import Policy
+    from alerts.models import Alert, AlertTemplate  # pragma: no cover
+    from automation.models import Policy  # pragma: no cover
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),

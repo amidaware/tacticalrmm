@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.fields import CharField, DateTimeField
-from django.core import cache
+from django.core.cache import cache
 from logs.models import BaseAuditModel
 
 from typing import Optional

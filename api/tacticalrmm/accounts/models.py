@@ -1,7 +1,10 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.fields import CharField, DateTimeField
+from django.core import cache
 from logs.models import BaseAuditModel
+
+from typing import Optional
 
 AGENT_DBLCLICK_CHOICES = [
     ("editagent", "Edit Agent"),
@@ -20,6 +23,8 @@ CLIENT_TREE_SORT_CHOICES = [
     ("alphafail", "Move failing clients to the top"),
     ("alpha", "Sort alphabetically"),
 ]
+
+ROLE_CACHE_PREFIX = "role_"
 
 
 class User(AbstractUser, BaseAuditModel):
@@ -74,6 +79,23 @@ class User(AbstractUser, BaseAuditModel):
         from .serializers import UserSerializer
 
         return UserSerializer(user).data
+
+    def get_and_set_role_cache(self) -> "Optional[Role]":
+        role = cache.get(f"{ROLE_CACHE_PREFIX}{self.role}")
+
+        if role and isinstance(role, Role):
+            return role
+        elif not role and not self.role:
+            return None
+        else:
+            models.prefetch_related_objects(
+                [self.role],
+                "can_view_clients",
+                "can_view_sites",
+            )
+
+            cache.set(f"{ROLE_CACHE_PREFIX}{self.role}", self.role, 600)
+            return self.role
 
 
 class Role(BaseAuditModel):

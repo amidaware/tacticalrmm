@@ -3,27 +3,35 @@ import tempfile
 from base64 import b64encode
 from meshctrl.utils import get_auth_token
 
-from typing import TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 import requests
 import websockets
+from django.core.cache import cache
 from django.conf import settings
 from django.http import FileResponse
-
 
 if TYPE_CHECKING:
     from core.models import CoreSettings
 
 
+class CoreSettingsNotFound(Exception):
+    pass
+
+
 def get_core_settings() -> "CoreSettings":
-    from core.models import CoreSettings
+    from core.models import CoreSettings, CORESETTINGS_CACHE_KEY
 
-    class CoreSettingsNotFound(Exception):
-        pass
+    coresettings = cache.get(CORESETTINGS_CACHE_KEY)
 
-    coresettings = CoreSettings.objects.first()
-    if not coresettings:
-        raise CoreSettingsNotFound("CoreSettings not found.")
-    return coresettings
+    if coresettings and isinstance(coresettings, CoreSettings):
+        return coresettings
+    else:
+        coresettings = CoreSettings.objects.first()
+        if not coresettings:
+            raise CoreSettingsNotFound("CoreSettings not found.")
+
+        cache.set(CORESETTINGS_CACHE_KEY, coresettings, 600)
+        return cast(CoreSettings, coresettings)
 
 
 def get_mesh_ws_url() -> str:

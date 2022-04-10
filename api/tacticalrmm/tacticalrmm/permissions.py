@@ -23,7 +23,7 @@ def _has_perm(request, perm: str) -> bool:
 def _has_perm_on_agent(user: "User", agent_id: str) -> bool:
     from agents.models import Agent
 
-    role = user.role
+    role = user.get_and_set_role_cache()
     if user.is_superuser or (role and getattr(role, "is_superuser")):
         return True
 
@@ -50,7 +50,7 @@ def _has_perm_on_agent(user: "User", agent_id: str) -> bool:
 def _has_perm_on_client(user: "User", client_id: int) -> bool:
     from clients.models import Client
 
-    role = user.role
+    role = user.get_and_set_role_cache()
 
     if user.is_superuser or (role and getattr(role, "is_superuser")):
         return True
@@ -73,7 +73,7 @@ def _has_perm_on_client(user: "User", client_id: int) -> bool:
 def _has_perm_on_site(user: "User", site_id: int) -> bool:
     from clients.models import Site
 
-    role = user.role
+    role = user.get_and_set_role_cache()
     if user.is_superuser or (role and getattr(role, "is_superuser")):
         return True
 
@@ -98,7 +98,7 @@ def _has_perm_on_site(user: "User", site_id: int) -> bool:
 
 
 def _audit_log_filter(user: "User") -> Q:
-    role = user.role
+    role = user.get_and_set_role_cache()
     if user.is_superuser or (role and getattr(role, "is_superuser")):
         return Q()
 

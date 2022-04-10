@@ -4,6 +4,7 @@ from email.message import EmailMessage
 from typing import Optional, Union, List, cast, TYPE_CHECKING
 import pytz
 import requests
+from django.core.cache import cache
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
@@ -16,6 +17,8 @@ if TYPE_CHECKING:
     from alerts.models import AlertTemplate
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
+
+CORESETTINGS_CACHE_KEY = "core_settings"
 
 
 class CoreSettings(BaseAuditModel):
@@ -91,6 +94,8 @@ class CoreSettings(BaseAuditModel):
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template
+
+        cache.delete(CORESETTINGS_CACHE_KEY)
 
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")

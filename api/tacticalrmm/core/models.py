@@ -110,7 +110,8 @@ class CoreSettings(BaseAuditModel):
         if old_settings:
             if (
                 old_settings.alert_template != self.alert_template
-                or old_settings.policy != self.policy
+                or old_settings.server_policy != self.server_policy
+                or old_settings.workstation_policy != self.workstation_policy
             ):
                 cache_agents_alert_template.delay()
 

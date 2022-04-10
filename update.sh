@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="132"
+SCRIPT_VERSION="133"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -257,6 +257,11 @@ sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
+
+CHECK_CELERY_CONFIG=$(grep "autoscale=20,2" /etc/conf.d/celery.conf)
+if ! [[ $CHECK_CELERY_CONFIG ]]; then
+  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"/g' /etc/conf.d/celery.conf
+fi
 
 CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
 if ! [[ $CHECK_ADMIN_ENABLED ]]; then

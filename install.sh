@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="60"
+SCRIPT_VERSION="61"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -658,7 +658,7 @@ CELERY_APP="tacticalrmm"
 
 CELERYD_MULTI="multi"
 
-CELERYD_OPTS="--time-limit=86400 --autoscale=50,3"
+CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"
 
 CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"

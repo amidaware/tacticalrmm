@@ -151,7 +151,7 @@ CHANNEL_LAYERS = {
 
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "BACKEND": "tacticalrmm.cache.TacticalRedisCache",
         "LOCATION": f"redis://{REDIS_HOST}:6379",
         "OPTIONS": {
             "parser_class": "redis.connection.HiredisParser",

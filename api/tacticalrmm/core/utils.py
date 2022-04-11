@@ -1,28 +1,12 @@
 import json
 import tempfile
-import time
 from base64 import b64encode
+from meshctrl.utils import get_auth_token
 
 import requests
 import websockets
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
 from django.conf import settings
 from django.http import FileResponse
-
-
-def get_auth_token(user, key):
-    key = bytes.fromhex(key)
-    key1 = key[0:32]
-    msg = '{{"userid":"{}", "domainid":"{}", "time":{}}}'.format(
-        f"user//{user}", "", int(time.time())
-    )
-    iv = get_random_bytes(12)
-
-    a = AES.new(key1, AES.MODE_GCM, iv)
-    msg, tag = a.encrypt_and_digest(bytes(msg, "utf-8"))  # type: ignore
-
-    return b64encode(iv + tag + msg, altchars=b"@$").decode("utf-8")
 
 
 def get_mesh_ws_url() -> str:

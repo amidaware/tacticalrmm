@@ -1,5 +1,5 @@
 asgiref==3.5.0
-celery==5.2.3
+celery==5.2.6
 certifi==2021.10.8
 cffi==1.15.0
 channels==3.0.4
@@ -14,8 +14,7 @@ django-rest-knox==4.2.0
 djangorestframework==3.13.1
 future==0.18.2
 msgpack==1.0.3
-nats-py==2.0.0
-packaging==21.3
+nats-py==2.1.0
 psycopg2-binary==2.9.3
 pycparser==2.21
 pycryptodome==3.14.1
@@ -23,15 +22,16 @@ pyotp==2.6.0
 pyparsing==3.0.7
 pytz==2022.1
 qrcode==7.3.1
-redis==4.1.4
+redis==4.2.2
 requests==2.27.1
 six==1.16.0
 sqlparse==0.4.2
-twilio==7.8.0
+twilio==7.8.1
 urllib3==1.26.9
 uWSGI==2.0.20
 validators==0.18.2
 vine==5.0.0
 websockets==10.2
-zipp==3.7.0
+zipp==3.8.0
 drf_spectacular==0.21.2
+meshctrl==0.1.13

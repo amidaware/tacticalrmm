@@ -2,3 +2,4 @@ coverage
 coveralls
 model_bakery
 black
+tblib

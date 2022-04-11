@@ -97,7 +97,7 @@ class CoreSettings(BaseAuditModel):
         if not self.pk:
             try:
                 self.mesh_site = settings.MESH_SITE
-                self.mesh_username = settings.MESH_USERNAME
+                self.mesh_username = settings.MESH_USERNAME.lower()
                 self.mesh_token = settings.MESH_TOKEN_KEY
             except:
                 pass

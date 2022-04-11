@@ -1,9 +1,10 @@
 import asyncio
+from meshctrl.utils import get_auth_token
 
 from django.core.management.base import BaseCommand
 
 from core.models import CoreSettings
-from core.utils import get_auth_token, get_mesh_device_id, get_mesh_ws_url
+from core.utils import get_mesh_device_id, get_mesh_ws_url
 
 
 class Command(BaseCommand):

@@ -41,8 +41,8 @@ func GetConfig(cfg string) (db *sqlx.DB, r DjangoConfig, err error) {
 	}
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		r.Host, r.Port, r.User, r.Pass, r.DBName)
+		"password=%s dbname=%s sslmode=%s",
+		r.Host, r.Port, r.User, r.Pass, r.DBName, r.SSLMode)
 
 	db, err = sqlx.Connect("postgres", psqlInfo)
 	if err != nil {

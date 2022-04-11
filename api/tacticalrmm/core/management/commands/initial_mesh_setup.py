@@ -45,9 +45,9 @@ class Command(BaseCommand):
             # Check for Mesh Username
             if (
                 not mesh_settings.mesh_username
-                or settings.MESH_USERNAME != mesh_settings.mesh_username
+                or settings.MESH_USERNAME.lower() != mesh_settings.mesh_username
             ):
-                mesh_settings.mesh_username = settings.MESH_USERNAME
+                mesh_settings.mesh_username = settings.MESH_USERNAME.lower()
 
             # Check for Mesh Site
             if (

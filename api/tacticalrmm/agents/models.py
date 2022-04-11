@@ -667,11 +667,7 @@ class Agent(BaseAuditModel):
         from automation.models import Policy
 
         cache_checks = False
-        if (
-            not self.policy
-            and not self.block_policy_inheritance
-            and not self.agentchecks.exists()
-        ):
+        if not self.policy and not self.block_policy_inheritance:
             cached_checks = cache.get(f"site_{self.site_id}_checks")
             if cached_checks and isinstance(cached_checks, list):
                 return cached_checks
@@ -679,13 +675,13 @@ class Agent(BaseAuditModel):
                 cache_checks = True
 
         # clear agent checks that have overridden_by_policy set
-        self.agentchecks.update(overridden_by_policy=False)
+        self.agentchecks.update(overridden_by_policy=False)  # type: ignore
 
         # get agent checks based on policies
         checks = Policy.get_policy_checks(self)
 
         if cache_checks:
-            cache.set(f"site_{self.site_id}_checks", checks, 300)
+            cache.set(f"site_{self.site_id}_checks", checks, 60)
 
         return checks
 
@@ -696,17 +692,17 @@ class Agent(BaseAuditModel):
         if not self.policy and not self.block_policy_inheritance:
             cached_tasks = cache.get(f"site_{self.site_id}_tasks")
             if cached_tasks and isinstance(cached_tasks, list):
-                return cache_tasks
+                return cached_tasks
             else:
-                cached_tasks = True
+                cache_tasks = True
         # get agent tasks based on policies
         tasks = Policy.get_policy_tasks(self)
 
         if cache_tasks:
-            cache.set(f"site_{self.site_id}_tasks", tasks, 300)
+            cache.set(f"site_{self.site_id}_tasks", tasks, 60)
         return tasks
 
-    def _do_nats_debug(self, agent, message):
+    def _do_nats_debug(self, agent: "Agent", message: str) -> None:
         DebugLog.error(agent=agent, log_type="agent_issues", message=message)
 
     async def nats_cmd(

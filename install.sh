@@ -212,7 +212,7 @@ print_green 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
 
 # apply redis configuration
-sudo redis-cli config set appendonly yes
+sudo redis-cli config set appendonly no
 sudo redis-cli config rewrite
 
 print_green 'Installing postgresql'

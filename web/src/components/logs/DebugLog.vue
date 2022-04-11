@@ -67,16 +67,23 @@
           </q-td>
         </q-tr>
       </template>
+
+      <template v-slot:body-cell-entry_time="props">
+        <q-td :props="props">
+          {{ formatDate(props.value) }}
+        </q-td>
+      </template>
     </q-table>
   </q-card>
 </template>
 
 <script>
 // composition api
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import { useAgentDropdown } from "@/composables/agents";
 import { fetchDebugLog } from "@/api/logs";
-import { formatDate, formatTableColumnText } from "@/utils/format";
+import { formatTableColumnText } from "@/utils/format";
 
 // ui components
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
@@ -98,7 +105,6 @@ const columns = [
     field: "entry_time",
     align: "left",
     sortable: true,
-    format: (val, row) => formatDate(val, true),
   },
   { name: "log_level", label: "Log Level", field: "log_level", align: "left", sortable: true },
   { name: "agent", label: "Agent", field: "agent", align: "left", sortable: true },
@@ -128,6 +134,11 @@ export default {
     },
   },
   setup(props) {
+    // setup vuex
+    const store = useStore();
+
+    const formatDate = computed(() => store.getters.formatDate);
+
     // setup dropdowns
     const { agentOptions, getAgentOptions } = useAgentDropdown();
 
@@ -193,6 +204,7 @@ export default {
 
       // methods
       getDebugLog,
+      formatDate,
     };
   },
 };

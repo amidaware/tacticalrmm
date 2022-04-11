@@ -51,8 +51,8 @@ class TestWinUpdateViews(TacticalTestCase):
         updates = WinUpdate.objects.filter(agent=agent).order_by("-id", "installed")
         serializer = WinUpdateSerializer(updates, many=True)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 4)  # type: ignore
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(len(resp.data), 4)
+        self.assertEqual(resp.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -75,7 +75,7 @@ class TestWinUpdateViews(TacticalTestCase):
 class TestWinUpdatePermissions(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
-        self.client_setup()
+        self.setup_client()
 
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     def test_get_scan_install_permissions(self, nats_cmd):

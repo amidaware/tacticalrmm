@@ -96,7 +96,9 @@ class ClientSerializer(ModelSerializer):
 
     def get_sites(self, obj):
         return SiteSerializer(
-            obj.sites.select_related("client").filter_by_role(self.context["user"]),
+            obj.sites.select_related("client")
+            .filter_by_role(self.context["user"])
+            .prefetch_related("custom_fields__field"),
             many=True,
         ).data
 

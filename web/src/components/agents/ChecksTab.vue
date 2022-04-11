@@ -110,14 +110,14 @@
                 clickable
                 v-close-popup
                 @click="showCheckModal(props.row.check_type, props.row)"
-                :disable="props.row.managed_by_policy"
+                :disable="!!props.row.policy"
               >
                 <q-item-section side>
                   <q-icon name="edit" />
                 </q-item-section>
                 <q-item-section>Edit</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="deleteCheck(props.row)" :disable="props.row.managed_by_policy">
+              <q-item clickable v-close-popup @click="deleteCheck(props.row)" :disable="!!props.row.policy">
                 <q-item-section side>
                   <q-icon name="delete" />
                 </q-item-section>
@@ -145,7 +145,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -153,7 +153,7 @@
               dense
               @update:model-value="editCheck(props.row, { text_alert: !props.row.text_alert })"
               v-model="props.row.text_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- email alert -->
@@ -164,7 +164,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -172,7 +172,7 @@
               dense
               @update:model-value="editCheck(props.row, { email_alert: !props.row.email_alert })"
               v-model="props.row.email_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- dashboard alert -->
@@ -183,7 +183,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -191,33 +191,34 @@
               dense
               @update:model-value="editCheck(props.row, { dashboard_alert: !props.row.dashboard_alert })"
               v-model="props.row.dashboard_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- policy check icon -->
-          <q-td v-if="props.row.managed_by_policy">
+          <q-td v-if="props.row.policy">
             <q-icon style="font-size: 1.3rem" name="policy">
               <q-tooltip>This check is managed by a policy</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td v-else-if="props.row.overriden_by_policy">
+          <q-td v-else-if="props.row.overridden_by_policy">
             <q-icon style="font-size: 1.3rem" name="remove_circle_outline">
               <q-tooltip>This check is overriden by a policy</q-tooltip>
             </q-icon>
           </q-td>
           <q-td v-else></q-td>
           <!-- status icon -->
-          <q-td v-if="props.row.status === 'passing'">
+          <q-td v-if="Object.keys(props.row.check_result).length === 0"></q-td>
+          <q-td v-else-if="props.row.check_result.status === 'passing'">
             <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
               <q-tooltip>Passing</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td v-else-if="props.row.status === 'failing'">
-            <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
+          <q-td v-else-if="props.row.check_result.status === 'failing'">
+            <q-icon v-if="getAlertSeverity(props.row) === 'info'" style="font-size: 1.3rem" color="info" name="info">
               <q-tooltip>Informational</q-tooltip>
             </q-icon>
             <q-icon
-              v-else-if="props.row.alert_severity === 'warning'"
+              v-else-if="getAlertSeverity(props.row) === 'warning'"
               style="font-size: 1.3rem"
               color="warning"
               name="warning"
@@ -239,6 +240,7 @@
           <!-- more info -->
           <q-td>
             <span
+              v-if="props.row.check_result.id"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showCheckGraphModal(props.row)"
@@ -246,35 +248,36 @@
             >
             &nbsp;&nbsp;&nbsp;
             <span
-              v-if="props.row.check_type === 'ping'"
+              v-if="props.row.check_type === 'ping' && props.row.check_result.id"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showPingInfo(props.row)"
               >Last Output</span
             >
             <span
-              v-else-if="props.row.check_type === 'script'"
+              v-else-if="props.row.check_type === 'script' && props.row.check_result.id"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
-              @click="showScriptOutput(props.row)"
+              @click="showScriptOutput(props.row.check_result)"
               >Last Output</span
             >
             <span
-              v-else-if="props.row.check_type === 'eventlog'"
+              v-else-if="props.row.check_type === 'eventlog' && props.row.check_result.id"
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showEventInfo(props.row)"
               >Last Output</span
             >
-            <span v-else-if="props.row.check_type === 'diskspace' || props.row.check_type === 'winsvc'">{{
-              props.row.more_info
-            }}</span>
+            <span
+              v-else-if="
+                props.row.check_type === 'diskspace' || (props.row.check_type === 'winsvc' && props.row.check_result.id)
+              "
+              >{{ props.row.check_result.more_info }}</span
+            >
           </q-td>
-          <q-td>{{ props.row.last_run || "Never" }}</q-td>
-          <q-td v-if="!!props.row.assigned_task && props.row.assigned_task.length > 1"
-            >{{ props.row.assigned_task.length }} Tasks</q-td
-          >
-          <q-td v-else-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
+          <q-td>{{ props.row.check_result.last_run ? formatDate(props.row.check_result.last_run) : "Never" }}</q-td>
+          <q-td v-if="props.row.assignedtasks.length > 1">{{ props.row.assignedtasks.length }} Tasks</q-td>
+          <q-td v-else-if="props.row.assignedtasks.length === 1">{{ props.row.assignedtasks[0].name }}</q-td>
           <q-td v-else></q-td>
         </q-tr>
       </template>
@@ -290,7 +293,7 @@ import { useQuasar } from "quasar";
 import { updateCheck, removeCheck, resetCheck } from "@/api/checks";
 import { fetchAgentChecks } from "@/api/agents";
 import { truncateText } from "@/utils/format";
-import { notifySuccess } from "@/utils/notify";
+import { notifySuccess, notifyWarning } from "@/utils/notify";
 
 // ui imports
 import DiskSpaceCheck from "@/components/checks/DiskSpaceCheck";
@@ -337,6 +340,7 @@ export default {
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
     const agentPlatform = computed(() => store.state.agentPlatform);
+    const formatDate = computed(() => store.getters.formatDate);
 
     // setup quasar
     const $q = useQuasar();
@@ -353,6 +357,14 @@ export default {
       descending: false,
     });
 
+    function getAlertSeverity(check) {
+      if (check.check_result.alert_severity) {
+        return check.check_result.alert_severity;
+      } else {
+        return check.alert_severity;
+      }
+    }
+
     async function getChecks() {
       loading.value = true;
       checks.value = await fetchAgentChecks(selectedAgent.value);
@@ -360,7 +372,7 @@ export default {
     }
 
     async function editCheck(check, data) {
-      if (check.managed_by_policy) return;
+      if (check.policy) return;
 
       loading.value = false;
       try {
@@ -395,9 +407,16 @@ export default {
     }
 
     async function resetCheckStatus(check) {
+      // make sure there is a check result before sending
+      if (!check.check_result.status) {
+        notifyWarning("Check hasn't run yet");
+      } else if (check.check_result.status === "passing") {
+        notifyWarning("Check is already passing");
+      }
+
       loading.value = true;
       try {
-        const result = await resetCheck(check.id);
+        const result = await resetCheck(check.check_result.id);
         await getChecks();
         notifySuccess(result);
         refreshDashboard(false /* clearTreeSelected */, false /* clearSubTable */);
@@ -438,13 +457,13 @@ export default {
       $q.dialog({
         title: check.readable_desc,
         style: "width: 50vw; max-width: 60vw",
-        message: `<pre>${check.more_info}</pre>`,
+        message: `<pre>${check.check_result.more_info}</pre>`,
         html: true,
       });
     }
 
     function showCheckModal(type, check) {
-      if (check && check.managed_by_policy) return;
+      if (check && check.policy) return;
 
       let component;
 
@@ -494,6 +513,8 @@ export default {
       deleteCheck,
       resetCheckStatus,
       truncateText,
+      formatDate,
+      getAlertSeverity,
 
       // dialogs
       showScriptOutput,

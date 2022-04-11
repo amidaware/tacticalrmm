@@ -4,11 +4,11 @@ import time
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
-from autotasks.models import AutomatedTask
-from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
-from checks.models import Check
+from autotasks.models import AutomatedTask, TaskResult
+from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
+from checks.models import Check, CheckResult
 from checks.serializers import CheckRunnerGetSerializer
-from core.models import CoreSettings
+from core.utils import get_core_settings
 from core.utils import download_mesh_agent, get_mesh_device_id, get_mesh_ws_url
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -100,6 +100,9 @@ class WinUpdates(APIView):
     def patch(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         u = agent.winupdates.filter(guid=request.data["guid"]).last()  # type: ignore
+        if not u:
+            raise WinUpdate.DoesNotExist
+
         success: bool = request.data["success"]
         if success:
             u.result = "success"
@@ -176,7 +179,7 @@ class RunChecks(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        checks = Check.objects.filter(agent__pk=agent.pk, overriden_by_policy=False)
+        checks = agent.get_checks_with_policies(exclude_overridden=True)
         ret = {
             "agent": agent.pk,
             "check_interval": agent.check_interval,
@@ -191,29 +194,26 @@ class CheckRunner(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        checks = agent.agentchecks.filter(overriden_by_policy=False)  # type: ignore
+        checks = agent.get_checks_with_policies(exclude_overridden=True)
 
         run_list = [
             check
             for check in checks
             # always run if check hasn't run yet
-            if not check.last_run
-            # if a check interval is set, see if the correct amount of seconds have passed
+            if not isinstance(check.check_result, CheckResult)
+            or not check.check_result.last_run
+            # see if the correct amount of seconds have passed
             or (
-                check.run_interval
-                and (
-                    check.last_run
-                    < djangotime.now()
-                    - djangotime.timedelta(seconds=check.run_interval)
+                check.check_result.last_run
+                < djangotime.now()
+                - djangotime.timedelta(
+                    seconds=check.run_interval
+                    if check.run_interval
+                    else agent.check_interval
                 )
             )
-            # if check interval isn't set, make sure the agent's check interval has passed before running
-            or (
-                not check.run_interval
-                and check.last_run
-                < djangotime.now() - djangotime.timedelta(seconds=agent.check_interval)
-            )
         ]
+
         ret = {
             "agent": agent.pk,
             "check_interval": agent.check_run_interval(),
@@ -224,10 +224,23 @@ class CheckRunner(APIView):
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
 
-        check.last_run = djangotime.now()
-        check.save(update_fields=["last_run"])
-        status = check.handle_check(request.data)
-        if status == "failing" and check.assignedtask.exists():  # type: ignore
+        if "agent_id" not in request.data.keys():
+            return notify_error("Agent upgrade required")
+
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+
+        # check check result or create if doesn't exist
+        try:
+            check_result = CheckResult.objects.get(assigned_check=check, agent=agent)
+        except CheckResult.DoesNotExist:
+            check_result = CheckResult(assigned_check=check, agent=agent)
+
+        check_result.last_run = djangotime.now()
+        check_result.save()
+
+        status = check_result.handle_check(request.data)
+
+        if status == "failing" and check.assignedtasks.exists():  # type: ignore
             check.handle_assigned_task()
 
         return Response("ok")
@@ -260,39 +273,49 @@ class TaskRunner(APIView):
         agent = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
 
-        serializer = TaskRunnerPatchSerializer(
-            instance=task, data=request.data, partial=True
-        )
+        # check check result or create if doesn't exist
+        try:
+            task_result = TaskResult.objects.get(task=task, agent=agent)
+            serializer = TaskResultSerializer(
+                data=request.data, instance=task_result, partial=True
+            )
+        except TaskResult.DoesNotExist:
+            serializer = TaskResultSerializer(data=request.data, partial=True)
+
         serializer.is_valid(raise_exception=True)
-        new_task = serializer.save(last_run=djangotime.now())
+        task_result = serializer.save(last_run=djangotime.now())
 
         AgentHistory.objects.create(
             agent=agent,
             type="task_run",
-            script=task.script,
+            command="See Output",
             script_results=request.data,
         )
 
         # check if task is a collector and update the custom field
         if task.custom_field:
-            if not task.stderr:
+            if not task_result.stderr:
 
-                task.save_collector_results()
+                task_result.save_collector_results()
 
                 status = "passing"
             else:
                 status = "failing"
         else:
-            status = "failing" if task.retcode != 0 else "passing"
+            status = "failing" if task_result.retcode != 0 else "passing"
 
-        new_task.status = status
-        new_task.save()
+        if task_result:
+            task_result.status = status
+            task_result.save(update_fields=["status"])
+        else:
+            task_result.status = status
+            task.save(update_fields=["status"])
 
         if status == "passing":
-            if Alert.objects.filter(assigned_task=new_task, resolved=False).exists():
-                Alert.handle_alert_resolve(new_task)
+            if Alert.create_or_return_task_alert(task, agent=agent, skip_create=True):
+                Alert.handle_alert_resolve(task_result)
         else:
-            Alert.handle_alert_failure(new_task)
+            Alert.handle_alert_failure(task_result)
 
         return Response("ok")
 
@@ -324,7 +347,7 @@ class MeshExe(APIView):
             case _:
                 return notify_error("Arch not specified")
 
-        core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+        core = get_core_settings()
 
         try:
             uri = get_mesh_ws_url()

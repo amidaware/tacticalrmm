@@ -10,7 +10,7 @@ from .models import PendingAction
 
 @receiver(post_init, sender=PendingAction)
 def handle_status(sender, instance: PendingAction, **kwargs):
-    if instance.id is not None:
+    if instance.pk:
         # change status to completed once scheduled reboot date/time has expired
         if instance.action_type == "schedreboot" and instance.status == "pending":
 

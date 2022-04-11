@@ -18,7 +18,7 @@
           </q-item-section>
 
           <q-item-section side top>
-            <q-item-label caption>{{ alertTime(alert.alert_time) }}</q-item-label>
+            <q-item-label caption>{{ getTimeLapse(alert.alert_time) }}</q-item-label>
             <q-item-label>
               <q-icon name="snooze" size="xs" class="cursor-pointer" @click="snoozeAlert(alert)" v-close-popup>
                 <q-tooltip>Snooze alert</q-tooltip>
@@ -38,10 +38,16 @@
 <script>
 import mixins from "@/mixins/mixins";
 import AlertsOverview from "@/components/modals/alerts/AlertsOverview";
+import { getTimeLapse } from "@/utils/format";
 
 export default {
   name: "AlertsIcon",
   mixins: [mixins],
+  setup(props) {
+    return {
+      getTimeLapse,
+    };
+  },
   data() {
     return {
       alertsCount: 0,

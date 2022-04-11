@@ -1,13 +1,11 @@
-import os
 import re
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from core.utils import get_core_settings
 from logs.models import AuditLog
-from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ParseError, PermissionDenied
-from rest_framework.parsers import FileUploadParser
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -77,6 +75,8 @@ def dashboard_info(request):
             "loading_bar_color": request.user.loading_bar_color,
             "clear_search_when_switching": request.user.clear_search_when_switching,
             "hosted": getattr(settings, "HOSTED", False),
+            "date_format": request.user.date_format,
+            "default_date_format": get_core_settings().date_format,
         }
     )
 
@@ -84,7 +84,7 @@ def dashboard_info(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, CoreSettingsPerms])
 def email_test(request):
-    core = CoreSettings.objects.first()
+    core = get_core_settings()
     r = core.send_mail(
         subject="Test from Tactical RMM", body="This is a test message", test=True
     )
@@ -220,9 +220,9 @@ class CodeSign(APIView):
         except Exception as e:
             return notify_error(str(e))
 
-        if r.status_code == 400 or r.status_code == 401:  # type: ignore
-            return notify_error(r.json()["ret"])  # type: ignore
-        elif r.status_code == 200:  # type: ignore
+        if r.status_code == 400 or r.status_code == 401:
+            return notify_error(r.json()["ret"])
+        elif r.status_code == 200:
             t = CodeSignToken.objects.first()
             if t is None:
                 CodeSignToken.objects.create(token=request.data["token"])
@@ -233,7 +233,7 @@ class CodeSign(APIView):
             return Response("Token was saved")
 
         try:
-            ret = r.json()["ret"]  # type: ignore
+            ret = r.json()["ret"]
         except:
             ret = "Something went wrong"
         return notify_error(ret)
@@ -243,12 +243,11 @@ class CodeSign(APIView):
         from agents.tasks import force_code_sign
 
         err = "A valid token must be saved first"
-        try:
-            t = CodeSignToken.objects.first().token
-        except:
-            return notify_error(err)
+        token = CodeSignToken.objects.first()
+        if not token:
+            raise CodeSignToken.DoesNotExist
 
-        if t is None or t == "":
+        if token.token is None or token.token == "":
             return notify_error(err)
 
         agent_ids: list[str] = list(
@@ -380,7 +379,7 @@ class TwilioSMSTest(APIView):
 
     def post(self, request):
 
-        core = CoreSettings.objects.first()
+        core = get_core_settings()
         if not core.sms_is_configured:
             return notify_error(
                 "All fields are required, including at least 1 recipient"

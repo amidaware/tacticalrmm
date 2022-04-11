@@ -150,6 +150,24 @@
               <q-badge :color="alertColor(props.row.severity)">{{ capitalize(props.row.severity) }}</q-badge>
             </q-td>
           </template>
+
+          <template v-slot:body-cell-alert_time="props">
+            <q-td :props="props">
+              {{ formatDate(props.value) }}
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-resolve_on="props">
+            <q-td :props="props">
+              {{ formatDate(props.value) }}
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-snoozed_until="props">
+            <q-td :props="props">
+              {{ formatDate(props.value) }}
+            </q-td>
+          </template>
         </q-table>
       </q-card-section>
     </q-card>
@@ -159,11 +177,21 @@
 <script>
 import mixins from "@/mixins/mixins";
 import ScriptOutput from "@/components/checks/ScriptOutput";
+import { computed } from "vue";
+import { useStore } from "vuex";
 
 export default {
   name: "AlertsOverview",
   emits: ["hide"],
   mixins: [mixins],
+  setup(props) {
+    // setup vuex store
+    const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
+    return {
+      formatDate,
+    };
+  },
   data() {
     return {
       alerts: [],
@@ -196,7 +224,6 @@ export default {
           field: "alert_time",
           align: "left",
           sortable: true,
-          format: a => this.unixToString(a),
         },
         { name: "hostname", label: "Agent", field: "hostname", align: "left", sortable: true },
         {
@@ -215,7 +242,6 @@ export default {
           field: "resolve_on",
           align: "left",
           sortable: true,
-          format: a => this.unixToString(a),
         },
         {
           name: "snoozed_until",
@@ -223,7 +249,6 @@ export default {
           field: "snoozed_until",
           align: "left",
           sortable: true,
-          format: a => this.unixToString(a),
         },
         { name: "actions", label: "Actions", align: "left" },
       ],

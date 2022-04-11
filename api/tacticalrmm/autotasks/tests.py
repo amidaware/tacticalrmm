@@ -1,4 +1,3 @@
-import datetime as dt
 from unittest.mock import call, patch
 
 from django.utils import timezone as djangotime
@@ -6,7 +5,7 @@ from model_bakery import baker
 
 from tacticalrmm.test import TacticalTestCase
 
-from .models import AutomatedTask
+from .models import AutomatedTask, TaskResult
 from .serializers import TaskSerializer
 from .tasks import create_win_task_schedule, remove_orphaned_win_tasks, run_win_task
 
@@ -44,11 +43,8 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 4)
 
-    @patch("automation.tasks.generate_agent_autotasks_task.delay")
     @patch("autotasks.tasks.create_win_task_schedule.delay")
-    def test_add_autotask(
-        self, create_win_task_schedule, generate_agent_autotasks_task
-    ):
+    def test_add_autotask(self, create_win_task_schedule):
         url = f"{base_url}/"
 
         # setup data
@@ -238,20 +234,6 @@ class TestAutotaskViews(TacticalTestCase):
         create_win_task_schedule.assert_called()
         create_win_task_schedule.reset_mock()
 
-        # test add task to policy
-        data = {
-            "policy": policy.id,  # type: ignore
-            "name": "Test Task Manual",
-            "enabled": True,
-            "task_type": "manual",
-            "actions": actions,
-        }
-
-        resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        generate_agent_autotasks_task.assert_called_with(policy=policy.id)  # type: ignore
-
         self.check_not_authenticated("post", url)
 
     def test_get_autotask(self):
@@ -266,15 +248,11 @@ class TestAutotaskViews(TacticalTestCase):
         serializer = TaskSerializer(task)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(resp.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
-    @patch("autotasks.tasks.modify_win_task.delay")
-    @patch("automation.tasks.update_policy_autotasks_fields_task.delay")
-    def test_update_autotask(
-        self, update_policy_autotasks_fields_task, modify_win_task
-    ):
+    def test_update_autotask(self):
         # setup data
         agent = baker.make_recipe("agents.agent")
         agent_task = baker.make("autotasks.AutomatedTask", agent=agent)
@@ -292,22 +270,19 @@ class TestAutotaskViews(TacticalTestCase):
         resp = self.client.put(f"{base_url}/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
-        url = f"{base_url}/{agent_task.id}/"  # type: ignore
+        url = f"{base_url}/{agent_task.id}/"
 
         # test editing agent task with no task update
         data = {"name": "New Name"}
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        modify_win_task.not_called()  # type: ignore
 
         # test editing agent task with agent task update
         data = {"enabled": False}
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        modify_win_task.assert_called_with(pk=agent_task.id)  # type: ignore
-        modify_win_task.reset_mock()
 
         # test editing agent task with task_type
         data = {
@@ -323,13 +298,11 @@ class TestAutotaskViews(TacticalTestCase):
             "repetition_duration": "1H",
             "random_task_delay": "5M",
             "custom_field": custom_field.id,
-            "run_asap_afteR_missed": False,
+            "run_asap_after_missed": False,
         }
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        modify_win_task.assert_called_with(pk=agent_task.id)  # type: ignore
-        modify_win_task.reset_mock()
 
         # test trying to edit with empty actions
         data = {
@@ -349,35 +322,11 @@ class TestAutotaskViews(TacticalTestCase):
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 400)
-        modify_win_task.assert_not_called  # type: ignore
-
-        # test editing policy tasks
-        url = f"{base_url}/{policy_task.id}/"  # type: ignore
-
-        # test editing policy task
-        data = {"enabled": False}
-
-        resp = self.client.put(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        update_policy_autotasks_fields_task.assert_called_with(
-            task=policy_task.id, update_agent=True  # type: ignore
-        )
-        update_policy_autotasks_fields_task.reset_mock()
-
-        # test editing policy task with no agent update
-        data = {"name": "New Name"}
-
-        resp = self.client.put(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        update_policy_autotasks_fields_task.assert_called_with(task=policy_task.id)
 
         self.check_not_authenticated("put", url)
 
     @patch("autotasks.tasks.delete_win_task_schedule.delay")
-    @patch("automation.tasks.delete_policy_autotasks_task.delay")
-    def test_delete_autotask(
-        self, delete_policy_autotasks_task, delete_win_task_schedule
-    ):
+    def test_delete_autotask(self, delete_win_task_schedule):
         # setup data
         agent = baker.make_recipe("agents.agent")
         agent_task = baker.make("autotasks.AutomatedTask", agent=agent)
@@ -389,17 +338,10 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         # test delete agent task
-        url = f"{base_url}/{agent_task.id}/"  # type: ignore
+        url = f"{base_url}/{agent_task.id}/"
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        delete_win_task_schedule.assert_called_with(pk=agent_task.id)  # type: ignore
-
-        # test delete policy task
-        url = f"{base_url}/{policy_task.id}/"  # type: ignore
-        resp = self.client.delete(url, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertFalse(AutomatedTask.objects.filter(pk=policy_task.id))  # type: ignore
-        delete_policy_autotasks_task.assert_called_with(task=policy_task.id)  # type: ignore
+        delete_win_task_schedule.assert_called_with(pk=agent_task.id)
 
         self.check_not_authenticated("delete", url)
 
@@ -414,7 +356,7 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         # test run agent task
-        url = f"{base_url}/{task.id}/run/"  # type: ignore
+        url = f"{base_url}/{task.id}/run/"
         resp = self.client.post(url, format="json")
         self.assertEqual(resp.status_code, 200)
         run_win_task.assert_called()
@@ -496,153 +438,318 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         ret = run_win_task.s(self.task1.pk).apply()
         self.assertEqual(ret.status, "SUCCESS")
 
-    # @patch("agents.models.Agent.nats_cmd")
-    # def test_create_win_task_schedule(self, nats_cmd):
-    #     self.agent = baker.make_recipe("agents.agent")
+    @patch("agents.models.Agent.nats_cmd")
+    def test_create_win_task_schedule(self, nats_cmd):
+        agent = baker.make_recipe("agents.agent", time_zone="UTC")
 
-    #     task_name = AutomatedTask.generate_task_name()
-    #     # test scheduled task
-    #     self.task1 = AutomatedTask.objects.create(
-    #         agent=self.agent,
-    #         name="test task 1",
-    #         win_task_name=task_name,
-    #         task_type="scheduled",
-    #         run_time_bit_weekdays=127,
-    #         run_time_minute="21:55",
-    #     )
-    #     self.assertEqual(self.task1.sync_status, "initial")
-    #     nats_cmd.return_value = "ok"
-    #     ret = create_win_task_schedule.s(pk=self.task1.pk).apply()
-    #     self.assertEqual(nats_cmd.call_count, 1)
-    #     nats_cmd.assert_called_with(
-    #         {
-    #             "func": "schedtask",
-    #             "schedtaskpayload": {
-    #                 "type": "rmm",
-    #                 "trigger": "weekly",
-    #                 "weekdays": 127,
-    #                 "pk": self.task1.pk,
-    #                 "name": task_name,
-    #                 "hour": 21,
-    #                 "min": 55,
-    #             },
-    #         },
-    #         timeout=5,
-    #     )
-    #     self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
-    #     self.assertEqual(self.task1.sync_status, "synced")
+        # test daily task
+        task1 = baker.make(
+            "autotasks.AutomatedTask",
+            agent=agent,
+            name="test task 1",
+            win_task_name=AutomatedTask.generate_task_name(),
+            task_type="daily",
+            daily_interval=1,
+            run_time_date=djangotime.now() + djangotime.timedelta(hours=3, minutes=30),
+        )
+        self.assertFalse(TaskResult.objects.filter(agent=agent, task=task1).exists())
 
-    #     nats_cmd.return_value = "timeout"
-    #     ret = create_win_task_schedule.s(pk=self.task1.pk).apply()
-    #     self.assertEqual(ret.status, "SUCCESS")
-    #     self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
-    #     self.assertEqual(self.task1.sync_status, "initial")
+        nats_cmd.return_value = "ok"
+        create_win_task_schedule(pk=task1.pk)
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "pk": task1.pk,
+                    "type": "rmm",
+                    "name": task1.win_task_name,
+                    "overwrite_task": False,
+                    "enabled": True,
+                    "trigger": "daily",
+                    "multiple_instances": 1,
+                    "delete_expired_task_after": False,
+                    "start_when_available": False,
+                    "start_year": int(task1.run_time_date.strftime("%Y")),
+                    "start_month": int(task1.run_time_date.strftime("%-m")),
+                    "start_day": int(task1.run_time_date.strftime("%-d")),
+                    "start_hour": int(task1.run_time_date.strftime("%-H")),
+                    "start_min": int(task1.run_time_date.strftime("%-M")),
+                    "day_interval": 1,
+                },
+            },
+            timeout=5,
+        )
+        nats_cmd.reset_mock()
+        self.assertEqual(
+            TaskResult.objects.get(task=task1, agent=agent).sync_status, "synced"
+        )
 
-    #     # test runonce with future date
-    #     nats_cmd.reset_mock()
-    #     task_name = AutomatedTask.generate_task_name()
-    #     run_time_date = djangotime.now() + djangotime.timedelta(hours=22)
-    #     self.task2 = AutomatedTask.objects.create(
-    #         agent=self.agent,
-    #         name="test task 2",
-    #         win_task_name=task_name,
-    #         task_type="runonce",
-    #         run_time_date=run_time_date,
-    #     )
-    #     nats_cmd.return_value = "ok"
-    #     ret = create_win_task_schedule.s(pk=self.task2.pk).apply()
-    #     nats_cmd.assert_called_with(
-    #         {
-    #             "func": "schedtask",
-    #             "schedtaskpayload": {
-    #                 "type": "rmm",
-    #                 "trigger": "once",
-    #                 "pk": self.task2.pk,
-    #                 "name": task_name,
-    #                 "year": int(dt.datetime.strftime(self.task2.run_time_date, "%Y")),
-    #                 "month": dt.datetime.strftime(self.task2.run_time_date, "%B"),
-    #                 "day": int(dt.datetime.strftime(self.task2.run_time_date, "%d")),
-    #                 "hour": int(dt.datetime.strftime(self.task2.run_time_date, "%H")),
-    #                 "min": int(dt.datetime.strftime(self.task2.run_time_date, "%M")),
-    #             },
-    #         },
-    #         timeout=5,
-    #     )
-    #     self.assertEqual(ret.status, "SUCCESS")
+        nats_cmd.return_value = "timeout"
+        create_win_task_schedule(pk=task1.pk)
+        self.assertEqual(
+            TaskResult.objects.get(task=task1, agent=agent).sync_status, "initial"
+        )
+        nats_cmd.reset_mock()
 
-    #     # test runonce with date in the past
-    #     nats_cmd.reset_mock()
-    #     task_name = AutomatedTask.generate_task_name()
-    #     run_time_date = djangotime.now() - djangotime.timedelta(days=13)
-    #     self.task3 = AutomatedTask.objects.create(
-    #         agent=self.agent,
-    #         name="test task 3",
-    #         win_task_name=task_name,
-    #         task_type="runonce",
-    #         run_time_date=run_time_date,
-    #     )
-    #     nats_cmd.return_value = "ok"
-    #     ret = create_win_task_schedule.s(pk=self.task3.pk).apply()
-    #     self.task3 = AutomatedTask.objects.get(pk=self.task3.pk)
-    #     self.assertEqual(ret.status, "SUCCESS")
+        # test weekly task
+        task1 = baker.make(
+            "autotasks.AutomatedTask",
+            agent=agent,
+            name="test task 1",
+            win_task_name=AutomatedTask.generate_task_name(),
+            task_type="weekly",
+            weekly_interval=1,
+            run_asap_after_missed=True,
+            run_time_bit_weekdays=127,
+            run_time_date=djangotime.now() + djangotime.timedelta(hours=3, minutes=30),
+            expire_date=djangotime.now() + djangotime.timedelta(days=100),
+            task_instance_policy=2,
+        )
 
-    #     # test checkfailure
-    #     nats_cmd.reset_mock()
-    #     self.check = baker.make_recipe("checks.diskspace_check", agent=self.agent)
-    #     task_name = AutomatedTask.generate_task_name()
-    #     self.task4 = AutomatedTask.objects.create(
-    #         agent=self.agent,
-    #         name="test task 4",
-    #         win_task_name=task_name,
-    #         task_type="checkfailure",
-    #         assigned_check=self.check,
-    #     )
-    #     nats_cmd.return_value = "ok"
-    #     ret = create_win_task_schedule.s(pk=self.task4.pk).apply()
-    #     nats_cmd.assert_called_with(
-    #         {
-    #             "func": "schedtask",
-    #             "schedtaskpayload": {
-    #                 "type": "rmm",
-    #                 "trigger": "manual",
-    #                 "pk": self.task4.pk,
-    #                 "name": task_name,
-    #             },
-    #         },
-    #         timeout=5,
-    #     )
-    #     self.assertEqual(ret.status, "SUCCESS")
+        nats_cmd.return_value = "ok"
+        create_win_task_schedule(pk=task1.pk)
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "pk": task1.pk,
+                    "type": "rmm",
+                    "name": task1.win_task_name,
+                    "overwrite_task": False,
+                    "enabled": True,
+                    "trigger": "weekly",
+                    "multiple_instances": 2,
+                    "delete_expired_task_after": False,
+                    "start_when_available": True,
+                    "start_year": int(task1.run_time_date.strftime("%Y")),
+                    "start_month": int(task1.run_time_date.strftime("%-m")),
+                    "start_day": int(task1.run_time_date.strftime("%-d")),
+                    "start_hour": int(task1.run_time_date.strftime("%-H")),
+                    "start_min": int(task1.run_time_date.strftime("%-M")),
+                    "expire_year": int(task1.expire_date.strftime("%Y")),
+                    "expire_month": int(task1.expire_date.strftime("%-m")),
+                    "expire_day": int(task1.expire_date.strftime("%-d")),
+                    "expire_hour": int(task1.expire_date.strftime("%-H")),
+                    "expire_min": int(task1.expire_date.strftime("%-M")),
+                    "week_interval": 1,
+                    "days_of_week": 127,
+                },
+            },
+            timeout=5,
+        )
+        nats_cmd.reset_mock()
 
-    #     # test manual
-    #     nats_cmd.reset_mock()
-    #     task_name = AutomatedTask.generate_task_name()
-    #     self.task5 = AutomatedTask.objects.create(
-    #         agent=self.agent,
-    #         name="test task 5",
-    #         win_task_name=task_name,
-    #         task_type="manual",
-    #     )
-    #     nats_cmd.return_value = "ok"
-    #     ret = create_win_task_schedule.s(pk=self.task5.pk).apply()
-    #     nats_cmd.assert_called_with(
-    #         {
-    #             "func": "schedtask",
-    #             "schedtaskpayload": {
-    #                 "type": "rmm",
-    #                 "trigger": "manual",
-    #                 "pk": self.task5.pk,
-    #                 "name": task_name,
-    #             },
-    #         },
-    #         timeout=5,
-    #     )
-    #     self.assertEqual(ret.status, "SUCCESS")
+        # test monthly task
+        task1 = baker.make(
+            "autotasks.AutomatedTask",
+            agent=agent,
+            name="test task 1",
+            win_task_name=AutomatedTask.generate_task_name(),
+            task_type="monthly",
+            random_task_delay="3M",
+            task_repetition_interval="15M",
+            task_repetition_duration="1D",
+            stop_task_at_duration_end=True,
+            monthly_days_of_month=0x80000030,
+            monthly_months_of_year=0x400,
+            run_time_date=djangotime.now() + djangotime.timedelta(hours=3, minutes=30),
+        )
+
+        nats_cmd.return_value = "ok"
+        create_win_task_schedule(pk=task1.pk)
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "pk": task1.pk,
+                    "type": "rmm",
+                    "name": task1.win_task_name,
+                    "overwrite_task": False,
+                    "enabled": True,
+                    "trigger": "monthly",
+                    "multiple_instances": 1,
+                    "delete_expired_task_after": False,
+                    "start_when_available": False,
+                    "start_year": int(task1.run_time_date.strftime("%Y")),
+                    "start_month": int(task1.run_time_date.strftime("%-m")),
+                    "start_day": int(task1.run_time_date.strftime("%-d")),
+                    "start_hour": int(task1.run_time_date.strftime("%-H")),
+                    "start_min": int(task1.run_time_date.strftime("%-M")),
+                    "random_delay": "PT3M",
+                    "repetition_interval": "PT15M",
+                    "repetition_duration": "P1DT",
+                    "stop_at_duration_end": True,
+                    "days_of_month": 0x30,
+                    "run_on_last_day_of_month": True,
+                    "months_of_year": 1024,
+                },
+            },
+            timeout=5,
+        )
+        nats_cmd.reset_mock()
+
+        # test monthly dow
+        task1 = baker.make(
+            "autotasks.AutomatedTask",
+            agent=agent,
+            name="test task 1",
+            win_task_name=AutomatedTask.generate_task_name(),
+            task_type="monthlydow",
+            run_time_bit_weekdays=56,
+            monthly_months_of_year=0x400,
+            monthly_weeks_of_month=3,
+            run_time_date=djangotime.now() + djangotime.timedelta(hours=3, minutes=30),
+        )
+        nats_cmd.return_value = "ok"
+        create_win_task_schedule(pk=task1.pk)
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "pk": task1.pk,
+                    "type": "rmm",
+                    "name": task1.win_task_name,
+                    "overwrite_task": False,
+                    "enabled": True,
+                    "trigger": "monthlydow",
+                    "multiple_instances": 1,
+                    "delete_expired_task_after": False,
+                    "start_when_available": False,
+                    "start_year": int(task1.run_time_date.strftime("%Y")),
+                    "start_month": int(task1.run_time_date.strftime("%-m")),
+                    "start_day": int(task1.run_time_date.strftime("%-d")),
+                    "start_hour": int(task1.run_time_date.strftime("%-H")),
+                    "start_min": int(task1.run_time_date.strftime("%-M")),
+                    "days_of_week": 56,
+                    "months_of_year": 0x400,
+                    "weeks_of_month": 3,
+                },
+            },
+            timeout=5,
+        )
+        nats_cmd.reset_mock()
+
+        # test runonce with future date
+        task1 = baker.make(
+            "autotasks.AutomatedTask",
+            agent=agent,
+            name="test task 2",
+            win_task_name=AutomatedTask.generate_task_name(),
+            task_type="runonce",
+            run_time_date=djangotime.now() + djangotime.timedelta(hours=22),
+            run_asap_after_missed=True,
+        )
+        nats_cmd.return_value = "ok"
+        create_win_task_schedule(pk=task1.pk)
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "pk": task1.pk,
+                    "type": "rmm",
+                    "name": task1.win_task_name,
+                    "overwrite_task": False,
+                    "enabled": True,
+                    "trigger": "runonce",
+                    "multiple_instances": 1,
+                    "delete_expired_task_after": False,
+                    "start_when_available": True,
+                    "start_year": int(task1.run_time_date.strftime("%Y")),
+                    "start_month": int(task1.run_time_date.strftime("%-m")),
+                    "start_day": int(task1.run_time_date.strftime("%-d")),
+                    "start_hour": int(task1.run_time_date.strftime("%-H")),
+                    "start_min": int(task1.run_time_date.strftime("%-M")),
+                },
+            },
+            timeout=5,
+        )
+        nats_cmd.reset_mock()
+
+        # test runonce with date in the past
+        task1 = baker.make(
+            "autotasks.AutomatedTask",
+            agent=agent,
+            name="test task 3",
+            win_task_name=AutomatedTask.generate_task_name(),
+            task_type="runonce",
+            run_asap_after_missed=True,
+            run_time_date=djangotime.datetime(2018, 6, 1, 23, 23, 23),
+        )
+        nats_cmd.return_value = "ok"
+        create_win_task_schedule(pk=task1.pk)
+        nats_cmd.assert_called()
+
+        # check if task is scheduled for at most 5min in the future
+        _, args, _ = nats_cmd.mock_calls[0]
+        self.assertGreater(
+            args[0]["schedtaskpayload"]["start_min"],
+            int(djangotime.now().strftime("%-M")),
+        )
+
+        # test checkfailure task
+        nats_cmd.reset_mock()
+        check = baker.make_recipe("checks.diskspace_check", agent=agent)
+        task1 = baker.make(
+            "autotasks.AutomatedTask",
+            agent=agent,
+            name="test task 4",
+            win_task_name=AutomatedTask.generate_task_name(),
+            task_type="checkfailure",
+            assigned_check=check,
+        )
+        nats_cmd.return_value = "ok"
+        create_win_task_schedule(pk=task1.pk)
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "pk": task1.pk,
+                    "type": "rmm",
+                    "name": task1.win_task_name,
+                    "overwrite_task": False,
+                    "enabled": True,
+                    "trigger": "manual",
+                    "multiple_instances": 1,
+                    "delete_expired_task_after": False,
+                    "start_when_available": False,
+                },
+            },
+            timeout=5,
+        )
+        nats_cmd.reset_mock()
+
+        # test manual
+        task1 = AutomatedTask.objects.create(
+            agent=agent,
+            name="test task 5",
+            win_task_name=AutomatedTask.generate_task_name(),
+            task_type="manual",
+        )
+        nats_cmd.return_value = "ok"
+        create_win_task_schedule(pk=task1.pk)
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "pk": task1.pk,
+                    "type": "rmm",
+                    "name": task1.win_task_name,
+                    "overwrite_task": False,
+                    "enabled": True,
+                    "trigger": "manual",
+                    "multiple_instances": 1,
+                    "delete_expired_task_after": False,
+                    "start_when_available": False,
+                },
+            },
+            timeout=5,
+        )
 
 
 class TestTaskPermissions(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
-        self.client_setup()
+        self.setup_client()
 
     def test_get_tasks_permissions(self):
         agent = baker.make_recipe("agents.agent")
@@ -709,7 +816,7 @@ class TestTaskPermissions(TacticalTestCase):
         script = baker.make("scripts.Script")
 
         policy_data = {
-            "policy": policy.id,  # type: ignore
+            "policy": policy.id,
             "name": "Test Task Manual",
             "run_time_days": [],
             "timeout": 120,
@@ -855,9 +962,3 @@ class TestTaskPermissions(TacticalTestCase):
 
         self.check_authorized("post", url)
         self.check_not_authorized("post", unauthorized_url)
-
-    def test_policy_fields_to_copy_exists(self):
-        fields = [i.name for i in AutomatedTask._meta.get_fields()]
-        task = baker.make("autotasks.AutomatedTask")
-        for i in task.policy_fields_to_copy:  # type: ignore
-            self.assertIn(i, fields)

@@ -2,8 +2,8 @@ import json
 import os
 from itertools import cycle
 from unittest.mock import patch
-
 import pytz
+from typing import TYPE_CHECKING
 from django.conf import settings
 from django.test import modify_settings
 from django.utils import timezone as djangotime
@@ -24,6 +24,9 @@ from .serializers import (
 )
 from .tasks import auto_self_agent_update_task
 
+if TYPE_CHECKING:
+    from clients.models import Client, Site
+
 base_url = "/agents"
 
 
@@ -33,19 +36,19 @@ base_url = "/agents"
     }
 )
 class TestAgentsList(TacticalTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.authenticate()
         self.setup_coresettings()
 
-    def test_get_agents(self):
+    def test_get_agents(self) -> None:
         url = f"{base_url}/"
 
         # 36 total agents
-        company1 = baker.make("clients.Client")
-        company2 = baker.make("clients.Client")
-        site1 = baker.make("clients.Site", client=company1)
-        site2 = baker.make("clients.Site", client=company1)
-        site3 = baker.make("clients.Site", client=company2)
+        company1: "Client" = baker.make("clients.Client")
+        company2: "Client" = baker.make("clients.Client")
+        site1: "Site" = baker.make("clients.Site", client=company1)
+        site2: "Site" = baker.make("clients.Site", client=company1)
+        site3: "Site" = baker.make("clients.Site", client=company2)
 
         baker.make_recipe(
             "agents.online_agent", site=site1, monitoring_type="server", _quantity=15
@@ -72,27 +75,27 @@ class TestAgentsList(TacticalTestCase):
         # test all agents
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 36)  # type: ignore
+        self.assertEqual(len(r.data), 36)
 
         # test client1
         r = self.client.get(f"{url}?client={company1.pk}", format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 25)  # type: ignore
+        self.assertEqual(len(r.data), 25)
 
         # test site3
         r = self.client.get(f"{url}?site={site3.pk}", format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 11)  # type: ignore
+        self.assertEqual(len(r.data), 11)
 
         # test with no details
         r = self.client.get(f"{url}?site={site3.pk}&detail=false", format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 11)  # type: ignore
+        self.assertEqual(len(r.data), 11)
 
         # make sure data is returned with the AgentHostnameSerializer
         agents = Agent.objects.filter(site=site3)
         serializer = AgentHostnameSerializer(agents, many=True)
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(r.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -129,7 +132,7 @@ class TestAgentViews(TacticalTestCase):
         url = f"{base_url}/{self.agent.agent_id}/"
 
         data = {
-            "site": site.id,  # type: ignore
+            "site": site.pk,
             "monitoring_type": "workstation",
             "description": "asjdk234andasd",
             "offline_time": 4,
@@ -160,7 +163,7 @@ class TestAgentViews(TacticalTestCase):
 
         agent = Agent.objects.get(pk=self.agent.pk)
         data = AgentSerializer(agent).data
-        self.assertEqual(data["site"], site.id)  # type: ignore
+        self.assertEqual(data["site"], site.pk)
 
         policy = WinUpdatePolicy.objects.get(agent=self.agent)
         data = WinUpdatePolicySerializer(policy).data
@@ -169,9 +172,9 @@ class TestAgentViews(TacticalTestCase):
         # test adding custom fields
         field = baker.make("core.CustomField", model="agent", type="number")
         data = {
-            "site": site.id,  # type: ignore
+            "site": site.pk,
             "description": "asjdk234andasd",
-            "custom_fields": [{"field": field.id, "string_value": "123"}],  # type: ignore
+            "custom_fields": [{"field": field.pk, "string_value": "123"}],
         }
 
         r = self.client.put(url, data, format="json")
@@ -182,9 +185,9 @@ class TestAgentViews(TacticalTestCase):
 
         # test edit custom field
         data = {
-            "site": site.id,  # type: ignore
+            "site": site.pk,
             "description": "asjdk234andasd",
-            "custom_fields": [{"field": field.id, "string_value": "456"}],  # type: ignore
+            "custom_fields": [{"field": field.pk, "string_value": "456"}],
         }
 
         r = self.client.put(url, data, format="json")
@@ -423,7 +426,7 @@ class TestAgentViews(TacticalTestCase):
         mock_ret.return_value = "nt authority\\system"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertIsInstance(r.data, str)  # type: ignore
+        self.assertIsInstance(r.data, str)
 
         mock_ret.return_value = "timeout"
         r = self.client.post(url, data, format="json")
@@ -442,8 +445,8 @@ class TestAgentViews(TacticalTestCase):
         nats_cmd.return_value = "ok"
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["time"], "August 29, 2025 at 06:41 PM")  # type: ignore
-        self.assertEqual(r.data["agent"], self.agent.hostname)  # type: ignore
+        self.assertEqual(r.data["time"], "August 29, 2025 at 06:41 PM")
+        self.assertEqual(r.data["agent"], self.agent.hostname)
 
         nats_data = {
             "func": "schedtask",
@@ -454,7 +457,7 @@ class TestAgentViews(TacticalTestCase):
                 "start_when_available": False,
                 "multiple_instances": 2,
                 "trigger": "runonce",
-                "name": r.data["task_name"],  # type: ignore
+                "name": r.data["task_name"],
                 "start_year": 2025,
                 "start_month": 8,
                 "start_day": 29,
@@ -479,7 +482,7 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.patch(url, data_invalid, format="json")
 
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.data, "Invalid date")  # type: ignore
+        self.assertEqual(r.data, "Invalid date")
 
         self.check_not_authenticated("patch", url)
 
@@ -488,8 +491,8 @@ class TestAgentViews(TacticalTestCase):
 
         site = baker.make("clients.Site")
         data = {
-            "client": site.client.id,  # type: ignore
-            "site": site.id,  # type: ignore
+            "client": site.client.pk,
+            "site": site.pk,
             "arch": "64",
             "expires": 23,
             "installMethod": "manual",
@@ -529,21 +532,21 @@ class TestAgentViews(TacticalTestCase):
         # TODO
         # decode the cookie
 
-        self.assertIn("&viewmode=13", r.data["file"])  # type: ignore
-        self.assertIn("&viewmode=12", r.data["terminal"])  # type: ignore
-        self.assertIn("&viewmode=11", r.data["control"])  # type: ignore
+        self.assertIn("&viewmode=13", r.data["file"])
+        self.assertIn("&viewmode=12", r.data["terminal"])
+        self.assertIn("&viewmode=11", r.data["control"])
 
-        self.assertIn("&gotonode=", r.data["file"])  # type: ignore
-        self.assertIn("&gotonode=", r.data["terminal"])  # type: ignore
-        self.assertIn("&gotonode=", r.data["control"])  # type: ignore
+        self.assertIn("&gotonode=", r.data["file"])
+        self.assertIn("&gotonode=", r.data["terminal"])
+        self.assertIn("&gotonode=", r.data["control"])
 
-        self.assertIn("?login=", r.data["file"])  # type: ignore
-        self.assertIn("?login=", r.data["terminal"])  # type: ignore
-        self.assertIn("?login=", r.data["control"])  # type: ignore
+        self.assertIn("?login=", r.data["file"])
+        self.assertIn("?login=", r.data["terminal"])
+        self.assertIn("?login=", r.data["control"])
 
-        self.assertEqual(self.agent.hostname, r.data["hostname"])  # type: ignore
-        self.assertEqual(self.agent.client.name, r.data["client"])  # type: ignore
-        self.assertEqual(self.agent.site.name, r.data["site"])  # type: ignore
+        self.assertEqual(self.agent.hostname, r.data["hostname"])
+        self.assertEqual(self.agent.client.name, r.data["client"])
+        self.assertEqual(self.agent.site.name, r.data["site"])
 
         self.assertEqual(r.status_code, 200)
 
@@ -555,7 +558,7 @@ class TestAgentViews(TacticalTestCase):
         nats_cmd.return_value = "ok"
         r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
-        self.assertIn(self.agent.hostname, r.data)  # type: ignore
+        self.assertIn(self.agent.hostname, r.data)
         nats_cmd.assert_called_with(
             {"func": "recover", "payload": {"mode": "mesh"}}, timeout=90
         )
@@ -592,6 +595,9 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
+        if not hist:
+            raise AgentHistory.DoesNotExist
+
         run_script.assert_called_with(
             scriptpk=script.pk, args=[], timeout=18, wait=True, history_pk=hist.pk
         )
@@ -640,6 +646,9 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
+        if not hist:
+            raise AgentHistory.DoesNotExist
+
         run_script.assert_called_with(
             scriptpk=script.pk, args=["hello", "world"], timeout=25, history_pk=hist.pk
         )
@@ -654,13 +663,16 @@ class TestAgentViews(TacticalTestCase):
             "output": "collector",
             "args": ["hello", "world"],
             "timeout": 22,
-            "custom_field": custom_field.id,  # type: ignore
+            "custom_field": custom_field.pk,
             "save_all_output": True,
         }
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
+        if not hist:
+            raise AgentHistory.DoesNotExist
+
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
@@ -682,13 +694,16 @@ class TestAgentViews(TacticalTestCase):
             "output": "collector",
             "args": ["hello", "world"],
             "timeout": 22,
-            "custom_field": custom_field.id,  # type: ignore
+            "custom_field": custom_field.pk,
             "save_all_output": False,
         }
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
+        if not hist:
+            raise AgentHistory.DoesNotExist
+
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
@@ -712,13 +727,16 @@ class TestAgentViews(TacticalTestCase):
             "output": "collector",
             "args": ["hello", "world"],
             "timeout": 22,
-            "custom_field": custom_field.id,  # type: ignore
+            "custom_field": custom_field.pk,
             "save_all_output": False,
         }
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
+        if not hist:
+            raise AgentHistory.DoesNotExist
+
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
@@ -746,6 +764,9 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
+        if not hist:
+            raise AgentHistory.DoesNotExist
+
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
@@ -767,8 +788,8 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.get(url)
         serializer = AgentNoteSerializer(notes, many=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 4)  # type: ignore
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(len(r.data), 4)
+        self.assertEqual(r.data, serializer.data)
 
         # test with agent_id
         url = f"{base_url}/{agent.agent_id}/notes/"
@@ -776,8 +797,8 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.get(url)
         serializer = AgentNoteSerializer(notes, many=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 4)  # type: ignore
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(len(r.data), 4)
+        self.assertEqual(r.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -788,7 +809,7 @@ class TestAgentViews(TacticalTestCase):
         data = {"note": "This is a note", "agent_id": agent.agent_id}
         r = self.client.post(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(Note.objects.filter(agent=agent).exists())  # type: ignore
+        self.assertTrue(Note.objects.filter(agent=agent).exists())
 
         self.check_not_authenticated("post", url)
 
@@ -796,7 +817,7 @@ class TestAgentViews(TacticalTestCase):
         # setup
         agent = baker.make_recipe("agents.agent")
         note = baker.make("agents.Note", agent=agent)
-        url = f"{base_url}/notes/{note.id}/"
+        url = f"{base_url}/notes/{note.pk}/"
 
         # test not found
         r = self.client.get(f"{base_url}/notes/500/")
@@ -811,7 +832,7 @@ class TestAgentViews(TacticalTestCase):
         # setup
         agent = baker.make_recipe("agents.agent")
         note = baker.make("agents.Note", agent=agent)
-        url = f"{base_url}/notes/{note.id}/"
+        url = f"{base_url}/notes/{note.pk}/"
 
         # test not found
         r = self.client.put(f"{base_url}/notes/500/")
@@ -821,7 +842,7 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
 
-        new_note = Note.objects.get(pk=note.id)  # type: ignore
+        new_note = Note.objects.get(pk=note.pk)
         self.assertEqual(new_note.note, data["note"])
 
         self.check_not_authenticated("put", url)
@@ -830,7 +851,7 @@ class TestAgentViews(TacticalTestCase):
         # setup
         agent = baker.make_recipe("agents.agent")
         note = baker.make("agents.Note", agent=agent)
-        url = f"{base_url}/notes/{note.id}/"
+        url = f"{base_url}/notes/{note.pk}/"
 
         # test not found
         r = self.client.delete(f"{base_url}/notes/500/")
@@ -839,7 +860,7 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
 
-        self.assertFalse(Note.objects.filter(pk=note.id).exists())  # type: ignore
+        self.assertFalse(Note.objects.filter(pk=note.pk).exists())
 
         self.check_not_authenticated("delete", url)
 
@@ -879,14 +900,14 @@ class TestAgentViewsNew(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
 
         # Test client toggle maintenance mode
-        data = {"type": "Client", "id": agent.site.client.id, "action": True}  # type: ignore
+        data = {"type": "Client", "id": agent.site.client.id, "action": True}
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(Agent.objects.get(pk=agent.pk).maintenance_mode)
 
         # Test site toggle maintenance mode
-        data = {"type": "Site", "id": agent.site.id, "action": False}  # type: ignore
+        data = {"type": "Site", "id": agent.site.id, "action": False}
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
@@ -908,13 +929,13 @@ class TestAgentViewsNew(TacticalTestCase):
 )
 class TestAgentPermissions(TacticalTestCase):
     def setUp(self):
-        self.client_setup()
+        self.setup_client()
         self.setup_coresettings()
 
     def test_list_agents_permissions(self):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         url = f"{base_url}/"
 
@@ -932,17 +953,17 @@ class TestAgentPermissions(TacticalTestCase):
 
         # all agents should be returned
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 10)  # type: ignore
+        self.assertEqual(len(response.data), 10)
 
         # limit user to specific client. only 1 agent should be returned
         user.role.can_view_clients.set([agents[4].client])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 2)  # type: ignore
+        self.assertEqual(len(response.data), 2)
 
         # limit agent to specific site. 2 should be returned now
         user.role.can_view_sites.set([agents[6].site])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 4)  # type: ignore
+        self.assertEqual(len(response.data), 4)
 
         # make sure superusers work
         self.check_authorized_superuser("get", url)
@@ -957,7 +978,7 @@ class TestAgentPermissions(TacticalTestCase):
         b64_to_hex.return_value = "nodeid"
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         agent = baker.make_recipe("agents.agent")
         baker.make_recipe("winupdate.winupdate_policy", agent=agent)
@@ -1040,7 +1061,7 @@ class TestAgentPermissions(TacticalTestCase):
             self.check_authorized_superuser(test["method"], url)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)  # type: ignore
+            self.client.force_authenticate(user=user)
 
             # test user without role
             self.check_not_authorized(test["method"], url)
@@ -1067,9 +1088,9 @@ class TestAgentPermissions(TacticalTestCase):
         site = baker.make("clients.Site")
         client = baker.make("clients.Client")
 
-        site_data = {"id": site.id, "type": "Site", "action": True}
+        site_data = {"id": site.pk, "type": "Site", "action": True}
 
-        client_data = {"id": client.id, "type": "Client", "action": True}
+        client_data = {"id": client.pk, "type": "Client", "action": True}
 
         url = f"{base_url}/maintenance/bulk/"
 
@@ -1078,7 +1099,7 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", url, client_data)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         # test user without role
         self.check_not_authorized("post", url, site_data)
@@ -1119,7 +1140,7 @@ class TestAgentPermissions(TacticalTestCase):
         update_task.reset_mock()
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         self.check_not_authorized("post", url, data)
         update_task.assert_not_called()
@@ -1158,10 +1179,10 @@ class TestAgentPermissions(TacticalTestCase):
 
         # test superuser access
         response = self.check_authorized_superuser("get", url)
-        self.assertEqual(len(response.data["agents"]), 12)  # type: ignore
+        self.assertEqual(len(response.data["agents"]), 12)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         self.check_not_authorized("get", url)
 
@@ -1169,22 +1190,22 @@ class TestAgentPermissions(TacticalTestCase):
         user.role.save()
 
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 12)  # type: ignore
+        self.assertEqual(len(response.data["agents"]), 12)
 
         # limit to client
         user.role.can_view_clients.set([agents[0].client])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 5)  # type: ignore
+        self.assertEqual(len(response.data["agents"]), 5)
 
         # add site
         user.role.can_view_sites.set([other_agents[0].site])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 12)  # type: ignore
+        self.assertEqual(len(response.data["agents"]), 12)
 
         # remove client permissions
         user.role.can_view_clients.clear()
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 7)  # type: ignore
+        self.assertEqual(len(response.data["agents"]), 7)
 
     def test_generating_agent_installer_permissions(self):
 
@@ -1198,7 +1219,7 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", url)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         self.check_not_authorized("post", url)
 
@@ -1211,8 +1232,8 @@ class TestAgentPermissions(TacticalTestCase):
         user.role.can_view_clients.set([client])
 
         data = {
-            "client": client.id,
-            "site": client_site.id,
+            "client": client.pk,
+            "site": client_site.pk,
             "version": settings.LATEST_AGENT_VER,
             "arch": "64",
         }
@@ -1220,8 +1241,8 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized("post", url, data)
 
         data = {
-            "client": site.client.id,
-            "site": site.id,
+            "client": site.client.pk,
+            "site": site.pk,
             "version": settings.LATEST_AGENT_VER,
             "arch": "64",
         }
@@ -1232,8 +1253,8 @@ class TestAgentPermissions(TacticalTestCase):
         user.role.can_view_clients.clear()
         user.role.can_view_sites.set([site])
         data = {
-            "client": site.client.id,
-            "site": site.id,
+            "client": site.client.pk,
+            "site": site.pk,
             "version": settings.LATEST_AGENT_VER,
             "arch": "64",
         }
@@ -1241,8 +1262,8 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized("post", url, data)
 
         data = {
-            "client": client.id,
-            "site": client_site.id,
+            "client": client.pk,
+            "site": client_site.pk,
             "version": settings.LATEST_AGENT_VER,
             "arch": "64",
         }
@@ -1263,17 +1284,17 @@ class TestAgentPermissions(TacticalTestCase):
             {"url": f"{base_url}/notes/", "method": "get", "role": "can_list_notes"},
             {"url": f"{base_url}/notes/", "method": "post", "role": "can_manage_notes"},
             {
-                "url": f"{base_url}/notes/{notes[0].id}/",
+                "url": f"{base_url}/notes/{notes[0].pk}/",
                 "method": "get",
                 "role": "can_list_notes",
             },
             {
-                "url": f"{base_url}/notes/{notes[0].id}/",
+                "url": f"{base_url}/notes/{notes[0].pk}/",
                 "method": "put",
                 "role": "can_manage_notes",
             },
             {
-                "url": f"{base_url}/notes/{notes[0].id}/",
+                "url": f"{base_url}/notes/{notes[0].pk}/",
                 "method": "delete",
                 "role": "can_manage_notes",
             },
@@ -1284,7 +1305,7 @@ class TestAgentPermissions(TacticalTestCase):
             self.check_authorized_superuser(test["method"], test["url"])
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user)  # type: ignore
+            self.client.force_authenticate(user=user)
             self.check_not_authorized(test["method"], test["url"])
 
             setattr(user.role, test["role"], True)
@@ -1295,7 +1316,7 @@ class TestAgentPermissions(TacticalTestCase):
         user = self.create_user_with_roles(["can_list_notes", "can_manage_notes"])
         user.role.can_view_sites.set([agent.site])
         user.role.save()
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         authorized_data = {"note": "Test not here", "agent_id": agent.agent_id}
 
@@ -1306,7 +1327,7 @@ class TestAgentPermissions(TacticalTestCase):
 
         # should only return the 4 allowed agent notes (one got deleted above in loop)
         r = self.client.get(f"{base_url}/notes/")
-        self.assertEqual(len(r.data), 4)  # type: ignore
+        self.assertEqual(len(r.data), 4)
 
         # test with agent_id in url
         self.check_authorized("get", f"{base_url}/{agent.agent_id}/notes/")
@@ -1317,25 +1338,25 @@ class TestAgentPermissions(TacticalTestCase):
         # test post get, put, and delete and make sure unauthorized is returned with unauthorized agent and works for authorized
         self.check_authorized("post", f"{base_url}/notes/", authorized_data)
         self.check_not_authorized("post", f"{base_url}/notes/", unauthorized_data)
-        self.check_authorized("get", f"{base_url}/notes/{notes[2].id}/")
+        self.check_authorized("get", f"{base_url}/notes/{notes[2].pk}/")
         self.check_not_authorized(
-            "get", f"{base_url}/notes/{unauthorized_notes[2].id}/"
+            "get", f"{base_url}/notes/{unauthorized_notes[2].pk}/"
         )
         self.check_authorized(
-            "put", f"{base_url}/notes/{notes[3].id}/", authorized_data
+            "put", f"{base_url}/notes/{notes[3].pk}/", authorized_data
         )
         self.check_not_authorized(
-            "put", f"{base_url}/notes/{unauthorized_notes[3].id}/", unauthorized_data
+            "put", f"{base_url}/notes/{unauthorized_notes[3].pk}/", unauthorized_data
         )
-        self.check_authorized("delete", f"{base_url}/notes/{notes[3].id}/")
+        self.check_authorized("delete", f"{base_url}/notes/{notes[3].pk}/")
         self.check_not_authorized(
-            "delete", f"{base_url}/notes/{unauthorized_notes[3].id}/"
+            "delete", f"{base_url}/notes/{unauthorized_notes[3].pk}/"
         )
 
     def test_get_agent_history_permissions(self):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  # type: ignore
+        self.client.force_authenticate(user=user)
 
         sites = baker.make("clients.Site", _quantity=2)
         agent = baker.make_recipe("agents.agent", site=sites[0])
@@ -1364,14 +1385,14 @@ class TestAgentPermissions(TacticalTestCase):
         r = self.check_authorized("get", url)
         self.check_authorized("get", authorized_url)
         self.check_authorized("get", unauthorized_url)
-        self.assertEqual(len(r.data), 11)  # type: ignore
+        self.assertEqual(len(r.data), 11)
 
         # limit user to specific client.
         user.role.can_view_clients.set([agent.client])
         self.check_authorized("get", authorized_url)
         self.check_not_authorized("get", unauthorized_url)
         r = self.check_authorized("get", url)
-        self.assertEqual(len(r.data), 5)  # type: ignore
+        self.assertEqual(len(r.data), 5)
 
         # make sure superusers work
         self.check_authorized_superuser("get", url)
@@ -1454,13 +1475,13 @@ class TestAgentTasks(TacticalTestCase):
 
         nats_cmd.return_value = "ok"
         get_exe.return_value = "https://exe.tacticalrmm.io"
-        r = agent_update(agent64_sign.pk, codesign.token)  # type: ignore
+        r = agent_update(agent64_sign.pk, codesign.token)  
         self.assertEqual(r, "created")
         nats_cmd.assert_called_with(
             {
                 "func": "agentupdate",
                 "payload": {
-                    "url": f"https://exe.tacticalrmm.io/api/v1/winagents/?version={settings.LATEST_AGENT_VER}&arch=64&token=testtoken123",  # type: ignore
+                    "url": f"https://exe.tacticalrmm.io/api/v1/winagents/?version={settings.LATEST_AGENT_VER}&arch=64&token=testtoken123",  
                     "version": settings.LATEST_AGENT_VER,
                     "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
                 },
@@ -1480,13 +1501,13 @@ class TestAgentTasks(TacticalTestCase):
 
         nats_cmd.return_value = "ok"
         get_exe.return_value = "https://exe.tacticalrmm.io"
-        r = agent_update(agent32_sign.pk, codesign.token)  # type: ignore
+        r = agent_update(agent32_sign.pk, codesign.token)  
         self.assertEqual(r, "created")
         nats_cmd.assert_called_with(
             {
                 "func": "agentupdate",
                 "payload": {
-                    "url": f"https://exe.tacticalrmm.io/api/v1/winagents/?version={settings.LATEST_AGENT_VER}&arch=32&token=testtoken123",  # type: ignore
+                    "url": f"https://exe.tacticalrmm.io/api/v1/winagents/?version={settings.LATEST_AGENT_VER}&arch=32&token=testtoken123",  
                     "version": settings.LATEST_AGENT_VER,
                     "inno": f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe",
                 },
@@ -1537,7 +1558,7 @@ class TestAgentTasks(TacticalTestCase):
         )
 
         days = 0
-        for item in history:  # type: ignore
+        for item in history:
             item.time = djangotime.now() - djangotime.timedelta(days=days)
             item.save()
             days = days + 5

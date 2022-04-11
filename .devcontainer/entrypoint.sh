@@ -60,6 +60,8 @@ DEBUG = True
 
 DOCKER_BUILD = True
 
+SWAGGER_ENABLED = True
+
 CERT_FILE = '${CERT_PUB_PATH}'
 KEY_FILE = '${CERT_PRIV_PATH}'
 
@@ -94,6 +96,7 @@ EOF
   echo "${localvars}" > ${WORKSPACE_DIR}/api/tacticalrmm/tacticalrmm/local_settings.py
 
   # run migrations and init scripts
+  "${VIRTUAL_ENV}"/bin/python manage.py pre_update_tasks
   "${VIRTUAL_ENV}"/bin/python manage.py migrate --no-input
   "${VIRTUAL_ENV}"/bin/python manage.py collectstatic --no-input
   "${VIRTUAL_ENV}"/bin/python manage.py initial_db_setup

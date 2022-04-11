@@ -38,7 +38,7 @@
             <q-menu context-menu auto-close>
               <q-list dense>
                 <q-item
-                  :disable="props.row.status === 'completed' || props.row.action_type !== 'schedreboot'"
+                  :disable="props.row.status === 'completed' || props.row.action_type === 'agentinstall'"
                   clickable
                   @click="cancelPendingAction(props.row)"
                 >
@@ -64,7 +64,9 @@
             </q-td>
             <q-td v-if="props.row.status !== 'completed'">
               <span v-if="props.row.action_type === 'agentupdate'">{{ getNextAgentUpdateTime() }}</span>
-              <span v-else>{{ props.row.due }}</span>
+              <span v-else>{{
+                props.row.action_type === "schedreboot" ? formatDate(props.row.due) : props.row.due
+              }}</span>
             </q-td>
             <q-td v-else>Completed</q-td>
             <q-td>{{ props.row.description }}</q-td>
@@ -123,6 +125,7 @@ export default {
 
     // vuex store
     const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
 
     // pending actions logic
     const actions = ref([]);
@@ -149,6 +152,7 @@ export default {
 
     function showOutput(details) {
       $q.dialog({
+        title: "Pending Action Output Details",
         style: "width: 75vw; max-width: 85vw; max-height: 65vh;",
         class: "scroll",
         message: `<pre>${details}</pre>`,
@@ -202,6 +206,7 @@ export default {
       getPendingActions,
       cancelPendingAction,
       getNextAgentUpdateTime,
+      formatDate,
 
       // non-reactive data
       columns,

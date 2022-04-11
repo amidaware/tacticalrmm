@@ -1,11 +1,10 @@
-from clients.serializers import SiteMinimumSerializer
 from rest_framework import serializers
 
 from .models import AuditLog, DebugLog, PendingAction
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
-    entry_time = serializers.SerializerMethodField()
+    entry_time = serializers.ReadOnlyField()
     ip_address = serializers.ReadOnlyField(source="debug_info.ip")
     site = serializers.SerializerMethodField()
 
@@ -24,10 +23,6 @@ class AuditLogSerializer(serializers.ModelSerializer):
         model = AuditLog
         fields = "__all__"
 
-    def get_entry_time(self, log):
-        tz = self.context["default_tz"]
-        return log.entry_time.astimezone(tz).strftime("%m %d %Y %H:%M:%S")
-
 
 class PendingActionSerializer(serializers.ModelSerializer):
     hostname = serializers.ReadOnlyField(source="agent.hostname")
@@ -43,12 +38,8 @@ class PendingActionSerializer(serializers.ModelSerializer):
 
 class DebugLogSerializer(serializers.ModelSerializer):
     agent = serializers.ReadOnlyField(source="agent.hostname")
-    entry_time = serializers.SerializerMethodField(read_only=True)
+    entry_time = serializers.ReadOnlyField()
 
     class Meta:
         model = DebugLog
         fields = "__all__"
-
-    def get_entry_time(self, log):
-        tz = self.context["default_tz"]
-        return log.entry_time.astimezone(tz).strftime("%m %d %Y %H:%M:%S")

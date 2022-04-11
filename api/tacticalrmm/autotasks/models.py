@@ -1,20 +1,24 @@
 import asyncio
-import datetime as dt
 import random
 import string
-from typing import List
-
 import pytz
+from typing import TYPE_CHECKING, List, Dict, Any, Optional, Union
+
 from alerts.models import SEVERITY_CHOICES
-from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils import timezone as djangotime
 from django.db import models
 from django.db.models.fields import DateTimeField
 from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
-from django.utils import timezone as djangotime
 from logs.models import BaseAuditModel, DebugLog
-from packaging import version as pyver
+from core.utils import get_core_settings
+
+if TYPE_CHECKING:
+    from automation.models import Policy
+    from alerts.models import Alert, AlertTemplate
+    from agents.models import Agent
+    from checks.models import Check
 
 from tacticalrmm.models import PermissionQuerySet
 from tacticalrmm.utils import (
@@ -75,51 +79,19 @@ class AutomatedTask(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
-    # deprecated
-    script = models.ForeignKey(
-        "scripts.Script",
-        null=True,
-        blank=True,
-        related_name="autoscript",
-        on_delete=models.SET_NULL,
-    )
-    # deprecated
-    script_args = ArrayField(
-        models.CharField(max_length=255, null=True, blank=True),
-        null=True,
-        blank=True,
-        default=list,
-    )
-    # deprecated
-    timeout = models.PositiveIntegerField(blank=True, default=120)
-
-    # format -> {"actions": [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]}
+    # format -> [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]
     actions = JSONField(default=list)
     assigned_check = models.ForeignKey(
         "checks.Check",
         null=True,
         blank=True,
-        related_name="assignedtask",
+        related_name="assignedtasks",
         on_delete=models.SET_NULL,
     )
     name = models.CharField(max_length=255)
     collector_all_output = models.BooleanField(default=False)
-    managed_by_policy = models.BooleanField(default=False)
-    parent_task = models.PositiveIntegerField(null=True, blank=True)
-    retvalue = models.TextField(null=True, blank=True)
-    retcode = models.IntegerField(null=True, blank=True)
-    stdout = models.TextField(null=True, blank=True)
-    stderr = models.TextField(null=True, blank=True)
-    execution_time = models.CharField(max_length=100, default="0.0000")
-    last_run = models.DateTimeField(null=True, blank=True)
     enabled = models.BooleanField(default=True)
     continue_on_error = models.BooleanField(default=True)
-    status = models.CharField(
-        max_length=30, choices=TASK_STATUS_CHOICES, default="pending"
-    )
-    sync_status = models.CharField(
-        max_length=100, choices=SYNC_STATUS_CHOICES, default="initial"
-    )
     alert_severity = models.CharField(
         max_length=30, choices=SEVERITY_CHOICES, default="info"
     )
@@ -132,7 +104,9 @@ class AutomatedTask(BaseAuditModel):
     task_type = models.CharField(
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
-    win_task_name = models.CharField(max_length=255, null=True, blank=True)
+    win_task_name = models.CharField(
+        max_length=255, null=True, blank=True
+    )  # should be changed to unique=True
     run_time_date = DateTimeField(null=True, blank=True)
     expire_date = DateTimeField(null=True, blank=True)
 
@@ -166,43 +140,35 @@ class AutomatedTask(BaseAuditModel):
     run_asap_after_missed = models.BooleanField(default=False)  # added in agent v1.4.7
     task_instance_policy = models.PositiveSmallIntegerField(blank=True, default=1)
 
-    def __str__(self):
+    # deprecated
+    managed_by_policy = models.BooleanField(default=False)
+
+    # non-database property
+    task_result: "Union[TaskResult, Dict[None, None]]" = {}
+
+    def __str__(self) -> str:
         return self.name
 
-    def save(self, *args, **kwargs):
-        from automation.tasks import update_policy_autotasks_fields_task
-        from autotasks.tasks import modify_win_task
-
-        # get old agent if exists
+    def save(self, *args, **kwargs) -> None:
+        # get old task if exists
         old_task = AutomatedTask.objects.get(pk=self.pk) if self.pk else None
         super(AutomatedTask, self).save(old_model=old_task, *args, **kwargs)
 
-        # check if fields were updated that require a sync to the agent
-        update_agent = False
+        # check if fields were updated that require a sync to the agent and set status to notsynced
         if old_task:
             for field in self.fields_that_trigger_task_update_on_agent:
                 if getattr(self, field) != getattr(old_task, field):
-                    update_agent = True
-                    break
-
-        # check if automated task was enabled/disabled and send celery task
-        if old_task and old_task.agent and update_agent:
-            modify_win_task.delay(pk=self.pk)
-
-        # check if policy task was edited and then check if it was a field worth copying to rest of agent tasks
-        elif old_task and old_task.policy:
-            if update_agent:
-                update_policy_autotasks_fields_task.delay(
-                    task=self.pk, update_agent=update_agent
-                )
-            else:
-                for field in self.policy_fields_to_copy:
-                    if getattr(self, field) != getattr(old_task, field):
-                        update_policy_autotasks_fields_task.delay(task=self.pk)
-                        break
+                    if self.policy:
+                        TaskResult.objects.exclude(sync_status="inital").filter(
+                            task__policy_id=self.policy.id
+                        ).update(sync_status="notsynced")
+                    else:
+                        TaskResult.objects.filter(agent=self.agent, task=self).update(
+                            sync_status="notsynced"
+                        )
 
     @property
-    def schedule(self):
+    def schedule(self) -> Optional[str]:
         if self.task_type == "manual":
             return "Manual"
         elif self.task_type == "checkfailure":
@@ -235,50 +201,6 @@ class AutomatedTask(BaseAuditModel):
             return f"Runs on {months} on {weeks} on {days} at {run_time_nice}"
 
     @property
-    def last_run_as_timezone(self):
-        if self.last_run is not None and self.agent is not None:
-            return self.last_run.astimezone(
-                pytz.timezone(self.agent.timezone)
-            ).strftime("%b-%d-%Y - %H:%M")
-
-        return self.last_run
-
-    # These fields will be duplicated on the agent tasks that are managed by a policy
-    @property
-    def policy_fields_to_copy(self) -> List[str]:
-        return [
-            "alert_severity",
-            "email_alert",
-            "text_alert",
-            "dashboard_alert",
-            "assigned_check",
-            "name",
-            "actions",
-            "run_time_bit_weekdays",
-            "run_time_date",
-            "expire_date",
-            "daily_interval",
-            "weekly_interval",
-            "task_type",
-            "win_task_name",
-            "enabled",
-            "remove_if_not_scheduled",
-            "run_asap_after_missed",
-            "custom_field",
-            "collector_all_output",
-            "monthly_days_of_month",
-            "monthly_months_of_year",
-            "monthly_weeks_of_month",
-            "task_repetition_duration",
-            "task_repetition_interval",
-            "stop_task_at_duration_end",
-            "random_task_delay",
-            "run_asap_after_missed",
-            "task_instance_policy",
-            "continue_on_error",
-        ]
-
-    @property
     def fields_that_trigger_task_update_on_agent(self) -> List[str]:
         return [
             "run_time_bit_weekdays",
@@ -301,7 +223,7 @@ class AutomatedTask(BaseAuditModel):
         ]
 
     @staticmethod
-    def generate_task_name():
+    def generate_task_name() -> str:
         chars = string.ascii_letters
         return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
 
@@ -312,46 +234,55 @@ class AutomatedTask(BaseAuditModel):
 
         return TaskAuditSerializer(task).data
 
-    def create_policy_task(self, agent=None, policy=None, assigned_check=None):
-
-        # added to allow new policy tasks to be assigned to check only when the agent check exists already
-        if (
-            self.assigned_check
-            and agent
-            and agent.agentchecks.filter(parent_check=self.assigned_check.id).exists()
-        ):
-            assigned_check = agent.agentchecks.get(parent_check=self.assigned_check.id)
-
-        # if policy is present, then this task is being copied to another policy
-        # if agent is present, then this task is being created on an agent from a policy
-        # exit if neither are set or if both are set
-        # also exit if assigned_check is set because this task will be created when the check is
-        if (
-            (not agent and not policy)
-            or (agent and policy)
-            or (self.assigned_check and not assigned_check)
-        ):
-            return
+    def create_policy_task(
+        self, policy: "Policy", assigned_check: "Optional[Check]" = None
+    ) -> None:
+        ### Copies certain properties on this task (self) to a new task and sets it to the supplied Policy
+        fields_to_copy = [
+            "alert_severity",
+            "email_alert",
+            "text_alert",
+            "dashboard_alert",
+            "name",
+            "actions",
+            "run_time_bit_weekdays",
+            "run_time_date",
+            "expire_date",
+            "daily_interval",
+            "weekly_interval",
+            "task_type",
+            "enabled",
+            "remove_if_not_scheduled",
+            "run_asap_after_missed",
+            "custom_field",
+            "collector_all_output",
+            "monthly_days_of_month",
+            "monthly_months_of_year",
+            "monthly_weeks_of_month",
+            "task_repetition_duration",
+            "task_repetition_interval",
+            "stop_task_at_duration_end",
+            "random_task_delay",
+            "run_asap_after_missed",
+            "task_instance_policy",
+            "continue_on_error",
+        ]
 
         task = AutomatedTask.objects.create(
-            agent=agent,
             policy=policy,
-            managed_by_policy=bool(agent),
-            parent_task=(self.pk if agent else None),
+            win_task_name=AutomatedTask.generate_task_name(),
             assigned_check=assigned_check,
         )
 
-        for field in self.policy_fields_to_copy:
-            if field != "assigned_check":
-                setattr(task, field, getattr(self, field))
+        for field in fields_to_copy:
+            setattr(task, field, getattr(self, field))
 
         task.save()
 
-        if agent:
-            task.create_task_on_agent()
-
     # agent version >= 1.8.0
-    def generate_nats_task_payload(self, editing=False):
+    def generate_nats_task_payload(
+        self, agent: "Optional[Agent]" = None, editing: bool = False
+    ) -> Dict[str, Any]:
         task = {
             "pk": self.pk,
             "type": "rmm",
@@ -371,6 +302,18 @@ class AutomatedTask(BaseAuditModel):
         }
 
         if self.task_type in ["runonce", "daily", "weekly", "monthly", "monthlydow"]:
+            # set runonce task in future if creating and run_asap_after_missed is set
+            if (
+                not editing
+                and self.task_type == "runonce"
+                and self.run_asap_after_missed
+                and agent
+                and self.run_time_date
+                < djangotime.now().astimezone(pytz.timezone(agent.timezone))
+            ):
+                self.run_time_date = (
+                    djangotime.now() + djangotime.timedelta(minutes=5)
+                ).astimezone(pytz.timezone(agent.timezone))
 
             task["start_year"] = int(self.run_time_date.strftime("%Y"))
             task["start_month"] = int(self.run_time_date.strftime("%-m"))
@@ -423,180 +366,114 @@ class AutomatedTask(BaseAuditModel):
 
         return task
 
-    def create_task_on_agent(self):
-        from agents.models import Agent
-
-        agent = (
-            Agent.objects.filter(pk=self.agent.pk)
-            .only("pk", "version", "hostname", "agent_id")
-            .get()
-        )
-
-        if pyver.parse(agent.version) >= pyver.parse("1.8.0"):
-            nats_data = {
-                "func": "schedtask",
-                "schedtaskpayload": self.generate_nats_task_payload(),
-            }
+    def create_task_on_agent(self, agent: "Optional[Agent]" = None) -> str:
+        if self.policy and not agent:
+            return "agent parameter needs to be passed with policy task"
         else:
+            agent = agent if self.policy else self.agent
 
-            if self.task_type == "scheduled":
-                nats_data = {
-                    "func": "schedtask",
-                    "schedtaskpayload": {
-                        "type": "rmm",
-                        "trigger": "weekly",
-                        "weekdays": self.run_time_bit_weekdays,
-                        "pk": self.pk,
-                        "name": self.win_task_name,
-                        "hour": dt.datetime.strptime(
-                            self.run_time_minute, "%H:%M"
-                        ).hour,
-                        "min": dt.datetime.strptime(
-                            self.run_time_minute, "%H:%M"
-                        ).minute,
-                    },
-                }
+        try:
+            task_result = TaskResult.objects.get(agent=agent, task=self)
+        except TaskResult.DoesNotExist:
+            task_result = TaskResult(agent=agent, task=self)
+            task_result.save()
 
-            elif self.task_type == "runonce":
-                # check if scheduled time is in the past
-                agent_tz = pytz.timezone(agent.timezone)
-                task_time_utc = self.run_time_date.replace(tzinfo=agent_tz).astimezone(
-                    pytz.utc
-                )
-                now = djangotime.now()
-                if task_time_utc < now:
-                    self.run_time_date = now.astimezone(agent_tz).replace(
-                        tzinfo=pytz.utc
-                    ) + djangotime.timedelta(minutes=5)
-                    self.save(update_fields=["run_time_date"])
+        nats_data = {
+            "func": "schedtask",
+            "schedtaskpayload": self.generate_nats_task_payload(agent),
+        }
 
-                nats_data = {
-                    "func": "schedtask",
-                    "schedtaskpayload": {
-                        "type": "rmm",
-                        "trigger": "once",
-                        "pk": self.pk,
-                        "name": self.win_task_name,
-                        "year": int(dt.datetime.strftime(self.run_time_date, "%Y")),
-                        "month": dt.datetime.strftime(self.run_time_date, "%B"),
-                        "day": int(dt.datetime.strftime(self.run_time_date, "%d")),
-                        "hour": int(dt.datetime.strftime(self.run_time_date, "%H")),
-                        "min": int(dt.datetime.strftime(self.run_time_date, "%M")),
-                    },
-                }
-
-                if self.run_asap_after_missed:
-                    nats_data["schedtaskpayload"]["run_asap_after_missed"] = True
-
-                if self.remove_if_not_scheduled:
-                    nats_data["schedtaskpayload"]["deleteafter"] = True
-
-            elif self.task_type == "checkfailure" or self.task_type == "manual":
-                nats_data = {
-                    "func": "schedtask",
-                    "schedtaskpayload": {
-                        "type": "rmm",
-                        "trigger": "manual",
-                        "pk": self.pk,
-                        "name": self.win_task_name,
-                    },
-                }
-            else:
-                return "error"
-
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=5))
+        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=5))
 
         if r != "ok":
-            self.sync_status = "initial"
-            self.save(update_fields=["sync_status"])
+            task_result.sync_status = "initial"
+            task_result.save(update_fields=["sync_status"])
             DebugLog.warning(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"Unable to create scheduled task {self.name} on {agent.hostname}. It will be created when the agent checks in.",
+                message=f"Unable to create scheduled task {self.name} on {task_result.agent.hostname}. It will be created when the agent checks in.",
             )
             return "timeout"
         else:
-            self.sync_status = "synced"
-            self.save(update_fields=["sync_status"])
+            task_result.sync_status = "synced"
+            task_result.save(update_fields=["sync_status"])
             DebugLog.info(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"{agent.hostname} task {self.name} was successfully created",
+                message=f"{task_result.agent.hostname} task {self.name} was successfully created",
             )
 
         return "ok"
 
-    def modify_task_on_agent(self):
-        from agents.models import Agent
-
-        agent = (
-            Agent.objects.filter(pk=self.agent.pk)
-            .only("pk", "version", "hostname", "agent_id")
-            .get()
-        )
-
-        if pyver.parse(agent.version) >= pyver.parse("1.8.0"):
-            nats_data = {
-                "func": "schedtask",
-                "schedtaskpayload": self.generate_nats_task_payload(editing=True),
-            }
+    def modify_task_on_agent(self, agent: "Optional[Agent]" = None) -> str:
+        if self.policy and not agent:
+            return "agent parameter needs to be passed with policy task"
         else:
-            nats_data = {
-                "func": "enableschedtask",
-                "schedtaskpayload": {
-                    "name": self.win_task_name,
-                    "enabled": self.enabled,
-                },
-            }
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=5))
+            agent = agent if self.policy else self.agent
+
+        try:
+            task_result = TaskResult.objects.get(agent=agent, task=self)
+        except TaskResult.DoesNotExist:
+            task_result = TaskResult(agent=agent, task=self)
+            task_result.save()
+
+        nats_data = {
+            "func": "schedtask",
+            "schedtaskpayload": self.generate_nats_task_payload(editing=True),
+        }
+
+        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=5))
 
         if r != "ok":
-            self.sync_status = "notsynced"
-            self.save(update_fields=["sync_status"])
+            task_result.sync_status = "notsynced"
+            task_result.save(update_fields=["sync_status"])
             DebugLog.warning(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"Unable to modify scheduled task {self.name} on {agent.hostname}({agent.pk}). It will try again on next agent checkin",
+                message=f"Unable to modify scheduled task {self.name} on {task_result.agent.hostname}({task_result.agent.agent_id}). It will try again on next agent checkin",
             )
             return "timeout"
         else:
-            self.sync_status = "synced"
-            self.save(update_fields=["sync_status"])
+            task_result.sync_status = "synced"
+            task_result.save(update_fields=["sync_status"])
             DebugLog.info(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"{agent.hostname} task {self.name} was successfully modified",
+                message=f"{task_result.agent.hostname} task {self.name} was successfully modified",
             )
 
         return "ok"
 
-    def delete_task_on_agent(self):
-        from agents.models import Agent
+    def delete_task_on_agent(self, agent: "Optional[Agent]" = None) -> str:
+        if self.policy and not agent:
+            return "agent parameter needs to be passed with policy task"
+        else:
+            agent = agent if self.policy else self.agent
 
-        agent = (
-            Agent.objects.filter(pk=self.agent.pk)
-            .only("pk", "version", "hostname", "agent_id")
-            .get()
-        )
+        try:
+            task_result = TaskResult.objects.get(agent=agent, task=self)
+        except TaskResult.DoesNotExist:
+            task_result = TaskResult(agent=agent, task=self)
+            task_result.save()
 
         nats_data = {
             "func": "delschedtask",
             "schedtaskpayload": {"name": self.win_task_name},
         }
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
+        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=10))
 
         if r != "ok" and "The system cannot find the file specified" not in r:
-            self.sync_status = "pendingdeletion"
+            task_result.sync_status = "pendingdeletion"
 
             try:
-                self.save(update_fields=["sync_status"])
+                task_result.save(update_fields=["sync_status"])
             except DatabaseError:
                 pass
 
             DebugLog.warning(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"{agent.hostname} task {self.name} will be deleted on next checkin",
+                message=f"{task_result.agent.hostname} task {self.name} will be deleted on next checkin",
             )
             return "timeout"
         else:
@@ -604,33 +481,29 @@ class AutomatedTask(BaseAuditModel):
             DebugLog.info(
                 agent=agent,
                 log_type="agent_issues",
-                message=f"{agent.hostname}({agent.pk}) task {self.name} was deleted",
+                message=f"{task_result.agent.hostname}({task_result.agent.agent_id}) task {self.name} was deleted",
             )
 
         return "ok"
 
-    def run_win_task(self):
-        from agents.models import Agent
+    def run_win_task(self, agent: "Optional[Agent]" = None) -> str:
+        if self.policy and not agent:
+            return "agent parameter needs to be passed with policy task"
+        else:
+            agent = agent if self.policy else self.agent
 
-        agent = (
-            Agent.objects.filter(pk=self.agent.pk)
-            .only("pk", "version", "hostname", "agent_id")
-            .get()
+        try:
+            task_result = TaskResult.objects.get(agent=agent, task=self)
+        except TaskResult.DoesNotExist:
+            task_result = TaskResult(agent=agent, task=self)
+            task_result.save()
+
+        asyncio.run(
+            task_result.agent.nats_cmd(
+                {"func": "runtask", "taskpk": self.pk}, wait=False
+            )
         )
-
-        asyncio.run(agent.nats_cmd({"func": "runtask", "taskpk": self.pk}, wait=False))
         return "ok"
-
-    def save_collector_results(self):
-
-        agent_field = self.custom_field.get_or_create_field_value(self.agent)
-
-        value = (
-            self.stdout.strip()
-            if self.collector_all_output
-            else self.stdout.strip().split("\n")[-1].strip()
-        )
-        agent_field.save_to_field(value)
 
     def should_create_alert(self, alert_template=None):
         return (
@@ -647,10 +520,64 @@ class AutomatedTask(BaseAuditModel):
             )
         )
 
-    def send_email(self):
-        from core.models import CoreSettings
 
-        CORE = CoreSettings.objects.first()
+class TaskResult(models.Model):
+    class Meta:
+        unique_together = (("agent", "task"),)
+
+    objects = PermissionQuerySet.as_manager()
+
+    agent = models.ForeignKey(
+        "agents.Agent",
+        related_name="taskresults",
+        on_delete=models.CASCADE,
+    )
+    task = models.ForeignKey(
+        "autotasks.AutomatedTask",
+        related_name="taskresults",
+        on_delete=models.CASCADE,
+    )
+
+    retcode = models.IntegerField(null=True, blank=True)
+    stdout = models.TextField(null=True, blank=True)
+    stderr = models.TextField(null=True, blank=True)
+    execution_time = models.CharField(max_length=100, default="0.0000")
+    last_run = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(
+        max_length=30, choices=TASK_STATUS_CHOICES, default="pending"
+    )
+    sync_status = models.CharField(
+        max_length=100, choices=SYNC_STATUS_CHOICES, default="initial"
+    )
+
+    def __str__(self):
+        return f"{self.agent.hostname} - {self.task}"
+
+    def get_or_create_alert_if_needed(
+        self, alert_template: "Optional[AlertTemplate]"
+    ) -> "Optional[Alert]":
+        from alerts.models import Alert
+
+        return Alert.create_or_return_task_alert(
+            self.task,
+            agent=self.agent,
+            skip_create=not self.task.should_create_alert(alert_template),
+        )
+
+    def save_collector_results(self) -> None:
+
+        agent_field = self.task.custom_field.get_or_create_field_value(self.agent)
+
+        value = (
+            self.stdout.strip()
+            if self.task.collector_all_output
+            else self.stdout.strip().split("\n")[-1].strip()
+        )
+        agent_field.save_to_field(value)
+
+    def send_email(self):
+        CORE = get_core_settings()
+
         # Format of Email sent when Task has email alert
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
@@ -662,12 +589,11 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_mail(subject, body, self.agent.alert_template)  # type: ignore
+        CORE.send_mail(subject, body, self.agent.alert_template)
 
     def send_sms(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
         # Format of SMS sent when Task has SMS alert
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
@@ -679,27 +605,24 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_sms(body, alert_template=self.agent.alert_template)
 
     def send_resolved_email(self):
-        from core.models import CoreSettings
+        CORE = get_core_settings()
 
-        CORE = CoreSettings.objects.first()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = (
             subject
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
 
     def send_resolved_sms(self):
-        from core.models import CoreSettings
-
-        CORE = CoreSettings.objects.first()
+        CORE = get_core_settings()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = (
             subject
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
-        CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore
+        CORE.send_sms(body, alert_template=self.agent.alert_template)

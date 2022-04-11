@@ -1,5 +1,6 @@
 import asyncio
 
+from typing import List
 from agents.models import Agent, AgentHistory
 from scripts.models import Script
 
@@ -31,7 +32,9 @@ def handle_bulk_command_task(
 
 
 @app.task
-def handle_bulk_script_task(scriptpk, agentpks, args, timeout, username) -> None:
+def handle_bulk_script_task(
+    scriptpk: int, agentpks: List[int], args: List[str], timeout: int, username: str
+) -> None:
     script = Script.objects.get(pk=scriptpk)
     for agent in Agent.objects.filter(pk__in=agentpks):
         hist = AgentHistory.objects.create(

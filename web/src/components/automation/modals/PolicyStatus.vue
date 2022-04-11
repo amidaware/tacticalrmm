@@ -99,7 +99,7 @@
               <q-td v-else-if="props.row.more_info">{{ props.row.more_info }}</q-td>
               <q-td v-else>Awaiting Output</q-td>
               <!-- last run -->
-              <q-td>{{ props.row.last_run }}</q-td>
+              <q-td>{{ props.row.last_run ? formatDate(props.row.last_run) : "Never" }}</q-td>
             </q-tr>
           </template>
         </q-table>
@@ -109,6 +109,8 @@
 </template>
 
 <script>
+import { computed } from "vue";
+import { useStore } from "vuex";
 import ScriptOutput from "@/components/checks/ScriptOutput";
 import EventLogCheckOutput from "@/components/checks/EventLogCheckOutput";
 
@@ -128,6 +130,15 @@ export default {
         return ["task", "check"].includes(value);
       },
     },
+  },
+  setup(props) {
+    // setup vuex store
+    const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
+
+    return {
+      formatDate,
+    };
   },
   data() {
     return {

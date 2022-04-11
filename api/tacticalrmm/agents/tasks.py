@@ -2,11 +2,11 @@ import asyncio
 import datetime as dt
 import random
 from time import sleep
-from typing import Union
+from typing import Optional
 
 from agents.models import Agent
 from agents.utils import get_agent_url
-from core.models import CoreSettings
+from core.utils import get_core_settings
 from django.conf import settings
 from django.utils import timezone as djangotime
 from logs.models import DebugLog, PendingAction
@@ -88,8 +88,8 @@ def send_agent_update_task(agent_ids: list[str]) -> None:
 
 @app.task
 def auto_self_agent_update_task() -> None:
-    core = CoreSettings.objects.first()
-    if not core.agent_auto_update:  # type:ignore
+    core = get_core_settings()
+    if not core.agent_auto_update:
         return
 
     q = Agent.objects.only("agent_id", "version")
@@ -108,10 +108,13 @@ def auto_self_agent_update_task() -> None:
 
 
 @app.task
-def agent_outage_email_task(pk: int, alert_interval: Union[float, None] = None) -> str:
+def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> str:
     from alerts.models import Alert
 
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     if not alert.email_sent:
         sleep(random.randint(1, 15))
@@ -136,7 +139,12 @@ def agent_recovery_email_task(pk: int) -> str:
     from alerts.models import Alert
 
     sleep(random.randint(1, 15))
-    alert = Alert.objects.get(pk=pk)
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
+
     alert.agent.send_recovery_email()
     alert.resolved_email_sent = djangotime.now()
     alert.save(update_fields=["resolved_email_sent"])
@@ -145,10 +153,13 @@ def agent_recovery_email_task(pk: int) -> str:
 
 
 @app.task
-def agent_outage_sms_task(pk: int, alert_interval: Union[float, None] = None) -> str:
+def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> str:
     from alerts.models import Alert
 
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     if not alert.sms_sent:
         sleep(random.randint(1, 15))
@@ -173,7 +184,11 @@ def agent_recovery_sms_task(pk: int) -> str:
     from alerts.models import Alert
 
     sleep(random.randint(1, 3))
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
+
     alert.agent.send_recovery_sms()
     alert.resolved_sms_sent = djangotime.now()
     alert.save(update_fields=["resolved_sms_sent"])
@@ -228,7 +243,7 @@ def run_script_email_results_task(
         )
         return
 
-    CORE = CoreSettings.objects.first()
+    CORE = get_core_settings()
     subject = f"{agent.hostname} {script.name} Results"
     exec_time = "{:.4f}".format(r["execution_time"])
     body = (
@@ -241,25 +256,21 @@ def run_script_email_results_task(
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = CORE.smtp_from_email  # type:ignore
+    msg["From"] = CORE.smtp_from_email
 
     if emails:
         msg["To"] = ", ".join(emails)
     else:
-        msg["To"] = ", ".join(CORE.email_alert_recipients)  # type:ignore
+        msg["To"] = ", ".join(CORE.email_alert_recipients)
 
     msg.set_content(body)
 
     try:
-        with smtplib.SMTP(
-            CORE.smtp_host, CORE.smtp_port, timeout=20  # type:ignore
-        ) as server:  # type:ignore
-            if CORE.smtp_requires_auth:  # type:ignore
+        with smtplib.SMTP(CORE.smtp_host, CORE.smtp_port, timeout=20) as server:
+            if CORE.smtp_requires_auth:
                 server.ehlo()
                 server.starttls()
-                server.login(
-                    CORE.smtp_host_user, CORE.smtp_host_password  # type:ignore
-                )  # type:ignore
+                server.login(CORE.smtp_host_user, CORE.smtp_host_password)
                 server.send_message(msg)
                 server.quit()
             else:
@@ -271,18 +282,22 @@ def run_script_email_results_task(
 
 @app.task
 def clear_faults_task(older_than_days: int) -> None:
+    from alerts.models import Alert
+
     # https://github.com/amidaware/tacticalrmm/issues/484
     agents = Agent.objects.exclude(last_seen__isnull=True).filter(
         last_seen__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     )
     for agent in agents:
-        if agent.agentchecks.exists():
-            for check in agent.agentchecks.all():
-                # reset check status
-                check.status = "passing"
-                check.save(update_fields=["status"])
-                if check.alert.filter(resolved=False).exists():
-                    check.alert.get(resolved=False).resolve()
+        for check in agent.get_checks_with_policies():
+            # reset check status
+            if check.check_result:
+                check.check_result.status = "passing"
+                check.check_result.save(update_fields=["status"])
+            if check.alert.filter(agent=agent, resolved=False).exists():
+                alert = Alert.create_or_return_check_alert(check, agent=agent)
+                if alert:
+                    alert.resolve()
 
         # reset overdue alerts
         agent.overdue_email_alert = False

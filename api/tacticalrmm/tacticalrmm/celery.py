@@ -8,17 +8,14 @@ from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
 
-app = Celery(
-    "tacticalrmm",
-    backend="redis://" + settings.REDIS_HOST,
-    broker="redis://" + settings.REDIS_HOST,
-)
+app = Celery("tacticalrmm", backend="redis://" + settings.REDIS_HOST, broker="redis://" + settings.REDIS_HOST)  # type: ignore
+
 # app.config_from_object('django.conf:settings', namespace='CELERY')
-app.broker_url = "redis://" + settings.REDIS_HOST + ":6379"  # type: ignore
-app.result_backend = "redis://" + settings.REDIS_HOST + ":6379"  # type: ignore
-app.accept_content = ["application/json"]  # type: ignore
-app.result_serializer = "json"  # type: ignore
-app.task_serializer = "json"  # type: ignore
+# app.broker_url = "redis://" + settings.REDIS_HOST + ":6379"
+# app.result_backend = "redis://" + settings.REDIS_HOST + ":6379"
+app.accept_content = ["application/json"]
+app.result_serializer = "json"
+app.task_serializer = "json"
 app.conf.task_track_started = True
 app.conf.worker_proc_alive_timeout = 30
 app.conf.worker_max_tasks_per_child = 2
@@ -45,7 +42,7 @@ def debug_task(self):
     print("Request: {0!r}".format(self.request))
 
 
-@app.on_after_finalize.connect  # type: ignore
+@app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
 
     from agents.tasks import agent_outages_task

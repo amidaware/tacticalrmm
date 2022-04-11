@@ -10,8 +10,9 @@ networks:
         - subnet: 172.20.0.0/24
   api-db: null
   redis: null
-  mesh-db: null # docker managed persistent volumes
+  mesh-db: null
 
+# docker managed persistent volumes
 volumes:
   tactical_data: null
   postgres_data: null
@@ -39,7 +40,7 @@ services:
     container_name: trmm-redis
     image: redis:6.0-alpine
     user: 1000:1000
-    command: redis-server --appendonly yes
+    command: redis-server
     restart: always
     volumes:
       - redis_data:/data

@@ -4,13 +4,14 @@ import uuid
 
 import pytz
 from agents.models import Agent
-from core.models import CoreSettings
+from core.utils import get_core_settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from knox.models import AuthToken
 
 from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
 from tacticalrmm.utils import notify_error
@@ -30,9 +31,13 @@ class GetAddClients(APIView):
     permission_classes = [IsAuthenticated, ClientsPerms]
 
     def get(self, request):
-        clients = Client.objects.select_related(
-            "workstation_policy", "server_policy", "alert_template"
-        ).filter_by_role(request.user)
+        clients = (
+            Client.objects.select_related(
+                "workstation_policy", "server_policy", "alert_template"
+            )
+            .filter_by_role(request.user)  # type: ignore
+            .prefetch_related("custom_fields__field", "sites")
+        )
         return Response(
             ClientSerializer(clients, context={"user": request.user}, many=True).data
         )
@@ -57,7 +62,7 @@ class GetAddClients(APIView):
             site_serializer.is_valid(raise_exception=True)
 
         if "initialsetup" in request.data.keys():
-            core = CoreSettings.objects.first()
+            core = get_core_settings()
             core.default_time_zone = request.data["timezone"]
             core.save(update_fields=["default_time_zone"])
 
@@ -119,8 +124,6 @@ class GetUpdateDeleteClient(APIView):
         return Response("{client} was updated")
 
     def delete(self, request, pk):
-        from automation.tasks import generate_agent_checks_task
-
         client = get_object_or_404(Client, pk=pk)
         agent_count = client.live_agent_count
 
@@ -129,7 +132,6 @@ class GetUpdateDeleteClient(APIView):
             agents = Agent.objects.filter(site__client=client)
             site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
             agents.update(site=site)
-            generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         elif agent_count > 0:
             return notify_error(
@@ -144,7 +146,7 @@ class GetAddSites(APIView):
     permission_classes = [IsAuthenticated, SitesPerms]
 
     def get(self, request):
-        sites = Site.objects.filter_by_role(request.user)
+        sites = Site.objects.filter_by_role(request.user)  # type: ignore
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
@@ -220,8 +222,6 @@ class GetUpdateDeleteSite(APIView):
         return Response("Site was edited")
 
     def delete(self, request, pk):
-        from automation.tasks import generate_agent_checks_task
-
         site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
             return notify_error("A client must have at least 1 site.")
@@ -232,7 +232,6 @@ class GetUpdateDeleteSite(APIView):
             agents = Agent.objects.filter(site=site)
             new_site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
             agents.update(site=new_site)
-            generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         elif agent_count > 0:
             return notify_error(
@@ -247,12 +246,11 @@ class AgentDeployment(APIView):
     permission_classes = [IsAuthenticated, DeploymentPerms]
 
     def get(self, request):
-        deps = Deployment.objects.filter_by_role(request.user)
+        deps = Deployment.objects.filter_by_role(request.user)  # type: ignore
         return Response(DeploymentSerializer(deps, many=True).data)
 
     def post(self, request):
         from accounts.models import User
-        from knox.models import AuthToken
 
         site = get_object_or_404(Site, pk=request.data["site"])
 

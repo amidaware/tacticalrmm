@@ -1,7 +1,10 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.fields import CharField, DateTimeField
+from django.core.cache import cache
 from logs.models import BaseAuditModel
+
+from typing import Optional
 
 AGENT_DBLCLICK_CHOICES = [
     ("editagent", "Edit Agent"),
@@ -20,6 +23,8 @@ CLIENT_TREE_SORT_CHOICES = [
     ("alphafail", "Move failing clients to the top"),
     ("alpha", "Sort alphabetically"),
 ]
+
+ROLE_CACHE_PREFIX = "role_"
 
 
 class User(AbstractUser, BaseAuditModel):
@@ -48,6 +53,7 @@ class User(AbstractUser, BaseAuditModel):
     client_tree_splitter = models.PositiveIntegerField(default=11)
     loading_bar_color = models.CharField(max_length=255, default="red")
     clear_search_when_switching = models.BooleanField(default=True)
+    date_format = models.CharField(max_length=30, blank=True, null=True)
     is_installer_user = models.BooleanField(default=False)
     last_login_ip = models.GenericIPAddressField(default=None, blank=True, null=True)
 
@@ -73,6 +79,23 @@ class User(AbstractUser, BaseAuditModel):
         from .serializers import UserSerializer
 
         return UserSerializer(user).data
+
+    def get_and_set_role_cache(self) -> "Optional[Role]":
+        role = cache.get(f"{ROLE_CACHE_PREFIX}{self.role}")
+
+        if role and isinstance(role, Role):
+            return role
+        elif not role and not self.role:
+            return None
+        else:
+            models.prefetch_related_objects(
+                [self.role],
+                "can_view_clients",
+                "can_view_sites",
+            )
+
+            cache.set(f"{ROLE_CACHE_PREFIX}{self.role}", self.role, 600)
+            return self.role
 
 
 class Role(BaseAuditModel):
@@ -173,6 +196,12 @@ class Role(BaseAuditModel):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs) -> None:
+
+        # delete cache on save
+        cache.delete(f"{ROLE_CACHE_PREFIX}{self.name}")
+        super(BaseAuditModel, self).save(*args, **kwargs)
 
     @staticmethod
     def serialize(role):

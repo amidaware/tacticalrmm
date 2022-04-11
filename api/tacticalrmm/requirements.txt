@@ -7,7 +7,7 @@ channels_redis==3.4.0
 chardet==4.0.0
 cryptography==36.0.2
 daphne==3.0.2
-Django==3.2.12
+Django==4.0.3
 django-cors-headers==3.11.0
 django-ipware==4.0.2
 django-rest-knox==4.2.0
@@ -23,6 +23,7 @@ pyparsing==3.0.7
 pytz==2022.1
 qrcode==7.3.1
 redis==4.2.2
+hiredis==2.0.0
 requests==2.27.1
 six==1.16.0
 sqlparse==0.4.2
@@ -33,5 +34,5 @@ validators==0.18.2
 vine==5.0.0
 websockets==10.2
 zipp==3.8.0
-drf_spectacular==0.21.2
+drf_spectacular==0.22.0
 meshctrl==0.1.13

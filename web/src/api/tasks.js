@@ -26,7 +26,7 @@ export async function removeTask(id) {
     return data
 }
 
-export async function runTask(id) {
-    const { data } = await axios.post(`${baseUrl}/${id}/run/`)
+export async function runTask(id, payload) {
+    const { data } = await axios.post(`${baseUrl}/${id}/run/`, payload)
     return data
 }

@@ -4,7 +4,7 @@ from tacticalrmm.permissions import _has_perm
 
 
 class AutomationPolicyPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
+    def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             return _has_perm(r, "can_list_automation_policies")
         else:

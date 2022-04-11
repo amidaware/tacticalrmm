@@ -105,13 +105,6 @@
                         <q-item-section>Policy Exclusions</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="syncPolicies(props.row)">
-                        <q-item-section side>
-                          <q-icon name="sync" />
-                        </q-item-section>
-                        <q-item-section>Sync Policies</q-item-section>
-                      </q-item>
-
                       <q-item clickable v-close-popup @click="showPatchPolicyForm(props.row)">
                         <q-item-section side>
                           <q-icon name="system_update" />
@@ -444,23 +437,6 @@ export default {
         })
         .onOk(() => {
           this.refresh();
-        });
-    },
-    syncPolicies(policy) {
-      this.$q.loading.show();
-
-      const data = {
-        policy: policy.id,
-      };
-
-      this.$axios
-        .post(`/automation/sync/`, data)
-        .then(r => {
-          this.$q.loading.hide();
-          this.notifySuccess("Sync request sent successfully. The task will be run on all affected agents");
-        })
-        .catch(error => {
-          this.$q.loading.hide();
         });
     },
     toggleCheckbox(policy, type) {

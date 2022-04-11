@@ -79,13 +79,13 @@ class AgentSerializer(serializers.ModelSerializer):
 class AgentTableSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
-    last_seen = serializers.SerializerMethodField()
     client_name = serializers.ReadOnlyField(source="client.name")
     site_name = serializers.ReadOnlyField(source="site.name")
     logged_username = serializers.SerializerMethodField()
     italic = serializers.SerializerMethodField()
     policy = serializers.ReadOnlyField(source="policy.id")
     alert_template = serializers.SerializerMethodField()
+    last_seen = serializers.ReadOnlyField()
 
     def get_alert_template(self, obj):
 
@@ -98,14 +98,6 @@ class AgentTableSerializer(serializers.ModelSerializer):
                 "always_text": obj.alert_template.agent_always_text,
                 "always_alert": obj.alert_template.agent_always_alert,
             }
-
-    def get_last_seen(self, obj) -> str:
-        if obj.time_zone is not None:
-            agent_tz = pytz.timezone(obj.time_zone)
-        else:
-            agent_tz = self.context["default_tz"]
-
-        return obj.last_seen.astimezone(agent_tz).strftime("%m %d %Y %H:%M")
 
     def get_logged_username(self, obj) -> str:
         if obj.logged_in_username == "None" and obj.status == "online":
@@ -181,16 +173,11 @@ class AgentNoteSerializer(serializers.ModelSerializer):
 
 
 class AgentHistorySerializer(serializers.ModelSerializer):
-    time = serializers.SerializerMethodField(read_only=True)
     script_name = serializers.ReadOnlyField(source="script.name")
 
     class Meta:
         model = AgentHistory
         fields = "__all__"
-
-    def get_time(self, history):
-        tz = self.context["default_tz"]
-        return history.time.astimezone(tz).strftime("%m %d %Y %H:%M:%S")
 
 
 class AgentAuditSerializer(serializers.ModelSerializer):

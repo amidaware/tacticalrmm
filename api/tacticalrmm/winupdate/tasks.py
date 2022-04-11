@@ -12,7 +12,7 @@ from tacticalrmm.celery import app
 
 
 @app.task
-def auto_approve_updates_task():
+def auto_approve_updates_task() -> None:
     # scheduled task that checks and approves updates daily
 
     agents = Agent.objects.only(
@@ -40,7 +40,7 @@ def auto_approve_updates_task():
 
 
 @app.task
-def check_agent_update_schedule_task():
+def check_agent_update_schedule_task() -> None:
     # scheduled task that installs updates on agents if enabled
     agents = Agent.objects.only(
         "pk",

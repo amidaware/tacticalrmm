@@ -124,7 +124,7 @@ export default {
       this.$q.loading.show();
 
       this.$axios
-        .patch(`/checks/${this.check.id}/history/`, { timeFilter: this.timeFilter })
+        .patch(`/checks/${this.check.check_result.id}/history/`, { timeFilter: this.timeFilter })
         .then(r => {
           this.history = Object.freeze(r.data);
 

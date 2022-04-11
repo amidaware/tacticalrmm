@@ -2,19 +2,30 @@ from rest_framework import serializers
 from scripts.models import Script
 from django.core.exceptions import ObjectDoesNotExist
 
-from .models import AutomatedTask
+from .models import AutomatedTask, TaskResult
+
+
+class TaskResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskResult
+        fields = "__all__"
 
 
 class TaskSerializer(serializers.ModelSerializer):
 
     check_name = serializers.ReadOnlyField(source="assigned_check.readable_desc")
     schedule = serializers.ReadOnlyField()
-    last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     alert_template = serializers.SerializerMethodField()
-    run_time_date = serializers.DateTimeField(format="iso-8601", required=False)
-    expire_date = serializers.DateTimeField(
-        format="iso-8601", allow_null=True, required=False
-    )
+    run_time_date = serializers.DateTimeField(required=False)
+    expire_date = serializers.DateTimeField(allow_null=True, required=False)
+    task_result = serializers.SerializerMethodField()
+
+    def get_task_result(self, obj):
+        return (
+            TaskResultSerializer(obj.task_result).data
+            if isinstance(obj.task_result, TaskResult)
+            else {}
+        )
 
     def validate_actions(self, value):
 
@@ -239,12 +250,6 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = AutomatedTask
         fields = ["id", "continue_on_error", "enabled", "task_actions"]
-
-
-class TaskRunnerPatchSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AutomatedTask
-        fields = "__all__"
 
 
 class TaskAuditSerializer(serializers.ModelSerializer):

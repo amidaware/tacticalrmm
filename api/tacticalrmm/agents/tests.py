@@ -439,7 +439,7 @@ class TestAgentViews(TacticalTestCase):
         url = f"{base_url}/{self.agent.agent_id}/reboot/"
 
         data = {
-            "datetime": "2025-08-29 18:41",
+            "datetime": "2025-08-29T18:41:02",
         }
 
         nats_cmd.return_value = "ok"

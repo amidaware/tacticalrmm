@@ -393,7 +393,7 @@ class TestClientViews(TacticalTestCase):
         payload = {
             "client": site.client.id,
             "site": site.id,
-            "expires": "2037-11-23 18:53",
+            "expires": "2037-11-23T18:53:04-04:00",
             "power": 1,
             "ping": 0,
             "rdp": 1,

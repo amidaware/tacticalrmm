@@ -397,7 +397,7 @@ class Reboot(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
         try:
-            obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%d %H:%M")
+            obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M:%S")
         except Exception:
             return notify_error("Invalid date")
 

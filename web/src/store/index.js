@@ -31,7 +31,7 @@ export default function () {
         clearSearchWhenSwitching: false,
         currentTRMMVersion: null,
         latestTRMMVersion: null,
-        dateFormat: "MMM-DD-YYYY - HH:mm"
+        dateFormat: "MMM-DD-YYYY - HH:mm",
       }
     },
     getters: {
@@ -131,7 +131,7 @@ export default function () {
       },
       setDateFormat(state, val) {
         state.dateFormat = val
-      }
+      },
     },
     actions: {
       setClientTreeSplitter(context, val) {

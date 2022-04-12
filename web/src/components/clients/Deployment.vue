@@ -29,7 +29,7 @@
         </template>
 
         <template v-slot:body="props">
-          <q-tr :props="props" class="cursor-pointer" @dblclick="copyToClipboard(props.row)">
+          <q-tr :props="props" class="cursor-pointer" @dblclick="copyLink(props.row)">
             <q-menu context-menu auto-close>
               <q-list dense style="min-width: 200px">
                 <q-item clickable @click="deleteDeployment(props.row)">

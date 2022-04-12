@@ -600,7 +600,7 @@ import { useCheckDropdown } from "@/composables/checks";
 import { useCustomFieldDropdown } from "@/composables/core";
 import { notifySuccess, notifyError } from "@/utils/notify";
 import { validateTimePeriod } from "@/utils/validation";
-import { convertPeriodToSeconds, convertToBitArray, convertFromBitArray } from "@/utils/format";
+import { convertPeriodToSeconds, convertToBitArray, convertFromBitArray, formatDateInputField } from "@/utils/format";
 
 // ui imports
 import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
@@ -705,7 +705,7 @@ export default {
           custom_field: null,
           name: null,
           expire_date: null,
-          run_time_date: date.formatDate(Date.now(), "YYYY-MM-DDTHH:mm:ss"),
+          run_time_date: formatDateInputField(Date.now()),
           run_time_bit_weekdays: [],
           weekly_interval: 1,
           daily_interval: 1,
@@ -836,9 +836,9 @@ export default {
         : [];
 
       // remove milliseconds and Z to work with native date input
-      task.value.run_time_date = task.value.run_time_date.split(".")[0].replace("Z", "");
+      task.value.run_time_date = formatDateInputField(task.value.run_time_date);
 
-      if (task.value.expire_date) task.value.expire_date = task.value.expire_date.split(".")[0].replace("Z", "");
+      if (task.value.expire_date) task.value.expire_date = formatDateInputField(task.value.expire_date);
 
       // set task type if monthlydow is being used
       if (task.value.task_type === "monthlydow") {

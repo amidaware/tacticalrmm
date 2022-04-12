@@ -206,7 +206,7 @@ export function getTimeLapse(unixtime) {
   }
 }
 
-export function formatDate(dateString, format = "MMM-DD-YYYY-HH:mm") {
+export function formatDate(dateString, format = "MMM-DD-YYYY HH:mm") {
   if (!dateString) return "";
   return date.formatDate(dateString, format);
 }
@@ -225,11 +225,15 @@ export function getNextAgentUpdateTime() {
   return `${a} at ${b}`;
 }
 
-// takes a unix timestamp and converts it to quasar datetime field value YYYY-MM-DD HH:mm:ss
-export function formatDateInputField(unixtimestamp) {
-  return date.formatDate(unixtimestamp, "YYYY-MM-DD HH:mm:ss")
+// converts a date with timezone to local for html native datetime fields -> YYYY-MM-DD HH:mm:ss
+export function formatDateInputField(isoDateString) {
+  return date.formatDate(isoDateString, "YYYY-MM-DDTHH:mm:ss")
 }
 
+// converts a local date string "YYYY-MM-DDTHH:mm:ss" to an iso date string with the local timezone
+export function formatDateStringwithTimezone(localDateString) {
+  return date.formatDate(localDateString, "YYYY-MM-DDTHH:mm:ssZ")
+}
 // string formatting
 
 export function capitalize(string) {

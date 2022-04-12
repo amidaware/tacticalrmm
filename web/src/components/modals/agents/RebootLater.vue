@@ -9,23 +9,15 @@
         </q-btn>
       </q-bar>
       <q-card-section>
-        <q-input dense filled v-model="state.datetime">
-          <template v-slot:prepend>
-            <q-icon name="event" class="cursor-pointer">
-              <q-popup-proxy transition-show="scale" transition-hide="scale">
-                <q-date v-model="state.datetime" mask="YYYY-MM-DD HH:mm" />
-              </q-popup-proxy>
-            </q-icon>
-          </template>
-
-          <template v-slot:append>
-            <q-icon name="access_time" class="cursor-pointer">
-              <q-popup-proxy transition-show="scale" transition-hide="scale">
-                <q-time v-model="state.datetime" mask="YYYY-MM-DD HH:mm" />
-              </q-popup-proxy>
-            </q-icon>
-          </template>
-        </q-input>
+        <q-input
+          type="datetime-local"
+          dense
+          label="Reboot time"
+          stack-label
+          filled
+          v-model="state.datetime"
+          hint="Uses the agent's local time zone"
+        />
       </q-card-section>
       <q-card-actions align="right">
         <q-btn dense flat push label="Cancel" v-close-popup />
@@ -38,9 +30,9 @@
 <script>
 // composition imports
 import { ref } from "vue";
-import { useQuasar, useDialogPluginComponent } from "quasar";
+import { useQuasar, useDialogPluginComponent, date } from "quasar";
 import { scheduleAgentReboot } from "@/api/agents";
-import { date } from "quasar";
+import { formatDateInputField } from "@/utils/format";
 
 export default {
   name: "RebootLater",
@@ -55,7 +47,7 @@ export default {
 
     // setup reboot later logic
     const state = ref({
-      datetime: date.formatDate(Date.now(), "YYYY-MM-DD HH:mm"),
+      datetime: formatDateInputField(date.addToDate(Date.now(), { hours: 1 })),
     });
     const loading = ref(false);
 
@@ -63,7 +55,7 @@ export default {
       loading.value = true;
 
       try {
-        const result = await scheduleAgentReboot(props.agent.agent_id, { datetime: state.value.datetime });
+        const result = await scheduleAgentReboot(props.agent.agent_id, state.value);
         $q.dialog({
           title: "Reboot pending",
           style: "width: 40vw",

@@ -29,28 +29,14 @@
 
         <!-- expiration -->
         <q-card-section>
-          <q-input dense label="Key Expiration (Not required) " filled v-model="localKey.expiration">
-            <template v-slot:append>
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-date v-model="localKey.expiration" mask="YYYY-MM-DD HH:mm">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Close" color="primary" flat />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-icon>
-              <q-icon name="access_time" class="cursor-pointer">
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-time v-model="localKey.expiration" mask="YYYY-MM-DD HH:mm">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Close" color="primary" flat />
-                    </div>
-                  </q-time>
-                </q-popup-proxy>
-              </q-icon>
-            </template>
-          </q-input>
+          <q-input
+            type="datetime-local"
+            dense
+            label="Key Expiration (Not required)"
+            stack-label
+            filled
+            v-model="localKey.expiration"
+          />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -69,6 +55,9 @@ import { useDialogPluginComponent } from "quasar";
 import { saveAPIKey, editAPIKey } from "@/api/accounts";
 import { useUserDropdown } from "@/composables/accounts";
 import { notifySuccess } from "@/utils/notify";
+import { formatDateInputField, formatDateStringwithTimezone } from "@/utils/format";
+
+// ui imports
 import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 
 export default {
@@ -87,12 +76,25 @@ export default {
     const key = props.APIKey ? ref(Object.assign({}, props.APIKey)) : ref({ name: "", expiration: null });
     const loading = ref(false);
 
+    // remove Z from date string
+    if (props.APIKey) {
+      key.value.expiration = formatDateInputField(key.value.expiration);
+    }
+
     const title = computed(() => (props.APIKey ? "Edit API Key" : "Add API Key"));
 
     async function submitForm() {
       loading.value = true;
+
+      const data = {
+        ...key.value,
+      };
+
+      // convert date to local timezone if exists
+      if (data.expiration) data.expiration = formatDateStringwithTimezone(data.expiration);
+
       try {
-        const result = props.APIKey ? await editAPIKey(key.value) : await saveAPIKey(key.value);
+        const result = props.APIKey ? await editAPIKey(data) : await saveAPIKey(data);
         onDialogOK();
         notifySuccess(result);
         loading.value = false;

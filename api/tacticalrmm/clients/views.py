@@ -259,12 +259,17 @@ class AgentDeployment(APIView):
 
         installer_user = User.objects.filter(is_installer_user=True).first()
 
-        expires = dt.datetime.strptime(
-            request.data["expires"], "%Y-%m-%d %H:%M"
-        ).astimezone(pytz.timezone("UTC"))
-        now = djangotime.now()
-        delta = expires - now
-        obj, token = AuthToken.objects.create(user=installer_user, expiry=delta)
+        try:
+            expires = dt.datetime.strptime(
+                request.data["expires"], "%Y-%m-%dT%H:%M:%S%z"
+            )
+
+        except Exception:
+            return notify_error("expire date is invalid")
+
+        obj, token = AuthToken.objects.create(
+            user=installer_user, expiry=expires - djangotime.now()
+        )
 
         flags = {
             "power": request.data["power"],

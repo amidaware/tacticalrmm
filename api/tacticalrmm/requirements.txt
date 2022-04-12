@@ -34,4 +34,4 @@ vine==5.0.0
 websockets==10.2
 zipp==3.8.0
 drf_spectacular==0.21.2
-meshctrl==0.1.13
+meshctrl==0.1.15

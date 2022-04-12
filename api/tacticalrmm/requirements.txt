@@ -7,7 +7,7 @@ channels_redis==3.4.0
 chardet==4.0.0
 cryptography==36.0.2
 daphne==3.0.2
-Django==4.0.3
+Django==4.0.4
 django-cors-headers==3.11.0
 django-ipware==4.0.2
 django-rest-knox==4.2.0
@@ -19,7 +19,7 @@ psycopg2-binary==2.9.3
 pycparser==2.21
 pycryptodome==3.14.1
 pyotp==2.6.0
-pyparsing==3.0.7
+pyparsing==3.0.8
 pytz==2022.1
 qrcode==7.3.1
 redis==4.2.2

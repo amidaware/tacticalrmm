@@ -522,7 +522,7 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("meshctrl.utils.get_auth_token")
+    @patch("meshctrl.utils.get_login_token")
     def test_meshcentral_tabs(self, mock_token):
         url = f"{base_url}/{self.agent.agent_id}/meshcentral/"
         mock_token.return_value = "askjh1k238uasdhk487234jadhsajksdhasd"

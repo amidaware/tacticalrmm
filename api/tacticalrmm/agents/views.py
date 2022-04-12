@@ -4,7 +4,7 @@ import os
 import random
 import string
 import time
-from meshctrl.utils import get_auth_token
+from meshctrl.utils import get_login_token
 
 from core.models import CodeSignToken
 from core.utils import (
@@ -224,7 +224,7 @@ class AgentMeshCentral(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         core = get_core_settings()
 
-        token = get_auth_token(user=core.mesh_username, key=core.mesh_token)
+        token = get_login_token(key=core.mesh_token, user=f"user//{core.mesh_username}")
 
         control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
         terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"

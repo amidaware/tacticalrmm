@@ -17,7 +17,7 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.12.3"
+TRMM_VERSION = "0.12.4"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser

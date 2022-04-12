@@ -66,6 +66,7 @@ class CoreSettings(BaseAuditModel):
     mesh_device_group = models.CharField(
         max_length=255, null=True, blank=True, default="TacticalRMM"
     )
+    mesh_disable_auto_login = models.BooleanField(default=False)
     agent_auto_update = models.BooleanField(default=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",

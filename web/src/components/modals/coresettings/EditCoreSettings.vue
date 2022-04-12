@@ -347,6 +347,11 @@
                   <div class="col-2"></div>
                   <q-input dense outlined v-model="settings.mesh_device_group" class="col-6" />
                 </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Disable Auto Login for Remote Control and Remote background:</div>
+                  <div class="col-2"></div>
+                  <q-checkbox dense v-model="settings.mesh_disable_auto_login" class="col-6" />
+                </q-card-section>
               </q-tab-panel>
               <q-tab-panel name="customfields">
                 <CustomFields />

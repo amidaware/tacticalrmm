@@ -25,7 +25,7 @@ urllib3==1.26.9
 validators==0.18.2
 websockets==10.2
 drf_spectacular==0.22.0
-meshctrl==0.1.13
+meshctrl==0.1.15
 hiredis==2.0.0
 
 # dev

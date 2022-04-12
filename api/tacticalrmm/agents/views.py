@@ -224,11 +224,17 @@ class AgentMeshCentral(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         core = get_core_settings()
 
-        token = get_login_token(key=core.mesh_token, user=f"user//{core.mesh_username}")
+        if not core.mesh_disable_auto_login:
+            token = get_login_token(
+                key=core.mesh_token, user=f"user//{core.mesh_username}"
+            )
+            token_param = f"login={token}&"
+        else:
+            token_param = ""
 
-        control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
-        terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
-        file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
+        control = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
+        terminal = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
+        file = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
 
         AuditLog.audit_mesh_session(
             username=request.user.username,

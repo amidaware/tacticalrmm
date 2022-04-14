@@ -13,4 +13,4 @@ class TacticalRedisCache(RedisCache):
 
 class TacticalDummyCache(DummyCache):
     def delete_many_pattern(self, pattern: str, version: Optional[int] = None) -> None:
-        pass
+        return None

@@ -683,7 +683,7 @@ class Agent(BaseAuditModel):
             cache_key = f"site_{self.monitoring_type}_{self.site_id}_checks"
 
         cached_checks = cache.get(cache_key)
-        if cached_checks and isinstance(cached_checks, list):
+        if isinstance(cached_checks, list):
             return cached_checks
         else:
             # clear agent checks that have overridden_by_policy set
@@ -708,7 +708,7 @@ class Agent(BaseAuditModel):
             cache_key = f"site_{self.monitoring_type}_{self.site_id}_tasks"
 
         cached_tasks = cache.get(cache_key)
-        if cached_tasks and isinstance(cached_tasks, list):
+        if isinstance(cached_tasks, list):
             return cached_tasks
         else:
             # get agent tasks based on policies

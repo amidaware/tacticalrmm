@@ -251,6 +251,9 @@ class Policy(BaseAuditModel):
                     for check in policy.policychecks.all():
                         policy_checks.append(check)
 
+        if not enforced_checks and not policy_checks:
+            return []
+
         # Sorted Checks already added
         added_diskspace_checks: List[str] = list()
         added_ping_checks: List[str] = list()

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 TEST_CACHE = {
     "default": {
-        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        "BACKEND": "tacticalrmm.cache.TacticalDummyCache",
     }
 }
 

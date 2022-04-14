@@ -349,7 +349,7 @@ class Agent(BaseAuditModel):
             )
         else:
             checks = list(self.agentchecks.all()) + self.get_checks_from_policies()
-        return checks
+        return self.add_check_results(checks)
 
     def get_tasks_with_policies(
         self, exclude_synced: bool = False
@@ -367,7 +367,7 @@ class Agent(BaseAuditModel):
                 and task.task_result.sync_status != "synced"
             ]
         else:
-            return tasks
+            return self.add_task_results(tasks)
 
     def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":
 

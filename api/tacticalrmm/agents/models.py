@@ -337,38 +337,72 @@ class Agent(BaseAuditModel):
     def get_checks_with_policies(
         self, exclude_overridden: bool = False
     ) -> "List[Check]":
+
         if exclude_overridden:
-            checks = list(self.agentchecks.filter(overridden_by_policy=False)) + self.get_checks_from_policies()  # type: ignore
+            checks = (
+                list(
+                    check
+                    for check in self.agentchecks.all()
+                    if not check.overridden_by_policy
+                )
+                + self.get_checks_from_policies()
+            )
         else:
-            checks = list(self.agentchecks.all()) + self.get_checks_from_policies()  # type: ignore
-        return self.add_check_results(checks)
+            checks = list(self.agentchecks.all()) + self.get_checks_from_policies()
+        return checks
 
     def get_tasks_with_policies(
         self, exclude_synced: bool = False
     ) -> "List[AutomatedTask]":
         from autotasks.models import TaskResult
 
-        tasks = list(self.autotasks.all()) + self.get_tasks_from_policies()  # type: ignore
+        tasks = list(self.autotasks.all()) + self.get_tasks_from_policies()
 
         if exclude_synced:
             return [
                 task
-                for task in self.add_task_results(tasks)
+                for task in tasks
                 if not task.task_result
                 or isinstance(task.task_result, TaskResult)
                 and task.task_result.sync_status != "synced"
             ]
         else:
-            return self.add_task_results(tasks)
+            return tasks
+
+    def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":
+
+        results = self.taskresults.all()  # type: ignore
+
+        for task in tasks:
+            for result in results:
+                if result.task.id == task.pk:
+                    task.task_result = result
+                    break
+
+        return tasks
+
+    def add_check_results(self, checks: "List[Check]") -> "List[Check]":
+
+        results = self.checkresults.all()  # type: ignore
+
+        for check in checks:
+            for result in results:
+                if result.assigned_check.id == check.pk:
+                    check.check_result = result
+                    break
+
+        return checks
 
     def get_agent_policies(self) -> "Dict[str, Optional[Policy]]":
+        from checks.models import Check
+
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
         client_policy = getattr(self.client, f"{self.monitoring_type}_policy", None)
         default_policy = getattr(
             get_core_settings(), f"{self.monitoring_type}_policy", None
         )
 
-        # prefetch excluded objects on polices only if policy is not None
+        # prefetch excluded objects on polices only if policy is not Non
         models.prefetch_related_objects(
             [
                 policy
@@ -378,7 +412,9 @@ class Agent(BaseAuditModel):
             "excluded_agents",
             "excluded_sites",
             "excluded_clients",
-            "policychecks__script",
+            models.Prefetch(
+                "policychecks", queryset=Check.objects.select_related("script")
+            ),
             "autotasks",
         )
 
@@ -633,74 +669,52 @@ class Agent(BaseAuditModel):
             self, skip_create=not self.should_create_alert(alert_template)
         )
 
-    def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":
-
-        results = self.taskresults.all()  # type: ignore
-
-        for task in tasks:
-            for result in results:
-                if result.task.id == task.pk:
-                    task.task_result = result
-                    break
-
-            if not hasattr(task, "task_result"):
-                task.task_result = {}
-
-        return tasks
-
-    def add_check_results(self, checks: "List[Check]") -> "List[Check]":
-
-        results = self.checkresults.all()  # type: ignore
-
-        for check in checks:
-            for result in results:
-                if result.assigned_check.id == check.pk:
-                    check.check_result = result
-                    break
-
-            if not hasattr(check, "check_result"):
-                check.check_result = {}
-
-        return checks
-
     def get_checks_from_policies(self) -> "List[Check]":
         from automation.models import Policy
 
-        cache_checks = False
-        if not self.policy and not self.block_policy_inheritance:
-            cached_checks = cache.get(f"site_{self.site_id}_checks")
-            if cached_checks and isinstance(cached_checks, list):
-                return cached_checks
-            else:
-                cache_checks = True
+        # check if agent is blocking inheritance
+        if self.block_policy_inheritance or self.agentchecks.exists():
+            cache_key = f"agent_{self.agent_id}_checks"
 
-        # clear agent checks that have overridden_by_policy set
-        self.agentchecks.update(overridden_by_policy=False)  # type: ignore
+        elif self.policy:
+            cache_key = f"site_{self.monitoring_type}_{self.site_id}_policy_{self.policy_id}_checks"
 
-        # get agent checks based on policies
-        checks = Policy.get_policy_checks(self)
+        else:
+            cache_key = f"site_{self.monitoring_type}_{self.site_id}_checks"
 
-        if cache_checks:
-            cache.set(f"site_{self.site_id}_checks", checks, 60)
+        cached_checks = cache.get(cache_key)
+        if cached_checks and isinstance(cached_checks, list):
+            return cached_checks
+        else:
+            # clear agent checks that have overridden_by_policy set
+            self.agentchecks.update(overridden_by_policy=False)  # type: ignore
 
-        return checks
+            # get agent checks based on policies
+            checks = Policy.get_policy_checks(self)
+            cache.set(cache_key, checks, 600)
+            return checks
 
     def get_tasks_from_policies(self) -> "List[AutomatedTask]":
         from automation.models import Policy
 
-        cache_tasks = False
-        if not self.policy and not self.block_policy_inheritance:
-            cached_tasks = cache.get(f"site_{self.site_id}_tasks")
-            if cached_tasks and isinstance(cached_tasks, list):
-                return cached_tasks
-            else:
-                cache_tasks = True
-        # get agent tasks based on policies
-        tasks = Policy.get_policy_tasks(self)
+        # check if agent is blocking inheritance
+        if self.block_policy_inheritance:
+            cache_key = f"agent_{self.agent_id}_tasks"
 
-        if cache_tasks:
-            cache.set(f"site_{self.site_id}_tasks", tasks, 60)
-        return tasks
+        elif self.policy:
+            cache_key = f"site_{self.monitoring_type}_{self.site_id}_policy_{self.policy_id}_tasks"
+
+        else:
+            cache_key = f"site_{self.monitoring_type}_{self.site_id}_tasks"
+
+        cached_tasks = cache.get(cache_key)
+        if cached_tasks and isinstance(cached_tasks, list):
+            return cached_tasks
+        else:
+            # get agent tasks based on policies
+            tasks = Policy.get_policy_tasks(self)
+            cache.set(f"site_{self.site_id}_tasks", tasks, 600)
+            return tasks
 
     def _do_nats_debug(self, agent: "Agent", message: str) -> None:
         DebugLog.error(agent=agent, log_type="agent_issues", message=message)

@@ -1,6 +1,7 @@
 import uuid
 
 from agents.models import Agent
+from django.core.cache import cache
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from logs.models import BaseAuditModel
@@ -55,13 +56,25 @@ class Client(BaseAuditModel):
         )
 
         # check if polcies have changed and initiate task to reapply policies if so
-        if old_client:
-            if (
-                old_client.alert_template != self.alert_template
-                or old_client.workstation_policy != self.workstation_policy
-                or old_client.server_policy != self.server_policy
-            ):
-                cache_agents_alert_template.delay()
+        if old_client and (
+            old_client.alert_template != self.alert_template
+            or old_client.workstation_policy != self.workstation_policy
+            or old_client.server_policy != self.server_policy
+        ):
+            cache_agents_alert_template.delay()
+
+        if old_client and (
+            old_client.workstation_policy != self.workstation_policy
+            or old_client.server_policy != self.server_policy
+        ):
+            sites = self.sites.all()
+            if old_client.workstation_policy != self.workstation_policy:
+                for site in sites:
+                    cache.delete_many_pattern(f"site_workstation_{site.pk}_*")
+
+            if old_client.server_policy != self.server_policy:
+                for site in sites:
+                    cache.delete_many_pattern(f"site_server_{site.pk}_*")
 
     class Meta:
         ordering = ("name",)
@@ -139,6 +152,12 @@ class Site(BaseAuditModel):
                 or old_site.server_policy != self.server_policy
             ):
                 cache_agents_alert_template.delay()
+
+            if old_site.workstation_policy != self.workstation_policy:
+                cache.delete_many_pattern(f"site_workstation_{self.pk}_*")
+
+            if old_site.server_policy != self.server_policy:
+                cache.delete_many_pattern(f"site_server_{self.pk}_*")
 
     class Meta:
         ordering = ("name",)

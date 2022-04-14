@@ -1,6 +1,7 @@
 from statistics import mean
-from typing import TYPE_CHECKING, Any, Dict, Union, Optional
+from typing import TYPE_CHECKING, Any, Union, Dict, Optional
 
+from django.core.cache import cache
 from alerts.models import SEVERITY_CHOICES
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -166,13 +167,46 @@ class Check(BaseAuditModel):
     # deprecated
     managed_by_policy = models.BooleanField(default=False)
 
-    check_result: "Union[CheckResult, Dict]" = {}
+    # non-database property
+    check_result: "Union[CheckResult, Dict[None, None]]" = {}
 
     def __str__(self):
         if self.agent:
             return f"{self.agent.hostname} - {self.readable_desc}"
         else:
             return f"{self.policy.name} - {self.readable_desc}"
+
+    def save(self, *args, **kwargs):
+
+        # if check is a policy check clear cache on everything
+        if self.policy:
+            cache.delete_many_pattern("site_*_checks")
+            cache.delete_many_pattern("agent_*_checks")
+
+        # if check is an agent check
+        elif self.agent:
+            cache.delete(f"agent_{self.agent.agent_id}_checks")
+
+        super(Check, self).save(
+            *args,
+            **kwargs,
+        )
+
+    def delete(self, *args, **kwargs):
+
+        # if check is a policy check clear cache on everything
+        if self.policy:
+            cache.delete_many_pattern("site_*_checks")
+            cache.delete_many_pattern("agent_*_checks")
+
+        # if check is an agent check
+        elif self.agent:
+            cache.delete(f"agent_{self.agent.agent_id}_checks")
+
+        super(Check, self).delete(
+            *args,
+            **kwargs,
+        )
 
     @property
     def readable_desc(self):

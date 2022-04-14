@@ -121,6 +121,18 @@ class CoreSettings(BaseAuditModel):
             ):
                 cache_agents_alert_template.delay()
 
+            if old_settings.workstation_policy != self.workstation_policy:
+                cache.delete_many_pattern(f"site_workstation_*")
+
+            if old_settings.server_policy != self.server_policy:
+                cache.delete_many_pattern(f"site_server_*")
+
+            if (
+                old_settings.server_policy != self.server_policy
+                or old_settings.workstation_policy != self.workstation_policy
+            ):
+                cache.delete_many_pattern("agent_*")
+
     def __str__(self) -> str:
         return "Global Site Settings"
 

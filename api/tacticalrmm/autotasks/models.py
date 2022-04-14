@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, List, Dict, Any, Optional, Union
 
 from alerts.models import SEVERITY_CHOICES
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.cache import cache
 from django.utils import timezone as djangotime
 from django.db import models
 from django.db.models.fields import DateTimeField
@@ -150,6 +151,12 @@ class AutomatedTask(BaseAuditModel):
         return self.name
 
     def save(self, *args, **kwargs) -> None:
+
+        # if task is a policy task clear cache on everything
+        if self.policy:
+            cache.delete_many_pattern("site_*_tasks")
+            cache.delete_many_pattern("agent_*_tasks")
+
         # get old task if exists
         old_task = AutomatedTask.objects.get(pk=self.pk) if self.pk else None
         super(AutomatedTask, self).save(old_model=old_task, *args, **kwargs)
@@ -166,6 +173,18 @@ class AutomatedTask(BaseAuditModel):
                         TaskResult.objects.filter(agent=self.agent, task=self).update(
                             sync_status="notsynced"
                         )
+
+    def delete(self, *args, **kwargs):
+
+        # if check is a policy check clear cache on everything
+        if self.policy:
+            cache.delete_many_pattern("site_*_tasks")
+            cache.delete_many_pattern("agent_*_tasks")
+
+        super(AutomatedTask, self).delete(
+            *args,
+            **kwargs,
+        )
 
     @property
     def schedule(self) -> Optional[str]:

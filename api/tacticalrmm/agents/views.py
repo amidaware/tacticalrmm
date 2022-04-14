@@ -14,7 +14,7 @@ from core.utils import (
     get_core_settings,
 )
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Prefetch, F
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -70,6 +70,8 @@ class GetAgents(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
     def get(self, request):
+        from checks.models import Check, CheckResult
+
         if "site" in request.query_params.keys():
             filter = Q(site_id=request.query_params["site"])
         elif "client" in request.query_params.keys():
@@ -83,7 +85,6 @@ class GetAgents(APIView):
             or "detail" in request.query_params.keys()
             and request.query_params["detail"] == "true"
         ):
-
             agents = (
                 Agent.objects.filter_by_role(request.user)  # type: ignore
                 .filter(filter)
@@ -97,8 +98,14 @@ class GetAgents(APIView):
                     "alert_template",
                 )
                 .prefetch_related(
-                    "agentchecks__script",
-                    "checkresults__assigned_check__script",
+                    Prefetch(
+                        "agentchecks",
+                        queryset=Check.objects.select_related("script"),
+                    ),
+                    Prefetch(
+                        "checkresults",
+                        queryset=CheckResult.objects.select_related("assigned_check"),
+                    ),
                 )
             )
             ctx = {"default_tz": get_default_timezone()}

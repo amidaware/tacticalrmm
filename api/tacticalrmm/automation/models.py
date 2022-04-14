@@ -1,6 +1,7 @@
 from agents.models import Agent
 from clients.models import Client, Site
 from django.db import models
+from django.core.cache import cache
 from logs.models import BaseAuditModel
 
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
@@ -45,8 +46,24 @@ class Policy(BaseAuditModel):
         if old_policy:
             if old_policy.alert_template != self.alert_template:
                 cache_agents_alert_template.delay()
-            elif old_policy.active != self.active and self.alert_template:
+            elif self.alert_template and old_policy.active != self.active:
                 cache_agents_alert_template.delay()
+
+            if old_policy.active != self.active or old_policy.enforced != self.enforced:
+                cache.delete_many_pattern(f"site_workstation_*")
+                cache.delete_many_pattern(f"site_server_*")
+                cache.delete_many_pattern("agent_*")
+
+    def delete(self, *args, **kwargs):
+
+        cache.delete_many_pattern(f"site_workstation_*")
+        cache.delete_many_pattern(f"site_server_*")
+        cache.delete_many_pattern("agent_*")
+
+        super(Policy, self).delete(
+            *args,
+            **kwargs,
+        )
 
     def __str__(self) -> str:
         return self.name
@@ -210,6 +227,7 @@ class Policy(BaseAuditModel):
 
     @staticmethod
     def get_policy_checks(agent: "Agent") -> "List[Check]":
+
         # Get checks added to agent directly
         agent_checks = list(agent.agentchecks.all())
 

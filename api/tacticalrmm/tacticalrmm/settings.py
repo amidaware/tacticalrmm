@@ -285,6 +285,6 @@ if "GHACTIONS" in os.environ:
 
     CACHES = {
         "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+            "BACKEND": "tacticalrmm.cache.TacticalDummyCache",
         }
     }

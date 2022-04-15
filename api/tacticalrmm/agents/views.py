@@ -22,7 +22,7 @@ from logs.models import AuditLog, DebugLog, PendingAction
 from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from scripts.models import Script
@@ -456,6 +456,35 @@ class Reboot(APIView):
             {"time": nice_time, "agent": agent.hostname, "task_name": task_name}
         )
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def install_macos(request):
+    sh = os.path.join(settings.BASE_DIR, "core/agent_macos.sh")
+    with open(sh, "r") as f:
+        text = f.read()
+
+    file_name = "agent_macos.sh"
+    shfile = os.path.join(settings.EXE_DIR, file_name)
+
+    if os.path.exists(shfile):
+        try:
+            os.remove(shfile)
+        except Exception as e:
+            DebugLog.error(message = str(e))
+    
+    with open(shfile, "w") as f:
+        f.write(text)
+
+    if settings.DEBUG:
+        with open(shfile, "r") as f:
+            response = HttpResponse(f.read(), content_type="text/plain")
+            response["Content-Disposition"] = f"inline; filename={file_name}"
+            return response
+    else:
+        response = HttpResponse()
+        response["Content-Disposition"] = f"attachment; filename={file_name}"
+        response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
+        return response
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])

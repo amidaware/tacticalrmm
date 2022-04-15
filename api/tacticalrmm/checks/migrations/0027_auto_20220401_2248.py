@@ -26,12 +26,16 @@ def migrate_check_results(apps, schema_editor):
                         retcode=check.retcode,
                         execution_time=check.execution_time,
                         history=check.history,
+                        alert_severity=check.alert_severity
+                        if check.check_type
+                        in ["cpuload", "memory", "diskspace", "script"]
+                        else None,
                     )
 
                 else:
                     CheckResult.objects.create(
-                        assigned_check=check,
-                        agent=check.agent,
+                        assigned_check_id=check.id,
+                        agent_id=check.agent.id,
                         status=check.status,
                         more_info=check.more_info,
                         last_run=check.last_run,
@@ -43,6 +47,10 @@ def migrate_check_results(apps, schema_editor):
                         retcode=check.retcode,
                         execution_time=check.execution_time,
                         history=check.history,
+                        alert_severity=check.alert_severity
+                        if check.check_type
+                        in ["cpuload", "memory", "diskspace", "script"]
+                        else None,
                     )
         except IntegrityError:
             pass

@@ -382,7 +382,6 @@ class CheckResult(models.Model):
     alert_severity = models.CharField(
         max_length=15,
         choices=SEVERITY_CHOICES,
-        default="warning",
         null=True,
         blank=True,
     )

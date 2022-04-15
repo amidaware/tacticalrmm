@@ -402,6 +402,22 @@ class CheckResult(models.Model):
     def __str__(self):
         return f"{self.agent.hostname} - {self.assigned_check}"
 
+    def save(self, *args, **kwargs):
+
+        # if check is a policy check clear cache on everything
+        if not self.alert_severity and self.assigned_check.check_type in [
+            "cpuload",
+            "memory",
+            "diskspace",
+            "script",
+        ]:
+            self.alert_severity = "warning"
+
+        super(CheckResult, self).save(
+            *args,
+            **kwargs,
+        )
+
     @property
     def history_info(self):
         if (

@@ -100,14 +100,12 @@ def cache_db_fields_task() -> None:
     for site in Site.objects.all():
         agents = site.agents.defer(*AGENT_DEFER)
         site.failing_checks = _get_failing_data(agents)
-        site.agent_count = agents.count()
-        site.save(update_fields=["failing_checks", "agent_count"])
+        site.save(update_fields=["failing_checks"])
 
     for client in Client.objects.all():
         agents = Agent.objects.defer(*AGENT_DEFER).filter(site__client=client)
         client.failing_checks = _get_failing_data(agents)
-        client.agent_count = agents.count()
-        client.save(update_fields=["failing_checks", "agent_count"])
+        client.save(update_fields=["failing_checks"])
 
     for agent in Agent.objects.defer(*AGENT_DEFER):
         if (

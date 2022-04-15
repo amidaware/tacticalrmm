@@ -2,11 +2,11 @@ import datetime as dt
 import re
 import uuid
 
-import pytz
 from agents.models import Agent
 from core.utils import get_core_settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from django.db.models import OuterRef, Exists, Count, Prefetch
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -36,7 +36,20 @@ class GetAddClients(APIView):
                 "workstation_policy", "server_policy", "alert_template"
             )
             .filter_by_role(request.user)  # type: ignore
-            .prefetch_related("custom_fields__field", "sites")
+            .prefetch_related(
+                Prefetch(
+                    "custom_fields",
+                    queryset=ClientCustomField.objects.select_related("field"),
+                ),
+            )
+            .annotate(
+                maintenance_mode=Exists(
+                    Agent.objects.filter(
+                        site__client=OuterRef("pk"), maintenance_mode=True
+                    )
+                )
+            )
+            .annotate(agent_count=Count("sites__agents"))
         )
         return Response(
             ClientSerializer(clients, context={"user": request.user}, many=True).data

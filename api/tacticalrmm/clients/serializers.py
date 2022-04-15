@@ -5,7 +5,9 @@ from rest_framework.serializers import (
     ValidationError,
 )
 
+from django.db.models import OuterRef, Exists, Count, Prefetch
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
+from agents.models import Agent
 
 
 class SiteCustomFieldSerializer(ModelSerializer):
@@ -30,7 +32,8 @@ class SiteCustomFieldSerializer(ModelSerializer):
 class SiteSerializer(ModelSerializer):
     client_name = ReadOnlyField(source="client.name")
     custom_fields = SiteCustomFieldSerializer(many=True, read_only=True)
-    maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
+    maintenance_mode = ReadOnlyField()
+    agent_count = ReadOnlyField()
 
     class Meta:
         model = Site
@@ -92,13 +95,19 @@ class ClientCustomFieldSerializer(ModelSerializer):
 class ClientSerializer(ModelSerializer):
     sites = SerializerMethodField()
     custom_fields = ClientCustomFieldSerializer(many=True, read_only=True)
-    maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
+    maintenance_mode = ReadOnlyField()
+    agent_count = ReadOnlyField()
 
     def get_sites(self, obj):
         return SiteSerializer(
             obj.sites.select_related("client")
             .filter_by_role(self.context["user"])
-            .prefetch_related("custom_fields__field"),
+            .annotate(
+                maintenance_mode=Exists(
+                    Agent.objects.filter(site=OuterRef("pk"), maintenance_mode=True)
+                )
+            )
+            .annotate(agent_count=Count("agents")),
             many=True,
         ).data
 

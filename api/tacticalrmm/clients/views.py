@@ -6,7 +6,7 @@ from agents.models import Agent
 from core.utils import get_core_settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from django.db.models import OuterRef, Exists, Count, Prefetch
+from django.db.models import OuterRef, Exists, Count, Prefetch, prefetch_related_objects
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -41,6 +41,21 @@ class GetAddClients(APIView):
                     "custom_fields",
                     queryset=ClientCustomField.objects.select_related("field"),
                 ),
+                Prefetch(
+                    "sites",
+                    queryset=Site.objects.select_related("client")
+                    .filter_by_role(request.user)
+                    .prefetch_related("custom_fields__field")
+                    .annotate(
+                        maintenance_mode=Exists(
+                            Agent.objects.filter(
+                                site=OuterRef("pk"), maintenance_mode=True
+                            )
+                        )
+                    )
+                    .annotate(agent_count=Count("agents")),
+                    to_attr="filtered_sites",
+                ),
             )
             .annotate(
                 maintenance_mode=Exists(
@@ -51,9 +66,7 @@ class GetAddClients(APIView):
             )
             .annotate(agent_count=Count("sites__agents"))
         )
-        return Response(
-            ClientSerializer(clients, context={"user": request.user}, many=True).data
-        )
+        return Response(ClientSerializer(clients, many=True).data)
 
     def post(self, request):
         # create client
@@ -102,7 +115,24 @@ class GetUpdateDeleteClient(APIView):
 
     def get(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
-        return Response(ClientSerializer(client, context={"user": request.user}).data)
+
+        prefetch_related_objects(
+            [client],
+            Prefetch(
+                "sites",
+                queryset=Site.objects.select_related("client")
+                .filter_by_role(request.user)
+                .prefetch_related("custom_fields__field")
+                .annotate(
+                    maintenance_mode=Exists(
+                        Agent.objects.filter(site=OuterRef("pk"), maintenance_mode=True)
+                    )
+                )
+                .annotate(agent_count=Count("agents")),
+                to_attr="filtered_sites",
+            ),
+        )
+        return Response(ClientSerializer(client).data)
 
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)

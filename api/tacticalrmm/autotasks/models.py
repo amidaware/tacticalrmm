@@ -55,6 +55,11 @@ TASK_STATUS_CHOICES = [
 ]
 
 
+def generate_task_name() -> str:
+    chars = string.ascii_letters
+    return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
+
+
 class AutomatedTask(BaseAuditModel):
     objects = PermissionQuerySet.as_manager()
 
@@ -106,7 +111,7 @@ class AutomatedTask(BaseAuditModel):
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
     win_task_name = models.CharField(
-        max_length=255, null=True, blank=True
+        max_length=255, unique=True, blank=True, default=generate_task_name()
     )  # should be changed to unique=True
     run_time_date = DateTimeField(null=True, blank=True)
     expire_date = DateTimeField(null=True, blank=True)

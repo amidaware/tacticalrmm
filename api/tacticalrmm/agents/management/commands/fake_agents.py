@@ -554,7 +554,6 @@ class Command(BaseCommand):
             nla_task.assigned_check = check6
             nla_task.name = "Restart NLA"
             nla_task.task_type = "checkfailure"
-            nla_task.win_task_name = "demotask123"
             nla_task_result.execution_time = "1.8443"
             nla_task_result.last_run = djangotime.now()
             nla_task_result.stdout = "no stdout"
@@ -587,7 +586,6 @@ class Command(BaseCommand):
             spool_task.task_repetition_duration = "2h"
             spool_task.task_repetition_interval = "25m"
             spool_task.random_task_delay = "3m"
-            spool_task.win_task_name = "demospool123"
             spool_task_result.last_run = djangotime.now()
             spool_task_result.retcode = 0
             spool_task_result.stdout = spooler_stdout
@@ -610,7 +608,6 @@ class Command(BaseCommand):
             ]
             tmp_dir_task.actions = actions
             tmp_dir_task.task_type = "manual"
-            tmp_dir_task.win_task_name = "demotemp"
             tmp_dir_task_result.last_run = djangotime.now()
             tmp_dir_task_result.stdout = temp_dir_stdout
             tmp_dir_task_result.retcode = 0

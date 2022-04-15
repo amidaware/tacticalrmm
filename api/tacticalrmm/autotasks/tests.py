@@ -375,7 +375,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         self.task1 = AutomatedTask.objects.create(
             agent=self.agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
         )
 
         # test removing an orphaned task
@@ -432,7 +431,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         self.task1 = AutomatedTask.objects.create(
             agent=self.agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
         )
         nats_cmd.return_value = "ok"
         ret = run_win_task.s(self.task1.pk).apply()
@@ -447,7 +445,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="daily",
             daily_interval=1,
             run_time_date=djangotime.now() + djangotime.timedelta(hours=3, minutes=30),
@@ -496,7 +493,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="weekly",
             weekly_interval=1,
             run_asap_after_missed=True,
@@ -544,7 +540,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="monthly",
             random_task_delay="3M",
             task_repetition_interval="15M",
@@ -593,7 +588,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="monthlydow",
             run_time_bit_weekdays=56,
             monthly_months_of_year=0x400,
@@ -634,7 +628,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 2",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="runonce",
             run_time_date=djangotime.now() + djangotime.timedelta(hours=22),
             run_asap_after_missed=True,
@@ -670,7 +663,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 3",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="runonce",
             run_asap_after_missed=True,
             run_time_date=djangotime.datetime(2018, 6, 1, 23, 23, 23),
@@ -681,10 +673,19 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
 
         # check if task is scheduled for at most 5min in the future
         _, args, _ = nats_cmd.mock_calls[0]
-        self.assertGreater(
-            args[0]["schedtaskpayload"]["start_min"],
-            int(djangotime.now().strftime("%-M")),
-        )
+
+        current_minute = int(djangotime.now().strftime("%-M"))
+
+        if current_minute >= 55 and current_minute < 60:
+            self.assertLess(
+                args[0]["schedtaskpayload"]["start_min"],
+                int(djangotime.now().strftime("%-M")),
+            )
+        else:
+            self.assertGreater(
+                args[0]["schedtaskpayload"]["start_min"],
+                int(djangotime.now().strftime("%-M")),
+            )
 
         # test checkfailure task
         nats_cmd.reset_mock()
@@ -693,7 +694,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 4",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="checkfailure",
             assigned_check=check,
         )
@@ -722,7 +722,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         task1 = AutomatedTask.objects.create(
             agent=agent,
             name="test task 5",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="manual",
         )
         nats_cmd.return_value = "ok"

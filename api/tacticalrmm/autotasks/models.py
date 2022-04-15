@@ -111,7 +111,7 @@ class AutomatedTask(BaseAuditModel):
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
     win_task_name = models.CharField(
-        max_length=255, unique=True, blank=True, default=generate_task_name()
+        max_length=255, unique=True, blank=True, default=generate_task_name
     )  # should be changed to unique=True
     run_time_date = DateTimeField(null=True, blank=True)
     expire_date = DateTimeField(null=True, blank=True)
@@ -247,11 +247,6 @@ class AutomatedTask(BaseAuditModel):
         ]
 
     @staticmethod
-    def generate_task_name() -> str:
-        chars = string.ascii_letters
-        return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
-
-    @staticmethod
     def serialize(task):
         # serializes the task and returns json
         from .serializers import TaskAuditSerializer
@@ -294,7 +289,6 @@ class AutomatedTask(BaseAuditModel):
 
         task = AutomatedTask.objects.create(
             policy=policy,
-            win_task_name=AutomatedTask.generate_task_name(),
             assigned_check=assigned_check,
         )
 

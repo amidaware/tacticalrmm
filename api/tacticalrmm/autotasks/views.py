@@ -44,9 +44,7 @@ class GetAddAutoTasks(APIView):
 
         serializer = TaskSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        task = serializer.save(
-            win_task_name=AutomatedTask.generate_task_name(),
-        )
+        task = serializer.save()
 
         if task.agent:
             create_win_task_schedule.delay(pk=task.pk)

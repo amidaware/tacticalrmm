@@ -62,7 +62,7 @@ def run_win_task(pk: int, agent_id: Optional[str] = None) -> str:
 
 
 @app.task
-def remove_orphaned_win_tasks(agentpk) -> None:
+def remove_orphaned_win_tasks(agentpk: int) -> None:
     from agents.models import Agent
 
     agent = Agent.objects.get(pk=agentpk)

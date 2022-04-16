@@ -49,14 +49,11 @@ def check_agent_update_schedule_task() -> None:
         "last_seen",
         "overdue_time",
         "offline_time",
-        "has_patches_pending",
     )
     online = [
         i
         for i in agents
-        if pyver.parse(i.version) >= pyver.parse("1.3.0")
-        and i.has_patches_pending
-        and i.status == "online"
+        if pyver.parse(i.version) >= pyver.parse("1.3.0") and i.status == "online"
     ]
 
     for agent in online:

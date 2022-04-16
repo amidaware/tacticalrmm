@@ -4,18 +4,30 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
+def delete_alerts_without_agent(apps, schema):
+    Alert = apps.get_model("alerts", "Alert")
+
+    Alert.objects.filter(agent=None).delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0047_alter_agent_plat_alter_agent_site'),
-        ('alerts', '0010_auto_20210917_1954'),
+        ("agents", "0047_alter_agent_plat_alter_agent_site"),
+        ("alerts", "0010_auto_20210917_1954"),
     ]
 
     operations = [
+        migrations.RunPython(delete_alerts_without_agent),
         migrations.AlterField(
-            model_name='alert',
-            name='agent',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='agent', to='agents.agent'),
+            model_name="alert",
+            name="agent",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="agent",
+                to="agents.agent",
+            ),
             preserve_default=False,
         ),
     ]

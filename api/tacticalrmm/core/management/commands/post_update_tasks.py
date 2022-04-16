@@ -42,7 +42,6 @@ class Command(BaseCommand):
         AutomatedTask.objects.filter(managed_by_policy=True).delete()
         Check.objects.filter(managed_by_policy=True).delete()
         CheckHistory.objects.filter(agent_id=None).delete()
-        Alert.objects.filter(agent=None).delete()
 
         # set goarch for older windows agents
         for agent in Agent.objects.defer(*AGENT_DEFER):

@@ -3,6 +3,8 @@
 from django.db import migrations
 from django.db.models import Count
 
+from autotasks.models import generate_task_name
+
 
 def check_for_win_task_name_duplicates(apps, schema_editor):
     AutomatedTask = apps.get_model("autotasks", "AutomatedTask")
@@ -17,7 +19,7 @@ def check_for_win_task_name_duplicates(apps, schema_editor):
         dups = list(AutomatedTask.objects.filter(win_task_name=task["win_task_name"]))
         for x in range(task["records"] - 1):
 
-            dups[x].win_task_name = AutomatedTask.generate_task_name()
+            dups[x].win_task_name = generate_task_name()
             dups[x].save(update_fields=["win_task_name"])
             # update task_result sync status
             TaskResult.objects.filter(task=dups[x]).update(sync_status="notsynced")

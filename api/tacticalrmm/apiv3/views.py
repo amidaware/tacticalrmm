@@ -288,7 +288,7 @@ class TaskRunner(APIView):
         AgentHistory.objects.create(
             agent=agent,
             type="task_run",
-            command="See Output",
+            command=task.name,
             script_results=request.data,
         )
 

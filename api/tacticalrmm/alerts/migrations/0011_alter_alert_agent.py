@@ -18,16 +18,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(delete_alerts_without_agent),
-        migrations.AlterField(
-            model_name="alert",
-            name="agent",
-            field=models.ForeignKey(
-                default=1,
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name="agent",
-                to="agents.agent",
-            ),
-            preserve_default=False,
+        migrations.RunPython(
+            delete_alerts_without_agent, reverse_code=migrations.RunPython.noop
         ),
     ]

@@ -117,7 +117,6 @@ class GetAgents(APIView):
                     )
                 )
             )
-            ctx = {"default_tz": get_default_timezone()}
             serializer = AgentTableSerializer(agents, many=True, context=ctx)
 
         # if detail=false

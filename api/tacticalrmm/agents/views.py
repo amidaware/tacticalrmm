@@ -117,7 +117,7 @@ class GetAgents(APIView):
                     )
                 )
             )
-            serializer = AgentTableSerializer(agents, many=True, context=ctx)
+            serializer = AgentTableSerializer(agents, many=True)
 
         # if detail=false
         else:

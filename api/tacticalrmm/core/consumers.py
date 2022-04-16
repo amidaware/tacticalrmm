@@ -33,41 +33,42 @@ class DashInfo(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def get_dashboard_info(self):
+        total_agents = Agent.objects.filter_by_role(self.user).only(
+            "pk",
+            "last_seen",
+            "overdue_time",
+            "offline_time",
+        )
+
         server_offline_count = len(
             [
                 agent
-                for agent in Agent.objects.filter(monitoring_type="server").only(
-                    "pk",
-                    "last_seen",
-                    "overdue_time",
-                    "offline_time",
-                )
-                if not agent.status == "online"
+                for agent in total_agents
+                if agent.monitoring_type == "server" and agent.status != "online"
             ]
         )
 
         workstation_offline_count = len(
             [
                 agent
-                for agent in Agent.objects.filter(monitoring_type="workstation").only(
-                    "pk",
-                    "last_seen",
-                    "overdue_time",
-                    "offline_time",
-                )
-                if not agent.status == "online"
+                for agent in total_agents
+                if agent.monitoring_type == "workstation" and agent.status != "online"
             ]
         )
 
         ret = {
             "total_server_offline_count": server_offline_count,
             "total_workstation_offline_count": workstation_offline_count,
-            "total_server_count": Agent.objects.filter(
-                monitoring_type="server"
-            ).count(),
-            "total_workstation_count": Agent.objects.filter(
-                monitoring_type="workstation"
-            ).count(),
+            "total_server_count": len(
+                [agent for agent in total_agents if agent.monitoring_type == "server"]
+            ),
+            "total_workstation_count": len(
+                [
+                    agent
+                    for agent in total_agents
+                    if agent.monitoring_type == "workstation"
+                ]
+            ),
         }
         return ret
 

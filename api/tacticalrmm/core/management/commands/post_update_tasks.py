@@ -2,6 +2,7 @@ import base64
 
 from accounts.models import User
 from agents.models import Agent
+from alerts.models import Alert
 from autotasks.models import AutomatedTask
 from checks.models import Check, CheckHistory
 from django.core.management.base import BaseCommand
@@ -41,6 +42,7 @@ class Command(BaseCommand):
         AutomatedTask.objects.filter(managed_by_policy=True).delete()
         Check.objects.filter(managed_by_policy=True).delete()
         CheckHistory.objects.filter(agent_id=None).delete()
+        Alert.objects.filter(agent=None).delete()
 
         # set goarch for older windows agents
         for agent in Agent.objects.defer(*AGENT_DEFER):

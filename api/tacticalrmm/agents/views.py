@@ -14,7 +14,7 @@ from core.utils import (
     get_core_settings,
 )
 from django.conf import settings
-from django.db.models import Q, Prefetch, Exists, Count
+from django.db.models import Q, Prefetch, Exists, Count, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -110,8 +110,10 @@ class GetAgents(APIView):
                 )
                 .annotate(pending_actions_count=Count("pendingactions"))
                 .annotate(
-                    has_pending_patches=Exists(
-                        WinUpdate.objects.filter(action="approve", installed=False)
+                    has_patches_pending=Exists(
+                        WinUpdate.objects.filter(
+                            agent_id=OuterRef("pk"), action="approve", installed=False
+                        )
                     )
                 )
             )

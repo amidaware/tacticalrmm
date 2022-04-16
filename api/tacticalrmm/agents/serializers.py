@@ -87,7 +87,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
     alert_template = serializers.SerializerMethodField()
     last_seen = serializers.ReadOnlyField()
     pending_actions_count = serializers.ReadOnlyField()
-    has_pending_patches = serializers.ReadOnlyField()
+    has_patches_pending = serializers.ReadOnlyField()
 
     def get_alert_template(self, obj):
 
@@ -138,7 +138,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "block_policy_inheritance",
             "plat",
             "goarch",
-            "has_pending_patches",
+            "has_patches_pending",
         ]
         depth = 2
 

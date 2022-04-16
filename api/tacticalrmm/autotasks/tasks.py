@@ -15,113 +15,120 @@ from tacticalrmm.celery import app
 
 @app.task
 def create_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
-    task = AutomatedTask.objects.get(pk=pk)
+    try:
+        task = AutomatedTask.objects.get(pk=pk)
 
-    if agent_id:
-        task.create_task_on_agent(Agent.objects.get(agent_id=agent_id))
-    else:
-        task.create_task_on_agent()
+        if agent_id:
+            task.create_task_on_agent(Agent.objects.get(agent_id=agent_id))
+        else:
+            task.create_task_on_agent()
+    except (AutomatedTask.DoesNotExist, Agent.DoesNotExist):
+        pass
 
     return "ok"
 
 
 @app.task
 def modify_win_task(pk: int, agent_id: Optional[str] = None) -> str:
-    task = AutomatedTask.objects.get(pk=pk)
+    try:
+        task = AutomatedTask.objects.get(pk=pk)
 
-    if agent_id:
-        task.modify_task_on_agent(Agent.objects.get(agent_id=agent_id))
-    else:
-        task.modify_task_on_agent()
+        if agent_id:
+            task.modify_task_on_agent(Agent.objects.get(agent_id=agent_id))
+        else:
+            task.modify_task_on_agent()
+    except (AutomatedTask.DoesNotExist, Agent.DoesNotExist):
+        pass
 
     return "ok"
 
 
 @app.task
 def delete_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
-    task = AutomatedTask.objects.get(pk=pk)
+    try:
+        task = AutomatedTask.objects.get(pk=pk)
 
-    if agent_id:
-        task.delete_task_on_agent(Agent.objects.get(agent_id=agent_id))
-    else:
-        task.delete_task_on_agent()
+        if agent_id:
+            task.delete_task_on_agent(Agent.objects.get(agent_id=agent_id))
+        else:
+            task.delete_task_on_agent()
+    except (AutomatedTask.DoesNotExist, Agent.DoesNotExist):
+        pass
 
     return "ok"
 
 
 @app.task
 def run_win_task(pk: int, agent_id: Optional[str] = None) -> str:
-    task = AutomatedTask.objects.get(pk=pk)
+    try:
+        task = AutomatedTask.objects.get(pk=pk)
 
-    if agent_id:
-        task.run_win_task(Agent.objects.get(agent_id=agent_id))
-    else:
-        task.run_win_task()
+        if agent_id:
+            task.run_win_task(Agent.objects.get(agent_id=agent_id))
+        else:
+            task.run_win_task()
+    except (AutomatedTask.DoesNotExist, Agent.DoesNotExist):
+        pass
 
     return "ok"
 
 
 @app.task
-def remove_orphaned_win_tasks(agentpk: int) -> None:
+def remove_orphaned_win_tasks() -> None:
     from agents.models import Agent
 
-    agent = Agent.objects.get(pk=agentpk)
+    agents = Agent.objects.only(
+        "pk", "last_seen", "overdue_time", "offline_time"
+    ).prefetch_related("taskresults", "autotasks")
 
-    DebugLog.info(
-        agent=agent,
-        log_type="agent_issues",
-        message=f"Orphaned task cleanup initiated on {agent.hostname}.",
-    )
+    online = [i for i in agents if i.status == "online"]
+    for agent in online:
 
-    r = asyncio.run(agent.nats_cmd({"func": "listschedtasks"}, timeout=10))
+        r = asyncio.run(agent.nats_cmd({"func": "listschedtasks"}, timeout=10))
 
-    if not isinstance(r, list) and not r:  # empty list
-        DebugLog.error(
-            agent=agent,
-            log_type="agent_issues",
-            message=f"Unable to clean up scheduled tasks on {agent.hostname}: {r}",
+        if not isinstance(r, list):  # empty list
+            DebugLog.error(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"Unable to pull list of scheduled tasks on {agent.hostname}: {r}",
+            )
+            return
+
+        agent_task_names = [
+            task.win_task_name for task in agent.get_tasks_with_policies()
+        ]
+
+        exclude_tasks = (
+            "TacticalRMM_fixmesh",
+            "TacticalRMM_SchedReboot",
+            "TacticalRMM_sync",
+            "TacticalRMM_agentupdate",
         )
-        return
 
-    agent_task_names = [task.win_task_name for task in agent.get_tasks_with_policies()]
+        for task in r:
+            if task.startswith(exclude_tasks):
+                # skip system tasks or any pending reboots
+                continue
 
-    exclude_tasks = (
-        "TacticalRMM_fixmesh",
-        "TacticalRMM_SchedReboot",
-        "TacticalRMM_sync",
-        "TacticalRMM_agentupdate",
-    )
-
-    for task in r:
-        if task.startswith(exclude_tasks):
-            # skip system tasks or any pending reboots
-            continue
-
-        if task.startswith("TacticalRMM_") and task not in agent_task_names:
-            # delete task since it doesn't exist in UI
-            nats_data = {
-                "func": "delschedtask",
-                "schedtaskpayload": {"name": task},
-            }
-            ret = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
-            if ret != "ok":
-                DebugLog.error(
-                    agent=agent,
-                    log_type="agent_issues",
-                    message=f"Unable to clean up orphaned task {task} on {agent.hostname}: {ret}",
-                )
-            else:
-                DebugLog.info(
-                    agent=agent,
-                    log_type="agent_issues",
-                    message=f"Removed orphaned task {task} from {agent.hostname}",
-                )
-
-    DebugLog.info(
-        agent=agent,
-        log_type="agent_issues",
-        message=f"Orphaned task cleanup finished on {agent.hostname}",
-    )
+            if task.startswith("TacticalRMM_") and task not in agent_task_names:
+                # delete task since it doesn't exist in UI
+                nats_data = {
+                    "func": "delschedtask",
+                    "schedtaskpayload": {"name": task},
+                }
+                ret = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
+                if ret != "ok":
+                    DebugLog.error(
+                        agent=agent,
+                        log_type="agent_issues",
+                        message=f"Unable to clean up orphaned task {task} on {agent.hostname}: {ret}",
+                    )
+                else:
+                    DebugLog.info(
+                        agent=agent,
+                        log_type="agent_issues",
+                        message=f"Removed orphaned task {task} from {agent.hostname}",
+                    )
 
 
 @app.task

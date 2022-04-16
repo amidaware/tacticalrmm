@@ -371,9 +371,10 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_remove_orphaned_win_task(self, nats_cmd):
-        self.agent = baker.make_recipe("agents.agent")
-        self.task1 = AutomatedTask.objects.create(
-            agent=self.agent,
+        agent = baker.make_recipe("agents.online_agent")
+        baker.make_recipe("agents.offline_agent")
+        task1 = AutomatedTask.objects.create(
+            agent=agent,
             name="test task 1",
         )
 
@@ -384,13 +385,13 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "GoogleUpdateTaskMachineCore",
             "GoogleUpdateTaskMachineUA",
             "OneDrive Standalone Update Task-S-1-5-21-717461175-241712648-1206041384-1001",
-            self.task1.win_task_name,
+            task1.win_task_name,
             "TacticalRMM_fixmesh",
             "TacticalRMM_SchedReboot_jk324kajd",
             "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb",  # orphaned task
         ]
 
-        self.calls = [
+        calls = [
             call({"func": "listschedtasks"}, timeout=10),
             call(
                 {
@@ -404,26 +405,23 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         ]
 
         nats_cmd.side_effect = [win_tasks, "ok"]
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        remove_orphaned_win_tasks()
         self.assertEqual(nats_cmd.call_count, 2)
-        nats_cmd.assert_has_calls(self.calls)
-        self.assertEqual(ret.status, "SUCCESS")
+        nats_cmd.assert_has_calls(calls)
 
         # test nats delete task fail
         nats_cmd.reset_mock()
         nats_cmd.side_effect = [win_tasks, "error deleting task"]
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        nats_cmd.assert_has_calls(self.calls)
+        remove_orphaned_win_tasks()
+        nats_cmd.assert_has_calls(calls)
         self.assertEqual(nats_cmd.call_count, 2)
-        self.assertEqual(ret.status, "SUCCESS")
 
         # no orphaned tasks
         nats_cmd.reset_mock()
         win_tasks.remove("TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb")
         nats_cmd.side_effect = [win_tasks, "ok"]
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        remove_orphaned_win_tasks()
         self.assertEqual(nats_cmd.call_count, 1)
-        self.assertEqual(ret.status, "SUCCESS")
 
     @patch("agents.models.Agent.nats_cmd")
     def test_run_win_task(self, nats_cmd):

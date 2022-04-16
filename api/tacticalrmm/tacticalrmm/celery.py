@@ -34,6 +34,10 @@ app.conf.beat_schedule = {
         "task": "agents.tasks.auto_self_agent_update_task",
         "schedule": crontab(minute=35, hour="*"),
     },
+    "remove-orphaned-tasks": {
+        "task": "autotasks.tasks.remove_orphaned_tasks",
+        "schedule": crontab(minute=50, hour="12"),
+    },
 }
 
 

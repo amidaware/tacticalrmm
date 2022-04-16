@@ -14,7 +14,7 @@ from core.utils import (
     get_core_settings,
 )
 from django.conf import settings
-from django.db.models import Q, Prefetch, F
+from django.db.models import Q, Prefetch, Exists, Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -29,6 +29,7 @@ from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
+from winupdate.models import WinUpdate
 
 from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.permissions import (
@@ -106,6 +107,12 @@ class GetAgents(APIView):
                         "checkresults",
                         queryset=CheckResult.objects.select_related("assigned_check"),
                     ),
+                )
+                .annotate(pending_actions_count=Count("pendingactions"))
+                .annotate(
+                    has_pending_patches=Exists(
+                        WinUpdate.objects.filter(action="approve", installed=False)
+                    )
                 )
             )
             ctx = {"default_tz": get_default_timezone()}

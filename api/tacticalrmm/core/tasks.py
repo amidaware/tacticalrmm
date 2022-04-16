@@ -7,8 +7,11 @@ from alerts.tasks import prune_resolved_alerts
 from autotasks.models import TaskResult
 from checks.tasks import prune_check_history
 from clients.models import Client, Site
+from checks.models import Check, CheckResult
 from core.utils import get_core_settings
 from django.conf import settings
+from django.db.models import Prefetch, Exists, OuterRef
+from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
 from packaging import version as pyver
 
@@ -96,18 +99,51 @@ def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
 
 @app.task
 def cache_db_fields_task() -> None:
+
+    agent_queryset = (
+        Agent.objects.defer(*AGENT_DEFER)
+        .select_related(
+            "site__server_policy",
+            "site__workstation_policy",
+            "site__client__server_policy",
+            "site__client__workstation_policy",
+            "policy",
+            "alert_template",
+        )
+        .prefetch_related(
+            Prefetch(
+                "agentchecks",
+                queryset=Check.objects.select_related("script"),
+            ),
+            Prefetch(
+                "checkresults",
+                queryset=CheckResult.objects.select_related("assigned_check"),
+            ),
+            "autotasks",
+            Prefetch(
+                "taskresults",
+                queryset=TaskResult.objects.select_related("task"),
+            ),
+        )
+    )
     # update client/site failing check fields and agent counts
     for site in Site.objects.all():
-        agents = site.agents.defer(*AGENT_DEFER)
+        agents = agent_queryset.filter(site=site)
         site.failing_checks = _get_failing_data(agents)
         site.save(update_fields=["failing_checks"])
 
     for client in Client.objects.all():
-        agents = Agent.objects.defer(*AGENT_DEFER).filter(site__client=client)
+        agents = agent_queryset.filter(site__client=client)
         client.failing_checks = _get_failing_data(agents)
         client.save(update_fields=["failing_checks"])
 
-    for agent in Agent.objects.defer(*AGENT_DEFER):
+    for agent in agent_queryset.annotate(
+        has_pending_actions=Exists(
+            PendingAction.objects.filter(
+                pk=OuterRef("pk"), action_type="agent_update", status="pending"
+            )
+        )
+    ):
         if (
             pyver.parse(agent.version) >= pyver.parse("1.6.0")
             and agent.status == "online"
@@ -115,34 +151,25 @@ def cache_db_fields_task() -> None:
             # change agent update pending status to completed if agent has just updated
             if (
                 pyver.parse(agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
-                and agent.pendingactions.filter(
-                    action_type="agentupdate", status="pending"
-                ).exists()
+                and agent.has_pending_actions
             ):
                 agent.pendingactions.filter(
-                    action_type="agentupdate", status="pending"
+                    action_type="agent_update", status="pending"
                 ).update(status="completed")
 
             # sync scheduled tasks
-            for task in agent.get_tasks_with_policies(exclude_synced=True):
+            for task in agent.get_tasks_with_policies():
                 if not task.task_result or task.task_result.sync_status == "initial":
                     task.create_task_on_agent(agent=agent if task.policy else None)
                 elif task.task_result.sync_status == "pendingdeletion":
                     task.delete_task_on_agent(agent=agent if task.policy else None)
                 elif task.task_result.sync_status == "notsynced":
                     task.modify_task_on_agent(agent=agent if task.policy else None)
+                elif task.task_result.sync_status == "synced":
+                    continue
 
             # handles any alerting actions
             if Alert.objects.filter(
                 alert_type="availability", agent=agent, resolved=False
             ).exists():
                 Alert.handle_alert_resolve(agent)
-
-        # update pending patches and pending action counts
-        agent.pending_actions_count = agent.pendingactions.filter(
-            status="pending"
-        ).count()
-        agent.has_patches_pending = (
-            agent.winupdates.filter(action="approve").filter(installed=False).exists()
-        )
-        agent.save(update_fields=["pending_actions_count", "has_patches_pending"])

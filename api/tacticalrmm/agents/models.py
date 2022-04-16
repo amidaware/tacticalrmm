@@ -68,8 +68,6 @@ class Agent(BaseAuditModel):
     )
     maintenance_mode = models.BooleanField(default=False)
     block_policy_inheritance = models.BooleanField(default=False)
-    pending_actions_count = models.PositiveIntegerField(default=0)
-    has_patches_pending = models.BooleanField(default=False)
     alert_template = models.ForeignKey(
         "alerts.AlertTemplate",
         related_name="agents",
@@ -351,23 +349,10 @@ class Agent(BaseAuditModel):
             checks = list(self.agentchecks.all()) + self.get_checks_from_policies()
         return self.add_check_results(checks)
 
-    def get_tasks_with_policies(
-        self, exclude_synced: bool = False
-    ) -> "List[AutomatedTask]":
-        from autotasks.models import TaskResult
+    def get_tasks_with_policies(self) -> "List[AutomatedTask]":
 
         tasks = list(self.autotasks.all()) + self.get_tasks_from_policies()
-
-        if exclude_synced:
-            return [
-                task
-                for task in tasks
-                if not task.task_result
-                or isinstance(task.task_result, TaskResult)
-                and task.task_result.sync_status != "synced"
-            ]
-        else:
-            return self.add_task_results(tasks)
+        return self.add_task_results(tasks)
 
     def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":
 

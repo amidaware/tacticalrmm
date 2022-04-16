@@ -15,10 +15,10 @@ export function removeExtraOptionCategories(array) {
   return tmp
 }
 
-function _formatOptions(data, { label, value = "id", flat = false, allowDuplicates = true }) {
+function _formatOptions(data, { label, value = "id", flat = false, allowDuplicates = true, appendToOptionObject = {} }) {
   if (!flat)
     // returns array of options in object format [{label: label, value: 1}]
-    return data.map(i => ({ label: i[label], value: i[value] }));
+    return data.map(i => ({ label: i[label], value: i[value], ...appendToOptionObject }));
   else
     // returns options as an array of strings ["label", "label1"]
     if (!allowDuplicates)
@@ -136,7 +136,7 @@ export function formatSiteOptions(data, flat = false) {
 
   data.forEach(client => {
     options.push({ category: client.name });
-    options.push(..._formatOptions(client.sites, { label: "name", flat: flat }))
+    options.push(..._formatOptions(client.sites, { label: "name", flat: flat, appendToOptionObject: { cat: client.name } }))
   });
 
   return options

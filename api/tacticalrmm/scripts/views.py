@@ -33,10 +33,10 @@ class GetAddScripts(APIView):
 
         if not showHiddenScripts or showHiddenScripts != "true":
             scripts = scripts.filter(hidden=False)
-        else:
-            scripts = Script.objects.all()
 
-        return Response(ScriptTableSerializer(scripts, many=True).data)
+        return Response(
+            ScriptTableSerializer(scripts.order_by("category"), many=True).data
+        )
 
     def post(self, request):
 

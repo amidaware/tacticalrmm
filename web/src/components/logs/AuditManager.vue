@@ -46,6 +46,7 @@
           mapOptions
           multiple
           filled
+          filterable
         />
         <tactical-dropdown
           v-if="filterType === 'clients' && !agent"
@@ -58,6 +59,7 @@
           multiple
           filled
           mapOptions
+          filterable
         />
         <tactical-dropdown
           class="q-pr-sm"

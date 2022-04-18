@@ -19,7 +19,14 @@
 
         <!-- user -->
         <q-card-section>
-          <tactical-dropdown outlined v-model="localKey.user" label="User" :options="userOptions" mapOptions />
+          <tactical-dropdown
+            outlined
+            v-model="localKey.user"
+            label="User"
+            :options="userOptions"
+            mapOptions
+            filterable
+          />
         </q-card-section>
 
         <!-- key -->

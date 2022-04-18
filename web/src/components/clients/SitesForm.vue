@@ -17,6 +17,7 @@
             outlined
             mapOptions
             :rules="[val => !!val || 'Client is required']"
+            filterable
           />
         </q-card-section>
         <q-card-section>

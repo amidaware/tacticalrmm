@@ -21,6 +21,7 @@
             mapOptions
             :rules="[val => !!val || 'Select the site that the agents should be moved to']"
             hint="The client you are deleting has agents assigned to it. Select a Site below to move the agents to."
+            filterable
           />
         </q-card-section>
         <q-card-actions align="right">

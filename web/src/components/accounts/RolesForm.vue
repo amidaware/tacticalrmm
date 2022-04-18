@@ -110,6 +110,7 @@
               outlined
               mapOptions
               multiple
+              filterable
             />
           </q-card-section>
           <q-card-section class="row">
@@ -122,6 +123,7 @@
               outlined
               mapOptions
               multiple
+              filterable
             />
           </q-card-section>
 

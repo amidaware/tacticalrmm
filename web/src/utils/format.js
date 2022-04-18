@@ -115,7 +115,7 @@ export function formatCustomFieldOptions(data, flat = false) {
       const tmp = [];
       data.forEach(custom_field => {
         if (custom_field.model === cat.toLowerCase()) {
-          tmp.push({ label: custom_field.name, value: custom_field.id })
+          tmp.push({ label: custom_field.name, value: custom_field.id, cat: cat })
         }
       });
 

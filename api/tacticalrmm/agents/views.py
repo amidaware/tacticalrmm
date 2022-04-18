@@ -73,12 +73,20 @@ class GetAgents(APIView):
     def get(self, request):
         from checks.models import Check, CheckResult
 
+        monitoring_type_filter = Q()
+        client_site_filter = Q()
+
+        monitoring_type = request.query_params.get("monitoring_type", None)
+        if monitoring_type:
+            if monitoring_type in ["server", "workstation"]:
+                monitoring_type_filter = Q(monitoring_type=monitoring_type)
+            else:
+                return notify_error("monitoring type does not exist")
+
         if "site" in request.query_params.keys():
-            filter = Q(site_id=request.query_params["site"])
+            client_site_filter = Q(site_id=request.query_params["site"])
         elif "client" in request.query_params.keys():
-            filter = Q(site__client_id=request.query_params["client"])
-        else:
-            filter = Q()
+            client_site_filter = Q(site__client_id=request.query_params["client"])
 
         # by default detail=true
         if (
@@ -88,7 +96,8 @@ class GetAgents(APIView):
         ):
             agents = (
                 Agent.objects.filter_by_role(request.user)  # type: ignore
-                .filter(filter)
+                .filter(monitoring_type_filter)
+                .filter(client_site_filter)
                 .defer(*AGENT_DEFER)
                 .select_related(
                     "site__server_policy",
@@ -108,7 +117,11 @@ class GetAgents(APIView):
                         queryset=CheckResult.objects.select_related("assigned_check"),
                     ),
                 )
-                .annotate(pending_actions_count=Count("pendingactions"))
+                .annotate(
+                    pending_actions_count=Count(
+                        "pendingactions", filter=Q(pendingactions__status="pending")
+                    )
+                )
                 .annotate(
                     has_patches_pending=Exists(
                         WinUpdate.objects.filter(
@@ -124,7 +137,8 @@ class GetAgents(APIView):
             agents = (
                 Agent.objects.filter_by_role(request.user)  # type: ignore
                 .select_related("site")
-                .filter(filter)
+                .filter(monitoring_type_filter)
+                .filter(client_site_filter)
                 .only("agent_id", "hostname", "site")
             )
             serializer = AgentHostnameSerializer(agents, many=True)

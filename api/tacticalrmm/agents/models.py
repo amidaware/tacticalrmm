@@ -33,6 +33,11 @@ Disk = Union[Dict[str, Any], str]
 
 
 class Agent(BaseAuditModel):
+    class Meta:
+        indexes = [
+            models.Index(fields=["monitoring_type"]),
+        ]
+
     objects = PermissionQuerySet.as_manager()
 
     version = models.CharField(default="0.1.0", max_length=255)

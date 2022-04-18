@@ -148,34 +148,41 @@ export default function () {
       },
       refreshDashboard({ state, commit, dispatch }, clearTreeSelected = false) {
         if (clearTreeSelected || !state.selectedTree) {
-          dispatch("loadAgents")
           commit("setSelectedTree", "")
         }
-        else if (state.selectedTree.includes("Client")) {
-          dispatch("loadAgents", `?client=${state.selectedTree.split("|")[1]}`)
-        }
-        else if (state.selectedTree.includes("Site")) {
-          dispatch("loadAgents", `?site=${state.selectedTree.split("|")[1]}`)
-        } else {
-          console.error("refreshDashboard has incorrect parameters")
-          return
-        }
-
         if (clearTreeSelected) commit("destroySubTable")
 
+        dispatch("loadAgents")
         dispatch("loadTree");
         dispatch("getDashInfo", false);
       },
-      async loadAgents(context, params = null) {
-        context.commit("AGENT_TABLE_LOADING", true);
+      async loadAgents({ state, commit, dispatch }) {
+        commit("AGENT_TABLE_LOADING", true);
+
+        let localParams = null
+        if (state.defaultAgentTblTab !== "mixed") {
+          if (localParams)
+            localParams += `&monitoring_type=${state.defaultAgentTblTab}`
+          else
+            localParams = `?monitoring_type=${state.defaultAgentTblTab}`
+        }
+
+        if (state.selectedTree.includes("Client")) {
+          if (localParams) localParams += `&client=${state.selectedTree.split("|")[1]}`
+          else localParams = `?client=${state.selectedTree.split("|")[1]}`
+        }
+        else if (state.selectedTree.includes("Site")) {
+          if (localParams) localParams += `&site=${state.selectedTree.split("|")[1]}`
+          else localParams = `?site=${state.selectedTree.split("|")[1]}`
+        }
         try {
-          const { data } = await axios.get(`/agents/${params ? params : ""}`)
-          context.commit("setAgents", data);
+          const { data } = await axios.get(`/agents/${localParams ? localParams : ""}`)
+          commit("setAgents", data);
         } catch (e) {
           console.error(e)
         }
 
-        context.commit("AGENT_TABLE_LOADING", false);
+        commit("AGENT_TABLE_LOADING", false);
       },
       async getDashInfo(context, edited = true) {
         const { data } = await axios.get("/core/dashinfo/");

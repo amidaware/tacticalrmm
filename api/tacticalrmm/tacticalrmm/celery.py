@@ -35,7 +35,7 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=35, hour="*"),
     },
     "remove-orphaned-tasks": {
-        "task": "autotasks.tasks.remove_orphaned_tasks",
+        "task": "autotasks.tasks.remove_orphaned_win_tasks",
         "schedule": crontab(minute=50, hour="12"),
     },
 }

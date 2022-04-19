@@ -111,9 +111,7 @@ def server_maintenance(request):
         from agents.models import Agent
         from autotasks.tasks import remove_orphaned_win_tasks
 
-        agents = Agent.objects.only("pk", "last_seen", "overdue_time", "offline_time")
-        online = [i for i in agents if i.status == "online"]
-        for agent in online:
+        for agent in Agent.online_agents():
             remove_orphaned_win_tasks.delay(agent.pk)
 
         return Response(

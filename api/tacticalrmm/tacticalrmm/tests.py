@@ -3,7 +3,7 @@ from unittest.mock import mock_open, patch
 import requests
 from django.test import override_settings
 
-from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER, ONLINE_AGENTS
 from tacticalrmm.test import TacticalTestCase
 
 from .utils import bitdays_to_string, generate_winagent_exe, get_bit_days, reload_nats
@@ -90,10 +90,15 @@ class TestUtils(TacticalTestCase):
         r = bitdays_to_string(bit_weekdays)
         self.assertEqual(r, "Every day")
 
-    def test_defer_fields_exist(self):
+    # for checking when removing db fields, make sure we update these tuples
+    def test_constants_fields_exist(self) -> None:
         from agents.models import Agent
 
         fields = [i.name for i in Agent._meta.get_fields()]
+        fields.append("pk")
 
         for i in AGENT_DEFER:
+            self.assertIn(i, fields)
+
+        for i in ONLINE_AGENTS:
             self.assertIn(i, fields)

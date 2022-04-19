@@ -42,21 +42,7 @@ def auto_approve_updates_task() -> None:
 @app.task
 def check_agent_update_schedule_task() -> None:
     # scheduled task that installs updates on agents if enabled
-    agents = Agent.objects.only(
-        "pk",
-        "agent_id",
-        "version",
-        "last_seen",
-        "overdue_time",
-        "offline_time",
-    )
-    online = [
-        i
-        for i in agents
-        if pyver.parse(i.version) >= pyver.parse("1.3.0") and i.status == "online"
-    ]
-
-    for agent in online:
+    for agent in Agent.online_agents(min_version="1.3.0"):
         agent.delete_superseded_updates()
         install = False
         patch_policy = agent.get_patch_policy()

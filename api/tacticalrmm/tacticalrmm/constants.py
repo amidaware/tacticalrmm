@@ -13,7 +13,24 @@ class MeshAgentIdent(Enum):
         return str(self.value)
 
 
-AGENT_DEFER = ("wmi_detail", "services")
+# Agent db fields that are not needed for most queries, speeds up query
+AGENT_DEFER = (
+    "wmi_detail",
+    "services",
+    "created_by",
+    "created_time",
+    "modified_by",
+    "modified_time",
+)
+
+ONLINE_AGENTS = (
+    "pk",
+    "agent_id",
+    "last_seen",
+    "overdue_time",
+    "offline_time",
+    "version",
+)
 
 
 WEEK_DAYS = {

@@ -4,6 +4,7 @@ from collections import Counter
 from distutils.version import LooseVersion
 from typing import Any, Optional, List, Dict, Union, Sequence, cast, TYPE_CHECKING
 from django.core.cache import cache
+from packaging import version as pyver
 
 import msgpack
 import nats
@@ -19,6 +20,7 @@ from nats.errors import TimeoutError
 
 from core.utils import get_core_settings
 from tacticalrmm.models import PermissionQuerySet
+from tacticalrmm.constants import ONLINE_AGENTS
 
 if TYPE_CHECKING:
     from automation.models import Policy
@@ -334,6 +336,18 @@ class Agent(BaseAuditModel):
         except:
             return ["unknown disk"]
 
+    @classmethod
+    def online_agents(cls, min_version: str = "") -> "List[Agent]":
+        if min_version:
+            return [
+                i
+                for i in cls.objects.only(*ONLINE_AGENTS)
+                if pyver.parse(i.version) >= pyver.parse(min_version)
+                and i.status == "online"
+            ]
+
+        return [i for i in cls.objects.only(*ONLINE_AGENTS) if i.status == "online"]
+
     def is_supported_script(self, platforms: List[str]) -> bool:
         return self.plat.lower() in platforms if platforms else True
 
@@ -480,15 +494,7 @@ class Agent(BaseAuditModel):
             if r == "pong":
                 running_agent = self
             else:
-                online = [
-                    agent
-                    for agent in Agent.objects.only(
-                        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
-                    )
-                    if agent.status == "online"
-                ]
-
-                for agent in online:
+                for agent in Agent.online_agents():
                     r = asyncio.run(agent.nats_cmd(nats_ping, timeout=1))
                     if r == "pong":
                         running_agent = agent

@@ -108,12 +108,9 @@ def server_maintenance(request):
         return Response("Nats configuration was reloaded successfully.")
 
     if request.data["action"] == "rm_orphaned_tasks":
-        from agents.models import Agent
         from autotasks.tasks import remove_orphaned_win_tasks
 
-        for agent in Agent.online_agents():
-            remove_orphaned_win_tasks.delay(agent.pk)
-
+        remove_orphaned_win_tasks.delay()
         return Response(
             "The task has been initiated. Check the Debug Log in the UI for progress."
         )

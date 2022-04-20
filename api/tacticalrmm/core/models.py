@@ -13,12 +13,12 @@ from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwClient
 
+from tacticalrmm.constants import CORESETTINGS_CACHE_KEY
+
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
-
-CORESETTINGS_CACHE_KEY = "core_settings"
 
 
 class CoreSettings(BaseAuditModel):

@@ -13,6 +13,8 @@ class MeshAgentIdent(Enum):
         return str(self.value)
 
 
+CORESETTINGS_CACHE_KEY = "core_settings"
+
 # Agent db fields that are not needed for most queries, speeds up query
 AGENT_DEFER = (
     "wmi_detail",

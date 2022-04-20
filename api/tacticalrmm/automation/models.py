@@ -6,6 +6,8 @@ from logs.models import BaseAuditModel
 
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
 
+from tacticalrmm.constants import CORESETTINGS_CACHE_KEY
+
 if TYPE_CHECKING:
     from checks.models import Check
     from autotasks.models import AutomatedTask
@@ -50,12 +52,13 @@ class Policy(BaseAuditModel):
                 cache_agents_alert_template.delay()
 
             if old_policy.active != self.active or old_policy.enforced != self.enforced:
+                cache.delete(CORESETTINGS_CACHE_KEY)
                 cache.delete_many_pattern(f"site_workstation_*")
                 cache.delete_many_pattern(f"site_server_*")
                 cache.delete_many_pattern("agent_*")
 
     def delete(self, *args, **kwargs):
-
+        cache.delete(CORESETTINGS_CACHE_KEY)
         cache.delete_many_pattern(f"site_workstation_*")
         cache.delete_many_pattern(f"site_server_*")
         cache.delete_many_pattern("agent_*")

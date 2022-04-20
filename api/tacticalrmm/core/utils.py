@@ -10,12 +10,21 @@ from django.core.cache import cache
 from django.conf import settings
 from django.http import FileResponse
 
+from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, ROLE_CACHE_PREFIX
+
 if TYPE_CHECKING:
     from core.models import CoreSettings
 
 
 class CoreSettingsNotFound(Exception):
     pass
+
+
+def clear_entire_cache() -> None:
+    cache.delete(f"{ROLE_CACHE_PREFIX}*")
+    cache.delete(CORESETTINGS_CACHE_KEY)
+    cache.delete_many_pattern("site_*")
+    cache.delete_many_pattern("agent_*")
 
 
 def get_core_settings() -> "CoreSettings":

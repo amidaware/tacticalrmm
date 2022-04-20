@@ -117,6 +117,10 @@
               <q-item clickable v-close-popup @click="showServerMaintenance = true">
                 <q-item-section>Server Maintenance</q-item-section>
               </q-item>
+              <!-- clear cache -->
+              <q-item clickable v-close-popup @click="clearCache">
+                <q-item-section>Clear Cache</q-item-section>
+              </q-item>
             </q-list>
           </q-menu>
         </q-btn>
@@ -179,6 +183,7 @@
 </template>
 
 <script>
+import mixins from "@/mixins/mixins";
 import DialogWrapper from "@/components/ui/DialogWrapper";
 import DebugLog from "@/components/logs/DebugLog";
 import PendingActions from "@/components/logs/PendingActions";
@@ -201,6 +206,7 @@ import PermissionsManager from "@/components/accounts/PermissionsManager";
 
 export default {
   name: "FileBar",
+  mixins: [mixins],
   components: {
     UpdateAgents,
     EditCoreSettings,
@@ -226,6 +232,12 @@ export default {
     },
   },
   methods: {
+    clearCache() {
+      this.$axios
+        .get("/core/clearcache/")
+        .then(r => this.notifySuccess(r.data))
+        .catch(() => {});
+    },
     openHelp(mode) {
       let url;
       switch (mode) {

@@ -53,14 +53,14 @@ class Policy(BaseAuditModel):
 
             if old_policy.active != self.active or old_policy.enforced != self.enforced:
                 cache.delete(CORESETTINGS_CACHE_KEY)
-                cache.delete_many_pattern(f"site_workstation_*")
-                cache.delete_many_pattern(f"site_server_*")
+                cache.delete_many_pattern("site_workstation_*")
+                cache.delete_many_pattern("site_server_*")
                 cache.delete_many_pattern("agent_*")
 
     def delete(self, *args, **kwargs):
         cache.delete(CORESETTINGS_CACHE_KEY)
-        cache.delete_many_pattern(f"site_workstation_*")
-        cache.delete_many_pattern(f"site_server_*")
+        cache.delete_many_pattern("site_workstation_*")
+        cache.delete_many_pattern("site_server_*")
         cache.delete_many_pattern("agent_*")
 
         super(Policy, self).delete(

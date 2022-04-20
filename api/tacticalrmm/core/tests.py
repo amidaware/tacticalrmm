@@ -386,6 +386,13 @@ class TestCoreTasks(TacticalTestCase):
 
         self.check_not_authenticated("patch", url)
 
+    def test_clear_cache(self):
+        url = "/core/clearcache/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("get", url)
+
 
 class TestCorePermissions(TacticalTestCase):
     def setUp(self):

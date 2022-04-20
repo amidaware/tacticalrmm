@@ -6,6 +6,8 @@ from logs.models import BaseAuditModel
 
 from typing import Optional
 
+from tacticalrmm.constants import ROLE_CACHE_PREFIX
+
 AGENT_DBLCLICK_CHOICES = [
     ("editagent", "Edit Agent"),
     ("takecontrol", "Take Control"),
@@ -23,8 +25,6 @@ CLIENT_TREE_SORT_CHOICES = [
     ("alphafail", "Move failing clients to the top"),
     ("alpha", "Sort alphabetically"),
 ]
-
-ROLE_CACHE_PREFIX = "role_"
 
 
 class User(AbstractUser, BaseAuditModel):

@@ -14,6 +14,7 @@ class MeshAgentIdent(Enum):
 
 
 CORESETTINGS_CACHE_KEY = "core_settings"
+ROLE_CACHE_PREFIX = "role_"
 
 # Agent db fields that are not needed for most queries, speeds up query
 AGENT_DEFER = (

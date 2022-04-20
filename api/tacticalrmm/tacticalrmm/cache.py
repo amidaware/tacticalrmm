@@ -10,6 +10,10 @@ class TacticalRedisCache(RedisCache):
         if keys:
             self._cache.delete_many(keys)
 
+    # just for debugging
+    def show_everything(self, version: Optional[int] = None) -> list[bytes]:
+        return self._cache.get_client().keys(f":{version if version else 1}:*")
+
 
 class TacticalDummyCache(DummyCache):
     def delete_many_pattern(self, pattern: str, version: Optional[int] = None) -> None:

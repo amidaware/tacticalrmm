@@ -56,6 +56,14 @@ def version(request):
 
 
 @api_view()
+def clear_cache(request):
+    from core.utils import clear_entire_cache
+
+    clear_entire_cache()
+    return Response("Cache was cleared!")
+
+
+@api_view()
 def dashboard_info(request):
     from tacticalrmm.utils import get_latest_trmm_ver
 

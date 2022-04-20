@@ -14,6 +14,10 @@ from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
 from logs.models import BaseAuditModel, DebugLog
 from core.utils import get_core_settings
+from tacticalrmm.constants import (
+    FIELDS_TRIGGER_TASK_UPDATE_AGENT,
+    POLICY_TASK_FIELDS_TO_COPY,
+)
 
 if TYPE_CHECKING:
     from automation.models import Policy
@@ -226,25 +230,7 @@ class AutomatedTask(BaseAuditModel):
 
     @property
     def fields_that_trigger_task_update_on_agent(self) -> List[str]:
-        return [
-            "run_time_bit_weekdays",
-            "run_time_date",
-            "expire_date",
-            "daily_interval",
-            "weekly_interval",
-            "enabled",
-            "remove_if_not_scheduled",
-            "run_asap_after_missed",
-            "monthly_days_of_month",
-            "monthly_months_of_year",
-            "monthly_weeks_of_month",
-            "task_repetition_duration",
-            "task_repetition_interval",
-            "stop_task_at_duration_end",
-            "random_task_delay",
-            "run_asap_after_missed",
-            "task_instance_policy",
-        ]
+        return FIELDS_TRIGGER_TASK_UPDATE_AGENT
 
     @staticmethod
     def serialize(task):
@@ -257,35 +243,7 @@ class AutomatedTask(BaseAuditModel):
         self, policy: "Policy", assigned_check: "Optional[Check]" = None
     ) -> None:
         ### Copies certain properties on this task (self) to a new task and sets it to the supplied Policy
-        fields_to_copy = [
-            "alert_severity",
-            "email_alert",
-            "text_alert",
-            "dashboard_alert",
-            "name",
-            "actions",
-            "run_time_bit_weekdays",
-            "run_time_date",
-            "expire_date",
-            "daily_interval",
-            "weekly_interval",
-            "task_type",
-            "enabled",
-            "remove_if_not_scheduled",
-            "run_asap_after_missed",
-            "custom_field",
-            "collector_all_output",
-            "monthly_days_of_month",
-            "monthly_months_of_year",
-            "monthly_weeks_of_month",
-            "task_repetition_duration",
-            "task_repetition_interval",
-            "stop_task_at_duration_end",
-            "random_task_delay",
-            "run_asap_after_missed",
-            "task_instance_policy",
-            "continue_on_error",
-        ]
+        fields_to_copy = POLICY_TASK_FIELDS_TO_COPY
 
         task = AutomatedTask.objects.create(
             policy=policy,

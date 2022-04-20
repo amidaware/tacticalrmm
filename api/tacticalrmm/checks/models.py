@@ -10,6 +10,10 @@ from logs.models import BaseAuditModel
 
 from tacticalrmm.models import PermissionQuerySet
 from core.utils import get_core_settings
+from tacticalrmm.constants import (
+    CHECKS_NON_EDITABLE_FIELDS,
+    POLICY_CHECK_FIELDS_TO_COPY,
+)
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate  # pragma: no cover
@@ -242,51 +246,11 @@ class Check(BaseAuditModel):
 
     @staticmethod
     def non_editable_fields() -> list[str]:
-        return [
-            "check_type",
-            "readable_desc",
-            "overridden_by_policy",
-            "created_by",
-            "created_time",
-            "modified_by",
-            "modified_time",
-        ]
+        return CHECKS_NON_EDITABLE_FIELDS
 
     def create_policy_check(self, policy: "Policy") -> None:
 
-        fields_to_copy = [
-            "warning_threshold",
-            "error_threshold",
-            "alert_severity",
-            "name",
-            "run_interval",
-            "disk",
-            "fails_b4_alert",
-            "ip",
-            "script",
-            "script_args",
-            "info_return_codes",
-            "warning_return_codes",
-            "timeout",
-            "svc_name",
-            "svc_display_name",
-            "svc_policy_mode",
-            "pass_if_start_pending",
-            "pass_if_svc_not_exist",
-            "restart_if_stopped",
-            "log_name",
-            "event_id",
-            "event_id_is_wildcard",
-            "event_type",
-            "event_source",
-            "event_message",
-            "fail_when",
-            "search_last_days",
-            "number_of_events_b4_alert",
-            "email_alert",
-            "text_alert",
-            "dashboard_alert",
-        ]
+        fields_to_copy = POLICY_CHECK_FIELDS_TO_COPY
 
         check = Check.objects.create(
             policy=policy,

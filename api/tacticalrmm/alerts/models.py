@@ -439,7 +439,7 @@ class Alert(models.Model):
             )
 
             # command was successful
-            if type(r) == dict:
+            if isinstance(r, dict):
                 alert.action_retcode = r["retcode"]
                 alert.action_stdout = r["stdout"]
                 alert.action_stderr = r["stderr"]
@@ -561,7 +561,7 @@ class Alert(models.Model):
             )
 
             # command was successful
-            if type(r) == dict:
+            if isinstance(r, dict):
                 alert.resolved_action_retcode = r["retcode"]
                 alert.resolved_action_stdout = r["stdout"]
                 alert.resolved_action_stderr = r["stderr"]

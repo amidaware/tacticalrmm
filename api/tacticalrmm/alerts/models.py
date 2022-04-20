@@ -484,6 +484,11 @@ class Alert(models.Model):
                 text_on_resolved = alert_template.agent_text_on_resolved
                 run_script_action = alert_template.agent_script_actions
 
+            if agent.overdue_email_alert:
+                email_on_resolved = True
+            if agent.overdue_text_alert:
+                text_on_resolved = True
+
         elif isinstance(instance, CheckResult):
             from checks.tasks import (
                 handle_resolved_check_email_alert_task,

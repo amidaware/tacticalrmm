@@ -175,11 +175,16 @@ class Agent(BaseAuditModel):
                 isinstance(check.check_result, CheckResult)
                 and check.check_result.status == "failing"
             ):
-                if check.alert_severity == "error":
+                alert_severity = (
+                    check.check_result.alert_severity
+                    if check.check_type in ["memory", "cpuload", "diskspace", "script"]
+                    else check.alert_severity
+                )
+                if alert_severity == "error":
                     failing += 1
-                elif check.alert_severity == "warning":
+                elif alert_severity == "warning":
                     warning += 1
-                elif check.alert_severity == "info":
+                elif alert_severity == "info":
                     info += 1
 
         ret = {

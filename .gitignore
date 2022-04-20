@@ -52,3 +52,4 @@ run_go_cmd.py
 nats-api.conf
 ignore/
 coverage.lcov
+daphne.sock.lock

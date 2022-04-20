@@ -110,7 +110,9 @@ class Alert(models.Model):
     def create_or_return_availability_alert(
         cls, agent: Agent, skip_create: bool = False
     ) -> Optional[Alert]:
-        if not cls.objects.filter(agent=agent, resolved=False).exists():
+        if not cls.objects.filter(
+            agent=agent, alert_type="availability", resolved=False
+        ).exists():
             if skip_create:
                 return None
 

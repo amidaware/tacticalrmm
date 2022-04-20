@@ -22,21 +22,21 @@
       <template v-slot:header-cell-smsalert="props">
         <q-th auto-width :props="props">
           <q-icon name="phone_android" size="1.5em">
-            <q-tooltip>Send SMS alert when agent is overdue</q-tooltip>
+            <q-tooltip>{{ sms_overdue_text }}</q-tooltip>
           </q-icon>
         </q-th>
       </template>
       <template v-slot:header-cell-emailalert="props">
         <q-th auto-width :props="props">
           <q-icon name="email" size="1.5em">
-            <q-tooltip>Send email alert when agent is overdue</q-tooltip>
+            <q-tooltip>{{ email_overdue_text }}</q-tooltip>
           </q-icon>
         </q-th>
       </template>
       <template v-slot:header-cell-dashboardalert="props">
         <q-th auto-width :props="props">
           <q-icon name="notifications" size="1.5em">
-            <q-tooltip>Dashboard alert when agent is overdue</q-tooltip>
+            <q-tooltip>{{ dashboard_overdue_text }}</q-tooltip>
           </q-icon>
         </q-th>
       </template>
@@ -105,7 +105,9 @@
               dense
               @update:model-value="overdueAlert('text', props.row, props.row.overdue_text_alert)"
               v-model="props.row.overdue_text_alert"
-            />
+            >
+              <q-tooltip>{{ sms_overdue_text }}</q-tooltip>
+            </q-checkbox>
           </q-td>
           <q-td>
             <q-checkbox
@@ -122,7 +124,9 @@
               dense
               @update:model-value="overdueAlert('email', props.row, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
-            />
+            >
+              <q-tooltip>{{ email_overdue_text }}</q-tooltip>
+            </q-checkbox>
           </q-td>
           <q-td>
             <q-checkbox
@@ -139,7 +143,9 @@
               dense
               @update:model-value="overdueAlert('dashboard', props.row, props.row.overdue_dashboard_alert)"
               v-model="props.row.overdue_dashboard_alert"
-            />
+            >
+              <q-tooltip>{{ dashboard_overdue_text }}</q-tooltip>
+            </q-checkbox>
           </q-td>
 
           <q-td key="plat" :props="props">
@@ -245,6 +251,9 @@ export default {
         sortBy: "hostname",
         descending: false,
       },
+      dashboard_overdue_text: "Show a dashboard alert when agent is overdue",
+      email_overdue_text: "Send an email alert when agent is overdue",
+      sms_overdue_text: "Send a SMS alert when agent is overdue",
     };
   },
   methods: {

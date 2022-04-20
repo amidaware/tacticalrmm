@@ -77,13 +77,7 @@ def run_win_task(pk: int, agent_id: Optional[str] = None) -> str:
 def remove_orphaned_win_tasks() -> None:
     from agents.models import Agent
 
-    agents = Agent.objects.only(
-        "pk", "last_seen", "overdue_time", "offline_time"
-    ).prefetch_related("taskresults", "autotasks")
-
-    online = [i for i in agents if i.status == "online"]
-    for agent in online:
-
+    for agent in Agent.online_agents():
         r = asyncio.run(agent.nats_cmd({"func": "listschedtasks"}, timeout=10))
 
         if not isinstance(r, list):  # empty list

@@ -22,21 +22,21 @@
       <template v-slot:header-cell-smsalert="props">
         <q-th auto-width :props="props">
           <q-icon name="phone_android" size="1.5em">
-            <q-tooltip>SMS Alert</q-tooltip>
+            <q-tooltip>Send SMS alert when agent is overdue</q-tooltip>
           </q-icon>
         </q-th>
       </template>
       <template v-slot:header-cell-emailalert="props">
         <q-th auto-width :props="props">
           <q-icon name="email" size="1.5em">
-            <q-tooltip>Email Alert</q-tooltip>
+            <q-tooltip>Send email alert when agent is overdue</q-tooltip>
           </q-icon>
         </q-th>
       </template>
       <template v-slot:header-cell-dashboardalert="props">
         <q-th auto-width :props="props">
           <q-icon name="notifications" size="1.5em">
-            <q-tooltip>Dashboard Alert</q-tooltip>
+            <q-tooltip>Dashboard alert when agent is overdue</q-tooltip>
           </q-icon>
         </q-th>
       </template>
@@ -228,6 +228,7 @@ import PendingActions from "@/components/logs/PendingActions";
 import AgentActionMenu from "@/components/agents/AgentActionMenu";
 import { runURLAction } from "@/api/core";
 import { runTakeControl, runRemoteBackground } from "@/api/agents";
+import { capitalize } from "@vue/shared";
 
 export default {
   name: "AgentTable",
@@ -343,14 +344,16 @@ export default {
       const data = {
         [db_field]: !alert_action,
       };
-      const alertColor = !alert_action ? "positive" : "warning";
+      const alertColor = !alert_action ? "positive" : "info";
       this.$axios
         .put(`/agents/${agent.agent_id}/`, data)
         .then(r => {
           this.$q.notify({
             color: alertColor,
+            textColor: "black",
             icon: "fas fa-check-circle",
-            message: `Overdue ${category} alerts ${action} on ${agent.hostname}`,
+            message: `${capitalize(category)} alerts will now be ${action} when ${agent.hostname} is overdue.`,
+            timeout: 5000,
           });
         })
         .catch(e => {});

@@ -101,9 +101,12 @@ class PendingActions(APIView):
             actions = PendingAction.objects.filter(agent=agent)
         else:
             actions = (
-                PendingAction.objects.select_related("agent")
+                PendingAction.objects.filter_by_role(request.user)  # type: ignore
+                .select_related(
+                    "agent__site",
+                    "agent__site__client",
+                )
                 .defer("agent__services", "agent__wmi_detail")
-                .filter_by_role(request.user)  # type: ignore
             )
 
         return Response(PendingActionSerializer(actions, many=True).data)

@@ -175,7 +175,7 @@ class AutomatedTask(BaseAuditModel):
             for field in self.fields_that_trigger_task_update_on_agent:
                 if getattr(self, field) != getattr(old_task, field):
                     if self.policy:
-                        TaskResult.objects.exclude(sync_status="inital").filter(
+                        TaskResult.objects.exclude(sync_status="initial").filter(
                             task__policy_id=self.policy.id
                         ).update(sync_status="notsynced")
                     else:

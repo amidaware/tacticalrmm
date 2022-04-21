@@ -239,9 +239,13 @@ class CheckRunner(APIView):
         check_result.save()
 
         status = check_result.handle_check(request.data)
-
         if status == "failing" and check.assignedtasks.exists():  # type: ignore
-            check.handle_assigned_task()
+            for task in check.assignedtasks.all():  # type: ignore
+                if task.enabled:
+                    if task.policy:
+                        task.run_win_task(agent)
+                    else:
+                        task.run_win_task()
 
         return Response("ok")
 

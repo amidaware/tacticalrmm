@@ -287,11 +287,6 @@ class Check(BaseAuditModel):
             check_id=self.pk, y=value, results=more_info, agent_id=agent_id
         )
 
-    def handle_assigned_task(self) -> None:
-        for task in self.assignedtasks.all():  # type: ignore
-            if task.enabled:
-                task.run_win_task()
-
     @staticmethod
     def serialize(check):
         # serializes the check and returns json

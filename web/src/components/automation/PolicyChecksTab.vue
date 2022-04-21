@@ -1,55 +1,54 @@
 <template>
   <div class="row">
     <div class="col-12">
-      <q-btn v-if="!!selectedPolicy" size="sm" color="grey-5" icon="fas fa-plus" label="Add Check" text-color="black">
-        <q-menu>
-          <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="showCheckModal('diskspace')">
-              <q-item-section side>
-                <q-icon size="xs" name="far fa-hdd" />
-              </q-item-section>
-              <q-item-section>Disk Space Check</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('ping')">
-              <q-item-section side>
-                <q-icon size="xs" name="fas fa-network-wired" />
-              </q-item-section>
-              <q-item-section>Ping Check</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('cpuload')">
-              <q-item-section side>
-                <q-icon size="xs" name="fas fa-microchip" />
-              </q-item-section>
-              <q-item-section>CPU Load Check</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('memory')">
-              <q-item-section side>
-                <q-icon size="xs" name="fas fa-memory" />
-              </q-item-section>
-              <q-item-section>Memory Check</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('winsvc')">
-              <q-item-section side>
-                <q-icon size="xs" name="fas fa-cogs" />
-              </q-item-section>
-              <q-item-section>Windows Service Check</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('script')">
-              <q-item-section side>
-                <q-icon size="xs" name="fas fa-terminal" />
-              </q-item-section>
-              <q-item-section>Script Check</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showCheckModal('eventlog')">
-              <q-item-section side>
-                <q-icon size="xs" name="fas fa-clipboard-list" />
-              </q-item-section>
-              <q-item-section>Event Log Check</q-item-section>
-            </q-item>
-          </q-list>
-        </q-menu>
-      </q-btn>
-      <q-btn v-if="!!selectedPolicy" dense flat push @click="getChecks" icon="refresh" />
+      <q-btn v-if="!!selectedPolicy" class="q-mr-sm" dense flat push @click="getChecks" icon="refresh" />
+      <q-btn-dropdown v-if="!!selectedPolicy" icon="add" label="New" no-caps dense flat>
+        <q-list dense style="min-width: 200px">
+          <q-item clickable v-close-popup @click="showCheckModal('diskspace')">
+            <q-item-section side>
+              <q-icon size="xs" name="far fa-hdd" />
+            </q-item-section>
+            <q-item-section>Disk Space Check</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="showCheckModal('ping')">
+            <q-item-section side>
+              <q-icon size="xs" name="fas fa-network-wired" />
+            </q-item-section>
+            <q-item-section>Ping Check</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="showCheckModal('cpuload')">
+            <q-item-section side>
+              <q-icon size="xs" name="fas fa-microchip" />
+            </q-item-section>
+            <q-item-section>CPU Load Check</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="showCheckModal('memory')">
+            <q-item-section side>
+              <q-icon size="xs" name="fas fa-memory" />
+            </q-item-section>
+            <q-item-section>Memory Check</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="showCheckModal('winsvc')">
+            <q-item-section side>
+              <q-icon size="xs" name="fas fa-cogs" />
+            </q-item-section>
+            <q-item-section>Windows Service Check</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="showCheckModal('script')">
+            <q-item-section side>
+              <q-icon size="xs" name="fas fa-terminal" />
+            </q-item-section>
+            <q-item-section>Script Check</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup @click="showCheckModal('eventlog')">
+            <q-item-section side>
+              <q-icon size="xs" name="fas fa-clipboard-list" />
+            </q-item-section>
+            <q-item-section>Event Log Check</q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
+
       <q-table
         :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="tabs-tbl-sticky"

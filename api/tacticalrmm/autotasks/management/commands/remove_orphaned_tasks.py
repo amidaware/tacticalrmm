@@ -1,4 +1,3 @@
-from agents.models import Agent
 from autotasks.tasks import remove_orphaned_win_tasks
 from django.core.management.base import BaseCommand
 

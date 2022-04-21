@@ -22,7 +22,9 @@ from core.utils import get_core_settings
 
 from tacticalrmm.constants import MONTH_DAYS, MONTHS, WEEK_DAYS, WEEKS
 
-notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
+
+def notify_error(msg: str) -> Response:
+    return Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
 
 def generate_winagent_exe(

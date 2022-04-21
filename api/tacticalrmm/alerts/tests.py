@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from alerts.tasks import cache_agents_alert_template
 from core.utils import get_core_settings
-from core.tasks import cache_db_fields_task
+from core.tasks import cache_db_fields_task, handle_resolved_stuff
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
@@ -685,6 +685,7 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_email.save()
 
         cache_db_fields_task()
+        handle_resolved_stuff()
 
         recovery_sms.assert_called_with(
             pk=Alert.objects.get(agent=agent_template_text).pk
@@ -1430,6 +1431,7 @@ class TestAlertTasks(TacticalTestCase):
         agent.save()
 
         cache_db_fields_task()
+        handle_resolved_stuff()
 
         # this is what data should be
         data = {

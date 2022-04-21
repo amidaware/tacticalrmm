@@ -35,8 +35,7 @@ def auto_approve_updates_task() -> None:
     for chunk in chunks:
         for agent in chunk:
             asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
-            time.sleep(0.05)
-        time.sleep(15)
+        time.sleep(1)
 
 
 @app.task
@@ -131,8 +130,7 @@ def bulk_install_updates_task(pks: list[int]) -> None:
                 "guids": agent.get_approved_update_guids(),
             }
             asyncio.run(agent.nats_cmd(nats_data, wait=False))
-            time.sleep(0.05)
-        time.sleep(15)
+        time.sleep(1)
 
 
 @app.task
@@ -144,5 +142,4 @@ def bulk_check_for_updates_task(pks: list[int]) -> None:
         for agent in chunk:
             agent.delete_superseded_updates()
             asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
-            time.sleep(0.05)
-        time.sleep(15)
+        time.sleep(1)

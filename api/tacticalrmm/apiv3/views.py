@@ -38,7 +38,6 @@ class CheckIn(APIView):
         if not agent.choco_installed:
             asyncio.run(agent.nats_cmd({"func": "installchoco"}, wait=False))
 
-        time.sleep(0.5)
         asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
         return Response("ok")
 

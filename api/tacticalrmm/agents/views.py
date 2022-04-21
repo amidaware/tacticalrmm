@@ -339,9 +339,9 @@ def ping(request, agent_id):
             break
         else:
             attempts += 1
-            time.sleep(1)
+            time.sleep(0.5)
 
-        if attempts >= 5:
+        if attempts >= 3:
             break
 
     return Response({"name": agent.hostname, "status": status})

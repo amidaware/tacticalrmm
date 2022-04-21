@@ -72,8 +72,7 @@ def force_code_sign(agent_ids: list[str]) -> None:
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id=agent_id, force=True)
-            sleep(0.05)
-        sleep(4)
+        sleep(2)
 
 
 @app.task
@@ -82,8 +81,7 @@ def send_agent_update_task(agent_ids: list[str]) -> None:
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id)
-            sleep(0.05)
-        sleep(4)
+        sleep(2)
 
 
 @app.task
@@ -103,8 +101,7 @@ def auto_self_agent_update_task() -> None:
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id)
-            sleep(0.05)
-        sleep(4)
+        sleep(2)
 
 
 @app.task

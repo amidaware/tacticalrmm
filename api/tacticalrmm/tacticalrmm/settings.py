@@ -17,11 +17,11 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.12.5-dev"
+TRMM_VERSION = "0.13.0-dev"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.160"
+APP_VER = "0.0.161"
 
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.0.2"
@@ -31,8 +31,8 @@ MESH_VER = "1.0.2"
 NATS_SERVER_VER = "2.7.4"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "28"
-NPM_VER = "31"
+PIP_VER = "29"
+NPM_VER = "32"
 
 SETUPTOOLS_VER = "59.6.0"
 WHEEL_VER = "0.37.1"

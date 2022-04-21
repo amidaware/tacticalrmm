@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="61"
+SCRIPT_VERSION="62"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -210,10 +210,6 @@ sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_green 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
-
-# apply redis configuration
-sudo redis-cli config set appendonly no
-sudo redis-cli config rewrite
 
 print_green 'Installing postgresql'
 

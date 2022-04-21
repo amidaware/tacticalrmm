@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="35"
+SCRIPT_VERSION="36"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update

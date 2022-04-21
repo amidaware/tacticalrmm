@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="18"
+SCRIPT_VERSION="19"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'

@@ -28,7 +28,7 @@ LATEST_AGENT_VER = "2.0.2"
 
 MESH_VER = "1.0.2"
 
-NATS_SERVER_VER = "2.8.0"
+NATS_SERVER_VER = "2.8.1"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "29"

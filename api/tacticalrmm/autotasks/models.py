@@ -185,7 +185,7 @@ class AutomatedTask(BaseAuditModel):
 
     def delete(self, *args, **kwargs):
 
-        # if check is a policy check clear cache on everything
+        # if task is a policy task clear cache on everything
         if self.policy:
             cache.delete_many_pattern("site_*_tasks")
             cache.delete_many_pattern("agent_*_tasks")

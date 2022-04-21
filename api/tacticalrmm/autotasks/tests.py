@@ -325,8 +325,9 @@ class TestAutotaskViews(TacticalTestCase):
 
         self.check_not_authenticated("put", url)
 
+    @patch("autotasks.tasks.remove_orphaned_win_tasks.delay")
     @patch("autotasks.tasks.delete_win_task_schedule.delay")
-    def test_delete_autotask(self, delete_win_task_schedule):
+    def test_delete_autotask(self, delete_win_task_schedule, remove_orphaned_win_tasks):
         # setup data
         agent = baker.make_recipe("agents.agent")
         agent_task = baker.make("autotasks.AutomatedTask", agent=agent)
@@ -342,6 +343,16 @@ class TestAutotaskViews(TacticalTestCase):
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
         delete_win_task_schedule.assert_called_with(pk=agent_task.id)
+        remove_orphaned_win_tasks.assert_not_called()
+
+        delete_win_task_schedule.reset_mock()
+        remove_orphaned_win_tasks.reset_mock()
+        # test delete policy task
+        url = f"{base_url}/{policy_task.id}/"
+        resp = self.client.delete(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        remove_orphaned_win_tasks.assert_called_once()
+        delete_win_task_schedule.assert_not_called()
 
         self.check_not_authenticated("delete", url)
 

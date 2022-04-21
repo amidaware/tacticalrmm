@@ -11,6 +11,7 @@ from tacticalrmm.permissions import _has_perm_on_agent
 from .models import AutomatedTask
 from .permissions import AutoTaskPerms, RunAutoTaskPerms
 from .serializers import TaskSerializer
+from .tasks import remove_orphaned_win_tasks
 
 
 class GetAddAutoTasks(APIView):
@@ -91,6 +92,7 @@ class GetEditDeleteAutoTask(APIView):
             delete_win_task_schedule.delay(pk=task.pk)
         else:
             task.delete()
+            remove_orphaned_win_tasks.delay()
 
         return Response(f"{task.name} will be deleted shortly")
 

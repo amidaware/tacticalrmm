@@ -138,7 +138,7 @@ def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) 
         task_result = TaskResult.objects.get(
             task=alert.assigned_task, agent=alert.agent
         )
-        sleep(random.randint(1, 10))
+        sleep(random.randint(1, 5))
         task_result.send_email()
         alert.email_sent = djangotime.now()
         alert.save(update_fields=["email_sent"])
@@ -150,7 +150,7 @@ def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) 
                 task_result = TaskResult.objects.get(
                     task=alert.assigned_task, agent=alert.agent
                 )
-                sleep(random.randint(1, 10))
+                sleep(random.randint(1, 5))
                 task_result.send_email()
                 alert.email_sent = djangotime.now()
                 alert.save(update_fields=["email_sent"])
@@ -225,7 +225,7 @@ def handle_resolved_task_email_alert(pk: int) -> str:
         task_result = TaskResult.objects.get(
             task=alert.assigned_task, agent=alert.agent
         )
-        sleep(random.randint(1, 10))
+        sleep(random.randint(1, 5))
         task_result.send_resolved_email()
         alert.resolved_email_sent = djangotime.now()
         alert.save(update_fields=["resolved_email_sent"])

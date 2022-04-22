@@ -25,7 +25,7 @@ def handle_check_email_alert_task(
         check_result = CheckResult.objects.get(
             assigned_check=alert.assigned_check, agent=alert.agent
         )
-        sleep(random.randint(1, 10))
+        sleep(random.randint(1, 5))
         check_result.send_email()
         alert.email_sent = djangotime.now()
         alert.save(update_fields=["email_sent"])
@@ -37,7 +37,7 @@ def handle_check_email_alert_task(
                 check_result = CheckResult.objects.get(
                     assigned_check=alert.assigned_check, agent=alert.agent
                 )
-                sleep(random.randint(1, 10))
+                sleep(random.randint(1, 5))
                 check_result.send_email()
                 alert.email_sent = djangotime.now()
                 alert.save(update_fields=["email_sent"])
@@ -112,7 +112,7 @@ def handle_resolved_check_email_alert_task(pk: int) -> str:
         check_result = CheckResult.objects.get(
             assigned_check=alert.assigned_check, agent=alert.agent
         )
-        sleep(random.randint(1, 10))
+        sleep(random.randint(1, 5))
         check_result.send_resolved_email()
         alert.resolved_email_sent = djangotime.now()
         alert.save(update_fields=["resolved_email_sent"])

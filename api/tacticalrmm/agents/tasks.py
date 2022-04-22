@@ -114,7 +114,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
         return "alert not found"
 
     if not alert.email_sent:
-        sleep(random.randint(1, 15))
+        sleep(random.randint(1, 5))
         alert.agent.send_outage_email()
         alert.email_sent = djangotime.now()
         alert.save(update_fields=["email_sent"])
@@ -123,7 +123,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
             # send an email only if the last email sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.email_sent < delta:
-                sleep(random.randint(1, 10))
+                sleep(random.randint(1, 5))
                 alert.agent.send_outage_email()
                 alert.email_sent = djangotime.now()
                 alert.save(update_fields=["email_sent"])
@@ -135,7 +135,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
 def agent_recovery_email_task(pk: int) -> str:
     from alerts.models import Alert
 
-    sleep(random.randint(1, 15))
+    sleep(random.randint(1, 5))
 
     try:
         alert = Alert.objects.get(pk=pk)
@@ -159,7 +159,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> st
         return "alert not found"
 
     if not alert.sms_sent:
-        sleep(random.randint(1, 15))
+        sleep(random.randint(1, 3))
         alert.agent.send_outage_sms()
         alert.sms_sent = djangotime.now()
         alert.save(update_fields=["sms_sent"])
@@ -168,7 +168,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> st
             # send an sms only if the last sms sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.sms_sent < delta:
-                sleep(random.randint(1, 10))
+                sleep(random.randint(1, 3))
                 alert.agent.send_outage_sms()
                 alert.sms_sent = djangotime.now()
                 alert.save(update_fields=["sms_sent"])

@@ -253,14 +253,15 @@ export default function () {
           }
 
 
+          const sorted = output.sort((a, b) => a.label.localeCompare(b.label));
           if (state.clientTreeSort === "alphafail") {
             // move failing clients to the top
-            const failing = output.filter(i => i.color === "negative" || i.color === "warning");
-            const ok = output.filter(i => i.color !== "negative" && i.color !== "warning");
+            const failing = sorted.filter(i => i.color === "negative" || i.color === "warning");
+            const ok = sorted.filter(i => i.color !== "negative" && i.color !== "warning");
             const sortedByFailing = [...failing, ...ok];
             commit("loadTree", sortedByFailing);
           } else {
-            commit("loadTree", output);
+            commit("loadTree", sorted);
           }
 
         })

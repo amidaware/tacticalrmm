@@ -1,16 +1,8 @@
 <template>
   <div class="row">
     <div class="col-12">
-      <q-btn
-        v-if="!!selectedPolicy"
-        size="sm"
-        color="grey-5"
-        icon="fas fa-plus"
-        label="Add Task"
-        text-color="black"
-        @click="showAddTask"
-      />
-      <q-btn v-if="!!selectedPolicy" dense flat push @click="getTasks" icon="refresh" />
+      <q-btn v-if="!!selectedPolicy" class="q-mr-sm" dense flat push @click="getTasks" icon="refresh" />
+      <q-btn v-if="!!selectedPolicy" icon="add" label="Add Task" no-caps dense flat push @click="showAddTask" />
       <q-table
         :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="tabs-tbl-sticky"

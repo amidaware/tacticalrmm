@@ -708,6 +708,7 @@ export default {
       },
       set(newVal) {
         this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", newVal);
+        this.$store.dispatch("loadAgents");
         this.$store.commit("destroySubTable");
       },
     },

@@ -11,7 +11,7 @@
       <q-card-section style="height: 70vh" class="scroll">
         <div>
           Last Run:
-          <code>{{ scriptInfo.last_run }}</code>
+          <code>{{ formatDate(scriptInfo.last_run) }}</code>
           <br />Run Time:
           <code>{{ scriptInfo.execution_time }} seconds</code>
           <br />Return Code:
@@ -39,6 +39,8 @@
 
 <script>
 // composition imports
+import { computed } from "vue";
+import { useStore } from "vuex";
 import { useDialogPluginComponent } from "quasar";
 
 export default {
@@ -46,10 +48,18 @@ export default {
   emits: [...useDialogPluginComponent.emits],
   props: { scriptInfo: !Object },
   setup(props) {
+    // setup vuex
+    const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
+
     // quasar dialog setup
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
     return {
+      // methods
+      formatDate,
+
+      // quasar dialog
       dialogRef,
       onDialogHide,
     };

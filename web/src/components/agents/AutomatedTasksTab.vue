@@ -89,13 +89,13 @@
                 </q-item-section>
                 <q-item-section>Run task now</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showEditTask(props.row)" v-if="!props.row.managed_by_policy">
+              <q-item clickable v-close-popup @click="showEditTask(props.row)" v-if="!props.row.policy">
                 <q-item-section side>
                   <q-icon name="edit" />
                 </q-item-section>
                 <q-item-section>Edit</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="deleteTask(props.row)" v-if="!props.row.managed_by_policy">
+              <q-item clickable v-close-popup @click="deleteTask(props.row)" v-if="!props.row.policy">
                 <q-item-section side>
                   <q-icon name="delete" />
                 </q-item-section>
@@ -113,7 +113,7 @@
               dense
               @update:model-value="editTask(props.row, { enabled: !props.row.enabled })"
               v-model="props.row.enabled"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- text alert -->
@@ -124,7 +124,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -132,7 +132,7 @@
               dense
               @update:model-value="editTask(props.row, { text_alert: !props.row.text_alert })"
               v-model="props.row.text_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- email alert -->
@@ -143,7 +143,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -151,7 +151,7 @@
               dense
               @update:model-value="editTask(props.row, { email_alert: !props.row.email_alert })"
               v-model="props.row.email_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- dashboard alert -->
@@ -162,7 +162,7 @@
               disable
               dense
             >
-              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
@@ -170,12 +170,12 @@
               dense
               @update:model-value="editTask(props.row, { dashboard_alert: !props.row.dashboard_alert })"
               v-model="props.row.dashboard_alert"
-              :disable="props.row.managed_by_policy"
+              :disable="!!props.row.policy"
             />
           </q-td>
           <!-- policy check icon -->
           <q-td>
-            <q-icon v-if="props.row.managed_by_policy" style="font-size: 1.3rem" name="policy">
+            <q-icon v-if="props.row.policy" style="font-size: 1.3rem" name="policy">
               <q-tooltip>This task is managed by a policy</q-tooltip>
             </q-icon>
           </q-td>
@@ -187,12 +187,13 @@
             </q-icon>
           </q-td>
           <!-- status icon -->
-          <q-td v-if="props.row.status === 'passing'">
+          <q-td v-if="Object.keys(props.row.task_result).length === 0"></q-td>
+          <q-td v-else-if="props.row.task_result.status === 'passing'">
             <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
               <q-tooltip>Passing</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td v-else-if="props.row.status === 'failing'">
+          <q-td v-else-if="props.row.task_result.status === 'failing'">
             <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
               <q-tooltip>Informational</q-tooltip>
             </q-icon>
@@ -212,12 +213,15 @@
           <!-- name -->
           <q-td>{{ props.row.name }}</q-td>
           <!-- sync status -->
-          <q-td v-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
-          <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
-          <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
-          <q-td v-else-if="props.row.sync_status === 'initial'">Waiting for task creation on agent</q-td>
-          <q-td v-else></q-td>
-          <q-td v-if="props.row.retcode !== null || props.row.stdout || props.row.stderr">
+          <q-td v-if="props.row.task_result.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
+          <q-td v-else-if="props.row.task_result.sync_status === 'synced'">Synced with agent</q-td>
+          <q-td v-else-if="props.row.task_result.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
+          <q-td v-else>Waiting for task creation on agent</q-td>
+          <q-td
+            v-if="
+              props.row.task_result.retcode !== null || props.row.task_result.stdout || props.row.task_result.stderr
+            "
+          >
             <span
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
@@ -226,7 +230,7 @@
             >
           </q-td>
           <q-td v-else>Awaiting output</q-td>
-          <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
+          <q-td v-if="props.row.task_result.last_run">{{ formatDate(props.row.task_result.last_run) }}</q-td>
           <q-td v-else>Has not run yet</q-td>
           <q-td>{{ props.row.schedule }}</q-td>
           <q-td>
@@ -304,6 +308,7 @@ export default {
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
     const agentPlatform = computed(() => store.state.agentPlatform);
+    const formatDate = computed(() => store.getters.formatDate);
 
     // setup quasar
     const $q = useQuasar();
@@ -330,7 +335,7 @@ export default {
     }
 
     async function editTask(task, data) {
-      if (task.managed_by_policy) return;
+      if (task.policy) return;
 
       loading.value = true;
       try {
@@ -345,7 +350,7 @@ export default {
     }
 
     function deleteTask(task) {
-      if (task.managed_by_policy) return;
+      if (task.policy) return;
 
       $q.dialog({
         title: "Are you sure?",
@@ -373,7 +378,7 @@ export default {
 
       loading.value = true;
       try {
-        const result = await runTask(task.id);
+        const result = await runTask(task.id, task.policy ? { agent_id: selectedAgent.value } : {});
         notifySuccess(result);
       } catch (e) {
         console.error(e);
@@ -393,7 +398,7 @@ export default {
     }
 
     function showEditTask(task) {
-      if (task.managed_by_policy) return;
+      if (task.policy) return;
 
       $q.dialog({
         component: AutomatedTaskForm,
@@ -410,7 +415,7 @@ export default {
       $q.dialog({
         component: ScriptOutput,
         componentProps: {
-          scriptInfo: script,
+          scriptInfo: script.task_result,
         },
       });
     }
@@ -438,6 +443,7 @@ export default {
       columns,
 
       // methods
+      formatDate,
       getTasks,
       editTask,
       runWinTask,
@@ -446,6 +452,7 @@ export default {
       showEditTask,
       showScriptOutput,
 
+      // helpers
       truncateText,
     };
   },

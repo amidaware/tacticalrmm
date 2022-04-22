@@ -101,9 +101,12 @@ class PendingActions(APIView):
             actions = PendingAction.objects.filter(agent=agent)
         else:
             actions = (
-                PendingAction.objects.select_related("agent")
+                PendingAction.objects.filter_by_role(request.user)  # type: ignore
+                .select_related(
+                    "agent__site",
+                    "agent__site__client",
+                )
                 .defer("agent__services", "agent__wmi_detail")
-                .filter_by_role(request.user)  # type: ignore
             )
 
         return Response(PendingActionSerializer(actions, many=True).data)
@@ -114,13 +117,14 @@ class PendingActions(APIView):
         if not _has_perm_on_agent(request.user, action.agent.agent_id):
             raise PermissionDenied()
 
-        nats_data = {
-            "func": "delschedtask",
-            "schedtaskpayload": {"name": action.details["taskname"]},
-        }
-        r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
-        if r != "ok":
-            return notify_error(r)
+        if action.action_type == "schedreboot":
+            nats_data = {
+                "func": "delschedtask",
+                "schedtaskpayload": {"name": action.details["taskname"]},
+            }
+            r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
+            if r != "ok":
+                return notify_error(r)
 
         action.delete()
         return Response(f"{action.agent.hostname}: {action.description} was cancelled")
@@ -145,7 +149,7 @@ class GetDebugLog(APIView):
 
         debug_logs = (
             DebugLog.objects.prefetch_related("agent")
-            .filter_by_role(request.user)
+            .filter_by_role(request.user)  # type: ignore
             .filter(logLevelFilter)
             .filter(agentFilter)
             .filter(logTypeFilter)

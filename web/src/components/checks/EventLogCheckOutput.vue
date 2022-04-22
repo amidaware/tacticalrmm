@@ -8,14 +8,14 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      <div v-if="evtLogData.extra_details !== null">
+      <div v-if="evtLogData.check_result.extra_details !== null">
         <q-table
           dense
           style="height: 65vh"
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
           :filter="filter"
-          :rows="evtLogData.extra_details.log"
+          :rows="evtLogData.check_result.extra_details.log"
           :columns="columns"
           v-model:pagination="pagination"
           row-key="uid"
@@ -31,7 +31,7 @@
                 <q-icon name="search" color="primary" />
               </template>
             </q-input>
-            <export-table-btn :data="evtLogData.extra_details.log" :columns="columns" />
+            <export-table-btn :data="evtLogData.check_result.extra_details.log" :columns="columns" />
           </template>
         </q-table>
       </div>

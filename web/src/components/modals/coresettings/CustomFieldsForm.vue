@@ -66,34 +66,15 @@
           <!-- For datetime field -->
           <q-input
             v-if="localField.type === 'datetime'"
-            outlined
+            type="datetime-local"
             dense
             label="Default Value"
+            stack-label
+            outlined
             v-model="localField.default_value_string"
             :rules="defaultValueRules"
             reactive-rules
-          >
-            <template v-slot:append>
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-date v-model="localField.default_value_string" mask="YYYY-MM-DD HH:mm">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Close" color="primary" flat />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-icon>
-              <q-icon name="access_time" class="cursor-pointer">
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-time v-model="localField.default_value_string" mask="YYYY-MM-DD HH:mm">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Close" color="primary" flat />
-                    </div>
-                  </q-time>
-                </q-popup-proxy>
-              </q-icon>
-            </template>
-          </q-input>
+          />
 
           <!-- For Checkbox -->
           <q-toggle

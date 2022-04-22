@@ -4,7 +4,7 @@ from tacticalrmm.permissions import _has_perm
 
 
 class AccountsPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
+    def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             return _has_perm(r, "can_list_accounts")
         else:
@@ -28,7 +28,7 @@ class AccountsPerms(permissions.BasePermission):
 
 
 class RolesPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
+    def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             return _has_perm(r, "can_list_roles")
         else:
@@ -36,7 +36,7 @@ class RolesPerms(permissions.BasePermission):
 
 
 class APIKeyPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
+    def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             return _has_perm(r, "can_list_api_keys")
 

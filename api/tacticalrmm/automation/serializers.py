@@ -1,6 +1,6 @@
 from agents.serializers import AgentHostnameSerializer
-from autotasks.models import AutomatedTask
-from checks.models import Check
+from autotasks.models import TaskResult
+from checks.models import CheckResult
 from clients.models import Client
 from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from rest_framework.serializers import (
@@ -95,7 +95,7 @@ class PolicyCheckStatusSerializer(ModelSerializer):
     hostname = ReadOnlyField(source="agent.hostname")
 
     class Meta:
-        model = Check
+        model = CheckResult
         fields = "__all__"
 
 
@@ -103,7 +103,7 @@ class PolicyTaskStatusSerializer(ModelSerializer):
     hostname = ReadOnlyField(source="agent.hostname")
 
     class Meta:
-        model = AutomatedTask
+        model = TaskResult
         fields = "__all__"
 
 

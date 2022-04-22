@@ -6,10 +6,15 @@ import string
 import time
 from meshctrl.utils import get_login_token
 
-from core.models import CodeSignToken, CoreSettings
-from core.utils import get_mesh_ws_url, remove_mesh_agent, send_command_with_mesh
+from core.models import CodeSignToken
+from core.utils import (
+    get_mesh_ws_url,
+    remove_mesh_agent,
+    send_command_with_mesh,
+    get_core_settings,
+)
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Prefetch, Exists, Count, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -24,6 +29,7 @@ from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
+from winupdate.models import WinUpdate
 
 from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.permissions import (
@@ -65,12 +71,22 @@ class GetAgents(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
     def get(self, request):
+        from checks.models import Check, CheckResult
+
+        monitoring_type_filter = Q()
+        client_site_filter = Q()
+
+        monitoring_type = request.query_params.get("monitoring_type", None)
+        if monitoring_type:
+            if monitoring_type in ["server", "workstation"]:
+                monitoring_type_filter = Q(monitoring_type=monitoring_type)
+            else:
+                return notify_error("monitoring type does not exist")
+
         if "site" in request.query_params.keys():
-            filter = Q(site_id=request.query_params["site"])
+            client_site_filter = Q(site_id=request.query_params["site"])
         elif "client" in request.query_params.keys():
-            filter = Q(site__client_id=request.query_params["client"])
-        else:
-            filter = Q()
+            client_site_filter = Q(site__client_id=request.query_params["client"])
 
         # by default detail=true
         if (
@@ -78,23 +94,51 @@ class GetAgents(APIView):
             or "detail" in request.query_params.keys()
             and request.query_params["detail"] == "true"
         ):
-
             agents = (
                 Agent.objects.filter_by_role(request.user)  # type: ignore
-                .select_related("site", "policy", "alert_template")
-                .prefetch_related("agentchecks")
-                .filter(filter)
+                .filter(monitoring_type_filter)
+                .filter(client_site_filter)
                 .defer(*AGENT_DEFER)
+                .select_related(
+                    "site__server_policy",
+                    "site__workstation_policy",
+                    "site__client__server_policy",
+                    "site__client__workstation_policy",
+                    "policy",
+                    "alert_template",
+                )
+                .prefetch_related(
+                    Prefetch(
+                        "agentchecks",
+                        queryset=Check.objects.select_related("script"),
+                    ),
+                    Prefetch(
+                        "checkresults",
+                        queryset=CheckResult.objects.select_related("assigned_check"),
+                    ),
+                )
+                .annotate(
+                    pending_actions_count=Count(
+                        "pendingactions", filter=Q(pendingactions__status="pending")
+                    )
+                )
+                .annotate(
+                    has_patches_pending=Exists(
+                        WinUpdate.objects.filter(
+                            agent_id=OuterRef("pk"), action="approve", installed=False
+                        )
+                    )
+                )
             )
-            ctx = {"default_tz": get_default_timezone()}
-            serializer = AgentTableSerializer(agents, many=True, context=ctx)
+            serializer = AgentTableSerializer(agents, many=True)
 
         # if detail=false
         else:
             agents = (
                 Agent.objects.filter_by_role(request.user)  # type: ignore
                 .select_related("site")
-                .filter(filter)
+                .filter(monitoring_type_filter)
+                .filter(client_site_filter)
                 .only("agent_id", "hostname", "site")
             )
             serializer = AgentHostnameSerializer(agents, many=True)
@@ -131,13 +175,13 @@ class GetUpdateDeleteAgent(APIView):
             for field in request.data["custom_fields"]:
 
                 custom_field = field
-                custom_field["agent"] = agent.id  # type: ignore
+                custom_field["agent"] = agent.pk
 
                 if AgentCustomField.objects.filter(
-                    field=field["field"], agent=agent.id  # type: ignore
+                    field=field["field"], agent=agent.pk
                 ):
                     value = AgentCustomField.objects.get(
-                        field=field["field"], agent=agent.id  # type: ignore
+                        field=field["field"], agent=agent.pk
                     )
                     serializer = AgentCustomFieldSerializer(
                         instance=value, data=custom_field
@@ -207,13 +251,19 @@ class AgentMeshCentral(APIView):
     # get mesh urls
     def get(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
-        core = CoreSettings.objects.first()
+        core = get_core_settings()
 
-        token = get_login_token(key=core.mesh_token, user=f"user//{core.mesh_username}")
+        if not core.mesh_disable_auto_login:
+            token = get_login_token(
+                key=core.mesh_token, user=f"user//{core.mesh_username}"
+            )
+            token_param = f"login={token}&"
+        else:
+            token_param = ""
 
-        control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
-        terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"  # type:ignore
-        file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"  # type:ignore
+        control = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
+        terminal = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
+        file = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
 
         AuditLog.audit_mesh_session(
             username=request.user.username,
@@ -247,7 +297,7 @@ class AgentMeshCentral(APIView):
 @permission_classes([IsAuthenticated, AgentPerms])
 def get_agent_versions(request):
     agents = (
-        Agent.objects.filter_by_role(request.user)
+        Agent.objects.filter_by_role(request.user)  # type: ignore
         .prefetch_related("site")
         .only("pk", "hostname")
     )
@@ -263,7 +313,7 @@ def get_agent_versions(request):
 @permission_classes([IsAuthenticated, UpdateAgentPerms])
 def update_agents(request):
     q = (
-        Agent.objects.filter_by_role(request.user)
+        Agent.objects.filter_by_role(request.user)  # type: ignore
         .filter(agent_id__in=request.data["agent_ids"])
         .only("agent_id", "version")
     )
@@ -289,9 +339,9 @@ def ping(request, agent_id):
             break
         else:
             attempts += 1
-            time.sleep(1)
+            time.sleep(0.5)
 
-        if attempts >= 5:
+        if attempts >= 3:
             break
 
     return Response({"name": agent.hostname, "status": status})
@@ -382,7 +432,7 @@ class Reboot(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
         try:
-            obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%d %H:%M")
+            obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M:%S")
         except Exception:
             return notify_error("Invalid date")
 
@@ -481,14 +531,11 @@ def install_agent(request):
         # linux agents are in beta for now, only available for sponsors for testing
         # remove this after it's out of beta
 
-        try:
-            t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
-        except:
-            return notify_error("Something went wrong")
-
-        if t is None:
+        code_token = CodeSignToken.objects.first()
+        if not code_token:
             return notify_error("Missing code signing token")
-        if not t.is_valid:
+
+        if not code_token.is_valid:
             return notify_error("Code signing token is not valid")
 
         from agents.utils import generate_linux_install
@@ -718,7 +765,7 @@ class GetAddNotes(APIView):
             agent = get_object_or_404(Agent, agent_id=agent_id)
             notes = Note.objects.filter(agent=agent)
         else:
-            notes = Note.objects.filter_by_role(request.user)
+            notes = Note.objects.filter_by_role(request.user)  # type: ignore
 
         return Response(AgentNoteSerializer(notes, many=True).data)
 
@@ -783,24 +830,24 @@ def bulk(request):
     if request.data["target"] == "client":
         if not _has_perm_on_client(request.user, request.data["client"]):
             raise PermissionDenied()
-        q = Agent.objects.filter_by_role(request.user).filter(
+        q = Agent.objects.filter_by_role(request.user).filter(  # type: ignore
             site__client_id=request.data["client"]
         )
 
     elif request.data["target"] == "site":
         if not _has_perm_on_site(request.user, request.data["site"]):
             raise PermissionDenied()
-        q = Agent.objects.filter_by_role(request.user).filter(
+        q = Agent.objects.filter_by_role(request.user).filter(  # type: ignore
             site_id=request.data["site"]
         )
 
     elif request.data["target"] == "agents":
-        q = Agent.objects.filter_by_role(request.user).filter(
+        q = Agent.objects.filter_by_role(request.user).filter(  # type: ignore
             agent_id__in=request.data["agents"]
         )
 
     elif request.data["target"] == "all":
-        q = Agent.objects.filter_by_role(request.user).only("pk", "monitoring_type")
+        q = Agent.objects.filter_by_role(request.user).only("pk", "monitoring_type")  # type: ignore
 
     else:
         return notify_error("Something went wrong")
@@ -877,7 +924,7 @@ def agent_maintenance(request):
             raise PermissionDenied()
 
         count = (
-            Agent.objects.filter_by_role(request.user)
+            Agent.objects.filter_by_role(request.user)  # type: ignore
             .filter(site__client_id=request.data["id"])
             .update(maintenance_mode=request.data["action"])
         )
@@ -887,7 +934,7 @@ def agent_maintenance(request):
             raise PermissionDenied()
 
         count = (
-            Agent.objects.filter_by_role(request.user)
+            Agent.objects.filter_by_role(request.user)  # type: ignore
             .filter(site_id=request.data["id"])
             .update(maintenance_mode=request.data["action"])
         )
@@ -923,6 +970,6 @@ class AgentHistoryView(APIView):
             agent = get_object_or_404(Agent, agent_id=agent_id)
             history = AgentHistory.objects.filter(agent=agent)
         else:
-            history = AgentHistory.objects.filter_by_role(request.user)
+            history = AgentHistory.objects.filter_by_role(request.user)  # type: ignore
         ctx = {"default_tz": get_default_timezone()}
         return Response(AgentHistorySerializer(history, many=True, context=ctx).data)

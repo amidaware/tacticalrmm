@@ -1,15 +1,16 @@
 import uuid
 
 from agents.models import Agent
+from django.core.cache import cache
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from logs.models import BaseAuditModel
-
+from typing import Dict
 from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.models import PermissionQuerySet
 
 
-def _default_failing_checks_data():
+def _default_failing_checks_data() -> Dict[str, bool]:
     return {"error": False, "warning": False}
 
 
@@ -19,7 +20,6 @@ class Client(BaseAuditModel):
     name = models.CharField(max_length=255, unique=True)
     block_policy_inheritance = models.BooleanField(default=False)
     failing_checks = models.JSONField(default=_default_failing_checks_data)
-    agent_count = models.PositiveIntegerField(default=0)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_clients",
@@ -45,7 +45,6 @@ class Client(BaseAuditModel):
 
     def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
-        from automation.tasks import generate_agent_checks_task
 
         # get old client if exists
         old_client = Client.objects.get(pk=self.pk) if self.pk else None
@@ -56,36 +55,31 @@ class Client(BaseAuditModel):
         )
 
         # check if polcies have changed and initiate task to reapply policies if so
-        if old_client:
-            if (
-                (old_client.server_policy != self.server_policy)
-                or (old_client.workstation_policy != self.workstation_policy)
-                or (
-                    old_client.block_policy_inheritance != self.block_policy_inheritance
-                )
-            ):
-                generate_agent_checks_task.delay(
-                    client=self.pk,
-                    create_tasks=True,
-                )
+        if old_client and (
+            old_client.alert_template != self.alert_template
+            or old_client.workstation_policy != self.workstation_policy
+            or old_client.server_policy != self.server_policy
+        ):
+            cache_agents_alert_template.delay()
 
-            if old_client.alert_template != self.alert_template:
-                cache_agents_alert_template.delay()
+        if old_client and (
+            old_client.workstation_policy != self.workstation_policy
+            or old_client.server_policy != self.server_policy
+        ):
+            sites = self.sites.all()
+            if old_client.workstation_policy != self.workstation_policy:
+                for site in sites:
+                    cache.delete_many_pattern(f"site_workstation_{site.pk}_*")
+
+            if old_client.server_policy != self.server_policy:
+                for site in sites:
+                    cache.delete_many_pattern(f"site_server_{site.pk}_*")
 
     class Meta:
         ordering = ("name",)
 
     def __str__(self):
         return self.name
-
-    @property
-    def has_maintenanace_mode_agents(self):
-        return (
-            Agent.objects.defer(*AGENT_DEFER)
-            .filter(site__client=self, maintenance_mode=True)
-            .count()
-            > 0
-        )
 
     @property
     def live_agent_count(self) -> int:
@@ -106,7 +100,6 @@ class Site(BaseAuditModel):
     name = models.CharField(max_length=255)
     block_policy_inheritance = models.BooleanField(default=False)
     failing_checks = models.JSONField(default=_default_failing_checks_data)
-    agent_count = models.PositiveIntegerField(default=0)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_sites",
@@ -132,7 +125,6 @@ class Site(BaseAuditModel):
 
     def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
-        from automation.tasks import generate_agent_checks_task
 
         # get old client if exists
         old_site = Site.objects.get(pk=self.pk) if self.pk else None
@@ -145,14 +137,17 @@ class Site(BaseAuditModel):
         # check if polcies have changed and initiate task to reapply policies if so
         if old_site:
             if (
-                (old_site.server_policy != self.server_policy)
-                or (old_site.workstation_policy != self.workstation_policy)
-                or (old_site.block_policy_inheritance != self.block_policy_inheritance)
+                old_site.alert_template != self.alert_template
+                or old_site.workstation_policy != self.workstation_policy
+                or old_site.server_policy != self.server_policy
             ):
-                generate_agent_checks_task.delay(site=self.pk, create_tasks=True)
-
-            if old_site.alert_template != self.alert_template:
                 cache_agents_alert_template.delay()
+
+            if old_site.workstation_policy != self.workstation_policy:
+                cache.delete_many_pattern(f"site_workstation_{self.pk}_*")
+
+            if old_site.server_policy != self.server_policy:
+                cache.delete_many_pattern(f"site_server_{self.pk}_*")
 
     class Meta:
         ordering = ("name",)
@@ -160,10 +155,6 @@ class Site(BaseAuditModel):
 
     def __str__(self):
         return self.name
-
-    @property
-    def has_maintenanace_mode_agents(self):
-        return self.agents.defer(*AGENT_DEFER).filter(maintenance_mode=True).count() > 0  # type: ignore
 
     @property
     def live_agent_count(self) -> int:

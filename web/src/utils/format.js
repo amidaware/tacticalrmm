@@ -1,6 +1,5 @@
 import { date } from "quasar";
 import { validateTimePeriod } from "@/utils/validation"
-
 // dropdown options formatting
 
 export function removeExtraOptionCategories(array) {
@@ -16,10 +15,10 @@ export function removeExtraOptionCategories(array) {
   return tmp
 }
 
-function _formatOptions(data, { label, value = "id", flat = false, allowDuplicates = true }) {
+function _formatOptions(data, { label, value = "id", flat = false, allowDuplicates = true, appendToOptionObject = {} }) {
   if (!flat)
     // returns array of options in object format [{label: label, value: 1}]
-    return data.map(i => ({ label: i[label], value: i[value] }));
+    return data.map(i => ({ label: i[label], value: i[value], ...appendToOptionObject }));
   else
     // returns options as an array of strings ["label", "label1"]
     if (!allowDuplicates)
@@ -116,7 +115,7 @@ export function formatCustomFieldOptions(data, flat = false) {
       const tmp = [];
       data.forEach(custom_field => {
         if (custom_field.model === cat.toLowerCase()) {
-          tmp.push({ label: custom_field.name, value: custom_field.id })
+          tmp.push({ label: custom_field.name, value: custom_field.id, cat: cat })
         }
       });
 
@@ -137,7 +136,7 @@ export function formatSiteOptions(data, flat = false) {
 
   data.forEach(client => {
     options.push({ category: client.name });
-    options.push(..._formatOptions(client.sites, { label: "name", flat: flat }))
+    options.push(..._formatOptions(client.sites, { label: "name", flat: flat, appendToOptionObject: { cat: client.name } }))
   });
 
   return options
@@ -180,10 +179,36 @@ export function formatScriptSyntax(syntax) {
 
 // date formatting
 
-export function formatDate(dateString) {
+export function getTimeLapse(unixtime) {
+  if (date.inferDateFormat(unixtime) === "string") {
+    unixtime = date.formatDate(unixtime, "X")
+  }
+  var previous = unixtime * 1000;
+  var current = new Date();
+  var msPerMinute = 60 * 1000;
+  var msPerHour = msPerMinute * 60;
+  var msPerDay = msPerHour * 24;
+  var msPerMonth = msPerDay * 30;
+  var msPerYear = msPerDay * 365;
+  var elapsed = current - previous;
+  if (elapsed < msPerMinute) {
+    return Math.round(elapsed / 1000) + " seconds ago";
+  } else if (elapsed < msPerHour) {
+    return Math.round(elapsed / msPerMinute) + " minutes ago";
+  } else if (elapsed < msPerDay) {
+    return Math.round(elapsed / msPerHour) + " hours ago";
+  } else if (elapsed < msPerMonth) {
+    return Math.round(elapsed / msPerDay) + " days ago";
+  } else if (elapsed < msPerYear) {
+    return Math.round(elapsed / msPerMonth) + " months ago";
+  } else {
+    return Math.round(elapsed / msPerYear) + " years ago";
+  }
+}
+
+export function formatDate(dateString, format = "MMM-DD-YYYY HH:mm") {
   if (!dateString) return "";
-  const d = date.extractDate(dateString, "MM DD YYYY HH:mm");
-  return date.formatDate(d, "MMM-DD-YYYY - HH:mm");
+  return date.formatDate(dateString, format);
 }
 
 export function getNextAgentUpdateTime() {
@@ -200,17 +225,15 @@ export function getNextAgentUpdateTime() {
   return `${a} at ${b}`;
 }
 
-export function dateStringToUnix(drfString) {
-  if (!drfString) return 0;
-  const d = date.extractDate(drfString, "MM DD YYYY HH:mm");
-  return parseInt(date.formatDate(d, "X"));
+// converts a date with timezone to local for html native datetime fields -> YYYY-MM-DD HH:mm:ss
+export function formatDateInputField(isoDateString) {
+  return date.formatDate(isoDateString, "YYYY-MM-DDTHH:mm:ss")
 }
 
-// takes a unix timestamp and converts it to quasar datetime field value YYYY-MM-DD HH:mm:ss
-export function formatDateInputField(unixtimestamp) {
-  return date.formatDate(unixtimestamp, "YYYY-MM-DD HH:mm:ss")
+// converts a local date string "YYYY-MM-DDTHH:mm:ss" to an iso date string with the local timezone
+export function formatDateStringwithTimezone(localDateString) {
+  return date.formatDate(localDateString, "YYYY-MM-DDTHH:mm:ssZ")
 }
-
 // string formatting
 
 export function capitalize(string) {

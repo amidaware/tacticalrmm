@@ -58,11 +58,11 @@
           </q-td>
           <!-- expiration -->
           <q-td>
-            {{ props.row.expiration }}
+            {{ formatDate(props.row.expiration) }}
           </q-td>
           <!-- created time -->
           <q-td>
-            {{ props.row.created_time }}
+            {{ formatDate(props.row.created_time) }}
           </q-td>
           <q-td>
             <q-icon size="sm" name="content_copy" @click="copyKeyToClipboard(props.row.key)">
@@ -77,7 +77,8 @@
 
 <script>
 // composition imports
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import { fetchAPIKeys, removeAPIKey } from "@/api/accounts";
 import { useQuasar, copyToClipboard } from "quasar";
 import { notifySuccess, notifyError } from "@/utils/notify";
@@ -123,6 +124,10 @@ export default {
   setup() {
     // setup quasar
     const $q = useQuasar();
+
+    // setup vuex
+    const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
 
     // setup api keys logic
     const keys = ref([]);
@@ -202,6 +207,7 @@ export default {
       getAPIKeys,
       deleteAPIKey,
       copyKeyToClipboard,
+      formatDate,
 
       //dialogs
       editAPIKey,

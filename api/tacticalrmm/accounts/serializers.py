@@ -22,6 +22,7 @@ class UserUISerializer(ModelSerializer):
             "loading_bar_color",
             "clear_search_when_switching",
             "block_dashboard_login",
+            "date_format",
         ]
 
 
@@ -39,6 +40,7 @@ class UserSerializer(ModelSerializer):
             "last_login_ip",
             "role",
             "block_dashboard_login",
+            "date_format",
         ]
 
 

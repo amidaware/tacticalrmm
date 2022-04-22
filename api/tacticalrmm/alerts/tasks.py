@@ -1,12 +1,11 @@
 from django.utils import timezone as djangotime
-
+from .models import Alert
+from agents.models import Agent
 from tacticalrmm.celery import app
 
 
 @app.task
 def unsnooze_alerts() -> str:
-    from .models import Alert
-
     Alert.objects.filter(snoozed=True, snooze_until__lte=djangotime.now()).update(
         snoozed=False, snooze_until=None
     )
@@ -15,10 +14,10 @@ def unsnooze_alerts() -> str:
 
 
 @app.task
-def cache_agents_alert_template():
-    from agents.models import Agent
-
-    for agent in Agent.objects.only("pk"):
+def cache_agents_alert_template() -> str:
+    for agent in Agent.objects.only(
+        "pk", "site", "policy", "alert_template"
+    ).select_related("site", "policy", "alert_template"):
         agent.set_alert_template()
 
     return "ok"
@@ -26,8 +25,6 @@ def cache_agents_alert_template():
 
 @app.task
 def prune_resolved_alerts(older_than_days: int) -> str:
-    from .models import Alert
-
     Alert.objects.filter(resolved=True).filter(
         alert_time__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     ).delete()

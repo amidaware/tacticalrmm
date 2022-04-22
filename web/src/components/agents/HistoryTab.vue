@@ -43,6 +43,12 @@
           </span>
         </q-td>
       </template>
+
+      <template v-slot:body-cell-time="props">
+        <q-td :props="props">
+          {{ formatDate(props.row.time) }}
+        </q-td>
+      </template>
     </q-table>
   </div>
 </template>
@@ -51,8 +57,8 @@
 // composition imports
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
-import { useQuasar } from "quasar";
-import { formatDate, formatTableColumnText, truncateText, dateStringToUnix } from "@/utils/format";
+import { useQuasar, Notify } from "quasar";
+import { formatTableColumnText, truncateText } from "@/utils/format";
 import { fetchAgentHistory } from "@/api/agents";
 
 // ui imports
@@ -67,8 +73,6 @@ const columns = [
     field: "time",
     align: "left",
     sortable: true,
-    sort: (a, b, rowA, rowB) => dateStringToUnix(a) - dateStringToUnix(b),
-    format: (val, row) => formatDate(val, true),
   },
   {
     name: "type",
@@ -109,6 +113,7 @@ export default {
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
+    const formatDate = computed(() => store.getters.formatDate);
 
     // setup main history functionality
     const history = ref([]);
@@ -129,6 +134,13 @@ export default {
 
     // quasar dialogs
     function showScriptOutput(output) {
+      if (!output) {
+        Notify.create({
+          message: "No output is available yet",
+          type: "negative",
+        });
+        return;
+      }
       $q.dialog({
         component: ScriptOutput,
         componentProps: {
@@ -162,6 +174,7 @@ export default {
       columns,
 
       // methods
+      formatDate,
       showScriptOutput,
       showCommandOutput,
       getHistory,

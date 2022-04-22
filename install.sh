@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="61"
+SCRIPT_VERSION="62"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -157,10 +157,10 @@ sudo apt install -y certbot openssl
 
 print_green 'Getting wildcard cert'
 
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
 while [[ $? -ne 0 ]]
 do
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email 
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
 done
 
 CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
@@ -210,10 +210,6 @@ sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_green 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
-
-# apply redis configuration
-sudo redis-cli config set appendonly yes
-sudo redis-cli config rewrite
 
 print_green 'Installing postgresql'
 
@@ -865,7 +861,7 @@ printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
-printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
+printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${rmmdomain}/${ADMINURL}/${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral username: ${GREEN}${meshusername}${NC}\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
 

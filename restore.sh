@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="35"
+SCRIPT_VERSION="36"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -181,13 +181,6 @@ sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_green 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
-
-# redis configuration
-sudo gzip -dkc ${tmp_dir}/redis/appendonly.aof.gz | sudo tee /var/lib/redis/appendonly.aof > /dev/null
-sudo redis-check-aof --fix /var/lib/redis/appendonly.aof
-
-sudo redis-cli config set appendonly yes
-sudo redis-cli config rewrite
 
 print_green 'Installing postgresql'
 

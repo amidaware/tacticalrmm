@@ -8,8 +8,18 @@
     "python.analysis.diagnosticSeverityOverrides": {
         "reportUnusedImport": "error",
         "reportDuplicateImport": "error",
+        "reportGeneralTypeIssues": "none"
     },
     "python.analysis.typeCheckingMode": "basic",
+    "mypy.runUsingActiveInterpreter": true,
+    "python.linting.enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.mypyArgs": [
+        "--ignore-missing-imports",
+        "--follow-imports=silent",
+        "--show-column-numbers",
+        "--strict"
+    ],
     "python.formatting.provider": "black",
     "editor.formatOnSave": true,
     "vetur.format.defaultFormatter.js": "prettier",
@@ -64,5 +74,13 @@
         "usePlaceholders": true,
         "completeUnimported": true,
         "staticcheck": true,
-    }
+    },
+    "mypy.targets": [
+        "api/tacticalrmm"
+    ],
+    "python.linting.ignorePatterns": [
+        "**/site-packages/**/*.py",
+        ".vscode/*.py",
+        "**env/**"
+    ]
 }

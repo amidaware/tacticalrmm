@@ -24,7 +24,14 @@
                   <q-card-section class="row">
                     <div class="col-2">Site:</div>
                     <div class="col-2"></div>
-                    <tactical-dropdown class="col-8" v-model="agent.site" :options="siteOptions" outlined mapOptions />
+                    <tactical-dropdown
+                      class="col-8"
+                      v-model="agent.site"
+                      :options="siteOptions"
+                      outlined
+                      mapOptions
+                      filterable
+                    />
                   </q-card-section>
                   <q-card-section class="row">
                     <div class="col-2">Type:</div>

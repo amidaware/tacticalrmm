@@ -1,6 +1,6 @@
 from agents.models import Agent
 from agents.tasks import send_agent_update_task
-from core.models import CoreSettings
+from core.utils import get_core_settings
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from packaging import version as pyver
@@ -12,8 +12,8 @@ class Command(BaseCommand):
     help = "Triggers an agent update task to run"
 
     def handle(self, *args, **kwargs):
-        core = CoreSettings.objects.first()
-        if not core.agent_auto_update:  # type: ignore
+        core = get_core_settings()
+        if not core.agent_auto_update:
             return
 
         q = Agent.objects.defer(*AGENT_DEFER).exclude(version=settings.LATEST_AGENT_VER)

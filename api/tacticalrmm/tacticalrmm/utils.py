@@ -18,10 +18,13 @@ from knox.auth import TokenAuthentication
 from logs.models import DebugLog
 from rest_framework import status
 from rest_framework.response import Response
+from core.utils import get_core_settings
 
 from tacticalrmm.constants import MONTH_DAYS, MONTHS, WEEK_DAYS, WEEKS
 
-notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
+
+def notify_error(msg: str) -> Response:
+    return Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
 
 def generate_winagent_exe(
@@ -85,7 +88,7 @@ def generate_winagent_exe(
             )
 
         with open(fp.name, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1024):  # type: ignore
+            for chunk in r.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
         del r
@@ -93,15 +96,13 @@ def generate_winagent_exe(
 
 
 def get_default_timezone():
-    from core.models import CoreSettings
-
-    return pytz.timezone(CoreSettings.objects.first().default_time_zone)  # type:ignore
+    return pytz.timezone(get_core_settings().default_time_zone)
 
 
 def get_bit_days(days: list[str]) -> int:
     bit_days = 0
     for day in days:
-        bit_days |= WEEK_DAYS.get(day)  # type: ignore
+        bit_days |= WEEK_DAYS.get(day, 0)
     return bit_days
 
 
@@ -160,7 +161,7 @@ def convert_to_iso_duration(string: str) -> str:
         return f"PT{tmp}"
 
 
-def reload_nats():
+def reload_nats() -> None:
     users = [
         {
             "user": "tacticalrmm",
@@ -367,7 +368,7 @@ def replace_db_values(
 
     # log any unhashable type errors
     if value != None:
-        return value  # type: ignore
+        return value
     else:
         DebugLog.error(
             log_type="scripting",

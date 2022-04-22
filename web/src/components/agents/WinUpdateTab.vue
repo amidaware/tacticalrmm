@@ -126,7 +126,7 @@ import { useStore } from "vuex";
 import { useQuasar } from "quasar";
 import { fetchAgentUpdates, editAgentUpdate, runAgentUpdateScan, runAgentUpdateInstall } from "@/api/winupdates";
 import { notifySuccess } from "@/utils/notify";
-import { truncateText, formatDate, dateStringToUnix } from "@/utils/format";
+import { truncateText } from "@/utils/format";
 
 // ui imports
 import ExportTableBtn from "@/components/ui/ExportTableBtn";
@@ -170,7 +170,6 @@ const columns = [
     field: "date_installed",
     align: "left",
     sortable: true,
-    sort: (a, b) => dateStringToUnix(a) - dateStringToUnix(b),
   },
 ];
 
@@ -183,6 +182,7 @@ export default {
     const selectedAgent = computed(() => store.state.selectedRow);
     const tabHeight = computed(() => store.state.tabHeight);
     const agentPlatform = computed(() => store.state.agentPlatform);
+    const formatDate = computed(() => store.getters.formatDate);
 
     // setup quasar
     const $q = useQuasar();

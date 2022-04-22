@@ -4,7 +4,7 @@ from tacticalrmm.permissions import _has_perm, _has_perm_on_client, _has_perm_on
 
 
 class ClientsPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
+    def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             if "pk" in view.kwargs.keys():
                 return _has_perm(r, "can_list_clients") and _has_perm_on_client(
@@ -21,7 +21,7 @@ class ClientsPerms(permissions.BasePermission):
 
 
 class SitesPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
+    def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             if "pk" in view.kwargs.keys():
                 return _has_perm(r, "can_list_sites") and _has_perm_on_site(
@@ -38,7 +38,7 @@ class SitesPerms(permissions.BasePermission):
 
 
 class DeploymentPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
+    def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             return _has_perm(r, "can_list_deployments")
         else:

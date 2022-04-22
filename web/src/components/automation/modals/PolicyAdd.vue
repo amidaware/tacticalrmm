@@ -19,6 +19,7 @@
             outlined
             clearable
             mapOptions
+            filterable
           />
           <tactical-dropdown
             v-if="type === 'client' || type === 'site'"
@@ -28,6 +29,7 @@
             outlined
             clearable
             mapOptions
+            filterable
           />
           <tactical-dropdown
             v-if="type === 'agent'"
@@ -37,6 +39,7 @@
             outlined
             clearable
             mapOptions
+            filterable
           />
 
           <q-checkbox label="Block policy inheritance" v-model="blockInheritance">

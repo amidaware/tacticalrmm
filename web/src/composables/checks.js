@@ -841,6 +841,26 @@ export const defaultServiceOptions = [
     label: "Remote Desktop Services"
   },
   {
+    value: "RDMS",
+    label: "Remote Desktop Management"
+  },
+  {
+    value: "TermServLicensing",
+    label: "Remote Desktop Licensing"
+  },
+  {
+    value: "TSGateway",
+    label: "Remote Desktop Gateway"
+  },
+  {
+    value: "Tssdis",
+    label: "Remote Desktop Connection Broker"
+  },
+  {
+    value: "MMS",
+    label: "Acronis Managed Machine Service"
+  },
+  {
     value: "Themes",
     label: "Themes"
   },

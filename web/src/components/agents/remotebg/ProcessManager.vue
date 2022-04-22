@@ -184,7 +184,7 @@ export default {
         result = await killAgentProcess(props.agent_id, pid);
         notifySuccess(result);
       } catch (e) {
-        console.log(error);
+        console.error(error);
       }
       loading.value = false;
     }

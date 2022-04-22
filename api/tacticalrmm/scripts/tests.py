@@ -1,11 +1,5 @@
-import hashlib
-import hmac
-import json
-import os
-from pathlib import Path
 from unittest.mock import patch
 
-from django.conf import settings
 from django.test import override_settings
 from model_bakery import baker
 
@@ -31,7 +25,7 @@ class TestScriptViews(TacticalTestCase):
         serializer = ScriptTableSerializer(scripts, many=True)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)  # type: ignore
+        self.assertEqual(serializer.data, resp.data)
 
         self.check_not_authenticated("get", url)
 
@@ -125,11 +119,11 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         script = baker.make("scripts.Script")
-        url = f"/scripts/{script.pk}/"  # type: ignore
+        url = f"/scripts/{script.pk}/"
         serializer = ScriptSerializer(script)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)  # type: ignore
+        self.assertEqual(serializer.data, resp.data)
 
         self.check_not_authenticated("get", url)
 
@@ -147,7 +141,7 @@ class TestScriptViews(TacticalTestCase):
 
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, "return value")  # type: ignore
+        self.assertEqual(resp.data, "return value")
 
         self.check_not_authenticated("post", url)
 
@@ -183,31 +177,37 @@ class TestScriptViews(TacticalTestCase):
         script = baker.make(
             "scripts.Script", script_body="Test Script Body", shell="powershell"
         )
-        url = f"/scripts/{script.pk}/download/"  # type: ignore
+        url = f"/scripts/{script.pk}/download/"
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.ps1", "code": "Test Script Body"})  # type: ignore
+        self.assertEqual(
+            resp.data, {"filename": f"{script.name}.ps1", "code": "Test Script Body"}
+        )
 
         # test batch file
         script = baker.make(
             "scripts.Script", script_body="Test Script Body", shell="cmd"
         )
-        url = f"/scripts/{script.pk}/download/"  # type: ignore
+        url = f"/scripts/{script.pk}/download/"
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.bat", "code": "Test Script Body"})  # type: ignore
+        self.assertEqual(
+            resp.data, {"filename": f"{script.name}.bat", "code": "Test Script Body"}
+        )
 
         # test python file
         script = baker.make(
             "scripts.Script", script_body="Test Script Body", shell="python"
         )
-        url = f"/scripts/{script.pk}/download/"  # type: ignore
+        url = f"/scripts/{script.pk}/download/"
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.py", "code": "Test Script Body"})  # type: ignore
+        self.assertEqual(
+            resp.data, {"filename": f"{script.name}.py", "code": "Test Script Body"}
+        )
 
         self.check_not_authenticated("get", url)
 
@@ -322,8 +322,8 @@ class TestScriptViews(TacticalTestCase):
         )
 
         # test with set but empty field value
-        value.string_value = ""  # type: ignore
-        value.save()  # type: ignore
+        value.string_value = ""
+        value.save()
 
         self.assertEqual(
             ["-Parameter", "-Another 'DEFAULT'"],
@@ -331,8 +331,8 @@ class TestScriptViews(TacticalTestCase):
         )
 
         # test blank default and value
-        field.default_value_string = ""  # type: ignore
-        field.save()  # type: ignore
+        field.default_value_string = ""
+        field.save()
 
         self.assertEqual(
             ["-Parameter", "-Another ''"],
@@ -412,8 +412,8 @@ class TestScriptViews(TacticalTestCase):
         )
 
         # test with True value powershell
-        custom.bool_value = True  # type: ignore
-        custom.save()  # type: ignore
+        custom.bool_value = True
+        custom.save()
 
         self.assertEqual(
             ["-Parameter", "-Another $True"],
@@ -433,7 +433,7 @@ class TestScriptSnippetViews(TacticalTestCase):
         serializer = ScriptSnippetSerializer(snippets, many=True)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)  # type: ignore
+        self.assertEqual(serializer.data, resp.data)
 
         self.check_not_authenticated("get", url)
 
@@ -460,13 +460,13 @@ class TestScriptSnippetViews(TacticalTestCase):
 
         # make a userdefined script
         snippet = baker.make("scripts.ScriptSnippet", name="Test")
-        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+        url = f"/scripts/snippets/{snippet.pk}/"
 
-        data = {"name": "New Name"}  # type: ignore
+        data = {"name": "New Name"}
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        snippet = ScriptSnippet.objects.get(pk=snippet.pk)  # type: ignore
+        snippet = ScriptSnippet.objects.get(pk=snippet.pk)
         self.assertEquals(snippet.name, "New Name")
 
         self.check_not_authenticated("put", url)
@@ -477,11 +477,11 @@ class TestScriptSnippetViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         snippet = baker.make("scripts.ScriptSnippet")
-        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+        url = f"/scripts/snippets/{snippet.pk}/"
         serializer = ScriptSnippetSerializer(snippet)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)  # type: ignore
+        self.assertEqual(serializer.data, resp.data)
 
         self.check_not_authenticated("get", url)
 
@@ -492,11 +492,11 @@ class TestScriptSnippetViews(TacticalTestCase):
 
         # test delete script snippet
         snippet = baker.make("scripts.ScriptSnippet")
-        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+        url = f"/scripts/snippets/{snippet.pk}/"
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        self.assertFalse(ScriptSnippet.objects.filter(pk=snippet.pk).exists())  # type: ignore
+        self.assertFalse(ScriptSnippet.objects.filter(pk=snippet.pk).exists())
 
         self.check_not_authenticated("delete", url)
 

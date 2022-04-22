@@ -29,7 +29,7 @@
         </template>
 
         <template v-slot:body="props">
-          <q-tr :props="props" class="cursor-pointer" @dblclick="copyToClipboard(props.row)">
+          <q-tr :props="props" class="cursor-pointer" @dblclick="copyLink(props.row)">
             <q-menu context-menu auto-close>
               <q-list dense style="min-width: 200px">
                 <q-item clickable @click="deleteDeployment(props.row)">
@@ -50,8 +50,8 @@
             <q-td key="arch" :props="props"
               ><span v-if="props.row.arch === '64'">64 bit</span><span v-else>32 bit</span></q-td
             >
-            <q-td key="expiry" :props="props">{{ props.row.expiry }}</q-td>
-            <q-td key="created" :props="props">{{ props.row.created }}</q-td>
+            <q-td key="expiry" :props="props">{{ formatDate(props.row.expiry) }}</q-td>
+            <q-td key="created" :props="props">{{ formatDate(props.row.created) }}</q-td>
             <q-td key="flags" :props="props"
               ><q-badge color="grey-8" label="View Flags" />
               <q-tooltip style="font-size: 12px">{{ props.row.install_flags }}</q-tooltip>
@@ -76,7 +76,8 @@
 
 <script>
 // composition imports
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import { useQuasar, useDialogPluginComponent, copyToClipboard } from "quasar";
 import { fetchDeployments, removeDeployment } from "@/api/clients";
 import { notifySuccess } from "@/utils/notify";
@@ -104,6 +105,10 @@ export default {
     // quasar dialog setup
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
     const $q = useQuasar();
+
+    // setup vuex
+    const store = useStore();
+    const formatDate = computed(() => store.getters.formatDate);
 
     // deployment logic
     const deployments = ref([]);
@@ -161,6 +166,7 @@ export default {
       deleteDeployment,
       showAddDeployment,
       copyLink,
+      formatDate,
 
       // quasar dialog
       dialogRef,

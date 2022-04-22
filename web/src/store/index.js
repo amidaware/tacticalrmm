@@ -1,6 +1,7 @@
 import { createStore } from 'vuex'
 import { Screen, Dark, LoadingBar } from 'quasar'
 import axios from "axios";
+import { formatDate } from "@/utils/format"
 
 export default function () {
   const Store = new createStore({
@@ -29,7 +30,8 @@ export default function () {
         hosted: false,
         clearSearchWhenSwitching: false,
         currentTRMMVersion: null,
-        latestTRMMVersion: null
+        latestTRMMVersion: null,
+        dateFormat: "MMM-DD-YYYY - HH:mm",
       }
     },
     getters: {
@@ -48,6 +50,10 @@ export default function () {
       allClientsSelected(state) {
         return !state.selectedTree;
       },
+      formatDate: (state, getters) => (date) => {
+        if (!state.dateFormat) return formatDate(date)
+        else return formatDate(date, state.dateFormat)
+      }
     },
     mutations: {
       AGENT_TABLE_LOADING(state, visible) {
@@ -122,7 +128,10 @@ export default function () {
       },
       setSelectedTree(state, val) {
         state.selectedTree = val
-      }
+      },
+      setDateFormat(state, val) {
+        state.dateFormat = val
+      },
     },
     actions: {
       setClientTreeSplitter(context, val) {
@@ -139,34 +148,41 @@ export default function () {
       },
       refreshDashboard({ state, commit, dispatch }, clearTreeSelected = false) {
         if (clearTreeSelected || !state.selectedTree) {
-          dispatch("loadAgents")
           commit("setSelectedTree", "")
         }
-        else if (state.selectedTree.includes("Client")) {
-          dispatch("loadAgents", `?client=${state.selectedTree.split("|")[1]}`)
-        }
-        else if (state.selectedTree.includes("Site")) {
-          dispatch("loadAgents", `?site=${state.selectedTree.split("|")[1]}`)
-        } else {
-          console.error("refreshDashboard has incorrect parameters")
-          return
-        }
-
         if (clearTreeSelected) commit("destroySubTable")
 
+        dispatch("loadAgents")
         dispatch("loadTree");
         dispatch("getDashInfo", false);
       },
-      async loadAgents(context, params = null) {
-        context.commit("AGENT_TABLE_LOADING", true);
+      async loadAgents({ state, commit, dispatch }) {
+        commit("AGENT_TABLE_LOADING", true);
+
+        let localParams = null
+        if (state.defaultAgentTblTab !== "mixed") {
+          if (localParams)
+            localParams += `&monitoring_type=${state.defaultAgentTblTab}`
+          else
+            localParams = `?monitoring_type=${state.defaultAgentTblTab}`
+        }
+
+        if (state.selectedTree.includes("Client")) {
+          if (localParams) localParams += `&client=${state.selectedTree.split("|")[1]}`
+          else localParams = `?client=${state.selectedTree.split("|")[1]}`
+        }
+        else if (state.selectedTree.includes("Site")) {
+          if (localParams) localParams += `&site=${state.selectedTree.split("|")[1]}`
+          else localParams = `?site=${state.selectedTree.split("|")[1]}`
+        }
         try {
-          const { data } = await axios.get(`/agents/${params ? params : ""}`)
-          context.commit("setAgents", data);
+          const { data } = await axios.get(`/agents/${localParams ? localParams : ""}`)
+          commit("setAgents", data);
         } catch (e) {
           console.error(e)
         }
 
-        context.commit("AGENT_TABLE_LOADING", false);
+        commit("AGENT_TABLE_LOADING", false);
       },
       async getDashInfo(context, edited = true) {
         const { data } = await axios.get("/core/dashinfo/");
@@ -184,6 +200,10 @@ export default function () {
         context.commit("SET_URL_ACTION", data.url_action);
         context.commit("setShowCommunityScripts", data.show_community_scripts);
         context.commit("SET_HOSTED", data.hosted);
+
+        if (data.date_format && data.date_format !== "") context.commit("setDateFormat", data.date_format)
+        else context.commit("setDateFormat", data.default_date_format)
+
       },
       loadTree({ commit, state }) {
         axios.get("/clients/").then(r => {

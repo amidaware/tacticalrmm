@@ -10,7 +10,7 @@ from tacticalrmm.test import TacticalTestCase
 
 class TestAccounts(TacticalTestCase):
     def setUp(self):
-        self.client_setup()
+        self.setup_client()
         self.bob = User(username="bob")
         self.bob.set_password("hunter2")
         self.bob.save()
@@ -308,7 +308,7 @@ class TestAPIKeyViews(TacticalTestCase):
         serializer = APIKeySerializer(apikeys, many=True)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)  # type: ignore
+        self.assertEqual(serializer.data, resp.data)
 
         self.check_not_authenticated("get", url)
 
@@ -331,13 +331,13 @@ class TestAPIKeyViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         apikey = baker.make("accounts.APIKey", name="Test")
-        url = f"/accounts/apikeys/{apikey.pk}/"  # type: ignore
+        url = f"/accounts/apikeys/{apikey.pk}/"
 
-        data = {"name": "New Name"}  # type: ignore
+        data = {"name": "New Name"}
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        apikey = APIKey.objects.get(pk=apikey.pk)  # type: ignore
+        apikey = APIKey.objects.get(pk=apikey.pk)
         self.assertEquals(apikey.name, "New Name")
 
         self.check_not_authenticated("put", url)
@@ -349,11 +349,11 @@ class TestAPIKeyViews(TacticalTestCase):
 
         # test delete api key
         apikey = baker.make("accounts.APIKey")
-        url = f"/accounts/apikeys/{apikey.pk}/"  # type: ignore
+        url = f"/accounts/apikeys/{apikey.pk}/"
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        self.assertFalse(APIKey.objects.filter(pk=apikey.pk).exists())  # type: ignore
+        self.assertFalse(APIKey.objects.filter(pk=apikey.pk).exists())
 
         self.check_not_authenticated("delete", url)
 
@@ -393,7 +393,7 @@ class TestAPIAuthentication(TacticalTestCase):
             name="Test Token", key="123456", user=self.user
         )
 
-        self.client_setup()
+        self.setup_client()
 
     def test_api_auth(self):
         url = "/clients/"

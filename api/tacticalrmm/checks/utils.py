@@ -1,4 +1,4 @@
-def bytes2human(n):
+def bytes2human(n: int) -> str:
     # http://code.activestate.com/recipes/578019
     symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
     prefix = {}

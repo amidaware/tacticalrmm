@@ -2,6 +2,7 @@ import threading
 
 from django.conf import settings
 from ipware import get_client_ip
+from typing import Dict, Optional, Any
 from rest_framework.exceptions import AuthenticationFailed
 
 from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED
@@ -9,11 +10,11 @@ from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED
 request_local = threading.local()
 
 
-def get_username():
+def get_username() -> Optional[str]:
     return getattr(request_local, "username", None)
 
 
-def get_debug_info():
+def get_debug_info() -> Dict[str, Any]:
     return getattr(request_local, "debug_info", {})
 
 
@@ -111,7 +112,7 @@ class DemoMiddleware:
 
         view = APIView()
         view.headers = view.default_response_headers
-        return view.finalize_response(request, resp).render()  # type: ignore
+        return view.finalize_response(request, resp).render()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         from .utils import notify_error
@@ -141,7 +142,7 @@ class LinuxMiddleware:
 
         view = APIView()
         view.headers = view.default_response_headers
-        return view.finalize_response(request, resp).render()  # type: ignore
+        return view.finalize_response(request, resp).render()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if not request.path.startswith(EXCLUDE_PATHS):

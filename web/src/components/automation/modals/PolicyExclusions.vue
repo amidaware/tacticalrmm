@@ -17,6 +17,7 @@
             outlined
             multiple
             mapOptions
+            filterable
           />
         </q-card-section>
         <q-card-section>
@@ -27,6 +28,7 @@
             outlined
             multiple
             mapOptions
+            filterable
           />
         </q-card-section>
         <q-card-section>
@@ -37,6 +39,7 @@
             outlined
             multiple
             mapOptions
+            filterable
           />
         </q-card-section>
 

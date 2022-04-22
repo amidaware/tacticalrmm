@@ -26,45 +26,18 @@
 
   <q-input
     v-else-if="field.type === 'datetime'"
-    ref="input"
     :label="field.name"
     :hint="hintText(field)"
-    outlined
+    ref="input"
+    type="datetime-local"
     dense
+    stack-label
+    outlined
     :model-value="modelValue"
     @update:model-value="value => $emit('update:modelValue', value)"
     :rules="[...validationRules]"
     reactive-rules
-  >
-    <template v-slot:append>
-      <q-icon name="event" class="cursor-pointer">
-        <q-popup-proxy transition-show="scale" transition-hide="scale">
-          <q-date
-            :model-value="modelValue"
-            @update:model-value="value => $emit('update:modelValue', value)"
-            mask="YYYY-MM-DD HH:mm"
-          >
-            <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Close" color="primary" flat />
-            </div>
-          </q-date>
-        </q-popup-proxy>
-      </q-icon>
-      <q-icon name="access_time" class="cursor-pointer">
-        <q-popup-proxy transition-show="scale" transition-hide="scale">
-          <q-time
-            :model-value="modelValue"
-            @update:model-value="value => $emit('update:modelValue', value)"
-            mask="YYYY-MM-DD HH:mm"
-          >
-            <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Close" color="primary" flat />
-            </div>
-          </q-time>
-        </q-popup-proxy>
-      </q-icon>
-    </template>
-  </q-input>
+  />
 
   <q-select
     v-else-if="field.type === 'single' || field.type === 'multiple'"

@@ -4,7 +4,7 @@ celery==5.2.3
 channels==3.0.4
 channels_redis==3.3.1
 daphne==3.0.2
-Django==3.2.12
+Django==3.2.13
 django-cors-headers==3.11.0
 django-ipware==4.0.2
 django-rest-knox==4.2.0

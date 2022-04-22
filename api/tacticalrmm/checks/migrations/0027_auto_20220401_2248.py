@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 def migrate_check_results(apps, schema_editor):
     Check = apps.get_model("checks", "Check")
     CheckResult = apps.get_model("checks", "CheckResult")
-    for check in Check.objects.exclude(agent=None):
+    for check in Check.objects.exclude(agent=None).iterator():
 
         try:
             with transaction.atomic():

@@ -32,7 +32,7 @@ class GetAddClients(APIView):
 
     def get(self, request):
         clients = (
-            Client.objects.select_related(
+            Client.objects.order_by("name").select_related(
                 "workstation_policy", "server_policy", "alert_template"
             )
             .filter_by_role(request.user)  # type: ignore

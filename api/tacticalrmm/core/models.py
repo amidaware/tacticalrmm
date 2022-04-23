@@ -175,12 +175,12 @@ class CoreSettings(BaseAuditModel):
         body: str,
         alert_template: "Optional[AlertTemplate]" = None,
         test: bool = False,
-    ) -> Union[bool, str]:
+    ) -> tuple[str, bool]:
         if test and not self.email_is_configured:
-            return "There needs to be at least one email recipient configured"
+            return ("There needs to be at least one email recipient configured", False)
         # return since email must be configured to continue
         elif not self.email_is_configured:
-            return "SMTP messaging not configured."
+            return ("SMTP messaging not configured.", False)
 
         # override email from if alert_template is passed and is set
         if alert_template and alert_template.email_from:
@@ -194,7 +194,7 @@ class CoreSettings(BaseAuditModel):
         elif self.email_alert_recipients:
             email_recipients = ", ".join(cast(List[str], self.email_alert_recipients))
         else:
-            return "There needs to be at least one email recipient configured"
+            return ("There needs to be at least one email recipient configured", False)
 
         try:
             msg = EmailMessage()
@@ -221,18 +221,21 @@ class CoreSettings(BaseAuditModel):
         except Exception as e:
             DebugLog.error(message=f"Sending email failed with error: {e}")
             if test:
-                return str(e)
-        finally:
-            return True
+                return (str(e), False)
+
+        if test:
+            return ("Email test ok!", True)
+
+        return ("ok", True)
 
     def send_sms(
         self,
         body: str,
         alert_template: "Optional[AlertTemplate]" = None,
         test: bool = False,
-    ) -> Union[str, bool]:
+    ) -> tuple[str, bool]:
         if not self.sms_is_configured:
-            return "Sms alerting is not setup correctly."
+            return ("Sms alerting is not setup correctly.", False)
 
         # override email recipients if alert_template is passed and is set
         if alert_template and alert_template.text_recipients:
@@ -240,7 +243,7 @@ class CoreSettings(BaseAuditModel):
         elif self.sms_alert_recipients:
             text_recipients = cast(List[str], self.sms_alert_recipients)
         else:
-            return "No sms recipients found"
+            return ("No sms recipients found", False)
 
         tw_client = TwClient(self.twilio_account_sid, self.twilio_auth_token)
         for num in text_recipients:
@@ -249,9 +252,12 @@ class CoreSettings(BaseAuditModel):
             except TwilioRestException as e:
                 DebugLog.error(message=f"SMS failed to send: {e}")
                 if test:
-                    return str(e)
+                    return (str(e), False)
 
-        return True
+        if test:
+            return ("SMS Test sent successfully!", True)
+
+        return ("ok", True)
 
     @staticmethod
     def serialize(core):

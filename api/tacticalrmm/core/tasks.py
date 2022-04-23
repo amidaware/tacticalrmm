@@ -83,7 +83,7 @@ def handle_resolved_stuff() -> None:
     for agent in agent_queryset.annotate(
         has_pending_actions=Exists(
             PendingAction.objects.filter(
-                pk=OuterRef("pk"), action_type="agent_update", status="pending"
+                agent=OuterRef("pk"), action_type="agentupdate", status="pending"
             )
         )
     ):
@@ -97,7 +97,7 @@ def handle_resolved_stuff() -> None:
                 and agent.has_pending_actions
             ):
                 agent.pendingactions.filter(
-                    action_type="agent_update", status="pending"
+                    action_type="agentupdate", status="pending"
                 ).update(status="completed")
 
             # sync scheduled tasks

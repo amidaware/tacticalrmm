@@ -453,7 +453,6 @@ export default {
           field: "last_seen",
           sortable: true,
           align: "left",
-          sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
         },
         {
           name: "boot_time",

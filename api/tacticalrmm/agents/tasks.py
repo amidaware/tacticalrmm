@@ -68,7 +68,7 @@ def agent_update(agent_id: str, force: bool = False) -> str:
 
 @app.task
 def force_code_sign(agent_ids: list[str]) -> None:
-    chunks = (agent_ids[i : i + 50] for i in range(0, len(agent_ids), 50))
+    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id=agent_id, force=True)
@@ -77,7 +77,7 @@ def force_code_sign(agent_ids: list[str]) -> None:
 
 @app.task
 def send_agent_update_task(agent_ids: list[str]) -> None:
-    chunks = (agent_ids[i : i + 50] for i in range(0, len(agent_ids), 50))
+    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id)
@@ -97,7 +97,7 @@ def auto_self_agent_update_task() -> None:
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
 
-    chunks = (agent_ids[i : i + 30] for i in range(0, len(agent_ids), 30))
+    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id)

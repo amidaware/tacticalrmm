@@ -69,17 +69,17 @@ class TestAccounts(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn("non_field_errors", r.data.keys())
 
-    @override_settings(DEBUG=True)
-    @patch("pyotp.TOTP.verify")
-    def test_debug_login_view(self, mock_verify):
-        url = "/login/"
-        mock_verify.return_value = True
+    # @override_settings(DEBUG=True)
+    # @patch("pyotp.TOTP.verify")
+    # def test_debug_login_view(self, mock_verify):
+    #     url = "/login/"
+    #     mock_verify.return_value = True
 
-        data = {"username": "bob", "password": "hunter2", "twofactor": "sekret"}
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertIn("expiry", r.data.keys())
-        self.assertIn("token", r.data.keys())
+    #     data = {"username": "bob", "password": "hunter2", "twofactor": "sekret"}
+    #     r = self.client.post(url, data, format="json")
+    #     self.assertEqual(r.status_code, 200)
+    #     self.assertIn("expiry", r.data.keys())
+    #     self.assertIn("token", r.data.keys())
 
 
 class TestGetAddUsers(TacticalTestCase):

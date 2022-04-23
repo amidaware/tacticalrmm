@@ -93,14 +93,14 @@ def dashboard_info(request):
 @permission_classes([IsAuthenticated, CoreSettingsPerms])
 def email_test(request):
     core = get_core_settings()
-    r = core.send_mail(
+
+    msg, ok = core.send_mail(
         subject="Test from Tactical RMM", body="This is a test message", test=True
     )
+    if not ok:
+        return notify_error(msg)
 
-    if not isinstance(r, bool) and isinstance(r, str):
-        return notify_error(r)
-
-    return Response("Email Test OK!")
+    return Response(msg)
 
 
 @api_view(["POST"])
@@ -388,9 +388,8 @@ class TwilioSMSTest(APIView):
                 "All fields are required, including at least 1 recipient"
             )
 
-        r = core.send_sms("TacticalRMM Test SMS", test=True)
+        msg, ok = core.send_sms("TacticalRMM Test SMS", test=True)
+        if not ok:
+            return notify_error(msg)
 
-        if not isinstance(r, bool) and isinstance(r, str):
-            return notify_error(r)
-
-        return Response("SMS Test sent successfully!")
+        return Response(msg)

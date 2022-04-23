@@ -1,7 +1,7 @@
 # Tactical RMM
 
 ![CI Tests](https://github.com/amidaware/tacticalrmm/actions/workflows/ci-tests.yml/badge.svg?branch=develop)
-[![Coverage Status](https://coveralls.io/repos/github/amidaware/tacticalrmm/badge.svg?branch=develop)](https://coveralls.io/github/amidaware/tacticalrmm?branch=develop)
+[![codecov](https://codecov.io/gh/amidaware/tacticalrmm/branch/develop/graph/badge.svg?token=8ACUPVPTH6)](https://codecov.io/gh/amidaware/tacticalrmm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
 Tactical RMM is a remote monitoring & management tool, built with Django and Vue.\

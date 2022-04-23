@@ -65,9 +65,11 @@ services:
     depends_on:
       - tactical-postgres
       - tactical-meshcentral
+      - tactical-redis
     networks:
       - api-db
       - proxy
+      - redis
     volumes:
       - tactical_data:/opt/tactical
       - mesh_data:/meshcentral-data

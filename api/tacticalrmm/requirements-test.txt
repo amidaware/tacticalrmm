@@ -1,5 +1,8 @@
 coverage
-coveralls
 model_bakery
 black
-tblib
+pytest
+pytest-django
+pytest-xdist
+pytest-cov
+codecov

@@ -42,9 +42,7 @@ jobs:
           cd api/tacticalrmm
           source ../env/bin/activate
           rm -f .coverage coverage.lcov
-          coverage run --concurrency=multiprocessing manage.py test -v 2 --parallel
-          coverage combine
-          coverage lcov
+          pytest
           if [ $? -ne 0 ]; then
               exit 1
           fi
@@ -58,9 +56,10 @@ jobs:
               exit 1
           fi
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./api/tacticalrmm/coverage.lcov
-          base-path: ./api/tacticalrmm
+      - name: Run django tests
+        env:
+          GHACTIONS: "yes"
+        run: |
+          cd api/tacticalrmm
+          source ../env/bin/activate
+          codecov

@@ -10,7 +10,7 @@ from clients.models import Client, Site
 from checks.models import Check, CheckResult
 from core.utils import get_core_settings
 from django.conf import settings
-from django.db.models import Prefetch, Exists, OuterRef
+from django.db.models import Prefetch
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
 from packaging import version as pyver
@@ -53,6 +53,23 @@ def core_maintenance_tasks() -> None:
 
 @app.task
 def handle_resolved_stuff() -> None:
+
+    # change agent update pending status to completed if agent has just updated
+    actions = (
+        PendingAction.objects.select_related("agent")
+        .defer("agent__services", "agent__wmi_detail")
+        .filter(action_type="agentupdate", status="pending")
+    )
+
+    to_update = [
+        action.id
+        for action in actions
+        if pyver.parse(action.agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
+        and action.agent.status == "online"
+    ]
+
+    PendingAction.objects.filter(pk__in=to_update).update(status="completed")
+
     agent_queryset = (
         Agent.objects.defer(*AGENT_DEFER)
         .select_related(
@@ -80,26 +97,11 @@ def handle_resolved_stuff() -> None:
         )
     )
 
-    for agent in agent_queryset.annotate(
-        has_pending_actions=Exists(
-            PendingAction.objects.filter(
-                agent=OuterRef("pk"), action_type="agentupdate", status="pending"
-            )
-        )
-    ):
+    for agent in agent_queryset:
         if (
             pyver.parse(agent.version) >= pyver.parse("1.6.0")
             and agent.status == "online"
         ):
-            # change agent update pending status to completed if agent has just updated
-            if (
-                pyver.parse(agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
-                and agent.has_pending_actions
-            ):
-                agent.pendingactions.filter(
-                    action_type="agentupdate", status="pending"
-                ).update(status="completed")
-
             # sync scheduled tasks
             for task in agent.get_tasks_with_policies():
                 if not task.task_result or task.task_result.sync_status == "initial":

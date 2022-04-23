@@ -297,9 +297,9 @@ class AgentMeshCentral(APIView):
 @permission_classes([IsAuthenticated, AgentPerms])
 def get_agent_versions(request):
     agents = (
-        Agent.objects.filter_by_role(request.user)  # type: ignore
-        .prefetch_related("site")
-        .only("pk", "hostname")
+        Agent.objects.defer(*AGENT_DEFER)
+        .filter_by_role(request.user)  # type: ignore
+        .prefetch_related("site", "site__client")
     )
     return Response(
         {

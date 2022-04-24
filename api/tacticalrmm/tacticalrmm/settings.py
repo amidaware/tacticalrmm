@@ -95,23 +95,6 @@ if not DEBUG:
         {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
     )
 
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  ##
-    "tacticalrmm.middleware.LogIPMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "tacticalrmm.middleware.AuditMiddleware",
-    "tacticalrmm.middleware.LinuxMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-if DEMO:
-    MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
-
-
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -256,11 +239,9 @@ LOGGING = {
     },
 }
 
-if "AZPIPELINE" in os.environ:
-    ADMIN_ENABLED = False
 
 if "GHACTIONS" in os.environ:
-    print("-----------------------PIPELINE----------------------------")
+    print("-----------------------GHACTIONS----------------------------")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",

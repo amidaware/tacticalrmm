@@ -245,7 +245,10 @@ class TestAgentViews(TacticalTestCase):
 
     def test_get_agent_versions(self):
         url = "/agents/versions/"
-        r = self.client.get(url)
+
+        with self.assertNumQueries(1):
+            r = self.client.get(url)
+
         self.assertEqual(r.status_code, 200)
         assert any(i["hostname"] == self.agent.hostname for i in r.json()["agents"])
 

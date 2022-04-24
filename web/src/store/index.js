@@ -23,7 +23,7 @@ export default function () {
         showCommunityScripts: false,
         agentDblClickAction: "",
         agentUrlAction: null,
-        defaultAgentTblTab: "server",
+        defaultAgentTblTab: null,
         clientTreeSort: "alphafail",
         clientTreeSplitter: 20,
         noCodeSign: false,

@@ -80,7 +80,7 @@ class TestScriptViews(TacticalTestCase):
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         script = Script.objects.get(pk=script.pk)
-        self.assertEquals(script.description, "Description Change")
+        self.assertEqual(script.description, "Description Change")
 
         # correct_hash = hmac.new(
         #     settings.SECRET_KEY.encode(), data["script_body"].encode(), hashlib.sha256
@@ -467,7 +467,7 @@ class TestScriptSnippetViews(TacticalTestCase):
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         snippet = ScriptSnippet.objects.get(pk=snippet.pk)
-        self.assertEquals(snippet.name, "New Name")
+        self.assertEqual(snippet.name, "New Name")
 
         self.check_not_authenticated("put", url)
 

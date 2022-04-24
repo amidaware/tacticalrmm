@@ -42,7 +42,7 @@ class TestSoftwareViews(TacticalTestCase):
         # test without agent software
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEquals(resp.data, [])
+        self.assertEqual(resp.data, [])
 
         # make some software
         software = baker.make(
@@ -60,7 +60,7 @@ class TestSoftwareViews(TacticalTestCase):
         serializer = InstalledSoftwareSerializer([software], many=True)
         resp = self.client.get(f"{base_url}/", format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEquals(resp.data, serializer.data)
+        self.assertEqual(resp.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 

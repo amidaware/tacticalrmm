@@ -28,7 +28,9 @@ class GetAddPolicies(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
 
     def get(self, request):
-        policies = Policy.objects.all()
+        policies = Policy.objects.select_related("alert_template").prefetch_related(
+            "excluded_agents", "excluded_sites", "excluded_clients"
+        )
 
         return Response(
             PolicyTableSerializer(

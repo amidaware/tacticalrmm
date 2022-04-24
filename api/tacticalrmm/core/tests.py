@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import requests
+from django.conf import settings
 from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 from model_bakery import baker
@@ -11,7 +12,9 @@ from core.utils import get_core_settings
 from .consumers import DashInfo
 from .models import CustomField, GlobalKVStore, URLAction
 from .serializers import CustomFieldSerializer, KeyStoreSerializer, URLActionSerializer
-from .tasks import core_maintenance_tasks
+from .tasks import core_maintenance_tasks, handle_resolved_stuff
+from logs.models import PendingAction
+from agents.models import Agent
 
 
 class TestCodeSign(TacticalTestCase):
@@ -392,6 +395,29 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("get", url)
+
+    def test_resolved_pending_agentupdate_task(self):
+        online = baker.make_recipe("agents.online_agent", version="2.0.0", _quantity=20)
+        offline = baker.make_recipe(
+            "agents.offline_agent", version="2.0.0", _quantity=20
+        )
+        agents = online + offline
+        for agent in agents:
+            baker.make_recipe("logs.pending_agentupdate_action", agent=agent)
+
+        Agent.objects.update(version=settings.LATEST_AGENT_VER)
+
+        handle_resolved_stuff()
+
+        complete = PendingAction.objects.filter(
+            action_type="agentupdate", status="completed"
+        ).count()
+        old = PendingAction.objects.filter(
+            action_type="agentupdate", status="pending"
+        ).count()
+
+        self.assertEqual(complete, 20)
+        self.assertEqual(old, 20)
 
 
 class TestCorePermissions(TacticalTestCase):

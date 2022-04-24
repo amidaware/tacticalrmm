@@ -96,9 +96,14 @@ class PendingActions(APIView):
     def get(self, request, agent_id=None):
         if agent_id:
             agent = get_object_or_404(
-                Agent.objects.defer(*AGENT_DEFER), agent_id=agent_id
+                Agent.objects.defer(*AGENT_DEFER).prefetch_related("pendingactions"),
+                agent_id=agent_id,
             )
-            actions = PendingAction.objects.filter(agent=agent)
+            actions = (
+                PendingAction.objects.filter(agent=agent)
+                .select_related("agent__site", "agent__site__client")
+                .defer("agent__services", "agent__wmi_detail")
+            )
         else:
             actions = (
                 PendingAction.objects.filter_by_role(request.user)  # type: ignore

@@ -299,7 +299,7 @@ def get_agent_versions(request):
     agents = (
         Agent.objects.defer(*AGENT_DEFER)
         .filter_by_role(request.user)  # type: ignore
-        .prefetch_related("site", "site__client")
+        .select_related("site", "site__client")
     )
     return Response(
         {

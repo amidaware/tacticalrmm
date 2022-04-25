@@ -182,7 +182,9 @@ class RunChecks(APIView):
         ret = {
             "agent": agent.pk,
             "check_interval": agent.check_interval,
-            "checks": CheckRunnerGetSerializer(checks, many=True).data,
+            "checks": CheckRunnerGetSerializer(
+                checks, context={"agent": agent}, many=True
+            ).data,
         }
         return Response(ret)
 
@@ -216,7 +218,9 @@ class CheckRunner(APIView):
         ret = {
             "agent": agent.pk,
             "check_interval": agent.check_run_interval(),
-            "checks": CheckRunnerGetSerializer(run_list, many=True).data,
+            "checks": CheckRunnerGetSerializer(
+                run_list, context={"agent": agent}, many=True
+            ).data,
         }
         return Response(ret)
 

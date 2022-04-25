@@ -24,7 +24,8 @@ from software.models import InstalledSoftware
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
 from tacticalrmm.constants import MeshAgentIdent
-from tacticalrmm.utils import notify_error, reload_nats
+from tacticalrmm.utils import reload_nats
+from tacticalrmm.helpers import notify_error
 
 
 class CheckIn(APIView):

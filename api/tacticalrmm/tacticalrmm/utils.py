@@ -16,15 +16,11 @@ from django.contrib.auth.models import AnonymousUser
 from django.http import FileResponse
 from knox.auth import TokenAuthentication
 from logs.models import DebugLog
-from rest_framework import status
 from rest_framework.response import Response
 from core.utils import get_core_settings
 
 from tacticalrmm.constants import MONTH_DAYS, MONTHS, WEEK_DAYS, WEEKS
-
-
-def notify_error(msg: str) -> Response:
-    return Response(msg, status=status.HTTP_400_BAD_REQUEST)
+from tacticalrmm.helpers import notify_error
 
 
 def generate_winagent_exe(

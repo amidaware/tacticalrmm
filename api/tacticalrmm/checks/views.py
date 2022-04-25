@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from tacticalrmm.permissions import _has_perm_on_agent
-from tacticalrmm.utils import notify_error
+from tacticalrmm.helpers import notify_error
 
 from .models import Check, CheckHistory, CheckResult
 from .permissions import ChecksPerms, RunChecksPerms

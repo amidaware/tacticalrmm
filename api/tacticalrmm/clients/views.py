@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from knox.models import AuthToken
 
 from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
-from tacticalrmm.utils import notify_error
+from tacticalrmm.helpers import notify_error
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .permissions import ClientsPerms, DeploymentPerms, SitesPerms

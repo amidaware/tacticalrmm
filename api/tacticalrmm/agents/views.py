@@ -37,7 +37,8 @@ from tacticalrmm.permissions import (
     _has_perm_on_client,
     _has_perm_on_site,
 )
-from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
+from tacticalrmm.utils import get_default_timezone, reload_nats
+from tacticalrmm.helpers import notify_error
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
 from .permissions import (

@@ -162,7 +162,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-if DEBUG:
+if DEBUG and not DEMO:
     INSTALLED_APPS += (
         "django_extensions",
         "silk",

@@ -13,7 +13,8 @@ from rest_framework.views import APIView
 
 from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
-from tacticalrmm.utils import get_default_timezone, notify_error
+from tacticalrmm.utils import get_default_timezone
+from tacticalrmm.helpers import notify_error
 
 from .models import AuditLog, DebugLog, PendingAction
 from .permissions import AuditLogPerms, DebugLogPerms, PendingActionPerms

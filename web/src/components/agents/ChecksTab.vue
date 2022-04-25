@@ -23,7 +23,7 @@
       <!-- table top slot -->
       <template v-slot:top>
         <q-btn class="q-mr-sm" dense flat push @click="getChecks" icon="refresh" />
-        <q-btn-dropdown icon="add" label="New" no-caps dense flat>
+        <q-btn-dropdown icon="add" label="New" no-caps dense flat class="q-mr-md">
           <q-list dense style="min-width: 200px">
             <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('diskspace')">
               <q-item-section side>
@@ -69,6 +69,7 @@
             </q-item>
           </q-list>
         </q-btn-dropdown>
+        <q-btn label="Run Checks Now" dense flat push no-caps icon="play_arrow" @click="runChecks" />
       </template>
 
       <!-- header slots -->
@@ -290,7 +291,7 @@
 import { ref, computed, watch, inject, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
-import { updateCheck, removeCheck, resetCheck } from "@/api/checks";
+import { updateCheck, removeCheck, resetCheck, runAgentChecks } from "@/api/checks";
 import { fetchAgentChecks } from "@/api/agents";
 import { truncateText } from "@/utils/format";
 import { notifySuccess, notifyWarning } from "@/utils/notify";
@@ -362,6 +363,15 @@ export default {
         return check.check_result.alert_severity;
       } else {
         return check.alert_severity;
+      }
+    }
+
+    async function runChecks() {
+      try {
+        const data = await runAgentChecks(selectedAgent.value);
+        notifySuccess(data);
+      } catch (e) {
+        console.error(e);
       }
     }
 
@@ -515,6 +525,7 @@ export default {
       truncateText,
       formatDate,
       getAlertSeverity,
+      runChecks,
 
       // dialogs
       showScriptOutput,

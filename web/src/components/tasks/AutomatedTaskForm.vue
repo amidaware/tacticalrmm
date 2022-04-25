@@ -49,6 +49,7 @@
                     ? 'All script output will be saved to custom field selected'
                     : 'The last line of script output will be saved to custom field selected'
                 "
+                filterable
               />
               <q-checkbox
                 v-if="collector"
@@ -558,6 +559,7 @@
                   :options="checkOptions"
                   label="Select Check"
                   mapOptions
+                  filterable
                 />
               </q-card-section>
             </q-form>

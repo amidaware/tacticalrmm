@@ -328,7 +328,12 @@ else
     echo -ne ${RED} SSL Certificate has expired or doesnt exist for $domain  | tee -a checklog.log
 	printf >&2 "\n\n"
 fi
+	echo -ne ${YELLOW} Getting summary output of logs | tee -a checklog.log  
 
+tail /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log  | tee -a checklog.log
+	printf >&2 "\n\n"
+tail /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log  | tee -a checklog.log
+	printf >&2 "\n\n"
 
 printf >&2 "\n\n"
 echo -ne ${YELLOW} 

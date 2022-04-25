@@ -3,21 +3,20 @@ import json
 import random
 import string
 
-from accounts.models import User
-from agents.models import Agent, AgentHistory
-from automation.models import Policy
-from autotasks.models import AutomatedTask, TaskResult
-from checks.models import Check, CheckResult, CheckHistory
-from clients.models import Client, Site
 from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.utils import timezone as djangotime
+
+from accounts.models import User
+from agents.models import Agent, AgentHistory
+from automation.models import Policy
+from autotasks.models import AutomatedTask, TaskResult
+from checks.models import Check, CheckHistory, CheckResult
+from clients.models import Client, Site
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
-from winupdate.models import WinUpdate, WinUpdatePolicy
-
 from tacticalrmm.demo_data import (
     disks,
     ping_fail_output,
@@ -25,6 +24,7 @@ from tacticalrmm.demo_data import (
     spooler_stdout,
     temp_dir_stdout,
 )
+from winupdate.models import WinUpdate, WinUpdatePolicy
 
 AGENTS_TO_GENERATE = 250
 
@@ -43,19 +43,19 @@ EVT_LOG_FAIL = settings.BASE_DIR.joinpath(
 class Command(BaseCommand):
     help = "populate database with fake agents"
 
-    def rand_string(self, length):
+    def rand_string(self, length: int) -> str:
         chars = string.ascii_letters
         return "".join(random.choice(chars) for _ in range(length))
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
 
         user = User.objects.first()
         if user:
             user.totp_key = "ABSA234234"
             user.save(update_fields=["totp_key"])
 
-        Client.objects.all().delete()
         Agent.objects.all().delete()
+        Client.objects.all().delete()
         Check.objects.all().delete()
         Script.objects.all().delete()
         AutomatedTask.objects.all().delete()
@@ -65,6 +65,9 @@ class Command(BaseCommand):
         PendingAction.objects.all().delete()
 
         call_command("load_community_scripts")
+        call_command("initial_db_setup")
+        call_command("load_chocos")
+        call_command("create_installer_user")
 
         # policies
         check_policy = Policy()
@@ -95,27 +98,27 @@ class Command(BaseCommand):
         update_policy.email_if_fail = True
         update_policy.save()
 
-        clients = [
+        clients = (
+            "Company 1",
             "Company 2",
             "Company 3",
-            "Company 1",
             "Company 4",
             "Company 5",
             "Company 6",
-        ]
-        sites1 = ["HQ1", "LA Office 1", "NY Office 1"]
-        sites2 = ["HQ2", "LA Office 2", "NY Office 2"]
-        sites3 = ["HQ3", "LA Office 3", "NY Office 3"]
-        sites4 = ["HQ4", "LA Office 4", "NY Office 4"]
-        sites5 = ["HQ5", "LA Office 5", "NY Office 5"]
-        sites6 = ["HQ6", "LA Office 6", "NY Office 6"]
+        )
+        sites1 = ("HQ1", "LA Office 1", "NY Office 1")
+        sites2 = ("HQ2", "LA Office 2", "NY Office 2")
+        sites3 = ("HQ3", "LA Office 3", "NY Office 3")
+        sites4 = ("HQ4", "LA Office 4", "NY Office 4")
+        sites5 = ("HQ5", "LA Office 5", "NY Office 5")
+        sites6 = ("HQ6", "LA Office 6", "NY Office 6")
 
-        client1 = Client(name="Company 1")
-        client2 = Client(name="Company 2")
-        client3 = Client(name="Company 3")
-        client4 = Client(name="Company 4")
-        client5 = Client(name="Company 5")
-        client6 = Client(name="Company 6")
+        client1 = Client(name=clients[0])
+        client2 = Client(name=clients[1])
+        client3 = Client(name=clients[2])
+        client4 = Client(name=clients[3])
+        client5 = Client(name=clients[4])
+        client6 = Client(name=clients[5])
 
         client1.save()
         client2.save()
@@ -142,7 +145,7 @@ class Command(BaseCommand):
         for site in sites6:
             Site(client=client6, name=site).save()
 
-        hostnames = [
+        hostnames = (
             "DC-1",
             "DC-2",
             "FSV-1",
@@ -150,26 +153,27 @@ class Command(BaseCommand):
             "WSUS",
             "DESKTOP-12345",
             "LAPTOP-55443",
-        ]
-        descriptions = ["Bob's computer", "Primary DC", "File Server", "Karen's Laptop"]
-        modes = ["server", "workstation"]
-        op_systems_servers = [
+        )
+        descriptions = ("Bob's computer", "Primary DC", "File Server", "Karen's Laptop")
+        modes = ("server", "workstation")
+        op_systems_servers = (
             "Microsoft Windows Server 2016 Standard, 64bit (build 14393)",
             "Microsoft Windows Server 2012 R2 Standard, 64bit (build 9600)",
             "Microsoft Windows Server 2019 Standard, 64bit (build 17763)",
-        ]
+        )
 
-        op_systems_workstations = [
+        op_systems_workstations = (
             "Microsoft Windows 8.1 Pro, 64bit (build 9600)",
             "Microsoft Windows 10 Pro for Workstations, 64bit (build 18363)",
             "Microsoft Windows 10 Pro, 64bit (build 18363)",
-        ]
+        )
 
         public_ips = ["65.234.22.4", "74.123.43.5", "44.21.134.45"]
 
         total_rams = [4, 8, 16, 32, 64, 128]
 
         now = dt.datetime.now()
+        django_now = djangotime.now()
 
         boot_times = []
 
@@ -196,10 +200,7 @@ class Command(BaseCommand):
         with open(WMI_3) as f:
             wmi3 = json.load(f)
 
-        wmi_details = []
-        wmi_details.append(wmi1)
-        wmi_details.append(wmi2)
-        wmi_details.append(wmi3)
+        wmi_details = [i for i in (wmi1, wmi2, wmi3)]
 
         # software
         with open(SW_1) as f:
@@ -208,9 +209,7 @@ class Command(BaseCommand):
         with open(SW_2) as f:
             software2 = json.load(f)
 
-        softwares = []
-        softwares.append(software1)
-        softwares.append(software2)
+        softwares = [i for i in (software1, software2)]
 
         # windows updates
         with open(WIN_UPDATES) as f:
@@ -261,20 +260,18 @@ class Command(BaseCommand):
 
             client = random.choice(clients)
 
-            if client == "Company 1":
+            if client == clients[0]:
                 site = random.choice(sites1)
-            elif client == "Company 2":
+            elif client == clients[1]:
                 site = random.choice(sites2)
-            elif client == "Company 3":
+            elif client == clients[2]:
                 site = random.choice(sites3)
-            elif client == "Company 4":
+            elif client == clients[3]:
                 site = random.choice(sites4)
-            elif client == "Company 5":
+            elif client == clients[4]:
                 site = random.choice(sites5)
-            elif client == "Company 6":
+            elif client == clients[5]:
                 site = random.choice(sites6)
-            else:
-                site = None
 
             agent = Agent()
 
@@ -285,15 +282,15 @@ class Command(BaseCommand):
                 agent.operating_system = random.choice(op_systems_workstations)
 
             agent.hostname = random.choice(hostnames)
+            agent.goarch = "amd64"
             agent.version = settings.LATEST_AGENT_VER
             agent.site = Site.objects.get(name=site)
-            agent.agent_id = self.rand_string(25)
+            agent.agent_id = self.rand_string(40)
             agent.description = random.choice(descriptions)
             agent.monitoring_type = mode
             agent.public_ip = random.choice(public_ips)
             agent.last_seen = djangotime.now()
             agent.plat = "windows"
-            agent.plat_release = "windows-2019Server"
             agent.total_ram = random.choice(total_rams)
             agent.boot_time = random.choice(boot_times)
             agent.logged_in_username = random.choice(user_names)
@@ -317,9 +314,7 @@ class Command(BaseCommand):
                 WinUpdatePolicy(agent=agent).save()
 
             # windows updates load
-            guids = []
-            for k in windows_updates.keys():
-                guids.append(k)
+            guids = [i for i in windows_updates.keys()]
 
             for i in guids:
                 WinUpdate(
@@ -357,20 +352,22 @@ class Command(BaseCommand):
 
             # disk space check
             check1 = Check()
-            check_result1 = CheckResult(assigned_check=check1, agent=agent)
             check1.agent = agent
             check1.check_type = "diskspace"
-            check_result1.status = "passing"
-            check_result1.last_run = djangotime.now()
-            check_result1.more_info = "Total: 498.7GB, Free: 287.4GB"
-            check_result1.save()
-
             check1.warning_threshold = 25
             check1.error_threshold = 10
             check1.disk = "C:"
             check1.email_alert = random.choice([True, False])
             check1.text_alert = random.choice([True, False])
             check1.save()
+
+            check_result1 = CheckResult()
+            check_result1.agent = agent
+            check_result1.assigned_check = check1
+            check_result1.status = "passing"
+            check_result1.last_run = django_now
+            check_result1.more_info = "Total: 498.7GB, Free: 287.4GB"
+            check_result1.save()
 
             for i in range(30):
                 check1_history = CheckHistory()
@@ -384,12 +381,17 @@ class Command(BaseCommand):
 
             # ping check
             check2 = Check()
-            check_result2 = CheckResult(assigned_check=check2, agent=agent)
+            check_result2 = CheckResult()
+
             check2.agent = agent
             check2.check_type = "ping"
-            check_result2.last_run = djangotime.now()
+
             check2.email_alert = random.choice([True, False])
             check2.text_alert = random.choice([True, False])
+
+            check_result2.agent = agent
+            check_result2.assigned_check = check2
+            check_result2.last_run = django_now
 
             if site in sites5:
                 check2.name = "Synology NAS"
@@ -554,7 +556,6 @@ class Command(BaseCommand):
             nla_task.assigned_check = check6
             nla_task.name = "Restart NLA"
             nla_task.task_type = "checkfailure"
-            nla_task.win_task_name = "demotask123"
             nla_task_result.execution_time = "1.8443"
             nla_task_result.last_run = djangotime.now()
             nla_task_result.stdout = "no stdout"
@@ -587,7 +588,6 @@ class Command(BaseCommand):
             spool_task.task_repetition_duration = "2h"
             spool_task.task_repetition_interval = "25m"
             spool_task.random_task_delay = "3m"
-            spool_task.win_task_name = "demospool123"
             spool_task_result.last_run = djangotime.now()
             spool_task_result.retcode = 0
             spool_task_result.stdout = spooler_stdout
@@ -610,7 +610,6 @@ class Command(BaseCommand):
             ]
             tmp_dir_task.actions = actions
             tmp_dir_task.task_type = "manual"
-            tmp_dir_task.win_task_name = "demotemp"
             tmp_dir_task_result.last_run = djangotime.now()
             tmp_dir_task_result.stdout = temp_dir_stdout
             tmp_dir_task_result.retcode = 0
@@ -735,7 +734,7 @@ class Command(BaseCommand):
 
                 sched_reboot = PendingAction()
                 sched_reboot.agent = agent
-                sched_reboot.action_type = "schedreboot"
+                sched_reboot.action_type = PendingAction.SCHED_REBOOT
                 sched_reboot.details = {
                     "time": str(obj),
                     "taskname": task_name,

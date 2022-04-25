@@ -4,15 +4,15 @@ import random
 from time import sleep
 from typing import Optional
 
+from django.conf import settings
+from django.utils import timezone as djangotime
+from packaging import version as pyver
+
 from agents.models import Agent
 from agents.utils import get_agent_url
 from core.utils import get_core_settings
-from django.conf import settings
-from django.utils import timezone as djangotime
 from logs.models import DebugLog, PendingAction
-from packaging import version as pyver
 from scripts.models import Script
-
 from tacticalrmm.celery import app
 
 
@@ -38,15 +38,15 @@ def agent_update(agent_id: str, force: bool = False) -> str:
 
     if not force:
         if agent.pendingactions.filter(
-            action_type="agentupdate", status="pending"
+            action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
         ).exists():
             agent.pendingactions.filter(
-                action_type="agentupdate", status="pending"
+                action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
             ).delete()
 
         PendingAction.objects.create(
             agent=agent,
-            action_type="agentupdate",
+            action_type=PendingAction.AGENT_UPDATE,
             details={
                 "url": url,
                 "version": version,
@@ -68,22 +68,20 @@ def agent_update(agent_id: str, force: bool = False) -> str:
 
 @app.task
 def force_code_sign(agent_ids: list[str]) -> None:
-    chunks = (agent_ids[i : i + 50] for i in range(0, len(agent_ids), 50))
+    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id=agent_id, force=True)
-            sleep(0.05)
-        sleep(4)
+        sleep(2)
 
 
 @app.task
 def send_agent_update_task(agent_ids: list[str]) -> None:
-    chunks = (agent_ids[i : i + 50] for i in range(0, len(agent_ids), 50))
+    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id)
-            sleep(0.05)
-        sleep(4)
+        sleep(2)
 
 
 @app.task
@@ -99,12 +97,11 @@ def auto_self_agent_update_task() -> None:
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
 
-    chunks = (agent_ids[i : i + 30] for i in range(0, len(agent_ids), 30))
+    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
     for chunk in chunks:
         for agent_id in chunk:
             agent_update(agent_id)
-            sleep(0.05)
-        sleep(4)
+        sleep(2)
 
 
 @app.task
@@ -117,7 +114,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
         return "alert not found"
 
     if not alert.email_sent:
-        sleep(random.randint(1, 15))
+        sleep(random.randint(1, 5))
         alert.agent.send_outage_email()
         alert.email_sent = djangotime.now()
         alert.save(update_fields=["email_sent"])
@@ -126,7 +123,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
             # send an email only if the last email sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.email_sent < delta:
-                sleep(random.randint(1, 10))
+                sleep(random.randint(1, 5))
                 alert.agent.send_outage_email()
                 alert.email_sent = djangotime.now()
                 alert.save(update_fields=["email_sent"])
@@ -138,7 +135,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
 def agent_recovery_email_task(pk: int) -> str:
     from alerts.models import Alert
 
-    sleep(random.randint(1, 15))
+    sleep(random.randint(1, 5))
 
     try:
         alert = Alert.objects.get(pk=pk)
@@ -162,7 +159,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> st
         return "alert not found"
 
     if not alert.sms_sent:
-        sleep(random.randint(1, 15))
+        sleep(random.randint(1, 3))
         alert.agent.send_outage_sms()
         alert.sms_sent = djangotime.now()
         alert.save(update_fields=["sms_sent"])
@@ -171,7 +168,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> st
             # send an sms only if the last sms sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.sms_sent < delta:
-                sleep(random.randint(1, 10))
+                sleep(random.randint(1, 3))
                 alert.agent.send_outage_sms()
                 alert.sms_sent = djangotime.now()
                 alert.save(update_fields=["sms_sent"])

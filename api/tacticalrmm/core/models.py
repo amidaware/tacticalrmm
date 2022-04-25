@@ -1,24 +1,24 @@
 import smtplib
 from email.message import EmailMessage
+from typing import TYPE_CHECKING, List, Optional, Union, cast
 
-from typing import Optional, Union, List, cast, TYPE_CHECKING
 import pytz
 import requests
-from django.core.cache import cache
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
-from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwClient
+
+from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
+from tacticalrmm.constants import CORESETTINGS_CACHE_KEY
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
-
-CORESETTINGS_CACHE_KEY = "core_settings"
 
 
 class CoreSettings(BaseAuditModel):
@@ -175,12 +175,12 @@ class CoreSettings(BaseAuditModel):
         body: str,
         alert_template: "Optional[AlertTemplate]" = None,
         test: bool = False,
-    ) -> Union[bool, str]:
+    ) -> tuple[str, bool]:
         if test and not self.email_is_configured:
-            return "There needs to be at least one email recipient configured"
+            return ("There needs to be at least one email recipient configured", False)
         # return since email must be configured to continue
         elif not self.email_is_configured:
-            return "SMTP messaging not configured."
+            return ("SMTP messaging not configured.", False)
 
         # override email from if alert_template is passed and is set
         if alert_template and alert_template.email_from:
@@ -194,7 +194,7 @@ class CoreSettings(BaseAuditModel):
         elif self.email_alert_recipients:
             email_recipients = ", ".join(cast(List[str], self.email_alert_recipients))
         else:
-            return "There needs to be at least one email recipient configured"
+            return ("There needs to be at least one email recipient configured", False)
 
         try:
             msg = EmailMessage()
@@ -221,18 +221,21 @@ class CoreSettings(BaseAuditModel):
         except Exception as e:
             DebugLog.error(message=f"Sending email failed with error: {e}")
             if test:
-                return str(e)
-        finally:
-            return True
+                return (str(e), False)
+
+        if test:
+            return ("Email test ok!", True)
+
+        return ("ok", True)
 
     def send_sms(
         self,
         body: str,
         alert_template: "Optional[AlertTemplate]" = None,
         test: bool = False,
-    ) -> Union[str, bool]:
+    ) -> tuple[str, bool]:
         if not self.sms_is_configured:
-            return "Sms alerting is not setup correctly."
+            return ("Sms alerting is not setup correctly.", False)
 
         # override email recipients if alert_template is passed and is set
         if alert_template and alert_template.text_recipients:
@@ -240,7 +243,7 @@ class CoreSettings(BaseAuditModel):
         elif self.sms_alert_recipients:
             text_recipients = cast(List[str], self.sms_alert_recipients)
         else:
-            return "No sms recipients found"
+            return ("No sms recipients found", False)
 
         tw_client = TwClient(self.twilio_account_sid, self.twilio_auth_token)
         for num in text_recipients:
@@ -249,9 +252,12 @@ class CoreSettings(BaseAuditModel):
             except TwilioRestException as e:
                 DebugLog.error(message=f"SMS failed to send: {e}")
                 if test:
-                    return str(e)
+                    return (str(e), False)
 
-        return True
+        if test:
+            return ("SMS Test sent successfully!", True)
+
+        return ("ok", True)
 
     @staticmethod
     def serialize(core):
@@ -284,7 +290,7 @@ class CustomField(BaseAuditModel):
         blank=True,
         default=list,
     )
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=100)
     required = models.BooleanField(blank=True, default=False)
     default_value_string = models.TextField(null=True, blank=True)
     default_value_bool = models.BooleanField(default=False)

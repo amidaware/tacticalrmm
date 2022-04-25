@@ -2,8 +2,9 @@ import asyncio
 import json
 
 import websockets
-from core.utils import get_mesh_ws_url
 from django.core.management.base import BaseCommand
+
+from core.utils import get_mesh_ws_url
 
 
 class Command(BaseCommand):

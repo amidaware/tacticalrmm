@@ -1,13 +1,14 @@
-from agents.serializers import AgentHostnameSerializer
-from autotasks.models import TaskResult
-from checks.models import CheckResult
-from clients.models import Client
-from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from rest_framework.serializers import (
     ModelSerializer,
     ReadOnlyField,
     SerializerMethodField,
 )
+
+from agents.serializers import AgentHostnameSerializer
+from autotasks.models import TaskResult
+from checks.models import CheckResult
+from clients.models import Client
+from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Policy

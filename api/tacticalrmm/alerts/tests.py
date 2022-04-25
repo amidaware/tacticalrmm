@@ -2,16 +2,16 @@ from datetime import datetime, timedelta
 from itertools import cycle
 from unittest.mock import patch
 
-from alerts.tasks import cache_agents_alert_template
-from core.utils import get_core_settings
-from core.tasks import cache_db_fields_task
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
 
+from alerts.tasks import cache_agents_alert_template
+from autotasks.models import TaskResult
+from core.tasks import cache_db_fields_task, handle_resolved_stuff
+from core.utils import get_core_settings
 from tacticalrmm.test import TacticalTestCase
 
-from autotasks.models import TaskResult
 from .models import Alert, AlertTemplate
 from .serializers import (
     AlertSerializer,
@@ -70,8 +70,8 @@ class TestAlertsViews(TacticalTestCase):
         data = {"top": 3}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEquals(resp.data["alerts"], AlertSerializer(alerts, many=True).data)
-        self.assertEquals(resp.data["alerts_count"], 10)
+        self.assertEqual(resp.data["alerts"], AlertSerializer(alerts, many=True).data)
+        self.assertEqual(resp.data["alerts_count"], 10)
 
         # test filter data
         # test data and result counts
@@ -409,15 +409,15 @@ class TestAlertTasks(TacticalTestCase):
         core.server_policy = policy
         core.save()
 
-        self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[0].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[0].pk)
 
         # assign second Alert Template to as default alert template
         core.alert_template = alert_templates[1]
         core.save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[1].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[1].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[1].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[1].pk)
 
         # assign third Alert Template to client
         workstation.client.alert_template = alert_templates[2]
@@ -425,8 +425,8 @@ class TestAlertTasks(TacticalTestCase):
         workstation.client.save()
         server.client.save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[2].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[2].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[2].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[2].pk)
 
         # apply policy to client and should override
         workstation.client.workstation_policy = policy
@@ -434,8 +434,8 @@ class TestAlertTasks(TacticalTestCase):
         workstation.client.save()
         server.client.save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[0].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[0].pk)
 
         # assign fouth Alert Template to site
         workstation.site.alert_template = alert_templates[3]
@@ -443,8 +443,8 @@ class TestAlertTasks(TacticalTestCase):
         workstation.site.save()
         server.site.save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[3].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[3].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[3].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[3].pk)
 
         # apply policy to site
         workstation.site.workstation_policy = policy
@@ -452,8 +452,8 @@ class TestAlertTasks(TacticalTestCase):
         workstation.site.save()
         server.site.save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[0].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[0].pk)
 
         # apply policy to agents
         workstation.policy = policy
@@ -461,35 +461,35 @@ class TestAlertTasks(TacticalTestCase):
         workstation.save()
         server.save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[0].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[0].pk)
 
         # test disabling alert template
         alert_templates[0].is_active = False
         alert_templates[0].save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[3].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[3].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[3].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[3].pk)
 
         # test policy exclusions
         alert_templates[3].excluded_agents.set([workstation.pk])
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[2].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[3].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[2].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[3].pk)
 
         # test workstation exclusions
         alert_templates[2].exclude_workstations = True
         alert_templates[2].save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[1].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[3].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[1].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[3].pk)
 
         # test server exclusions
         alert_templates[3].exclude_servers = True
         alert_templates[3].save()
 
-        self.assertEquals(workstation.set_alert_template().pk, alert_templates[1].pk)
-        self.assertEquals(server.set_alert_template().pk, alert_templates[2].pk)
+        self.assertEqual(workstation.set_alert_template().pk, alert_templates[1].pk)
+        self.assertEqual(server.set_alert_template().pk, alert_templates[2].pk)
 
     @patch("agents.tasks.sleep")
     @patch("core.models.CoreSettings.send_mail")
@@ -523,7 +523,7 @@ class TestAlertTasks(TacticalTestCase):
         # call outages task and no alert should be created
         agent_outages_task()
 
-        self.assertEquals(Alert.objects.count(), 0)
+        self.assertEqual(Alert.objects.count(), 0)
 
         # set overdue_dashboard_alert and alert should be created
         agent_dashboard_alert.overdue_dashboard_alert = True
@@ -574,22 +574,22 @@ class TestAlertTasks(TacticalTestCase):
         agent_outages_task()
 
         # should have created 6 alerts
-        self.assertEquals(Alert.objects.count(), 6)
+        self.assertEqual(Alert.objects.count(), 6)
 
         # other specific agents should have created alerts
-        self.assertEquals(Alert.objects.filter(agent=agent_dashboard_alert).count(), 1)
-        self.assertEquals(Alert.objects.filter(agent=agent_text_alert).count(), 1)
-        self.assertEquals(Alert.objects.filter(agent=agent_email_alert).count(), 1)
-        self.assertEquals(Alert.objects.filter(agent=agent_template_email).count(), 1)
-        self.assertEquals(
+        self.assertEqual(Alert.objects.filter(agent=agent_dashboard_alert).count(), 1)
+        self.assertEqual(Alert.objects.filter(agent=agent_text_alert).count(), 1)
+        self.assertEqual(Alert.objects.filter(agent=agent_email_alert).count(), 1)
+        self.assertEqual(Alert.objects.filter(agent=agent_template_email).count(), 1)
+        self.assertEqual(
             Alert.objects.filter(agent=agent_template_dashboard).count(), 1
         )
-        self.assertEquals(Alert.objects.filter(agent=agent_template_text).count(), 1)
-        self.assertEquals(Alert.objects.filter(agent=agent_template_blank).count(), 0)
+        self.assertEqual(Alert.objects.filter(agent=agent_template_text).count(), 1)
+        self.assertEqual(Alert.objects.filter(agent=agent_template_blank).count(), 0)
 
         # check if email and text tasks were called
-        self.assertEquals(outage_email.call_count, 2)
-        self.assertEquals(outage_sms.call_count, 2)
+        self.assertEqual(outage_email.call_count, 2)
+        self.assertEqual(outage_sms.call_count, 2)
 
         outage_sms.assert_any_call(
             pk=Alert.objects.get(agent=agent_text_alert).pk, alert_interval=None
@@ -630,7 +630,7 @@ class TestAlertTasks(TacticalTestCase):
 
         # calling agent outage task again shouldn't create duplicate alerts and won't send alerts
         agent_outages_task()
-        self.assertEquals(Alert.objects.count(), 6)
+        self.assertEqual(Alert.objects.count(), 6)
 
         # test periodic notification
         # change email/text sent to sometime in the past
@@ -685,6 +685,7 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_email.save()
 
         cache_db_fields_task()
+        handle_resolved_stuff()
 
         recovery_sms.assert_called_with(
             pk=Alert.objects.get(agent=agent_template_text).pk
@@ -941,7 +942,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email.assert_not_called()
         send_sms.assert_not_called()
 
-        self.assertEquals(
+        self.assertEqual(
             Alert.objects.filter(assigned_check=check_template_email).count(), 1
         )
 
@@ -1243,7 +1244,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email.assert_not_called()
         send_sms.assert_not_called()
 
-        self.assertEquals(
+        self.assertEqual(
             Alert.objects.filter(assigned_task=task_template_email).count(), 1
         )
 
@@ -1430,6 +1431,7 @@ class TestAlertTasks(TacticalTestCase):
         agent.save()
 
         cache_db_fields_task()
+        handle_resolved_stuff()
 
         # this is what data should be
         data = {

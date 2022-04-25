@@ -1,15 +1,15 @@
 import asyncio
 from typing import Any
 
-from agents.models import Agent
 from django.shortcuts import get_object_or_404
-from logs.models import PendingAction
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from tacticalrmm.utils import notify_error
+from agents.models import Agent
+from logs.models import PendingAction
+from tacticalrmm.helpers import notify_error
 
 from .models import ChocoSoftware, InstalledSoftware
 from .permissions import SoftwarePerms
@@ -49,7 +49,7 @@ class GetSoftware(APIView):
 
         action = PendingAction.objects.create(
             agent=agent,
-            action_type="chocoinstall",
+            action_type=PendingAction.CHOCO_INSTALL,
             details={"name": name, "output": None, "installed": False},
         )
 

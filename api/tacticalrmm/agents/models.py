@@ -2,27 +2,29 @@ import asyncio
 import re
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, Optional, List, Dict, Union, Sequence, cast, TYPE_CHECKING
-from django.core.cache import cache
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union, cast
 
 import msgpack
 import nats
 import validators
 from asgiref.sync import sync_to_async
-from core.models import TZ_CHOICES
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.db import models
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel, DebugLog
 from nats.errors import TimeoutError
+from packaging import version as pyver
 
+from core.models import TZ_CHOICES
 from core.utils import get_core_settings
+from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.constants import ONLINE_AGENTS
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
+    from alerts.models import Alert, AlertTemplate
     from automation.models import Policy
-    from alerts.models import AlertTemplate, Alert
     from autotasks.models import AutomatedTask
     from checks.models import Check
     from clients.models import Client
@@ -33,13 +35,17 @@ Disk = Union[Dict[str, Any], str]
 
 
 class Agent(BaseAuditModel):
+    class Meta:
+        indexes = [
+            models.Index(fields=["monitoring_type"]),
+        ]
+
     objects = PermissionQuerySet.as_manager()
 
     version = models.CharField(default="0.1.0", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
     plat = models.CharField(max_length=255, default="windows")
     goarch = models.CharField(max_length=255, null=True, blank=True)
-    plat_release = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
     agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)
@@ -68,8 +74,6 @@ class Agent(BaseAuditModel):
     )
     maintenance_mode = models.BooleanField(default=False)
     block_policy_inheritance = models.BooleanField(default=False)
-    pending_actions_count = models.PositiveIntegerField(default=0)
-    has_patches_pending = models.BooleanField(default=False)
     alert_template = models.ForeignKey(
         "alerts.AlertTemplate",
         related_name="agents",
@@ -170,11 +174,16 @@ class Agent(BaseAuditModel):
                 isinstance(check.check_result, CheckResult)
                 and check.check_result.status == "failing"
             ):
-                if check.alert_severity == "error":
+                alert_severity = (
+                    check.check_result.alert_severity
+                    if check.check_type in ["memory", "cpuload", "diskspace", "script"]
+                    else check.alert_severity
+                )
+                if alert_severity == "error":
                     failing += 1
-                elif check.alert_severity == "warning":
+                elif alert_severity == "warning":
                     warning += 1
-                elif check.alert_severity == "info":
+                elif alert_severity == "info":
                     info += 1
 
         ret = {
@@ -331,6 +340,18 @@ class Agent(BaseAuditModel):
         except:
             return ["unknown disk"]
 
+    @classmethod
+    def online_agents(cls, min_version: str = "") -> "List[Agent]":
+        if min_version:
+            return [
+                i
+                for i in cls.objects.only(*ONLINE_AGENTS)
+                if pyver.parse(i.version) >= pyver.parse(min_version)
+                and i.status == "online"
+            ]
+
+        return [i for i in cls.objects.only(*ONLINE_AGENTS) if i.status == "online"]
+
     def is_supported_script(self, platforms: List[str]) -> bool:
         return self.plat.lower() in platforms if platforms else True
 
@@ -349,25 +370,12 @@ class Agent(BaseAuditModel):
             )
         else:
             checks = list(self.agentchecks.all()) + self.get_checks_from_policies()
-        return checks
+        return self.add_check_results(checks)
 
-    def get_tasks_with_policies(
-        self, exclude_synced: bool = False
-    ) -> "List[AutomatedTask]":
-        from autotasks.models import TaskResult
+    def get_tasks_with_policies(self) -> "List[AutomatedTask]":
 
         tasks = list(self.autotasks.all()) + self.get_tasks_from_policies()
-
-        if exclude_synced:
-            return [
-                task
-                for task in tasks
-                if not task.task_result
-                or isinstance(task.task_result, TaskResult)
-                and task.task_result.sync_status != "synced"
-            ]
-        else:
-            return tasks
+        return self.add_task_results(tasks)
 
     def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":
 
@@ -490,15 +498,7 @@ class Agent(BaseAuditModel):
             if r == "pong":
                 running_agent = self
             else:
-                online = [
-                    agent
-                    for agent in Agent.objects.only(
-                        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
-                    )
-                    if agent.status == "online"
-                ]
-
-                for agent in online:
+                for agent in Agent.online_agents():
                     r = asyncio.run(agent.nats_cmd(nats_ping, timeout=1))
                     if r == "pong":
                         running_agent = agent

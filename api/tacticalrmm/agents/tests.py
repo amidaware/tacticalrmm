@@ -1,19 +1,20 @@
 import json
 import os
 from itertools import cycle
-from unittest.mock import patch
-import pytz
 from typing import TYPE_CHECKING
+from unittest.mock import patch
+
+import pytz
 from django.conf import settings
 from django.test import modify_settings
 from django.utils import timezone as djangotime
-from logs.models import PendingAction
 from model_bakery import baker
 from packaging import version as pyver
+
+from logs.models import PendingAction
+from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
-
-from tacticalrmm.test import TacticalTestCase
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
 from .serializers import (
@@ -245,7 +246,10 @@ class TestAgentViews(TacticalTestCase):
 
     def test_get_agent_versions(self):
         url = "/agents/versions/"
-        r = self.client.get(url)
+
+        with self.assertNumQueries(1):
+            r = self.client.get(url)
+
         self.assertEqual(r.status_code, 200)
         assert any(i["hostname"] == self.agent.hostname for i in r.json()["agents"])
 
@@ -1443,8 +1447,8 @@ class TestAgentTasks(TacticalTestCase):
         r = agent_update(agent64_nosign.agent_id)
         self.assertEqual(r, "created")
         action = PendingAction.objects.get(agent__agent_id=agent64_nosign.agent_id)
-        self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending")
+        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PendingAction.PENDING)
         self.assertEqual(
             action.details["url"],
             f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
@@ -1489,8 +1493,8 @@ class TestAgentTasks(TacticalTestCase):
             wait=False,
         )
         action = PendingAction.objects.get(agent__pk=agent64_sign.pk)
-        self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending")
+        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PendingAction.PENDING)
 
         # test __with__ code signing (32 bit)
         agent32_sign = baker.make_recipe(
@@ -1515,8 +1519,8 @@ class TestAgentTasks(TacticalTestCase):
             wait=False,
         )
         action = PendingAction.objects.get(agent__pk=agent32_sign.pk)
-        self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending") """
+        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PendingAction.PENDING) """
 
     @patch("agents.tasks.agent_update")
     @patch("agents.tasks.sleep", return_value=None)

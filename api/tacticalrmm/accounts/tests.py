@@ -1,10 +1,10 @@
 from unittest.mock import patch
 
-from accounts.models import APIKey, User
-from accounts.serializers import APIKeySerializer
 from django.test import override_settings
 from model_bakery import baker, seq
 
+from accounts.models import APIKey, User
+from accounts.serializers import APIKeySerializer
 from tacticalrmm.test import TacticalTestCase
 
 
@@ -69,17 +69,17 @@ class TestAccounts(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn("non_field_errors", r.data.keys())
 
-    @override_settings(DEBUG=True)
-    @patch("pyotp.TOTP.verify")
-    def test_debug_login_view(self, mock_verify):
-        url = "/login/"
-        mock_verify.return_value = True
+    # @override_settings(DEBUG=True)
+    # @patch("pyotp.TOTP.verify")
+    # def test_debug_login_view(self, mock_verify):
+    #     url = "/login/"
+    #     mock_verify.return_value = True
 
-        data = {"username": "bob", "password": "hunter2", "twofactor": "sekret"}
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertIn("expiry", r.data.keys())
-        self.assertIn("token", r.data.keys())
+    #     data = {"username": "bob", "password": "hunter2", "twofactor": "sekret"}
+    #     r = self.client.post(url, data, format="json")
+    #     self.assertEqual(r.status_code, 200)
+    #     self.assertIn("expiry", r.data.keys())
+    #     self.assertIn("token", r.data.keys())
 
 
 class TestGetAddUsers(TacticalTestCase):
@@ -338,7 +338,7 @@ class TestAPIKeyViews(TacticalTestCase):
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         apikey = APIKey.objects.get(pk=apikey.pk)
-        self.assertEquals(apikey.name, "New Name")
+        self.assertEqual(apikey.name, "New Name")
 
         self.check_not_authenticated("put", url)
 

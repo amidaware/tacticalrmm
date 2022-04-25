@@ -1,7 +1,6 @@
 import asyncio
 from datetime import datetime as dt
 
-from agents.models import Agent
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -11,9 +10,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from agents.models import Agent
 from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
-from tacticalrmm.utils import get_default_timezone, notify_error
+from tacticalrmm.utils import get_default_timezone
 
 from .models import AuditLog, DebugLog, PendingAction
 from .permissions import AuditLogPerms, DebugLogPerms, PendingActionPerms
@@ -96,14 +97,22 @@ class PendingActions(APIView):
     def get(self, request, agent_id=None):
         if agent_id:
             agent = get_object_or_404(
-                Agent.objects.defer(*AGENT_DEFER), agent_id=agent_id
+                Agent.objects.defer(*AGENT_DEFER).prefetch_related("pendingactions"),
+                agent_id=agent_id,
             )
-            actions = PendingAction.objects.filter(agent=agent)
+            actions = (
+                PendingAction.objects.filter(agent=agent)
+                .select_related("agent__site", "agent__site__client")
+                .defer("agent__services", "agent__wmi_detail")
+            )
         else:
             actions = (
-                PendingAction.objects.select_related("agent")
+                PendingAction.objects.filter_by_role(request.user)  # type: ignore
+                .select_related(
+                    "agent__site",
+                    "agent__site__client",
+                )
                 .defer("agent__services", "agent__wmi_detail")
-                .filter_by_role(request.user)  # type: ignore
             )
 
         return Response(PendingActionSerializer(actions, many=True).data)
@@ -114,7 +123,7 @@ class PendingActions(APIView):
         if not _has_perm_on_agent(request.user, action.agent.agent_id):
             raise PermissionDenied()
 
-        if action.action_type == "schedreboot":
+        if action.action_type == PendingAction.SCHED_REBOOT:
             nats_data = {
                 "func": "delschedtask",
                 "schedtaskpayload": {"name": action.details["taskname"]},

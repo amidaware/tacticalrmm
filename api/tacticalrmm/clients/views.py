@@ -2,19 +2,19 @@ import datetime as dt
 import re
 import uuid
 
-import pytz
-from agents.models import Agent
-from core.utils import get_core_settings
+from django.db.models import Count, Exists, OuterRef, Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from knox.models import AuthToken
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from knox.models import AuthToken
 
+from agents.models import Agent
+from core.utils import get_core_settings
+from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
-from tacticalrmm.utils import notify_error
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .permissions import ClientsPerms, DeploymentPerms, SitesPerms
@@ -32,15 +32,40 @@ class GetAddClients(APIView):
 
     def get(self, request):
         clients = (
-            Client.objects.select_related(
-                "workstation_policy", "server_policy", "alert_template"
-            )
+            Client.objects.order_by("name")
+            .select_related("workstation_policy", "server_policy", "alert_template")
             .filter_by_role(request.user)  # type: ignore
-            .prefetch_related("custom_fields__field", "sites")
+            .prefetch_related(
+                Prefetch(
+                    "custom_fields",
+                    queryset=ClientCustomField.objects.select_related("field"),
+                ),
+                Prefetch(
+                    "sites",
+                    queryset=Site.objects.select_related("client")
+                    .filter_by_role(request.user)
+                    .prefetch_related("custom_fields__field")
+                    .annotate(
+                        maintenance_mode=Exists(
+                            Agent.objects.filter(
+                                site=OuterRef("pk"), maintenance_mode=True
+                            )
+                        )
+                    )
+                    .annotate(agent_count=Count("agents")),
+                    to_attr="filtered_sites",
+                ),
+            )
+            .annotate(
+                maintenance_mode=Exists(
+                    Agent.objects.filter(
+                        site__client=OuterRef("pk"), maintenance_mode=True
+                    )
+                )
+            )
+            .annotate(agent_count=Count("sites__agents"))
         )
-        return Response(
-            ClientSerializer(clients, context={"user": request.user}, many=True).data
-        )
+        return Response(ClientSerializer(clients, many=True).data)
 
     def post(self, request):
         # create client
@@ -89,7 +114,24 @@ class GetUpdateDeleteClient(APIView):
 
     def get(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
-        return Response(ClientSerializer(client, context={"user": request.user}).data)
+
+        prefetch_related_objects(
+            [client],
+            Prefetch(
+                "sites",
+                queryset=Site.objects.select_related("client")
+                .filter_by_role(request.user)
+                .prefetch_related("custom_fields__field")
+                .annotate(
+                    maintenance_mode=Exists(
+                        Agent.objects.filter(site=OuterRef("pk"), maintenance_mode=True)
+                    )
+                )
+                .annotate(agent_count=Count("agents")),
+                to_attr="filtered_sites",
+            ),
+        )
+        return Response(ClientSerializer(client).data)
 
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)

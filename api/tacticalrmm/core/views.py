@@ -2,20 +2,20 @@ import re
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-from core.utils import get_core_settings
-from logs.models import AuditLog
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.utils import get_core_settings
+from logs.models import AuditLog
+from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
     _has_perm_on_site,
 )
-from tacticalrmm.utils import notify_error
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
 from .permissions import (
@@ -56,6 +56,14 @@ def version(request):
 
 
 @api_view()
+def clear_cache(request):
+    from core.utils import clear_entire_cache
+
+    clear_entire_cache()
+    return Response("Cache was cleared!")
+
+
+@api_view()
 def dashboard_info(request):
     from tacticalrmm.utils import get_latest_trmm_ver
 
@@ -85,14 +93,14 @@ def dashboard_info(request):
 @permission_classes([IsAuthenticated, CoreSettingsPerms])
 def email_test(request):
     core = get_core_settings()
-    r = core.send_mail(
+
+    msg, ok = core.send_mail(
         subject="Test from Tactical RMM", body="This is a test message", test=True
     )
+    if not ok:
+        return notify_error(msg)
 
-    if not isinstance(r, bool) and isinstance(r, str):
-        return notify_error(r)
-
-    return Response("Email Test OK!")
+    return Response(msg)
 
 
 @api_view(["POST"])
@@ -108,14 +116,9 @@ def server_maintenance(request):
         return Response("Nats configuration was reloaded successfully.")
 
     if request.data["action"] == "rm_orphaned_tasks":
-        from agents.models import Agent
         from autotasks.tasks import remove_orphaned_win_tasks
 
-        agents = Agent.objects.only("pk", "last_seen", "overdue_time", "offline_time")
-        online = [i for i in agents if i.status == "online"]
-        for agent in online:
-            remove_orphaned_win_tasks.delay(agent.pk)
-
+        remove_orphaned_win_tasks.delay()
         return Response(
             "The task has been initiated. Check the Debug Log in the UI for progress."
         )
@@ -134,7 +137,9 @@ def server_maintenance(request):
             auditlogs.delete()
 
         if "pending_actions" in tables:
-            pendingactions = PendingAction.objects.filter(status="completed")
+            pendingactions = PendingAction.objects.filter(
+                status=PendingAction.COMPLETED
+            )
             records_count += pendingactions.count()
             pendingactions.delete()
 
@@ -329,10 +334,10 @@ class RunURLAction(APIView):
     permission_classes = [IsAuthenticated, URLActionPerms]
 
     def patch(self, request):
-        from agents.models import Agent
-        from clients.models import Client, Site
         from requests.utils import requote_uri
 
+        from agents.models import Agent
+        from clients.models import Client, Site
         from tacticalrmm.utils import replace_db_values
 
         if "agent_id" in request.data.keys():
@@ -385,9 +390,8 @@ class TwilioSMSTest(APIView):
                 "All fields are required, including at least 1 recipient"
             )
 
-        r = core.send_sms("TacticalRMM Test SMS", test=True)
+        msg, ok = core.send_sms("TacticalRMM Test SMS", test=True)
+        if not ok:
+            return notify_error(msg)
 
-        if not isinstance(r, bool) and isinstance(r, str):
-            return notify_error(r)
-
-        return Response("SMS Test sent successfully!")
+        return Response(msg)

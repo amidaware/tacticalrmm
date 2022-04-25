@@ -1,7 +1,9 @@
-from agents.models import Agent
+from typing import TYPE_CHECKING
+
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from typing import TYPE_CHECKING
+
+from agents.models import Agent
 
 if TYPE_CHECKING:
     from accounts.models import User

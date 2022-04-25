@@ -18,6 +18,7 @@
             :options="clientOptions"
             use-chips
             mapOptions
+            filterable
           />
         </q-card-section>
         <q-card-section>
@@ -29,6 +30,7 @@
             :options="siteOptions"
             use-chips
             mapOptions
+            filterable
           />
         </q-card-section>
         <q-card-section>
@@ -40,6 +42,7 @@
             :options="agentOptions"
             use-chips
             mapOptions
+            filterable
           />
         </q-card-section>
 

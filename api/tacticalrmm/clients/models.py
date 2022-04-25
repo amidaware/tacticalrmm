@@ -1,11 +1,12 @@
 import uuid
+from typing import Dict
+
+from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
+from django.db import models
 
 from agents.models import Agent
-from django.core.cache import cache
-from django.contrib.postgres.fields import ArrayField
-from django.db import models
 from logs.models import BaseAuditModel
-from typing import Dict
 from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.models import PermissionQuerySet
 
@@ -20,7 +21,6 @@ class Client(BaseAuditModel):
     name = models.CharField(max_length=255, unique=True)
     block_policy_inheritance = models.BooleanField(default=False)
     failing_checks = models.JSONField(default=_default_failing_checks_data)
-    agent_count = models.PositiveIntegerField(default=0)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_clients",
@@ -83,14 +83,6 @@ class Client(BaseAuditModel):
         return self.name
 
     @property
-    def has_maintenanace_mode_agents(self) -> bool:
-        return (
-            Agent.objects.defer(*AGENT_DEFER)
-            .filter(site__client=self, maintenance_mode=True)
-            .exists()
-        )
-
-    @property
     def live_agent_count(self) -> int:
         return Agent.objects.defer(*AGENT_DEFER).filter(site__client=self).count()
 
@@ -109,7 +101,6 @@ class Site(BaseAuditModel):
     name = models.CharField(max_length=255)
     block_policy_inheritance = models.BooleanField(default=False)
     failing_checks = models.JSONField(default=_default_failing_checks_data)
-    agent_count = models.PositiveIntegerField(default=0)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_sites",
@@ -165,10 +156,6 @@ class Site(BaseAuditModel):
 
     def __str__(self):
         return self.name
-
-    @property
-    def has_maintenanace_mode_agents(self) -> bool:
-        return self.agents.defer(*AGENT_DEFER).filter(maintenance_mode=True).exists()  # type: ignore
 
     @property
     def live_agent_count(self) -> int:

@@ -325,8 +325,9 @@ class TestAutotaskViews(TacticalTestCase):
 
         self.check_not_authenticated("put", url)
 
+    @patch("autotasks.tasks.remove_orphaned_win_tasks.delay")
     @patch("autotasks.tasks.delete_win_task_schedule.delay")
-    def test_delete_autotask(self, delete_win_task_schedule):
+    def test_delete_autotask(self, delete_win_task_schedule, remove_orphaned_win_tasks):
         # setup data
         agent = baker.make_recipe("agents.agent")
         agent_task = baker.make("autotasks.AutomatedTask", agent=agent)
@@ -342,6 +343,16 @@ class TestAutotaskViews(TacticalTestCase):
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
         delete_win_task_schedule.assert_called_with(pk=agent_task.id)
+        remove_orphaned_win_tasks.assert_not_called()
+
+        delete_win_task_schedule.reset_mock()
+        remove_orphaned_win_tasks.reset_mock()
+        # test delete policy task
+        url = f"{base_url}/{policy_task.id}/"
+        resp = self.client.delete(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        remove_orphaned_win_tasks.assert_called_once()
+        delete_win_task_schedule.assert_not_called()
 
         self.check_not_authenticated("delete", url)
 
@@ -371,11 +382,11 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_remove_orphaned_win_task(self, nats_cmd):
-        self.agent = baker.make_recipe("agents.agent")
-        self.task1 = AutomatedTask.objects.create(
-            agent=self.agent,
+        agent = baker.make_recipe("agents.online_agent")
+        baker.make_recipe("agents.offline_agent")
+        task1 = AutomatedTask.objects.create(
+            agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
         )
 
         # test removing an orphaned task
@@ -385,13 +396,13 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "GoogleUpdateTaskMachineCore",
             "GoogleUpdateTaskMachineUA",
             "OneDrive Standalone Update Task-S-1-5-21-717461175-241712648-1206041384-1001",
-            self.task1.win_task_name,
+            task1.win_task_name,
             "TacticalRMM_fixmesh",
             "TacticalRMM_SchedReboot_jk324kajd",
             "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb",  # orphaned task
         ]
 
-        self.calls = [
+        calls = [
             call({"func": "listschedtasks"}, timeout=10),
             call(
                 {
@@ -405,26 +416,23 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         ]
 
         nats_cmd.side_effect = [win_tasks, "ok"]
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        remove_orphaned_win_tasks()
         self.assertEqual(nats_cmd.call_count, 2)
-        nats_cmd.assert_has_calls(self.calls)
-        self.assertEqual(ret.status, "SUCCESS")
+        nats_cmd.assert_has_calls(calls)
 
         # test nats delete task fail
         nats_cmd.reset_mock()
         nats_cmd.side_effect = [win_tasks, "error deleting task"]
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        nats_cmd.assert_has_calls(self.calls)
+        remove_orphaned_win_tasks()
+        nats_cmd.assert_has_calls(calls)
         self.assertEqual(nats_cmd.call_count, 2)
-        self.assertEqual(ret.status, "SUCCESS")
 
         # no orphaned tasks
         nats_cmd.reset_mock()
         win_tasks.remove("TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb")
         nats_cmd.side_effect = [win_tasks, "ok"]
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        remove_orphaned_win_tasks()
         self.assertEqual(nats_cmd.call_count, 1)
-        self.assertEqual(ret.status, "SUCCESS")
 
     @patch("agents.models.Agent.nats_cmd")
     def test_run_win_task(self, nats_cmd):
@@ -432,7 +440,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         self.task1 = AutomatedTask.objects.create(
             agent=self.agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
         )
         nats_cmd.return_value = "ok"
         ret = run_win_task.s(self.task1.pk).apply()
@@ -447,7 +454,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="daily",
             daily_interval=1,
             run_time_date=djangotime.now() + djangotime.timedelta(hours=3, minutes=30),
@@ -496,7 +502,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="weekly",
             weekly_interval=1,
             run_asap_after_missed=True,
@@ -544,7 +549,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="monthly",
             random_task_delay="3M",
             task_repetition_interval="15M",
@@ -593,7 +597,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="monthlydow",
             run_time_bit_weekdays=56,
             monthly_months_of_year=0x400,
@@ -634,7 +637,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 2",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="runonce",
             run_time_date=djangotime.now() + djangotime.timedelta(hours=22),
             run_asap_after_missed=True,
@@ -670,7 +672,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 3",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="runonce",
             run_asap_after_missed=True,
             run_time_date=djangotime.datetime(2018, 6, 1, 23, 23, 23),
@@ -681,10 +682,19 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
 
         # check if task is scheduled for at most 5min in the future
         _, args, _ = nats_cmd.mock_calls[0]
-        self.assertGreater(
-            args[0]["schedtaskpayload"]["start_min"],
-            int(djangotime.now().strftime("%-M")),
-        )
+
+        current_minute = int(djangotime.now().strftime("%-M"))
+
+        if current_minute >= 55 and current_minute < 60:
+            self.assertLess(
+                args[0]["schedtaskpayload"]["start_min"],
+                int(djangotime.now().strftime("%-M")),
+            )
+        else:
+            self.assertGreater(
+                args[0]["schedtaskpayload"]["start_min"],
+                int(djangotime.now().strftime("%-M")),
+            )
 
         # test checkfailure task
         nats_cmd.reset_mock()
@@ -693,7 +703,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 4",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="checkfailure",
             assigned_check=check,
         )
@@ -722,7 +731,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         task1 = AutomatedTask.objects.create(
             agent=agent,
             name="test task 5",
-            win_task_name=AutomatedTask.generate_task_name(),
             task_type="manual",
         )
         nats_cmd.return_value = "ok"

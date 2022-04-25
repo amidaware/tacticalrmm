@@ -1,10 +1,12 @@
 from django.core.management.base import BaseCommand
-from alerts.models import Alert
+
+from core.utils import clear_entire_cache
 
 
 class Command(BaseCommand):
     help = "Collection of tasks to run after updating the rmm, before migrations"
 
     def handle(self, *args, **kwargs):
-        # adding this now for future updates
-        Alert.objects.filter(agent=None).delete()
+        self.stdout.write(self.style.WARNING("Clearning the cache"))
+        clear_entire_cache()
+        self.stdout.write(self.style.SUCCESS("Cache was cleared!"))

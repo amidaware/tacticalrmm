@@ -13,7 +13,120 @@ class MeshAgentIdent(Enum):
         return str(self.value)
 
 
-AGENT_DEFER = ("wmi_detail", "services")
+CORESETTINGS_CACHE_KEY = "core_settings"
+ROLE_CACHE_PREFIX = "role_"
+
+# Agent db fields that are not needed for most queries, speeds up query
+AGENT_DEFER = (
+    "wmi_detail",
+    "services",
+    "created_by",
+    "created_time",
+    "modified_by",
+    "modified_time",
+)
+
+ONLINE_AGENTS = (
+    "pk",
+    "agent_id",
+    "last_seen",
+    "overdue_time",
+    "offline_time",
+    "version",
+)
+
+FIELDS_TRIGGER_TASK_UPDATE_AGENT = [
+    "run_time_bit_weekdays",
+    "run_time_date",
+    "expire_date",
+    "daily_interval",
+    "weekly_interval",
+    "enabled",
+    "remove_if_not_scheduled",
+    "run_asap_after_missed",
+    "monthly_days_of_month",
+    "monthly_months_of_year",
+    "monthly_weeks_of_month",
+    "task_repetition_duration",
+    "task_repetition_interval",
+    "stop_task_at_duration_end",
+    "random_task_delay",
+    "run_asap_after_missed",
+    "task_instance_policy",
+]
+
+POLICY_TASK_FIELDS_TO_COPY = [
+    "alert_severity",
+    "email_alert",
+    "text_alert",
+    "dashboard_alert",
+    "name",
+    "actions",
+    "run_time_bit_weekdays",
+    "run_time_date",
+    "expire_date",
+    "daily_interval",
+    "weekly_interval",
+    "task_type",
+    "enabled",
+    "remove_if_not_scheduled",
+    "run_asap_after_missed",
+    "custom_field",
+    "collector_all_output",
+    "monthly_days_of_month",
+    "monthly_months_of_year",
+    "monthly_weeks_of_month",
+    "task_repetition_duration",
+    "task_repetition_interval",
+    "stop_task_at_duration_end",
+    "random_task_delay",
+    "run_asap_after_missed",
+    "task_instance_policy",
+    "continue_on_error",
+]
+
+CHECKS_NON_EDITABLE_FIELDS = [
+    "check_type",
+    "overridden_by_policy",
+    "created_by",
+    "created_time",
+    "modified_by",
+    "modified_time",
+]
+
+POLICY_CHECK_FIELDS_TO_COPY = [
+    "warning_threshold",
+    "error_threshold",
+    "alert_severity",
+    "name",
+    "run_interval",
+    "disk",
+    "fails_b4_alert",
+    "ip",
+    "script",
+    "script_args",
+    "info_return_codes",
+    "warning_return_codes",
+    "timeout",
+    "svc_name",
+    "svc_display_name",
+    "svc_policy_mode",
+    "pass_if_start_pending",
+    "pass_if_svc_not_exist",
+    "restart_if_stopped",
+    "log_name",
+    "event_id",
+    "event_id_is_wildcard",
+    "event_type",
+    "event_source",
+    "event_message",
+    "fail_when",
+    "search_last_days",
+    "number_of_events_b4_alert",
+    "email_alert",
+    "text_alert",
+    "dashboard_alert",
+]
 
 
 WEEK_DAYS = {

@@ -57,7 +57,7 @@
 // composition imports
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
-import { useQuasar } from "quasar";
+import { useQuasar, Notify } from "quasar";
 import { formatTableColumnText, truncateText } from "@/utils/format";
 import { fetchAgentHistory } from "@/api/agents";
 
@@ -134,6 +134,13 @@ export default {
 
     // quasar dialogs
     function showScriptOutput(output) {
+      if (!output) {
+        Notify.create({
+          message: "No output is available yet",
+          type: "negative",
+        });
+        return;
+      }
       $q.dialog({
         component: ScriptOutput,
         componentProps: {

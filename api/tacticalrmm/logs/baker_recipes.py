@@ -2,6 +2,8 @@ from itertools import cycle
 
 from model_bakery.recipe import Recipe
 
+from logs.models import PendingAction
+
 object_types = [
     "user",
     "script",
@@ -26,3 +28,9 @@ object_logs = Recipe(
 )
 
 login_logs = Recipe("logs.AuditLog", action=cycle(login_actions), object_type="user")
+
+pending_agentupdate_action = Recipe(
+    "logs.PendingAction",
+    action_type=PendingAction.AGENT_UPDATE,
+    status=PendingAction.PENDING,
+)

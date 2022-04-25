@@ -1,16 +1,17 @@
-from agents.models import Agent
-from automation.models import Policy
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from agents.models import Agent
+from automation.models import Policy
 from tacticalrmm.permissions import _has_perm_on_agent
 
 from .models import AutomatedTask
 from .permissions import AutoTaskPerms, RunAutoTaskPerms
 from .serializers import TaskSerializer
+from .tasks import remove_orphaned_win_tasks
 
 
 class GetAddAutoTasks(APIView):
@@ -44,9 +45,7 @@ class GetAddAutoTasks(APIView):
 
         serializer = TaskSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        task = serializer.save(
-            win_task_name=AutomatedTask.generate_task_name(),
-        )
+        task = serializer.save()
 
         if task.agent:
             create_win_task_schedule.delay(pk=task.pk)
@@ -93,6 +92,7 @@ class GetEditDeleteAutoTask(APIView):
             delete_win_task_schedule.delay(pk=task.pk)
         else:
             task.delete()
+            remove_orphaned_win_tasks.delay()
 
         return Response(f"{task.name} will be deleted shortly")
 

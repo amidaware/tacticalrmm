@@ -1,12 +1,13 @@
 import base64
 
+from django.core.management.base import BaseCommand
+
 from accounts.models import User
 from agents.models import Agent
+from alerts.models import Alert
 from autotasks.models import AutomatedTask
 from checks.models import Check, CheckHistory
-from django.core.management.base import BaseCommand
 from scripts.models import Script
-
 from tacticalrmm.constants import AGENT_DEFER
 
 

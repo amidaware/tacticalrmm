@@ -1,19 +1,24 @@
 import asyncio
 import random
 import string
-import pytz
-from typing import TYPE_CHECKING, List, Dict, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from alerts.models import SEVERITY_CHOICES
-from django.core.validators import MaxValueValidator, MinValueValidator
+import pytz
 from django.core.cache import cache
-from django.utils import timezone as djangotime
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.fields import DateTimeField
 from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
-from logs.models import BaseAuditModel, DebugLog
+from django.utils import timezone as djangotime
+
+from alerts.models import SEVERITY_CHOICES
 from core.utils import get_core_settings
+from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.constants import (
+    FIELDS_TRIGGER_TASK_UPDATE_AGENT,
+    POLICY_TASK_FIELDS_TO_COPY,
+)
 
 if TYPE_CHECKING:
     from automation.models import Policy
@@ -53,6 +58,11 @@ TASK_STATUS_CHOICES = [
     ("failing", "Failing"),
     ("pending", "Pending"),
 ]
+
+
+def generate_task_name() -> str:
+    chars = string.ascii_letters
+    return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
 
 
 class AutomatedTask(BaseAuditModel):
@@ -106,7 +116,7 @@ class AutomatedTask(BaseAuditModel):
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
     win_task_name = models.CharField(
-        max_length=255, null=True, blank=True
+        max_length=255, unique=True, blank=True, default=generate_task_name
     )  # should be changed to unique=True
     run_time_date = DateTimeField(null=True, blank=True)
     expire_date = DateTimeField(null=True, blank=True)
@@ -166,7 +176,7 @@ class AutomatedTask(BaseAuditModel):
             for field in self.fields_that_trigger_task_update_on_agent:
                 if getattr(self, field) != getattr(old_task, field):
                     if self.policy:
-                        TaskResult.objects.exclude(sync_status="inital").filter(
+                        TaskResult.objects.exclude(sync_status="initial").filter(
                             task__policy_id=self.policy.id
                         ).update(sync_status="notsynced")
                     else:
@@ -176,7 +186,7 @@ class AutomatedTask(BaseAuditModel):
 
     def delete(self, *args, **kwargs):
 
-        # if check is a policy check clear cache on everything
+        # if task is a policy task clear cache on everything
         if self.policy:
             cache.delete_many_pattern("site_*_tasks")
             cache.delete_many_pattern("agent_*_tasks")
@@ -221,30 +231,7 @@ class AutomatedTask(BaseAuditModel):
 
     @property
     def fields_that_trigger_task_update_on_agent(self) -> List[str]:
-        return [
-            "run_time_bit_weekdays",
-            "run_time_date",
-            "expire_date",
-            "daily_interval",
-            "weekly_interval",
-            "enabled",
-            "remove_if_not_scheduled",
-            "run_asap_after_missed",
-            "monthly_days_of_month",
-            "monthly_months_of_year",
-            "monthly_weeks_of_month",
-            "task_repetition_duration",
-            "task_repetition_interval",
-            "stop_task_at_duration_end",
-            "random_task_delay",
-            "run_asap_after_missed",
-            "task_instance_policy",
-        ]
-
-    @staticmethod
-    def generate_task_name() -> str:
-        chars = string.ascii_letters
-        return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
+        return FIELDS_TRIGGER_TASK_UPDATE_AGENT
 
     @staticmethod
     def serialize(task):
@@ -257,39 +244,10 @@ class AutomatedTask(BaseAuditModel):
         self, policy: "Policy", assigned_check: "Optional[Check]" = None
     ) -> None:
         ### Copies certain properties on this task (self) to a new task and sets it to the supplied Policy
-        fields_to_copy = [
-            "alert_severity",
-            "email_alert",
-            "text_alert",
-            "dashboard_alert",
-            "name",
-            "actions",
-            "run_time_bit_weekdays",
-            "run_time_date",
-            "expire_date",
-            "daily_interval",
-            "weekly_interval",
-            "task_type",
-            "enabled",
-            "remove_if_not_scheduled",
-            "run_asap_after_missed",
-            "custom_field",
-            "collector_all_output",
-            "monthly_days_of_month",
-            "monthly_months_of_year",
-            "monthly_weeks_of_month",
-            "task_repetition_duration",
-            "task_repetition_interval",
-            "stop_task_at_duration_end",
-            "random_task_delay",
-            "run_asap_after_missed",
-            "task_instance_policy",
-            "continue_on_error",
-        ]
+        fields_to_copy = POLICY_TASK_FIELDS_TO_COPY
 
         task = AutomatedTask.objects.create(
             policy=policy,
-            win_task_name=AutomatedTask.generate_task_name(),
             assigned_check=assigned_check,
         )
 

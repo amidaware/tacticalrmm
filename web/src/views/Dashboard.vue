@@ -453,7 +453,6 @@ export default {
           field: "last_seen",
           sortable: true,
           align: "left",
-          sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
         },
         {
           name: "boot_time",
@@ -491,10 +490,12 @@ export default {
     selectedTree(newVal, oldVal) {
       if (this.clearSearchWhenSwitching) this.clearFilter();
     },
+    tab(newVal, oldVal) {
+      this.$store.dispatch("loadAgents");
+    },
   },
   methods: {
     getTree() {
-      this.$store.dispatch("loadAgents");
       this.$store.dispatch("loadTree");
     },
     clearTreeSelected() {

@@ -33,7 +33,8 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "WANonly": true,
     "Minify": 1,
     "Port": 4443,
-    "AgentPort": 443,
+    "AgentAliasPort": 443,
+    "aliasPort": 443,
     "AllowLoginToken": true,
     "AllowFraming": true,
     "_AgentPing": 60,
@@ -73,13 +74,6 @@ EOF
 )"
 
   echo "${mesh_config}" > /home/node/app/meshcentral-data/config.json
-
-else
-  # replace persistent mesh configuration with new ports
-  sed -i 's/"Port": 443/"Port": 4443/' /home/node/app/meshcentral-data/config.json
-  sed -i 's/"RedirPort": 80/"RedirPort": 8080/' /home/node/app/meshcentral-data/config.json
-  sed -i "s/\"CertUrl\": \".*\"/\"CertUrl\": \"https:\/\/${NGINX_HOST_IP}:${NGINX_HOST_PORT}\"/" /home/node/app/meshcentral-data/config.json
-
 fi
 
 node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email example@example.com

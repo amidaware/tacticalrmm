@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="133"
+SCRIPT_VERSION="134"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -302,6 +302,11 @@ python manage.py create_installer_user
 python manage.py create_natsapi_conf
 python manage.py post_update_tasks
 deactivate
+
+printf >&2 "${GREEN}Turning off redis aof${NC}\n"
+sudo redis-cli config set appendonly no
+sudo redis-cli config rewrite
+sudo rm -f /var/lib/redis/appendonly.aof
 
 rm -rf /rmm/web/dist
 rm -rf /rmm/web/.quasar

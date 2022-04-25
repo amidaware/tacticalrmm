@@ -1,8 +1,9 @@
-from accounts.views import CheckCreds, LoginView
-from core.consumers import DashInfo
 from django.conf import settings
 from django.urls import include, path, register_converter
 from knox import views as knox_views
+
+from accounts.views import CheckCreds, LoginView
+from core.consumers import DashInfo
 
 
 class AgentIDConverter:
@@ -43,7 +44,7 @@ if getattr(settings, "ADMIN_ENABLED", False):
 
     urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)
 
-if getattr(settings, "DEBUG", False):
+if getattr(settings, "DEBUG", False) and not getattr(settings, "DEMO", False):
     urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
 
 if getattr(settings, "SWAGGER_ENABLED", False):

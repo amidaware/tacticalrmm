@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	version = "3.0.2"
+	version = "3.0.3"
 	log     = logrus.New()
 )
 

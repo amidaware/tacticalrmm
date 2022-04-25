@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union, Optional, Dict, Any, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel, DebugLog
 
+from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -110,7 +110,9 @@ class Alert(models.Model):
     def create_or_return_availability_alert(
         cls, agent: Agent, skip_create: bool = False
     ) -> Optional[Alert]:
-        if not cls.objects.filter(agent=agent, resolved=False).exists():
+        if not cls.objects.filter(
+            agent=agent, alert_type="availability", resolved=False
+        ).exists():
             if skip_create:
                 return None
 
@@ -437,7 +439,7 @@ class Alert(models.Model):
             )
 
             # command was successful
-            if type(r) == dict:
+            if isinstance(r, dict):
                 alert.action_retcode = r["retcode"]
                 alert.action_stdout = r["stdout"]
                 alert.action_stderr = r["stderr"]
@@ -481,6 +483,11 @@ class Alert(models.Model):
                 email_on_resolved = alert_template.agent_email_on_resolved
                 text_on_resolved = alert_template.agent_text_on_resolved
                 run_script_action = alert_template.agent_script_actions
+
+            if agent.overdue_email_alert:
+                email_on_resolved = True
+            if agent.overdue_text_alert:
+                text_on_resolved = True
 
         elif isinstance(instance, CheckResult):
             from checks.tasks import (
@@ -554,7 +561,7 @@ class Alert(models.Model):
             )
 
             # command was successful
-            if type(r) == dict:
+            if isinstance(r, dict):
                 alert.resolved_action_retcode = r["retcode"]
                 alert.resolved_action_stdout = r["stdout"]
                 alert.resolved_action_stderr = r["stderr"]

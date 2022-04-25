@@ -1,13 +1,13 @@
 import asyncio
 
-from agents.permissions import RunScriptPerms
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from tacticalrmm.utils import notify_error
+from agents.permissions import RunScriptPerms
+from tacticalrmm.helpers import notify_error
 
 from .models import Script, ScriptSnippet
 from .permissions import ScriptsPerms
@@ -33,10 +33,10 @@ class GetAddScripts(APIView):
 
         if not showHiddenScripts or showHiddenScripts != "true":
             scripts = scripts.filter(hidden=False)
-        else:
-            scripts = Script.objects.all()
 
-        return Response(ScriptTableSerializer(scripts, many=True).data)
+        return Response(
+            ScriptTableSerializer(scripts.order_by("category"), many=True).data
+        )
 
     def post(self, request):
 

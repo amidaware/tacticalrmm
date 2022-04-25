@@ -133,10 +133,10 @@ function initiate_letsencrypt {
   ROOT_DOMAIN=$(echo ${API_HOST} | cut -d "." -f2- )
 
   echo "Root domain is ${ROOTDOMAIN}"
-  sudo certbot certonly --manual -d *.${ROOT_DOMAIN} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${EMAIL} --no-eff-email
+  sudo certbot certonly --manual -d *.${ROOT_DOMAIN} --agree-tos --no-bootstrap --preferred-challenges dns -m ${EMAIL} --no-eff-email
   while [[ $? -ne 0 ]]
   do
-  sudo certbot certonly --manual -d *.${ROOT_DOMAIN} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${EMAIL} --no-eff-email
+  sudo certbot certonly --manual -d *.${ROOT_DOMAIN} --agree-tos --no-bootstrap --preferred-challenges dns -m ${EMAIL} --no-eff-email
   done
 
   CERT_PRIV_FILE=/etc/letsencrypt/live/${ROOT_DOMAIN}/privkey.pem

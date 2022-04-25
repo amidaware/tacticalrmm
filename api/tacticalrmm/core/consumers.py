@@ -1,9 +1,12 @@
 import asyncio
 
-from agents.models import Agent
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import F
+from django.utils import timezone as djangotime
+
+from agents.models import Agent
 
 
 class DashInfo(AsyncJsonWebsocketConsumer):
@@ -33,43 +36,41 @@ class DashInfo(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def get_dashboard_info(self):
-        server_offline_count = len(
-            [
-                agent
-                for agent in Agent.objects.filter(monitoring_type="server").only(
-                    "pk",
-                    "last_seen",
-                    "overdue_time",
-                    "offline_time",
-                )
-                if not agent.status == "online"
-            ]
+        total_server_agents_count = (
+            Agent.objects.filter_by_role(self.user)
+            .filter(monitoring_type="server")
+            .count()
+        )
+        offline_server_agents_count = (
+            Agent.objects.filter_by_role(self.user)
+            .filter(monitoring_type="server")
+            .filter(
+                last_seen__lt=djangotime.now()
+                - (djangotime.timedelta(minutes=1) * F("offline_time"))
+            )
+            .count()
+        )
+        total_workstation_agents_count = (
+            Agent.objects.filter_by_role(self.user)
+            .filter(monitoring_type="workstation")
+            .count()
+        )
+        offline_workstation_agents_count = (
+            Agent.objects.filter_by_role(self.user)
+            .filter(monitoring_type="workstation")
+            .filter(
+                last_seen__lt=djangotime.now()
+                - (djangotime.timedelta(minutes=1) * F("offline_time"))
+            )
+            .count()
         )
 
-        workstation_offline_count = len(
-            [
-                agent
-                for agent in Agent.objects.filter(monitoring_type="workstation").only(
-                    "pk",
-                    "last_seen",
-                    "overdue_time",
-                    "offline_time",
-                )
-                if not agent.status == "online"
-            ]
-        )
-
-        ret = {
-            "total_server_offline_count": server_offline_count,
-            "total_workstation_offline_count": workstation_offline_count,
-            "total_server_count": Agent.objects.filter(
-                monitoring_type="server"
-            ).count(),
-            "total_workstation_count": Agent.objects.filter(
-                monitoring_type="workstation"
-            ).count(),
+        return {
+            "total_server_offline_count": offline_server_agents_count,
+            "total_workstation_offline_count": offline_workstation_agents_count,
+            "total_server_count": total_server_agents_count,
+            "total_workstation_count": total_workstation_agents_count,
         }
-        return ret
 
     async def send_dash_info(self):
         while self.connected:

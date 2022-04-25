@@ -1,10 +1,12 @@
+from typing import Optional
+
 from django.contrib.auth.models import AbstractUser
+from django.core.cache import cache
 from django.db import models
 from django.db.models.fields import CharField, DateTimeField
-from django.core.cache import cache
-from logs.models import BaseAuditModel
 
-from typing import Optional
+from logs.models import BaseAuditModel
+from tacticalrmm.constants import ROLE_CACHE_PREFIX
 
 AGENT_DBLCLICK_CHOICES = [
     ("editagent", "Edit Agent"),
@@ -23,8 +25,6 @@ CLIENT_TREE_SORT_CHOICES = [
     ("alphafail", "Move failing clients to the top"),
     ("alpha", "Sort alphabetically"),
 ]
-
-ROLE_CACHE_PREFIX = "role_"
 
 
 class User(AbstractUser, BaseAuditModel):

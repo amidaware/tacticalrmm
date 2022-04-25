@@ -73,6 +73,7 @@
             :options="customFieldOptions"
             label="Select custom field"
             mapOptions
+            filterable
           />
           <q-checkbox v-model="state.save_all_output" label="Save all output" />
         </q-card-section>

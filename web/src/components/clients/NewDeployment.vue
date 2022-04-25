@@ -16,6 +16,7 @@
           v-model="state.site"
           :options="siteOptions"
           mapOptions
+          filterable
         />
       </q-card-section>
       <q-card-section>

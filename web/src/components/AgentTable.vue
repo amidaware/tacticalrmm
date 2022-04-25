@@ -22,21 +22,21 @@
       <template v-slot:header-cell-smsalert="props">
         <q-th auto-width :props="props">
           <q-icon name="phone_android" size="1.5em">
-            <q-tooltip>SMS Alert</q-tooltip>
+            <q-tooltip>{{ sms_overdue_text }}</q-tooltip>
           </q-icon>
         </q-th>
       </template>
       <template v-slot:header-cell-emailalert="props">
         <q-th auto-width :props="props">
           <q-icon name="email" size="1.5em">
-            <q-tooltip>Email Alert</q-tooltip>
+            <q-tooltip>{{ email_overdue_text }}</q-tooltip>
           </q-icon>
         </q-th>
       </template>
       <template v-slot:header-cell-dashboardalert="props">
         <q-th auto-width :props="props">
           <q-icon name="notifications" size="1.5em">
-            <q-tooltip>Dashboard Alert</q-tooltip>
+            <q-tooltip>{{ dashboard_overdue_text }}</q-tooltip>
           </q-icon>
         </q-th>
       </template>
@@ -105,7 +105,9 @@
               dense
               @update:model-value="overdueAlert('text', props.row, props.row.overdue_text_alert)"
               v-model="props.row.overdue_text_alert"
-            />
+            >
+              <q-tooltip>{{ sms_overdue_text }}</q-tooltip>
+            </q-checkbox>
           </q-td>
           <q-td>
             <q-checkbox
@@ -122,7 +124,9 @@
               dense
               @update:model-value="overdueAlert('email', props.row, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
-            />
+            >
+              <q-tooltip>{{ email_overdue_text }}</q-tooltip>
+            </q-checkbox>
           </q-td>
           <q-td>
             <q-checkbox
@@ -139,7 +143,9 @@
               dense
               @update:model-value="overdueAlert('dashboard', props.row, props.row.overdue_dashboard_alert)"
               v-model="props.row.overdue_dashboard_alert"
-            />
+            >
+              <q-tooltip>{{ dashboard_overdue_text }}</q-tooltip>
+            </q-checkbox>
           </q-td>
 
           <q-td key="plat" :props="props">
@@ -184,7 +190,7 @@
           </q-td>
           <q-td :props="props" key="pendingactions">
             <q-icon
-              v-if="props.row.pending_actions_count !== 0"
+              v-if="props.row.pending_actions_count > 0"
               @click="showPendingActionsModal(props.row)"
               name="far fa-clock"
               size="1.4em"
@@ -228,6 +234,7 @@ import PendingActions from "@/components/logs/PendingActions";
 import AgentActionMenu from "@/components/agents/AgentActionMenu";
 import { runURLAction } from "@/api/core";
 import { runTakeControl, runRemoteBackground } from "@/api/agents";
+import { capitalize } from "@vue/shared";
 
 export default {
   name: "AgentTable",
@@ -244,6 +251,9 @@ export default {
         sortBy: "hostname",
         descending: false,
       },
+      dashboard_overdue_text: "Show a dashboard alert when agent is overdue",
+      email_overdue_text: "Send an email alert when agent is overdue",
+      sms_overdue_text: "Send a SMS alert when agent is overdue",
     };
   },
   methods: {
@@ -343,14 +353,16 @@ export default {
       const data = {
         [db_field]: !alert_action,
       };
-      const alertColor = !alert_action ? "positive" : "warning";
+      const alertColor = !alert_action ? "positive" : "info";
       this.$axios
         .put(`/agents/${agent.agent_id}/`, data)
         .then(r => {
           this.$q.notify({
             color: alertColor,
+            textColor: "black",
             icon: "fas fa-check-circle",
-            message: `Overdue ${category} alerts ${action} on ${agent.hostname}`,
+            message: `${capitalize(category)} alerts will now be ${action} when ${agent.hostname} is overdue.`,
+            timeout: 5000,
           });
         })
         .catch(e => {});

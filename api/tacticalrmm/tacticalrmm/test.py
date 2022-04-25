@@ -1,14 +1,15 @@
 import uuid
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from typing import Optional, List, Dict, Any, Union, TYPE_CHECKING
-from accounts.models import User
-from core.models import CoreSettings
 from django.test import TestCase, override_settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
+
+from accounts.models import User
 from agents.models import Agent
 from automation.models import Policy
+from core.models import CoreSettings
 
 if TYPE_CHECKING:
     from agents.models import Agent
@@ -23,6 +24,9 @@ TEST_CACHE = {
 }
 
 
+@override_settings(
+    CACHES=TEST_CACHE,
+)
 class TacticalTestCase(TestCase):
     client: APIClient
 
@@ -57,7 +61,6 @@ class TacticalTestCase(TestCase):
     # fixes tests waiting 2 minutes for mesh token to appear
     @override_settings(
         MESH_TOKEN_KEY="41410834b8bb4481446027f87d88ec6f119eb9aa97860366440b778540c7399613f7cabfef4f1aa5c0bd9beae03757e17b2e990e5876b0d9924da59bdf24d3437b3ed1a8593b78d65a72a76c794160d9",
-        CACHES=TEST_CACHE,
     )
     def setup_coresettings(self) -> None:
         self.coresettings = CoreSettings.objects.create()

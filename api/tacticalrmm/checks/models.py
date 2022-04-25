@@ -1,15 +1,19 @@
 from statistics import mean
-from typing import TYPE_CHECKING, Any, Union, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
-from django.core.cache import cache
-from alerts.models import SEVERITY_CHOICES
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from logs.models import BaseAuditModel
 
-from tacticalrmm.models import PermissionQuerySet
+from alerts.models import SEVERITY_CHOICES
 from core.utils import get_core_settings
+from logs.models import BaseAuditModel
+from tacticalrmm.constants import (
+    CHECKS_NON_EDITABLE_FIELDS,
+    POLICY_CHECK_FIELDS_TO_COPY,
+)
+from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate  # pragma: no cover
@@ -242,51 +246,11 @@ class Check(BaseAuditModel):
 
     @staticmethod
     def non_editable_fields() -> list[str]:
-        return [
-            "check_type",
-            "readable_desc",
-            "overridden_by_policy",
-            "created_by",
-            "created_time",
-            "modified_by",
-            "modified_time",
-        ]
+        return CHECKS_NON_EDITABLE_FIELDS
 
     def create_policy_check(self, policy: "Policy") -> None:
 
-        fields_to_copy = [
-            "warning_threshold",
-            "error_threshold",
-            "alert_severity",
-            "name",
-            "run_interval",
-            "disk",
-            "fails_b4_alert",
-            "ip",
-            "script",
-            "script_args",
-            "info_return_codes",
-            "warning_return_codes",
-            "timeout",
-            "svc_name",
-            "svc_display_name",
-            "svc_policy_mode",
-            "pass_if_start_pending",
-            "pass_if_svc_not_exist",
-            "restart_if_stopped",
-            "log_name",
-            "event_id",
-            "event_id_is_wildcard",
-            "event_type",
-            "event_source",
-            "event_message",
-            "fail_when",
-            "search_last_days",
-            "number_of_events_b4_alert",
-            "email_alert",
-            "text_alert",
-            "dashboard_alert",
-        ]
+        fields_to_copy = POLICY_CHECK_FIELDS_TO_COPY
 
         check = Check.objects.create(
             policy=policy,
@@ -322,11 +286,6 @@ class Check(BaseAuditModel):
         CheckHistory.objects.create(
             check_id=self.pk, y=value, results=more_info, agent_id=agent_id
         )
-
-    def handle_assigned_task(self) -> None:
-        for task in self.assignedtasks.all():  # type: ignore
-            if task.enabled:
-                task.run_win_task()
 
     @staticmethod
     def serialize(check):
@@ -382,7 +341,6 @@ class CheckResult(models.Model):
     alert_severity = models.CharField(
         max_length=15,
         choices=SEVERITY_CHOICES,
-        default="warning",
         null=True,
         blank=True,
     )
@@ -402,6 +360,22 @@ class CheckResult(models.Model):
 
     def __str__(self):
         return f"{self.agent.hostname} - {self.assigned_check}"
+
+    def save(self, *args, **kwargs):
+
+        # if check is a policy check clear cache on everything
+        if not self.alert_severity and self.assigned_check.check_type in [
+            "cpuload",
+            "memory",
+            "diskspace",
+            "script",
+        ]:
+            self.alert_severity = "warning"
+
+        super(CheckResult, self).save(
+            *args,
+            **kwargs,
+        )
 
     @property
     def history_info(self):

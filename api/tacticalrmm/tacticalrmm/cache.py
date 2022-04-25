@@ -1,6 +1,7 @@
-from django.core.cache.backends.redis import RedisCache
-from django.core.cache.backends.dummy import DummyCache
 from typing import Optional
+
+from django.core.cache.backends.dummy import DummyCache
+from django.core.cache.backends.redis import RedisCache
 
 
 class TacticalRedisCache(RedisCache):
@@ -9,6 +10,10 @@ class TacticalRedisCache(RedisCache):
 
         if keys:
             self._cache.delete_many(keys)
+
+    # just for debugging
+    def show_everything(self, version: Optional[int] = None) -> list[bytes]:
+        return self._cache.get_client().keys(f":{version if version else 1}:*")
 
 
 class TacticalDummyCache(DummyCache):

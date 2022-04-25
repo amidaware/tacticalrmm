@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from tacticalrmm.utils import notify_error
+from tacticalrmm.helpers import notify_error
 
 from .models import Alert, AlertTemplate
 from .permissions import AlertPerms, AlertTemplatePerms

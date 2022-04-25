@@ -1,14 +1,16 @@
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from django.core.cache import cache
+from django.db import models
+
 from agents.models import Agent
 from clients.models import Client, Site
-from django.db import models
-from django.core.cache import cache
 from logs.models import BaseAuditModel
-
-from typing import Optional, Dict, Any, List, TYPE_CHECKING
+from tacticalrmm.constants import CORESETTINGS_CACHE_KEY
 
 if TYPE_CHECKING:
-    from checks.models import Check
     from autotasks.models import AutomatedTask
+    from checks.models import Check
 
 
 class Policy(BaseAuditModel):
@@ -50,14 +52,15 @@ class Policy(BaseAuditModel):
                 cache_agents_alert_template.delay()
 
             if old_policy.active != self.active or old_policy.enforced != self.enforced:
-                cache.delete_many_pattern(f"site_workstation_*")
-                cache.delete_many_pattern(f"site_server_*")
+                cache.delete(CORESETTINGS_CACHE_KEY)
+                cache.delete_many_pattern("site_workstation_*")
+                cache.delete_many_pattern("site_server_*")
                 cache.delete_many_pattern("agent_*")
 
     def delete(self, *args, **kwargs):
-
-        cache.delete_many_pattern(f"site_workstation_*")
-        cache.delete_many_pattern(f"site_server_*")
+        cache.delete(CORESETTINGS_CACHE_KEY)
+        cache.delete_many_pattern("site_workstation_*")
+        cache.delete_many_pattern("site_server_*")
         cache.delete_many_pattern("agent_*")
 
         super(Policy, self).delete(

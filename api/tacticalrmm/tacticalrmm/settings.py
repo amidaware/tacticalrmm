@@ -17,22 +17,22 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.12.5-dev"
+TRMM_VERSION = "0.13.4-dev"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.160"
+APP_VER = "0.0.163"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.0.2"
+LATEST_AGENT_VER = "2.0.3"
 
 MESH_VER = "1.0.2"
 
-NATS_SERVER_VER = "2.7.4"
+NATS_SERVER_VER = "2.8.1"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "28"
-NPM_VER = "31"
+PIP_VER = "29"
+NPM_VER = "32"
 
 SETUPTOOLS_VER = "59.6.0"
 WHEEL_VER = "0.37.1"
@@ -49,7 +49,6 @@ ASGI_APPLICATION = "tacticalrmm.asgi.application"
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -96,23 +95,6 @@ if not DEBUG:
         {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
     )
 
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  ##
-    "tacticalrmm.middleware.LogIPMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "tacticalrmm.middleware.AuditMiddleware",
-    "tacticalrmm.middleware.LinuxMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-if DEMO:
-    MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
-
-
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -151,6 +133,7 @@ CHANNEL_LAYERS = {
 
 # silence cache key length warnings
 import warnings
+
 from django.core.cache import CacheKeyWarning
 
 warnings.simplefilter("ignore", CacheKeyWarning)
@@ -180,7 +163,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-if DEBUG:
+if DEBUG and not DEMO:
     INSTALLED_APPS += (
         "django_extensions",
         "silk",
@@ -257,11 +240,9 @@ LOGGING = {
     },
 }
 
-if "AZPIPELINE" in os.environ:
-    ADMIN_ENABLED = False
 
 if "GHACTIONS" in os.environ:
-    print("-----------------------PIPELINE----------------------------")
+    print("-----------------------GHACTIONS----------------------------")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",

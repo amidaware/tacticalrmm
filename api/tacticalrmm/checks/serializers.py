@@ -1,6 +1,7 @@
 import validators as _v
-from autotasks.models import AutomatedTask
 from rest_framework import serializers
+
+from autotasks.models import AutomatedTask
 from scripts.models import Script
 from scripts.serializers import ScriptCheckSerializer
 
@@ -159,8 +160,9 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
         if obj.check_type != "script":
             return []
 
+        agent = self.context["agent"] if "agent" in self.context.keys() else obj.agent
         return Script.parse_script_args(
-            agent=obj.agent, shell=obj.script.shell, args=obj.script_args
+            agent=agent, shell=obj.script.shell, args=obj.script_args
         )
 
     class Meta:

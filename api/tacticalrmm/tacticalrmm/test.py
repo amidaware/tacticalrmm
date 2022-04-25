@@ -1,14 +1,15 @@
 import uuid
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from typing import Optional, List, Dict, Any, Union, TYPE_CHECKING
-from accounts.models import User
-from core.models import CoreSettings
 from django.test import TestCase, override_settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
+
+from accounts.models import User
 from agents.models import Agent
 from automation.models import Policy
+from core.models import CoreSettings
 
 if TYPE_CHECKING:
     from agents.models import Agent

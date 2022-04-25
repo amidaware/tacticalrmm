@@ -1,18 +1,18 @@
 import smtplib
 from email.message import EmailMessage
+from typing import TYPE_CHECKING, List, Optional, Union, cast
 
-from typing import Optional, Union, List, cast, TYPE_CHECKING
 import pytz
 import requests
-from django.core.cache import cache
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
-from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwClient
 
+from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
 from tacticalrmm.constants import CORESETTINGS_CACHE_KEY
 
 if TYPE_CHECKING:

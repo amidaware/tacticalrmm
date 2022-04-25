@@ -1,7 +1,8 @@
-from automation.serializers import PolicySerializer
-from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer, ReadOnlyField
+
+from automation.serializers import PolicySerializer
+from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 
 from .models import Alert, AlertTemplate
 

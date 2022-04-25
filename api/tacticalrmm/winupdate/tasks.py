@@ -3,11 +3,11 @@ import datetime as dt
 import time
 
 import pytz
-from agents.models import Agent
 from django.utils import timezone as djangotime
-from logs.models import DebugLog
 from packaging import version as pyver
 
+from agents.models import Agent
+from logs.models import DebugLog
 from tacticalrmm.celery import app
 
 

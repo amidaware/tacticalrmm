@@ -4,15 +4,15 @@ import random
 from time import sleep
 from typing import Optional
 
+from django.conf import settings
+from django.utils import timezone as djangotime
+from packaging import version as pyver
+
 from agents.models import Agent
 from agents.utils import get_agent_url
 from core.utils import get_core_settings
-from django.conf import settings
-from django.utils import timezone as djangotime
 from logs.models import DebugLog, PendingAction
-from packaging import version as pyver
 from scripts.models import Script
-
 from tacticalrmm.celery import app
 
 

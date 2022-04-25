@@ -1,15 +1,16 @@
 from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast
 
 from django.db import models
+
 from core.utils import get_core_settings
-from typing import Optional, Dict, Any, Union, cast, Tuple, TYPE_CHECKING
 from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
+    from agents.models import Agent
     from clients.models import Client, Site
     from core.models import URLAction
-    from agents.models import Agent
 
 
 def get_debug_level() -> str:

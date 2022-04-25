@@ -1,6 +1,6 @@
-from agents.models import Agent
 from django.db import models
 
+from agents.models import Agent
 from tacticalrmm.models import PermissionQuerySet
 
 

@@ -1,19 +1,20 @@
 import json
 import os
 from itertools import cycle
-from unittest.mock import patch
-import pytz
 from typing import TYPE_CHECKING
+from unittest.mock import patch
+
+import pytz
 from django.conf import settings
 from django.test import modify_settings
 from django.utils import timezone as djangotime
-from logs.models import PendingAction
 from model_bakery import baker
 from packaging import version as pyver
+
+from logs.models import PendingAction
+from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
-
-from tacticalrmm.test import TacticalTestCase
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
 from .serializers import (

@@ -1,11 +1,11 @@
 import json
 import os
 
-from autotasks.models import TaskResult
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
 
+from autotasks.models import TaskResult
 from tacticalrmm.test import TacticalTestCase
 
 

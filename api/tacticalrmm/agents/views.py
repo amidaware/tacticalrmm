@@ -4,41 +4,41 @@ import os
 import random
 import string
 import time
-from meshctrl.utils import get_login_token
 
-from core.models import CodeSignToken
-from core.utils import (
-    get_mesh_ws_url,
-    remove_mesh_agent,
-    send_command_with_mesh,
-    get_core_settings,
-)
 from django.conf import settings
-from django.db.models import Q, Prefetch, Exists, Count, OuterRef
+from django.db.models import Count, Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from logs.models import AuditLog, DebugLog, PendingAction
+from meshctrl.utils import get_login_token
 from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from core.models import CodeSignToken
+from core.utils import (
+    get_core_settings,
+    get_mesh_ws_url,
+    remove_mesh_agent,
+    send_command_with_mesh,
+)
+from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from winupdate.serializers import WinUpdatePolicySerializer
-from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
-from winupdate.models import WinUpdate
-
 from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
     _has_perm_on_site,
 )
 from tacticalrmm.utils import get_default_timezone, reload_nats
-from tacticalrmm.helpers import notify_error
+from winupdate.models import WinUpdate
+from winupdate.serializers import WinUpdatePolicySerializer
+from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
 from .permissions import (
@@ -483,9 +483,10 @@ class Reboot(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
+    from knox.models import AuthToken
+
     from accounts.models import User
     from agents.utils import get_agent_url
-    from knox.models import AuthToken
 
     client_id = request.data["client"]
     site_id = request.data["site"]

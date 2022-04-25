@@ -6,8 +6,8 @@ from typing import List
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import CharField, TextField
-from logs.models import BaseAuditModel
 
+from logs.models import BaseAuditModel
 from tacticalrmm.utils import replace_db_values
 
 SCRIPT_SHELLS = [

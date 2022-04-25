@@ -1,9 +1,6 @@
 import asyncio
 from datetime import datetime as dt
 
-from agents.models import Agent
-from alerts.models import Alert
-from automation.models import Policy
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -13,8 +10,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from tacticalrmm.permissions import _has_perm_on_agent
+from agents.models import Agent
+from alerts.models import Alert
+from automation.models import Policy
 from tacticalrmm.helpers import notify_error
+from tacticalrmm.permissions import _has_perm_on_agent
 
 from .models import Check, CheckHistory, CheckResult
 from .permissions import ChecksPerms, RunChecksPerms

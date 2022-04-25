@@ -1,16 +1,16 @@
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from django.core.cache import cache
+from django.db import models
+
 from agents.models import Agent
 from clients.models import Client, Site
-from django.db import models
-from django.core.cache import cache
 from logs.models import BaseAuditModel
-
-from typing import Optional, Dict, Any, List, TYPE_CHECKING
-
 from tacticalrmm.constants import CORESETTINGS_CACHE_KEY
 
 if TYPE_CHECKING:
-    from checks.models import Check
     from autotasks.models import AutomatedTask
+    from checks.models import Check
 
 
 class Policy(BaseAuditModel):

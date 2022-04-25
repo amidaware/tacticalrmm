@@ -2,19 +2,19 @@ import datetime as dt
 import re
 import uuid
 
-from agents.models import Agent
-from core.utils import get_core_settings
+from django.db.models import Count, Exists, OuterRef, Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from django.db.models import OuterRef, Exists, Count, Prefetch, prefetch_related_objects
+from knox.models import AuthToken
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from knox.models import AuthToken
 
-from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
+from agents.models import Agent
+from core.utils import get_core_settings
 from tacticalrmm.helpers import notify_error
+from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .permissions import ClientsPerms, DeploymentPerms, SitesPerms

@@ -2,29 +2,29 @@ import asyncio
 import re
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, Optional, List, Dict, Union, Sequence, cast, TYPE_CHECKING
-from django.core.cache import cache
-from packaging import version as pyver
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union, cast
 
 import msgpack
 import nats
 import validators
 from asgiref.sync import sync_to_async
-from core.models import TZ_CHOICES
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.db import models
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel, DebugLog
 from nats.errors import TimeoutError
+from packaging import version as pyver
 
+from core.models import TZ_CHOICES
 from core.utils import get_core_settings
-from tacticalrmm.models import PermissionQuerySet
+from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import ONLINE_AGENTS
+from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
+    from alerts.models import Alert, AlertTemplate
     from automation.models import Policy
-    from alerts.models import AlertTemplate, Alert
     from autotasks.models import AutomatedTask
     from checks.models import Check
     from clients.models import Client

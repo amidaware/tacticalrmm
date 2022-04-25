@@ -1,11 +1,11 @@
 from unittest.mock import patch
 
-from checks.models import CheckHistory, CheckResult
 from django.conf import settings
 from django.test import modify_settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
 
+from checks.models import CheckHistory, CheckResult
 from tacticalrmm.test import TacticalTestCase
 
 from .serializers import CheckSerializer

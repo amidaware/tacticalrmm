@@ -1,14 +1,14 @@
 import asyncio
+from typing import Dict, Tuple, Union
 
-from agents.models import Agent
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from tacticalrmm.helpers import notify_error
 
-from typing import Union, Dict, Tuple
+from agents.models import Agent
+from tacticalrmm.helpers import notify_error
 
 from .permissions import WinSvcsPerms
 

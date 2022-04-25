@@ -5,11 +5,11 @@ from django.test import override_settings
 
 from tacticalrmm.constants import (
     AGENT_DEFER,
-    ONLINE_AGENTS,
-    FIELDS_TRIGGER_TASK_UPDATE_AGENT,
-    POLICY_TASK_FIELDS_TO_COPY,
     CHECKS_NON_EDITABLE_FIELDS,
+    FIELDS_TRIGGER_TASK_UPDATE_AGENT,
+    ONLINE_AGENTS,
     POLICY_CHECK_FIELDS_TO_COPY,
+    POLICY_TASK_FIELDS_TO_COPY,
 )
 from tacticalrmm.test import TacticalTestCase
 

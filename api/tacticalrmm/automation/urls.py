@@ -1,6 +1,7 @@
+from django.urls import path
+
 from autotasks.views import GetAddAutoTasks
 from checks.views import GetAddChecks
-from django.urls import path
 
 from . import views
 

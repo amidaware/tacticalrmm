@@ -1,5 +1,6 @@
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 
+
 # custom api key auth for swagger-ui
 class APIAuthenticationScheme(OpenApiAuthenticationExtension):
     target_class = "tacticalrmm.auth.APIAuthentication"  # full import path OR class ref

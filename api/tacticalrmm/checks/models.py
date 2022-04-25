@@ -1,19 +1,19 @@
 from statistics import mean
-from typing import TYPE_CHECKING, Any, Union, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
-from django.core.cache import cache
-from alerts.models import SEVERITY_CHOICES
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from logs.models import BaseAuditModel
 
-from tacticalrmm.models import PermissionQuerySet
+from alerts.models import SEVERITY_CHOICES
 from core.utils import get_core_settings
+from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
     CHECKS_NON_EDITABLE_FIELDS,
     POLICY_CHECK_FIELDS_TO_COPY,
 )
+from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate  # pragma: no cover

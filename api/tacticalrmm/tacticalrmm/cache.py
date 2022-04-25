@@ -1,6 +1,7 @@
-from django.core.cache.backends.redis import RedisCache
-from django.core.cache.backends.dummy import DummyCache
 from typing import Optional
+
+from django.core.cache.backends.dummy import DummyCache
+from django.core.cache.backends.redis import RedisCache
 
 
 class TacticalRedisCache(RedisCache):

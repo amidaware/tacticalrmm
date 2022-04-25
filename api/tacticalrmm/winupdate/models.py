@@ -1,8 +1,9 @@
 import datetime as dt
 
-from agents.models import Agent
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+
+from agents.models import Agent
 from logs.models import BaseAuditModel
 
 PATCH_ACTION_CHOICES = [

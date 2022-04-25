@@ -1,6 +1,6 @@
-from django.db import models
-
 from typing import TYPE_CHECKING
+
+from django.db import models
 
 if TYPE_CHECKING:
     from accounts.models import User

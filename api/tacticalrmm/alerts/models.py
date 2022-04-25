@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union, Optional, Dict, Any, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel, DebugLog
 
+from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:

@@ -1,6 +1,7 @@
-from rest_framework import serializers
-from scripts.models import Script
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import serializers
+
+from scripts.models import Script
 
 from .models import AutomatedTask, TaskResult
 

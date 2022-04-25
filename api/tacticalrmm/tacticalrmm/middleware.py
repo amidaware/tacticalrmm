@@ -1,8 +1,8 @@
 import threading
+from typing import Any, Dict, Optional
 
 from django.conf import settings
 from ipware import get_client_ip
-from typing import Dict, Optional, Any
 from rest_framework.exceptions import AuthenticationFailed
 
 from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED

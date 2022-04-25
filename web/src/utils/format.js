@@ -226,7 +226,10 @@ export function getNextAgentUpdateTime() {
 }
 
 // converts a date with timezone to local for html native datetime fields -> YYYY-MM-DD HH:mm:ss
-export function formatDateInputField(isoDateString) {
+export function formatDateInputField(isoDateString, noTimezone = false) {
+  if (noTimezone) {
+    isoDateString = isoDateString.replace("Z", "")
+  }
   return date.formatDate(isoDateString, "YYYY-MM-DDTHH:mm:ss")
 }
 

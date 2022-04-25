@@ -838,9 +838,9 @@ export default {
         : [];
 
       // remove milliseconds and Z to work with native date input
-      task.value.run_time_date = formatDateInputField(task.value.run_time_date);
+      task.value.run_time_date = formatDateInputField(task.value.run_time_date, true);
 
-      if (task.value.expire_date) task.value.expire_date = formatDateInputField(task.value.expire_date);
+      if (task.value.expire_date) task.value.expire_date = formatDateInputField(task.value.expire_date, true);
 
       // set task type if monthlydow is being used
       if (task.value.task_type === "monthlydow") {

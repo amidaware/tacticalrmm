@@ -72,6 +72,11 @@ try:
 except ImportError:
     pass
 
+if "GHACTIONS" in os.environ:
+    DEBUG = False
+    ADMIN_ENABLED = False
+    DEMO = False
+
 REST_FRAMEWORK = {
     # "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
@@ -149,6 +154,13 @@ CACHES = {
         },
     }
 }
+
+if "GHACTIONS" in os.environ:
+    CACHES = {
+        "default": {
+            "BACKEND": "tacticalrmm.cache.TacticalDummyCache",
+        }
+    }
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -254,7 +266,6 @@ if "GHACTIONS" in os.environ:
         }
     }
     SECRET_KEY = "abcdefghijklmnoptravis123456789"
-    DEBUG = False
     ALLOWED_HOSTS = ["api.example.com"]
     ADMIN_URL = "abc123456/"
     CORS_ORIGIN_WHITELIST = ["https://rmm.example.com"]
@@ -262,10 +273,3 @@ if "GHACTIONS" in os.environ:
     MESH_SITE = "https://example.com"
     MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
     REDIS_HOST = "localhost"
-    ADMIN_ENABLED = False
-
-    CACHES = {
-        "default": {
-            "BACKEND": "tacticalrmm.cache.TacticalDummyCache",
-        }
-    }

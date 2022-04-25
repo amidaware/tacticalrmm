@@ -58,7 +58,7 @@ def handle_resolved_stuff() -> None:
     actions = (
         PendingAction.objects.select_related("agent")
         .defer("agent__services", "agent__wmi_detail")
-        .filter(action_type="agentupdate", status="pending")
+        .filter(action_type="agentupdate", status=PendingAction.PENDING)
     )
 
     to_update = [
@@ -68,7 +68,9 @@ def handle_resolved_stuff() -> None:
         and action.agent.status == "online"
     ]
 
-    PendingAction.objects.filter(pk__in=to_update).update(status="completed")
+    PendingAction.objects.filter(pk__in=to_update).update(
+        status=PendingAction.COMPLETED
+    )
 
     agent_queryset = (
         Agent.objects.defer(*AGENT_DEFER)

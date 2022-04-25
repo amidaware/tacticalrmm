@@ -63,11 +63,6 @@ AUDIT_OBJECT_TYPE_CHOICES = [
     ("customfield", "Custom Field"),
 ]
 
-STATUS_CHOICES = [
-    ("pending", "Pending"),
-    ("completed", "Completed"),
-]
-
 
 class AuditLog(models.Model):
     username = models.CharField(max_length=255)
@@ -385,6 +380,14 @@ class DebugLog(models.Model):
 
 
 class PendingAction(models.Model):
+    PENDING = "pending"
+    COMPLETED = "completed"
+
+    STATUS_CHOICES = (
+        (PENDING, "Pending"),
+        (COMPLETED, "Completed"),
+    )
+
     objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(
@@ -399,10 +402,8 @@ class PendingAction(models.Model):
     status = models.CharField(
         max_length=255,
         choices=STATUS_CHOICES,
-        default="pending",
+        default=PENDING,
     )
-    cancelable = models.BooleanField(blank=True, default=False)
-    celery_id = models.CharField(null=True, blank=True, max_length=255)
     details = models.JSONField(null=True, blank=True)
 
     def __str__(self) -> str:

@@ -120,7 +120,8 @@ class GetAgents(APIView):
                 )
                 .annotate(
                     pending_actions_count=Count(
-                        "pendingactions", filter=Q(pendingactions__status="pending")
+                        "pendingactions",
+                        filter=Q(pendingactions__status=PendingAction.PENDING),
                     )
                 )
                 .annotate(

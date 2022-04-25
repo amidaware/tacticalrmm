@@ -38,10 +38,10 @@ def agent_update(agent_id: str, force: bool = False) -> str:
 
     if not force:
         if agent.pendingactions.filter(
-            action_type="agentupdate", status="pending"
+            action_type="agentupdate", status=PendingAction.PENDING
         ).exists():
             agent.pendingactions.filter(
-                action_type="agentupdate", status="pending"
+                action_type="agentupdate", status=PendingAction.PENDING
             ).delete()
 
         PendingAction.objects.create(

@@ -5,6 +5,7 @@ from django.utils import timezone as djangotime
 from model_bakery import baker, seq
 
 from tacticalrmm.test import TacticalTestCase
+from .models import PendingAction
 
 base_url = "/logs"
 
@@ -176,7 +177,7 @@ class TestAuditViews(TacticalTestCase):
             "logs.PendingAction",
             agent=agent2,
             action_type="chocoinstall",
-            status="completed",
+            status=PendingAction.COMPLETED,
             details={"name": "adobereader", "output": None, "installed": False},
             _quantity=14,
         )

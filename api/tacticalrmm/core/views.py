@@ -137,7 +137,9 @@ def server_maintenance(request):
             auditlogs.delete()
 
         if "pending_actions" in tables:
-            pendingactions = PendingAction.objects.filter(status="completed")
+            pendingactions = PendingAction.objects.filter(
+                status=PendingAction.COMPLETED
+            )
             records_count += pendingactions.count()
             pendingactions.delete()
 

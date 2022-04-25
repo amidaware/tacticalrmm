@@ -298,12 +298,12 @@ class Alert(models.Model):
             maintenance_mode = instance.maintenance_mode
             alert_severity = "error"
             agent = instance
+            dashboard_severities = ["error"]
+            email_severities = ["error"]
+            text_severities = ["error"]
 
             # set alert_template settings
             if alert_template:
-                dashboard_severities = ["error"]
-                email_severities = ["error"]
-                text_severities = ["error"]
                 always_dashboard = alert_template.agent_always_alert
                 always_email = alert_template.agent_always_email
                 always_text = alert_template.agent_always_text
@@ -334,9 +334,21 @@ class Alert(models.Model):
 
             # set alert_template settings
             if alert_template:
-                dashboard_severities = alert_template.check_dashboard_alert_severity
-                email_severities = alert_template.check_email_alert_severity
-                text_severities = alert_template.check_text_alert_severity
+                dashboard_severities = (
+                    alert_template.check_dashboard_alert_severity
+                    if alert_template.check_dashboard_alert_severity
+                    else ["error", "warning", "info"]
+                )
+                email_severities = (
+                    alert_template.check_email_alert_severity
+                    if alert_template.check_email_alert_severity
+                    else ["error", "warning"]
+                )
+                text_severities = (
+                    alert_template.check_text_alert_severity
+                    if alert_template.check_text_alert_severity
+                    else ["error", "warning"]
+                )
                 always_dashboard = alert_template.check_always_alert
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
@@ -359,9 +371,21 @@ class Alert(models.Model):
 
             # set alert_template settings
             if alert_template:
-                dashboard_severities = alert_template.task_dashboard_alert_severity
-                email_severities = alert_template.task_email_alert_severity
-                text_severities = alert_template.task_text_alert_severity
+                dashboard_severities = (
+                    alert_template.task_dashboard_alert_severity
+                    if alert_template.task_dashboard_alert_severity
+                    else ["error", "warning"]
+                )
+                email_severities = (
+                    alert_template.task_email_alert_severity
+                    if alert_template.task_email_alert_severity
+                    else ["error", "warning"]
+                )
+                text_severities = (
+                    alert_template.task_text_alert_severity
+                    if alert_template.task_text_alert_severity
+                    else ["error", "warning"]
+                )
                 always_dashboard = alert_template.task_always_alert
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text

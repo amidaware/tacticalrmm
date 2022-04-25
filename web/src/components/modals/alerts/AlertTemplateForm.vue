@@ -339,7 +339,7 @@
             <q-card-section>
               <q-select
                 label="Only email on alert severity"
-                hint="This needs to be set in order to receive email notifications"
+                hint="Defaults to 'error' and 'warning'"
                 v-model="template.check_email_alert_severity"
                 outlined
                 dense
@@ -355,7 +355,7 @@
             <q-card-section>
               <q-select
                 label="Only text on alert severity"
-                hint="This needs to be set in order to receive text notifications"
+                hint="Defaults to 'error' and 'warning'"
                 v-model="template.check_text_alert_severity"
                 outlined
                 dense
@@ -371,7 +371,7 @@
             <q-card-section>
               <q-select
                 label="Only show dashboard alert on severity"
-                hint="This needs to be set in order to receive dashboard notifications"
+                hint="Defaults to 'error', 'warning', and 'info'"
                 v-model="template.check_dashboard_alert_severity"
                 outlined
                 dense
@@ -448,7 +448,7 @@
             <q-card-section>
               <q-select
                 label="Only email on alert severity"
-                hint="This needs to be set in order to receive email notifications"
+                hint="Defaults to 'error' and 'warning'"
                 v-model="template.task_email_alert_severity"
                 outlined
                 dense
@@ -464,7 +464,7 @@
             <q-card-section>
               <q-select
                 label="Only text on alert severity"
-                hint="This needs to be set in order to receive text notifications"
+                hint="Defaults to 'error' and 'warning'"
                 v-model="template.task_text_alert_severity"
                 outlined
                 dense
@@ -480,7 +480,7 @@
             <q-card-section>
               <q-select
                 label="Only show dashboard alert on severity"
-                hint="This needs to be set in order to receive dashboard notifications"
+                hint="Defaults to 'error', 'warning', and 'info'"
                 v-model="template.task_dashboard_alert_severity"
                 outlined
                 dense

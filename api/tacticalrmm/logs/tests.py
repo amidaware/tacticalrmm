@@ -195,7 +195,7 @@ class TestAuditViews(TacticalTestCase):
         action = baker.make(
             "logs.PendingAction",
             agent=agent,
-            PendingAction.SCHED_REBOOT,
+            action_type=PendingAction.SCHED_REBOOT,
             details={
                 "time": "2021-01-13 18:20:00",
                 "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",

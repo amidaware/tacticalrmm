@@ -136,10 +136,10 @@ class GetAgents(APIView):
         else:
             agents = (
                 Agent.objects.filter_by_role(request.user)  # type: ignore
-                .select_related("site")
+                .defer(*AGENT_DEFER)
+                .select_related("site__client")
                 .filter(monitoring_type_filter)
                 .filter(client_site_filter)
-                .only("agent_id", "hostname", "site")
             )
             serializer = AgentHostnameSerializer(agents, many=True)
 
@@ -297,9 +297,9 @@ class AgentMeshCentral(APIView):
 @permission_classes([IsAuthenticated, AgentPerms])
 def get_agent_versions(request):
     agents = (
-        Agent.objects.filter_by_role(request.user)  # type: ignore
-        .prefetch_related("site")
-        .only("pk", "hostname")
+        Agent.objects.defer(*AGENT_DEFER)
+        .filter_by_role(request.user)  # type: ignore
+        .select_related("site__client")
     )
     return Response(
         {

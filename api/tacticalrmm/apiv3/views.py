@@ -266,9 +266,9 @@ class TaskRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, agentid):
-        _ = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
-        return Response(TaskGOGetSerializer(task).data)
+        return Response(TaskGOGetSerializer(task, context={"agent": agent}).data)
 
     def patch(self, request, pk, agentid):
         from alerts.models import Alert

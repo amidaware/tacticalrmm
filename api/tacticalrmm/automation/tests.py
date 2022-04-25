@@ -410,11 +410,11 @@ class TestPolicyTasks(TacticalTestCase):
         )
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEquals(len(resp.data["server_clients"]), 1)
-        self.assertEquals(len(resp.data["server_sites"]), 0)
-        self.assertEquals(len(resp.data["workstation_clients"]), 1)
-        self.assertEquals(len(resp.data["workstation_sites"]), 0)
-        self.assertEquals(len(resp.data["agents"]), 0)
+        self.assertEqual(len(resp.data["server_clients"]), 1)
+        self.assertEqual(len(resp.data["server_sites"]), 0)
+        self.assertEqual(len(resp.data["workstation_clients"]), 1)
+        self.assertEqual(len(resp.data["workstation_sites"]), 0)
+        self.assertEqual(len(resp.data["agents"]), 0)
 
         # Add Site to Policy
         policy.server_sites.add(server_agents[10].site)
@@ -422,9 +422,9 @@ class TestPolicyTasks(TacticalTestCase):
         resp = self.client.get(
             f"/automation/policies/{policy.pk}/related/", format="json"
         )
-        self.assertEquals(len(resp.data["server_sites"]), 1)
-        self.assertEquals(len(resp.data["workstation_sites"]), 1)
-        self.assertEquals(len(resp.data["agents"]), 0)
+        self.assertEqual(len(resp.data["server_sites"]), 1)
+        self.assertEqual(len(resp.data["workstation_sites"]), 1)
+        self.assertEqual(len(resp.data["agents"]), 0)
 
         # Add Agent to Policy
         policy.agents.add(server_agents[2])
@@ -432,7 +432,7 @@ class TestPolicyTasks(TacticalTestCase):
         resp = self.client.get(
             f"/automation/policies/{policy.pk}/related/", format="json"
         )
-        self.assertEquals(len(resp.data["agents"]), 2)
+        self.assertEqual(len(resp.data["agents"]), 2)
 
     def test_getting_agent_policy_checks(self):
 
@@ -442,7 +442,7 @@ class TestPolicyTasks(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", policy=policy)
 
         # test policy assigned to agent
-        self.assertEquals(len(agent.get_checks_from_policies()), 7)
+        self.assertEqual(len(agent.get_checks_from_policies()), 7)
 
     def test_getting_agent_policy_checks_with_enforced(self):
         # setup data

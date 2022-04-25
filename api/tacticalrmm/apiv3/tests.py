@@ -62,7 +62,7 @@ class TestAPIv3(TacticalTestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["check_interval"], 20)
-        self.assertEquals(len(r.data["checks"]), 2)
+        self.assertEqual(len(r.data["checks"]), 2)
 
         url = "/api/v3/Maj34ACb324j234asdj2n34kASDjh34-DESKTOPTEST123/checkrunner/"
         r = self.client.get(url)

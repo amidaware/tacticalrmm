@@ -338,7 +338,7 @@ class TestAPIKeyViews(TacticalTestCase):
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         apikey = APIKey.objects.get(pk=apikey.pk)
-        self.assertEquals(apikey.name, "New Name")
+        self.assertEqual(apikey.name, "New Name")
 
         self.check_not_authenticated("put", url)
 

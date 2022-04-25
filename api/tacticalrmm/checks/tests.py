@@ -842,8 +842,8 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
-        self.assertEquals(check.alert_severity, "warning")
-        self.assertEquals(check_result.status, "failing")
+        self.assertEqual(check.alert_severity, "warning")
+        self.assertEqual(check_result.status, "failing")
 
         # test passing when contains
         resp = self.client.patch(url, no_logs_data, format="json")
@@ -851,7 +851,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
-        self.assertEquals(check_result.status, "passing")
+        self.assertEqual(check_result.status, "passing")
 
         # test failing when not contains and message and source
         check.fail_when = "not_contains"
@@ -863,8 +863,8 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
-        self.assertEquals(check_result.status, "failing")
-        self.assertEquals(check.alert_severity, "error")
+        self.assertEqual(check_result.status, "failing")
+        self.assertEqual(check.alert_severity, "error")
 
         # test passing when contains with source and message
         resp = self.client.patch(url, data, format="json")
@@ -872,7 +872,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
-        self.assertEquals(check_result.status, "passing")
+        self.assertEqual(check_result.status, "passing")
 
 
 class TestCheckPermissions(TacticalTestCase):

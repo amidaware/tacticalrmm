@@ -490,10 +490,12 @@ export default {
     selectedTree(newVal, oldVal) {
       if (this.clearSearchWhenSwitching) this.clearFilter();
     },
+    tab(newVal, oldVal) {
+      this.$store.dispatch("loadAgents");
+    },
   },
   methods: {
     getTree() {
-      this.$store.dispatch("loadAgents");
       this.$store.dispatch("loadTree");
     },
     clearTreeSelected() {
@@ -707,7 +709,6 @@ export default {
       },
       set(newVal) {
         this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", newVal);
-        this.$store.dispatch("loadAgents");
         this.$store.commit("destroySubTable");
       },
     },

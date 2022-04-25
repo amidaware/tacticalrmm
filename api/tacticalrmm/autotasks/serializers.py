@@ -198,13 +198,14 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
     def get_task_actions(self, obj):
         tmp = []
         actions_to_remove = []
+        agent = self.context["agent"] if "agent" in self.context.keys() else obj.agent
         for action in obj.actions:
             if action["type"] == "cmd":
                 tmp.append(
                     {
                         "type": "cmd",
                         "command": Script.parse_script_args(
-                            agent=obj.agent,
+                            agent=agent,
                             shell=action["shell"],
                             args=[action["command"]],
                         )[0],
@@ -225,7 +226,7 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
                         "script_name": script.name,
                         "code": script.code,
                         "script_args": Script.parse_script_args(
-                            agent=obj.agent,
+                            agent=agent,
                             shell=script.shell,
                             args=action["script_args"],
                         ),

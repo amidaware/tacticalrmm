@@ -17,11 +17,11 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.13.1"
+TRMM_VERSION = "0.13.2"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.162"
+APP_VER = "0.0.163"
 
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.0.3"
@@ -94,23 +94,6 @@ if not DEBUG:
     REST_FRAMEWORK.update(
         {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
     )
-
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  ##
-    "tacticalrmm.middleware.LogIPMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "tacticalrmm.middleware.AuditMiddleware",
-    "tacticalrmm.middleware.LinuxMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-if DEMO:
-    MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
-
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -256,11 +239,9 @@ LOGGING = {
     },
 }
 
-if "AZPIPELINE" in os.environ:
-    ADMIN_ENABLED = False
 
 if "GHACTIONS" in os.environ:
-    print("-----------------------PIPELINE----------------------------")
+    print("-----------------------GHACTIONS----------------------------")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",

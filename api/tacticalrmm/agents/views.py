@@ -136,10 +136,10 @@ class GetAgents(APIView):
         else:
             agents = (
                 Agent.objects.filter_by_role(request.user)  # type: ignore
-                .select_related("site")
+                .defer(*AGENT_DEFER)
+                .select_related("site__client")
                 .filter(monitoring_type_filter)
                 .filter(client_site_filter)
-                .only("agent_id", "hostname", "site")
             )
             serializer = AgentHostnameSerializer(agents, many=True)
 

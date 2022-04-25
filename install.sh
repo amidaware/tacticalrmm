@@ -1,6 +1,11 @@
 #!/bin/bash
 
-SCRIPT_VERSION="62"
+# For Dev testing to define a different repo url use: -u URL
+# 
+# For Dev testing to device a different repo branch name use: -b develop
+
+
+SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -17,6 +22,16 @@ PYTHON_VER="3.10.2"
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+
+while getopts b:u: flag
+do
+    case "${flag}" in
+        b) devbranch=${OPTARG};;
+        u) devurl=${OPTARG};;
+    esac
+done
+echo "devbranch: $devbranch";
+echo "devurl: $devurl";
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
     printf >&2 "${YELLOW}Old install script detected, downloading and replacing with the latest version...${NC}\n"
@@ -236,11 +251,23 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
+
+if [[ $devurl ]]; then
+  git clone ${devurl} /rmm/
+else
 git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+fi
+
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
+if [[ $devbranch ]]; then
+  git checkout ${branch}
+else
 git checkout master
+fi
+
+
 
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}

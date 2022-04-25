@@ -46,7 +46,6 @@ class Agent(BaseAuditModel):
     operating_system = models.CharField(null=True, blank=True, max_length=255)
     plat = models.CharField(max_length=255, default="windows")
     goarch = models.CharField(max_length=255, null=True, blank=True)
-    plat_release = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
     agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)

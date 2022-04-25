@@ -1447,8 +1447,8 @@ class TestAgentTasks(TacticalTestCase):
         r = agent_update(agent64_nosign.agent_id)
         self.assertEqual(r, "created")
         action = PendingAction.objects.get(agent__agent_id=agent64_nosign.agent_id)
-        self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending")
+        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PendingAction.PENDING)
         self.assertEqual(
             action.details["url"],
             f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
@@ -1493,8 +1493,8 @@ class TestAgentTasks(TacticalTestCase):
             wait=False,
         )
         action = PendingAction.objects.get(agent__pk=agent64_sign.pk)
-        self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending")
+        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PendingAction.PENDING)
 
         # test __with__ code signing (32 bit)
         agent32_sign = baker.make_recipe(
@@ -1519,8 +1519,8 @@ class TestAgentTasks(TacticalTestCase):
             wait=False,
         )
         action = PendingAction.objects.get(agent__pk=agent32_sign.pk)
-        self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending") """
+        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PendingAction.PENDING) """
 
     @patch("agents.tasks.agent_update")
     @patch("agents.tasks.sleep", return_value=None)

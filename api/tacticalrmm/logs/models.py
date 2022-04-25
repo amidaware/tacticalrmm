@@ -17,16 +17,6 @@ def get_debug_level() -> str:
     return get_core_settings().agent_debug_level
 
 
-ACTION_TYPE_CHOICES = [
-    ("schedreboot", "Scheduled Reboot"),
-    ("agentupdate", "Agent Update"),
-    ("chocoinstall", "Chocolatey Software Install"),
-    ("runcmd", "Run Command"),
-    ("runscript", "Run Script"),
-    ("runpatchscan", "Run Patch Scan"),
-    ("runpatchinstall", "Run Patch Install"),
-]
-
 AUDIT_ACTION_TYPE_CHOICES = [
     ("login", "User Login"),
     ("failed_login", "Failed User Login"),
@@ -383,9 +373,27 @@ class PendingAction(models.Model):
     PENDING = "pending"
     COMPLETED = "completed"
 
+    SCHED_REBOOT = "schedreboot"
+    AGENT_UPDATE = "agentupdate"
+    CHOCO_INSTALL = "chocoinstall"
+    RUN_CMD = "runcmd"
+    RUN_SCRIPT = "runscript"
+    RUN_PATCH_SCAN = "runpatchscan"
+    RUN_PATCH_INSTALL = "runpatchinstall"
+
     STATUS_CHOICES = (
         (PENDING, "Pending"),
         (COMPLETED, "Completed"),
+    )
+
+    ACTION_TYPE_CHOICES = (
+        (SCHED_REBOOT, "Scheduled Reboot"),
+        (AGENT_UPDATE, "Agent Update"),
+        (CHOCO_INSTALL, "Chocolatey Software Install"),
+        (RUN_CMD, "Run Command"),
+        (RUN_SCRIPT, "Run Script"),
+        (RUN_PATCH_SCAN, "Run Patch Scan"),
+        (RUN_PATCH_INSTALL, "Run Patch Install"),
     )
 
     objects = PermissionQuerySet.as_manager()
@@ -411,31 +419,31 @@ class PendingAction(models.Model):
 
     @property
     def due(self) -> str:
-        if self.action_type == "schedreboot":
+        if self.action_type == self.SCHED_REBOOT:
             return cast(str, self.details["time"])
-        elif self.action_type == "agentupdate":
+        elif self.action_type == self.AGENT_UPDATE:
             return "Next update cycle"
-        elif self.action_type == "chocoinstall":
+        elif self.action_type == self.CHOCO_INSTALL:
             return "ASAP"
         else:
             return "On next checkin"
 
     @property
     def description(self) -> Optional[str]:
-        if self.action_type == "schedreboot":
+        if self.action_type == self.SCHED_REBOOT:
             return "Device pending reboot"
 
-        elif self.action_type == "agentupdate":
+        elif self.action_type == self.AGENT_UPDATE:
             return f"Agent update to {self.details['version']}"
 
-        elif self.action_type == "chocoinstall":
+        elif self.action_type == self.CHOCO_INSTALL:
             return f"{self.details['name']} software install"
 
         elif self.action_type in [
-            "runcmd",
-            "runscript",
-            "runpatchscan",
-            "runpatchinstall",
+            self.RUN_CMD,
+            self.RUN_SCRIPT,
+            self.RUN_PATCH_SCAN,
+            self.RUN_PATCH_INSTALL,
         ]:
             return f"{self.action_type}"
         else:

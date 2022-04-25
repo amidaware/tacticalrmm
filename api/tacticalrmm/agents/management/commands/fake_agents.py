@@ -734,7 +734,7 @@ class Command(BaseCommand):
 
                 sched_reboot = PendingAction()
                 sched_reboot.agent = agent
-                sched_reboot.action_type = "schedreboot"
+                sched_reboot.action_type = PendingAction.SCHED_REBOOT
                 sched_reboot.details = {
                     "time": str(obj),
                     "taskname": task_name,

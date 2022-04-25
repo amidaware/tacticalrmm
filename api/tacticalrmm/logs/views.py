@@ -123,7 +123,7 @@ class PendingActions(APIView):
         if not _has_perm_on_agent(request.user, action.agent.agent_id):
             raise PermissionDenied()
 
-        if action.action_type == "schedreboot":
+        if action.action_type == PendingAction.SCHED_REBOOT:
             nats_data = {
                 "func": "delschedtask",
                 "schedtaskpayload": {"name": action.details["taskname"]},

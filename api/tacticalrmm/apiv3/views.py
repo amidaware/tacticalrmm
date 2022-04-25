@@ -496,7 +496,7 @@ class ChocoResult(APIView):
 
         action.details["output"] = results
         action.details["installed"] = installed
-        action.status = "completed"
+        action.status = action.COMPLETED
         action.save(update_fields=["details", "status"])
         return Response("ok")
 

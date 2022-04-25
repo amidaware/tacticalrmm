@@ -12,7 +12,10 @@ from .models import PendingAction
 def handle_status(sender, instance: PendingAction, **kwargs):
     if instance.pk:
         # change status to completed once scheduled reboot date/time has expired
-        if instance.action_type == "schedreboot" and instance.status == "pending":
+        if (
+            instance.action_type == instance.SCHED_REBOOT
+            and instance.status == instance.PENDING
+        ):
 
             reboot_time = dt.datetime.strptime(
                 instance.details["time"], "%Y-%m-%d %H:%M:%S"
@@ -26,5 +29,5 @@ def handle_status(sender, instance: PendingAction, **kwargs):
             reboot_time_utc = localized.astimezone(pytz.utc)
 
             if now > reboot_time_utc:
-                instance.status = "completed"
+                instance.status = instance.COMPLETED
                 instance.save(update_fields=["status"])

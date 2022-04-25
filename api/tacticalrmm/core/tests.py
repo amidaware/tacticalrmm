@@ -411,10 +411,10 @@ class TestCoreTasks(TacticalTestCase):
         handle_resolved_stuff()
 
         complete = PendingAction.objects.filter(
-            action_type="agentupdate", status=PendingAction.COMPLETED
+            PendingAction.AGENT_UPDATE, status=PendingAction.COMPLETED
         ).count()
         old = PendingAction.objects.filter(
-            action_type="agentupdate", status=PendingAction.PENDING
+            PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
         ).count()
 
         self.assertEqual(complete, 20)

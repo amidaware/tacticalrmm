@@ -30,5 +30,5 @@ object_logs = Recipe(
 login_logs = Recipe("logs.AuditLog", action=cycle(login_actions), object_type="user")
 
 pending_agentupdate_action = Recipe(
-    "logs.PendingAction", action_type="agentupdate", status=PendingAction.PENDING
+    "logs.PendingAction", PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
 )

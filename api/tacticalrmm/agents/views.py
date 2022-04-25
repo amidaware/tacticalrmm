@@ -473,7 +473,7 @@ class Reboot(APIView):
 
         details = {"taskname": task_name, "time": str(obj)}
         PendingAction.objects.create(
-            agent=agent, action_type="schedreboot", details=details
+            agent=agent, action_type=PendingAction.SCHED_REBOOT, details=details
         )
         nice_time = dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
         return Response(

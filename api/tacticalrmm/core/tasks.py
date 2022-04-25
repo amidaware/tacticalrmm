@@ -58,7 +58,7 @@ def handle_resolved_stuff() -> None:
     actions = (
         PendingAction.objects.select_related("agent")
         .defer("agent__services", "agent__wmi_detail")
-        .filter(action_type="agentupdate", status=PendingAction.PENDING)
+        .filter(action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING)
     )
 
     to_update = [

@@ -169,14 +169,14 @@ class TestAuditViews(TacticalTestCase):
         baker.make(
             "logs.PendingAction",
             agent=agent1,
-            action_type="chocoinstall",
+            action_type=PendingAction.CHOCO_INSTALL,
             details={"name": "googlechrome", "output": None, "installed": False},
             _quantity=12,
         )
         baker.make(
             "logs.PendingAction",
             agent=agent2,
-            action_type="chocoinstall",
+            action_type=PendingAction.CHOCO_INSTALL,
             status=PendingAction.COMPLETED,
             details={"name": "adobereader", "output": None, "installed": False},
             _quantity=14,
@@ -195,7 +195,7 @@ class TestAuditViews(TacticalTestCase):
         action = baker.make(
             "logs.PendingAction",
             agent=agent,
-            action_type="schedreboot",
+            PendingAction.SCHED_REBOOT,
             details={
                 "time": "2021-01-13 18:20:00",
                 "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",
@@ -221,7 +221,7 @@ class TestAuditViews(TacticalTestCase):
         action2 = baker.make(
             "logs.PendingAction",
             agent=agent,
-            action_type="schedreboot",
+            action_type=PendingAction.SCHED_REBOOT,
             details={
                 "time": "2021-01-13 18:20:00",
                 "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",

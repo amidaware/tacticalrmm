@@ -49,7 +49,7 @@ class GetSoftware(APIView):
 
         action = PendingAction.objects.create(
             agent=agent,
-            action_type="chocoinstall",
+            action_type=PendingAction.CHOCO_INSTALL,
             details={"name": name, "output": None, "installed": False},
         )
 

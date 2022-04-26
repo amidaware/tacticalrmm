@@ -219,6 +219,7 @@ DEMO_NOT_ALLOWED = [
     {"name": "ScanWindowsUpdates", "methods": ["POST"]},
     {"name": "InstallWindowsUpdates", "methods": ["POST"]},
     {"name": "PendingActions", "methods": ["DELETE"]},
+    {"name": "clear_cache", "methods": ["GET"]},
 ]
 
 LINUX_NOT_IMPLEMENTED = [

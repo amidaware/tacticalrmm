@@ -1,1 +1,0 @@
-Restart-Service NlaSvc -Force

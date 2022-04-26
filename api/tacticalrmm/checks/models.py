@@ -12,22 +12,13 @@ from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
     CHECKS_NON_EDITABLE_FIELDS,
     POLICY_CHECK_FIELDS_TO_COPY,
+    CheckType,
 )
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate  # pragma: no cover
     from automation.models import Policy  # pragma: no cover
-
-CHECK_TYPE_CHOICES = [
-    ("diskspace", "Disk Space Check"),
-    ("ping", "Ping Check"),
-    ("cpuload", "CPU Load Check"),
-    ("memory", "Memory Check"),
-    ("winsvc", "Service Check"),
-    ("script", "Script Check"),
-    ("eventlog", "Event Log Check"),
-]
 
 CHECK_STATUS_CHOICES = [
     ("passing", "Passing"),
@@ -77,7 +68,7 @@ class Check(BaseAuditModel):
     overridden_by_policy = models.BooleanField(default=False)
     name = models.CharField(max_length=255, null=True, blank=True)
     check_type = models.CharField(
-        max_length=50, choices=CHECK_TYPE_CHOICES, default="diskspace"
+        max_length=50, choices=CheckType.choices, default=CheckType.DISK_SPACE
     )
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
@@ -215,7 +206,7 @@ class Check(BaseAuditModel):
     @property
     def readable_desc(self):
         display = self.get_check_type_display()  # type: ignore
-        if self.check_type == "diskspace":
+        if self.check_type == CheckType.DISK_SPACE:
 
             text = ""
             if self.warning_threshold:
@@ -224,9 +215,11 @@ class Check(BaseAuditModel):
                 text += f" Error Threshold: {self.error_threshold}%"
 
             return f"{display}: Drive {self.disk} - {text}"
-        elif self.check_type == "ping":
+        elif self.check_type == CheckType.PING:
             return f"{display}: {self.name}"
-        elif self.check_type == "cpuload" or self.check_type == "memory":
+        elif (
+            self.check_type == CheckType.CPU_LOAD or self.check_type == CheckType.MEMORY
+        ):
 
             text = ""
             if self.warning_threshold:
@@ -235,11 +228,11 @@ class Check(BaseAuditModel):
                 text += f" Error Threshold: {self.error_threshold}%"
 
             return f"{display} - {text}"
-        elif self.check_type == "winsvc":
+        elif self.check_type == CheckType.WINSVC:
             return f"{display}: {self.svc_display_name}"
-        elif self.check_type == "eventlog":
+        elif self.check_type == CheckType.EVENT_LOG:
             return f"{display}: {self.name}"
-        elif self.check_type == "script":
+        elif self.check_type == CheckType.SCRIPT:
             return f"{display}: {self.script.name}"
         else:
             return "n/a"
@@ -295,25 +288,22 @@ class Check(BaseAuditModel):
         return CheckAuditSerializer(check).data
 
     def is_duplicate(self, check):
-        if self.check_type == "diskspace":
+        if self.check_type == CheckType.DISK_SPACE:
             return self.disk == check.disk
 
-        elif self.check_type == "script":
+        elif self.check_type == CheckType.SCRIPT:
             return self.script == check.script
 
-        elif self.check_type == "ping":
+        elif self.check_type == CheckType.PING:
             return self.ip == check.ip
 
-        elif self.check_type == "cpuload":
+        elif self.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
             return True
 
-        elif self.check_type == "memory":
-            return True
-
-        elif self.check_type == "winsvc":
+        elif self.check_type == CheckType.WINSVC:
             return self.svc_name == check.svc_name
 
-        elif self.check_type == "eventlog":
+        elif self.check_type == CheckType.EVENT_LOG:
             return [self.log_name, self.event_id] == [check.log_name, check.event_id]
 
 
@@ -365,10 +355,10 @@ class CheckResult(models.Model):
 
         # if check is a policy check clear cache on everything
         if not self.alert_severity and self.assigned_check.check_type in [
-            "cpuload",
-            "memory",
-            "diskspace",
-            "script",
+            CheckType.MEMORY,
+            CheckType.CPU_LOAD,
+            CheckType.DISK_SPACE,
+            CheckType.SCRIPT,
         ]:
             self.alert_severity = "warning"
 
@@ -379,10 +369,7 @@ class CheckResult(models.Model):
 
     @property
     def history_info(self):
-        if (
-            self.assigned_check.check_type == "cpuload"
-            or self.assigned_check.check_type == "memory"
-        ):
+        if self.assigned_check.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
             return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
     def get_or_create_alert_if_needed(
@@ -403,7 +390,7 @@ class CheckResult(models.Model):
         check = self.assigned_check
 
         # cpuload or mem checks
-        if check.check_type == "cpuload" or check.check_type == "memory":
+        if check.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
 
             self.history.append(data["percent"])
 
@@ -427,7 +414,7 @@ class CheckResult(models.Model):
             check.add_check_history(data["percent"], self.agent.agent_id)
 
         # diskspace checks
-        elif check.check_type == "diskspace":
+        elif check.check_type == CheckType.DISK_SPACE:
             if data["exists"]:
                 percent_used = round(data["percent_used"])
                 if (
@@ -458,7 +445,7 @@ class CheckResult(models.Model):
             self.save(update_fields=["more_info"])
 
         # script checks
-        elif check.check_type == "script":
+        elif check.check_type == CheckType.SCRIPT:
             self.stdout = data["stdout"]
             self.stderr = data["stderr"]
             self.retcode = data["retcode"]
@@ -498,7 +485,7 @@ class CheckResult(models.Model):
             )
 
         # ping checks
-        elif check.check_type == "ping":
+        elif check.check_type == CheckType.PING:
             self.status = data["status"]
             self.more_info = data["output"]
             self.save(update_fields=["more_info"])
@@ -510,7 +497,7 @@ class CheckResult(models.Model):
             )
 
         # windows service checks
-        elif check.check_type == "winsvc":
+        elif check.check_type == CheckType.WINSVC:
             self.status = data["status"]
             self.more_info = data["more_info"]
             self.save(update_fields=["more_info"])
@@ -521,7 +508,7 @@ class CheckResult(models.Model):
                 self.more_info[:60],
             )
 
-        elif check.check_type == "eventlog":
+        elif check.check_type == CheckType.EVENT_LOG:
             log = data["log"]
             if check.fail_when == "contains":
                 if log and len(log) >= check.number_of_events_b4_alert:
@@ -572,7 +559,7 @@ class CheckResult(models.Model):
         else:
             subject = f"{self} Failed"
 
-        if self.assigned_check.check_type == "diskspace":
+        if self.assigned_check.check_type == CheckType.DISK_SPACE:
             text = ""
             if self.assigned_check.warning_threshold:
                 text += f" Warning Threshold: {self.assigned_check.warning_threshold}%"
@@ -591,21 +578,18 @@ class CheckResult(models.Model):
             except:
                 body = subject + f" - Disk {self.assigned_check.disk} does not exist"
 
-        elif self.assigned_check.check_type == "script":
+        elif self.assigned_check.check_type == CheckType.SCRIPT:
 
             body = (
                 subject
                 + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
             )
 
-        elif self.assigned_check.check_type == "ping":
+        elif self.assigned_check.check_type == CheckType.PING:
 
             body = self.more_info
 
-        elif (
-            self.assigned_check.check_type == "cpuload"
-            or self.assigned_check.check_type == "memory"
-        ):
+        elif self.assigned_check.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
             text = ""
             if self.assigned_check.warning_threshold:
                 text += f" Warning Threshold: {self.assigned_check.warning_threshold}%"
@@ -614,16 +598,16 @@ class CheckResult(models.Model):
 
             avg = int(mean(self.history))
 
-            if self.assigned_check.check_type == "cpuload":
+            if self.assigned_check.check_type == CheckType.CPU_LOAD:
                 body = subject + f" - Average CPU utilization: {avg}%, {text}"
 
-            elif self.assigned_check.check_type == "memory":
+            elif self.assigned_check.check_type == CheckType.MEMORY:
                 body = subject + f" - Average memory usage: {avg}%, {text}"
 
-        elif self.assigned_check.check_type == "winsvc":
+        elif self.assigned_check.check_type == CheckType.WINSVC:
             body = subject + f" - Status: {self.more_info}"
 
-        elif self.assigned_check.check_type == "eventlog":
+        elif self.assigned_check.check_type == CheckType.EVENT_LOG:
 
             if self.assigned_check.event_source and self.assigned_check.event_message:
                 start = f"Event ID {self.assigned_check.event_id}, source {self.assigned_check.event_source}, containing string {self.assigned_check.event_message} "
@@ -655,7 +639,7 @@ class CheckResult(models.Model):
         else:
             subject = f"{self} Failed"
 
-        if self.assigned_check.check_type == "diskspace":
+        if self.assigned_check.check_type == CheckType.DISK_SPACE:
             text = ""
             if self.assigned_check.warning_threshold:
                 text += f" Warning Threshold: {self.assigned_check.warning_threshold}%"
@@ -673,14 +657,11 @@ class CheckResult(models.Model):
             except:
                 body = subject + f" - Disk {self.assigned_check.disk} does not exist"
 
-        elif self.assigned_check.check_type == "script":
+        elif self.assigned_check.check_type == CheckType.SCRIPT:
             body = subject + f" - Return code: {self.retcode}"
-        elif self.assigned_check.check_type == "ping":
+        elif self.assigned_check.check_type == CheckType.PING:
             body = subject
-        elif (
-            self.assigned_check.check_type == "cpuload"
-            or self.assigned_check.check_type == "memory"
-        ):
+        elif self.assigned_check.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
             text = ""
             if self.assigned_check.warning_threshold:
                 text += f" Warning Threshold: {self.assigned_check.warning_threshold}%"
@@ -688,13 +669,13 @@ class CheckResult(models.Model):
                 text += f" Error Threshold: {self.assigned_check.error_threshold}%"
 
             avg = int(mean(self.history))
-            if self.assigned_check.check_type == "cpuload":
+            if self.assigned_check.check_type == CheckType.CPU_LOAD:
                 body = subject + f" - Average CPU utilization: {avg}%, {text}"
-            elif self.assigned_check.check_type == "memory":
+            elif self.assigned_check.check_type == CheckType.MEMORY:
                 body = subject + f" - Average memory usage: {avg}%, {text}"
-        elif self.assigned_check.check_type == "winsvc":
+        elif self.assigned_check.check_type == CheckType.WINSVC:
             body = subject + f" - Status: {self.more_info}"
-        elif self.assigned_check.check_type == "eventlog":
+        elif self.assigned_check.check_type == CheckType.EVENT_LOG:
             body = subject
 
         CORE.send_sms(body, alert_template=self.agent.alert_template)

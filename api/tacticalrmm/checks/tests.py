@@ -6,6 +6,7 @@ from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from checks.models import CheckHistory, CheckResult
+from tacticalrmm.constants import CheckType
 from tacticalrmm.test import TacticalTestCase
 
 from .serializers import CheckSerializer
@@ -84,7 +85,7 @@ class TestCheckViews(TacticalTestCase):
 
         agent_payload = {
             "agent": agent.agent_id,
-            "check_type": "diskspace",
+            "check_type": CheckType.DISK_SPACE,
             "disk": "C:",
             "error_threshold": 55,
             "warning_threshold": 0,
@@ -93,7 +94,7 @@ class TestCheckViews(TacticalTestCase):
 
         policy_payload = {
             "policy": policy.id,
-            "check_type": "diskspace",
+            "check_type": CheckType.DISK_SPACE,
             "disk": "C:",
             "error_threshold": 55,
             "warning_threshold": 0,
@@ -133,7 +134,7 @@ class TestCheckViews(TacticalTestCase):
 
         agent_payload = {
             "agent": agent.agent_id,
-            "check_type": "cpuload",
+            "check_type": CheckType.CPU_LOAD,
             "error_threshold": 66,
             "warning_threshold": 0,
             "fails_b4_alert": 9,
@@ -141,7 +142,7 @@ class TestCheckViews(TacticalTestCase):
 
         policy_payload = {
             "policy": policy.id,
-            "check_type": "cpuload",
+            "check_type": CheckType.CPU_LOAD,
             "error_threshold": 66,
             "warning_threshold": 0,
             "fails_b4_alert": 9,
@@ -180,7 +181,7 @@ class TestCheckViews(TacticalTestCase):
 
         agent_payload = {
             "agent": agent.agent_id,
-            "check_type": "memory",
+            "check_type": CheckType.MEMORY,
             "error_threshold": 78,
             "warning_threshold": 0,
             "fails_b4_alert": 1,
@@ -188,7 +189,7 @@ class TestCheckViews(TacticalTestCase):
 
         policy_payload = {
             "policy": policy.id,
-            "check_type": "memory",
+            "check_type": CheckType.MEMORY,
             "error_threshold": 78,
             "warning_threshold": 0,
             "fails_b4_alert": 1,
@@ -945,7 +946,7 @@ class TestCheckPermissions(TacticalTestCase):
 
         policy_data = {
             "policy": policy.id,
-            "check_type": "diskspace",
+            "check_type": CheckType.DISK_SPACE,
             "disk": "C:",
             "error_threshold": 55,
             "warning_threshold": 0,
@@ -954,7 +955,7 @@ class TestCheckPermissions(TacticalTestCase):
 
         agent_data = {
             "agent": agent.agent_id,
-            "check_type": "diskspace",
+            "check_type": CheckType.DISK_SPACE,
             "disk": "C:",
             "error_threshold": 55,
             "warning_threshold": 0,
@@ -963,7 +964,7 @@ class TestCheckPermissions(TacticalTestCase):
 
         unauthorized_agent_data = {
             "agent": unauthorized_agent.agent_id,
-            "check_type": "diskspace",
+            "check_type": CheckType.DISK_SPACE,
             "disk": "C:",
             "error_threshold": 55,
             "warning_threshold": 0,

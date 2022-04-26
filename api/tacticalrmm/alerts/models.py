@@ -9,6 +9,7 @@ from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
 from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.constants import CheckType
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -176,7 +177,12 @@ class Alert(models.Model):
                     alert_type="check",
                     severity=check.alert_severity
                     if check.check_type
-                    not in ["memory", "cpuload", "diskspace", "script"]
+                    not in [
+                        CheckType.MEMORY,
+                        CheckType.CPU_LOAD,
+                        CheckType.DISK_SPACE,
+                        CheckType.SCRIPT,
+                    ]
                     else alert_severity,
                     message=f"{agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                     hidden=True,
@@ -327,7 +333,12 @@ class Alert(models.Model):
             alert_severity = (
                 instance.assigned_check.alert_severity
                 if instance.assigned_check.check_type
-                not in ["memory", "cpuload", "diskspace", "script"]
+                not in [
+                    CheckType.MEMORY,
+                    CheckType.CPU_LOAD,
+                    CheckType.DISK_SPACE,
+                    CheckType.SCRIPT,
+                ]
                 else instance.alert_severity
             )
             agent = instance.agent

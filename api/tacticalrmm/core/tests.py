@@ -10,6 +10,7 @@ from rest_framework.authtoken.models import Token
 from agents.models import Agent
 from core.utils import get_core_settings
 from logs.models import PendingAction
+from tacticalrmm.constants import PAAction, PAStatus
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
@@ -411,10 +412,10 @@ class TestCoreTasks(TacticalTestCase):
         handle_resolved_stuff()
 
         complete = PendingAction.objects.filter(
-            action_type=PendingAction.AGENT_UPDATE, status=PendingAction.COMPLETED
+            action_type=PAAction.AGENT_UPDATE, status=PAStatus.COMPLETED
         ).count()
         old = PendingAction.objects.filter(
-            action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
+            action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
         ).count()
 
         self.assertEqual(complete, 20)

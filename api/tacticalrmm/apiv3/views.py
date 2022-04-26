@@ -1,5 +1,4 @@
 import asyncio
-import time
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -26,7 +25,7 @@ from core.utils import (
 )
 from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
-from tacticalrmm.constants import MeshAgentIdent
+from tacticalrmm.constants import MeshAgentIdent, PAStatus
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.utils import reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
@@ -496,7 +495,7 @@ class ChocoResult(APIView):
 
         action.details["output"] = results
         action.details["installed"] = installed
-        action.status = action.COMPLETED
+        action.status = PAStatus.COMPLETED
         action.save(update_fields=["details", "status"])
         return Response("ok")
 

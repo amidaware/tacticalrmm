@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from agents.models import Agent
-from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER, PAAction
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
 from tacticalrmm.utils import get_default_timezone
@@ -123,7 +123,7 @@ class PendingActions(APIView):
         if not _has_perm_on_agent(request.user, action.agent.agent_id):
             raise PermissionDenied()
 
-        if action.action_type == PendingAction.SCHED_REBOOT:
+        if action.action_type == PAAction.SCHED_REBOOT:
             nats_data = {
                 "func": "delschedtask",
                 "schedtaskpayload": {"name": action.details["taskname"]},

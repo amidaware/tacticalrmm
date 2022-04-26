@@ -4,8 +4,8 @@ from unittest.mock import patch
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
 
+from tacticalrmm.constants import PAAction, PAStatus
 from tacticalrmm.test import TacticalTestCase
-from .models import PendingAction
 
 base_url = "/logs"
 
@@ -169,15 +169,15 @@ class TestAuditViews(TacticalTestCase):
         baker.make(
             "logs.PendingAction",
             agent=agent1,
-            action_type=PendingAction.CHOCO_INSTALL,
+            action_type=PAAction.CHOCO_INSTALL,
             details={"name": "googlechrome", "output": None, "installed": False},
             _quantity=12,
         )
         baker.make(
             "logs.PendingAction",
             agent=agent2,
-            action_type=PendingAction.CHOCO_INSTALL,
-            status=PendingAction.COMPLETED,
+            action_type=PAAction.CHOCO_INSTALL,
+            status=PAStatus.COMPLETED,
             details={"name": "adobereader", "output": None, "installed": False},
             _quantity=14,
         )
@@ -195,7 +195,7 @@ class TestAuditViews(TacticalTestCase):
         action = baker.make(
             "logs.PendingAction",
             agent=agent,
-            action_type=PendingAction.SCHED_REBOOT,
+            action_type=PAAction.SCHED_REBOOT,
             details={
                 "time": "2021-01-13 18:20:00",
                 "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",
@@ -221,7 +221,7 @@ class TestAuditViews(TacticalTestCase):
         action2 = baker.make(
             "logs.PendingAction",
             agent=agent,
-            action_type=PendingAction.SCHED_REBOOT,
+            action_type=PAAction.SCHED_REBOOT,
             details={
                 "time": "2021-01-13 18:20:00",
                 "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",

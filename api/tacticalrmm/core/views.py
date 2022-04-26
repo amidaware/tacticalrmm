@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from core.utils import get_core_settings
 from logs.models import AuditLog
+from tacticalrmm.constants import PAStatus
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
@@ -137,9 +138,7 @@ def server_maintenance(request):
             auditlogs.delete()
 
         if "pending_actions" in tables:
-            pendingactions = PendingAction.objects.filter(
-                status=PendingAction.COMPLETED
-            )
+            pendingactions = PendingAction.objects.filter(status=PAStatus.COMPLETED)
             records_count += pendingactions.count()
             pendingactions.delete()
 

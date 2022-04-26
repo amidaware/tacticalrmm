@@ -14,6 +14,7 @@ from core.utils import get_core_settings
 from logs.models import DebugLog, PendingAction
 from scripts.models import Script
 from tacticalrmm.celery import app
+from tacticalrmm.constants import PAAction, PAStatus
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:
@@ -38,15 +39,15 @@ def agent_update(agent_id: str, force: bool = False) -> str:
 
     if not force:
         if agent.pendingactions.filter(
-            action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
+            action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
         ).exists():
             agent.pendingactions.filter(
-                action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
+                action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
             ).delete()
 
         PendingAction.objects.create(
             agent=agent,
-            action_type=PendingAction.AGENT_UPDATE,
+            action_type=PAAction.AGENT_UPDATE,
             details={
                 "url": url,
                 "version": version,

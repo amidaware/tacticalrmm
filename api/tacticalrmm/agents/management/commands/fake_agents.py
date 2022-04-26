@@ -17,6 +17,7 @@ from clients.models import Client, Site
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
+from tacticalrmm.constants import CheckType, PAAction
 from tacticalrmm.demo_data import (
     disks,
     ping_fail_output,
@@ -353,7 +354,7 @@ class Command(BaseCommand):
             # disk space check
             check1 = Check()
             check1.agent = agent
-            check1.check_type = "diskspace"
+            check1.check_type = CheckType.DISK_SPACE
             check1.warning_threshold = 25
             check1.error_threshold = 10
             check1.disk = "C:"
@@ -384,7 +385,7 @@ class Command(BaseCommand):
             check_result2 = CheckResult()
 
             check2.agent = agent
-            check2.check_type = "ping"
+            check2.check_type = CheckType.PING
 
             check2.email_alert = random.choice([True, False])
             check2.text_alert = random.choice([True, False])
@@ -426,7 +427,7 @@ class Command(BaseCommand):
             check3 = Check()
             check_result3 = CheckResult(assigned_check=check3, agent=agent)
             check3.agent = agent
-            check3.check_type = "cpuload"
+            check3.check_type = CheckType.CPU_LOAD
             check_result3.status = "passing"
             check_result3.last_run = djangotime.now()
             check3.warning_threshold = 70
@@ -466,7 +467,7 @@ class Command(BaseCommand):
             check4 = Check()
             check_result4 = CheckResult(assigned_check=check4, agent=agent)
             check4.agent = agent
-            check4.check_type = "memory"
+            check4.check_type = CheckType.MEMORY
             check_result4.status = "passing"
             check4.warning_threshold = 70
             check4.error_threshold = 85
@@ -490,7 +491,7 @@ class Command(BaseCommand):
             check5 = Check()
             check_result5 = CheckResult(assigned_check=check5, agent=agent)
             check5.agent = agent
-            check5.check_type = "script"
+            check5.check_type = CheckType.SCRIPT
             check_result5.status = "passing"
             check_result5.last_run = djangotime.now()
             check5.email_alert = random.choice([True, False])
@@ -518,7 +519,7 @@ class Command(BaseCommand):
             check6 = Check()
             check_result6 = CheckResult(assigned_check=check6, agent=agent)
             check6.agent = agent
-            check6.check_type = "script"
+            check6.check_type = CheckType.SCRIPT
             check_result6.status = "passing"
             check_result6.last_run = djangotime.now()
             check6.email_alert = random.choice([True, False])
@@ -620,7 +621,7 @@ class Command(BaseCommand):
             check7 = Check()
             check_result7 = CheckResult(assigned_check=check7, agent=agent)
             check7.agent = agent
-            check7.check_type = "script"
+            check7.check_type = CheckType.SCRIPT
             check_result7.status = "passing"
             check_result7.last_run = djangotime.now()
             check7.email_alert = random.choice([True, False])
@@ -646,7 +647,7 @@ class Command(BaseCommand):
             check8 = Check()
             check_result8 = CheckResult(assigned_check=check8, agent=agent)
             check8.agent = agent
-            check8.check_type = "winsvc"
+            check8.check_type = CheckType.WINSVC
             check_result8.status = "passing"
             check_result8.last_run = djangotime.now()
             check8.email_alert = random.choice([True, False])
@@ -678,7 +679,7 @@ class Command(BaseCommand):
             check9 = Check()
             check_result9 = CheckResult(assigned_check=check9, agent=agent)
             check9.agent = agent
-            check9.check_type = "eventlog"
+            check9.check_type = CheckType.EVENT_LOG
             check9.name = "unexpected shutdown"
 
             check_result9.last_run = djangotime.now()
@@ -734,7 +735,7 @@ class Command(BaseCommand):
 
                 sched_reboot = PendingAction()
                 sched_reboot.agent = agent
-                sched_reboot.action_type = PendingAction.SCHED_REBOOT
+                sched_reboot.action_type = PAAction.SCHED_REBOOT
                 sched_reboot.details = {
                     "time": str(obj),
                     "taskname": task_name,

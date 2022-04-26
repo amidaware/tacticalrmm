@@ -4,6 +4,7 @@ from rest_framework import serializers
 from autotasks.models import AutomatedTask
 from scripts.models import Script
 from scripts.serializers import ScriptCheckSerializer
+from tacticalrmm.constants import CheckType
 
 from .models import Check, CheckHistory, CheckResult
 
@@ -68,9 +69,11 @@ class CheckSerializer(serializers.ModelSerializer):
 
         # disk checks
         # make sure no duplicate diskchecks exist for an agent/policy
-        if check_type == "diskspace":
+        if check_type == CheckType.DISK_SPACE:
             if not self.instance:  # only on create
-                checks = Check.objects.filter(**filter).filter(check_type="diskspace")
+                checks = Check.objects.filter(**filter).filter(
+                    check_type=CheckType.DISK_SPACE
+                )
                 for check in checks:
                     if val["disk"] in check.disk:
                         raise serializers.ValidationError(
@@ -92,7 +95,7 @@ class CheckSerializer(serializers.ModelSerializer):
                 )
 
         # ping checks
-        if check_type == "ping":
+        if check_type == CheckType.PING:
             if (
                 not _v.ipv4(val["ip"])
                 and not _v.ipv6(val["ip"])
@@ -102,8 +105,8 @@ class CheckSerializer(serializers.ModelSerializer):
                     "Please enter a valid IP address or domain name"
                 )
 
-        if check_type == "cpuload" and not self.instance:
-            if Check.objects.filter(**filter, check_type="cpuload").exists():
+        if check_type == CheckType.CPU_LOAD and not self.instance:
+            if Check.objects.filter(**filter, check_type=CheckType.CPU_LOAD).exists():
                 raise serializers.ValidationError(
                     "A cpuload check for this agent already exists"
                 )
@@ -122,8 +125,8 @@ class CheckSerializer(serializers.ModelSerializer):
                     f"Warning threshold must be less than Error Threshold"
                 )
 
-        if check_type == "memory" and not self.instance:
-            if Check.objects.filter(**filter, check_type="memory").exists():
+        if check_type == CheckType.MEMORY and not self.instance:
+            if Check.objects.filter(**filter, check_type=CheckType.MEMORY).exists():
                 raise serializers.ValidationError(
                     "A memory check for this agent already exists"
                 )
@@ -157,7 +160,7 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
     script_args = serializers.SerializerMethodField()
 
     def get_script_args(self, obj):
-        if obj.check_type != "script":
+        if obj.check_type != CheckType.SCRIPT:
             return []
 
         agent = self.context["agent"] if "agent" in self.context.keys() else obj.agent

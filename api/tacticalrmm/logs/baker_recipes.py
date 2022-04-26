@@ -2,7 +2,7 @@ from itertools import cycle
 
 from model_bakery.recipe import Recipe
 
-from logs.models import PendingAction
+from tacticalrmm.constants import PAAction, PAStatus
 
 object_types = [
     "user",
@@ -31,6 +31,6 @@ login_logs = Recipe("logs.AuditLog", action=cycle(login_actions), object_type="u
 
 pending_agentupdate_action = Recipe(
     "logs.PendingAction",
-    action_type=PendingAction.AGENT_UPDATE,
-    status=PendingAction.PENDING,
+    action_type=PAAction.AGENT_UPDATE,
+    status=PAStatus.PENDING,
 )

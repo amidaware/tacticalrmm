@@ -19,7 +19,7 @@ from packaging import version as pyver
 from core.models import TZ_CHOICES
 from core.utils import get_core_settings
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import ONLINE_AGENTS
+from tacticalrmm.constants import ONLINE_AGENTS, CheckType
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -176,7 +176,13 @@ class Agent(BaseAuditModel):
             ):
                 alert_severity = (
                     check.check_result.alert_severity
-                    if check.check_type in ["memory", "cpuload", "diskspace", "script"]
+                    if check.check_type
+                    in [
+                        CheckType.MEMORY,
+                        CheckType.CPU_LOAD,
+                        CheckType.DISK_SPACE,
+                        CheckType.SCRIPT,
+                    ]
                     else check.alert_severity
                 )
                 if alert_severity == "error":

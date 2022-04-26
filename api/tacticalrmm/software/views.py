@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from agents.models import Agent
 from logs.models import PendingAction
+from tacticalrmm.constants import PAAction
 from tacticalrmm.helpers import notify_error
 
 from .models import ChocoSoftware, InstalledSoftware
@@ -49,7 +50,7 @@ class GetSoftware(APIView):
 
         action = PendingAction.objects.create(
             agent=agent,
-            action_type=PendingAction.CHOCO_INSTALL,
+            action_type=PAAction.CHOCO_INSTALL,
             details={"name": name, "output": None, "installed": False},
         )
 

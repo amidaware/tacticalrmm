@@ -1,5 +1,7 @@
 from enum import Enum
 
+from django.db import models
+
 
 class MeshAgentIdent(Enum):
     WIN32 = 3
@@ -15,6 +17,32 @@ class MeshAgentIdent(Enum):
 
 CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
+
+
+class PAStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    COMPLETED = "completed", "Completed"
+
+
+class PAAction(models.TextChoices):
+    SCHED_REBOOT = "schedreboot", "Scheduled Reboot"
+    AGENT_UPDATE = "agentupdate", "Agent Update"
+    CHOCO_INSTALL = "chocoinstall", "Chocolatey Software Install"
+    RUN_CMD = "runcmd", "Run Command"
+    RUN_SCRIPT = "runscript", "Run Script"
+    RUN_PATCH_SCAN = "runpatchscan", "Run Patch Scan"
+    RUN_PATCH_INSTALL = "runpatchinstall", "Run Patch Install"
+
+
+class CheckType(models.TextChoices):
+    DISK_SPACE = "diskspace", "Disk Space Check"
+    PING = "ping", "Ping Check"
+    CPU_LOAD = "cpuload", "CPU Load Check"
+    MEMORY = "memory", "Memory Check"
+    WINSVC = "winsvc", "Service Check"
+    SCRIPT = "script", "Script Check"
+    EVENT_LOG = "eventlog", "Event Log Check"
+
 
 # Agent db fields that are not needed for most queries, speeds up query
 AGENT_DEFER = (

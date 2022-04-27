@@ -2,17 +2,29 @@ import { Notify } from "quasar";
 
 export function isValidThreshold(warning, error, diskcheck = false) {
   if (warning === 0 && error === 0) {
-    Notify.create({ type: "negative", timeout: 2000, message: "Warning Threshold or Error Threshold need to be set" });
+    Notify.create({
+      type: "negative",
+      timeout: 2000,
+      message: "Warning Threshold or Error Threshold need to be set",
+    });
     return false;
   }
 
   if (!diskcheck && warning > error && warning > 0 && error > 0) {
-    Notify.create({ type: "negative", timeout: 2000, message: "Warning Threshold must be less than Error Threshold" });
+    Notify.create({
+      type: "negative",
+      timeout: 2000,
+      message: "Warning Threshold must be less than Error Threshold",
+    });
     return false;
   }
 
   if (diskcheck && warning < error && warning > 0 && error > 0) {
-    Notify.create({ type: "negative", timeout: 2000, message: "Warning Threshold must be more than Error Threshold" });
+    Notify.create({
+      type: "negative",
+      timeout: 2000,
+      message: "Warning Threshold must be more than Error Threshold",
+    });
     return false;
   }
 

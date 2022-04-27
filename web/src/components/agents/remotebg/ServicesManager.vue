@@ -5,7 +5,10 @@
   <q-table
     v-else
     dense
-    :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+    :table-class="{
+      'table-bgcolor': !$q.dark.isActive,
+      'table-bgcolor-dark': $q.dark.isActive,
+    }"
     class="remote-bg-tbl-sticky"
     :style="{ 'max-height': `${$q.screen.height - 36}px` }"
     :rows="services"
@@ -26,10 +29,19 @@
         </template>
       </q-input>
       <!-- file download doesn't work so disabling -->
-      <export-table-btn v-show="false" class="q-ml-sm" :columns="columns" :data="services" />
+      <export-table-btn
+        v-show="false"
+        class="q-ml-sm"
+        :columns="columns"
+        :data="services"
+      />
     </template>
     <template v-slot:body="props">
-      <q-tr :props="props" class="cursor-pointer" @dblclick="showServiceDetail(props.row)">
+      <q-tr
+        :props="props"
+        class="cursor-pointer"
+        @dblclick="showServiceDetail(props.row)"
+      >
         <q-menu context-menu auto-close>
           <q-list dense style="min-width: 200px">
             <q-item clickable @click="sendServiceAction(props.row, 'start')">
@@ -57,13 +69,18 @@
         </q-td>
         <q-td key="name" :props="props">{{ props.row.name }}</q-td>
         <q-td key="start_type" :props="props">{{
-          props.row.start_type.toLowerCase() === "automatic" && props.row.autodelay
+          props.row.start_type.toLowerCase() === "automatic" &&
+          props.row.autodelay
             ? `${props.row.start_type} (Delayed)`
             : `${props.row.start_type}`
         }}</q-td>
-        <q-td key="pid" :props="props">{{ props.row.pid === 0 ? "" : props.row.pid }}</q-td>
+        <q-td key="pid" :props="props">{{
+          props.row.pid === 0 ? "" : props.row.pid
+        }}</q-td>
         <q-td key="status" :props="props">{{ props.row.status }}</q-td>
-        <q-td key="username" :props="props">{{ props.row.username ? props.row.username : "LocalSystem" }}</q-td>
+        <q-td key="username" :props="props">{{
+          props.row.username ? props.row.username : "LocalSystem"
+        }}</q-td>
       </q-tr>
     </template>
   </q-table>
@@ -185,7 +202,11 @@ export default {
       loading.value = true;
 
       try {
-        const result = await sendAgentServiceAction(props.agent_id, service.name, { sv_action: action });
+        const result = await sendAgentServiceAction(
+          props.agent_id,
+          service.name,
+          { sv_action: action }
+        );
         notifySuccess(result);
         await getServices();
       } catch (e) {

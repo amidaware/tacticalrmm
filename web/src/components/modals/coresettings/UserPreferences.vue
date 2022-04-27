@@ -14,7 +14,12 @@
               <q-space />
               <q-btn icon="close" flat round dense v-close-popup />
             </q-card-section>
-            <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
+            <q-tab-panels
+              v-model="tab"
+              animated
+              transition-prev="jump-up"
+              transition-next="jump-up"
+            >
               <!-- UI -->
               <q-tab-panel name="ui">
                 <div class="text-subtitle2">User Interface</div>
@@ -34,7 +39,10 @@
                     @update:model-value="url_action = null"
                   />
                 </q-card-section>
-                <q-card-section class="row" v-if="agentDblClickAction === 'urlaction'">
+                <q-card-section
+                  class="row"
+                  v-if="agentDblClickAction === 'urlaction'"
+                >
                   <div class="col-6">URL Action:</div>
                   <div class="col-2"></div>
                   <q-select
@@ -99,7 +107,11 @@
                         flat
                         size="sm"
                         icon="info"
-                        @click="openURL('https://quasar.dev/quasar-utils/date-utils#format-for-display')"
+                        @click="
+                          openURL(
+                            'https://quasar.dev/quasar-utils/date-utils#format-for-display'
+                          )
+                        "
                       >
                         <q-tooltip>Click to see formatting options</q-tooltip>
                       </q-btn>
@@ -192,7 +204,7 @@ export default {
     };
   },
   watch: {
-    agentDblClickAction(new_value, old_value) {
+    agentDblClickAction(new_value) {
       if (new_value === "urlaction") {
         this.getURLActions();
       }
@@ -203,33 +215,35 @@ export default {
       openURL(url);
     },
     getURLActions() {
-      this.$axios
-        .get("/core/urlaction/")
-        .then(r => {
-          if (r.data.length === 0) {
-            this.notifyWarning("No URL Actions configured. Go to Settings > Global Settings > URL Actions");
-            return;
-          }
-          this.urlActions = r.data.map(action => ({ label: action.name, value: action.id }));
-        })
-        .catch(() => {});
+      this.$axios.get("/core/urlaction/").then((r) => {
+        if (r.data.length === 0) {
+          this.notifyWarning(
+            "No URL Actions configured. Go to Settings > Global Settings > URL Actions"
+          );
+          return;
+        }
+        this.urlActions = r.data.map((action) => ({
+          label: action.name,
+          value: action.id,
+        }));
+      });
     },
     getUserPrefs() {
-      this.$axios
-        .get("/core/dashinfo/")
-        .then(r => {
-          this.agentDblClickAction = r.data.dbl_click_action;
-          this.url_action = r.data.url_action;
-          this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
-          this.clientTreeSort = r.data.client_tree_sort;
-          this.loading_bar_color = r.data.loading_bar_color;
-          this.clear_search_when_switching = r.data.clear_search_when_switching;
-          this.date_format = r.data.date_format;
-        })
-        .catch(e => {});
+      this.$axios.get("/core/dashinfo/").then((r) => {
+        this.agentDblClickAction = r.data.dbl_click_action;
+        this.url_action = r.data.url_action;
+        this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
+        this.clientTreeSort = r.data.client_tree_sort;
+        this.loading_bar_color = r.data.loading_bar_color;
+        this.clear_search_when_switching = r.data.clear_search_when_switching;
+        this.date_format = r.data.date_format;
+      });
     },
     editUserPrefs() {
-      if (this.agentDblClickAction === "urlaction" && this.url_action === null) {
+      if (
+        this.agentDblClickAction === "urlaction" &&
+        this.url_action === null
+      ) {
         this.notifyError("Select a URL Action");
         return;
       }
@@ -242,14 +256,11 @@ export default {
         clear_search_when_switching: this.clear_search_when_switching,
         date_format: this.date_format,
       };
-      this.$axios
-        .patch("/accounts/users/ui/", data)
-        .then(r => {
-          this.notifySuccess("Preferences were saved!");
-          this.$store.dispatch("loadTree");
-          this.onOk();
-        })
-        .catch(e => {});
+      this.$axios.patch("/accounts/users/ui/", data).then(() => {
+        this.notifySuccess("Preferences were saved!");
+        this.$store.dispatch("loadTree");
+        this.onOk();
+      });
     },
     show() {
       this.$refs.dialog.show();

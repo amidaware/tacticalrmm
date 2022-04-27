@@ -11,7 +11,10 @@
       <q-card-section>
         <q-table
           class="remote-bg-tbl-sticky"
-          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+          :table-class="{
+            'table-bgcolor': !$q.dark.isActive,
+            'table-bgcolor-dark': $q.dark.isActive,
+          }"
           dense
           :rows="chocos"
           :columns="columns"
@@ -33,10 +36,18 @@
           <template v-slot:body="props">
             <q-tr :props="props">
               <q-td auto-width>
-                <q-btn dense flat push icon="add" @click="installSoftware(props.row.name)" />
+                <q-btn
+                  dense
+                  flat
+                  push
+                  icon="add"
+                  @click="installSoftware(props.row.name)"
+                />
               </q-td>
               <q-td @click="showDescription(props.row.name)">
-                <span style="cursor: pointer; text-decoration: underline">{{ props.row.name }}</span>
+                <span style="cursor: pointer; text-decoration: underline">{{
+                  props.row.name
+                }}</span>
               </q-td>
             </q-tr>
           </template>

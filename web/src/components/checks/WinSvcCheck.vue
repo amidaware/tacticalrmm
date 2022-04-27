@@ -19,10 +19,15 @@
               val="default"
               label="Choose from defaults"
             />
-            <q-radio v-if="isPolicy && !check" v-model="state.svc_policy_mode" val="manual" label="Enter manually" />
+            <q-radio
+              v-if="isPolicy && !check"
+              v-model="state.svc_policy_mode"
+              val="manual"
+              label="Enter manually"
+            />
             <q-select
               v-if="isPolicy && state.svc_policy_mode === 'default' && !check"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
               dense
               options-dense
               outlined
@@ -35,7 +40,7 @@
             />
             <q-input
               v-if="isPolicy && state.svc_policy_mode === 'manual'"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
               outlined
               dense
               v-model="state.svc_name"
@@ -43,7 +48,7 @@
             />
             <q-input
               v-if="isPolicy && state.svc_policy_mode === 'manual'"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
               outlined
               dense
               v-model="state.svc_display_name"
@@ -53,7 +58,7 @@
             <!-- disable selection if editing -->
             <q-select
               v-if="isAgent"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
               dense
               options-dense
               outlined
@@ -66,11 +71,20 @@
             />
           </q-card-section>
           <q-card-section>
-            <q-checkbox v-model="state.pass_if_start_pending" label="PASS if service is in 'Start Pending' mode" />
+            <q-checkbox
+              v-model="state.pass_if_start_pending"
+              label="PASS if service is in 'Start Pending' mode"
+            />
             <br />
-            <q-checkbox v-model="state.pass_if_svc_not_exist" label="PASS if service doesn't exist" />
+            <q-checkbox
+              v-model="state.pass_if_svc_not_exist"
+              label="PASS if service doesn't exist"
+            />
             <br />
-            <q-checkbox v-model="state.restart_if_stopped" label="Restart service if it's stopped" />
+            <q-checkbox
+              v-model="state.restart_if_stopped"
+              label="Restart service if it's stopped"
+            />
           </q-card-section>
           <q-card-section>
             <q-select
@@ -107,7 +121,14 @@
         </div>
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat label="Save" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -132,7 +153,14 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
     // check logic
-    const { state, loading, submit, failOptions, severityOptions, serviceOptions } = useCheckModal({
+    const {
+      state,
+      loading,
+      submit,
+      failOptions,
+      severityOptions,
+      serviceOptions,
+    } = useCheckModal({
       editCheck: props.check,
       initialState: {
         ...props.parent,
@@ -151,17 +179,19 @@ export default {
 
     watch(
       () => state.value.svc_name,
-      (newvalue, oldValue) => {
+      () => {
         // prevent error when in manual mode
         try {
-          state.value.svc_display_name = serviceOptions.value.find(i => i.value === state.value.svc_name).label;
+          state.value.svc_display_name = serviceOptions.value.find(
+            (i) => i.value === state.value.svc_name
+          ).label;
         } catch {}
       }
     );
 
     watch(
       () => state.value.svc_policy_mode,
-      (newValue, oldValue) => {
+      () => {
         state.value.svc_name = null;
         state.value.svc_display_name = null;
       }

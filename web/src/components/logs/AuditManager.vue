@@ -14,8 +14,13 @@
       :rows="auditLogs"
       :columns="columns"
       class="tabs-tbl-sticky"
-      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-      :style="{ 'max-height': tabHeight ? tabHeight : `${$q.screen.height - 33}px` }"
+      :table-class="{
+        'table-bgcolor': !$q.dark.isActive,
+        'table-bgcolor-dark': $q.dark.isActive,
+      }"
+      :style="{
+        'max-height': tabHeight ? tabHeight : `${$q.screen.height - 33}px`,
+      }"
       row-key="id"
       dense
       binary-state-sort
@@ -27,7 +32,15 @@
       :loading="loading"
     >
       <template v-slot:top>
-        <q-btn v-if="agent" class="q-pr-sm" dense flat push @click="search" icon="refresh" />
+        <q-btn
+          v-if="agent"
+          class="q-pr-sm"
+          dense
+          flat
+          push
+          @click="search"
+          icon="refresh"
+        />
         <q-option-group
           v-if="!agent"
           class="q-pr-sm"
@@ -111,7 +124,10 @@
       <template v-slot:body-cell-action="props">
         <q-td :props="props">
           <div>
-            <q-badge :color="formatActionColor(props.value)" :label="props.value" />
+            <q-badge
+              :color="formatActionColor(props.value)"
+              :label="props.value"
+            />
           </div>
         </q-td>
       </template>
@@ -160,9 +176,27 @@ const columns = [
     align: "left",
     sortable: true,
   },
-  { name: "username", label: "Username", field: "username", align: "left", sortable: true },
-  { name: "agent", label: "Agent", field: "agent", align: "left", sortable: true },
-  { name: "client", label: "Client", field: "site", align: "left", sortable: true },
+  {
+    name: "username",
+    label: "Username",
+    field: "username",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "agent",
+    label: "Agent",
+    field: "agent",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "client",
+    label: "Client",
+    field: "site",
+    align: "left",
+    sortable: true,
+  },
   { name: "site", label: "Site", field: "site", align: "left", sortable: true },
   {
     name: "action",
@@ -170,7 +204,7 @@ const columns = [
     field: "action",
     align: "left",
     sortable: true,
-    format: (val, row) => formatTableColumnText(val),
+    format: (val) => formatTableColumnText(val),
   },
   {
     name: "object_type",
@@ -178,10 +212,22 @@ const columns = [
     field: "object_type",
     align: "left",
     sortable: true,
-    format: (val, row) => formatTableColumnText(val),
+    format: (val) => formatTableColumnText(val),
   },
-  { name: "message", label: "Message", field: "message", align: "left", sortable: true },
-  { name: "client_ip", label: "Client IP", field: "ip_address", align: "left", sortable: true },
+  {
+    name: "message",
+    label: "Message",
+    field: "message",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "client_ip",
+    label: "Client IP",
+    field: "ip_address",
+    align: "left",
+    sortable: true,
+  },
 ];
 
 const agentActionOptions = [
@@ -292,12 +338,17 @@ export default {
         pagination: pagination.value,
       };
 
-      if (agentFilter.value && agentFilter.value.length > 0) data["agentFilter"] = agentFilter.value;
-      else if (clientFilter.value && clientFilter.value.length > 0) data["clientFilter"] = clientFilter.value;
-      if (userFilter.value && userFilter.value.length > 0) data["userFilter"] = userFilter.value;
+      if (agentFilter.value && agentFilter.value.length > 0)
+        data["agentFilter"] = agentFilter.value;
+      else if (clientFilter.value && clientFilter.value.length > 0)
+        data["clientFilter"] = clientFilter.value;
+      if (userFilter.value && userFilter.value.length > 0)
+        data["userFilter"] = userFilter.value;
       if (timeFilter.value) data["timeFilter"] = timeFilter.value;
-      if (actionFilter.value && actionFilter.value.length > 0) data["actionFilter"] = actionFilter.value;
-      if (objectFilter.value && objectFilter.value.length > 0) data["objectFilter"] = objectFilter.value;
+      if (actionFilter.value && actionFilter.value.length > 0)
+        data["actionFilter"] = actionFilter.value;
+      if (objectFilter.value && objectFilter.value.length > 0)
+        data["objectFilter"] = objectFilter.value;
       try {
         const { audit_logs, total } = await fetchAuditLog(data);
         auditLogs.value = audit_logs;
@@ -349,7 +400,7 @@ export default {
       watch([userFilter, actionFilter, timeFilter], search);
       watch(
         () => props.agent,
-        (newValue, oldValue) => {
+        (newValue) => {
           if (newValue) {
             agentFilter.value = [props.agent];
             search();
@@ -389,14 +440,18 @@ export default {
       clientOptions,
       agentOptions,
       columns,
-      actionOptions: props.agent ? [...agentActionOptions] : [...agentActionOptions, ...actionOptions],
+      actionOptions: props.agent
+        ? [...agentActionOptions]
+        : [...agentActionOptions, ...actionOptions],
       objectOptions,
       timeOptions,
       filterTypeOptions,
 
       //computed
       tableNoDataText: computed(() =>
-        searched.value ? "No data found. Try to refine you search" : "Click search to find audit logs"
+        searched.value
+          ? "No data found. Try to refine you search"
+          : "Click search to find audit logs"
       ),
 
       // methods

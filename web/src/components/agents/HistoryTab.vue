@@ -2,7 +2,10 @@
   <div v-if="!selectedAgent" class="q-pa-sm">No agent selected</div>
   <div v-else>
     <q-table
-      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+      :table-class="{
+        'table-bgcolor': !$q.dark.isActive,
+        'table-bgcolor-dark': $q.dark.isActive,
+      }"
       :rows="history"
       :columns="columns"
       :pagination="{ sortBy: 'time', descending: true, rowsPerPage: 0 }"
@@ -17,7 +20,14 @@
       <template v-slot:top>
         <q-btn dense flat push @click="getHistory" icon="refresh" />
         <q-space />
-        <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+        <q-input
+          v-model="filter"
+          outlined
+          label="Search"
+          dense
+          clearable
+          class="q-pr-sm"
+        >
           <template v-slot:prepend>
             <q-icon name="search" color="primary" />
           </template>
@@ -80,7 +90,7 @@ const columns = [
     field: "type",
     align: "left",
     sortable: true,
-    format: (val, row) => formatTableColumnText(val),
+    format: (val) => formatTableColumnText(val),
   },
   /* {
     name: "status",
@@ -93,13 +103,28 @@ const columns = [
   {
     name: "command",
     label: "Script/Command",
-    field: row => (row.type === "script_run" || row.type === "task_run" ? row.script_name : row.command),
+    field: (row) =>
+      row.type === "script_run" || row.type === "task_run"
+        ? row.script_name
+        : row.command,
     align: "left",
     sortable: true,
-    format: (val, row) => truncateText(val, 30),
+    format: (val) => truncateText(val, 30),
   },
-  { name: "username", label: "Initiated By", field: "username", align: "left", sortable: true },
-  { name: "output", label: "Output", field: "output", align: "left", sortable: true },
+  {
+    name: "username",
+    label: "Initiated By",
+    field: "username",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "output",
+    label: "Output",
+    field: "output",
+    align: "left",
+    sortable: true,
+  },
 ];
 
 export default {
@@ -126,7 +151,7 @@ export default {
       loading.value = false;
     }
 
-    watch(selectedAgent, (newValue, oldValue) => {
+    watch(selectedAgent, (newValue) => {
       if (newValue) {
         getHistory();
       }

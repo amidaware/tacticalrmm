@@ -11,7 +11,8 @@
     </q-card-section>
     <q-card-section>
       <p class="text-subtitle1">
-        Download the agent then run the following command from an elevated command prompt on the device you want to add.
+        Download the agent then run the following command from an elevated
+        command prompt on the device you want to add.
       </p>
       <p>
         <q-field outlined :color="$q.dark.isActive ? 'white' : 'black'">
@@ -38,15 +39,23 @@
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>-local-mesh "C:\\&lt;some folder or path&gt;\\meshagent.exe"</code>
+            <code
+              >-local-mesh "C:\\&lt;some folder or
+              path&gt;\\meshagent.exe"</code
+            >
           </q-badge>
           <span> To skip downloading the Mesh Agent during the install.</span>
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>-meshdir "C:\Program Files\Your Company Name\Mesh Agent"</code>
+            <code
+              >-meshdir "C:\Program Files\Your Company Name\Mesh Agent"</code
+            >
           </q-badge>
-          <span>Specify full path to the directory containing MeshAgent.exe if using custom agent branding</span>
+          <span
+            >Specify full path to the directory containing MeshAgent.exe if
+            using custom agent branding</span
+          >
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
@@ -74,8 +83,15 @@
         </div>
       </q-expansion-item>
       <br />
-      <p class="text-italic">Note: the auth token above will be valid for {{ info.expires }} hours.</p>
-      <q-btn type="a" :href="info.data.url" color="primary" label="Download Agent" />
+      <p class="text-italic">
+        Note: the auth token above will be valid for {{ info.expires }} hours.
+      </p>
+      <q-btn
+        type="a"
+        :href="info.data.url"
+        color="primary"
+        label="Download Agent"
+      />
     </q-card-section>
   </q-card>
 </template>

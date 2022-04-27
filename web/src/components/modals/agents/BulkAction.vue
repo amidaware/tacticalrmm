@@ -24,7 +24,7 @@
         <q-card-section>
           <tactical-dropdown
             v-if="state.target === 'client'"
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             v-model="state.client"
             :options="clientOptions"
             label="Select Client"
@@ -34,7 +34,7 @@
           />
           <tactical-dropdown
             v-else-if="state.target === 'site'"
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             v-model="state.site"
             :options="siteOptions"
             label="Select Site"
@@ -44,7 +44,7 @@
           />
           <tactical-dropdown
             v-else-if="state.target === 'agents'"
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             v-model="state.agents"
             :options="agentOptions"
             label="Select Agents"
@@ -81,7 +81,7 @@
 
         <q-card-section v-if="mode === 'script'" class="q-pt-none">
           <tactical-dropdown
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             v-model="state.script"
             :options="filteredScriptOptions"
             label="Select Script"
@@ -122,7 +122,7 @@
             label="Custom shell"
             stack-label
             placeholder="/usr/bin/python3"
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
           />
         </q-card-section>
         <q-card-section v-if="mode === 'command'">
@@ -132,7 +132,7 @@
             label="Command"
             stack-label
             :placeholder="cmdPlaceholder(state.shell)"
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
           />
         </q-card-section>
 
@@ -145,7 +145,10 @@
             style="max-width: 150px"
             label="Timeout (seconds)"
             stack-label
-            :rules="[val => !!val || '*Required', val => val >= 5 || 'Minimum is 5 seconds']"
+            :rules="[
+              (val) => !!val || '*Required',
+              (val) => val >= 5 || 'Minimum is 5 seconds',
+            ]"
           />
         </q-card-section>
 
@@ -162,14 +165,26 @@
         </q-card-section>
 
         <q-card-section v-show="false">
-          <q-checkbox v-model="state.offlineAgents" label="Offline Agents (Run on next checkin)">
-            <q-tooltip>If the agent is offline, a pending action will be created to run on agent checkin</q-tooltip>
+          <q-checkbox
+            v-model="state.offlineAgents"
+            label="Offline Agents (Run on next checkin)"
+          >
+            <q-tooltip
+              >If the agent is offline, a pending action will be created to run
+              on agent checkin</q-tooltip
+            >
           </q-checkbox>
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn label="Cancel" v-close-popup />
-          <q-btn label="Run" color="primary" type="submit" :disable="loading" :loading="loading" />
+          <q-btn
+            label="Run"
+            color="primary"
+            type="submit"
+            :disable="loading"
+            :loading="loading"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -227,7 +242,9 @@ export default {
   setup(props) {
     // setup vuex store
     const store = useStore();
-    const showCommunityScripts = computed(() => store.state.showCommunityScripts);
+    const showCommunityScripts = computed(
+      () => store.state.showCommunityScripts
+    );
 
     const shellOptions = computed(() => {
       if (state.value.osType === "windows") {
@@ -244,8 +261,10 @@ export default {
     });
 
     const filteredOsTypeOptions = computed(() => {
-      if (props.mode === "command") return osTypeOptions.filter(i => i.value !== "all");
-      else if (props.mode === "patch") return osTypeOptions.filter(i => i.value === "windows");
+      if (props.mode === "command")
+        return osTypeOptions.filter((i) => i.value !== "all");
+      else if (props.mode === "patch")
+        return osTypeOptions.filter((i) => i.value === "windows");
       return osTypeOptions;
     });
 
@@ -253,7 +272,13 @@ export default {
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
     // dropdown setup
-    const { script, scriptOptions, defaultTimeout, defaultArgs, getScriptOptions } = useScriptDropdown();
+    const {
+      script,
+      scriptOptions,
+      defaultTimeout,
+      defaultArgs,
+      getScriptOptions,
+    } = useScriptDropdown();
     const { agents, agentOptions, getAgentOptions } = useAgentDropdown();
     const { site, siteOptions, getSiteOptions } = useSiteDropdown();
     const { client, clientOptions, getClientOptions } = useClientDropdown();
@@ -280,7 +305,7 @@ export default {
 
     watch(
       () => state.value.target,
-      (newValue, oldValue) => {
+      () => {
         client.value = null;
         site.value = null;
         agents.value = [];
@@ -289,7 +314,7 @@ export default {
 
     watch(
       () => state.value.osType,
-      (newValue, oldValue) => {
+      (newValue) => {
         state.value.custom_shell = null;
 
         if (newValue === "windows") {
@@ -329,7 +354,7 @@ export default {
 
       return removeExtraOptionCategories(
         scriptOptions.value.filter(
-          script =>
+          (script) =>
             script.category ||
             !script.supported_platforms ||
             script.supported_platforms.length === 0 ||

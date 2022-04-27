@@ -23,7 +23,14 @@
           />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-select dense options-dense outlined label="Site" v-model="site" :options="sites" />
+          <q-select
+            dense
+            options-dense
+            outlined
+            label="Site"
+            v-model="site"
+            :options="sites"
+          />
         </q-card-section>
         <q-card-section>
           <div class="q-gutter-sm">
@@ -49,8 +56,17 @@
         </q-card-section>
         <q-card-section>
           <div class="q-gutter-sm">
-            <q-radio v-model="agenttype" val="server" label="Server" @update:model-value="power = false" />
-            <q-radio v-model="agenttype" val="workstation" label="Workstation" />
+            <q-radio
+              v-model="agenttype"
+              val="server"
+              label="Server"
+              @update:model-value="power = false"
+            />
+            <q-radio
+              v-model="agenttype"
+              val="workstation"
+              label="Workstation"
+            />
           </div>
         </q-card-section>
         <q-card-section>
@@ -70,20 +86,57 @@
           <div class="q-gutter-sm">
             <q-checkbox v-model="rdp" dense label="Enable RDP" />
             <q-checkbox v-model="ping" dense label="Enable Ping">
-              <q-tooltip> Enable ICMP echo requests in the local firewall </q-tooltip>
+              <q-tooltip>
+                Enable ICMP echo requests in the local firewall
+              </q-tooltip>
             </q-checkbox>
-            <q-checkbox v-model="power" dense v-show="agenttype === 'workstation'" label="Disable sleep/hibernate" />
+            <q-checkbox
+              v-model="power"
+              dense
+              v-show="agenttype === 'workstation'"
+              label="Disable sleep/hibernate"
+            />
           </div>
         </q-card-section>
         <q-card-section>
           Arch
           <div class="q-gutter-sm">
-            <q-radio v-model="arch" val="64" label="64 bit" v-show="agentOS === 'windows'" />
-            <q-radio v-model="arch" val="32" label="32 bit" v-show="agentOS === 'windows'" />
-            <q-radio v-model="arch" val="amd64" label="64 bit" v-show="agentOS !== 'windows'" />
-            <q-radio v-model="arch" val="386" label="32 bit" v-show="agentOS !== 'windows'" />
-            <q-radio v-model="arch" val="arm64" label="ARM 64 bit" v-show="agentOS !== 'windows'" />
-            <q-radio v-model="arch" val="arm" label="ARM 32 bit (Rasp Pi)" v-show="agentOS !== 'windows'" />
+            <q-radio
+              v-model="arch"
+              val="64"
+              label="64 bit"
+              v-show="agentOS === 'windows'"
+            />
+            <q-radio
+              v-model="arch"
+              val="32"
+              label="32 bit"
+              v-show="agentOS === 'windows'"
+            />
+            <q-radio
+              v-model="arch"
+              val="amd64"
+              label="64 bit"
+              v-show="agentOS !== 'windows'"
+            />
+            <q-radio
+              v-model="arch"
+              val="386"
+              label="32 bit"
+              v-show="agentOS !== 'windows'"
+            />
+            <q-radio
+              v-model="arch"
+              val="arm64"
+              label="ARM 64 bit"
+              v-show="agentOS !== 'windows'"
+            />
+            <q-radio
+              v-model="arch"
+              val="arm"
+              label="ARM 32 bit (Rasp Pi)"
+              v-show="agentOS !== 'windows'"
+            />
           </div>
         </q-card-section>
         <q-card-section>
@@ -95,8 +148,18 @@
               v-show="agentOS === 'windows'"
               label="Dynamically generated exe"
             />
-            <q-radio v-model="installMethod" val="powershell" v-show="agentOS === 'windows'" label="Powershell" />
-            <q-radio v-model="installMethod" val="manual" v-show="agentOS === 'windows'" label="Manual" />
+            <q-radio
+              v-model="installMethod"
+              val="powershell"
+              v-show="agentOS === 'windows'"
+              label="Powershell"
+            />
+            <q-radio
+              v-model="installMethod"
+              val="manual"
+              v-show="agentOS === 'windows'"
+              label="Manual"
+            />
           </div>
         </q-card-section>
         <q-card-actions align="left">
@@ -144,11 +207,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/clients/")
-        .then(r => {
+        .then((r) => {
           this.client_options = this.formatClientOptions(r.data);
           if (this.sitepk !== undefined && this.sitepk !== null) {
-            this.client_options.forEach(client => {
-              let site = client.sites.find(site => site.id === this.sitepk);
+            this.client_options.forEach((client) => {
+              let site = client.sites.find((site) => site.id === this.sitepk);
 
               if (site !== undefined) {
                 this.client = client;
@@ -197,25 +260,24 @@ export default {
       };
 
       if (this.installMethod === "manual") {
-        this.$axios
-          .post("/agents/installer/", data)
-          .then(r => {
-            this.info = {
-              expires: this.expires,
-              data: r.data,
-              arch: this.arch,
-            };
-            this.showAgentDownload = true;
-          })
-          .catch(e => {});
+        this.$axios.post("/agents/installer/", data).then((r) => {
+          this.info = {
+            expires: this.expires,
+            data: r.data,
+            arch: this.arch,
+          };
+          this.showAgentDownload = true;
+        });
       } else if (this.installMethod === "exe") {
         this.$q.loading.show({ message: "Generating executable..." });
 
         this.$axios
           .post("/agents/installer/", data, { responseType: "blob" })
-          .then(r => {
+          .then((r) => {
             this.$q.loading.hide();
-            const blob = new Blob([r.data], { type: "application/vnd.microsoft.portable-executable" });
+            const blob = new Blob([r.data], {
+              type: "application/vnd.microsoft.portable-executable",
+            });
             let link = document.createElement("a");
             link.href = window.URL.createObjectURL(blob);
             link.download = fileName;
@@ -225,7 +287,10 @@ export default {
           .catch(() => {
             this.$q.loading.hide();
           });
-      } else if (this.installMethod === "powershell" || this.installMethod === "linux") {
+      } else if (
+        this.installMethod === "powershell" ||
+        this.installMethod === "linux"
+      ) {
         this.$q.loading.show();
         let ext = this.installMethod === "powershell" ? "ps1" : "sh";
         const scriptName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.${ext}`;

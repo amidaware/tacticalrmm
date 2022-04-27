@@ -16,7 +16,7 @@
       <q-form v-else @submit.prevent="submit(onDialogOK)">
         <q-card-section>
           <tactical-dropdown
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             outlined
             v-model="state.script"
             :options="scriptOptions"
@@ -66,7 +66,12 @@
           />
         </q-card-section>
         <q-card-section>
-          <q-input outlined dense v-model.number="state.timeout" label="Script Timeout (seconds)" />
+          <q-input
+            outlined
+            dense
+            v-model.number="state.timeout"
+            label="Script Timeout (seconds)"
+          />
         </q-card-section>
         <q-card-section>
           <q-select
@@ -90,7 +95,14 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat label="Save" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -120,26 +132,27 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
     // setup script dropdown
-    const { script, scriptOptions, defaultTimeout, defaultArgs } = useScriptDropdown(
-      props.check ? props.check.script : undefined,
-      { onMount: true }
-    );
+    const { script, scriptOptions, defaultTimeout, defaultArgs } =
+      useScriptDropdown(props.check ? props.check.script : undefined, {
+        onMount: true,
+      });
 
     // check logic
-    const { state, loading, submit, failOptions, severityOptions } = useCheckModal({
-      editCheck: props.check,
-      initialState: {
-        ...props.parent,
-        script,
-        script_args: defaultArgs,
-        timeout: defaultTimeout,
-        check_type: "script",
-        fails_b4_alert: 1,
-        info_return_codes: [],
-        warning_return_codes: [],
-        run_interval: 0,
-      },
-    });
+    const { state, loading, submit, failOptions, severityOptions } =
+      useCheckModal({
+        editCheck: props.check,
+        initialState: {
+          ...props.parent,
+          script,
+          script_args: defaultArgs,
+          timeout: defaultTimeout,
+          check_type: "script",
+          fails_b4_alert: 1,
+          info_return_codes: [],
+          warning_return_codes: [],
+          run_interval: 0,
+        },
+      });
 
     return {
       // reactive data

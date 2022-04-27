@@ -15,7 +15,12 @@
       <q-item-section>Pending Agent Actions</q-item-section>
     </q-item>
     <!-- take control -->
-    <q-item clickable v-ripple v-close-popup @click="runTakeControl(agent.agent_id)">
+    <q-item
+      clickable
+      v-ripple
+      v-close-popup
+      @click="runTakeControl(agent.agent_id)"
+    >
       <q-item-section side>
         <q-icon size="xs" name="fas fa-desktop" />
       </q-item-section>
@@ -39,7 +44,9 @@
             dense
             clickable
             v-close-popup
-            @click="runURLAction({ agent_id: agent.agent_id, action: action.id })"
+            @click="
+              runURLAction({ agent_id: agent.agent_id, action: action.id })
+            "
           >
             {{ action.name }}
           </q-item>
@@ -85,7 +92,11 @@
       </q-menu>
     </q-item>
 
-    <q-item clickable v-close-popup @click="runRemoteBackground(agent.agent_id, agent.plat)">
+    <q-item
+      clickable
+      v-close-popup
+      @click="runRemoteBackground(agent.agent_id, agent.plat)"
+    >
       <q-item-section side>
         <q-icon size="xs" name="fas fa-cogs" />
       </q-item-section>
@@ -98,7 +109,11 @@
         <q-icon size="xs" name="construction" />
       </q-item-section>
       <q-item-section>
-        {{ agent.maintenance_mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode" }}
+        {{
+          agent.maintenance_mode
+            ? "Disable Maintenance Mode"
+            : "Enable Maintenance Mode"
+        }}
       </q-item-section>
     </q-item>
 
@@ -215,7 +230,7 @@ export default {
   props: {
     agent: !Object,
   },
-  setup(props) {
+  setup() {
     // setup quasar
     const $q = useQuasar();
 
@@ -252,7 +267,9 @@ export default {
         urlActions.value = await fetchURLActions();
 
         if (urlActions.value.length === 0) {
-          notifyWarning("No URL Actions configured. Go to Settings > Global Settings > URL Actions");
+          notifyWarning(
+            "No URL Actions configured. Go to Settings > Global Settings > URL Actions"
+          );
           return;
         }
       } catch (e) {}
@@ -283,9 +300,11 @@ export default {
 
       menuLoading.value = true;
       try {
-        const data = await fetchScripts({ showCommunityScripts: store.state.showCommunityScripts });
+        const data = await fetchScripts({
+          showCommunityScripts: store.state.showCommunityScripts,
+        });
 
-        const scripts = data.filter(script => !!script.favorite);
+        const scripts = data.filter((script) => !!script.favorite);
 
         if (scripts.length === 0) {
           notifyWarning("You don't have any scripts favorited!");
@@ -293,7 +312,7 @@ export default {
         }
 
         favoriteScripts.value = scripts
-          .map(script => ({
+          .map((script) => ({
             label: script.name,
             value: script.id,
             timeout: script.default_timeout,
@@ -311,8 +330,12 @@ export default {
       };
 
       try {
-        const result = await editAgent(agent.agent_id, data);
-        notifySuccess(`Maintenance mode was ${agent.maintenance_mode ? "disabled" : "enabled"} on ${agent.hostname}`);
+        await editAgent(agent.agent_id, data);
+        notifySuccess(
+          `Maintenance mode was ${
+            agent.maintenance_mode ? "disabled" : "enabled"
+          } on ${agent.hostname}`
+        );
         store.commit("setRefreshSummaryTab", true);
         refreshDashboard();
       } catch (e) {
@@ -322,7 +345,7 @@ export default {
 
     async function runPatchStatusScan(agent) {
       try {
-        const result = await runAgentUpdateScan(agent.agent_id);
+        await runAgentUpdateScan(agent.agent_id);
         notifySuccess(`Scan will be run shortly on ${agent.hostname}`);
       } catch (e) {
         console.error(e);
@@ -365,7 +388,7 @@ export default {
       }).onOk(async () => {
         $q.loading.show();
         try {
-          const result = await agentRebootNow(agent.agent_id);
+          await agentRebootNow(agent.agent_id);
           notifySuccess(`${agent.hostname} will now be restarted`);
           $q.loading.hide();
         } catch (e) {
@@ -402,8 +425,8 @@ export default {
         if (data.status === "offline") {
           $q.dialog({
             title: "Agent offline",
-            message: `${agent.hostname} cannot be contacted. 
-                  Would you like to continue with the uninstall? 
+            message: `${agent.hostname} cannot be contacted.
+                  Would you like to continue with the uninstall?
                   If so, the agent will need to be manually uninstalled from the computer.`,
             cancel: { label: "No", color: "negative" },
             ok: { label: "Yes", color: "positive" },
@@ -426,21 +449,25 @@ export default {
 
     function deleteAgent(agent) {
       $q.dialog({
-        title: `Please type <code style="color:red">yes</code> in the box below to confirm deletion.`,
+        title:
+          'Please type <code style="color:red">yes</code> in the box below to confirm deletion.',
         prompt: {
           model: "",
           type: "text",
-          isValid: val => val === "yes",
+          isValid: (val) => val === "yes",
         },
         cancel: true,
         ok: { label: "Uninstall", color: "negative" },
         persistent: true,
         html: true,
-      }).onOk(async val => {
+      }).onOk(async () => {
         try {
           const data = await removeAgent(agent.agent_id);
           notifySuccess(data);
-          refreshDashboard(false /* clearTreeSelected */, true /* clearSubTable */);
+          refreshDashboard(
+            false /* clearTreeSelected */,
+            true /* clearSubTable */
+          );
         } catch (e) {
           console.error(e);
         }

@@ -42,16 +42,29 @@
             filterable
           />
 
-          <q-checkbox label="Block policy inheritance" v-model="blockInheritance">
-            <q-tooltip>This {{ type }} will not inherit from higher policies</q-tooltip>
+          <q-checkbox
+            label="Block policy inheritance"
+            v-model="blockInheritance"
+          >
+            <q-tooltip
+              >This {{ type }} will not inherit from higher policies</q-tooltip
+            >
           </q-checkbox>
         </q-card-section>
         <q-card-section v-else>
-          No Automation Policies have been setup. Go to Settings > Automation Manager
+          No Automation Policies have been setup. Go to Settings > Automation
+          Manager
         </q-card-section>
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn v-if="options.length > 0" dense flat label="Submit" color="primary" type="submit" />
+          <q-btn
+            v-if="options.length > 0"
+            dense
+            flat
+            label="Submit"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -142,12 +155,12 @@ export default {
 
       this.$axios
         .put(url, data)
-        .then(r => {
+        .then(() => {
           this.$q.loading.hide();
           this.onOk();
           this.notifySuccess("Policies Updated Successfully!");
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -155,15 +168,15 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/automation/policies/")
-        .then(r => {
-          this.options = r.data.map(policy => ({
+        .then((r) => {
+          this.options = r.data.map((policy) => ({
             label: policy.name,
             value: policy.id,
           }));
 
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },

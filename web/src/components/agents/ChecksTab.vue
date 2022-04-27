@@ -3,7 +3,10 @@
   <div v-else>
     <q-table
       dense
-      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+      :table-class="{
+        'table-bgcolor': !$q.dark.isActive,
+        'table-bgcolor-dark': $q.dark.isActive,
+      }"
       class="tabs-tbl-sticky"
       :style="{ 'max-height': tabHeight }"
       :rows="checks"
@@ -22,10 +25,29 @@
 
       <!-- table top slot -->
       <template v-slot:top>
-        <q-btn class="q-mr-sm" dense flat push @click="getChecks" icon="refresh" />
-        <q-btn-dropdown icon="add" label="New" no-caps dense flat class="q-mr-md">
+        <q-btn
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          @click="getChecks"
+          icon="refresh"
+        />
+        <q-btn-dropdown
+          icon="add"
+          label="New"
+          no-caps
+          dense
+          flat
+          class="q-mr-md"
+        >
           <q-list dense style="min-width: 200px">
-            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('diskspace')">
+            <q-item
+              v-if="agentPlatform === 'windows'"
+              clickable
+              v-close-popup
+              @click="showCheckModal('diskspace')"
+            >
               <q-item-section side>
                 <q-icon size="xs" name="far fa-hdd" />
               </q-item-section>
@@ -37,19 +59,34 @@
               </q-item-section>
               <q-item-section>Ping Check</q-item-section>
             </q-item>
-            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('cpuload')">
+            <q-item
+              v-if="agentPlatform === 'windows'"
+              clickable
+              v-close-popup
+              @click="showCheckModal('cpuload')"
+            >
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-microchip" />
               </q-item-section>
               <q-item-section>CPU Load Check</q-item-section>
             </q-item>
-            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('memory')">
+            <q-item
+              v-if="agentPlatform === 'windows'"
+              clickable
+              v-close-popup
+              @click="showCheckModal('memory')"
+            >
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-memory" />
               </q-item-section>
               <q-item-section>Memory Check</q-item-section>
             </q-item>
-            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('winsvc')">
+            <q-item
+              v-if="agentPlatform === 'windows'"
+              clickable
+              v-close-popup
+              @click="showCheckModal('winsvc')"
+            >
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-cogs" />
               </q-item-section>
@@ -61,7 +98,12 @@
               </q-item-section>
               <q-item-section>Script Check</q-item-section>
             </q-item>
-            <q-item v-if="agentPlatform === 'windows'" clickable v-close-popup @click="showCheckModal('eventlog')">
+            <q-item
+              v-if="agentPlatform === 'windows'"
+              clickable
+              v-close-popup
+              @click="showCheckModal('eventlog')"
+            >
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-clipboard-list" />
               </q-item-section>
@@ -69,7 +111,15 @@
             </q-item>
           </q-list>
         </q-btn-dropdown>
-        <q-btn label="Run Checks Now" dense flat push no-caps icon="play_arrow" @click="runChecks" />
+        <q-btn
+          label="Run Checks Now"
+          dense
+          flat
+          push
+          no-caps
+          icon="play_arrow"
+          @click="runChecks"
+        />
       </template>
 
       <!-- header slots -->
@@ -103,7 +153,11 @@
 
       <!-- body slots -->
       <template v-slot:body="props">
-        <q-tr :props="props" class="cursor-pointer" @dblclick="showCheckModal(props.row.check_type, props.row)">
+        <q-tr
+          :props="props"
+          class="cursor-pointer"
+          @dblclick="showCheckModal(props.row.check_type, props.row)"
+        >
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
@@ -118,14 +172,23 @@
                 </q-item-section>
                 <q-item-section>Edit</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="deleteCheck(props.row)" :disable="!!props.row.policy">
+              <q-item
+                clickable
+                v-close-popup
+                @click="deleteCheck(props.row)"
+                :disable="!!props.row.policy"
+              >
                 <q-item-section side>
                   <q-icon name="delete" />
                 </q-item-section>
                 <q-item-section>Delete</q-item-section>
               </q-item>
               <q-separator></q-separator>
-              <q-item clickable v-close-popup @click="resetCheckStatus(props.row)">
+              <q-item
+                clickable
+                v-close-popup
+                @click="resetCheckStatus(props.row)"
+              >
                 <q-item-section side>
                   <q-icon name="info" />
                 </q-item-section>
@@ -141,18 +204,26 @@
           <!-- text alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_text != null"
+              v-if="
+                props.row.alert_template &&
+                props.row.alert_template.always_text != null
+              "
               v-model="props.row.alert_template.always_text"
               disable
               dense
             >
-              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip>
+                Setting is overridden by alert template:
+                {{ props.row.alert_template.name }}
+              </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
               v-else
               dense
-              @update:model-value="editCheck(props.row, { text_alert: !props.row.text_alert })"
+              @update:model-value="
+                editCheck(props.row, { text_alert: !props.row.text_alert })
+              "
               v-model="props.row.text_alert"
               :disable="!!props.row.policy"
             />
@@ -160,18 +231,26 @@
           <!-- email alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_email != null"
+              v-if="
+                props.row.alert_template &&
+                props.row.alert_template.always_email != null
+              "
               v-model="props.row.alert_template.always_email"
               disable
               dense
             >
-              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip>
+                Setting is overridden by alert template:
+                {{ props.row.alert_template.name }}
+              </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
               v-else
               dense
-              @update:model-value="editCheck(props.row, { email_alert: !props.row.email_alert })"
+              @update:model-value="
+                editCheck(props.row, { email_alert: !props.row.email_alert })
+              "
               v-model="props.row.email_alert"
               :disable="!!props.row.policy"
             />
@@ -179,18 +258,28 @@
           <!-- dashboard alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_alert !== null"
+              v-if="
+                props.row.alert_template &&
+                props.row.alert_template.always_alert !== null
+              "
               v-model="props.row.alert_template.always_alert"
               disable
               dense
             >
-              <q-tooltip> Setting is overridden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+              <q-tooltip>
+                Setting is overridden by alert template:
+                {{ props.row.alert_template.name }}
+              </q-tooltip>
             </q-checkbox>
 
             <q-checkbox
               v-else
               dense
-              @update:model-value="editCheck(props.row, { dashboard_alert: !props.row.dashboard_alert })"
+              @update:model-value="
+                editCheck(props.row, {
+                  dashboard_alert: !props.row.dashboard_alert,
+                })
+              "
               v-model="props.row.dashboard_alert"
               :disable="!!props.row.policy"
             />
@@ -210,12 +299,21 @@
           <!-- status icon -->
           <q-td v-if="Object.keys(props.row.check_result).length === 0"></q-td>
           <q-td v-else-if="props.row.check_result.status === 'passing'">
-            <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
+            <q-icon
+              style="font-size: 1.3rem"
+              color="positive"
+              name="check_circle"
+            >
               <q-tooltip>Passing</q-tooltip>
             </q-icon>
           </q-td>
           <q-td v-else-if="props.row.check_result.status === 'failing'">
-            <q-icon v-if="getAlertSeverity(props.row) === 'info'" style="font-size: 1.3rem" color="info" name="info">
+            <q-icon
+              v-if="getAlertSeverity(props.row) === 'info'"
+              style="font-size: 1.3rem"
+              color="info"
+              name="info"
+            >
               <q-tooltip>Informational</q-tooltip>
             </q-icon>
             <q-icon
@@ -226,7 +324,12 @@
             >
               <q-tooltip>Warning</q-tooltip>
             </q-icon>
-            <q-icon v-else style="font-size: 1.3rem" color="negative" name="error">
+            <q-icon
+              v-else
+              style="font-size: 1.3rem"
+              color="negative"
+              name="error"
+            >
               <q-tooltip>Error</q-tooltip>
             </q-icon>
           </q-td>
@@ -235,7 +338,9 @@
           <q-td>
             <span>
               {{ truncateText(props.row.readable_desc, 40) }}
-              <q-tooltip v-if="props.row.readable_desc.length > 40">{{ props.row.readable_desc }}</q-tooltip>
+              <q-tooltip v-if="props.row.readable_desc.length > 40">{{
+                props.row.readable_desc
+              }}</q-tooltip>
             </span></q-td
           >
           <!-- more info -->
@@ -249,21 +354,27 @@
             >
             &nbsp;&nbsp;&nbsp;
             <span
-              v-if="props.row.check_type === 'ping' && props.row.check_result.id"
+              v-if="
+                props.row.check_type === 'ping' && props.row.check_result.id
+              "
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showPingInfo(props.row)"
               >Last Output</span
             >
             <span
-              v-else-if="props.row.check_type === 'script' && props.row.check_result.id"
+              v-else-if="
+                props.row.check_type === 'script' && props.row.check_result.id
+              "
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showScriptOutput(props.row.check_result)"
               >Last Output</span
             >
             <span
-              v-else-if="props.row.check_type === 'eventlog' && props.row.check_result.id"
+              v-else-if="
+                props.row.check_type === 'eventlog' && props.row.check_result.id
+              "
               style="cursor: pointer; text-decoration: underline"
               class="text-primary"
               @click="showEventInfo(props.row)"
@@ -271,14 +382,23 @@
             >
             <span
               v-else-if="
-                props.row.check_type === 'diskspace' || (props.row.check_type === 'winsvc' && props.row.check_result.id)
+                props.row.check_type === 'diskspace' ||
+                (props.row.check_type === 'winsvc' && props.row.check_result.id)
               "
               >{{ props.row.check_result.more_info }}</span
             >
           </q-td>
-          <q-td>{{ props.row.check_result.last_run ? formatDate(props.row.check_result.last_run) : "Never" }}</q-td>
-          <q-td v-if="props.row.assignedtasks.length > 1">{{ props.row.assignedtasks.length }} Tasks</q-td>
-          <q-td v-else-if="props.row.assignedtasks.length === 1">{{ props.row.assignedtasks[0].name }}</q-td>
+          <q-td>{{
+            props.row.check_result.last_run
+              ? formatDate(props.row.check_result.last_run)
+              : "Never"
+          }}</q-td>
+          <q-td v-if="props.row.assignedtasks.length > 1"
+            >{{ props.row.assignedtasks.length }} Tasks</q-td
+          >
+          <q-td v-else-if="props.row.assignedtasks.length === 1">{{
+            props.row.assignedtasks[0].name
+          }}</q-td>
           <q-td v-else></q-td>
         </q-tr>
       </template>
@@ -291,7 +411,12 @@
 import { ref, computed, watch, inject, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
-import { updateCheck, removeCheck, resetCheck, runAgentChecks } from "@/api/checks";
+import {
+  updateCheck,
+  removeCheck,
+  resetCheck,
+  runAgentChecks,
+} from "@/api/checks";
 import { fetchAgentChecks } from "@/api/agents";
 import { truncateText } from "@/utils/format";
 import { notifySuccess, notifyWarning } from "@/utils/notify";
@@ -315,7 +440,13 @@ const columns = [
   { name: "dashboardalert", field: "dashboard_alert", align: "left" },
   { name: "policystatus", align: "left" },
   { name: "statusicon", align: "left" },
-  { name: "desc", field: "readable_desc", label: "Description", align: "left", sortable: true },
+  {
+    name: "desc",
+    field: "readable_desc",
+    label: "Description",
+    align: "left",
+    sortable: true,
+  },
   {
     name: "moreinfo",
     label: "More Info",
@@ -330,12 +461,18 @@ const columns = [
     align: "left",
     sortable: true,
   },
-  { name: "assignedtasks", label: "Assigned Tasks", field: "assigned_task", align: "left", sortable: true },
+  {
+    name: "assignedtasks",
+    label: "Assigned Tasks",
+    field: "assigned_task",
+    align: "left",
+    sortable: true,
+  },
 ];
 
 export default {
   name: "ChecksTab",
-  setup(props) {
+  setup() {
     // setup vuex
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
@@ -429,7 +566,10 @@ export default {
         const result = await resetCheck(check.check_result.id);
         await getChecks();
         notifySuccess(result);
-        refreshDashboard(false /* clearTreeSelected */, false /* clearSubTable */);
+        refreshDashboard(
+          false /* clearTreeSelected */,
+          false /* clearSubTable */
+        );
       } catch (e) {
         console.error(e);
       }
@@ -495,7 +635,7 @@ export default {
       }).onOk(getChecks);
     }
 
-    watch(selectedAgent, (newValue, oldValue) => {
+    watch(selectedAgent, (newValue) => {
       if (newValue) {
         getChecks();
       }
@@ -537,4 +677,3 @@ export default {
   },
 };
 </script>
-

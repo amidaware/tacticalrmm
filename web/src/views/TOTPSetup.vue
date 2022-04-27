@@ -9,17 +9,26 @@
           </q-card-section>
           <q-card-section v-if="qr_url">
             <p>
-              Scan the QR Code with your authenticator app and then click Finish to be redirected back to the signin
-              page. If you navigate away from this page you 2FA signin will need to be reset!
+              Scan the QR Code with your authenticator app and then click Finish
+              to be redirected back to the signin page. If you navigate away
+              from this page you 2FA signin will need to be reset!
             </p>
             <qrcode-vue :value="qr_url" :size="200" level="H" />
           </q-card-section>
           <q-card-section v-if="totp_key">
-            <p>You can also use the below code to configure the authenticator manually.</p>
+            <p>
+              You can also use the below code to configure the authenticator
+              manually.
+            </p>
             <p>{{ totp_key }}</p>
           </q-card-section>
           <q-card-actions align="center">
-            <q-btn label="Finish" color="primary" class="full-width" @click="logout" />
+            <q-btn
+              label="Finish"
+              color="primary"
+              class="full-width"
+              @click="logout"
+            />
           </q-card-actions>
         </q-card>
       </div>
@@ -49,7 +58,7 @@ export default {
 
       this.$axios
         .post("/accounts/users/setup_totp/")
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
 
           if (r.data === "totp token already set") {
@@ -61,13 +70,13 @@ export default {
             this.qr_url = r.data.qr_url;
           }
         })
-        .catch(e => this.$q.loading.hide());
+        .catch(() => this.$q.loading.hide());
     },
     logout() {
       this.$q.loading.show();
       this.$store
         .dispatch("destroyToken")
-        .then(r => {
+        .then(() => {
           this.cleared_token = true;
           this.$q.loading.hide();
           this.$router.push({ name: "Login" });

@@ -1,14 +1,26 @@
 <template>
   <q-page>
     <FileBar />
-    <q-splitter v-model="clientTreeSplitter" :style="{ height: `${$q.screen.height - 50 - 40}px` }">
+    <q-splitter
+      v-model="clientTreeSplitter"
+      :style="{ height: `${$q.screen.height - 50 - 40}px` }"
+    >
       <template v-slot:before>
-        <div v-if="!treeReady" class="q-pa-sm q-gutter-sm text-center" style="height: 30vh">
+        <div
+          v-if="!treeReady"
+          class="q-pa-sm q-gutter-sm text-center"
+          style="height: 30vh"
+        >
           <q-spinner size="40px" color="primary" />
         </div>
         <div v-else class="q-pa-sm q-gutter-sm scroll" style="height: 85vh">
           <q-list dense class="rounded-borders">
-            <q-item clickable v-ripple :active="allClientsActive" @click="clearTreeSelected">
+            <q-item
+              clickable
+              v-ripple
+              :active="allClientsActive"
+              @click="clearTreeSelected"
+            >
               <q-item-section avatar>
                 <q-icon name="fas fa-home" />
               </q-item-section>
@@ -25,25 +37,41 @@
             >
               <template v-slot:default-header="props">
                 <div class="row items-center">
-                  <q-icon :name="props.node.icon" :color="props.node.color" class="q-mr-sm" />
+                  <q-icon
+                    :name="props.node.icon"
+                    :color="props.node.color"
+                    class="q-mr-sm"
+                  />
                   <div>
                     {{ props.node.label }}
                     <q-tooltip :delay="600">
                       ID: {{ props.node.id }}<br />
                       Agent Count:
-                      {{ props.node.children ? props.node.client.agent_count : props.node.site.agent_count }}
+                      {{
+                        props.node.children
+                          ? props.node.client.agent_count
+                          : props.node.site.agent_count
+                      }}
                     </q-tooltip>
                   </div>
 
                   <q-menu context-menu>
                     <q-list dense style="min-width: 200px">
-                      <q-item clickable v-close-popup @click="showEditModal(props.node)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showEditModal(props.node)"
+                      >
                         <q-item-section side>
                           <q-icon name="edit" />
                         </q-item-section>
                         <q-item-section>Edit</q-item-section>
                       </q-item>
-                      <q-item clickable v-close-popup @click="showDeleteModal(props.node)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showDeleteModal(props.node)"
+                      >
                         <q-item-section side>
                           <q-icon name="delete" />
                         </q-item-section>
@@ -52,19 +80,30 @@
 
                       <q-separator></q-separator>
 
-                      <q-item v-if="props.node.children" clickable v-close-popup @click="showAddSiteModal(props.node)">
+                      <q-item
+                        v-if="props.node.children"
+                        clickable
+                        v-close-popup
+                        @click="showAddSiteModal(props.node)"
+                      >
                         <q-item-section side>
                           <q-icon name="add" />
                         </q-item-section>
                         <q-item-section>Add Site</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="showToggleMaintenance(props.node)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showToggleMaintenance(props.node)"
+                      >
                         <q-item-section side>
                           <q-icon name="construction" />
                         </q-item-section>
                         <q-item-section>{{
-                          props.node.color === "green" ? "Disable Maintenance Mode" : "Enable Maintenance Mode"
+                          props.node.color === "green"
+                            ? "Disable Maintenance Mode"
+                            : "Enable Maintenance Mode"
                         }}</q-item-section>
                       </q-item>
 
@@ -80,14 +119,24 @@
                         <q-item-section>Install Agent</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="showPolicyAdd(props.node)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showPolicyAdd(props.node)"
+                      >
                         <q-item-section side>
                           <q-icon name="policy" />
                         </q-item-section>
-                        <q-item-section>Assign Automation Policy</q-item-section>
+                        <q-item-section
+                          >Assign Automation Policy</q-item-section
+                        >
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="showAlertTemplateAdd(props.node)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showAlertTemplateAdd(props.node)"
+                      >
                         <q-item-section side>
                           <q-icon name="error" />
                         </q-item-section>
@@ -110,7 +159,13 @@
                               dense
                               clickable
                               v-close-popup
-                              @click="runURLAction(props.node.id, action.id, props.node.children ? 'client' : 'site')"
+                              @click="
+                                runURLAction(
+                                  props.node.id,
+                                  action.id,
+                                  props.node.children ? 'client' : 'site'
+                                )
+                              "
                             >
                               {{ action.name }}
                             </q-item>
@@ -157,7 +212,11 @@
                 narrow-indicator
               >
                 <q-tab name="server" icon="fas fa-server" label="Servers" />
-                <q-tab name="workstation" icon="computer" label="Workstations" />
+                <q-tab
+                  name="workstation"
+                  icon="computer"
+                  label="Workstations"
+                />
                 <q-tab name="mixed" label="Mixed" />
               </q-tabs>
               <q-space />
@@ -175,7 +234,13 @@
                   <q-icon name="search" color="primary" />
                 </template>
                 <template v-slot:after>
-                  <q-btn round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : ''">
+                  <q-btn
+                    round
+                    dense
+                    flat
+                    icon="filter_alt"
+                    :color="isFilteringTable ? 'green' : ''"
+                  >
                     <q-menu>
                       <q-list dense>
                         <q-item-label header>Filter Agent Table</q-item-label>
@@ -234,7 +299,10 @@
 
                         <q-item>
                           <q-item-section side>
-                            <q-radio val="online" v-model="filterAvailability" />
+                            <q-radio
+                              val="online"
+                              v-model="filterAvailability"
+                            />
                           </q-item-section>
 
                           <q-item-section>
@@ -244,7 +312,10 @@
 
                         <q-item>
                           <q-item-section side>
-                            <q-radio val="offline" v-model="filterAvailability" />
+                            <q-radio
+                              val="offline"
+                              v-model="filterAvailability"
+                            />
                           </q-item-section>
 
                           <q-item-section>
@@ -254,7 +325,10 @@
 
                         <q-item>
                           <q-item-section side>
-                            <q-radio val="overdue" v-model="filterAvailability" />
+                            <q-radio
+                              val="overdue"
+                              v-model="filterAvailability"
+                            />
                           </q-item-section>
 
                           <q-item-section>
@@ -264,18 +338,28 @@
 
                         <q-item>
                           <q-item-section side>
-                            <q-radio val="offline_30days" v-model="filterAvailability" />
+                            <q-radio
+                              val="offline_30days"
+                              v-model="filterAvailability"
+                            />
                           </q-item-section>
 
                           <q-item-section>
-                            <q-item-label>Show Offline for over 30 days</q-item-label>
+                            <q-item-label
+                              >Show Offline for over 30 days</q-item-label
+                            >
                           </q-item-section>
                         </q-item>
                       </q-list>
 
                       <div class="row no-wrap q-pa-md">
                         <div class="column">
-                          <q-btn v-close-popup label="Apply" color="primary" @click="applyFilter" />
+                          <q-btn
+                            v-close-popup
+                            label="Apply"
+                            color="primary"
+                            @click="applyFilter"
+                          />
                         </div>
                         <q-space />
                         <div class="column">
@@ -287,10 +371,20 @@
                 </template>
               </q-input>
             </div>
-            <AgentTable :agents="filteredAgents" :columns="columns" :search="search" :visibleColumns="visibleColumns" />
+            <AgentTable
+              :agents="filteredAgents"
+              :columns="columns"
+              :search="search"
+              :visibleColumns="visibleColumns"
+            />
           </template>
           <template v-slot:separator>
-            <q-avatar color="primary" text-color="white" size="20px" icon="drag_indicator" />
+            <q-avatar
+              color="primary"
+              text-color="white"
+              size="20px"
+              icon="drag_indicator"
+            />
           </template>
           <template v-slot:after>
             <SubTableTabs />
@@ -323,7 +417,7 @@ import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
 import { removeClient, removeSite } from "@/api/clients";
 
 export default {
-  name: "Dashboard",
+  name: "DashboardView",
   components: {
     FileBar,
     AgentTable,
@@ -379,7 +473,7 @@ export default {
           align: "left",
           field: "checks",
           sortable: true,
-          sort: (a, b, rowA, rowB) =>
+          sort: (a, b) =>
             parseInt(b.failing) - parseInt(a.failing) ||
             parseInt(b.warning) - parseInt(a.warning) ||
             parseInt(b.info) - parseInt(a.info),
@@ -483,11 +577,11 @@ export default {
     };
   },
   watch: {
-    search(newVal, oldVal) {
+    search(newVal) {
       if (newVal === "") this.clearFilter();
       else if (newVal.length < this.filterTextLength) this.clearFilter();
     },
-    selectedTree(newVal, oldVal) {
+    selectedTree() {
       if (this.clearSearchWhenSwitching) this.clearFilter();
     },
     tab(newVal, oldVal) {
@@ -534,12 +628,17 @@ export default {
       this.$q
         .dialog({
           component: node.children ? ClientsForm : SitesForm,
-          componentProps: node.children ? { client: node.client } : { site: node.site },
+          componentProps: node.children
+            ? { client: node.client }
+            : { site: node.site },
         })
         .onOk(() => this.$store.dispatch("loadTree"));
     },
     showDeleteModal(node) {
-      if ((node.children && node.client.agent_count > 0) || (!node.children && node.site.agent_count > 0)) {
+      if (
+        (node.children && node.client.agent_count > 0) ||
+        (!node.children && node.site.agent_count > 0)
+      ) {
         this.$q
           .dialog({
             component: DeleteClient,
@@ -560,7 +659,9 @@ export default {
           .onOk(async () => {
             this.$q.loading.show();
             try {
-              const result = node.children ? await removeClient(node.id) : await removeSite(node.id);
+              const result = node.children
+                ? await removeClient(node.id)
+                : await removeSite(node.id);
               this.notifySuccess(result);
               this.clearTreeSelected();
             } catch (e) {
@@ -598,12 +699,12 @@ export default {
 
       this.$axios
         .post("/agents/maintenance/bulk/", data)
-        .then(r => {
+        .then((r) => {
           this.notifySuccess(r.data);
           this.$store.dispatch("refreshDashboard");
           this.$store.commit("setRefreshSummaryTab", true);
         })
-        .catch(e => {
+        .catch((e) => {
           console.error(e);
         });
     },
@@ -664,36 +765,32 @@ export default {
       this.filterTextLength = filterText.length - 1;
     },
     getURLActions() {
-      this.$axios
-        .get("/core/urlaction/")
-        .then(r => {
-          if (r.data.length === 0) {
-            this.notifyWarning("No URL Actions configured. Go to Settings > Global Settings > URL Actions");
-            return;
-          }
-          this.urlActions = r.data;
-        })
-        .catch(() => {});
+      this.$axios.get("/core/urlaction/").then((r) => {
+        if (r.data.length === 0) {
+          this.notifyWarning(
+            "No URL Actions configured. Go to Settings > Global Settings > URL Actions"
+          );
+          return;
+        }
+        this.urlActions = r.data;
+      });
     },
     runURLAction(id, action, model) {
       const data = {
         [model]: id,
         action: action,
       };
-      this.$axios
-        .patch("/core/urlaction/run/", data)
-        .then(r => {
-          openURL(r.data);
-        })
-        .catch(() => {});
+      this.$axios.patch("/core/urlaction/run/", data).then((r) => {
+        openURL(r.data);
+      });
     },
   },
   computed: {
     ...mapState({
-      clientsTree: state => state.tree,
-      treeReady: state => state.treeReady,
-      clearSearchWhenSwitching: state => state.clearSearchWhenSwitching,
-      agents: state => state.agents,
+      clientsTree: (state) => state.tree,
+      treeReady: (state) => state.treeReady,
+      clearSearchWhenSwitching: (state) => state.clearSearchWhenSwitching,
+      agents: (state) => state.agents,
     }),
     clientTreeSplitter: {
       get() {
@@ -726,7 +823,7 @@ export default {
     },
     filteredAgents() {
       if (this.tab === "mixed") return this.agents;
-      else return this.agents.filter(k => k.monitoring_type === this.tab);
+      else return this.agents.filter((k) => k.monitoring_type === this.tab);
     },
     isFilteringTable() {
       return (

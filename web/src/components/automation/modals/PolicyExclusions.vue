@@ -77,12 +77,12 @@ export default {
     onSubmit() {
       this.$axios
         .put(`automation/policies/${this.policy.id}/`, this.localPolicy)
-        .then(r => {
+        .then(() => {
           this.$q.loading.hide();
           this.onOk();
           this.notifySuccess("Policy exclusions added");
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -90,12 +90,17 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/clients/")
-        .then(r => {
-          this.clientOptions = r.data.map(client => ({ label: client.name, value: client.id }));
+        .then((r) => {
+          this.clientOptions = r.data.map((client) => ({
+            label: client.name,
+            value: client.id,
+          }));
 
-          r.data.forEach(client => {
+          r.data.forEach((client) => {
             this.siteOptions.push({ category: client.name });
-            client.sites.forEach(site => this.siteOptions.push({ label: site.name, value: site.id }));
+            client.sites.forEach((site) =>
+              this.siteOptions.push({ label: site.name, value: site.id })
+            );
           });
           this.$q.loading.hide();
         })
@@ -104,7 +109,9 @@ export default {
         });
     },
     getOptions() {
-      this.getAgentOptions("id").then(options => (this.agentOptions = Object.freeze(options)));
+      this.getAgentOptions("id").then(
+        (options) => (this.agentOptions = Object.freeze(options))
+      );
       this.getClientsandSites();
     },
     show() {

@@ -1,8 +1,23 @@
 <template>
   <div class="row">
     <div class="col-12">
-      <q-btn v-if="!!selectedPolicy" class="q-mr-sm" dense flat push @click="getChecks" icon="refresh" />
-      <q-btn-dropdown v-if="!!selectedPolicy" icon="add" label="New" no-caps dense flat>
+      <q-btn
+        v-if="!!selectedPolicy"
+        class="q-mr-sm"
+        dense
+        flat
+        push
+        @click="getChecks"
+        icon="refresh"
+      />
+      <q-btn-dropdown
+        v-if="!!selectedPolicy"
+        icon="add"
+        label="New"
+        no-caps
+        dense
+        flat
+      >
         <q-list dense style="min-width: 200px">
           <q-item clickable v-close-popup @click="showCheckModal('diskspace')">
             <q-item-section side>
@@ -50,7 +65,10 @@
       </q-btn-dropdown>
 
       <q-table
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         class="tabs-tbl-sticky"
         :rows="checks"
         :columns="columns"
@@ -65,7 +83,9 @@
         <!-- No data Slot -->
         <template v-slot:no-data>
           <div class="full-width row flex-center q-gutter-sm">
-            <span v-if="!selectedPolicy">Click on a policy to see the checks</span>
+            <span v-if="!selectedPolicy"
+              >Click on a policy to see the checks</span
+            >
             <span v-else>There are no checks added to this policy</span>
           </div>
         </template>
@@ -96,11 +116,19 @@
         </template>
         <!-- body slots -->
         <template v-slot:body="props">
-          <q-tr :props="props" class="cursor-pointer" @dblclick="showCheckModal(props.row.check_type, props.row)">
+          <q-tr
+            :props="props"
+            class="cursor-pointer"
+            @dblclick="showCheckModal(props.row.check_type, props.row)"
+          >
             <!-- context menu -->
             <q-menu context-menu>
               <q-list dense style="min-width: 200px">
-                <q-item clickable v-close-popup @click="showCheckModal(props.row.check_type, props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="showCheckModal(props.row.check_type, props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="edit" />
                   </q-item-section>
@@ -115,7 +143,11 @@
 
                 <q-separator></q-separator>
 
-                <q-item clickable v-close-popup @click="showPolicyStatus(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="showPolicyStatus(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="sync" />
                   </q-item-section>
@@ -133,21 +165,31 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="checkAlert(props.row.id, 'Text', props.row.text_alert)"
+                @update:model-value="
+                  checkAlert(props.row.id, 'Text', props.row.text_alert)
+                "
                 v-model="props.row.text_alert"
               />
             </q-td>
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="checkAlert(props.row.id, 'Email', props.row.email_alert)"
+                @update:model-value="
+                  checkAlert(props.row.id, 'Email', props.row.email_alert)
+                "
                 v-model="props.row.email_alert"
               />
             </q-td>
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="checkAlert(props.row.id, 'Dashboard', props.row.dashboard_alert)"
+                @update:model-value="
+                  checkAlert(
+                    props.row.id,
+                    'Dashboard',
+                    props.row.dashboard_alert
+                  )
+                "
                 v-model="props.row.dashboard_alert"
               />
             </q-td>
@@ -160,8 +202,12 @@
                 >See Status</span
               >
             </q-td>
-            <q-td v-if="props.row.assignedtasks.length > 1">{{ props.row.assignedtasks.length }} Tasks</q-td>
-            <q-td v-else-if="props.row.assignedtasks.length === 1">{{ props.row.assignedtasks[0].name }}</q-td>
+            <q-td v-if="props.row.assignedtasks.length > 1"
+              >{{ props.row.assignedtasks.length }} Tasks</q-td
+            >
+            <q-td v-else-if="props.row.assignedtasks.length === 1">{{
+              props.row.assignedtasks[0].name
+            }}</q-td>
             <q-td v-else></q-td>
           </q-tr>
         </template>
@@ -194,9 +240,21 @@ export default {
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "dashboardalert", field: "dashboard_alert", align: "left" },
-        { name: "desc", field: "readable_desc", label: "Description", align: "left", sortable: true },
+        {
+          name: "desc",
+          field: "readable_desc",
+          label: "Description",
+          align: "left",
+          sortable: true,
+        },
         { name: "status", label: "Status", field: "status", align: "left" },
-        { name: "assigned_task", label: "Assigned Tasks", field: "assigned_task", align: "left", sortable: true },
+        {
+          name: "assigned_task",
+          label: "Assigned Tasks",
+          field: "assigned_task",
+          align: "left",
+          sortable: true,
+        },
       ],
       pagination: {
         rowsPerPage: 0,
@@ -215,11 +273,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/automation/policies/${this.selectedPolicy}/checks/`)
-        .then(r => {
+        .then((r) => {
           this.checks = r.data;
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -240,7 +298,7 @@ export default {
       const color = !action ? "positive" : "warning";
       this.$axios
         .put(`/checks/${id}/`, data)
-        .then(r => {
+        .then(() => {
           this.$q.loading.hide();
           this.$q.notify({
             color: color,
@@ -248,7 +306,7 @@ export default {
             message: `${alert_type} alerts ${act}`,
           });
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -263,12 +321,12 @@ export default {
           this.$q.loading.show();
           this.$axios
             .delete(`/checks/${check.id}/`)
-            .then(r => {
+            .then(() => {
               this.getChecks();
               this.$q.loading.hide();
               this.notifySuccess("Check Deleted!");
             })
-            .catch(e => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });
@@ -310,4 +368,3 @@ export default {
   },
 };
 </script>
-

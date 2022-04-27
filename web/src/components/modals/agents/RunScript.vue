@@ -1,14 +1,36 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide" :maximized="maximized">
+  <q-dialog
+    ref="dialogRef"
+    @hide="onDialogHide"
+    persistent
+    @keydown.esc="onDialogHide"
+    :maximized="maximized"
+  >
     <q-card class="dialog-plugin" style="min-width: 60vw">
       <q-bar>
         Run a script on {{ agent.hostname }}
         <q-space />
-        <q-btn dense flat icon="minimize" @click="maximized = false" :disable="!maximized">
-          <q-tooltip v-if="maximized" class="bg-white text-primary">Minimize</q-tooltip>
+        <q-btn
+          dense
+          flat
+          icon="minimize"
+          @click="maximized = false"
+          :disable="!maximized"
+        >
+          <q-tooltip v-if="maximized" class="bg-white text-primary"
+            >Minimize</q-tooltip
+          >
         </q-btn>
-        <q-btn dense flat icon="crop_square" @click="maximized = true" :disable="maximized">
-          <q-tooltip v-if="!maximized" class="bg-white text-primary">Maximize</q-tooltip>
+        <q-btn
+          dense
+          flat
+          icon="crop_square"
+          @click="maximized = true"
+          :disable="maximized"
+        >
+          <q-tooltip v-if="!maximized" class="bg-white text-primary"
+            >Maximize</q-tooltip
+          >
         </q-btn>
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -17,7 +39,7 @@
       <q-form @submit.prevent="sendScript">
         <q-card-section>
           <tactical-dropdown
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             v-model="state.script"
             :options="filteredScriptOptions"
             label="Select script"
@@ -26,8 +48,19 @@
             filterable
           >
             <template v-slot:after>
-              <q-btn size="sm" round dense flat icon="info" @click="openScriptURL">
-                <q-tooltip v-if="syntax" class="bg-white text-primary text-body1" v-html="formatScriptSyntax(syntax)" />
+              <q-btn
+                size="sm"
+                round
+                dense
+                flat
+                icon="info"
+                @click="openScriptURL"
+              >
+                <q-tooltip
+                  v-if="syntax"
+                  class="bg-white text-primary text-body1"
+                  v-html="formatScriptSyntax(syntax)"
+                />
               </q-btn>
             </template>
           </tactical-dropdown>
@@ -45,15 +78,33 @@
           />
         </q-card-section>
         <q-card-section>
-          <q-option-group v-model="state.output" :options="outputOptions" color="primary" inline dense />
+          <q-option-group
+            v-model="state.output"
+            :options="outputOptions"
+            color="primary"
+            inline
+            dense
+          />
         </q-card-section>
         <q-card-section v-if="state.output === 'email'">
           <div class="q-gutter-sm">
-            <q-radio dense v-model="state.emailMode" val="default" label="Use email addresses from global settings" />
-            <q-radio dense v-model="state.emailMode" val="custom" label="Custom emails" />
+            <q-radio
+              dense
+              v-model="state.emailMode"
+              val="default"
+              label="Use email addresses from global settings"
+            />
+            <q-radio
+              dense
+              v-model="state.emailMode"
+              val="custom"
+              label="Custom emails"
+            />
           </div>
         </q-card-section>
-        <q-card-section v-if="state.emailMode === 'custom' && state.output === 'email'">
+        <q-card-section
+          v-if="state.emailMode === 'custom' && state.output === 'email'"
+        >
           <tactical-dropdown
             v-model="state.emails"
             label="Email recipients (press Enter after typing each email)"
@@ -67,7 +118,7 @@
         </q-card-section>
         <q-card-section v-if="state.output === 'collector'">
           <tactical-dropdown
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             outlined
             v-model="state.custom_field"
             :options="customFieldOptions"
@@ -86,14 +137,27 @@
             style="max-width: 150px"
             label="Timeout (seconds)"
             stack-label
-            :rules="[val => !!val || '*Required', val => val >= 5 || 'Minimum is 5 seconds']"
+            :rules="[
+              (val) => !!val || '*Required',
+              (val) => val >= 5 || 'Minimum is 5 seconds',
+            ]"
           />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn label="Cancel" v-close-popup />
-          <q-btn :loading="loading" :disabled="loading" label="Run" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            :disabled="loading"
+            label="Run"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
-        <q-card-section v-if="ret !== null" class="q-pl-md q-pr-md q-pt-none q-ma-none scroll" style="max-height: 50vh">
+        <q-card-section
+          v-if="ret !== null"
+          class="q-pl-md q-pr-md q-pt-none q-ma-none scroll"
+          style="max-height: 50vh"
+        >
           <pre>{{ ret }}</pre>
         </q-card-section>
       </q-form>
@@ -109,7 +173,10 @@ import { useScriptDropdown } from "@/composables/scripts";
 import { useCustomFieldDropdown } from "@/composables/core";
 import { runScript } from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
-import { formatScriptSyntax, removeExtraOptionCategories } from "@/utils/format";
+import {
+  formatScriptSyntax,
+  removeExtraOptionCategories,
+} from "@/utils/format";
 
 //ui imports
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
@@ -136,10 +203,11 @@ export default {
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
     // setup dropdowns
-    const { script, scriptOptions, defaultTimeout, defaultArgs, syntax, link } = useScriptDropdown(props.script, {
-      onMount: true,
-      filterByPlatform: props.agent.plat,
-    });
+    const { script, scriptOptions, defaultTimeout, defaultArgs, syntax, link } =
+      useScriptDropdown(props.script, {
+        onMount: true,
+        filterByPlatform: props.agent.plat,
+      });
     const { customFieldOptions } = useCustomFieldDropdown({ onMount: true });
 
     // main run script functionaity
@@ -177,7 +245,7 @@ export default {
     const filteredScriptOptions = computed(() => {
       return removeExtraOptionCategories(
         scriptOptions.value.filter(
-          script =>
+          (script) =>
             script.category ||
             !script.supported_platforms ||
             script.supported_platforms.length === 0 ||
@@ -187,7 +255,10 @@ export default {
     });
 
     // watchers
-    watch([() => state.value.output, () => state.value.emailMode], () => (state.value.emails = []));
+    watch(
+      [() => state.value.output, () => state.value.emailMode],
+      () => (state.value.emails = [])
+    );
 
     return {
       // reactive data

@@ -11,7 +11,10 @@
       <q-card-section>
         <q-table
           style="max-height: 35vh"
-          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+          :table-class="{
+            'table-bgcolor': !$q.dark.isActive,
+            'table-bgcolor-dark': $q.dark.isActive,
+          }"
           class="tabs-tbl-sticky"
           :rows="data"
           :columns="columns"
@@ -36,12 +39,21 @@
               <q-td>{{ props.row.hostname }}</q-td>
               <!-- status icon -->
               <q-td v-if="props.row.status === 'passing'">
-                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
+                <q-icon
+                  style="font-size: 1.3rem"
+                  color="positive"
+                  name="check_circle"
+                >
                   <q-tooltip>Passing</q-tooltip>
                 </q-icon>
               </q-td>
               <q-td v-else-if="props.row.status === 'failing'">
-                <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
+                <q-icon
+                  v-if="props.row.alert_severity === 'info'"
+                  style="font-size: 1.3rem"
+                  color="info"
+                  name="info"
+                >
                   <q-tooltip>Informational</q-tooltip>
                 </q-icon>
                 <q-icon
@@ -52,17 +64,32 @@
                 >
                   <q-tooltip>Warning</q-tooltip>
                 </q-icon>
-                <q-icon v-else style="font-size: 1.3rem" color="negative" name="error">
+                <q-icon
+                  v-else
+                  style="font-size: 1.3rem"
+                  color="negative"
+                  name="error"
+                >
                   <q-tooltip>Error</q-tooltip>
                 </q-icon>
               </q-td>
               <q-td v-else></q-td>
               <!-- status text -->
-              <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
-              <q-td v-else-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
-              <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
-              <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
-              <q-td v-else-if="props.row.sync_status === 'initial'">Waiting for task creation on agent</q-td>
+              <q-td v-if="props.row.status === 'pending'"
+                >Awaiting First Synchronization</q-td
+              >
+              <q-td v-else-if="props.row.sync_status === 'notsynced'"
+                >Will sync on next agent checkin</q-td
+              >
+              <q-td v-else-if="props.row.sync_status === 'synced'"
+                >Synced with agent</q-td
+              >
+              <q-td v-else-if="props.row.sync_status === 'pendingdeletion'"
+                >Pending deletion on agent</q-td
+              >
+              <q-td v-else-if="props.row.sync_status === 'initial'"
+                >Waiting for task creation on agent</q-td
+              >
               <q-td v-else></q-td>
               <!-- more info -->
               <q-td v-if="props.row.check_type === 'ping'">
@@ -75,7 +102,10 @@
               </q-td>
               <q-td
                 v-else-if="
-                  props.row.check_type === 'script' || props.row.retcode || props.row.stdout || props.row.stderr
+                  props.row.check_type === 'script' ||
+                  props.row.retcode ||
+                  props.row.stdout ||
+                  props.row.stderr
                 "
               >
                 <span
@@ -93,13 +123,21 @@
                   >output</span
                 >
               </q-td>
-              <q-td v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'">{{
-                props.row.history_info
+              <q-td
+                v-else-if="
+                  props.row.check_type === 'cpuload' ||
+                  props.row.check_type === 'memory'
+                "
+                >{{ props.row.history_info }}</q-td
+              >
+              <q-td v-else-if="props.row.more_info">{{
+                props.row.more_info
               }}</q-td>
-              <q-td v-else-if="props.row.more_info">{{ props.row.more_info }}</q-td>
               <q-td v-else>Awaiting Output</q-td>
               <!-- last run -->
-              <q-td>{{ props.row.last_run ? formatDate(props.row.last_run) : "Never" }}</q-td>
+              <q-td>{{
+                props.row.last_run ? formatDate(props.row.last_run) : "Never"
+              }}</q-td>
             </q-tr>
           </template>
         </q-table>
@@ -131,7 +169,7 @@ export default {
       },
     },
   },
-  setup(props) {
+  setup() {
     // setup vuex store
     const store = useStore();
     const formatDate = computed(() => store.getters.formatDate);
@@ -144,9 +182,21 @@ export default {
     return {
       data: [],
       columns: [
-        { name: "agent", label: "Hostname", field: "agent", align: "left", sortable: true },
+        {
+          name: "agent",
+          label: "Hostname",
+          field: "agent",
+          align: "left",
+          sortable: true,
+        },
         { name: "statusicon", align: "left" },
-        { name: "status", label: "Status", field: "status", align: "left", sortable: true },
+        {
+          name: "status",
+          label: "Status",
+          field: "status",
+          align: "left",
+          sortable: true,
+        },
         {
           name: "moreinfo",
           label: "More Info",
@@ -171,7 +221,9 @@ export default {
   },
   computed: {
     title() {
-      return !!this.item.readable_desc ? this.item.readable_desc + " Status" : this.item.name + " Status";
+      return !!this.item.readable_desc
+        ? this.item.readable_desc + " Status"
+        : this.item.name + " Status";
     },
   },
   methods: {
@@ -179,11 +231,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/automation/checks/${this.item.id}/status/`)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.data = r.data;
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -191,11 +243,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/automation/tasks/${this.item.id}/status/`)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.data = r.data;
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },

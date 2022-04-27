@@ -100,11 +100,11 @@ export default {
 
     this.$axios
       .get(`/alerts/templates/${this.template.id}/related/`)
-      .then(r => {
+      .then((r) => {
         this.$q.loading.hide();
         this.related = r.data;
       })
-      .catch(e => {
+      .catch(() => {
         this.$q.loading.hide();
       });
   },

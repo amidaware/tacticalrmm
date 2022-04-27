@@ -7,67 +7,67 @@ const routes = [
       {
         path: "agents/:agent_id",
         name: "Agent",
-        component: () => import("@/views/Agent"),
+        component: () => import("@/views/AgentView"),
         meta: {
-          requireAuth: true
-        }
+          requireAuth: true,
+        },
       },
       {
         path: "",
         name: "Dashboard",
-        component: () => import("@/views/Dashboard"),
+        component: () => import("@/views/DashboardView"),
         meta: {
-          requireAuth: true
-        }
+          requireAuth: true,
+        },
       },
-    ]
+    ],
   },
   {
     path: "/setup",
     name: "InitialSetup",
     component: () => import("@/views/InitialSetup"),
     meta: {
-      requireAuth: true
-    }
+      requireAuth: true,
+    },
   },
   {
     path: "/totp_setup",
     name: "TOTPSetup",
     component: () => import("@/views/TOTPSetup"),
     meta: {
-      requireAuth: true
-    }
+      requireAuth: true,
+    },
   },
   {
     path: "/takecontrol/:agent_id",
     name: "TakeControl",
     component: () => import("@/views/TakeControl"),
     meta: {
-      requireAuth: true
-    }
+      requireAuth: true,
+    },
   },
   {
     path: "/remotebackground/:agent_id",
     name: "RemoteBackground",
     component: () => import("@/views/RemoteBackground"),
     meta: {
-      requireAuth: true
-    }
+      requireAuth: true,
+    },
   },
   {
     path: "/login",
     name: "Login",
-    component: () => import("@/views/Login"),
+    component: () => import("@/views/LoginView"),
     meta: {
-      requiresVisitor: true
-    }
+      requiresVisitor: true,
+    },
   },
   {
     path: "/expired",
     name: "SessionExpired",
-    component: () => import("@/views/SessionExpired")
+    component: () => import("@/views/SessionExpired"),
   },
-  { path: "/:catchAll(.*)*", component: () => import("@/views/NotFound") }
-]
+  { path: "/:catchAll(.*)*", component: () => import("@/views/NotFound") },
+];
 
-export default routes
+export default routes;

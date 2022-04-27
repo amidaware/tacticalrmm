@@ -10,11 +10,22 @@
       </q-bar>
       <q-form id="scriptUploadForm" @submit="submitForm">
         <q-card-section>
-          <q-input label="Name" outlined dense v-model="script.name" :rules="[val => !!val || '*Required']" />
+          <q-input
+            label="Name"
+            outlined
+            dense
+            v-model="script.name"
+            :rules="[(val) => !!val || '*Required']"
+          />
         </q-card-section>
 
         <q-card-section>
-          <q-input label="Description" outlined dense v-model="script.description" />
+          <q-input
+            label="Description"
+            outlined
+            dense
+            v-model="script.description"
+          />
         </q-card-section>
 
         <q-card-section>
@@ -47,7 +58,13 @@
         </q-card-section>
 
         <q-card-section>
-          <tactical-dropdown v-model="script.shell" :options="shellOptions" label="Type" outlined mapOptions />
+          <tactical-dropdown
+            v-model="script.shell"
+            :options="shellOptions"
+            label="Type"
+            outlined
+            mapOptions
+          />
         </q-card-section>
 
         <q-card-section>
@@ -83,14 +100,21 @@
             outlined
             dense
             v-model.number="script.default_timeout"
-            :rules="[val => val >= 5 || 'Minimum is 5']"
+            :rules="[(val) => val >= 5 || 'Minimum is 5']"
           />
         </q-card-section>
 
         <q-card-actions>
           <q-space />
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat label="Add" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            label="Add"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -117,7 +141,7 @@ export default {
   props: {
     categories: !Array,
   },
-  setup(props) {
+  setup() {
     // setup quasar plugins
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
@@ -126,7 +150,7 @@ export default {
     const file = ref(null);
     const loading = ref(false);
 
-    watch(file, (newValue, oldValue) => {
+    watch(file, (newValue) => {
       if (newValue) {
         // base64 encode the script and delete file
         const reader = new FileReader();

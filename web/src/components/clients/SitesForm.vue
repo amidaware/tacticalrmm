@@ -16,22 +16,38 @@
             :options="clientOptions"
             outlined
             mapOptions
-            :rules="[val => !!val || 'Client is required']"
+            :rules="[(val) => !!val || 'Client is required']"
             filterable
           />
         </q-card-section>
         <q-card-section>
-          <q-input :rules="[val => !!val || 'Name is required']" outlined dense v-model="state.name" label="Name" />
+          <q-input
+            :rules="[(val) => !!val || 'Name is required']"
+            outlined
+            dense
+            v-model="state.name"
+            label="Name"
+          />
         </q-card-section>
 
-        <div class="q-pl-sm text-h6" v-if="customFields.length > 0">Custom Fields</div>
+        <div class="q-pl-sm text-h6" v-if="customFields.length > 0">
+          Custom Fields
+        </div>
         <q-card-section v-for="field in customFields" :key="field.id">
           <CustomField v-model="custom_fields[field.name]" :field="field" />
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn dense flat push label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat push label="Save" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            push
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -72,7 +88,9 @@ export default {
     const { clientOptions } = useClientDropdown(true);
 
     // sites for logic
-    const state = !!props.site ? ref(Object.assign({}, props.site)) : ref({ client: props.client, name: "" });
+    const state = !!props.site
+      ? ref(Object.assign({}, props.site))
+      : ref({ client: props.client, name: "" });
     const custom_fields = ref({});
     const customFields = ref([]);
     const loading = ref(false);
@@ -81,10 +99,15 @@ export default {
       loading.value = true;
       const data = {
         site: state.value,
-        custom_fields: formatCustomFields(customFields.value, custom_fields.value),
+        custom_fields: formatCustomFields(
+          customFields.value,
+          custom_fields.value
+        ),
       };
       try {
-        const result = !!props.site ? await editSite(props.site.id, data) : await saveSite(data);
+        const result = !!props.site
+          ? await editSite(props.site.id, data)
+          : await saveSite(data);
         notifySuccess(result);
         onDialogOK();
       } catch (e) {
@@ -98,7 +121,9 @@ export default {
       const data = await fetchSite(props.site.id);
 
       for (let field of customFields.value) {
-        const value = data.custom_fields.find(value => value.field === field.id);
+        const value = data.custom_fields.find(
+          (value) => value.field === field.id
+        );
 
         if (field.type === "multiple") {
           if (value) custom_fields.value[field.name] = value.value;
@@ -118,7 +143,7 @@ export default {
       $q.loading.show();
       try {
         const fields = await fetchCustomFields({ model: "site" });
-        customFields.value = fields.filter(field => !field.hide_in_ui);
+        customFields.value = fields.filter((field) => !field.hide_in_ui);
         if (props.site) getSiteCustomFieldValues();
       } catch (e) {
         console.error(e);

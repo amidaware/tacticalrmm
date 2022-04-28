@@ -5,19 +5,20 @@ on:
   pull_request:
     branches: [develop]
 
+defaults:
+  run:
+    working-directory: web
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: CD to web directory
-        run: cd web
-
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - run: npm install
+      - run: cd web && npm install
 
       - name: Run Prettier formatting
         run: npm run format

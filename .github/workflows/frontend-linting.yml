@@ -9,8 +9,17 @@ jobs:
   lint:
     steps:
       - uses: actions/checkout@v3
+
+      - name: CD to web directory
+        run: cd web
+
       - uses: actions/setup-node@v3
         with:
           node-version: 14
       - run: npm install
-      - run: npm test
+
+      - name: Run Prettier formatting
+        run: npm run format
+
+      - name: Run ESLint
+        run: npm run lint

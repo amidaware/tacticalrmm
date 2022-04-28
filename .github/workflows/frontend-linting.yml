@@ -24,4 +24,4 @@ jobs:
         run: npm run format
 
       - name: Run ESLint
-        run: npm run lint
+        run: npm run lint -- --max-warnings=0

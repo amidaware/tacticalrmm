@@ -14,11 +14,21 @@
         icon="refresh"
         @click="restartMeshService"
       />
-      <q-btn color="negative" size="sm" label="Recover Connection" icon="fas fa-first-aid" @click="repairMeshCentral" />
+      <q-btn
+        color="negative"
+        size="sm"
+        label="Recover Connection"
+        icon="fas fa-first-aid"
+        @click="repairMeshCentral"
+      />
       <q-space />
     </q-bar>
 
-    <q-video v-show="control" :src="control" :style="{ height: `${$q.screen.height - 26}px` }"></q-video>
+    <q-video
+      v-show="control"
+      :src="control"
+      :style="{ height: `${$q.screen.height - 26}px` }"
+    ></q-video>
   </div>
 </template>
 
@@ -34,7 +44,7 @@ import { notifySuccess } from "@/utils/notify";
 
 export default {
   name: "TakeControl",
-  setup(props) {
+  setup() {
     // vue lifecycle hooks
     onMounted(() => {
       getDashInfo();
@@ -52,16 +62,14 @@ export default {
     const status = ref(null);
 
     const statusColor = computed(() => {
-      if (status.value) {
-        switch (status.value) {
-          case "online":
-            return "positive";
-          case "offline":
-            return "warning";
-          case "overdue":
-            return "negative";
-        }
-      } else return "negative";
+      switch (status.value) {
+        case "online":
+          return "positive";
+        case "offline":
+          return "warning";
+        default:
+          return "negative";
+      }
     });
 
     async function getMeshURLs() {
@@ -70,7 +78,9 @@ export default {
         const data = await fetchAgentMeshCentralURLs(params.agent_id);
         control.value = data.control;
         status.value = data.status;
-        useMeta({ title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background` });
+        useMeta({
+          title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background`,
+        });
       } catch (e) {
         console.error(e);
       }

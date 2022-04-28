@@ -10,13 +10,17 @@
       </q-bar>
       <q-card-section
         class="row items-center"
-        v-if="related.default_server_policy || related.default_workstation_policy"
+        v-if="
+          related.default_server_policy || related.default_workstation_policy
+        "
       >
         <div v-if="related.default_server_policy" class="text-body">
-          <q-icon name="error_outline" color="info" size="1.5em" />This policy is set as the Default Server Policy.
+          <q-icon name="error_outline" color="info" size="1.5em" />This policy
+          is set as the Default Server Policy.
         </div>
         <div v-if="related.default_workstation_policy" class="text-body">
-          <q-icon name="error_outline" color="info" size="1.5em" />This policy is set as the Default Workstation Policy.
+          <q-icon name="error_outline" color="info" size="1.5em" />This policy
+          is set as the Default Workstation Policy.
         </div>
       </q-card-section>
       <q-card-section>
@@ -41,7 +45,10 @@
           <q-tab-panels v-model="tab" :animated="false">
             <q-tab-panel name="clients">
               <q-list separator padding>
-                <q-item v-for="item in related.server_clients" :key="item.id + 'servers'">
+                <q-item
+                  v-for="item in related.server_clients"
+                  :key="item.id + 'servers'"
+                >
                   <q-item-section>
                     <q-item-label>{{ item.name }}</q-item-label>
                   </q-item-section>
@@ -51,7 +58,10 @@
                     </q-item-label>
                   </q-item-section>
                 </q-item>
-                <q-item v-for="item in related.workstation_clients" :key="item.id + 'workstations'">
+                <q-item
+                  v-for="item in related.workstation_clients"
+                  :key="item.id + 'workstations'"
+                >
                   <q-item-section>
                     <q-item-label>{{ item.name }}</q-item-label>
                   </q-item-section>
@@ -66,7 +76,10 @@
 
             <q-tab-panel name="sites">
               <q-list separator padding>
-                <q-item v-for="item in related.server_sites" :key="item.id + 'servers'">
+                <q-item
+                  v-for="item in related.server_sites"
+                  :key="item.id + 'servers'"
+                >
                   <q-item-section>
                     <q-item-label>{{ item.name }}</q-item-label>
                     <q-item-label caption>{{ item.client_name }}</q-item-label>
@@ -77,7 +90,10 @@
                     </q-item-label>
                   </q-item-section>
                 </q-item>
-                <q-item v-for="item in related.workstation_sites" :key="item.id + 'workstations'">
+                <q-item
+                  v-for="item in related.workstation_sites"
+                  :key="item.id + 'workstations'"
+                >
                   <q-item-section>
                     <q-item-label>{{ item.name }}</q-item-label>
                     <q-item-label caption>{{ item.client_name }}</q-item-label>
@@ -150,11 +166,11 @@ export default {
 
     this.$axios
       .get(`/automation/policies/${this.policy.id}/related/`)
-      .then(r => {
+      .then((r) => {
         this.$q.loading.hide();
         this.related = r.data;
       })
-      .catch(e => {
+      .catch(() => {
         this.$q.loading.hide();
       });
   },

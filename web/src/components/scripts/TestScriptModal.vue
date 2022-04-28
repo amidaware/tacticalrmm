@@ -22,15 +22,9 @@ import { ref, onMounted } from "vue";
 import { testScript } from "@/api/scripts";
 import { useDialogPluginComponent } from "quasar";
 
-// ui imports
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
-
 export default {
   name: "TestScriptModal",
   emits: [...useDialogPluginComponent.emits],
-  components: {
-    TacticalDropdown,
-  },
   props: {
     script: !Object,
     agent: !String,

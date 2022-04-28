@@ -2,14 +2,28 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin" style="height: 70vh; min-width: 70vw">
       <q-bar>
-        <q-btn @click="getPendingActions" class="q-mr-sm" dense flat push icon="refresh" />
-        {{ agent ? `Pending Actions for ${agent.hostname}` : "All Pending Actions" }}
+        <q-btn
+          @click="getPendingActions"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />
+        {{
+          agent
+            ? `Pending Actions for ${agent.hostname}`
+            : "All Pending Actions"
+        }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup />
       </q-bar>
       <q-table
         dense
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         class="remote-bg-tbl-sticky"
         style="max-height: 65vh"
         :rows="filteredActions"
@@ -25,7 +39,11 @@
         <template v-slot:top>
           <q-space />
           <q-btn
-            :label="showCompleted ? `Hide ${completedCount} Completed` : `Show ${completedCount} Completed`"
+            :label="
+              showCompleted
+                ? `Hide ${completedCount} Completed`
+                : `Show ${completedCount} Completed`
+            "
             :icon="showCompleted ? 'visibility_off' : 'visibility'"
             @click="showCompleted = !showCompleted"
             dense
@@ -38,7 +56,10 @@
             <q-menu context-menu auto-close>
               <q-list dense>
                 <q-item
-                  :disable="props.row.status === 'completed' || props.row.action_type === 'agentinstall'"
+                  :disable="
+                    props.row.status === 'completed' ||
+                    props.row.action_type === 'agentinstall'
+                  "
                   clickable
                   @click="cancelPendingAction(props.row)"
                 >
@@ -63,9 +84,13 @@
               <q-icon name="download" size="sm" />
             </q-td>
             <q-td v-if="props.row.status !== 'completed'">
-              <span v-if="props.row.action_type === 'agentupdate'">{{ getNextAgentUpdateTime() }}</span>
+              <span v-if="props.row.action_type === 'agentupdate'">{{
+                getNextAgentUpdateTime()
+              }}</span>
               <span v-else>{{
-                props.row.action_type === "schedreboot" ? formatDate(props.row.due) : props.row.due
+                props.row.action_type === "schedreboot"
+                  ? formatDate(props.row.due)
+                  : props.row.due
               }}</span>
             </q-td>
             <q-td v-else>Completed</q-td>
@@ -73,7 +98,12 @@
             <q-td v-if="!agent">{{ props.row.hostname }}</q-td>
             <q-td v-if="!agent">{{ props.row.client }}</q-td>
             <q-td v-if="!agent">{{ props.row.site }}</q-td>
-            <q-td v-if="props.row.action_type === 'chocoinstall' && props.row.status === 'completed'">
+            <q-td
+              v-if="
+                props.row.action_type === 'chocoinstall' &&
+                props.row.status === 'completed'
+              "
+            >
               <q-btn
                 color="primary"
                 icon="preview"
@@ -95,7 +125,11 @@
 import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar, useDialogPluginComponent } from "quasar";
-import { fetchPendingActions, fetchAgentPendingActions, deletePendingAction } from "@/api/logs";
+import {
+  fetchPendingActions,
+  fetchAgentPendingActions,
+  deletePendingAction,
+} from "@/api/logs";
 import { getNextAgentUpdateTime } from "@/utils/format";
 import { notifySuccess } from "@/utils/notify";
 
@@ -103,11 +137,35 @@ import { notifySuccess } from "@/utils/notify";
 const columns = [
   { name: "id", field: "id" },
   { name: "status", field: "status" },
-  { name: "type", label: "Type", field: "action_type", align: "left", sortable: true },
+  {
+    name: "type",
+    label: "Type",
+    field: "action_type",
+    align: "left",
+    sortable: true,
+  },
   { name: "due", label: "Due", field: "due", align: "left", sortable: true },
-  { name: "desc", label: "Description", field: "description", align: "left", sortable: true },
-  { name: "agent", label: "Agent", field: "hostname", align: "left", sortable: true },
-  { name: "client", label: "Client", field: "client", align: "left", sortable: true },
+  {
+    name: "desc",
+    label: "Description",
+    field: "description",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "agent",
+    label: "Agent",
+    field: "hostname",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "client",
+    label: "Client",
+    field: "client",
+    align: "left",
+    sortable: true,
+  },
   { name: "site", label: "Site", field: "site", align: "left", sortable: true },
   { name: "details", field: "details", align: "left", sortable: false },
 ];
@@ -133,7 +191,8 @@ export default {
     const loading = ref(false);
     const completedCount = computed(() => {
       try {
-        return actions.value.filter(action => action.status === "completed").length;
+        return actions.value.filter((action) => action.status === "completed")
+          .length;
       } catch (e) {
         console.error(e);
         return 0;
@@ -147,7 +206,8 @@ export default {
 
     const filteredActions = computed(() => {
       if (showCompleted.value) return actions.value;
-      else return actions.value.filter(action => action.status !== "completed");
+      else
+        return actions.value.filter((action) => action.status !== "completed");
     });
 
     function showOutput(details) {

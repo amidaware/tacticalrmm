@@ -1,13 +1,27 @@
 <template>
   <div v-if="!selectedAgent" class="q-pa-sm">No agent selected</div>
   <div v-else-if="!summary && loading" class="q-pa-md flex flex-center">
-    <q-circular-progress indeterminate size="50px" color="primary" class="q-ma-md" />
+    <q-circular-progress
+      indeterminate
+      size="50px"
+      color="primary"
+      class="q-ma-md"
+    />
   </div>
   <div v-else-if="summary" class="q-pa-sm">
     <q-bar dense style="background-color: transparent">
-      <q-btn dense flat size="md" class="q-mr-sm" icon="refresh" @click="refreshSummary" />
+      <q-btn
+        dense
+        flat
+        size="md"
+        class="q-mr-sm"
+        icon="refresh"
+        @click="refreshSummary"
+      />
       <b>{{ summary.hostname }}</b>
-      <span v-if="summary.maintenance_mode"> &bull; <q-badge color="green"> Maintenance Mode </q-badge> </span>
+      <span v-if="summary.maintenance_mode">
+        &bull; <q-badge color="green"> Maintenance Mode </q-badge>
+      </span>
       &bull; {{ summary.operating_system }} &bull; Agent v{{ summary.version }}
       <q-space />
       <q-btn
@@ -92,19 +106,43 @@
         <br />
         <div v-if="summary.checks.total !== 0">
           <q-chip v-if="summary.checks.passing" square size="lg">
-            <q-avatar size="lg" square icon="done" color="green" text-color="white" />
+            <q-avatar
+              size="lg"
+              square
+              icon="done"
+              color="green"
+              text-color="white"
+            />
             <small>{{ summary.checks.passing }} checks passing</small>
           </q-chip>
           <q-chip v-if="summary.checks.failing" square size="lg">
-            <q-avatar size="lg" square icon="cancel" color="red" text-color="white" />
+            <q-avatar
+              size="lg"
+              square
+              icon="cancel"
+              color="red"
+              text-color="white"
+            />
             <small>{{ summary.checks.failing }} checks failing</small>
           </q-chip>
           <q-chip v-if="summary.checks.warning" square size="lg">
-            <q-avatar size="lg" square icon="warning" color="warning" text-color="white" />
+            <q-avatar
+              size="lg"
+              square
+              icon="warning"
+              color="warning"
+              text-color="white"
+            />
             <small>{{ summary.checks.warning }} checks warning</small>
           </q-chip>
           <q-chip v-if="summary.checks.info" square size="lg">
-            <q-avatar size="lg" square icon="info" color="info" text-color="white" />
+            <q-avatar
+              size="lg"
+              square
+              icon="info"
+              color="info"
+              text-color="white"
+            />
             <small>{{ summary.checks.info }} checks info</small>
           </q-chip>
           <span
@@ -115,7 +153,8 @@
               summary.checks.warning === 0 &&
               summary.checks.info === 0
             "
-            >{{ summary.checks.total }} checks awaiting first synchronization</span
+            >{{ summary.checks.total }} checks awaiting first
+            synchronization</span
           >
         </div>
         <div v-else>No checks</div>
@@ -147,7 +186,12 @@
 // composition imports
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
-import { fetchAgent, refreshAgentWMI, runTakeControl, openAgentWindow } from "@/api/agents";
+import {
+  fetchAgent,
+  refreshAgentWMI,
+  runTakeControl,
+  openAgentWindow,
+} from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
@@ -158,7 +202,7 @@ export default {
   components: {
     AgentActionMenu,
   },
-  setup(props) {
+  setup() {
     // vuex setup
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
@@ -185,6 +229,7 @@ export default {
 
       const entries = Object.entries(summary.value.disks);
       const ret = [];
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for (let [k, v] of entries) {
         ret.push(v);
       }
@@ -210,13 +255,13 @@ export default {
       loading.value = false;
     }
 
-    watch(selectedAgent, (newValue, oldValue) => {
+    watch(selectedAgent, (newValue) => {
       if (newValue) {
         getSummary();
       }
     });
 
-    watch(refreshSummaryTab, (newValue, oldValue) => {
+    watch(refreshSummaryTab, (newValue) => {
       if (newValue && selectedAgent.value) {
         getSummary();
       }
@@ -245,4 +290,3 @@ export default {
   },
 };
 </script>
-

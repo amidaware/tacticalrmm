@@ -87,7 +87,7 @@ import WmiDetail from "@/components/agents/WmiDetail";
 export default {
   name: "AssetsTab",
   components: { WmiDetail },
-  setup(props) {
+  setup() {
     // setup vuex
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
@@ -105,7 +105,7 @@ export default {
       loading.value = false;
     }
 
-    watch(selectedAgent, (newValue, oldValue) => {
+    watch(selectedAgent, (newValue) => {
       if (newValue) {
         getWMIData();
       }
@@ -125,4 +125,3 @@ export default {
   },
 };
 </script>
-

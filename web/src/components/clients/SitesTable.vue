@@ -2,7 +2,14 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin" style="width: 60vw">
       <q-bar>
-        <q-btn @click="getSites" class="q-mr-sm" dense flat push icon="refresh" />Sites for {{ client.name }}
+        <q-btn
+          @click="getSites"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />Sites for {{ client.name }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -18,13 +25,25 @@
         virtual-scroll
         :rows-per-page-options="[0]"
         no-data-label="No Sites"
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         class="settings-tbl-sticky"
         style="height: 65vh"
         :loading="loading"
       >
         <template v-slot:top>
-          <q-btn label="New" dense flat push unelevated no-caps icon="add" @click="showAddSite" />
+          <q-btn
+            label="New"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="add"
+            @click="showAddSite"
+          />
         </template>
 
         <!-- loading slot -->
@@ -34,17 +53,29 @@
 
         <!-- body slots -->
         <template v-slot:body="props">
-          <q-tr :props="props" class="cursor-pointer" @dblclick="showEditSite(props.row)">
+          <q-tr
+            :props="props"
+            class="cursor-pointer"
+            @dblclick="showEditSite(props.row)"
+          >
             <!-- context menu -->
             <q-menu context-menu>
               <q-list dense style="min-width: 200px">
-                <q-item clickable v-close-popup @click="showEditSite(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="showEditSite(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="edit" />
                   </q-item-section>
                   <q-item-section>Edit</q-item-section>
                 </q-item>
-                <q-item clickable v-close-popup @click="showSiteDeleteModal(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="showSiteDeleteModal(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="delete" />
                   </q-item-section>
@@ -85,7 +116,12 @@ import DeleteClient from "@/components/clients/DeleteClient";
 // static data
 const columns = [
   { name: "name", label: "Name", field: "name", align: "left" },
-  { name: "agent_count", label: "Total Agents", field: "agent_count", align: "left" },
+  {
+    name: "agent_count",
+    label: "Total Agents",
+    field: "agent_count",
+    align: "left",
+  },
 ];
 
 export default {

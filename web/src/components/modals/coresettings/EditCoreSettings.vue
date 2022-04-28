@@ -22,13 +22,21 @@
             <q-btn icon="close" flat round dense v-close-popup />
           </q-card-section>
           <q-scroll-area :thumb-style="thumbStyle" style="height: 60vh">
-            <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
+            <q-tab-panels
+              v-model="tab"
+              animated
+              transition-prev="jump-up"
+              transition-next="jump-up"
+            >
               <!-- general -->
               <q-tab-panel name="general">
                 <div class="text-subtitle2">General</div>
                 <q-separator />
                 <q-card-section class="row">
-                  <q-checkbox v-model="settings.agent_auto_update" label="Enable agent automatic self update">
+                  <q-checkbox
+                    v-model="settings.agent_auto_update"
+                    label="Enable agent automatic self update"
+                  >
                     <q-tooltip> Runs at 35mins past every hour </q-tooltip>
                   </q-checkbox>
                 </q-card-section>
@@ -47,7 +55,12 @@
                 <q-card-section class="row">
                   <div class="col-4">Default date format:</div>
                   <div class="col-2"></div>
-                  <q-input outlined dense v-model="settings.date_format" class="col-6">
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.date_format"
+                    class="col-6"
+                  >
                     <template v-slot:after>
                       <q-btn
                         round
@@ -55,7 +68,11 @@
                         flat
                         size="sm"
                         icon="info"
-                        @click="openURL('https://quasar.dev/quasar-utils/date-utils#format-for-display')"
+                        @click="
+                          openURL(
+                            'https://quasar.dev/quasar-utils/date-utils#format-for-display'
+                          )
+                        "
                       >
                         <q-tooltip>Click to see formatting options</q-tooltip>
                       </q-btn>
@@ -122,7 +139,9 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-4">Clear faults on agents that haven't checked in after (days):</div>
+                  <div class="col-4">
+                    Clear faults on agents that haven't checked in after (days):
+                  </div>
                   <div class="col-2"></div>
                   <q-input
                     hint="Setting this value to 0 disables this feature"
@@ -130,13 +149,17 @@
                     dense
                     v-model.number="settings.clear_faults_days"
                     class="col-6"
-                    :rules="[val => val >= 0 || 'Minimum is 0']"
+                    :rules="[(val) => val >= 0 || 'Minimum is 0']"
                   />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Reset Patch Policy on Agents:</div>
                   <div class="col-2"></div>
-                  <q-btn color="negative" label="Reset" @click="showResetPatchPolicy" />
+                  <q-btn
+                    color="negative"
+                    label="Reset"
+                    @click="showResetPatchPolicy"
+                  />
                 </q-card-section>
               </q-tab-panel>
               <!-- email alerts -->
@@ -160,7 +183,12 @@
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
                   <div class="col-5">
-                    <q-list dense v-if="ready && settings.email_alert_recipients.length !== 0">
+                    <q-list
+                      dense
+                      v-if="
+                        ready && settings.email_alert_recipients.length !== 0
+                      "
+                    >
                       <q-item
                         v-for="email in settings.email_alert_recipients"
                         :key="email"
@@ -194,13 +222,18 @@
                     dense
                     v-model="settings.smtp_from_email"
                     class="col-6 q-pa-none"
-                    :rules="[val => isValidEmail(val) || 'Invalid email']"
+                    :rules="[(val) => isValidEmail(val) || 'Invalid email']"
                   />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Host:</div>
                   <div class="col-4"></div>
-                  <q-input outlined dense v-model="settings.smtp_host" class="col-6 q-pa-none" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.smtp_host"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Port:</div>
@@ -211,7 +244,9 @@
                     type="number"
                     filled
                     class="q-pa-none"
-                    :rules="[val => (val > 0 && val <= 65535) || 'Invalid Port']"
+                    :rules="[
+                      (val) => (val > 0 && val <= 65535) || 'Invalid Port',
+                    ]"
                   />
                 </q-card-section>
                 <q-card-section class="row">
@@ -221,12 +256,23 @@
                     class="q-pa-none"
                   />
                 </q-card-section>
-                <q-card-section class="row" v-show="settings.smtp_requires_auth">
+                <q-card-section
+                  class="row"
+                  v-show="settings.smtp_requires_auth"
+                >
                   <div class="col-2">Username:</div>
                   <div class="col-4"></div>
-                  <q-input outlined dense v-model="settings.smtp_host_user" class="col-6 q-pa-none" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.smtp_host_user"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
-                <q-card-section class="row" v-show="settings.smtp_requires_auth">
+                <q-card-section
+                  class="row"
+                  v-show="settings.smtp_requires_auth"
+                >
                   <div class="col-2">Password:</div>
                   <div class="col-4"></div>
                   <q-input
@@ -267,7 +313,10 @@
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
                   <div class="col-5">
-                    <q-list dense v-if="ready && settings.sms_alert_recipients.length !== 0">
+                    <q-list
+                      dense
+                      v-if="ready && settings.sms_alert_recipients.length !== 0"
+                    >
                       <q-item
                         v-for="num in settings.sms_alert_recipients"
                         :key="num"
@@ -307,12 +356,22 @@
                 <q-card-section class="row">
                   <div class="col-3">Twilio Account SID:</div>
                   <div class="col-3"></div>
-                  <q-input outlined dense v-model="settings.twilio_account_sid" class="col-6 q-pa-none" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.twilio_account_sid"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-3">Twilio Auth Token:</div>
                   <div class="col-3"></div>
-                  <q-input outlined dense v-model="settings.twilio_auth_token" class="col-6 q-pa-none" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.twilio_auth_token"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
               </q-tab-panel>
               <!-- meshcentral -->
@@ -328,29 +387,53 @@
                     v-model="settings.mesh_username"
                     class="col-6"
                     :rules="[
-                      val => (val == val.toLowerCase() && val != val.toUpperCase()) || 'Username must be all lowercase',
+                      (val) =>
+                        (val == val.toLowerCase() &&
+                          val != val.toUpperCase()) ||
+                        'Username must be all lowercase',
                     ]"
                   />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Site:</div>
                   <div class="col-2"></div>
-                  <q-input dense outlined v-model="settings.mesh_site" class="col-6" />
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.mesh_site"
+                    class="col-6"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Token:</div>
                   <div class="col-2"></div>
-                  <q-input dense outlined v-model="settings.mesh_token" class="col-6" />
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.mesh_token"
+                    class="col-6"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Device Group Name:</div>
                   <div class="col-2"></div>
-                  <q-input dense outlined v-model="settings.mesh_device_group" class="col-6" />
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.mesh_device_group"
+                    class="col-6"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-4">Disable Auto Login for Remote Control and Remote background:</div>
+                  <div class="col-4">
+                    Disable Auto Login for Remote Control and Remote background:
+                  </div>
                   <div class="col-2"></div>
-                  <q-checkbox dense v-model="settings.mesh_disable_auto_login" class="col-6" />
+                  <q-checkbox
+                    dense
+                    v-model="settings.mesh_disable_auto_login"
+                    class="col-6"
+                  />
                 </q-card-section>
               </q-tab-panel>
               <q-tab-panel name="customfields">
@@ -429,7 +512,11 @@
           </q-scroll-area>
           <q-card-section class="row items-center">
             <q-btn
-              v-show="tab !== 'customfields' && tab !== 'keystore' && tab !== 'urlactions'"
+              v-show="
+                tab !== 'customfields' &&
+                tab !== 'keystore' &&
+                tab !== 'urlactions'
+              "
               label="Save"
               color="primary"
               type="submit"
@@ -509,34 +596,34 @@ export default {
       openURL(url);
     },
     getCoreSettings() {
-      this.$axios
-        .get("/core/settings/")
-        .then(r => {
-          this.settings = r.data;
-          this.allTimezones = Object.freeze(r.data.all_timezones);
-          this.ready = true;
-        })
-        .catch(e => {});
+      this.$axios.get("/core/settings/").then((r) => {
+        this.settings = r.data;
+        this.allTimezones = Object.freeze(r.data.all_timezones);
+        this.ready = true;
+      });
     },
     getPolicies() {
       this.$q.loading.show();
       this.$axios
         .get("/automation/policies/")
-        .then(r => {
-          this.policies = r.data.map(policy => ({ label: policy.name, value: policy.id }));
+        .then((r) => {
+          this.policies = r.data.map((policy) => ({
+            label: policy.name,
+            value: policy.id,
+          }));
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
     getAlertTemplates() {
-      this.$axios
-        .get("alerts/templates/")
-        .then(r => {
-          this.alertTemplateOptions = r.data.map(template => ({ label: template.name, value: template.id }));
-        })
-        .catch(e => {});
+      this.$axios.get("alerts/templates/").then((r) => {
+        this.alertTemplateOptions = r.data.map((template) => ({
+          label: template.name,
+          value: template.id,
+        }));
+      });
     },
     showResetPatchPolicy() {
       this.$q.dialog({
@@ -549,14 +636,14 @@ export default {
           title: "Add email",
           prompt: {
             model: "",
-            isValid: val => this.isValidEmail(val),
+            isValid: (val) => this.isValidEmail(val),
             type: "email",
           },
           cancel: true,
           ok: { label: "Add", color: "primary" },
           persistent: false,
         })
-        .onOk(data => {
+        .onOk((data) => {
           this.settings.email_alert_recipients.push(data);
         });
     },
@@ -574,16 +661,20 @@ export default {
           ok: { label: "Add", color: "primary" },
           persistent: false,
         })
-        .onOk(data => {
+        .onOk((data) => {
           this.settings.sms_alert_recipients.push(data);
         });
     },
     removeEmail(email) {
-      const removed = this.settings.email_alert_recipients.filter(k => k !== email);
+      const removed = this.settings.email_alert_recipients.filter(
+        (k) => k !== email
+      );
       this.settings.email_alert_recipients = removed;
     },
     removeSMSNumber(num) {
-      const removed = this.settings.sms_alert_recipients.filter(k => k !== num);
+      const removed = this.settings.sms_alert_recipients.filter(
+        (k) => k !== num
+      );
       this.settings.sms_alert_recipients = removed;
     },
     editSettings() {
@@ -591,13 +682,13 @@ export default {
       delete this.settings.all_timezones;
       this.$axios
         .put("/core/settings/", this.settings)
-        .then(r => {
+        .then(() => {
           this.$q.loading.hide();
           if (this.emailTest) {
             this.$q.loading.show({ message: "Sending test email..." });
             this.$axios
               .post("/core/emailtest/")
-              .then(r => {
+              .then((r) => {
                 this.emailTest = false;
                 this.$q.loading.hide();
                 this.getCoreSettings();
@@ -611,7 +702,7 @@ export default {
             this.$q.loading.show({ message: "Sending test SMS..." });
             this.$axios
               .post("/core/smstest/")
-              .then(r => {
+              .then((r) => {
                 this.smsTest = false;
                 this.$q.loading.hide();
                 this.getCoreSettings();

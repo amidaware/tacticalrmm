@@ -4,7 +4,16 @@
     <q-separator />
     <SubTableTabs
       :style="{ height: `${tabHeight + 38}px` }"
-      :activeTabs="['checks', 'tasks', 'patches', 'software', 'history', 'notes', 'assets', 'audit']"
+      :activeTabs="[
+        'checks',
+        'tasks',
+        'patches',
+        'software',
+        'history',
+        'notes',
+        'assets',
+        'audit',
+      ]"
     />
   </q-page>
 </template>
@@ -21,17 +30,18 @@ import SummaryTab from "@/components/agents/SummaryTab";
 import SubTableTabs from "@/components/SubTableTabs";
 
 export default {
-  name: "Agent",
+  name: "AgentView",
   components: {
     SummaryTab,
     SubTableTabs,
   },
   provide() {
     return {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       refreshDashboard: () => {}, // noop
     };
   },
-  setup(props) {
+  setup() {
     const store = useStore();
     const route = useRoute();
     const $q = useQuasar();

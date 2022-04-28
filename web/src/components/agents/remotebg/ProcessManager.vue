@@ -1,7 +1,10 @@
 <template>
   <q-table
     dense
-    :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+    :table-class="{
+      'table-bgcolor': !$q.dark.isActive,
+      'table-bgcolor-dark': $q.dark.isActive,
+    }"
     class="remote-bg-tbl-sticky"
     :style="{ 'max-height': `${$q.screen.height - 36}px` }"
     :rows="processes"
@@ -14,8 +17,24 @@
     :loading="loading"
   >
     <template v-slot:top>
-      <q-btn v-if="isPolling" dense flat push @click="stopPoll" icon="stop" label="Stop Live Refresh" />
-      <q-btn v-else dense flat push @click="startPoll" icon="play_arrow" label="Resume Live Refresh" />
+      <q-btn
+        v-if="isPolling"
+        dense
+        flat
+        push
+        @click="stopPoll"
+        icon="stop"
+        label="Stop Live Refresh"
+      />
+      <q-btn
+        v-else
+        dense
+        flat
+        push
+        @click="startPoll"
+        icon="play_arrow"
+        label="Resume Live Refresh"
+      />
 
       <q-space />
 
@@ -29,10 +48,23 @@
           size="sm"
           color="grey"
         />
-        <q-btn dense push icon="add" size="sm" color="grey" @click="pollIntervalChanged('add')" />
+        <q-btn
+          dense
+          push
+          icon="add"
+          size="sm"
+          color="grey"
+          @click="pollIntervalChanged('add')"
+        />
       </div>
       <div class="text-overline">
-        <q-badge align="middle" size="sm" class="text-h6" color="blue" :label="pollInterval" />
+        <q-badge
+          align="middle"
+          size="sm"
+          class="text-h6"
+          color="blue"
+          :label="pollInterval"
+        />
         Refresh interval (seconds)
       </div>
 
@@ -43,13 +75,21 @@
         </template>
       </q-input>
       <!-- file download doesn't work so disabling -->
-      <export-table-btn v-show="false" class="q-ml-sm" :columns="columns" :data="processes" />
+      <export-table-btn
+        v-show="false"
+        class="q-ml-sm"
+        :columns="columns"
+        :data="processes"
+      />
     </template>
     <template v-slot:body="props">
       <q-tr :props="props" class="cursor-pointer">
         <q-menu context-menu auto-close>
           <q-list dense style="min-width: 200px">
-            <q-item clickable @click="killProcess(props.row.pid, props.row.name)">
+            <q-item
+              clickable
+              @click="killProcess(props.row.pid, props.row.name)"
+            >
               <q-item-section side>
                 <q-icon name="fas fa-trash-alt" size="xs" />
               </q-item-section>
@@ -73,7 +113,11 @@
 
 <script>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import { fetchAgent, fetchAgentProcesses, killAgentProcess } from "@/api/agents";
+import {
+  fetchAgent,
+  fetchAgentProcesses,
+  killAgentProcess,
+} from "@/api/agents";
 import { bytes2Human } from "@/utils/format";
 import { notifySuccess } from "@/utils/notify";
 
@@ -94,7 +138,7 @@ const columns = [
     field: "cpu_percent",
     align: "left",
     sortable: true,
-    sort: (a, b, rowA, rowB) => parseFloat(b) < parseFloat(a),
+    sort: (a, b) => parseFloat(b) < parseFloat(a),
   },
   {
     name: "membytes",
@@ -177,7 +221,7 @@ export default {
       }, pollInterval.value * 1000);
     }
 
-    async function killProcess(pid, name) {
+    async function killProcess(pid) {
       loading.value = true;
       let result = "";
       try {

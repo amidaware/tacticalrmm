@@ -1,16 +1,28 @@
 <template>
   <q-card>
     <q-bar v-if="modal">
-      <q-btn @click="getDebugLog" class="q-mr-sm" dense flat push icon="refresh" />Debug Log
+      <q-btn
+        @click="getDebugLog"
+        class="q-mr-sm"
+        dense
+        flat
+        push
+        icon="refresh"
+      />Debug Log
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
         <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
     <q-table
-      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+      :table-class="{
+        'table-bgcolor': !$q.dark.isActive,
+        'table-bgcolor-dark': $q.dark.isActive,
+      }"
       class="tabs-tbl-sticky"
-      :style="{ 'max-height': tabHeight ? tabHeight : `${$q.screen.height - 33}px` }"
+      :style="{
+        'max-height': tabHeight ? tabHeight : `${$q.screen.height - 33}px`,
+      }"
       :rows="debugLog"
       :columns="columns"
       :title="modal ? 'Debug Logs' : ''"
@@ -23,7 +35,15 @@
       :rows-per-page-options="[0]"
     >
       <template v-slot:top>
-        <q-btn v-if="agent" class="q-pr-sm" dense flat push @click="getDebugLog" icon="refresh" />
+        <q-btn
+          v-if="agent"
+          class="q-pr-sm"
+          dense
+          flat
+          push
+          @click="getDebugLog"
+          icon="refresh"
+        />
         <tactical-dropdown
           v-if="!agent"
           class="q-pr-sm"
@@ -46,12 +66,39 @@
           outlined
           clearable
         />
-        <q-radio v-model="logLevelFilter" color="cyan" val="info" label="Info" />
-        <q-radio v-model="logLevelFilter" color="red" val="critical" label="Critical" />
-        <q-radio v-model="logLevelFilter" color="red" val="error" label="Error" />
-        <q-radio v-model="logLevelFilter" color="yellow" val="warning" label="Warning" />
+        <q-radio
+          v-model="logLevelFilter"
+          color="cyan"
+          val="info"
+          label="Info"
+        />
+        <q-radio
+          v-model="logLevelFilter"
+          color="red"
+          val="critical"
+          label="Critical"
+        />
+        <q-radio
+          v-model="logLevelFilter"
+          color="red"
+          val="error"
+          label="Error"
+        />
+        <q-radio
+          v-model="logLevelFilter"
+          color="yellow"
+          val="warning"
+          label="Warning"
+        />
         <q-space />
-        <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+        <q-input
+          v-model="filter"
+          outlined
+          label="Search"
+          dense
+          clearable
+          class="q-pr-sm"
+        >
           <template v-slot:prepend>
             <q-icon name="search" color="primary" />
           </template>
@@ -79,7 +126,7 @@
 
 <script>
 // composition api
-import { ref, watch, computed, onMounted } from "vue";
+import { ref, toRef, watch, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useAgentDropdown } from "@/composables/agents";
 import { fetchDebugLog } from "@/api/logs";
@@ -106,17 +153,35 @@ const columns = [
     align: "left",
     sortable: true,
   },
-  { name: "log_level", label: "Log Level", field: "log_level", align: "left", sortable: true },
-  { name: "agent", label: "Agent", field: "agent", align: "left", sortable: true },
+  {
+    name: "log_level",
+    label: "Log Level",
+    field: "log_level",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "agent",
+    label: "Agent",
+    field: "agent",
+    align: "left",
+    sortable: true,
+  },
   {
     name: "log_type",
     label: "Log Type",
     field: "log_type",
     align: "left",
     sortable: true,
-    format: (val, row) => formatTableColumnText(val),
+    format: (val) => formatTableColumnText(val),
   },
-  { name: "message", label: "Message", field: "message", align: "left", sortable: true },
+  {
+    name: "message",
+    label: "Message",
+    field: "message",
+    align: "left",
+    sortable: true,
+  },
 ];
 
 export default {
@@ -144,7 +209,7 @@ export default {
 
     // set main debug log functionality
     const debugLog = ref([]);
-    const agentFilter = ref(null);
+    const agentFilter = props.agent ? toRef(props, "agent") : ref(null);
     const logLevelFilter = ref("info");
     const logTypeFilter = ref(null);
     const loading = ref(false);
@@ -167,10 +232,9 @@ export default {
     }
 
     if (props.agent) {
-      agentFilter.value = props.agent;
       watch(
         () => props.agent,
-        (newValue, oldValue) => {
+        (newValue) => {
           if (newValue) {
             agentFilter.value = props.agent;
             getDebugLog();

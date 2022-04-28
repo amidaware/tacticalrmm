@@ -21,7 +21,15 @@
       </q-card-section>
       <q-card-actions align="right">
         <q-btn dense flat push label="Cancel" v-close-popup />
-        <q-btn :loading="loading" dense flat push label="Schedule Reboot" color="primary" @click="scheduleReboot" />
+        <q-btn
+          :loading="loading"
+          dense
+          flat
+          push
+          label="Schedule Reboot"
+          color="primary"
+          @click="scheduleReboot"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -55,7 +63,7 @@ export default {
       loading.value = true;
 
       try {
-        const result = await scheduleAgentReboot(props.agent.agent_id, state.value);
+        await scheduleAgentReboot(props.agent.agent_id, state.value);
         $q.dialog({
           title: "Reboot pending",
           style: "width: 40vw",

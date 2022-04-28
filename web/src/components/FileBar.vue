@@ -51,7 +51,11 @@
               <q-item clickable v-close-popup @click="showDeployments">
                 <q-item-section>Manage Deployments</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
+              <q-item
+                clickable
+                v-close-popup
+                @click="showUpdateAgentsModal = true"
+              >
                 <q-item-section>Update Agents</q-item-section>
               </q-item>
             </q-list>
@@ -87,11 +91,20 @@
                 <q-item-section>User Administration</q-item-section>
               </q-item>
               <!-- core settings -->
-              <q-item clickable v-close-popup @click="showEditCoreSettingsModal = true">
+              <q-item
+                clickable
+                v-close-popup
+                @click="showEditCoreSettingsModal = true"
+              >
                 <q-item-section>Global Settings</q-item-section>
               </q-item>
               <!-- code sign -->
-              <q-item v-if="!hosted" clickable v-close-popup @click="showCodeSign = true">
+              <q-item
+                v-if="!hosted"
+                clickable
+                v-close-popup
+                @click="showCodeSign = true"
+              >
                 <q-item-section>Code Signing</q-item-section>
               </q-item>
             </q-list>
@@ -102,7 +115,11 @@
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
               <!-- bulk command -->
-              <q-item clickable v-close-popup @click="showBulkAction('command')">
+              <q-item
+                clickable
+                v-close-popup
+                @click="showBulkAction('command')"
+              >
                 <q-item-section>Bulk Command</q-item-section>
               </q-item>
               <!-- bulk script -->
@@ -114,7 +131,11 @@
                 <q-item-section>Bulk Patch Management</q-item-section>
               </q-item>
               <!-- server maintenance -->
-              <q-item clickable v-close-popup @click="showServerMaintenance = true">
+              <q-item
+                clickable
+                v-close-popup
+                @click="showServerMaintenance = true"
+              >
                 <q-item-section>Server Maintenance</q-item-section>
               </q-item>
               <!-- clear cache -->
@@ -160,7 +181,12 @@
       </div>
       <!-- Update Agents Modal -->
       <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showUpdateAgentsModal" maximized transition-show="slide-up" transition-hide="slide-down">
+        <q-dialog
+          v-model="showUpdateAgentsModal"
+          maximized
+          transition-show="slide-up"
+          transition-hide="slide-down"
+        >
           <UpdateAgents @close="showUpdateAgentsModal = false" />
         </q-dialog>
       </div>
@@ -199,7 +225,7 @@ import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import AuditManager from "@/components/logs/AuditManager";
 import BulkAction from "@/components/modals/agents/BulkAction";
-import Deployment from "@/components/clients/Deployment";
+import DeploymentTable from "@/components/clients/DeploymentTable";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
 import CodeSign from "@/components/modals/coresettings/CodeSign";
 import PermissionsManager from "@/components/accounts/PermissionsManager";
@@ -214,7 +240,6 @@ export default {
     AdminManager,
     ServerMaintenance,
     CodeSign,
-    PermissionsManager,
   },
   data() {
     return {
@@ -235,8 +260,7 @@ export default {
     clearCache() {
       this.$axios
         .get("/core/clearcache/")
-        .then(r => this.notifySuccess(r.data))
-        .catch(() => {});
+        .then((r) => this.notifySuccess(r.data));
     },
     openHelp(mode) {
       let url;
@@ -248,10 +272,12 @@ export default {
           url = "https://docs.tacticalrmm.com";
           break;
         case "bug":
-          url = "https://github.com/amidaware/tacticalrmm/issues/new?template=bug_report.md";
+          url =
+            "https://github.com/amidaware/tacticalrmm/issues/new?template=bug_report.md";
           break;
         case "feature":
-          url = "https://github.com/amidaware/tacticalrmm/issues/new?template=feature_request.md";
+          url =
+            "https://github.com/amidaware/tacticalrmm/issues/new?template=feature_request.md";
           break;
         case "discord":
           url = "https://discord.gg/upGTkWp";
@@ -349,7 +375,7 @@ export default {
     },
     showDeployments() {
       this.$q.dialog({
-        component: Deployment,
+        component: DeploymentTable,
       });
     },
   },

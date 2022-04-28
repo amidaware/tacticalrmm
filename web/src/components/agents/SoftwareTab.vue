@@ -5,7 +5,10 @@
   </div>
   <div v-else>
     <q-table
-      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+      :table-class="{
+        'table-bgcolor': !$q.dark.isActive,
+        'table-bgcolor-dark': $q.dark.isActive,
+      }"
       class="tabs-tbl-sticky"
       dense
       :rows="software"
@@ -24,12 +27,34 @@
       </template>
 
       <template v-slot:top>
-        <q-btn class="q-mr-sm" dense flat push @click="refreshSoftware" icon="refresh" />
-        <q-btn icon="add" label="Install Software" no-caps dense flat push @click="showInstallSoftwareModal" />
+        <q-btn
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          @click="refreshSoftware"
+          icon="refresh"
+        />
+        <q-btn
+          icon="add"
+          label="Install Software"
+          no-caps
+          dense
+          flat
+          push
+          @click="showInstallSoftwareModal"
+        />
 
         <q-space />
 
-        <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+        <q-input
+          v-model="filter"
+          outlined
+          label="Search"
+          dense
+          clearable
+          class="q-pr-sm"
+        >
           <template v-slot:prepend>
             <q-icon name="search" color="primary" />
           </template>
@@ -73,7 +98,7 @@ const columns = [
     label: "Installed On",
     field: "install_date",
     sortable: false,
-    format: (val, row) => {
+    format: (val) => {
       return val === "01/01/1" || val === "01-1-01" ? "" : val;
     },
   },
@@ -98,7 +123,7 @@ export default {
   components: {
     ExportTableBtn,
   },
-  setup(props) {
+  setup() {
     // setup quasar
     const $q = useQuasar();
 
@@ -140,7 +165,7 @@ export default {
       });
     }
 
-    watch(selectedAgent, (newValue, oldValue) => {
+    watch(selectedAgent, (newValue) => {
       if (newValue) {
         getSoftware();
       }
@@ -170,4 +195,3 @@ export default {
   },
 };
 </script>
-

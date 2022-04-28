@@ -22,10 +22,18 @@
           >
           </q-select>
         </q-card-section>
-        <q-card-section v-else> No Alert Templates have been setup. Go to Settings > Alerts Manager </q-card-section>
+        <q-card-section v-else>
+          No Alert Templates have been setup. Go to Settings > Alerts Manager
+        </q-card-section>
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn v-if="options.length > 0" flat label="Submit" color="primary" type="submit" />
+          <q-btn
+            v-if="options.length > 0"
+            flat
+            label="Submit"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -86,12 +94,12 @@ export default {
       const text = this.selectedTemplate ? "assigned" : "removed";
       this.$axios
         .put(url, data)
-        .then(r => {
+        .then(() => {
           this.$q.loading.hide();
           this.onOk();
           this.notifySuccess(`Alert Template ${text} successfully!`);
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -99,14 +107,14 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/alerts/templates/")
-        .then(r => {
-          this.options = r.data.map(template => ({
+        .then((r) => {
+          this.options = r.data.map((template) => ({
             label: template.name,
             value: template.id,
           }));
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },

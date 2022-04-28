@@ -3,7 +3,15 @@
     <div class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
       <q-card>
         <q-bar>
-          <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Alerts Manager
+          <q-btn
+            ref="refresh"
+            @click="refresh"
+            class="q-mr-sm"
+            dense
+            flat
+            push
+            icon="refresh"
+          />Alerts Manager
           <q-space />
           <q-btn dense flat icon="close" v-close-popup>
             <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -11,7 +19,17 @@
         </q-bar>
         <div class="q-pa-sm" style="min-height: 65vh; max-height: 65vh">
           <div class="q-gutter-sm">
-            <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddTemplateModal" />
+            <q-btn
+              ref="new"
+              label="New"
+              dense
+              flat
+              push
+              unelevated
+              no-caps
+              icon="add"
+              @click="showAddTemplateModal"
+            />
           </div>
           <q-table
             dense
@@ -67,13 +85,21 @@
                 <!-- context menu -->
                 <q-menu context-menu>
                   <q-list dense style="min-width: 200px">
-                    <q-item clickable v-close-popup @click="showEditTemplateModal(props.row)">
+                    <q-item
+                      clickable
+                      v-close-popup
+                      @click="showEditTemplateModal(props.row)"
+                    >
                       <q-item-section side>
                         <q-icon name="edit" />
                       </q-item-section>
                       <q-item-section>Edit</q-item-section>
                     </q-item>
-                    <q-item clickable v-close-popup @click="deleteTemplate(props.row)">
+                    <q-item
+                      clickable
+                      v-close-popup
+                      @click="deleteTemplate(props.row)"
+                    >
                       <q-item-section side>
                         <q-icon name="delete" />
                       </q-item-section>
@@ -82,7 +108,11 @@
 
                     <q-separator></q-separator>
 
-                    <q-item clickable v-close-popup @click="showAlertExclusions(props.row)">
+                    <q-item
+                      clickable
+                      v-close-popup
+                      @click="showAlertExclusions(props.row)"
+                    >
                       <q-item-section side>
                         <q-icon name="rule" />
                       </q-item-section>
@@ -98,30 +128,59 @@
                 </q-menu>
                 <!-- enabled checkbox -->
                 <q-td>
-                  <q-checkbox dense @update:model-value="toggleEnabled(props.row)" v-model="props.row.is_active" />
+                  <q-checkbox
+                    dense
+                    @update:model-value="toggleEnabled(props.row)"
+                    v-model="props.row.is_active"
+                  />
                 </q-td>
                 <!-- agent settings -->
                 <q-td>
-                  <q-icon v-if="props.row.agent_settings" color="primary" name="done" size="sm">
-                    <q-tooltip>Alert template has agent alert settings</q-tooltip>
+                  <q-icon
+                    v-if="props.row.agent_settings"
+                    color="primary"
+                    name="done"
+                    size="sm"
+                  >
+                    <q-tooltip
+                      >Alert template has agent alert settings</q-tooltip
+                    >
                   </q-icon>
                 </q-td>
                 <!-- text settings -->
                 <q-td>
-                  <q-icon v-if="props.row.check_settings" color="primary" name="done" size="sm">
-                    <q-tooltip>Alert template has check alert settings</q-tooltip>
+                  <q-icon
+                    v-if="props.row.check_settings"
+                    color="primary"
+                    name="done"
+                    size="sm"
+                  >
+                    <q-tooltip
+                      >Alert template has check alert settings</q-tooltip
+                    >
                   </q-icon>
                 </q-td>
                 <!-- dashboard settings -->
                 <q-td>
-                  <q-icon v-if="props.row.task_settings" color="primary" name="done" size="sm">
-                    <q-tooltip>Alert template has task alert settings</q-tooltip>
+                  <q-icon
+                    v-if="props.row.task_settings"
+                    color="primary"
+                    name="done"
+                    size="sm"
+                  >
+                    <q-tooltip
+                      >Alert template has task alert settings</q-tooltip
+                    >
                   </q-icon>
                 </q-td>
                 <!-- name -->
                 <q-td
                   >{{ props.row.name }}
-                  <q-chip v-if="props.row.default_template" color="primary" text-color="white" size="sm"
+                  <q-chip
+                    v-if="props.row.default_template"
+                    color="primary"
+                    text-color="white"
+                    size="sm"
                     >Default</q-chip
                   >
                 </q-td>
@@ -131,7 +190,9 @@
                     style="cursor: pointer; text-decoration: underline"
                     class="text-primary"
                     @click="showTemplateApplied(props.row)"
-                    >Show where template is applied ({{ props.row.applied_count }})</span
+                    >Show where template is applied ({{
+                      props.row.applied_count
+                    }})</span
                   ></q-td
                 >
                 <!-- alert exclusions -->
@@ -175,10 +236,27 @@ export default {
       selectedTemplate: null,
       templates: [],
       columns: [
-        { name: "is_active", label: "Active", field: "is_active", align: "left" },
-        { name: "agent_settings", label: "Agent Settings", field: "agent_settings" },
-        { name: "check_settings", label: "Check Settings", field: "check_settings" },
-        { name: "task_settings", label: "Task Settings", field: "task_settings" },
+        {
+          name: "is_active",
+          label: "Active",
+          field: "is_active",
+          align: "left",
+        },
+        {
+          name: "agent_settings",
+          label: "Agent Settings",
+          field: "agent_settings",
+        },
+        {
+          name: "check_settings",
+          label: "Check Settings",
+          field: "check_settings",
+        },
+        {
+          name: "task_settings",
+          label: "Task Settings",
+          field: "task_settings",
+        },
         { name: "name", label: "Name", field: "name", align: "left" },
         {
           name: "applied_to",
@@ -217,11 +295,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("alerts/templates/")
-        .then(r => {
+        .then((r) => {
           this.templates = r.data;
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -244,12 +322,14 @@ export default {
           this.$q.loading.show();
           this.$axios
             .delete(`alerts/templates/${template.id}/`)
-            .then(r => {
+            .then(() => {
               this.refresh();
               this.$q.loading.hide();
-              this.notifySuccess(`Alert template ${template.name} was deleted!`);
+              this.notifySuccess(
+                `Alert template ${template.name} was deleted!`
+              );
             })
-            .catch(error => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });
@@ -297,23 +377,23 @@ export default {
       });
     },
     toggleEnabled(template) {
-      let text = !template.is_active ? "Template enabled successfully" : "Template disabled successfully";
+      let text = !template.is_active
+        ? "Template enabled successfully"
+        : "Template disabled successfully";
 
       const data = {
         id: template.id,
         is_active: !template.is_active,
       };
 
-      this.$axios
-        .put(`alerts/templates/${template.id}/`, data)
-        .then(r => {
-          this.notifySuccess(text);
-          this.$store.dispatch("refreshDashboard");
-        })
-        .catch(error => {});
+      this.$axios.put(`alerts/templates/${template.id}/`, data).then(() => {
+        this.notifySuccess(text);
+        this.$store.dispatch("refreshDashboard");
+      });
     },
     rowSelectedClass(id, selectedTemplate) {
-      if (selectedTemplate && selectedTemplate.id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
+      if (selectedTemplate && selectedTemplate.id === id)
+        return this.$q.dark.isActive ? "highlight-dark" : "highlight";
     },
     show() {
       this.$refs.dialog.show();

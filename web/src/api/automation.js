@@ -1,15 +1,17 @@
-import axios from "axios"
+import axios from "axios";
 
-const baseUrl = "/automation"
+const baseUrl = "/automation";
 
 export async function sendPatchPolicyReset(payload) {
-    const { data } = await axios.post(`${baseUrl}/patchpolicy/reset/`, payload)
-    return data
+  const { data } = await axios.post(`${baseUrl}/patchpolicy/reset/`, payload);
+  return data;
 }
 
 export async function fetchPolicyChecks(id) {
-    try {
-        const { data } = await axios.get(`${baseUrl}/policies/${id}/checks/`)
-        return data
-    } catch (e) { console.error(e) }
+  try {
+    const { data } = await axios.get(`${baseUrl}/policies/${id}/checks/`);
+    return data;
+  } catch (e) {
+    console.error(e);
+  }
 }

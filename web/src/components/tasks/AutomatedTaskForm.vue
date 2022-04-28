@@ -2,7 +2,11 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent>
     <q-card class="q-dialog-plugin" style="width: 65vw; min-width: 65vw">
       <q-bar>
-        {{ task ? `Editing Automated Task: ${task.name}` : "Adding Automated Task" }}
+        {{
+          task
+            ? `Editing Automated Task: ${task.name}`
+            : "Adding Automated Task"
+        }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -13,11 +17,16 @@
         <p>Settings -> Script Manager</p>
       </q-card-section>
       <q-stepper v-else v-model="step" ref="stepper" color="primary" animated>
-        <q-step :name="1" title="Select Task" :done="step > 1" :error="!isValidStep1">
+        <q-step
+          :name="1"
+          title="Select Task"
+          :done="step > 1"
+          :error="!isValidStep1"
+        >
           <q-form @submit.prevent ref="taskGeneralForm">
             <q-card-section>
               <q-input
-                :rules="[val => !!val || '*Required']"
+                :rules="[(val) => !!val || '*Required']"
                 filled
                 dense
                 v-model="state.name"
@@ -38,7 +47,7 @@
               />
               <tactical-dropdown
                 v-if="collector"
-                :rules="[val => !!val || '*Required']"
+                :rules="[(val) => !!val || '*Required']"
                 v-model="state.custom_field"
                 :options="customFieldOptions"
                 label="Custom Field to update"
@@ -66,13 +75,18 @@
                 label="Alert Severity"
                 filled
                 mapOptions
-                :rules="[val => !!val || '*Required']"
+                :rules="[(val) => !!val || '*Required']"
               />
             </q-card-section>
           </q-form>
         </q-step>
 
-        <q-step :name="2" title="Configure Actions" :done="step > 2" :error="!isValidStep2">
+        <q-step
+          :name="2"
+          title="Configure Actions"
+          :done="step > 2"
+          :error="!isValidStep2"
+        >
           <q-form @submit.prevent="addAction">
             <div class="row q-pa-sm q-gutter-x-xs items-center">
               <div class="text-subtitle2 col-12">Action Type:</div>
@@ -122,7 +136,14 @@
                 label="Timeout (seconds)"
               />
 
-              <q-input v-if="actionType === 'cmd'" label="Command" v-model="command" dense filled class="col-7" />
+              <q-input
+                v-if="actionType === 'cmd'"
+                label="Command"
+                v-model="command"
+                dense
+                filled
+                class="col-7"
+              />
               <q-input
                 v-if="actionType === 'cmd'"
                 class="col-2"
@@ -142,43 +163,83 @@
                   { label: 'Powershell', value: 'powershell' },
                 ]"
               />
-              <q-btn class="col-1" type="submit" style="width: 50px" flat dense icon="add" color="primary" />
+              <q-btn
+                class="col-1"
+                type="submit"
+                style="width: 50px"
+                flat
+                dense
+                icon="add"
+                color="primary"
+              />
             </div>
           </q-form>
           <div class="text-subtitle2 q-pa-sm">
             Actions:
-            <q-checkbox class="float-right" label="Continue on Errors" v-model="state.continue_on_error" dense>
+            <q-checkbox
+              class="float-right"
+              label="Continue on Errors"
+              v-model="state.continue_on_error"
+              dense
+            >
               <q-tooltip>Continue task if an action fails</q-tooltip>
             </q-checkbox>
           </div>
           <div class="scroll q-pt-sm" style="height: 40vh; max-height: 40vh">
-            <draggable class="q-list" handle=".handle" ghost-class="ghost" v-model="state.actions" item-key="index">
+            <draggable
+              class="q-list"
+              handle=".handle"
+              ghost-class="ghost"
+              v-model="state.actions"
+              item-key="index"
+            >
               <template v-slot:item="{ index, element }">
                 <q-item>
                   <q-item-section avatar>
-                    <q-icon class="handle" style="cursor: move" name="drag_handle" />
+                    <q-icon
+                      class="handle"
+                      style="cursor: move"
+                      name="drag_handle"
+                    />
                   </q-item-section>
                   <q-item-section v-if="element.type === 'script'">
                     <q-item-label>
-                      <q-icon size="sm" name="description" color="primary" /> &nbsp; {{ element.name }}
+                      <q-icon size="sm" name="description" color="primary" />
+                      &nbsp; {{ element.name }}
                     </q-item-label>
-                    <q-item-label caption> Arguments: {{ element.script_args }} </q-item-label>
-                    <q-item-label caption> Timeout: {{ element.timeout }} </q-item-label>
+                    <q-item-label caption>
+                      Arguments: {{ element.script_args }}
+                    </q-item-label>
+                    <q-item-label caption>
+                      Timeout: {{ element.timeout }}
+                    </q-item-label>
                   </q-item-section>
                   <q-item-section v-else>
                     <q-item-label>
-                      <q-icon size="sm" name="terminal" color="primary" /> &nbsp;
+                      <q-icon size="sm" name="terminal" color="primary" />
+                      &nbsp;
                       <q-icon
                         size="sm"
-                        :name="element.shell === 'cmd' ? 'mdi-microsoft-windows' : 'mdi-powershell'"
+                        :name="
+                          element.shell === 'cmd'
+                            ? 'mdi-microsoft-windows'
+                            : 'mdi-powershell'
+                        "
                         color="primary"
                       />
                       {{ element.command }}
                     </q-item-label>
-                    <q-item-label caption> Timeout: {{ element.timeout }} </q-item-label>
+                    <q-item-label caption>
+                      Timeout: {{ element.timeout }}
+                    </q-item-label>
                   </q-item-section>
                   <q-item-section side>
-                    <q-icon class="cursor-pointer" color="negative" name="close" @click="removeAction(index)" />
+                    <q-icon
+                      class="cursor-pointer"
+                      color="negative"
+                      name="close"
+                      @click="removeAction(index)"
+                    />
                   </q-item-section>
                 </q-item>
               </template>
@@ -201,7 +262,14 @@
               </q-card-section>
 
               <!-- task start/expire time fields -->
-              <q-card-section v-if="['runonce', 'daily', 'weekly', 'monthly'].includes(state.task_type)" class="row">
+              <q-card-section
+                v-if="
+                  ['runonce', 'daily', 'weekly', 'monthly'].includes(
+                    state.task_type
+                  )
+                "
+                class="row"
+              >
                 <!-- start time input -->
                 <q-input
                   class="col-6 q-pa-sm"
@@ -212,7 +280,7 @@
                   filled
                   v-model="state.run_time_date"
                   hint="Agent timezone will be used"
-                  :rules="[val => !!val || '*Required']"
+                  :rules="[(val) => !!val || '*Required']"
                 />
 
                 <!-- expires on input -->
@@ -233,8 +301,10 @@
                 <!-- daily interval -->
                 <q-input
                   :rules="[
-                    val => !!val || '*Required',
-                    val => (val > 0 && val < 256) || 'Daily interval must be greater than 0 and less than 3',
+                    (val) => !!val || '*Required',
+                    (val) =>
+                      (val > 0 && val < 256) ||
+                      'Daily interval must be greater than 0 and less than 3',
                   ]"
                   dense
                   type="number"
@@ -255,8 +325,10 @@
                 <!-- weekly interval -->
                 <q-input
                   :rules="[
-                    val => !!val || '*Required',
-                    val => (val > 0 && val < 53) || 'Weekly interval must be greater than 0 and less than 3',
+                    (val) => !!val || '*Required',
+                    (val) =>
+                      (val > 0 && val < 53) ||
+                      'Weekly interval must be greater than 0 and less than 3',
                   ]"
                   class="col-6 q-pa-sm"
                   dense
@@ -275,7 +347,7 @@
                   <!-- day of week input -->
                   Run on Days:
                   <q-option-group
-                    :rules="[val => val.length > 0 || '*Required']"
+                    :rules="[(val) => val.length > 0 || '*Required']"
                     inline
                     dense
                     :options="dayOfWeekOptions"
@@ -300,7 +372,7 @@
 
                 <!-- month select input -->
                 <q-select
-                  :rules="[val => val.length > 0 || '*Required']"
+                  :rules="[(val) => val.length > 0 || '*Required']"
                   class="col-4 q-pa-sm"
                   filled
                   dense
@@ -318,12 +390,18 @@
                         <q-item-label>All months</q-item-label>
                       </q-item-section>
                       <q-item-section side>
-                        <q-checkbox dense v-model="allMonthsCheckbox" @update:model-value="toggleMonths" />
+                        <q-checkbox
+                          dense
+                          v-model="allMonthsCheckbox"
+                          @update:model-value="toggleMonths"
+                        />
                       </q-item-section>
                     </q-item>
                   </template>
 
-                  <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
+                  <template
+                    v-slot:option="{ itemProps, opt, selected, toggleOption }"
+                  >
                     <q-item v-bind="itemProps">
                       <q-item-section>
                         <q-item-label v-html="opt.label" />
@@ -345,7 +423,7 @@
                 <!-- days of month select input -->
                 <q-select
                   v-if="monthlyType === 'days'"
-                  :rules="[val => val.length > 0 || '*Required']"
+                  :rules="[(val) => val.length > 0 || '*Required']"
                   class="col-4 q-pa-sm"
                   filled
                   dense
@@ -363,12 +441,18 @@
                         <q-item-label>All days</q-item-label>
                       </q-item-section>
                       <q-item-section side>
-                        <q-checkbox dense v-model="allMonthDaysCheckbox" @update:model-value="toggleMonthDays" />
+                        <q-checkbox
+                          dense
+                          v-model="allMonthDaysCheckbox"
+                          @update:model-value="toggleMonthDays"
+                        />
                       </q-item-section>
                     </q-item>
                   </template>
 
-                  <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
+                  <template
+                    v-slot:option="{ itemProps, opt, selected, toggleOption }"
+                  >
                     <q-item v-bind="itemProps">
                       <q-item-section>
                         <q-item-label v-html="opt.label" />
@@ -392,7 +476,7 @@
                 <!-- week of month select input -->
                 <q-select
                   v-if="monthlyType === 'weeks'"
-                  :rules="[val => val.length > 0 || '*Required']"
+                  :rules="[(val) => val.length > 0 || '*Required']"
                   class="col-4 q-pa-sm"
                   filled
                   dense
@@ -404,13 +488,19 @@
                   emit-value
                   map-options
                 >
-                  <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
+                  <template
+                    v-slot:option="{ itemProps, opt, selected, toggleOption }"
+                  >
                     <q-item v-bind="itemProps">
                       <q-item-section>
                         <q-item-label v-html="opt.label" />
                       </q-item-section>
                       <q-item-section side>
-                        <q-checkbox dense :model-value="selected" @update:model-value="toggleOption(opt)" />
+                        <q-checkbox
+                          dense
+                          :model-value="selected"
+                          @update:model-value="toggleOption(opt)"
+                        />
                       </q-item-section>
                     </q-item>
                   </template>
@@ -419,7 +509,7 @@
                 <!-- day of week select input -->
                 <q-select
                   v-if="monthlyType === 'weeks'"
-                  :rules="[val => val.length > 0 || '*Required']"
+                  :rules="[(val) => val.length > 0 || '*Required']"
                   class="col-4 q-pa-sm"
                   filled
                   dense
@@ -437,12 +527,18 @@
                         <q-item-label>All days</q-item-label>
                       </q-item-section>
                       <q-item-section side>
-                        <q-checkbox dense v-model="allWeekDaysCheckbox" @update:model-value="toggleWeekDays" />
+                        <q-checkbox
+                          dense
+                          v-model="allWeekDaysCheckbox"
+                          @update:model-value="toggleWeekDays"
+                        />
                       </q-item-section>
                     </q-item>
                   </template>
 
-                  <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
+                  <template
+                    v-slot:option="{ itemProps, opt, selected, toggleOption }"
+                  >
                     <q-item v-bind="itemProps">
                       <q-item-section>
                         <q-item-label v-html="opt.label" />
@@ -462,7 +558,13 @@
                 </q-select>
               </q-card-section>
 
-              <q-card-section v-if="state.task_type !== 'checkfailure' && state.task_type !== 'manual'" class="row">
+              <q-card-section
+                v-if="
+                  state.task_type !== 'checkfailure' &&
+                  state.task_type !== 'manual'
+                "
+                class="row"
+              >
                 <div class="col-12 text-h6">Advanced Settings</div>
                 <q-input
                   class="col-6 q-pa-sm"
@@ -473,8 +575,10 @@
                   placeholder="e.g. 30m (30 minutes) or 1h (1 hour)"
                   lazy-rules
                   :rules="[
-                    val =>
-                      !val || validateTimePeriod(val) || 'Valid values are 1-3 digits followed by (D|d|H|h|M|m|S|s)',
+                    (val) =>
+                      !val ||
+                      validateTimePeriod(val) ||
+                      'Valid values are 1-3 digits followed by (D|d|H|h|M|m|S|s)',
                   ]"
                 />
 
@@ -488,10 +592,15 @@
                   placeholder="e.g. 6h (6 hours) or 1d (1 day)"
                   lazy-rules
                   :rules="[
-                    val => validateTimePeriod(val) || 'Valid values are 1-3 digits followed by (D|d|H|h|M|m|S|s)',
-                    val => (state.task_repetition_interval ? !!val : true), // field is required if repetition interval is set
-                    val =>
-                      convertPeriodToSeconds(val) >= convertPeriodToSeconds(state.task_repetition_interval) ||
+                    (val) =>
+                      validateTimePeriod(val) ||
+                      'Valid values are 1-3 digits followed by (D|d|H|h|M|m|S|s)',
+                    (val) => (state.task_repetition_interval ? !!val : true), // field is required if repetition interval is set
+                    (val) =>
+                      convertPeriodToSeconds(val) >=
+                        convertPeriodToSeconds(
+                          state.task_repetition_interval
+                        ) ||
                       'Repetition duration must be greater than repetition interval',
                   ]"
                 />
@@ -514,8 +623,10 @@
                   placeholder="e.g. 2m (2 minutes) or 1h (1 hour)"
                   lazy-rules
                   :rules="[
-                    val =>
-                      !val || validateTimePeriod(val) || 'Valid values are 1-3 digits followed by (D|d|H|h|M|m|S|s)',
+                    (val) =>
+                      !val ||
+                      validateTimePeriod(val) ||
+                      'Valid values are 1-3 digits followed by (D|d|H|h|M|m|S|s)',
                   ]"
                 />
                 <div class="col-6"></div>
@@ -550,10 +661,13 @@
               </q-card-section>
 
               <!-- check failure options -->
-              <q-card-section v-else-if="state.task_type === 'checkfailure'" class="row">
+              <q-card-section
+                v-else-if="state.task_type === 'checkfailure'"
+                class="row"
+              >
                 <tactical-dropdown
                   class="col-6 q-pa-sm"
-                  :rules="[val => !!val || '*Required']"
+                  :rules="[(val) => !!val || '*Required']"
                   v-model="state.assigned_check"
                   filled
                   :options="checkOptions"
@@ -568,10 +682,21 @@
       </q-stepper>
       <q-card-actions align="right">
         <q-btn flat label="Cancel" v-close-popup />
-        <q-btn v-if="step > 1" label="Back" @click="$refs.stepper.previous()" color="primary" flat />
+        <q-btn
+          v-if="step > 1"
+          label="Back"
+          @click="$refs.stepper.previous()"
+          color="primary"
+          flat
+        />
         <q-btn
           v-if="step < 3"
-          @click="validateStep(step === 1 ? $refs.taskGeneralForm : undefined, $refs.stepper)"
+          @click="
+            validateStep(
+              step === 1 ? $refs.taskGeneralForm : undefined,
+              $refs.stepper
+            )
+          "
           color="primary"
           label="Next"
           flat
@@ -594,7 +719,7 @@
 <script>
 // composition imports
 import { ref, watch, onMounted } from "vue";
-import { useDialogPluginComponent, date } from "quasar";
+import { useDialogPluginComponent } from "quasar";
 import draggable from "vuedraggable";
 import { saveTask, updateTask } from "@/api/tasks";
 import { useScriptDropdown } from "@/composables/scripts";
@@ -602,7 +727,12 @@ import { useCheckDropdown } from "@/composables/checks";
 import { useCustomFieldDropdown } from "@/composables/core";
 import { notifySuccess, notifyError } from "@/utils/notify";
 import { validateTimePeriod } from "@/utils/validation";
-import { convertPeriodToSeconds, convertToBitArray, convertFromBitArray, formatDateInputField } from "@/utils/format";
+import {
+  convertPeriodToSeconds,
+  convertToBitArray,
+  convertFromBitArray,
+  formatDateInputField,
+} from "@/utils/format";
 
 // ui imports
 import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
@@ -687,9 +817,10 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
     // setup dropdowns
-    const { script, scriptOptions, defaultTimeout, defaultArgs } = useScriptDropdown(undefined, {
-      onMount: true,
-    });
+    const { script, scriptOptions, defaultTimeout, defaultArgs } =
+      useScriptDropdown(undefined, {
+        onMount: true,
+      });
 
     // set defaultTimeout to 30
     defaultTimeout.value = 30;
@@ -739,25 +870,37 @@ export default {
     // if all months is selected or cleared it will either clear the monthly_months_of_year array or add all options to it.
     const allMonthsCheckbox = ref(false);
     function toggleMonths() {
-      task.value.monthly_months_of_year = allMonthsCheckbox.value ? monthOptions.map(month => month.value) : [];
+      task.value.monthly_months_of_year = allMonthsCheckbox.value
+        ? monthOptions.map((month) => month.value)
+        : [];
     }
 
     const allMonthDaysCheckbox = ref(false);
     function toggleMonthDays() {
-      task.value.monthly_days_of_month = allMonthDaysCheckbox.value ? dayOfMonthOptions.map(day => day.value) : [];
+      task.value.monthly_days_of_month = allMonthDaysCheckbox.value
+        ? dayOfMonthOptions.map((day) => day.value)
+        : [];
     }
 
     const allWeekDaysCheckbox = ref(false);
     function toggleWeekDays() {
-      task.value.run_time_bit_weekdays = allWeekDaysCheckbox.value ? dayOfWeekOptions.map(day => day.value) : [];
+      task.value.run_time_bit_weekdays = allWeekDaysCheckbox.value
+        ? dayOfWeekOptions.map((day) => day.value)
+        : [];
     }
 
     // function for adding script and commands to be run from task
     function addAction() {
-      if (actionType.value === "script" && (!script.value || !defaultTimeout.value)) {
+      if (
+        actionType.value === "script" &&
+        (!script.value || !defaultTimeout.value)
+      ) {
         notifyError("Script and timeout must be set");
         return;
-      } else if (actionType.value === "cmd" && (!command.value || !defaultTimeout.value)) {
+      } else if (
+        actionType.value === "cmd" &&
+        (!command.value || !defaultTimeout.value)
+      ) {
         notifyError("A command and timeout must be set");
         return;
       }
@@ -765,7 +908,9 @@ export default {
       if (actionType.value === "script") {
         task.value.actions.push({
           type: "script",
-          name: scriptOptions.value.find(option => option.value === script.value).label,
+          name: scriptOptions.value.find(
+            (option) => option.value === script.value
+          ).label,
           script: script.value,
           timeout: defaultTimeout.value,
           script_args: defaultArgs.value,
@@ -797,16 +942,24 @@ export default {
 
       // converts fields from arrays to integers
       data.run_time_bit_weekdays =
-        taskData.run_time_bit_weekdays.length > 0 ? convertFromBitArray(taskData.run_time_bit_weekdays) : null;
+        taskData.run_time_bit_weekdays.length > 0
+          ? convertFromBitArray(taskData.run_time_bit_weekdays)
+          : null;
 
       data.monthly_months_of_year =
-        taskData.monthly_months_of_year.length > 0 ? convertFromBitArray(taskData.monthly_months_of_year) : null;
+        taskData.monthly_months_of_year.length > 0
+          ? convertFromBitArray(taskData.monthly_months_of_year)
+          : null;
 
       data.monthly_days_of_month =
-        taskData.monthly_days_of_month.length > 0 ? convertFromBitArray(taskData.monthly_days_of_month) : null;
+        taskData.monthly_days_of_month.length > 0
+          ? convertFromBitArray(taskData.monthly_days_of_month)
+          : null;
 
       data.monthly_weeks_of_month =
-        taskData.monthly_weeks_of_month.length > 0 ? convertFromBitArray(taskData.monthly_weeks_of_month) : null;
+        taskData.monthly_weeks_of_month.length > 0
+          ? convertFromBitArray(taskData.monthly_weeks_of_month)
+          : null;
 
       // Add Z back to run_time_date and expires_date
       data.run_time_date += "Z";
@@ -838,9 +991,10 @@ export default {
         : [];
 
       // remove milliseconds and Z to work with native date input
-      task.value.run_time_date = formatDateInputField(task.value.run_time_date, true);
+      task.value.run_time_date = formatDateInputField(task.value.run_time_date);
 
-      if (task.value.expire_date) task.value.expire_date = formatDateInputField(task.value.expire_date, true);
+      if (task.value.expire_date)
+        task.value.expire_date = formatDateInputField(task.value.expire_date);
 
       // set task type if monthlydow is being used
       if (task.value.task_type === "monthlydow") {
@@ -868,7 +1022,7 @@ export default {
 
     watch(
       () => task.value.task_type,
-      (newValue, oldValue) => {
+      () => {
         task.value.assigned_check = null;
         task.value.run_time_bit_weekdays = [];
         task.value.remove_if_not_scheduled = false;
@@ -907,7 +1061,7 @@ export default {
 
         // steps 1 or 3
       } else {
-        form.validate().then(result => {
+        form.validate().then((result) => {
           if (step.value === 1) {
             isValidStep1.value = result;
             if (result) stepper.next();

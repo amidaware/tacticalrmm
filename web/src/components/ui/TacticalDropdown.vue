@@ -2,7 +2,7 @@
   <q-select
     dense
     options-dense
-    @update:model-value="value => $emit('update:modelValue', value)"
+    @update:model-value="(value) => $emit('update:modelValue', value)"
     :options="filtered ? filteredOptions : options"
     :model-value="modelValue"
     :map-options="mapOptions"
@@ -25,13 +25,21 @@
         :key="mapOptions ? scope.opt.value : scope.opt"
       >
         <q-item-section>
-          <q-item-label v-html="mapOptions ? scope.opt.label : scope.opt"></q-item-label>
+          <q-item-label
+            v-html="mapOptions ? scope.opt.label : scope.opt"
+          ></q-item-label>
         </q-item-section>
-        <q-item-section v-if="filtered && mapOptions && scope.opt.cat" side>{{ scope.opt.cat }}</q-item-section>
+        <q-item-section v-if="filtered && mapOptions && scope.opt.cat" side>{{
+          scope.opt.cat
+        }}</q-item-section>
       </q-item>
-      <q-item-label v-if="scope.opt.category" header class="q-pa-sm" :key="scope.opt.category">{{
-        scope.opt.category
-      }}</q-item-label>
+      <q-item-label
+        v-if="scope.opt.category"
+        header
+        class="q-pa-sm"
+        :key="scope.opt.category"
+        >{{ scope.opt.category }}</q-item-label
+      >
     </template>
   </q-select>
 </template>
@@ -58,11 +66,11 @@ export default {
     },
     options: !Array,
   },
-  setup(props, context) {
+  setup(props) {
     const filtered = ref(false);
     const filteredOptions = ref(props.options);
 
-    function filterFn(val, update, abort) {
+    function filterFn(val, update) {
       update(() => {
         if (val === "") {
           filtered.value = false;
@@ -71,10 +79,14 @@ export default {
           const needle = val.toLowerCase();
 
           if (!props.mapOptions)
-            filteredOptions.value = props.options.filter(v => v.toLowerCase().indexOf(needle) > -1);
+            filteredOptions.value = props.options.filter(
+              (v) => v.toLowerCase().indexOf(needle) > -1
+            );
           else
-            filteredOptions.value = props.options.filter(v => {
-              return !v.category ? v.label.toLowerCase().indexOf(needle) > -1 : false;
+            filteredOptions.value = props.options.filter((v) => {
+              return !v.category
+                ? v.label.toLowerCase().indexOf(needle) > -1
+                : false;
             });
         }
       });

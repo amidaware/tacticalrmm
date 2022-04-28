@@ -3,7 +3,8 @@ import { exportFile, Notify } from "quasar";
 function _wrapCsvValue(val, formatFn) {
   let formatted = formatFn !== void 0 ? formatFn(val) : val;
 
-  formatted = formatted === void 0 || formatted === null ? "" : String(formatted);
+  formatted =
+    formatted === void 0 || formatted === null ? "" : String(formatted);
 
   formatted = formatted.split('"').join('""');
   /**
@@ -18,13 +19,15 @@ function _wrapCsvValue(val, formatFn) {
 
 export function exportTableToCSV(rows, columns) {
   // naive encoding to csv format
-  const content = [columns.map(col => _wrapCsvValue(col.label))]
+  const content = [columns.map((col) => _wrapCsvValue(col.label))]
     .concat(
-      rows.map(row =>
+      rows.map((row) =>
         columns
-          .map(col =>
+          .map((col) =>
             _wrapCsvValue(
-              typeof col.field === "function" ? col.field(row) : row[col.field === void 0 ? col.name : col.field],
+              typeof col.field === "function"
+                ? col.field(row)
+                : row[col.field === void 0 ? col.name : col.field],
               col.format
             )
           )

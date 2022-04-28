@@ -9,7 +9,10 @@
       </q-bar>
       <q-table
         dense
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         class="tabs-tbl-sticky"
         style="max-height: 70vh"
         binary-state-sort
@@ -22,10 +25,20 @@
         :rows-per-page-options="[0]"
       >
         <template v-slot:top>
-          <q-btn flat dense icon="add" label="New Role" @click="showAddRoleModal" />
+          <q-btn
+            flat
+            dense
+            icon="add"
+            label="New Role"
+            @click="showAddRoleModal"
+          />
         </template>
         <template v-slot:body="props">
-          <q-tr :props="props" @dblclick="showEditRoleModal(props.row)" class="cursor-pointer">
+          <q-tr
+            :props="props"
+            @dblclick="showEditRoleModal(props.row)"
+            class="cursor-pointer"
+          >
             <q-menu context-menu auto-close>
               <q-list dense style="min-width: 200px">
                 <q-item clickable @click="showEditRoleModal(props.row)">
@@ -34,7 +47,11 @@
                   </q-item-section>
                   <q-item-section>Edit</q-item-section>
                 </q-item>
-                <q-item clickable @click="deleteRole(props.row)" :disable="props.row.user_count > 0">
+                <q-item
+                  clickable
+                  @click="deleteRole(props.row)"
+                  :disable="props.row.user_count > 0"
+                >
                   <q-item-section side>
                     <q-icon name="delete" />
                   </q-item-section>
@@ -50,7 +67,12 @@
             </q-menu>
             <q-td key="name" :props="props">{{ props.row.name }}</q-td>
             <q-td key="is_superuser" :props="props">
-              <q-icon v-if="props.row.is_superuser" name="done" color="primary" size="sm" />
+              <q-icon
+                v-if="props.row.is_superuser"
+                name="done"
+                color="primary"
+                size="sm"
+              />
             </q-td>
             <q-td key="user_count" :props="props">
               {{ props.row.user_count }}
@@ -75,14 +97,26 @@ import RolesForm from "@/components/accounts/RolesForm";
 // static data
 const columns = [
   { name: "name", label: "Name", field: "name", align: "left", sortable: true },
-  { name: "is_superuser", label: "Superuser", field: "is_superuser", align: "left", sortable: true },
-  { name: "user_count", label: "Assigned Users", field: "user_count", align: "left", sortable: true },
+  {
+    name: "is_superuser",
+    label: "Superuser",
+    field: "is_superuser",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "user_count",
+    label: "Assigned Users",
+    field: "user_count",
+    align: "left",
+    sortable: true,
+  },
 ];
 
 export default {
   name: "PermissionsManager",
   emits: [...useDialogPluginComponent.emits],
-  setup(props) {
+  setup() {
     // setup quasar
     const $q = useQuasar();
     const { dialogRef, onDialogHide } = useDialogPluginComponent();

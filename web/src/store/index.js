@@ -1,7 +1,7 @@
-import { createStore } from 'vuex'
-import { Screen, Dark, LoadingBar } from 'quasar'
+import { createStore } from "vuex";
+import { Screen, Dark, LoadingBar } from "quasar";
 import axios from "axios";
-import { formatDate } from "@/utils/format"
+import { formatDate } from "@/utils/format";
 
 export default function () {
   const Store = new createStore({
@@ -32,7 +32,7 @@ export default function () {
         currentTRMMVersion: null,
         latestTRMMVersion: null,
         dateFormat: "MMM-DD-YYYY - HH:mm",
-      }
+      };
     },
     getters: {
       clientTreeSplitterModel(state) {
@@ -50,10 +50,10 @@ export default function () {
       allClientsSelected(state) {
         return !state.selectedTree;
       },
-      formatDate: (state, getters) => (date) => {
-        if (!state.dateFormat) return formatDate(date)
-        else return formatDate(date, state.dateFormat)
-      }
+      formatDate: (state) => (date) => {
+        if (!state.dateFormat) return formatDate(date);
+        else return formatDate(date, state.dateFormat);
+      },
     },
     mutations: {
       AGENT_TABLE_LOADING(state, visible) {
@@ -84,7 +84,7 @@ export default function () {
         state.needrefresh = action;
       },
       SET_SPLITTER(state, val) {
-        // top toolbar is 50px. Filebar is 40px and agent filter tabs are 44px 
+        // top toolbar is 50px. Filebar is 40px and agent filter tabs are 44px
         state.tableHeight = `${Screen.height - 50 - 40 - 78 - val}px`;
 
         // q-tabs are 37px
@@ -94,92 +94,98 @@ export default function () {
         state.clientTreeSplitter = val;
       },
       setShowCommunityScripts(state, show) {
-        state.showCommunityScripts = show
+        state.showCommunityScripts = show;
       },
       SET_AGENT_DBLCLICK_ACTION(state, action) {
-        state.agentDblClickAction = action
+        state.agentDblClickAction = action;
       },
       SET_URL_ACTION(state, action) {
-        state.agentUrlAction = action
+        state.agentUrlAction = action;
       },
       SET_DEFAULT_AGENT_TBL_TAB(state, tab) {
-        state.defaultAgentTblTab = tab
+        state.defaultAgentTblTab = tab;
       },
       SET_CLIENT_TREE_SORT(state, val) {
-        state.clientTreeSort = val
+        state.clientTreeSort = val;
       },
       SET_HOSTED(state, val) {
-        state.hosted = val
+        state.hosted = val;
       },
       setClearSearchWhenSwitching(state, val) {
-        state.clearSearchWhenSwitching = val
+        state.clearSearchWhenSwitching = val;
       },
       setLatestTRMMVersion(state, val) {
-        state.latestTRMMVersion = val
+        state.latestTRMMVersion = val;
       },
       setCurrentTRMMVersion(state, val) {
-        state.currentTRMMVersion = val
+        state.currentTRMMVersion = val;
       },
       setAgents(state, agents) {
-        state.agents = agents
+        state.agents = agents;
       },
       setRefreshSummaryTab(state, val) {
-        state.refreshSummaryTab = val
+        state.refreshSummaryTab = val;
       },
       setSelectedTree(state, val) {
-        state.selectedTree = val
+        state.selectedTree = val;
       },
       setDateFormat(state, val) {
-        state.dateFormat = val
+        state.dateFormat = val;
       },
     },
     actions: {
       setClientTreeSplitter(context, val) {
-        axios.patch("/accounts/users/ui/", { client_tree_splitter: Math.trunc(val) }).then(r => {
-          context.commit("SET_CLIENT_SPLITTER", val)
-        })
-          .catch(e => { })
+        axios
+          .patch("/accounts/users/ui/", {
+            client_tree_splitter: Math.trunc(val),
+          })
+          .then(() => {
+            context.commit("SET_CLIENT_SPLITTER", val);
+          });
       },
       setShowCommunityScripts(context, data) {
-        axios.patch("/accounts/users/ui/", { show_community_scripts: data }).then(r => {
-          context.commit("setShowCommunityScripts", data)
-        })
-          .catch(e => { })
+        axios
+          .patch("/accounts/users/ui/", { show_community_scripts: data })
+          .then(() => {
+            context.commit("setShowCommunityScripts", data);
+          });
       },
       refreshDashboard({ state, commit, dispatch }, clearTreeSelected = false) {
         if (clearTreeSelected || !state.selectedTree) {
-          commit("setSelectedTree", "")
+          commit("setSelectedTree", "");
         }
-        if (clearTreeSelected) commit("destroySubTable")
+        if (clearTreeSelected) commit("destroySubTable");
 
-        dispatch("loadAgents")
+        dispatch("loadAgents");
         dispatch("loadTree");
         dispatch("getDashInfo", false);
       },
-      async loadAgents({ state, commit, dispatch }) {
+      async loadAgents({ state, commit }) {
         commit("AGENT_TABLE_LOADING", true);
 
-        let localParams = null
+        let localParams = null;
         if (state.defaultAgentTblTab !== "mixed") {
           if (localParams)
-            localParams += `&monitoring_type=${state.defaultAgentTblTab}`
-          else
-            localParams = `?monitoring_type=${state.defaultAgentTblTab}`
+            localParams += `&monitoring_type=${state.defaultAgentTblTab}`;
+          else localParams = `?monitoring_type=${state.defaultAgentTblTab}`;
         }
 
         if (state.selectedTree.includes("Client")) {
-          if (localParams) localParams += `&client=${state.selectedTree.split("|")[1]}`
-          else localParams = `?client=${state.selectedTree.split("|")[1]}`
-        }
-        else if (state.selectedTree.includes("Site")) {
-          if (localParams) localParams += `&site=${state.selectedTree.split("|")[1]}`
-          else localParams = `?site=${state.selectedTree.split("|")[1]}`
+          if (localParams)
+            localParams += `&client=${state.selectedTree.split("|")[1]}`;
+          else localParams = `?client=${state.selectedTree.split("|")[1]}`;
+        } else if (state.selectedTree.includes("Site")) {
+          if (localParams)
+            localParams += `&site=${state.selectedTree.split("|")[1]}`;
+          else localParams = `?site=${state.selectedTree.split("|")[1]}`;
         }
         try {
-          const { data } = await axios.get(`/agents/${localParams ? localParams : ""}`)
+          const { data } = await axios.get(
+            `/agents/${localParams ? localParams : ""}`
+          );
           commit("setAgents", data);
         } catch (e) {
-          console.error(e)
+          console.error(e);
         }
 
         commit("AGENT_TABLE_LOADING", false);
@@ -188,8 +194,14 @@ export default function () {
         const { data } = await axios.get("/core/dashinfo/");
         if (edited) {
           LoadingBar.setDefaults({ color: data.loading_bar_color });
-          context.commit("setClearSearchWhenSwitching", data.clear_search_when_switching);
-          context.commit("SET_DEFAULT_AGENT_TBL_TAB", data.default_agent_tbl_tab);
+          context.commit(
+            "setClearSearchWhenSwitching",
+            data.clear_search_when_switching
+          );
+          context.commit(
+            "SET_DEFAULT_AGENT_TBL_TAB",
+            data.default_agent_tbl_tab
+          );
           context.commit("SET_CLIENT_TREE_SORT", data.client_tree_sort);
           context.commit("SET_CLIENT_SPLITTER", data.client_tree_splitter);
         }
@@ -201,76 +213,86 @@ export default function () {
         context.commit("setShowCommunityScripts", data.show_community_scripts);
         context.commit("SET_HOSTED", data.hosted);
 
-        if (data.date_format && data.date_format !== "") context.commit("setDateFormat", data.date_format)
-        else context.commit("setDateFormat", data.default_date_format)
-
+        if (data.date_format && data.date_format !== "")
+          context.commit("setDateFormat", data.date_format);
+        else context.commit("setDateFormat", data.default_date_format);
       },
       loadTree({ commit, state }) {
-        axios.get("/clients/").then(r => {
+        axios
+          .get("/clients/")
+          .then((r) => {
+            if (r.data.length === 0) {
+              this.$router.push({ name: "InitialSetup" });
+            }
 
-          if (r.data.length === 0) {
-            this.$router.push({ name: "InitialSetup" });
-          }
+            let output = [];
+            for (let client of r.data) {
+              let childSites = [];
+              for (let site of client.sites) {
+                let siteNode = {
+                  label: site.name,
+                  id: site.id,
+                  raw: `Site|${site.id}`,
+                  header: "generic",
+                  icon: "apartment",
+                  selectable: true,
+                  site: site,
+                };
 
-          let output = [];
-          for (let client of r.data) {
+                if (site.maintenance_mode) {
+                  siteNode["color"] = "green";
+                } else if (site.failing_checks.error) {
+                  siteNode["color"] = "negative";
+                } else if (site.failing_checks.warning) {
+                  siteNode["color"] = "warning";
+                }
 
-            let childSites = [];
-            for (let site of client.sites) {
-
-              let siteNode = {
-                label: site.name,
-                id: site.id,
-                raw: `Site|${site.id}`,
-                header: "generic",
-                icon: "apartment",
-                selectable: true,
-                site: site
+                childSites.push(siteNode);
               }
 
-              if (site.maintenance_mode) { siteNode["color"] = "green" }
-              else if (site.failing_checks.error) { siteNode["color"] = "negative" }
-              else if (site.failing_checks.warning) { siteNode["color"] = "warning" }
+              let clientNode = {
+                label: client.name,
+                id: client.id,
+                raw: `Client|${client.id}`,
+                header: "root",
+                icon: "business",
+                children: childSites,
+                client: client,
+              };
 
-              childSites.push(siteNode);
+              if (client.maintenance_mode) clientNode["color"] = "green";
+              else if (client.failing_checks.error) {
+                clientNode["color"] = "negative";
+              } else if (client.failing_checks.warning) {
+                clientNode["color"] = "warning";
+              }
+
+              output.push(clientNode);
             }
 
-            let clientNode = {
-              label: client.name,
-              id: client.id,
-              raw: `Client|${client.id}`,
-              header: "root",
-              icon: "business",
-              children: childSites,
-              client: client
+            const sorted = output.sort((a, b) =>
+              a.label.localeCompare(b.label)
+            );
+            if (state.clientTreeSort === "alphafail") {
+              // move failing clients to the top
+              const failing = sorted.filter(
+                (i) => i.color === "negative" || i.color === "warning"
+              );
+              const ok = sorted.filter(
+                (i) => i.color !== "negative" && i.color !== "warning"
+              );
+              const sortedByFailing = [...failing, ...ok];
+              commit("loadTree", sortedByFailing);
+            } else {
+              commit("loadTree", sorted);
             }
-
-            if (client.maintenance_mode) clientNode["color"] = "green"
-            else if (client.failing_checks.error) { clientNode["color"] = "negative" }
-            else if (client.failing_checks.warning) { clientNode["color"] = "warning" }
-
-            output.push(clientNode);
-          }
-
-
-          const sorted = output.sort((a, b) => a.label.localeCompare(b.label));
-          if (state.clientTreeSort === "alphafail") {
-            // move failing clients to the top
-            const failing = sorted.filter(i => i.color === "negative" || i.color === "warning");
-            const ok = sorted.filter(i => i.color !== "negative" && i.color !== "warning");
-            const sortedByFailing = [...failing, ...ok];
-            commit("loadTree", sortedByFailing);
-          } else {
-            commit("loadTree", sorted);
-          }
-
-        })
-          .catch(e => {
-            state.treeReady = true
+          })
+          .catch(() => {
+            state.treeReady = true;
           });
       },
       checkVer(context) {
-        axios.get("/core/version/").then(r => {
+        axios.get("/core/version/").then((r) => {
           const version = r.data;
 
           if (localStorage.getItem("rmmver")) {
@@ -284,50 +306,45 @@ export default function () {
             localStorage.setItem("rmmver", version);
             return;
           }
-        })
-          .catch(e => { })
+        });
       },
       reload() {
         localStorage.removeItem("rmmver");
         location.reload();
       },
       retrieveToken(context, credentials) {
-        return new Promise((resolve, reject) => {
-          axios
-            .post("/login/", credentials)
-            .then(response => {
-              const token = response.data.token;
-              const username = credentials.username;
-              localStorage.setItem("access_token", token);
-              localStorage.setItem("user_name", username);
-              context.commit("retrieveToken", { token, username });
-              resolve(response);
-            })
-            .catch(e => { })
+        return new Promise((resolve) => {
+          axios.post("/login/", credentials).then((response) => {
+            const token = response.data.token;
+            const username = credentials.username;
+            localStorage.setItem("access_token", token);
+            localStorage.setItem("user_name", username);
+            context.commit("retrieveToken", { token, username });
+            resolve(response);
+          });
         });
       },
       destroyToken(context) {
         if (context.getters.loggedIn) {
-          return new Promise((resolve, reject) => {
+          return new Promise((resolve) => {
             axios
               .post("/logout/")
-              .then(response => {
+              .then((response) => {
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("user_name");
                 context.commit("destroyCommit");
                 resolve(response);
               })
-              .catch(error => {
+              .catch(() => {
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("user_name");
                 context.commit("destroyCommit");
               });
           });
         }
-      }
-    }
+      },
+    },
   });
 
   return Store;
 }
-

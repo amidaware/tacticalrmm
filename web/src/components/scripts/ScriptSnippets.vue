@@ -10,7 +10,14 @@
       }"
     >
       <q-bar>
-        <q-btn @click="getSnippets" class="q-mr-sm" dense flat push icon="refresh" />Script Snippets
+        <q-btn
+          @click="getSnippets"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />Script Snippets
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -18,7 +25,10 @@
       </q-bar>
       <q-table
         dense
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         :style="{ 'max-height': `${$q.screen.height - 300 - 32}px` }"
         class="tbl-sticky"
         :rows="snippets"
@@ -31,7 +41,14 @@
         :rows-per-page-options="[0]"
       >
         <template v-slot:top>
-          <q-btn dense flat no-caps icon="add" label="New" @click="newSnippetModal" />
+          <q-btn
+            dense
+            flat
+            no-caps
+            icon="add"
+            label="New"
+            @click="newSnippetModal"
+          />
         </template>
         <template v-slot:header-cell-shell="props">
           <q-th :props="props" auto-width> Shell </q-th>
@@ -39,18 +56,30 @@
 
         <template v-slot:body="props">
           <!-- Table View -->
-          <q-tr :props="props" @dblclick="editSnippetModal(props.row)" class="cursor-pointer">
+          <q-tr
+            :props="props"
+            @dblclick="editSnippetModal(props.row)"
+            class="cursor-pointer"
+          >
             <!-- Context Menu -->
             <q-menu context-menu>
               <q-list dense style="min-width: 200px">
-                <q-item clickable v-close-popup @click="editSnippetModal(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="editSnippetModal(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="edit" />
                   </q-item-section>
                   <q-item-section>Edit</q-item-section>
                 </q-item>
 
-                <q-item clickable v-close-popup @click="deleteSnippet(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="deleteSnippet(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="delete" />
                   </q-item-section>
@@ -63,16 +92,36 @@
               </q-list>
             </q-menu>
             <q-td>
-              <q-icon v-if="props.row.shell === 'powershell'" name="mdi-powershell" color="primary" size="sm">
+              <q-icon
+                v-if="props.row.shell === 'powershell'"
+                name="mdi-powershell"
+                color="primary"
+                size="sm"
+              >
                 <q-tooltip> Powershell </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.row.shell === 'python'" name="mdi-language-python" color="primary" size="sm">
+              <q-icon
+                v-else-if="props.row.shell === 'python'"
+                name="mdi-language-python"
+                color="primary"
+                size="sm"
+              >
                 <q-tooltip> Python </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.row.shell === 'cmd'" name="mdi-microsoft-windows" color="primary" size="sm">
+              <q-icon
+                v-else-if="props.row.shell === 'cmd'"
+                name="mdi-microsoft-windows"
+                color="primary"
+                size="sm"
+              >
                 <q-tooltip> Batch </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.row.shell === 'shell'" name="mdi-bash" color="primary" size="sm">
+              <q-icon
+                v-else-if="props.row.shell === 'shell'"
+                name="mdi-bash"
+                color="primary"
+                size="sm"
+              >
                 <q-tooltip> Shell </q-tooltip>
               </q-icon>
             </q-td>

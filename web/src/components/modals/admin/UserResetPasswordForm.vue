@@ -15,7 +15,7 @@
               dense
               v-model="password"
               :type="isPwd ? 'password' : 'text'"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
             >
               <template v-slot:append>
                 <q-icon
@@ -59,12 +59,12 @@ export default {
 
       this.$axios
         .post("/accounts/users/reset/", data)
-        .then(r => {
+        .then(() => {
           this.onOk();
           this.$q.loading.hide();
           this.notifySuccess("User Password Reset!");
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },

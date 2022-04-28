@@ -1,38 +1,48 @@
-require('dotenv').config();
-const path = require('path');
+require("dotenv").config();
+const path = require("path");
 
 module.exports = function () {
   return {
-    supportTS: false,
+    supportTS: {
+      tsCheckerConfig: {
+        eslint: {
+          enabled: true,
+          files: "./src/**/*.{ts,tsx,js,jsx,vue}",
+        },
+      },
+    },
     // https://quasar.dev/quasar-cli/cli-documentation/prefetch-feature
     // preFetch: true,
-    boot: [
-      'axios',
-    ],
+    boot: ["axios"],
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-css
-    css: [
-      'app.sass'
-    ],
+    css: ["app.sass"],
     // https://github.com/quasarframework/quasar/tree/dev/extras
     extras: [
       // 'ionicons-v4',
-      'mdi-v5',
-      'fontawesome-v5',
+      "mdi-v5",
+      "fontawesome-v5",
       // 'eva-icons',
       // 'themify',
       // 'line-awesome',
       // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
 
-      'roboto-font', // optional, you are not bound to it
-      'material-icons', // optional, you are not bound to it
+      "roboto-font", // optional, you are not bound to it
+      "material-icons", // optional, you are not bound to it
     ],
 
     // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
-      env: { DEV_API: process.env.DEV_URL, PROD_API: process.env.PROD_URL, DOCKER_BUILD: process.env.DOCKER_BUILD },
-      vueRouterMode: 'history', // available values: 'hash', 'history'
+      env: {
+        DEV_API: process.env.DEV_URL,
+        PROD_API: process.env.PROD_URL,
+        DOCKER_BUILD: process.env.DOCKER_BUILD,
+      },
+      vueRouterMode: "history", // available values: 'hash', 'history'
       distDir: "dist/",
-      devtool: process.env.NODE_ENV === "production" ? "cheap-module-eval-source-map" : "source-map",
+      devtool:
+        process.env.NODE_ENV === "production"
+          ? "cheap-module-eval-source-map"
+          : "source-map",
 
       // Add dependencies for transpiling with Babel (Array of regexes)
       // (from node_modules, which are by default not transpiled).
@@ -52,8 +62,8 @@ module.exports = function () {
       extendWebpack(cfg) {
         cfg.resolve.alias = {
           ...cfg.resolve.alias,
-          "@": path.resolve(__dirname, './src'),
-        }
+          "@": path.resolve(__dirname, "./src"),
+        };
       },
     },
 
@@ -62,36 +72,30 @@ module.exports = function () {
       https: false,
       host: process.env.DEV_HOST,
       port: process.env.DEV_PORT,
-      open: false
+      open: false,
     },
 
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-framework
     framework: {
-      iconSet: 'material-icons', // Quasar icon set
-      lang: 'en-US', // Quasar language pack
+      iconSet: "material-icons", // Quasar icon set
+      lang: "en-US", // Quasar language pack
 
       // Quasar plugins
-      plugins: [
-        'Dialog',
-        'Loading',
-        'LoadingBar',
-        'Meta',
-        'Notify'
-      ],
+      plugins: ["Dialog", "Loading", "LoadingBar", "Meta", "Notify"],
       config: {
         loadingBar: {
-          size: "4px"
+          size: "4px",
         },
         notify: {
           position: "top",
           timeout: 2000,
           textColor: "white",
-          actions: [{ icon: "close", color: "white" }]
+          actions: [{ icon: "close", color: "white" }],
         },
         loading: {
-          delay: 50
-        }
-      }
+          delay: 50,
+        },
+      },
     },
 
     // animations: 'all', // --- includes all animations
@@ -100,7 +104,7 @@ module.exports = function () {
 
     // https://quasar.dev/quasar-cli/developing-ssr/configuring-ssr
     ssr: {
-      pwa: false
-    }
-  }
-}
+      pwa: false,
+    },
+  };
+};

@@ -22,7 +22,7 @@ const scheduledTimes = [
   { label: "8 PM", value: 20 },
   { label: "9 PM", value: 21 },
   { label: "10 PM", value: 22 },
-  { label: "11 PM", value: 23 }
+  { label: "11 PM", value: 23 },
 ];
 
 const monthDays = [
@@ -56,9 +56,29 @@ const monthDays = [
   "28",
   "29",
   "30",
-  "31"
-]
+  "31",
+];
 
-const loadingBarColors = ["red", "pink", "purple", "deep-purple", "indigo", "blue", "light-blue", "cyan", "teal", "green", "light-green", "lime", "yellow", "amber", "orange", "deep-orange", "brown", "grey", "blue-grey"]
+const loadingBarColors = [
+  "red",
+  "pink",
+  "purple",
+  "deep-purple",
+  "indigo",
+  "blue",
+  "light-blue",
+  "cyan",
+  "teal",
+  "green",
+  "light-green",
+  "lime",
+  "yellow",
+  "amber",
+  "orange",
+  "deep-orange",
+  "brown",
+  "grey",
+  "blue-grey",
+];
 
 export { scheduledTimes, monthDays, loadingBarColors };

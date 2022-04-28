@@ -11,7 +11,14 @@
       }"
     >
       <q-bar>
-        <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
+        <q-btn
+          @click="getScripts"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />Script Manager
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -61,7 +68,11 @@
           flat
           no-caps
           class="q-ml-sm"
-          :label="showCommunityScripts ? 'Hide Community Scripts' : 'Show Community Scripts'"
+          :label="
+            showCommunityScripts
+              ? 'Hide Community Scripts'
+              : 'Show Community Scripts'
+          "
           :icon="showCommunityScripts ? 'visibility_off' : 'visibility'"
           @click="setShowCommunityScripts(!showCommunityScripts)"
         />
@@ -71,13 +82,23 @@
           flat
           no-caps
           class="q-ml-sm"
-          :label="showHiddenScripts ? 'Hide Hidden Scripts' : 'Show Hidden Scripts'"
+          :label="
+            showHiddenScripts ? 'Hide Hidden Scripts' : 'Show Hidden Scripts'
+          "
           :icon="showHiddenScripts ? 'visibility_off' : 'visibility'"
           @click="showHiddenScripts = !showHiddenScripts"
         />
 
         <q-space />
-        <q-input v-model="search" style="width: 300px" label="Search" dense outlined clearable class="q-pr-md q-pb-xs">
+        <q-input
+          v-model="search"
+          style="width: 300px"
+          label="Search"
+          dense
+          outlined
+          clearable
+          class="q-pr-md q-pb-xs"
+        >
           <template v-slot:prepend>
             <q-icon name="search" color="primary" />
           </template>
@@ -87,7 +108,10 @@
       <div
         v-if="!tableView"
         class="scroll q-pl-xs"
-        :style="{ 'max-height': `${$q.screen.height - 182}px`, 'min-height': `${$q.screen.height - 382}px` }"
+        :style="{
+          'max-height': `${$q.screen.height - 182}px`,
+          'min-height': `${$q.screen.height - 382}px`,
+        }"
       >
         <q-tree
           ref="folderTree"
@@ -102,41 +126,83 @@
           <template v-slot:header-script="props">
             <div
               class="cursor-pointer"
-              @dblclick="props.node.script_type === 'builtin' ? viewCodeModal(props.node) : editScriptModal(props.node)"
+              @dblclick="
+                props.node.script_type === 'builtin'
+                  ? viewCodeModal(props.node)
+                  : editScriptModal(props.node)
+              "
             >
-              <q-icon v-if="props.node.favorite" color="yellow-8" name="star" size="sm" class="q-px-sm" />
-              <q-icon v-else color="yellow-8" name="star_outline" size="sm" class="q-px-sm" />
+              <q-icon
+                v-if="props.node.favorite"
+                color="yellow-8"
+                name="star"
+                size="sm"
+                class="q-px-sm"
+              />
+              <q-icon
+                v-else
+                color="yellow-8"
+                name="star_outline"
+                size="sm"
+                class="q-px-sm"
+              />
 
-              <q-icon v-if="props.node.shell === 'powershell'" name="mdi-powershell" color="primary">
+              <q-icon
+                v-if="props.node.shell === 'powershell'"
+                name="mdi-powershell"
+                color="primary"
+              >
                 <q-tooltip> Powershell </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.node.shell === 'python'" name="mdi-language-python" color="primary">
+              <q-icon
+                v-else-if="props.node.shell === 'python'"
+                name="mdi-language-python"
+                color="primary"
+              >
                 <q-tooltip> Python </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.node.shell === 'cmd'" name="mdi-microsoft-windows" color="primary">
+              <q-icon
+                v-else-if="props.node.shell === 'cmd'"
+                name="mdi-microsoft-windows"
+                color="primary"
+              >
                 <q-tooltip> Batch </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.node.shell === 'shell'" name="mdi-bash" color="primary">
+              <q-icon
+                v-else-if="props.node.shell === 'shell'"
+                name="mdi-bash"
+                color="primary"
+              >
                 <q-tooltip> Shell </q-tooltip>
               </q-icon>
 
-              <span class="q-pl-xs text-weight-bold" :style="{ color: props.node.hidden ? 'grey' : '' }">{{
-                props.node.name
-              }}</span>
+              <span
+                class="q-pl-xs text-weight-bold"
+                :style="{ color: props.node.hidden ? 'grey' : '' }"
+                >{{ props.node.name }}</span
+              >
               <span class="q-pl-xs">{{ props.node.description }}</span>
             </div>
 
             <!-- context menu -->
             <q-menu context-menu>
               <q-list dense style="min-width: 200px">
-                <q-item clickable v-close-popup @click="viewCodeModal(props.node)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="viewCodeModal(props.node)"
+                >
                   <q-item-section side>
                     <q-icon name="remove_red_eye" />
                   </q-item-section>
                   <q-item-section>View Code</q-item-section>
                 </q-item>
 
-                <q-item clickable v-close-popup @click="cloneScriptModal(props.node)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="cloneScriptModal(props.node)"
+                >
                   <q-item-section side>
                     <q-icon name="content_copy" />
                   </q-item-section>
@@ -169,14 +235,26 @@
 
                 <q-separator></q-separator>
 
-                <q-item clickable v-close-popup @click="favoriteScript(props.node)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="favoriteScript(props.node)"
+                >
                   <q-item-section side>
                     <q-icon name="star" />
                   </q-item-section>
-                  <q-item-section>{{ props.node.favorite ? "Remove as Favorite" : "Add as Favorite" }}</q-item-section>
+                  <q-item-section>{{
+                    props.node.favorite
+                      ? "Remove as Favorite"
+                      : "Add as Favorite"
+                  }}</q-item-section>
                 </q-item>
 
-                <q-item clickable v-close-popup @click="exportScript(props.node)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="exportScript(props.node)"
+                >
                   <q-item-section side>
                     <q-icon name="cloud_download" />
                   </q-item-section>
@@ -187,9 +265,15 @@
 
                 <q-item clickable v-close-popup @click="hideScript(props.node)">
                   <q-item-section side>
-                    <q-icon :name="props.node.hidden ? 'visibility' : 'visibility_off'" />
+                    <q-icon
+                      :name="
+                        props.node.hidden ? 'visibility' : 'visibility_off'
+                      "
+                    />
                   </q-item-section>
-                  <q-item-section>{{ props.node.hidden ? "Show Script" : "Hide Script" }}</q-item-section>
+                  <q-item-section>{{
+                    props.node.hidden ? "Show Script" : "Hide Script"
+                  }}</q-item-section>
                 </q-item>
 
                 <q-separator></q-separator>
@@ -205,7 +289,10 @@
       <q-table
         v-if="tableView"
         dense
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         :style="{ 'max-height': `${$q.screen.height - 182}px` }"
         class="tbl-sticky"
         :rows="visibleScripts"
@@ -233,20 +320,32 @@
           <!-- Table View -->
           <q-tr
             :props="props"
-            @dblclick="props.row.script_type === 'builtin' ? viewCodeModal(props.row) : editScriptModal(props.row)"
+            @dblclick="
+              props.row.script_type === 'builtin'
+                ? viewCodeModal(props.row)
+                : editScriptModal(props.row)
+            "
             class="cursor-pointer"
           >
             <!-- Context Menu -->
             <q-menu context-menu>
               <q-list dense style="min-width: 200px">
-                <q-item clickable v-close-popup @click="viewCodeModal(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="viewCodeModal(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="remove_red_eye" />
                   </q-item-section>
                   <q-item-section>View Code</q-item-section>
                 </q-item>
 
-                <q-item clickable v-close-popup @click="cloneScriptModal(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="cloneScriptModal(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="content_copy" />
                   </q-item-section>
@@ -279,14 +378,26 @@
 
                 <q-separator></q-separator>
 
-                <q-item clickable v-close-popup @click="favoriteScript(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="favoriteScript(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="star" />
                   </q-item-section>
-                  <q-item-section>{{ props.row.favorite ? "Remove as Favorite" : "Add as Favorite" }}</q-item-section>
+                  <q-item-section>{{
+                    props.row.favorite
+                      ? "Remove as Favorite"
+                      : "Add as Favorite"
+                  }}</q-item-section>
                 </q-item>
 
-                <q-item clickable v-close-popup @click="exportScript(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="exportScript(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="cloud_download" />
                   </q-item-section>
@@ -297,9 +408,13 @@
 
                 <q-item clickable v-close-popup @click="hideScript(props.row)">
                   <q-item-section side>
-                    <q-icon :name="props.row.hidden ? 'visibility' : 'visibility_off'" />
+                    <q-icon
+                      :name="props.row.hidden ? 'visibility' : 'visibility_off'"
+                    />
                   </q-item-section>
-                  <q-item-section>{{ props.row.hidden ? "Show Script" : "Hide Script" }}</q-item-section>
+                  <q-item-section>{{
+                    props.row.hidden ? "Show Script" : "Hide Script"
+                  }}</q-item-section>
                 </q-item>
 
                 <q-separator></q-separator>
@@ -311,26 +426,57 @@
             </q-menu>
             <!-- favorite -->
             <q-td>
-              <q-icon v-if="props.row.favorite" color="yellow-8" name="star" size="sm" />
+              <q-icon
+                v-if="props.row.favorite"
+                color="yellow-8"
+                name="star"
+                size="sm"
+              />
             </q-td>
             <!-- shell icon -->
             <q-td>
-              <q-icon v-if="props.row.shell === 'powershell'" name="mdi-powershell" color="primary" size="sm">
+              <q-icon
+                v-if="props.row.shell === 'powershell'"
+                name="mdi-powershell"
+                color="primary"
+                size="sm"
+              >
                 <q-tooltip> Powershell </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.row.shell === 'python'" name="mdi-language-python" color="primary" size="sm">
+              <q-icon
+                v-else-if="props.row.shell === 'python'"
+                name="mdi-language-python"
+                color="primary"
+                size="sm"
+              >
                 <q-tooltip> Python </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.row.shell === 'cmd'" name="mdi-microsoft-windows" color="primary" size="sm">
+              <q-icon
+                v-else-if="props.row.shell === 'cmd'"
+                name="mdi-microsoft-windows"
+                color="primary"
+                size="sm"
+              >
                 <q-tooltip> Batch </q-tooltip>
               </q-icon>
-              <q-icon v-else-if="props.row.shell === 'shell'" size="sm" name="mdi-bash" color="primary">
+              <q-icon
+                v-else-if="props.row.shell === 'shell'"
+                size="sm"
+                name="mdi-bash"
+                color="primary"
+              >
                 <q-tooltip> Shell </q-tooltip>
               </q-icon>
             </q-td>
             <!-- supported platforms -->
             <q-td>
-              <q-badge v-if="!props.row.supported_platforms || props.row.supported_platforms.length === 0">All</q-badge>
+              <q-badge
+                v-if="
+                  !props.row.supported_platforms ||
+                  props.row.supported_platforms.length === 0
+                "
+                >All</q-badge
+              >
               <q-badge
                 v-else
                 v-for="plat in props.row.supported_platforms"
@@ -343,7 +489,10 @@
             <!-- name -->
             <q-td :style="{ color: props.row.hidden ? 'grey' : '' }">
               {{ truncateText(props.row.name, 50) }}
-              <q-tooltip v-if="props.row.name.length >= 50" style="font-size: 12px">
+              <q-tooltip
+                v-if="props.row.name.length >= 50"
+                style="font-size: 12px"
+              >
                 {{ props.row.name }}
               </q-tooltip>
             </q-td>
@@ -351,7 +500,10 @@
             <q-td>
               <span v-if="props.row.args.length > 0">
                 {{ truncateText(props.row.args.toString(), 30) }}
-                <q-tooltip v-if="props.row.args.toString().length >= 30" style="font-size: 12px">
+                <q-tooltip
+                  v-if="props.row.args.toString().length >= 30"
+                  style="font-size: 12px"
+                >
                   {{ props.row.args }}
                 </q-tooltip>
               </span>
@@ -360,9 +512,11 @@
             <q-td>{{ props.row.category }}</q-td>
             <q-td>
               {{ truncateText(props.row.description, 30) }}
-              <q-tooltip v-if="props.row.description.length >= 30" style="font-size: 12px">{{
-                props.row.description
-              }}</q-tooltip>
+              <q-tooltip
+                v-if="props.row.description.length >= 30"
+                style="font-size: 12px"
+                >{{ props.row.description }}</q-tooltip
+              >
             </q-td>
             <q-td>{{ props.row.default_timeout }}</q-td>
           </q-tr>
@@ -377,7 +531,12 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar, useDialogPluginComponent, exportFile } from "quasar";
-import { fetchScripts, editScript, downloadScript, removeScript } from "@/api/scripts";
+import {
+  fetchScripts,
+  editScript,
+  downloadScript,
+  removeScript,
+} from "@/api/scripts";
 import { capitalize } from "@/utils/format";
 import { truncateText } from "@/utils/format";
 import { notifySuccess } from "@/utils/notify";
@@ -453,7 +612,9 @@ export default {
   setup() {
     // setup vuex store
     const store = useStore();
-    const showCommunityScripts = computed(() => store.state.showCommunityScripts);
+    const showCommunityScripts = computed(
+      () => store.state.showCommunityScripts
+    );
 
     // setup quasar plugins
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
@@ -475,9 +636,14 @@ export default {
 
     async function favoriteScript(script) {
       loading.value = true;
-      const notifyText = !script.favorite ? "Script was favorited!" : "Script was removed as a favorite!";
+      const notifyText = !script.favorite
+        ? "Script was favorited!"
+        : "Script was removed as a favorite!";
       try {
-        const result = await editScript({ id: script.id, favorite: !script.favorite });
+        await editScript({
+          id: script.id,
+          favorite: !script.favorite,
+        });
         await getScripts();
         notifySuccess(notifyText);
       } catch (e) {}
@@ -487,9 +653,14 @@ export default {
 
     async function hideScript(script) {
       loading.value = true;
-      const notifyText = !script.hidden ? "Script was hidden!" : "Script was unhidden!";
+      const notifyText = !script.hidden
+        ? "Script was hidden!"
+        : "Script was unhidden!";
       try {
-        const result = await editScript({ id: script.id, hidden: !script.hidden });
+        await editScript({
+          id: script.id,
+          hidden: !script.hidden,
+        });
         await getScripts();
         notifySuccess(notifyText);
       } catch (e) {}
@@ -519,7 +690,9 @@ export default {
 
       try {
         const { code, filename } = await downloadScript(script.id);
-        exportFile(filename, new Blob([code]), { mimeType: "text/plain;charset=utf-8" });
+        exportFile(filename, new Blob([code]), {
+          mimeType: "text/plain;charset=utf-8",
+        });
       } catch (e) {
         console.error(e);
       }
@@ -534,17 +707,21 @@ export default {
 
     const visibleScripts = computed(() => {
       if (showHiddenScripts.value) {
-        return showCommunityScripts.value ? scripts.value : scripts.value.filter(i => i.script_type !== "builtin");
+        return showCommunityScripts.value
+          ? scripts.value
+          : scripts.value.filter((i) => i.script_type !== "builtin");
       } else {
         return showCommunityScripts.value
-          ? scripts.value.filter(i => !i.hidden)
-          : scripts.value.filter(i => i.script_type !== "builtin" && !i.hidden);
+          ? scripts.value.filter((i) => !i.hidden)
+          : scripts.value.filter(
+              (i) => i.script_type !== "builtin" && !i.hidden
+            );
       }
     });
 
     const categories = computed(() => {
       let list = [];
-      visibleScripts.value.forEach(script => {
+      visibleScripts.value.forEach((script) => {
         if (!!script.category && !list.includes(script.category)) {
           list.push(script.category);
         }
@@ -582,7 +759,7 @@ export default {
           return 0;
         });
 
-        sortedCategories.forEach(category => {
+        sortedCategories.forEach((category) => {
           let temp = {
             icon: "folder",
             iconColor: "yellow-9",
@@ -594,9 +771,20 @@ export default {
 
           for (let x = 0; x < sortedScripts.length; x++) {
             if (sortedScripts[x].category === category) {
-              temp.children.push({ label: sortedScripts[x].name, header: "script", ...sortedScripts[x] });
-            } else if (category === "Unassigned" && !sortedScripts[x].category) {
-              temp.children.push({ label: sortedScripts[x].name, header: "script", ...sortedScripts[x] });
+              temp.children.push({
+                label: sortedScripts[x].name,
+                header: "script",
+                ...sortedScripts[x],
+              });
+            } else if (
+              category === "Unassigned" &&
+              !sortedScripts[x].category
+            ) {
+              temp.children.push({
+                label: sortedScripts[x].name,
+                header: "script",
+                ...sortedScripts[x],
+              });
             }
           }
 
@@ -713,7 +901,8 @@ export default {
 
       // table and tree view methods
       tree,
-      setShowCommunityScripts: show => store.dispatch("setShowCommunityScripts", show),
+      setShowCommunityScripts: (show) =>
+        store.dispatch("setShowCommunityScripts", show),
 
       // helper methods
       truncateText,

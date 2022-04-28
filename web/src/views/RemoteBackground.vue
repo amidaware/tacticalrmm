@@ -11,8 +11,17 @@
       narrow-indicator
     >
       <q-tab name="terminal" icon="fas fa-terminal" label="Terminal" />
-      <q-tab name="filebrowser" icon="far fa-folder-open" label="File Browser" />
-      <q-tab v-if="$route.query.agentPlatform === 'windows'" name="services" icon="fas fa-cogs" label="Services" />
+      <q-tab
+        name="filebrowser"
+        icon="far fa-folder-open"
+        label="File Browser"
+      />
+      <q-tab
+        v-if="$route.query.agentPlatform === 'windows'"
+        name="services"
+        icon="fas fa-cogs"
+        label="Services"
+      />
       <q-tab name="processes" icon="fas fa-chart-area" label="Processes" />
       <q-tab
         v-if="$route.query.agentPlatform === 'windows'"
@@ -26,20 +35,43 @@
       <q-tab-panel name="terminal" class="q-pa-none">
         <iframe
           :src="terminal"
-          :style="{ height: `${$q.screen.height - 30}px`, width: `${$q.screen.width}px` }"
+          :style="{
+            height: `${$q.screen.height - 30}px`,
+            width: `${$q.screen.width}px`,
+          }"
         ></iframe>
       </q-tab-panel>
       <q-tab-panel name="processes" class="q-pa-none">
         <ProcessManager :agent_id="agent_id" />
       </q-tab-panel>
-      <q-tab-panel v-if="$route.query.agentPlatform === 'windows'" name="services" class="q-pa-none">
-        <ServicesManager :agent_id="agent_id" :agentPlatform="$route.query.agentPlatform" />
+      <q-tab-panel
+        v-if="$route.query.agentPlatform === 'windows'"
+        name="services"
+        class="q-pa-none"
+      >
+        <ServicesManager
+          :agent_id="agent_id"
+          :agentPlatform="$route.query.agentPlatform"
+        />
       </q-tab-panel>
-      <q-tab-panel v-if="$route.query.agentPlatform === 'windows'" name="eventlog" class="q-pa-none">
-        <EventLogManager :agent_id="agent_id" :agentPlatform="$route.query.agentPlatform" />
+      <q-tab-panel
+        v-if="$route.query.agentPlatform === 'windows'"
+        name="eventlog"
+        class="q-pa-none"
+      >
+        <EventLogManager
+          :agent_id="agent_id"
+          :agentPlatform="$route.query.agentPlatform"
+        />
       </q-tab-panel>
       <q-tab-panel name="filebrowser" class="q-pa-none">
-        <iframe :src="file" :style="{ height: `${$q.screen.height - 30}px`, width: `${$q.screen.width}px` }"></iframe>
+        <iframe
+          :src="file"
+          :style="{
+            height: `${$q.screen.height - 30}px`,
+            width: `${$q.screen.width}px`,
+          }"
+        ></iframe>
       </q-tab-panel>
     </q-tab-panels>
   </div>
@@ -65,7 +97,7 @@ export default {
     EventLogManager,
     ProcessManager,
   },
-  setup(props) {
+  setup() {
     // setup quasar
     const $q = useQuasar();
 
@@ -83,7 +115,9 @@ export default {
       const data = await fetchAgentMeshCentralURLs(params.agent_id);
       terminal.value = data.terminal;
       file.value = data.file;
-      useMeta({ title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background` });
+      useMeta({
+        title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background`,
+      });
     }
 
     async function getDashInfo() {

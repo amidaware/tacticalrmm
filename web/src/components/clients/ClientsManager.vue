@@ -2,7 +2,14 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin" style="width: 70vw">
       <q-bar>
-        <q-btn @click="getClients" class="q-mr-sm" dense flat push icon="refresh" />Clients Manager
+        <q-btn
+          @click="getClients"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />Clients Manager
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -11,7 +18,10 @@
       <q-table
         :rows="clients"
         :columns="columns"
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         class="settings-tbl-sticky"
         style="height: 70vh"
         :pagination="{ rowsPerPage: 0, sortBy: 'name', descending: false }"
@@ -25,7 +35,15 @@
       >
         <!-- top slot -->
         <template v-slot:top>
-          <q-btn label="New" dense flat push no-caps icon="add" @click="showAddClient" />
+          <q-btn
+            label="New"
+            dense
+            flat
+            push
+            no-caps
+            icon="add"
+            @click="showAddClient"
+          />
         </template>
 
         <!-- loading slot -->
@@ -35,17 +53,29 @@
 
         <!-- body slots -->
         <template v-slot:body="props">
-          <q-tr :props="props" class="cursor-pointer" @dblclick="showEditClient(props.row)">
+          <q-tr
+            :props="props"
+            class="cursor-pointer"
+            @dblclick="showEditClient(props.row)"
+          >
             <!-- context menu -->
             <q-menu context-menu>
               <q-list dense style="min-width: 200px">
-                <q-item clickable v-close-popup @click="showEditClient(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="showEditClient(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="edit" />
                   </q-item-section>
                   <q-item-section>Edit</q-item-section>
                 </q-item>
-                <q-item clickable v-close-popup @click="showClientDeleteModal(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="showClientDeleteModal(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="delete" />
                   </q-item-section>
@@ -105,13 +135,18 @@ import SitesTable from "@/components/clients/SitesTable";
 const columns = [
   { name: "name", label: "Name", field: "name", align: "left" },
   { name: "sites", label: "Sites", field: "sites", align: "left" },
-  { name: "agent_count", label: "Total Agents", field: "agent_count", align: "left" },
+  {
+    name: "agent_count",
+    label: "Total Agents",
+    field: "agent_count",
+    align: "left",
+  },
 ];
 
 export default {
   name: "ClientsManager",
   emits: [...useDialogPluginComponent.emits],
-  setup(props) {
+  setup() {
     // setup quasar dialog
     const $q = useQuasar();
     const { dialogRef, onDialogHide } = useDialogPluginComponent();

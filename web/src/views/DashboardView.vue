@@ -584,7 +584,7 @@ export default {
     selectedTree() {
       if (this.clearSearchWhenSwitching) this.clearFilter();
     },
-    tab(newVal, oldVal) {
+    tab() {
       this.$store.dispatch("loadAgents");
     },
   },

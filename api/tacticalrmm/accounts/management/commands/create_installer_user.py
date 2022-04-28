@@ -8,7 +8,7 @@ from accounts.models import User
 class Command(BaseCommand):
     help = "Creates the installer user"
 
-    def handle(self, *args, **kwargs): # type: ignore
+    def handle(self, *args, **kwargs):  # type: ignore
         self.stdout.write("Checking if installer user has been created...")
         if User.objects.filter(is_installer_user=True).exists():
             self.stdout.write("Installer user already exists")

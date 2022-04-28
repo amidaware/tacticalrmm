@@ -313,7 +313,9 @@ class TaskRunner(APIView):
             else:
                 status = CheckStatus.FAILING
         else:
-            status = CheckStatus.FAILING if task_result.retcode != 0 else CheckStatus.PASSING
+            status = (
+                CheckStatus.FAILING if task_result.retcode != 0 else CheckStatus.PASSING
+            )
 
         if task_result:
             task_result.status = status

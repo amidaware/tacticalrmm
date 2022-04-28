@@ -1,6 +1,6 @@
 from model_bakery.recipe import Recipe
 
-from tacticalrmm.constants import CheckType
+from tacticalrmm.constants import CheckType, EvtLogTypes
 
 check = Recipe("checks.Check")
 
@@ -27,7 +27,7 @@ winsvc_check = check.extend(
 )
 
 eventlog_check = check.extend(
-    check_type=CheckType.EVENT_LOG, event_id=5000, event_type="application"
+    check_type=CheckType.EVENT_LOG, event_id=5000, event_type=EvtLogTypes.INFO
 )
 
 script_check = check.extend(

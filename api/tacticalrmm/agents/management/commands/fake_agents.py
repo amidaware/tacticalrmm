@@ -17,7 +17,14 @@ from clients.models import Client, Site
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
-from tacticalrmm.constants import CheckType, PAAction, CheckStatus
+from tacticalrmm.constants import (
+    CheckType,
+    PAAction,
+    CheckStatus,
+    EvtLogNames,
+    EvtLogTypes,
+    EvtLogFailWhen,
+)
 from tacticalrmm.demo_data import (
     check_network_loc_aware_ps1,
     check_storage_pool_health_ps1,
@@ -741,10 +748,10 @@ class Command(BaseCommand):
                 check9.email_alert = random.choice([True, False])
                 check9.text_alert = random.choice([True, False])
                 check9.fails_b4_alert = 2
-                check9.log_name = "Application"
+                check9.log_name = EvtLogNames.APPLICATION
                 check9.event_id = 1001
-                check9.event_type = "INFO"
-                check9.fail_when = "contains"
+                check9.event_type = EvtLogTypes.INFO
+                check9.fail_when = EvtLogFailWhen.CONTAINS
                 check9.search_last_days = 30
 
                 check_result9 = CheckResult()

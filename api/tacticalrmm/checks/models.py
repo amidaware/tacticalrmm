@@ -14,32 +14,15 @@ from tacticalrmm.constants import (
     POLICY_CHECK_FIELDS_TO_COPY,
     CheckType,
     CheckStatus,
+    EvtLogNames,
+    EvtLogTypes,
+    EvtLogFailWhen,
 )
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate  # pragma: no cover
     from automation.models import Policy  # pragma: no cover
-
-
-EVT_LOG_NAME_CHOICES = [
-    ("Application", "Application"),
-    ("System", "System"),
-    ("Security", "Security"),
-]
-
-EVT_LOG_TYPE_CHOICES = [
-    ("INFO", "Information"),
-    ("WARNING", "Warning"),
-    ("ERROR", "Error"),
-    ("AUDIT_SUCCESS", "Success Audit"),
-    ("AUDIT_FAILURE", "Failure Audit"),
-]
-
-EVT_LOG_FAIL_WHEN_CHOICES = [
-    ("contains", "Log contains"),
-    ("not_contains", "Log does not contain"),
-]
 
 
 class Check(BaseAuditModel):
@@ -138,17 +121,17 @@ class Check(BaseAuditModel):
 
     # event log checks
     log_name = models.CharField(
-        max_length=255, choices=EVT_LOG_NAME_CHOICES, null=True, blank=True
+        max_length=255, choices=EvtLogNames.choices, null=True, blank=True
     )
     event_id = models.IntegerField(null=True, blank=True)
     event_id_is_wildcard = models.BooleanField(default=False)
     event_type = models.CharField(
-        max_length=255, choices=EVT_LOG_TYPE_CHOICES, null=True, blank=True
+        max_length=255, choices=EvtLogTypes.choices, null=True, blank=True
     )
     event_source = models.CharField(max_length=255, null=True, blank=True)
     event_message = models.TextField(null=True, blank=True)
     fail_when = models.CharField(
-        max_length=255, choices=EVT_LOG_FAIL_WHEN_CHOICES, null=True, blank=True
+        max_length=255, choices=EvtLogFailWhen.choices, null=True, blank=True
     )
     search_last_days = models.PositiveIntegerField(null=True, blank=True)
     number_of_events_b4_alert = models.PositiveIntegerField(
@@ -506,13 +489,13 @@ class CheckResult(models.Model):
 
         elif check.check_type == CheckType.EVENT_LOG:
             log = data["log"]
-            if check.fail_when == "contains":
+            if check.fail_when == EvtLogFailWhen.CONTAINS:
                 if log and len(log) >= check.number_of_events_b4_alert:
                     self.status = CheckStatus.FAILING
                 else:
                     self.status = CheckStatus.PASSING
 
-            elif check.fail_when == "not_contains":
+            elif check.fail_when == EvtLogFailWhen.NOT_CONTAINS:
                 if log and len(log) >= check.number_of_events_b4_alert:
                     self.status = CheckStatus.PASSING
                 else:

@@ -19,6 +19,25 @@ CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
 
 
+class EvtLogNames(models.TextChoices):
+    APPLICATION = "Application", "Application"
+    SYSTEM = "System", "System"
+    SECURITY = "Security", "Security"
+
+
+class EvtLogTypes(models.TextChoices):
+    INFO = "INFO", "Information"
+    WARNING = "WARNING", "Warning"
+    ERROR = "ERROR", "Error"
+    AUDIT_SUCCESS = "AUDIT_SUCCESS", "Success Audit"
+    AUDIT_FAILURE = "AUDIT_FAILURE", "Failure Audit"
+
+
+class EvtLogFailWhen(models.TextChoices):
+    CONTAINS = "contains", "Log contains"
+    NOT_CONTAINS = "not_contains", "Log does not contain"
+
+
 class CheckStatus(models.TextChoices):
     PASSING = "passing", "Passing"
     FAILING = "failing", "Failing"

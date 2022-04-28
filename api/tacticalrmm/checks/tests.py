@@ -6,7 +6,7 @@ from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from checks.models import CheckHistory, CheckResult
-from tacticalrmm.constants import CheckType, CheckStatus
+from tacticalrmm.constants import CheckType, CheckStatus, EvtLogTypes, EvtLogFailWhen
 from tacticalrmm.test import TacticalTestCase
 
 from .serializers import CheckSerializer
@@ -797,8 +797,8 @@ class TestCheckTasks(TacticalTestCase):
 
         check = baker.make_recipe(
             "checks.eventlog_check",
-            event_type="warning",
-            fail_when="contains",
+            event_type=EvtLogTypes.WARNING,
+            fail_when=EvtLogFailWhen.CONTAINS,
             event_id=123,
             alert_severity="warning",
             agent=self.agent,
@@ -855,7 +855,7 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(check_result.status, CheckStatus.PASSING)
 
         # test failing when not contains and message and source
-        check.fail_when = "not_contains"
+        check.fail_when = EvtLogFailWhen.NOT_CONTAINS
         check.alert_severity = "error"
         check.save()
 

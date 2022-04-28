@@ -28,7 +28,7 @@ from core.utils import (
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.constants import AGENT_DEFER, PAAction, PAStatus
+from tacticalrmm.constants import AGENT_DEFER, PAAction, PAStatus, EvtLogNames
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
@@ -358,7 +358,7 @@ def get_event_log(request, agent_id, logtype, days):
         return demo_get_eventlog()
 
     agent = get_object_or_404(Agent, agent_id=agent_id)
-    timeout = 180 if logtype == "Security" else 30
+    timeout = 180 if logtype == EvtLogNames.SECURITY else 30
 
     data = {
         "func": "eventlog",

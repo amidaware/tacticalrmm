@@ -12,7 +12,7 @@ from model_bakery import baker
 from packaging import version as pyver
 
 from logs.models import PendingAction
-from tacticalrmm.constants import PAAction, PAStatus
+from tacticalrmm.constants import PAAction, PAStatus, EvtLogNames
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -376,7 +376,7 @@ class TestAgentViews(TacticalTestCase):
                 "func": "eventlog",
                 "timeout": 30,
                 "payload": {
-                    "logname": "Application",
+                    "logname": EvtLogNames.APPLICATION,
                     "days": str(22),
                 },
             },
@@ -391,7 +391,7 @@ class TestAgentViews(TacticalTestCase):
                 "func": "eventlog",
                 "timeout": 180,
                 "payload": {
-                    "logname": "Security",
+                    "logname": EvtLogNames.SECURITY,
                     "days": str(6),
                 },
             },

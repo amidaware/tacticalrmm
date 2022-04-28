@@ -17,7 +17,7 @@ from clients.models import Client, Site
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
-from tacticalrmm.constants import CheckType, PAAction
+from tacticalrmm.constants import CheckType, PAAction, CheckStatus
 from tacticalrmm.demo_data import (
     check_network_loc_aware_ps1,
     check_storage_pool_health_ps1,
@@ -401,7 +401,7 @@ class Command(BaseCommand):
                 check_result1 = CheckResult()
                 check_result1.agent = agent
                 check_result1.assigned_check = check1
-                check_result1.status = "passing"
+                check_result1.status = CheckStatus.PASSING
                 check_result1.last_run = django_now
                 check_result1.more_info = "Total: 498.7GB, Free: 287.4GB"
                 check_result1.save()
@@ -431,12 +431,12 @@ class Command(BaseCommand):
             if site in sites5:
                 check2.name = "Synology NAS"
                 check2.alert_severity = "error"
-                check_result2.status = "failing"
+                check_result2.status = CheckStatus.FAILING
                 check2.ip = "172.17.14.26"
                 check_result2.more_info = ping_fail_output
             else:
                 check2.name = "Google"
-                check_result2.status = "passing"
+                check_result2.status = CheckStatus.PASSING
                 check2.ip = "8.8.8.8"
                 check_result2.more_info = ping_success_output
 
@@ -469,7 +469,7 @@ class Command(BaseCommand):
             check_result3 = CheckResult()
             check_result3.agent = agent
             check_result3.assigned_check = check3
-            check_result3.status = "passing"
+            check_result3.status = CheckStatus.PASSING
             check_result3.last_run = django_now
             check_result3.history = [
                 15,
@@ -510,7 +510,7 @@ class Command(BaseCommand):
             check_result4 = CheckResult()
             check_result4.agent = agent
             check_result4.assigned_check = check4
-            check_result4.status = "passing"
+            check_result4.status = CheckStatus.PASSING
             check_result4.last_run = django_now
             check_result4.history = [34, 34, 35, 36, 34, 34, 34, 34, 34, 34]
             check_result4.save()
@@ -539,7 +539,7 @@ class Command(BaseCommand):
             check_result5 = CheckResult()
             check_result5.agent = agent
             check_result5.assigned_check = check5
-            check_result5.status = "passing"
+            check_result5.status = CheckStatus.PASSING
             check_result5.last_run = django_now
             check_result5.retcode = 0
             check_result5.execution_time = "4.0000"
@@ -569,7 +569,7 @@ class Command(BaseCommand):
             check_result6 = CheckResult()
             check_result6.agent = agent
             check_result6.assigned_check = check6
-            check_result6.status = "passing"
+            check_result6.status = CheckStatus.PASSING
             check_result6.last_run = django_now
             check_result6.retcode = 0
             check_result6.execution_time = "4.0000"
@@ -685,7 +685,7 @@ class Command(BaseCommand):
             check_result7 = CheckResult()
             check_result7.assigned_check = check7
             check_result7.agent = agent
-            check_result7.status = "passing"
+            check_result7.status = CheckStatus.PASSING
             check_result7.last_run = django_now
             check_result7.retcode = 0
             check_result7.execution_time = "3.1337"
@@ -716,7 +716,7 @@ class Command(BaseCommand):
                 check_result8 = CheckResult()
                 check_result8.assigned_check = check8
                 check_result8.agent = agent
-                check_result8.status = "passing"
+                check_result8.status = CheckStatus.PASSING
                 check_result8.last_run = django_now
                 check_result8.more_info = "Status RUNNING"
                 check_result8.save()
@@ -754,10 +754,10 @@ class Command(BaseCommand):
                 check_result9.last_run = django_now
                 if site in sites5:
                     check_result9.extra_details = eventlog_check_fail_data
-                    check_result9.status = "failing"
+                    check_result9.status = CheckStatus.FAILING
                 else:
                     check_result9.extra_details = {"log": []}
-                    check_result9.status = "passing"
+                    check_result9.status = CheckStatus.PASSING
 
                 check9.save()
                 check_result9.save()

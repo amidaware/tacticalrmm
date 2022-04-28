@@ -19,7 +19,7 @@ from packaging import version as pyver
 from core.models import TZ_CHOICES
 from core.utils import get_core_settings
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import ONLINE_AGENTS, CheckType
+from tacticalrmm.constants import ONLINE_AGENTS, CheckType, CheckStatus
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -167,12 +167,12 @@ class Agent(BaseAuditModel):
             if (
                 not hasattr(check.check_result, "status")
                 or isinstance(check.check_result, CheckResult)
-                and check.check_result.status == "passing"
+                and check.check_result.status == CheckStatus.PASSING
             ):
                 passing += 1
             elif (
                 isinstance(check.check_result, CheckResult)
-                and check.check_result.status == "failing"
+                and check.check_result.status == CheckStatus.FAILING
             ):
                 alert_severity = (
                     check.check_result.alert_severity

@@ -18,6 +18,10 @@ class MeshAgentIdent(Enum):
 CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
 
+class CheckStatus(models.TextChoices):
+    PASSING = "passing", "Passing"
+    FAILING = "failing", "Failing"
+    PENDING = "pending", "Pending"
 
 class PAStatus(models.TextChoices):
     PENDING = "pending", "Pending"

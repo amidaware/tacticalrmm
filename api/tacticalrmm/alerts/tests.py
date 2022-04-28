@@ -11,6 +11,7 @@ from autotasks.models import TaskResult
 from core.tasks import cache_db_fields_task, handle_resolved_stuff
 from core.utils import get_core_settings
 from tacticalrmm.test import TacticalTestCase
+from tacticalrmm.constants import CheckStatus
 
 from .models import Alert, AlertTemplate
 from .serializers import (
@@ -841,7 +842,7 @@ class TestAlertTasks(TacticalTestCase):
 
         # test agent with check that has alert settings
         check_agent_result.alert_severity = "warning"
-        check_agent_result.status = "failing"
+        check_agent_result.status = CheckStatus.FAILING
 
         Alert.handle_alert_failure(check_agent_result)
 

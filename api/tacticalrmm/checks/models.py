@@ -13,6 +13,7 @@ from tacticalrmm.constants import (
     CHECKS_NON_EDITABLE_FIELDS,
     POLICY_CHECK_FIELDS_TO_COPY,
     CheckType,
+    CheckStatus,
 )
 from tacticalrmm.models import PermissionQuerySet
 
@@ -20,11 +21,6 @@ if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate  # pragma: no cover
     from automation.models import Policy  # pragma: no cover
 
-CHECK_STATUS_CHOICES = [
-    ("passing", "Passing"),
-    ("failing", "Failing"),
-    ("pending", "Pending"),
-]
 
 EVT_LOG_NAME_CHOICES = [
     ("Application", "Application"),
@@ -325,7 +321,7 @@ class CheckResult(models.Model):
         on_delete=models.CASCADE,
     )
     status = models.CharField(
-        max_length=100, choices=CHECK_STATUS_CHOICES, default="pending"
+        max_length=100, choices=CheckStatus.choices, default=CheckStatus.PENDING
     )
     # for memory, diskspace, script, and cpu checks where severity changes
     alert_severity = models.CharField(
@@ -402,13 +398,13 @@ class CheckResult(models.Model):
             avg = int(mean(self.history))
 
             if check.error_threshold and avg > check.error_threshold:
-                self.status = "failing"
+                self.status = CheckStatus.FAILING
                 self.alert_severity = "error"
             elif check.warning_threshold and avg > check.warning_threshold:
-                self.status = "failing"
+                self.status = CheckStatus.FAILING
                 self.alert_severity = "warning"
             else:
-                self.status = "passing"
+                self.status = CheckStatus.PASSING
 
             # add check history
             check.add_check_history(data["percent"], self.agent.agent_id)
@@ -421,24 +417,24 @@ class CheckResult(models.Model):
                     check.error_threshold
                     and (100 - percent_used) < check.error_threshold
                 ):
-                    self.status = "failing"
+                    self.status = CheckStatus.FAILING
                     self.alert_severity = "error"
                 elif (
                     check.warning_threshold
                     and (100 - percent_used) < check.warning_threshold
                 ):
-                    self.status = "failing"
+                    self.status = CheckStatus.FAILING
                     self.alert_severity = "warning"
 
                 else:
-                    self.status = "passing"
+                    self.status = CheckStatus.PASSING
 
                 self.more_info = data["more_info"]
 
                 # add check history
                 check.add_check_history(100 - percent_used, self.agent.agent_id)
             else:
-                self.status = "failing"
+                self.status = CheckStatus.FAILING
                 self.alert_severity = "error"
                 self.more_info = f"Disk {check.disk} does not exist"
 
@@ -453,15 +449,15 @@ class CheckResult(models.Model):
 
             if data["retcode"] in check.info_return_codes:
                 self.alert_severity = "info"
-                self.status = "failing"
+                self.status = CheckStatus.FAILING
             elif data["retcode"] in check.warning_return_codes:
                 self.alert_severity = "warning"
-                self.status = "failing"
+                self.status = CheckStatus.FAILING
             elif data["retcode"] != 0:
-                self.status = "failing"
+                self.status = CheckStatus.FAILING
                 self.alert_severity = "error"
             else:
-                self.status = "passing"
+                self.status = CheckStatus.PASSING
 
             self.save(
                 update_fields=[
@@ -474,7 +470,7 @@ class CheckResult(models.Model):
 
             # add check history
             check.add_check_history(
-                1 if self.status == "failing" else 0,
+                1 if self.status == CheckStatus.FAILING else 0,
                 self.agent.agent_id,
                 {
                     "retcode": data["retcode"],
@@ -491,7 +487,7 @@ class CheckResult(models.Model):
             self.save(update_fields=["more_info"])
 
             check.add_check_history(
-                1 if self.status == "failing" else 0,
+                1 if self.status == CheckStatus.FAILING else 0,
                 self.agent.agent_id,
                 self.more_info[:60],
             )
@@ -503,7 +499,7 @@ class CheckResult(models.Model):
             self.save(update_fields=["more_info"])
 
             check.add_check_history(
-                1 if self.status == "failing" else 0,
+                1 if self.status == CheckStatus.FAILING else 0,
                 self.agent.agent_id,
                 self.more_info[:60],
             )
@@ -512,34 +508,34 @@ class CheckResult(models.Model):
             log = data["log"]
             if check.fail_when == "contains":
                 if log and len(log) >= check.number_of_events_b4_alert:
-                    self.status = "failing"
+                    self.status = CheckStatus.FAILING
                 else:
-                    self.status = "passing"
+                    self.status = CheckStatus.PASSING
 
             elif check.fail_when == "not_contains":
                 if log and len(log) >= check.number_of_events_b4_alert:
-                    self.status = "passing"
+                    self.status = CheckStatus.PASSING
                 else:
-                    self.status = "failing"
+                    self.status = CheckStatus.FAILING
 
             self.extra_details = {"log": log}
             self.save(update_fields=["extra_details"])
 
             check.add_check_history(
-                1 if self.status == "failing" else 0,
+                1 if self.status == CheckStatus.FAILING else 0,
                 self.agent.agent_id,
                 "Events Found:" + str(len(self.extra_details["log"])),
             )
 
         # handle status
-        if self.status == "failing":
+        if self.status == CheckStatus.FAILING:
             self.fail_count += 1
             self.save(update_fields=["status", "fail_count", "alert_severity"])
 
             if self.fail_count >= check.fails_b4_alert:
                 Alert.handle_alert_failure(self)
 
-        elif self.status == "passing":
+        elif self.status == CheckStatus.PASSING:
             self.fail_count = 0
             self.save(update_fields=["status", "fail_count", "alert_severity"])
             if Alert.objects.filter(

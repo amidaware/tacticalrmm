@@ -25,7 +25,7 @@ from core.utils import (
 )
 from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
-from tacticalrmm.constants import MeshAgentIdent, PAStatus
+from tacticalrmm.constants import MeshAgentIdent, PAStatus, CheckStatus
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.utils import reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
@@ -246,8 +246,8 @@ class CheckRunner(APIView):
         check_result.save()
 
         status = check_result.handle_check(request.data)
-        if status == "failing" and check.assignedtasks.exists():  # type: ignore
-            for task in check.assignedtasks.all():  # type: ignore
+        if status == CheckStatus.FAILING and check.assignedtasks.exists():
+            for task in check.assignedtasks.all():
                 if task.enabled:
                     if task.policy:
                         task.run_win_task(agent)
@@ -309,11 +309,11 @@ class TaskRunner(APIView):
 
                 task_result.save_collector_results()
 
-                status = "passing"
+                status = CheckStatus.PASSING
             else:
-                status = "failing"
+                status = CheckStatus.FAILING
         else:
-            status = "failing" if task_result.retcode != 0 else "passing"
+            status = CheckStatus.FAILING if task_result.retcode != 0 else CheckStatus.PASSING
 
         if task_result:
             task_result.status = status
@@ -322,7 +322,7 @@ class TaskRunner(APIView):
             task_result.status = status
             task.save(update_fields=["status"])
 
-        if status == "passing":
+        if status == CheckStatus.PASSING:
             if Alert.create_or_return_task_alert(task, agent=agent, skip_create=True):
                 Alert.handle_alert_resolve(task_result)
         else:

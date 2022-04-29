@@ -10,7 +10,6 @@ from accounts.models import User
 from agents.models import Agent
 from automation.models import Policy
 from core.models import CoreSettings
-from core.utils import clear_entire_cache
 
 if TYPE_CHECKING:
     from agents.models import Agent
@@ -18,7 +17,16 @@ if TYPE_CHECKING:
     from checks.models import Check
     from scripts.models import Script
 
+TEST_CACHE = {
+    "default": {
+        "BACKEND": "tacticalrmm.cache.TacticalDummyCache",
+    }
+}
 
+
+@override_settings(
+    CACHES=TEST_CACHE,
+)
 class TacticalTestCase(TestCase):
     client: APIClient
 
@@ -94,7 +102,6 @@ class TacticalTestCase(TestCase):
     def check_not_authorized(
         self, method: str, url: str, data: Optional[Dict[Any, Any]] = {}
     ) -> None:
-        clear_entire_cache()
         try:
             r = getattr(self.client, method)(url, data, format="json")
             self.assertEqual(r.status_code, 403)
@@ -104,7 +111,6 @@ class TacticalTestCase(TestCase):
     def check_authorized(
         self, method: str, url: str, data: Optional[Dict[Any, Any]] = {}
     ) -> Any:
-        clear_entire_cache()
         try:
             r = getattr(self.client, method)(url, data, format="json")
             self.assertNotEqual(r.status_code, 403)

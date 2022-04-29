@@ -14,7 +14,7 @@ from .permissions import WinSvcsPerms
 
 
 def process_nats_response(data: Union[str, Dict]) -> Tuple[bool, bool, str]:
-    natserror = True if isinstance(data, str) else False
+    natserror = isinstance(data, str)
     success = (
         data["success"]
         if isinstance(data, dict) and isinstance(data["success"], bool)

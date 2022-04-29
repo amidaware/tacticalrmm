@@ -19,7 +19,7 @@ from agents.models import Agent
 from core.models import CodeSignToken
 from core.utils import get_core_settings
 from logs.models import DebugLog
-from tacticalrmm.constants import MONTH_DAYS, MONTHS, WEEK_DAYS, WEEKS
+from tacticalrmm.constants import MONTH_DAYS, MONTHS, WEEK_DAYS, WEEKS, ScriptShell
 from tacticalrmm.helpers import notify_error
 
 
@@ -373,7 +373,7 @@ def replace_db_values(
         return ""
 
 
-def format_shell_array(value: list) -> str:
+def format_shell_array(value: list[str]) -> str:
     temp_string = ""
     for item in value:
         temp_string += item + ","
@@ -381,7 +381,7 @@ def format_shell_array(value: list) -> str:
 
 
 def format_shell_bool(value: bool, shell: Optional[str]) -> str:
-    if shell == "powershell":
+    if shell == ScriptShell.POWERSHELL:
         return "$True" if value else "$False"
     else:
         return "1" if value else "0"

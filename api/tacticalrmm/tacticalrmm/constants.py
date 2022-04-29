@@ -19,6 +19,18 @@ CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
 
 
+class ScriptShell(models.TextChoices):
+    POWERSHELL = "powershell", "Powershell"
+    CMD = "cmd", "Batch (CMD)"
+    PYTHON = "python", "Python"
+    SHELL = "shell", "Shell"
+
+
+class ScriptType(models.TextChoices):
+    USER_DEFINED = "userdefined", "User Defined"
+    BUILT_IN = "builtin", "Built In"
+
+
 class EvtLogNames(models.TextChoices):
     APPLICATION = "Application", "Application"
     SYSTEM = "System", "System"

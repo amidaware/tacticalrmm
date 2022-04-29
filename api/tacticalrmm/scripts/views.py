@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from agents.permissions import RunScriptPerms
 from tacticalrmm.helpers import notify_error
+from tacticalrmm.constants import ScriptType, ScriptShell
 
 from .models import Script, ScriptSnippet
 from .permissions import ScriptsPerms
@@ -27,7 +28,7 @@ class GetAddScripts(APIView):
         showHiddenScripts = request.GET.get("showHiddenScripts", False)
 
         if not showCommunityScripts or showCommunityScripts == "false":
-            scripts = Script.objects.filter(script_type="userdefined")
+            scripts = Script.objects.filter(script_type=ScriptType.USER_DEFINED)
         else:
             scripts = Script.objects.all()
 
@@ -61,7 +62,7 @@ class GetUpdateDeleteScript(APIView):
 
         data = request.data
 
-        if script.script_type == "builtin":
+        if script.script_type == ScriptType.BUILT_IN:
             # allow only favoriting builtin scripts
             if "favorite" in data:
                 # overwrite request data
@@ -83,7 +84,7 @@ class GetUpdateDeleteScript(APIView):
         script = get_object_or_404(Script, pk=pk)
 
         # this will never trigger but check anyway
-        if script.script_type == "builtin":
+        if script.script_type == ScriptType.BUILT_IN:
             return notify_error("Community scripts cannot be deleted")
 
         script.delete()
@@ -172,9 +173,9 @@ def download(request, pk):
     if with_snippets == "false":
         with_snippets = False
 
-    if script.shell == "powershell":
+    if script.shell == ScriptShell.POWERSHELL:
         filename = f"{script.name}.ps1"
-    elif script.shell == "cmd":
+    elif script.shell == ScriptShell.CMD:
         filename = f"{script.name}.bat"
     else:
         filename = f"{script.name}.py"

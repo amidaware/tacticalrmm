@@ -24,6 +24,7 @@ from tacticalrmm.constants import (
     EvtLogNames,
     EvtLogTypes,
     EvtLogFailWhen,
+    ScriptShell,
 )
 from tacticalrmm.demo_data import (
     check_network_loc_aware_ps1,
@@ -245,7 +246,7 @@ class Command(BaseCommand):
         clear_spool.name = "Clear Print Spooler"
         clear_spool.description = "clears the print spooler. Fuck printers"
         clear_spool.filename = "clear_print_spool.bat"
-        clear_spool.shell = "cmd"
+        clear_spool.shell = ScriptShell.CMD
         clear_spool.script_body = clear_print_spool_bat
         clear_spool.save()
 
@@ -253,7 +254,7 @@ class Command(BaseCommand):
         check_net_aware.name = "Check Network Location Awareness"
         check_net_aware.description = "Check's network location awareness on domain computers, should always be domain profile and not public or private. Sometimes happens when computer restarts before domain available. This script will return 0 if check passes or 1 if it fails."
         check_net_aware.filename = "check_network_loc_aware.ps1"
-        check_net_aware.shell = "powershell"
+        check_net_aware.shell = ScriptShell.POWERSHELL
         check_net_aware.script_body = check_network_loc_aware_ps1
         check_net_aware.save()
 
@@ -261,7 +262,7 @@ class Command(BaseCommand):
         check_pool_health.name = "Check storage spool health"
         check_pool_health.description = "loops through all storage pools and will fail if any of them are not healthy"
         check_pool_health.filename = "check_storage_pool_health.ps1"
-        check_pool_health.shell = "powershell"
+        check_pool_health.shell = ScriptShell.POWERSHELL
         check_pool_health.script_body = check_storage_pool_health_ps1
         check_pool_health.save()
 
@@ -269,7 +270,7 @@ class Command(BaseCommand):
         restart_nla.name = "Restart NLA Service"
         restart_nla.description = "restarts the Network Location Awareness windows service to fix the nic profile. Run this after the check network service fails"
         restart_nla.filename = "restart_nla.ps1"
-        restart_nla.shell = "powershell"
+        restart_nla.shell = ScriptShell.POWERSHELL
         restart_nla.script_body = restart_nla_ps1
         restart_nla.save()
 
@@ -277,7 +278,7 @@ class Command(BaseCommand):
         show_tmp_dir_script.name = "Check temp dir"
         show_tmp_dir_script.description = "shows files in temp dir using python"
         show_tmp_dir_script.filename = "show_temp_dir.py"
-        show_tmp_dir_script.shell = "python"
+        show_tmp_dir_script.shell = ScriptShell.PYTHON
         show_tmp_dir_script.script_body = show_temp_dir_py
         show_tmp_dir_script.save()
 

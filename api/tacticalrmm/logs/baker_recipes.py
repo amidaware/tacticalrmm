@@ -2,32 +2,45 @@ from itertools import cycle
 
 from model_bakery.recipe import Recipe
 
-from tacticalrmm.constants import PAAction, PAStatus
+from tacticalrmm.constants import PAAction, PAStatus, AuditObjType, AuditActionType
 
 object_types = [
-    "user",
-    "script",
-    "agent",
-    "policy",
-    "winupdatepolicy",
-    "client",
-    "site",
-    "check",
-    "automatedtask",
-    "coresettings",
+    AuditObjType.USER,
+    AuditObjType.SCRIPT,
+    AuditObjType.AGENT,
+    AuditObjType.POLICY,
+    AuditObjType.WINUPDATE,
+    AuditObjType.CLIENT,
+    AuditObjType.SITE,
+    AuditObjType.CHECK,
+    AuditObjType.AUTOTASK,
+    AuditObjType.CORE,
 ]
 
-object_actions = ["add", "modify", "view", "delete"]
-agent_actions = ["remote_session", "execute_script", "execute_command"]
-login_actions = ["failed_login", "login"]
+object_actions = [
+    AuditActionType.ADD,
+    AuditActionType.MODIFY,
+    AuditActionType.VIEW,
+    AuditActionType.DELETE,
+]
+agent_actions = [
+    AuditActionType.REMOTE_SESSION,
+    AuditActionType.EXEC_SCRIPT,
+    AuditActionType.EXEC_COMMAND,
+]
+login_actions = [AuditActionType.FAILED_LOGIN, AuditActionType.LOGIN]
 
-agent_logs = Recipe("logs.AuditLog", action=cycle(agent_actions), object_type="agent")
+agent_logs = Recipe(
+    "logs.AuditLog", action=cycle(agent_actions), object_type=AuditObjType.AGENT
+)
 
 object_logs = Recipe(
     "logs.AuditLog", action=cycle(object_actions), object_type=cycle(object_types)
 )
 
-login_logs = Recipe("logs.AuditLog", action=cycle(login_actions), object_type="user")
+login_logs = Recipe(
+    "logs.AuditLog", action=cycle(login_actions), object_type=AuditObjType.USER
+)
 
 pending_agentupdate_action = Recipe(
     "logs.PendingAction",

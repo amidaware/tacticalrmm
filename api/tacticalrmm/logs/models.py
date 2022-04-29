@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast
 from django.db import models
 
 from core.utils import get_core_settings
-from tacticalrmm.constants import PAAction, PAStatus
+from tacticalrmm.constants import PAAction, PAStatus, AuditActionType, AuditObjType
 from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet
 
@@ -18,50 +18,13 @@ def get_debug_level() -> str:
     return get_core_settings().agent_debug_level
 
 
-AUDIT_ACTION_TYPE_CHOICES = [
-    ("login", "User Login"),
-    ("failed_login", "Failed User Login"),
-    ("delete", "Delete Object"),
-    ("modify", "Modify Object"),
-    ("add", "Add Object"),
-    ("view", "View Object"),
-    ("check_run", "Check Run"),
-    ("task_run", "Task Run"),
-    ("agent_install", "Agent Install"),
-    ("remote_session", "Remote Session"),
-    ("execute_script", "Execute Script"),
-    ("execute_command", "Execute Command"),
-    ("bulk_action", "Bulk Action"),
-    ("url_action", "URL Action"),
-]
-
-AUDIT_OBJECT_TYPE_CHOICES = [
-    ("user", "User"),
-    ("script", "Script"),
-    ("agent", "Agent"),
-    ("policy", "Policy"),
-    ("winupdatepolicy", "Patch Policy"),
-    ("client", "Client"),
-    ("site", "Site"),
-    ("check", "Check"),
-    ("automatedtask", "Automated Task"),
-    ("coresettings", "Core Settings"),
-    ("bulk", "Bulk"),
-    ("alerttemplate", "Alert Template"),
-    ("role", "Role"),
-    ("urlaction", "URL Action"),
-    ("keystore", "Global Key Store"),
-    ("customfield", "Custom Field"),
-]
-
-
 class AuditLog(models.Model):
     username = models.CharField(max_length=255)
     agent = models.CharField(max_length=255, null=True, blank=True)
     agent_id = models.CharField(max_length=255, blank=True, null=True)
     entry_time = models.DateTimeField(auto_now_add=True)
-    action = models.CharField(max_length=100, choices=AUDIT_ACTION_TYPE_CHOICES)
-    object_type = models.CharField(max_length=100, choices=AUDIT_OBJECT_TYPE_CHOICES)
+    action = models.CharField(max_length=100, choices=AuditActionType.choices)
+    object_type = models.CharField(max_length=100, choices=AuditObjType.choices)
     before_value = models.JSONField(null=True, blank=True)
     after_value = models.JSONField(null=True, blank=True)
     message = models.CharField(max_length=255, null=True, blank=True)
@@ -88,8 +51,8 @@ class AuditLog(models.Model):
             username=username,
             agent=agent.hostname,
             agent_id=agent.agent_id,
-            object_type="agent",
-            action="remote_session",
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.REMOTE_SESSION,
             message=f"{username} used Mesh Central to initiate a remote session to {agent.hostname}.",
             debug_info=debug_info,
         )
@@ -106,8 +69,8 @@ class AuditLog(models.Model):
             username=username,
             agent=agent.hostname,
             agent_id=agent.agent_id,
-            object_type="agent",
-            action="execute_command",
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.EXEC_COMMAND,
             message=f"{username} issued {shell} command on {agent.hostname}.",
             after_value=cmd,
             debug_info=debug_info,
@@ -125,9 +88,9 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=before["hostname"] if object_type == "agent" else None,
-            agent_id=before["agent_id"] if object_type == "agent" else None,
-            action="modify",
+            agent=before["hostname"] if object_type == AuditObjType.AGENT else None,
+            agent_id=before["agent_id"] if object_type == AuditObjType.AGENT else None,
+            action=AuditActionType.MODIFY,
             message=f"{username} modified {object_type} {name}",
             before_value=before,
             after_value=after,
@@ -145,9 +108,9 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=after["hostname"] if object_type == "agent" else None,
-            agent_id=after["agent_id"] if object_type == "agent" else None,
-            action="add",
+            agent=after["hostname"] if object_type == AuditObjType.AGENT else None,
+            agent_id=after["agent_id"] if object_type == AuditObjType.AGENT else None,
+            action=AuditActionType.ADD,
             message=f"{username} added {object_type} {name}",
             after_value=after,
             debug_info=debug_info,
@@ -164,9 +127,9 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=before["hostname"] if object_type == "agent" else None,
-            agent_id=before["agent_id"] if object_type == "agent" else None,
-            action="delete",
+            agent=before["hostname"] if object_type == AuditObjType.AGENT else None,
+            agent_id=before["agent_id"] if object_type == AuditObjType.AGENT else None,
+            action=AuditActionType.DELETE,
             message=f"{username} deleted {object_type} {name}",
             before_value=before,
             debug_info=debug_info,
@@ -180,8 +143,8 @@ class AuditLog(models.Model):
             agent=agent.hostname,
             agent_id=agent.agent_id,
             username=username,
-            object_type="agent",
-            action="execute_script",
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.EXEC_SCRIPT,
             message=f'{username} ran script: "{script}" on {agent.hostname}',
             debug_info=debug_info,
         )
@@ -190,8 +153,8 @@ class AuditLog(models.Model):
     def audit_user_failed_login(username: str, debug_info: Dict[Any, Any] = {}) -> None:
         AuditLog.objects.create(
             username=username,
-            object_type="user",
-            action="failed_login",
+            object_type=AuditObjType.USER,
+            action=AuditActionType.FAILED_LOGIN,
             message=f"{username} failed to login: Credentials were rejected",
             debug_info=debug_info,
         )
@@ -202,8 +165,8 @@ class AuditLog(models.Model):
     ) -> None:
         AuditLog.objects.create(
             username=username,
-            object_type="user",
-            action="failed_login",
+            object_type=AuditObjType.USER,
+            action=AuditActionType.FAILED_LOGIN,
             message=f"{username} failed to login: Two Factor token rejected",
             debug_info=debug_info,
         )
@@ -214,8 +177,8 @@ class AuditLog(models.Model):
     ) -> None:
         AuditLog.objects.create(
             username=username,
-            object_type="user",
-            action="login",
+            object_type=AuditObjType.USER,
+            action=AuditActionType.LOGIN,
             message=f"{username} logged in successfully",
             debug_info=debug_info,
         )
@@ -236,7 +199,7 @@ class AuditLog(models.Model):
             agent=name if isinstance(instance, Agent) else None,
             agent_id=instance.agent_id if isinstance(instance, Agent) else None,
             object_type=classname.lower(),
-            action="url_action",
+            action=AuditActionType.URL_ACTION,
             message=f"{username} ran url action: {urlaction.pattern} on {classname}: {name}",
             debug_info=debug_info,
         )
@@ -278,8 +241,8 @@ class AuditLog(models.Model):
 
         AuditLog.objects.create(
             username=username,
-            object_type="bulk",
-            action="bulk_action",
+            object_type=AuditObjType.BULK,
+            action=AuditActionType.BULK_ACTION,
             message=f"{username} executed bulk {action} {target}",
             debug_info=debug_info,
             after_value=affected,

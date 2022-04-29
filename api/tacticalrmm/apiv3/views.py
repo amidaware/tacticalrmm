@@ -25,7 +25,13 @@ from core.utils import (
 )
 from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
-from tacticalrmm.constants import MeshAgentIdent, PAStatus, CheckStatus
+from tacticalrmm.constants import (
+    MeshAgentIdent,
+    PAStatus,
+    CheckStatus,
+    AuditObjType,
+    AuditActionType,
+)
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.utils import reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
@@ -298,7 +304,7 @@ class TaskRunner(APIView):
 
         AgentHistory.objects.create(
             agent=agent,
-            type="task_run",
+            type=AuditActionType.TASK_RUN,
             command=task.name,
             script_results=request.data,
         )
@@ -424,8 +430,8 @@ class NewAgent(APIView):
         AuditLog.objects.create(
             username=request.user,
             agent=agent.hostname,
-            object_type="agent",
-            action="agent_install",
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.AGENT_INSTALL,
             message=f"{request.user} installed new agent {agent.hostname}",
             after_value=Agent.serialize(agent),
             debug_info={"ip": request._client_ip},

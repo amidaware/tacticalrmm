@@ -81,6 +81,42 @@ class CheckType(models.TextChoices):
     EVENT_LOG = "eventlog", "Event Log Check"
 
 
+class AuditActionType(models.TextChoices):
+    LOGIN = "login", "User Login"
+    FAILED_LOGIN = "failed_login", "Failed User Login"
+    DELETE = "delete", "Delete Object"
+    MODIFY = "modify", "Modify Object"
+    ADD = "add", "Add Object"
+    VIEW = "view", "View Object"
+    CHECK_RUN = "check_run", "Check Run"
+    TASK_RUN = "task_run", "Task Run"
+    AGENT_INSTALL = "agent_install", "Agent Install"
+    REMOTE_SESSION = "remote_session", "Remote Session"
+    EXEC_SCRIPT = "execute_script", "Execute Script"
+    EXEC_COMMAND = "execute_command", "Execute Command"
+    BULK_ACTION = "bulk_action", "Bulk Action"
+    URL_ACTION = "url_action", "URL Action"
+
+
+class AuditObjType(models.TextChoices):
+    USER = "user", "User"
+    SCRIPT = "script", "Script"
+    AGENT = "agent", "Agent"
+    POLICY = "policy", "Policy"
+    WINUPDATE = "winupdatepolicy", "Patch Policy"
+    CLIENT = "client", "Client"
+    SITE = "site", "Site"
+    CHECK = "check", "Check"
+    AUTOTASK = "automatedtask", "Automated Task"
+    CORE = "coresettings", "Core Settings"
+    BULK = "bulk", "Bulk"
+    ALERT_TEMPLATE = "alerttemplate", "Alert Template"
+    ROLE = "role", "Role"
+    URL_ACTION = "urlaction", "URL Action"
+    KEYSTORE = "keystore", "Global Key Store"
+    CUSTOM_FIELD = "customfield", "Custom Field"
+
+
 # Agent db fields that are not needed for most queries, speeds up query
 AGENT_DEFER = (
     "wmi_detail",

@@ -155,13 +155,6 @@ CACHES = {
     }
 }
 
-if "GHACTIONS" in os.environ:
-    CACHES = {
-        "default": {
-            "BACKEND": "tacticalrmm.cache.TacticalDummyCache",
-        }
-    }
-
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

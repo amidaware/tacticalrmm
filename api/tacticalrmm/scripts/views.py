@@ -173,16 +173,21 @@ def download(request, pk):
     if with_snippets == "false":
         with_snippets = False
 
-    if script.shell == ScriptShell.POWERSHELL:
-        filename = f"{script.name}.ps1"
-    elif script.shell == ScriptShell.CMD:
-        filename = f"{script.name}.bat"
-    else:
-        filename = f"{script.name}.py"
+    match script.shell:
+        case ScriptShell.POWERSHELL:
+            ext = ".ps1"
+        case ScriptShell.CMD:
+            ext = ".bat"
+        case ScriptShell.PYTHON:
+            ext = ".py"
+        case ScriptShell.SHELL:
+            ext = ".sh"
+        case _:
+            ext = ""
 
     return Response(
         {
-            "filename": filename,
+            "filename": f"{script.name}{ext}",
             "code": script.code if with_snippets else script.code_no_snippets,
         }
     )

@@ -86,10 +86,10 @@ class Alert(models.Model):
     )
 
     def __str__(self) -> str:
-        return self.message
+        return f"{self.alert_type} - {self.message}"
 
     @property
-    def assigned_agent(self) -> "Agent":
+    def assigned_agent(self) -> "Optional[Agent]":
         return self.agent
 
     @property

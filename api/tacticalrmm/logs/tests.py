@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
 
-from tacticalrmm.constants import PAAction, PAStatus
+from tacticalrmm.constants import PAAction, PAStatus, DebugLogLevel, DebugLogType
 from tacticalrmm.test import TacticalTestCase
 
 base_url = "/logs"
@@ -244,16 +244,16 @@ class TestAuditViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         baker.make(
             "logs.DebugLog",
-            log_level=cycle(["error", "info", "warning", "critical"]),
-            log_type="agent_issues",
+            log_level=cycle([i.value for i in DebugLogLevel]),
+            log_type=DebugLogType.AGENT_ISSUES,
             agent=agent,
             _quantity=4,
         )
 
         logs = baker.make(
             "logs.DebugLog",
-            log_type="system_issues",
-            log_level=cycle(["error", "info", "warning", "critical"]),
+            log_type=DebugLogType.SYSTEM_ISSUES,
+            log_level=cycle([i.value for i in DebugLogLevel]),
             _quantity=15,
         )
 
@@ -270,7 +270,10 @@ class TestAuditViews(TacticalTestCase):
         self.assertEqual(len(resp.data), 1)
 
         # test time filter with other
-        data = {"logTypeFilter": "system_issues", "logLevelFilter": "error"}
+        data = {
+            "logTypeFilter": DebugLogType.SYSTEM_ISSUES.value,
+            "logLevelFilter": "error",
+        }
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 4)
@@ -325,24 +328,24 @@ class TestAuditViews(TacticalTestCase):
         agent2 = baker.make_recipe("agents.agent")
         baker.make(
             "logs.DebugLog",
-            log_level=cycle(["error", "info", "warning", "critical"]),
-            log_type="agent_issues",
+            log_level=cycle([i.value for i in DebugLogLevel]),
+            log_type=DebugLogType.AGENT_ISSUES,
             agent=agent,
             _quantity=4,
         )
 
         baker.make(
             "logs.DebugLog",
-            log_level=cycle(["error", "info", "warning", "critical"]),
-            log_type="agent_issues",
+            log_level=cycle([i.value for i in DebugLogLevel]),
+            log_type=DebugLogType.AGENT_ISSUES,
             agent=agent2,
             _quantity=8,
         )
 
         baker.make(
             "logs.DebugLog",
-            log_type="system_issues",
-            log_level=cycle(["error", "info", "warning", "critical"]),
+            log_type=DebugLogType.SYSTEM_ISSUES,
+            log_level=cycle([i.value for i in DebugLogLevel]),
             _quantity=15,
         )
 

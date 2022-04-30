@@ -19,7 +19,7 @@ from packaging import version as pyver
 from core.models import TZ_CHOICES
 from core.utils import get_core_settings
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import ONLINE_AGENTS, CheckType, CheckStatus
+from tacticalrmm.constants import ONLINE_AGENTS, CheckType, CheckStatus, DebugLogType
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -723,7 +723,7 @@ class Agent(BaseAuditModel):
             return tasks
 
     def _do_nats_debug(self, agent: "Agent", message: str) -> None:
-        DebugLog.error(agent=agent, log_type="agent_issues", message=message)
+        DebugLog.error(agent=agent, log_type=DebugLogType.AGENT_ISSUES, message=message)
 
     async def nats_cmd(
         self, data: Dict[Any, Any], timeout: int = 30, wait: bool = True

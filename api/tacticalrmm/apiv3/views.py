@@ -31,6 +31,7 @@ from tacticalrmm.constants import (
     CheckStatus,
     AuditObjType,
     AuditActionType,
+    DebugLogType,
 )
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.utils import reload_nats
@@ -99,7 +100,7 @@ class WinUpdates(APIView):
             asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
             DebugLog.info(
                 agent=agent,
-                log_type="windows_updates",
+                log_type=DebugLogType.WIN_UPDATES,
                 message=f"{agent.hostname} is rebooting after updates were installed.",
             )
 

@@ -9,7 +9,7 @@ from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import CheckType
+from tacticalrmm.constants import CheckType, DebugLogType
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -484,7 +484,7 @@ class Alert(models.Model):
             else:
                 DebugLog.error(
                     agent=agent,
-                    log_type="scripting",
+                    log_type=DebugLogType.SCRIPTING,
                     message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
                 )
 
@@ -608,7 +608,7 @@ class Alert(models.Model):
             else:
                 DebugLog.error(
                     agent=agent,
-                    log_type="scripting",
+                    log_type=DebugLogType.SCRIPTING,
                     message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
                 )
 
@@ -635,7 +635,7 @@ class Alert(models.Model):
                 try:
                     temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
                 except Exception as e:
-                    DebugLog.error(log_type="scripting", message=str(e))
+                    DebugLog.error(log_type=DebugLogType.SCRIPTING, message=str(e))
                     continue
 
             else:

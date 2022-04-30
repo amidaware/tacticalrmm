@@ -19,7 +19,14 @@ from agents.models import Agent
 from core.models import CodeSignToken
 from core.utils import get_core_settings
 from logs.models import DebugLog
-from tacticalrmm.constants import MONTH_DAYS, MONTHS, WEEK_DAYS, WEEKS, ScriptShell
+from tacticalrmm.constants import (
+    MONTH_DAYS,
+    MONTHS,
+    WEEK_DAYS,
+    WEEKS,
+    ScriptShell,
+    DebugLogType,
+)
 from tacticalrmm.helpers import notify_error
 
 
@@ -184,7 +191,7 @@ def reload_nats() -> None:
         except:
             DebugLog.critical(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"{agent.hostname} does not have a user account, NATS will not work",
             )
 
@@ -281,7 +288,7 @@ def replace_db_values(
             return f"'{value}'" if quotes else value
         else:
             DebugLog.error(
-                log_type="scripting",
+                log_type=DebugLogType.SCRIPTING,
                 message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
             )
             return ""
@@ -315,7 +322,7 @@ def replace_db_values(
     else:
         # ignore arg since it is invalid
         DebugLog.error(
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f"{instance} Not enough information to find value for: {string}. Only agent, site, client, and global are supported.",
         )
         return ""
@@ -357,7 +364,7 @@ def replace_db_values(
     else:
         # ignore arg since property is invalid
         DebugLog.error(
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f"{instance} Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property",
         )
         return ""
@@ -367,7 +374,7 @@ def replace_db_values(
         return value
     else:
         DebugLog.error(
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f" {instance}({instance.pk}) Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property",
         )
         return ""

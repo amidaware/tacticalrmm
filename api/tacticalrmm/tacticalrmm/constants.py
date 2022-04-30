@@ -117,6 +117,21 @@ class AuditObjType(models.TextChoices):
     CUSTOM_FIELD = "customfield", "Custom Field"
 
 
+class DebugLogLevel(models.TextChoices):
+    INFO = "info", "Info"
+    WARN = "warning", "Warning"
+    ERROR = "error", "Error"
+    CRITICAL = "critical", "Critical"
+
+
+class DebugLogType(models.TextChoices):
+    AGENT_UPDATE = "agent_update", "Agent Update"
+    AGENT_ISSUES = "agent_issues", "Agent Issues"
+    WIN_UPDATES = "win_updates", "Windows Updates"
+    SYSTEM_ISSUES = "system_issues", "System Issues"
+    SCRIPTING = "scripting", "Scripting"
+
+
 # Agent db fields that are not needed for most queries, speeds up query
 AGENT_DEFER = (
     "wmi_detail",

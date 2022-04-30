@@ -14,7 +14,7 @@ from core.utils import get_core_settings
 from logs.models import DebugLog, PendingAction
 from scripts.models import Script
 from tacticalrmm.celery import app
-from tacticalrmm.constants import PAAction, PAStatus, CheckStatus
+from tacticalrmm.constants import PAAction, PAStatus, CheckStatus, DebugLogType
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:
@@ -28,7 +28,7 @@ def agent_update(agent_id: str, force: bool = False) -> str:
     if agent.arch is None:
         DebugLog.warning(
             agent=agent,
-            log_type="agent_issues",
+            log_type=DebugLogType.AGENT_ISSUES,
             message=f"Unable to determine arch on {agent.hostname}({agent.agent_id}). Skipping agent update.",
         )
         return "noarch"
@@ -236,7 +236,7 @@ def run_script_email_results_task(
     if r == "timeout":
         DebugLog.error(
             agent=agent,
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f"{agent.hostname}({agent.pk}) timed out running script.",
         )
         return

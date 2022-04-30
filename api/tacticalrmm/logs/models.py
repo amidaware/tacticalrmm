@@ -4,7 +4,14 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast
 from django.db import models
 
 from core.utils import get_core_settings
-from tacticalrmm.constants import PAAction, PAStatus, AuditActionType, AuditObjType
+from tacticalrmm.constants import (
+    PAAction,
+    PAStatus,
+    AuditActionType,
+    AuditObjType,
+    DebugLogLevel,
+    DebugLogType,
+)
 from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet
 
@@ -249,22 +256,6 @@ class AuditLog(models.Model):
         )
 
 
-LOG_LEVEL_CHOICES = [
-    ("info", "Info"),
-    ("warning", "Warning"),
-    ("error", "Error"),
-    ("critical", "Critical"),
-]
-
-LOG_TYPE_CHOICES = [
-    ("agent_update", "Agent Update"),
-    ("agent_issues", "Agent Issues"),
-    ("win_updates", "Windows Updates"),
-    ("system_issues", "System Issues"),
-    ("scripting", "Scripting"),
-]
-
-
 class DebugLog(models.Model):
     objects = PermissionQuerySet.as_manager()
 
@@ -277,10 +268,10 @@ class DebugLog(models.Model):
         blank=True,
     )
     log_level = models.CharField(
-        max_length=50, choices=LOG_LEVEL_CHOICES, default="info"
+        max_length=50, choices=DebugLogLevel.choices, default=DebugLogLevel.INFO
     )
     log_type = models.CharField(
-        max_length=50, choices=LOG_TYPE_CHOICES, default="system_issues"
+        max_length=50, choices=DebugLogType.choices, default=DebugLogType.SYSTEM_ISSUES
     )
     message = models.TextField(null=True, blank=True)
 
@@ -289,11 +280,14 @@ class DebugLog(models.Model):
         cls,
         message: str,
         agent: "Optional[Agent]" = None,
-        log_type: str = "system_issues",
+        log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in ["info"]:
+        if get_debug_level() in [DebugLogLevel.INFO]:
             cls.objects.create(
-                log_level="info", agent=agent, log_type=log_type, message=message
+                log_level=DebugLogLevel.INFO,
+                agent=agent,
+                log_type=log_type,
+                message=message,
             )
 
     @classmethod
@@ -301,11 +295,14 @@ class DebugLog(models.Model):
         cls,
         message: str,
         agent: "Optional[Agent]" = None,
-        log_type: str = "system_issues",
+        log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in ["info", "warning"]:
+        if get_debug_level() in [DebugLogLevel.INFO, DebugLogLevel.WARN]:
             cls.objects.create(
-                log_level="warning", agent=agent, log_type=log_type, message=message
+                log_level=DebugLogLevel.INFO,
+                agent=agent,
+                log_type=log_type,
+                message=message,
             )
 
     @classmethod
@@ -313,11 +310,18 @@ class DebugLog(models.Model):
         cls,
         message: str,
         agent: "Optional[Agent]" = None,
-        log_type: str = "system_issues",
+        log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in ["info", "warning", "error"]:
+        if get_debug_level() in [
+            DebugLogLevel.INFO,
+            DebugLogLevel.WARN,
+            DebugLogLevel.ERROR,
+        ]:
             cls.objects.create(
-                log_level="error", agent=agent, log_type=log_type, message=message
+                log_level=DebugLogLevel.ERROR,
+                agent=agent,
+                log_type=log_type,
+                message=message,
             )
 
     @classmethod
@@ -325,11 +329,19 @@ class DebugLog(models.Model):
         cls,
         message: str,
         agent: "Optional[Agent]" = None,
-        log_type: str = "system_issues",
+        log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in ["info", "warning", "error", "critical"]:
+        if get_debug_level() in [
+            DebugLogLevel.INFO,
+            DebugLogLevel.WARN,
+            DebugLogLevel.ERROR,
+            DebugLogLevel.CRITICAL,
+        ]:
             cls.objects.create(
-                log_level="critical", agent=agent, log_type=log_type, message=message
+                log_level=DebugLogLevel.CRITICAL,
+                agent=agent,
+                log_type=log_type,
+                message=message,
             )
 
 

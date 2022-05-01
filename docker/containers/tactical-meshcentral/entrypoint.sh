@@ -12,10 +12,12 @@ set -e
 : "${NGINX_HOST_PORT:=4443}"
 : "${MESH_PERSISTENT_CONFIG:=0}"
 : "${WS_MASK_OVERRIDE:=0}"
+: "${AGENT_ALIAS_PORT:=443}"
+: "${ALIAS_PORT:=443}"
 : "${SMTP_HOST:=smtp.example.com}"
 : "${SMTP_PORT:=587}"
 : "${SMTP_FROM:=mesh@example.com}"
-: "${SMTP_USER:=mesh@example.com}"
+: "${SMTP_USER:=example@example.com}"
 : "${SMTP_PASS:=mesh-smtp-pass}"
 : "${SMTP_TLS:=false}"
 
@@ -33,8 +35,8 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "WANonly": true,
     "Minify": 1,
     "Port": 4443,
-    "AgentAliasPort": 443,
-    "aliasPort": 443,
+    "AgentAliasPort": "${AGENT_ALIAS_PORT}",
+    "aliasPort": "${ALIAS_PORT}",
     "AllowLoginToken": true,
     "AllowFraming": true,
     "_AgentPing": 60,
@@ -76,7 +78,7 @@ EOF
   echo "${mesh_config}" > /home/node/app/meshcentral-data/config.json
 fi
 
-node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email example@example.com
+node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email ${SMTP_USER}
 node node_modules/meshcentral --adminaccount ${MESH_USER}
 
 if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then

@@ -260,6 +260,7 @@ if "GHACTIONS" in os.environ:
     }
     SECRET_KEY = "abcdefghijklmnoptravis123456789"
     ALLOWED_HOSTS = ["api.example.com"]
+    NATS_PORT = ["4222"]
     ADMIN_URL = "abc123456/"
     CORS_ORIGIN_WHITELIST = ["https://rmm.example.com"]
     MESH_USERNAME = "pipeline"

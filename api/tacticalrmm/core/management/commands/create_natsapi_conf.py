@@ -21,7 +21,7 @@ class Command(BaseCommand):
 
         config = {
             "key": settings.SECRET_KEY,
-            "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:{settings.NATS_PORT[0]}",
+            "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
             "user": db["USER"],
             "pass": db["PASSWORD"],
             "host": db["HOST"],

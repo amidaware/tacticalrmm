@@ -156,16 +156,13 @@ CACHES = {
 }
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",  ##
     "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
     "tacticalrmm.middleware.LinuxMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 if DEBUG and not DEMO:

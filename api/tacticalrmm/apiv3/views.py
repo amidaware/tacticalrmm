@@ -3,6 +3,7 @@ import asyncio
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from django.db.models import Prefetch
 from packaging import version as pyver
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -17,6 +18,7 @@ from autotasks.models import AutomatedTask, TaskResult
 from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
 from checks.models import Check, CheckResult
 from checks.serializers import CheckRunnerGetSerializer
+from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
 from core.utils import (
     download_mesh_agent,
     get_core_settings,
@@ -26,6 +28,7 @@ from core.utils import (
 from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
+    AGENT_DEFER,
     MeshAgentIdent,
     PAStatus,
     CheckStatus,
@@ -188,7 +191,12 @@ class RunChecks(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER).prefetch_related(
+                Prefetch("agentchecks", queryset=Check.objects.select_related("script"))
+            ),
+            agent_id=agentid,
+        )
         checks = agent.get_checks_with_policies(exclude_overridden=True)
         ret = {
             "agent": agent.pk,
@@ -205,7 +213,12 @@ class CheckRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER).prefetch_related(
+                Prefetch("agentchecks", queryset=Check.objects.select_related("script"))
+            ),
+            agent_id=agentid,
+        )
         checks = agent.get_checks_with_policies(exclude_overridden=True)
 
         run_list = [
@@ -236,23 +249,29 @@ class CheckRunner(APIView):
         return Response(ret)
 
     def patch(self, request):
-        check = get_object_or_404(Check, pk=request.data["id"])
-
         if "agent_id" not in request.data.keys():
             return notify_error("Agent upgrade required")
 
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        check = get_object_or_404(
+            Check.objects.defer(*CHECK_DEFER),
+            pk=request.data["id"],
+        )
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
 
-        # check check result or create if doesn't exist
-        try:
-            check_result = CheckResult.objects.get(assigned_check=check, agent=agent)
-        except CheckResult.DoesNotExist:
-            check_result = CheckResult(assigned_check=check, agent=agent)
+        # get check result or create if doesn't exist
+        check_result, created = CheckResult.objects.defer(
+            *CHECK_RESULT_DEFER
+        ).get_or_create(
+            assigned_check=check,
+            agent=agent,
+        )
 
-        check_result.last_run = djangotime.now()
-        check_result.save()
+        if created:
+            check_result.save()
 
-        status = check_result.handle_check(request.data)
+        status = check_result.handle_check(request.data, check, agent)
         if status == CheckStatus.FAILING and check.assignedtasks.exists():
             for task in check.assignedtasks.all():
                 if task.enabled:

@@ -15,7 +15,7 @@ class TestRecovery(TacticalTestCase):
         self.site1: "Site" = baker.make("clients.Site", client=self.client1)
 
     @patch("agents.models.Agent.recover")
-    @patch("core.utils.get_mesh_ws_url")
+    @patch("agents.views.get_mesh_ws_url")
     def test_recover(self, get_mesh_ws_url, recover) -> None:
         get_mesh_ws_url.return_value = "https://mesh.example.com"
 

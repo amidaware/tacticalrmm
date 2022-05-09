@@ -20,6 +20,7 @@ omit =
     */urls.py
     */tests.py
     */test.py
+    */tests/*
     checks/utils.py
     */asgi.py
     */demo_views.py

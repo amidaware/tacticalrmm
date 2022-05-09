@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from django.test import TestCase, override_settings
+from django.test import TestCase, override_settings, modify_settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
@@ -26,6 +26,24 @@ TEST_CACHE = {
 
 @override_settings(
     CACHES=TEST_CACHE,
+    DEBUG=False,
+    ADMIN_ENABLED=False,
+)
+@modify_settings(
+    INSTALLED_APPS={
+        "remove": [
+            "django.contrib.admin",
+            "django.contrib.messages",
+            "django_extensions",
+            "silk",
+        ]
+    },
+    MIDDLEWARE={
+        "remove": [
+            "silk.middleware.SilkyMiddleware",
+            "django.contrib.messages.middleware.MessageMiddleware",
+        ]
+    },
 )
 class TacticalTestCase(TestCase):
     client: APIClient

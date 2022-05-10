@@ -6,6 +6,7 @@ from model_bakery import baker, seq
 from accounts.models import APIKey, User
 from accounts.serializers import APIKeySerializer
 from tacticalrmm.test import TacticalTestCase
+from tacticalrmm.constants import AgentDblClick, AgentTableTabs, ClientTreeSort
 
 
 class TestAccounts(TacticalTestCase):
@@ -283,9 +284,9 @@ class TestUserAction(TacticalTestCase):
         data = {
             "dark_mode": True,
             "show_community_scripts": True,
-            "agent_dblclick_action": "editagent",
-            "default_agent_tbl_tab": "mixed",
-            "client_tree_sort": "alpha",
+            "agent_dblclick_action": AgentDblClick.EDIT_AGENT,
+            "default_agent_tbl_tab": AgentTableTabs.MIXED,
+            "client_tree_sort": ClientTreeSort.ALPHA,
             "client_tree_splitter": 14,
             "loading_bar_color": "green",
             "clear_search_when_switching": False,

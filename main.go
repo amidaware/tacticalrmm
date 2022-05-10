@@ -6,12 +6,12 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/amidaware/tacticalrmm/natsapi"
 	"github.com/sirupsen/logrus"
-	"github.com/wh1te909/tacticalrmm/natsapi"
 )
 
 var (
-	version = "3.0.3"
+	version = "3.0.4"
 	log     = logrus.New()
 )
 

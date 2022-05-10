@@ -1,5 +1,5 @@
 # creates python virtual env
-FROM python:3.10.2-slim AS CREATE_VENV_STAGE
+FROM python:3.10.4-slim AS CREATE_VENV_STAGE
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -21,14 +21,14 @@ RUN apt-get update && \
     pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt
 
 # pulls community scripts from git repo
-FROM python:3.10.2-slim AS GET_SCRIPTS_STAGE
+FROM python:3.10.4-slim AS GET_SCRIPTS_STAGE
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
     git clone https://github.com/amidaware/community-scripts.git /community-scripts
 
 # runtime image
-FROM python:3.10.2-slim
+FROM python:3.10.4-slim
 
 # set env variables
 ENV VIRTUAL_ENV /opt/venv

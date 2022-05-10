@@ -1,4 +1,4 @@
-FROM nats:2.7.4-alpine
+FROM nats:2.8.2-alpine
 
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="62"
+SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR="/opt/trmm-community-scripts"
-PYTHON_VER="3.10.2"
+PYTHON_VER="3.10.4"
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -193,7 +193,7 @@ sudo apt install -y mongodb-org
 sudo systemctl enable mongod
 sudo systemctl restart mongod
 
-print_green 'Installing Python 3.10.2'
+print_green 'Installing Python 3.10.4'
 
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)

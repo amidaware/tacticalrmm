@@ -26,9 +26,9 @@ APP_VER = "0.0.163"
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.0.3"
 
-MESH_VER = "1.0.2"
+MESH_VER = "1.0.19"
 
-NATS_SERVER_VER = "2.8.1"
+NATS_SERVER_VER = "2.8.2"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "29"

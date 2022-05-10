@@ -17,14 +17,14 @@ from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, AgentCustomField, AgentHistory, Note
-from .serializers import (
+from agents.models import Agent, AgentCustomField, AgentHistory, Note
+from agents.serializers import (
     AgentHistorySerializer,
     AgentHostnameSerializer,
     AgentNoteSerializer,
     AgentSerializer,
 )
-from .tasks import auto_self_agent_update_task
+from agents.tasks import auto_self_agent_update_task
 
 if TYPE_CHECKING:
     from clients.models import Client, Site
@@ -583,7 +583,7 @@ class TestAgentViews(TacticalTestCase):
     def test_run_script(self, run_script, email_task):
         from clients.models import ClientCustomField, SiteCustomField
 
-        from .models import AgentCustomField, AgentHistory, Note
+        from agents.models import AgentCustomField, AgentHistory, Note
 
         run_script.return_value = "ok"
         url = f"/agents/{self.agent.agent_id}/runscript/"
@@ -1552,7 +1552,7 @@ class TestAgentTasks(TacticalTestCase):
         self.assertEqual(agent_update.call_count, 33)
 
     def test_agent_history_prune_task(self):
-        from .tasks import prune_agent_history
+        from agents.tasks import prune_agent_history
 
         # setup data
         agent = baker.make_recipe("agents.agent")

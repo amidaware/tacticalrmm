@@ -103,10 +103,7 @@ const columns = [
   {
     name: "command",
     label: "Script/Command",
-    field: (row) =>
-      row.type === "script_run" || row.type === "task_run"
-        ? row.script_name
-        : row.command,
+    field: (row) => (row.type === "script_run" ? row.script_name : row.command),
     align: "left",
     sortable: true,
     format: (val) => truncateText(val, 30),

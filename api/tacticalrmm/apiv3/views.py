@@ -48,7 +48,9 @@ class CheckIn(APIView):
 
     # called once during tacticalagent windows service startup
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         if not agent.choco_installed:
             asyncio.run(agent.nats_cmd({"func": "installchoco"}, wait=False))
 
@@ -61,7 +63,9 @@ class SyncMeshNodeID(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         if agent.mesh_node_id != request.data["nodeid"]:
             agent.mesh_node_id = request.data["nodeid"]
             agent.save(update_fields=["mesh_node_id"])
@@ -74,7 +78,9 @@ class Choco(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         agent.choco_installed = request.data["installed"]
         agent.save(update_fields=["choco_installed"])
         return Response("ok")
@@ -85,7 +91,9 @@ class WinUpdates(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
 
         needs_reboot: bool = request.data["needs_reboot"]
         agent.needs_reboot = needs_reboot
@@ -111,7 +119,9 @@ class WinUpdates(APIView):
         return Response("ok")
 
     def patch(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         u = agent.winupdates.filter(guid=request.data["guid"]).last()  # type: ignore
         if not u:
             raise WinUpdate.DoesNotExist
@@ -138,7 +148,9 @@ class WinUpdates(APIView):
         return Response("ok")
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         updates = request.data["wua_updates"]
         for update in updates:
             if agent.winupdates.filter(guid=update["guid"]).exists():  # type: ignore
@@ -178,7 +190,9 @@ class SupersededWinUpdate(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         updates = agent.winupdates.filter(guid=request.data["guid"])  # type: ignore
         for u in updates:
             u.delete()
@@ -288,7 +302,10 @@ class CheckRunnerInterval(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER).prefetch_related("agentchecks"),
+            agent_id=agentid,
+        )
 
         return Response(
             {"agent": agent.pk, "check_interval": agent.check_run_interval()}
@@ -300,19 +317,28 @@ class TaskRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(Agent.objects.defer(*AGENT_DEFER), agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
         return Response(TaskGOGetSerializer(task, context={"agent": agent}).data)
 
     def patch(self, request, pk, agentid):
         from alerts.models import Alert
 
-        agent = get_object_or_404(Agent, agent_id=agentid)
-        task = get_object_or_404(AutomatedTask, pk=pk)
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER),
+            agent_id=agentid,
+        )
+        task = get_object_or_404(
+            AutomatedTask.objects.select_related("custom_field"), pk=pk
+        )
 
-        # check check result or create if doesn't exist
+        # get task result or create if doesn't exist
         try:
-            task_result = TaskResult.objects.get(task=task, agent=agent)
+            task_result = (
+                TaskResult.objects.select_related("agent")
+                .defer("agent__services", "agent__wmi_detail")
+                .get(task=task, agent=agent)
+            )
             serializer = TaskResultSerializer(
                 data=request.data, instance=task_result, partial=True
             )
@@ -356,21 +382,6 @@ class TaskRunner(APIView):
         else:
             Alert.handle_alert_failure(task_result)
 
-        return Response("ok")
-
-
-class SysInfo(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def patch(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-
-        if not isinstance(request.data["sysinfo"], dict):
-            return notify_error("err")
-
-        agent.wmi_detail = request.data["sysinfo"]
-        agent.save(update_fields=["wmi_detail"])
         return Response("ok")
 
 
@@ -533,8 +544,9 @@ class AgentHistoryResult(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, agentid, pk):
-        _ = get_object_or_404(Agent, agent_id=agentid)
-        hist = get_object_or_404(AgentHistory, pk=pk)
+        hist = get_object_or_404(
+            AgentHistory.objects.filter(agent__agent_id=agentid), pk=pk
+        )
         s = AgentHistorySerializer(instance=hist, data=request.data, partial=True)
         s.is_valid(raise_exception=True)
         s.save()

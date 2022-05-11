@@ -16,6 +16,8 @@ if TYPE_CHECKING:
     from automation.models import Policy
     from checks.models import Check
     from scripts.models import Script
+    from clients.models import Client, Site
+    from core.models import CustomField
 
 TEST_CACHE = {
     "default": {
@@ -168,3 +170,19 @@ class TacticalTestCase(TestCase):
 
         new_role.save()
         return baker.make("accounts.User", role=new_role, is_active=True)
+
+    def setup_base_instance(self):
+        self.company1: "Client" = baker.make("clients.Client")
+        self.company2: "Client" = baker.make("clients.Client")
+        self.site1: "Site" = baker.make("clients.Site", client=self.company1)
+        self.site2: "Site" = baker.make("clients.Site", client=self.company1)
+        self.site3: "Site" = baker.make("clients.Site", client=self.company2)
+        self.client_customfield: "CustomField" = baker.make(
+            "core.CustomField", model="client", type="text", name="clientCustomField"
+        )
+        self.site_customfield: "CustomField" = baker.make(
+            "core.CustomField", model="site", type="text", name="siteCustomField"
+        )
+        self.agent_customfield: "CustomField" = baker.make(
+            "core.CustomField", model="agent", type="text", name="agentCustomField"
+        )

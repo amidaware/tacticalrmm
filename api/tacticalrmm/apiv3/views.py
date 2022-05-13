@@ -148,10 +148,14 @@ class WinUpdates(APIView):
         return Response("ok")
 
     def post(self, request):
+        updates = request.data["wua_updates"]
+        if not updates:
+            return notify_error("Empty payload")
+
         agent = get_object_or_404(
             Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
         )
-        updates = request.data["wua_updates"]
+
         for update in updates:
             if agent.winupdates.filter(guid=update["guid"]).exists():  # type: ignore
                 u = agent.winupdates.filter(guid=update["guid"]).last()  # type: ignore

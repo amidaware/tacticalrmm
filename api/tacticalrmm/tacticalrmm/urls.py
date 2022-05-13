@@ -59,6 +59,11 @@ if getattr(settings, "SWAGGER_ENABLED", False):
         ),
     )
 
+if getattr(settings, "HOSTED", False):
+    from trmm_mon import views
+
+    urlpatterns += (path("status/", views.status),)
+
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
 ]

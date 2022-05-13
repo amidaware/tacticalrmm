@@ -65,6 +65,7 @@ REST_KNOX = {
 DEMO = False
 DEBUG = False
 ADMIN_ENABLED = False
+HOSTED = False
 REDIS_HOST = "127.0.0.1"
 
 try:
@@ -179,6 +180,9 @@ if ADMIN_ENABLED:
         "django.contrib.admin",
         "django.contrib.messages",
     )
+
+if HOSTED:
+    INSTALLED_APPS += ("trmm_mon",)
 
 if DEMO:
     MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)

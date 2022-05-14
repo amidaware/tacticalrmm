@@ -26,7 +26,7 @@ APP_VER = "0.0.163"
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.0.3"
 
-MESH_VER = "1.0.19"
+MESH_VER = "1.0.22"
 
 NATS_SERVER_VER = "2.8.2"
 
@@ -48,7 +48,7 @@ ASGI_APPLICATION = "tacticalrmm.asgi.application"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = True
+USE_I18N = False  # disabled for performance, enable when we add translation support
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -182,7 +182,12 @@ if ADMIN_ENABLED:
     )
 
 if HOSTED:
-    INSTALLED_APPS += ("trmm_mon",)
+    try:
+        import trmm_mon
+    except ImportError:
+        pass
+    else:
+        INSTALLED_APPS += ("trmm_mon",)
 
 if DEMO:
     MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)

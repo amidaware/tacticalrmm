@@ -1,4 +1,4 @@
-asgiref==3.5.0
+asgiref==3.5.1
 celery==5.2.6
 certifi==2021.10.8
 cffi==1.15.0
@@ -19,7 +19,7 @@ psycopg2-binary==2.9.3
 pycparser==2.21
 pycryptodome==3.14.1
 pyotp==2.6.0
-pyparsing==3.0.8
+pyparsing==3.0.9
 pytz==2022.1
 qrcode==7.3.1
 redis==4.3.1

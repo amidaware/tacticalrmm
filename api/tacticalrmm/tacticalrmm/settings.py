@@ -163,7 +163,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
-    "tacticalrmm.middleware.LinuxMiddleware",
 ]
 
 if DEBUG and not DEMO:

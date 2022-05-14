@@ -431,6 +431,8 @@ class Reboot(APIView):
     # reboot later
     def patch(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
+        if agent.is_posix:
+            return notify_error(f"Not currently implemented for {agent.plat}")
 
         try:
             obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M:%S")

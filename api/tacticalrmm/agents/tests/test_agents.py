@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import pytz
 from django.conf import settings
-from django.test import modify_settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
 from packaging import version as pyver
@@ -32,11 +31,6 @@ if TYPE_CHECKING:
 base_url = "/agents"
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentsList(TacticalTestCase):
     def setUp(self) -> None:
         self.authenticate()
@@ -102,11 +96,6 @@ class TestAgentsList(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -888,11 +877,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.data, data)  # type:ignore
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -927,11 +911,6 @@ class TestAgentViewsNew(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentPermissions(TacticalTestCase):
     def setUp(self):
         self.setup_client()
@@ -1405,11 +1384,6 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized_superuser("get", unauthorized_url)
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()

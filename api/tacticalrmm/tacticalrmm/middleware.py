@@ -5,7 +5,7 @@ from django.conf import settings
 from ipware import get_client_ip
 from rest_framework.exceptions import AuthenticationFailed
 
-from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED
+from tacticalrmm.constants import DEMO_NOT_ALLOWED
 from tacticalrmm.helpers import notify_error
 
 request_local = threading.local()
@@ -136,40 +136,3 @@ class DemoMiddleware:
         for i in self.not_allowed:
             if view_Name == i["name"] and request.method in i["methods"]:
                 return self.drf_mock_response(request, notify_error(err))
-
-
-class LinuxMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-        self.not_implemented = LINUX_NOT_IMPLEMENTED
-
-    def __call__(self, request):
-        return self.get_response(request)
-
-    def drf_mock_response(self, request, resp):
-        from rest_framework.views import APIView
-
-        view = APIView()
-        view.headers = view.default_response_headers
-        return view.finalize_response(request, resp).render()
-
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        if not request.path.startswith(EXCLUDE_PATHS):
-            if "agent_id" in view_kwargs.keys():
-                from agents.models import Agent
-
-                err = "Not currently implemented for linux"
-                agent = Agent.objects.only("id", "agent_id", "plat").get(
-                    agent_id=view_kwargs["agent_id"]
-                )
-                if agent.plat == "linux":
-
-                    try:
-                        view_Name = view_func.__dict__["view_class"].__name__
-                    except:
-                        return
-
-                    for i in self.not_implemented:
-                        if view_Name == i["name"] and request.method in i["methods"]:
-                            return self.drf_mock_response(request, notify_error(err))

@@ -327,9 +327,3 @@ DEMO_NOT_ALLOWED = [
     {"name": "PendingActions", "methods": ["DELETE"]},
     {"name": "clear_cache", "methods": ["GET"]},
 ]
-
-LINUX_NOT_IMPLEMENTED = [
-    {"name": "ScanWindowsUpdates", "methods": ["POST"]},
-    {"name": "GetSoftware", "methods": ["POST", "PUT"]},
-    {"name": "Reboot", "methods": ["PATCH"]},  # TODO implement reboot later
-]

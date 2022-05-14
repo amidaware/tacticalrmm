@@ -18,12 +18,12 @@ from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
-    CheckType,
-    PAAction,
     CheckStatus,
+    CheckType,
+    EvtLogFailWhen,
     EvtLogNames,
     EvtLogTypes,
-    EvtLogFailWhen,
+    PAAction,
     ScriptShell,
 )
 from tacticalrmm.demo_data import (

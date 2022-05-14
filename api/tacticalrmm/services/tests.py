@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-
 from model_bakery import baker
 
 from agents.models import Agent

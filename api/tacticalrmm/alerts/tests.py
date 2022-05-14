@@ -10,8 +10,8 @@ from alerts.tasks import cache_agents_alert_template
 from autotasks.models import TaskResult
 from core.tasks import cache_db_fields_task, handle_resolved_stuff
 from core.utils import get_core_settings
-from tacticalrmm.test import TacticalTestCase
 from tacticalrmm.constants import CheckStatus
+from tacticalrmm.test import TacticalTestCase
 
 from .models import Alert, AlertTemplate
 from .serializers import (

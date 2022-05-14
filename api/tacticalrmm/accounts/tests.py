@@ -5,8 +5,8 @@ from model_bakery import baker, seq
 
 from accounts.models import APIKey, User
 from accounts.serializers import APIKeySerializer
-from tacticalrmm.test import TacticalTestCase
 from tacticalrmm.constants import AgentDblClick, AgentTableTabs, ClientTreeSort
+from tacticalrmm.test import TacticalTestCase
 
 
 class TestAccounts(TacticalTestCase):

@@ -3,8 +3,8 @@ from unittest.mock import patch
 from django.test import override_settings
 from model_bakery import baker
 
+from tacticalrmm.constants import ScriptShell, ScriptType
 from tacticalrmm.test import TacticalTestCase
-from tacticalrmm.constants import ScriptType, ScriptShell
 
 from .models import Script, ScriptSnippet
 from .serializers import (

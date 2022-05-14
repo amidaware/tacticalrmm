@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from django.test import TestCase, override_settings, modify_settings
+from django.test import TestCase, modify_settings, override_settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
@@ -15,9 +15,9 @@ if TYPE_CHECKING:
     from agents.models import Agent
     from automation.models import Policy
     from checks.models import Check
-    from scripts.models import Script
     from clients.models import Client, Site
     from core.models import CustomField
+    from scripts.models import Script
 
 TEST_CACHE = {
     "default": {

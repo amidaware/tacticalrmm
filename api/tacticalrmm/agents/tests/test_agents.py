@@ -10,12 +10,6 @@ from django.utils import timezone as djangotime
 from model_bakery import baker
 from packaging import version as pyver
 
-from logs.models import PendingAction
-from tacticalrmm.constants import PAAction, PAStatus, EvtLogNames
-from tacticalrmm.test import TacticalTestCase
-from winupdate.models import WinUpdatePolicy
-from winupdate.serializers import WinUpdatePolicySerializer
-
 from agents.models import Agent, AgentCustomField, AgentHistory, Note
 from agents.serializers import (
     AgentHistorySerializer,
@@ -24,6 +18,11 @@ from agents.serializers import (
     AgentSerializer,
 )
 from agents.tasks import auto_self_agent_update_task
+from logs.models import PendingAction
+from tacticalrmm.constants import EvtLogNames, PAAction, PAStatus
+from tacticalrmm.test import TacticalTestCase
+from winupdate.models import WinUpdatePolicy
+from winupdate.serializers import WinUpdatePolicySerializer
 
 if TYPE_CHECKING:
     from clients.models import Client, Site
@@ -570,9 +569,8 @@ class TestAgentViews(TacticalTestCase):
     @patch("agents.tasks.run_script_email_results_task.delay")
     @patch("agents.models.Agent.run_script")
     def test_run_script(self, run_script, email_task):
-        from clients.models import ClientCustomField, SiteCustomField
-
         from agents.models import AgentCustomField, AgentHistory, Note
+        from clients.models import ClientCustomField, SiteCustomField
 
         run_script.return_value = "ok"
         url = f"/agents/{self.agent.agent_id}/runscript/"

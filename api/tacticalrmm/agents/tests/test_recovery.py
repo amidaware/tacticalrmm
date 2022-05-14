@@ -1,7 +1,9 @@
-from tacticalrmm.test import TacticalTestCase
-from model_bakery import baker
 from typing import TYPE_CHECKING
 from unittest.mock import patch
+
+from model_bakery import baker
+
+from tacticalrmm.test import TacticalTestCase
 
 if TYPE_CHECKING:
     from clients.models import Client, Site

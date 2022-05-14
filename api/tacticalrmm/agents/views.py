@@ -19,15 +19,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import CodeSignToken
-from core.utils import (
-    get_core_settings,
-    get_mesh_ws_url,
-    remove_mesh_agent,
-)
+from core.utils import get_core_settings, get_mesh_ws_url, remove_mesh_agent
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.constants import AGENT_DEFER, PAAction, PAStatus, EvtLogNames
+from tacticalrmm.constants import AGENT_DEFER, EvtLogNames, PAAction, PAStatus
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,

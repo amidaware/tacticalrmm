@@ -7,9 +7,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from agents.models import Agent
+from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.utils import get_default_timezone
-from tacticalrmm.helpers import notify_error
 
 from .models import WinUpdate
 from .permissions import AgentWinUpdatePerms

@@ -8,8 +8,8 @@ from django.db import models
 from django.db.models.fields import CharField, TextField
 
 from logs.models import BaseAuditModel
-from tacticalrmm.utils import replace_db_values
 from tacticalrmm.constants import ScriptShell, ScriptType
+from tacticalrmm.utils import replace_db_values
 
 
 class Script(BaseAuditModel):

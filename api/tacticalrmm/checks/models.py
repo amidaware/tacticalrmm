@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
-from django.utils import timezone as djangotime
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone as djangotime
 
 from alerts.models import SEVERITY_CHOICES
 from core.utils import get_core_settings
@@ -13,18 +13,18 @@ from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
     CHECKS_NON_EDITABLE_FIELDS,
     POLICY_CHECK_FIELDS_TO_COPY,
-    CheckType,
     CheckStatus,
+    CheckType,
+    EvtLogFailWhen,
     EvtLogNames,
     EvtLogTypes,
-    EvtLogFailWhen,
 )
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
+    from agents.models import Agent  # pragma: no cover
     from alerts.models import Alert, AlertTemplate  # pragma: no cover
     from automation.models import Policy  # pragma: no cover
-    from agents.models import Agent  # pragma: no cover
 
 
 class Check(BaseAuditModel):

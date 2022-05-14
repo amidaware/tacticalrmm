@@ -1,12 +1,12 @@
 from model_bakery.recipe import Recipe
+
 from tacticalrmm.constants import ScriptShell, ScriptType
 from tacticalrmm.demo_data import (
-    clear_print_spool_bat,
     check_storage_pool_health_ps1,
-    show_temp_dir_py,
+    clear_print_spool_bat,
     redhat_insights,
+    show_temp_dir_py,
 )
-
 
 script = Recipe(
     "scripts.Script",

@@ -24,10 +24,10 @@ from tacticalrmm.constants import (
     MONTHS,
     WEEK_DAYS,
     WEEKS,
-    ScriptShell,
     DebugLogType,
+    ScriptShell,
 )
-from tacticalrmm.helpers import notify_error, get_certs
+from tacticalrmm.helpers import get_certs, notify_error
 
 
 def generate_winagent_exe(

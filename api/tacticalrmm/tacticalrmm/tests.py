@@ -3,6 +3,7 @@ from unittest.mock import mock_open, patch
 import requests
 from django.test import override_settings
 
+from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
 from tacticalrmm.constants import (
     AGENT_DEFER,
     CHECKS_NON_EDITABLE_FIELDS,
@@ -11,7 +12,6 @@ from tacticalrmm.constants import (
     POLICY_CHECK_FIELDS_TO_COPY,
     POLICY_TASK_FIELDS_TO_COPY,
 )
-from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
 from tacticalrmm.test import TacticalTestCase
 
 from .utils import bitdays_to_string, generate_winagent_exe, get_bit_days, reload_nats

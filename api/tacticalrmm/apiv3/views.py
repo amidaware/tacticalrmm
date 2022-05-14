@@ -1,9 +1,9 @@
 import asyncio
 
 from django.conf import settings
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from django.db.models import Prefetch
 from packaging import version as pyver
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -16,9 +16,9 @@ from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
 from autotasks.models import AutomatedTask, TaskResult
 from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
+from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
 from checks.models import Check, CheckResult
 from checks.serializers import CheckRunnerGetSerializer
-from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
 from core.utils import (
     download_mesh_agent,
     get_core_settings,
@@ -29,12 +29,12 @@ from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    AuditActionType,
+    AuditObjType,
+    CheckStatus,
+    DebugLogType,
     MeshAgentIdent,
     PAStatus,
-    CheckStatus,
-    AuditObjType,
-    AuditActionType,
-    DebugLogType,
 )
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.utils import reload_nats

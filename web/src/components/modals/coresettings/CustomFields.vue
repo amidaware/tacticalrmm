@@ -34,7 +34,10 @@
       <q-scroll-area :thumb-style="thumbStyle" style="height: 50vh">
         <q-tab-panels v-model="tab" :animated="false">
           <q-tab-panel name="client">
-            <CustomFieldsTable @refresh="getCustomFields" :data="clientFields" />
+            <CustomFieldsTable
+              @refresh="getCustomFields"
+              :data="clientFields"
+            />
           </q-tab-panel>
 
           <q-tab-panel name="site">
@@ -74,13 +77,13 @@ export default {
   },
   computed: {
     agentFields() {
-      return this.customFields.filter(field => field.model === "agent");
+      return this.customFields.filter((field) => field.model === "agent");
     },
     siteFields() {
-      return this.customFields.filter(field => field.model === "site");
+      return this.customFields.filter((field) => field.model === "site");
     },
     clientFields() {
-      return this.customFields.filter(field => field.model === "client");
+      return this.customFields.filter((field) => field.model === "client");
     },
   },
   methods: {
@@ -88,12 +91,12 @@ export default {
       this.$q.loading.show();
 
       this.$axios
-        .get(`/core/customfields/`)
-        .then(r => {
+        .get("/core/customfields/")
+        .then((r) => {
           this.$q.loading.hide();
           this.customFields = r.data;
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },

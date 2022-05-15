@@ -20,12 +20,18 @@
             dense
             :disable="editing"
             v-model="localField.model"
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
           />
         </q-card-section>
         <!-- name -->
         <q-card-section>
-          <q-input label="Name" outlined dense v-model="localField.name" :rules="[val => !!val || '*Required']" />
+          <q-input
+            label="Name"
+            outlined
+            dense
+            v-model="localField.name"
+            :rules="[(val) => !!val || '*Required']"
+          />
         </q-card-section>
         <!-- type select -->
         <q-card-section>
@@ -39,11 +45,13 @@
             dense
             :disable="editing"
             v-model="localField.type"
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
           />
         </q-card-section>
         <!-- input options select for single and multiple input type -->
-        <q-card-section v-if="localField.type === 'single' || localField.type == 'multiple'">
+        <q-card-section
+          v-if="localField.type === 'single' || localField.type == 'multiple'"
+        >
           <q-select
             dense
             label="Input Options (press Enter after typing each option)"
@@ -129,7 +137,11 @@
             v-model="localField.required"
             color="green"
           />
-          <q-toggle label="Hide in Dashboard" v-model="localField.hide_in_ui" color="green" />
+          <q-toggle
+            label="Hide in Dashboard"
+            v-model="localField.hide_in_ui"
+            color="green"
+          />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" v-close-popup />
@@ -185,7 +197,9 @@ export default {
     },
     defaultValueRules() {
       if (this.localField.required) {
-        return [val => !!val || `Default Value needs to be set for required fields`];
+        return [
+          (val) => !!val || "Default Value needs to be set for required fields",
+        ];
       } else {
         return [];
       }
@@ -202,23 +216,23 @@ export default {
       if (this.editing) {
         this.$axios
           .put(`/core/customfields/${data.id}/`, data)
-          .then(r => {
+          .then(() => {
             this.$q.loading.hide();
             this.onOk();
             this.notifySuccess("Custom field edited!");
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       } else {
         this.$axios
           .post("/core/customfields/", data)
-          .then(r => {
+          .then(() => {
             this.$q.loading.hide();
             this.onOk();
             this.notifySuccess("Custom field added!");
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       }

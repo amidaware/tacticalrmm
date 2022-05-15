@@ -13,7 +13,11 @@
   >
     <!-- body slots -->
     <template v-slot:body="props">
-      <q-tr :props="props" class="cursor-pointer" @dblclick="editCustomField(props.row)">
+      <q-tr
+        :props="props"
+        class="cursor-pointer"
+        @dblclick="editCustomField(props.row)"
+      >
         <!-- context menu -->
         <q-menu context-menu>
           <q-list dense style="min-width: 200px">
@@ -23,7 +27,11 @@
               </q-item-section>
               <q-item-section>Edit</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="deleteCustomField(props.row)">
+            <q-item
+              clickable
+              v-close-popup
+              @click="deleteCustomField(props.row)"
+            >
               <q-item-section side>
                 <q-icon name="delete" />
               </q-item-section>
@@ -54,13 +62,17 @@
           {{ props.row.default_value_bool }}
         </q-td>
         <q-td v-else-if="props.row.type === 'multiple'">
-          <span v-if="props.row.default_values_multiple.length > 0">{{ props.row.default_values_multiple }}</span>
+          <span v-if="props.row.default_values_multiple.length > 0">{{
+            props.row.default_values_multiple
+          }}</span>
         </q-td>
         <q-td v-else>
           {{ truncateText(props.row.default_value_string) }}
-          <q-tooltip v-if="props.row.default_value_string.length >= 60" style="font-size: 12px">{{
-            props.row.default_value_string
-          }}</q-tooltip>
+          <q-tooltip
+            v-if="props.row.default_value_string.length >= 60"
+            style="font-size: 12px"
+            >{{ props.row.default_value_string }}</q-tooltip
+          >
         </q-td>
         <!-- required -->
         <q-td>
@@ -104,9 +116,27 @@ export default {
           align: "left",
           sortable: true,
         },
-        { name: "hide_in_ui", label: "Hide in UI", field: "hide_in_ui", align: "left", sortable: true },
-        { name: "default_value", label: "Default Value", field: "default_value", align: "left", sortable: true },
-        { name: "required", label: "Required", field: "required", align: "left", sortable: true },
+        {
+          name: "hide_in_ui",
+          label: "Hide in UI",
+          field: "hide_in_ui",
+          align: "left",
+          sortable: true,
+        },
+        {
+          name: "default_value",
+          label: "Default Value",
+          field: "default_value",
+          align: "left",
+          sortable: true,
+        },
+        {
+          name: "required",
+          label: "Required",
+          field: "required",
+          align: "left",
+          sortable: true,
+        },
       ],
     };
   },
@@ -134,12 +164,12 @@ export default {
           this.$q.loading.show();
           this.$axios
             .delete(`/core/customfields/${field.id}/`)
-            .then(r => {
+            .then(() => {
               this.refresh();
               this.$q.loading.hide();
               this.notifySuccess(`Custom Field ${field.name} was deleted!`);
             })
-            .catch(error => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });

@@ -2,29 +2,29 @@ import asyncio
 import re
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, Optional, List, Dict, Union, Sequence, cast, TYPE_CHECKING
-from django.core.cache import cache
-from packaging import version as pyver
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union, cast
 
 import msgpack
 import nats
 import validators
 from asgiref.sync import sync_to_async
-from core.models import TZ_CHOICES
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.db import models
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel, DebugLog
 from nats.errors import TimeoutError
+from packaging import version as pyver
 
-from core.utils import get_core_settings
+from core.models import TZ_CHOICES
+from core.utils import get_core_settings, send_command_with_mesh
+from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.constants import ONLINE_AGENTS, CheckStatus, CheckType, DebugLogType
 from tacticalrmm.models import PermissionQuerySet
-from tacticalrmm.constants import ONLINE_AGENTS
 
 if TYPE_CHECKING:
+    from alerts.models import Alert, AlertTemplate
     from automation.models import Policy
-    from alerts.models import AlertTemplate, Alert
     from autotasks.models import AutomatedTask
     from checks.models import Check
     from clients.models import Client
@@ -46,7 +46,6 @@ class Agent(BaseAuditModel):
     operating_system = models.CharField(null=True, blank=True, max_length=255)
     plat = models.CharField(max_length=255, default="windows")
     goarch = models.CharField(max_length=255, null=True, blank=True)
-    plat_release = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
     agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)
@@ -168,16 +167,22 @@ class Agent(BaseAuditModel):
             if (
                 not hasattr(check.check_result, "status")
                 or isinstance(check.check_result, CheckResult)
-                and check.check_result.status == "passing"
+                and check.check_result.status == CheckStatus.PASSING
             ):
                 passing += 1
             elif (
                 isinstance(check.check_result, CheckResult)
-                and check.check_result.status == "failing"
+                and check.check_result.status == CheckStatus.FAILING
             ):
                 alert_severity = (
                     check.check_result.alert_severity
-                    if check.check_type in ["memory", "cpuload", "diskspace", "script"]
+                    if check.check_type
+                    in [
+                        CheckType.MEMORY,
+                        CheckType.CPU_LOAD,
+                        CheckType.DISK_SPACE,
+                        CheckType.SCRIPT,
+                    ]
                     else check.alert_severity
                 )
                 if alert_severity == "error":
@@ -718,7 +723,7 @@ class Agent(BaseAuditModel):
             return tasks
 
     def _do_nats_debug(self, agent: "Agent", message: str) -> None:
-        DebugLog.error(agent=agent, log_type="agent_issues", message=message)
+        DebugLog.error(agent=agent, log_type=DebugLogType.AGENT_ISSUES, message=message)
 
     async def nats_cmd(
         self, data: Dict[Any, Any], timeout: int = 30, wait: bool = True
@@ -758,6 +763,38 @@ class Agent(BaseAuditModel):
             await nc.publish(self.agent_id, msgpack.dumps(data))
             await nc.flush()
             await nc.close()
+
+    def recover(self, mode: str, mesh_uri: str, wait: bool = True) -> tuple[str, bool]:
+        """
+        Return type: tuple(message: str, error: bool)
+        """
+        if mode == "tacagent":
+            if self.is_posix:
+                cmd = "systemctl restart tacticalagent.service"
+                shell = 3
+            else:
+                cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
+                shell = 1
+
+            asyncio.run(
+                send_command_with_mesh(cmd, mesh_uri, self.mesh_node_id, shell, 0)
+            )
+            return ("ok", False)
+
+        elif mode == "mesh":
+            data = {"func": "recover", "payload": {"mode": mode}}
+            if wait:
+                r = asyncio.run(self.nats_cmd(data, timeout=20))
+                if r == "ok":
+                    return ("ok", False)
+                else:
+                    return (str(r), True)
+            else:
+                asyncio.run(self.nats_cmd(data, timeout=20, wait=False))
+
+            return ("ok", False)
+
+        return ("invalid", True)
 
     @staticmethod
     def serialize(agent: "Agent") -> Dict[str, Any]:

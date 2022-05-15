@@ -89,7 +89,10 @@
         map-options
       />
     </q-card-section>
-    <q-card-section class="row" v-if="winupdatepolicy.run_time_frequency === 'monthly'">
+    <q-card-section
+      class="row"
+      v-if="winupdatepolicy.run_time_frequency === 'monthly'"
+    >
       <div class="col-3">Day of month to run:</div>
       <div class="col-4"></div>
       <q-select
@@ -103,7 +106,10 @@
         map-options
       />
     </q-card-section>
-    <q-card-section class="row" v-show="winupdatepolicy.run_time_frequency !== 'inherit'">
+    <q-card-section
+      class="row"
+      v-show="winupdatepolicy.run_time_frequency !== 'inherit'"
+    >
       <div class="col-3">Scheduled Time:</div>
       <div class="col-4"></div>
       <q-select
@@ -121,13 +127,41 @@
       v-show="winupdatepolicy.run_time_frequency !== 'inherit'"
     >
       <div class="q-gutter-sm">
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="1" label="Monday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="2" label="Tuesday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="3" label="Wednesday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="4" label="Thursday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="5" label="Friday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="6" label="Saturday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="0" label="Sunday" />
+        <q-checkbox
+          v-model="winupdatepolicy.run_time_days"
+          :val="1"
+          label="Monday"
+        />
+        <q-checkbox
+          v-model="winupdatepolicy.run_time_days"
+          :val="2"
+          label="Tuesday"
+        />
+        <q-checkbox
+          v-model="winupdatepolicy.run_time_days"
+          :val="3"
+          label="Wednesday"
+        />
+        <q-checkbox
+          v-model="winupdatepolicy.run_time_days"
+          :val="4"
+          label="Thursday"
+        />
+        <q-checkbox
+          v-model="winupdatepolicy.run_time_days"
+          :val="5"
+          label="Friday"
+        />
+        <q-checkbox
+          v-model="winupdatepolicy.run_time_days"
+          :val="6"
+          label="Saturday"
+        />
+        <q-checkbox
+          v-model="winupdatepolicy.run_time_days"
+          :val="0"
+          label="Sunday"
+        />
       </div>
     </q-card-section>
     <!-- Reboot After Installation -->
@@ -151,12 +185,21 @@
     <q-separator />
     <q-card-section class="row" v-if="!policy">
       <div class="col-5">
-        <q-checkbox v-model="winupdatepolicy.reprocess_failed_inherit" label="Inherit failed patch settings" />
+        <q-checkbox
+          v-model="winupdatepolicy.reprocess_failed_inherit"
+          label="Inherit failed patch settings"
+        />
       </div>
     </q-card-section>
-    <q-card-section class="row" v-show="!winupdatepolicy.reprocess_failed_inherit">
+    <q-card-section
+      class="row"
+      v-show="!winupdatepolicy.reprocess_failed_inherit"
+    >
       <div class="col-5">
-        <q-checkbox v-model="winupdatepolicy.reprocess_failed" label="Reprocess failed patches" />
+        <q-checkbox
+          v-model="winupdatepolicy.reprocess_failed"
+          label="Reprocess failed patches"
+        />
       </div>
 
       <div class="col-3">
@@ -166,17 +209,25 @@
           type="number"
           filled
           label="Times"
-          :rules="[val => val > 0 || 'Must be greater than 0']"
+          :rules="[(val) => val > 0 || 'Must be greater than 0']"
         />
       </div>
       <div class="col-3"></div>
-      <q-checkbox v-model="winupdatepolicy.email_if_fail" label="Send an email when patch installation fails" />
+      <q-checkbox
+        v-model="winupdatepolicy.email_if_fail"
+        label="Send an email when patch installation fails"
+      />
     </q-card-section>
     <q-card-actions align="left" v-if="policy">
       <q-btn label="Submit" color="primary" @click="submit" />
       <q-btn label="Cancel" @click="$emit('hide')" />
       <q-space />
-      <q-btn v-if="editing" label="Remove Policy" color="negative" @click="deletePolicy(winupdatepolicy)" />
+      <q-btn
+        v-if="editing"
+        label="Remove Policy"
+        color="negative"
+        @click="deletePolicy(winupdatepolicy)"
+      />
     </q-card-actions>
   </div>
 </template>
@@ -240,25 +291,28 @@ export default {
         // editing patch policy
         if (this.editing) {
           this.$axios
-            .put(`/automation/patchpolicy/${this.winupdatepolicy.id}/`, this.winupdatepolicy)
-            .then(response => {
+            .put(
+              `/automation/patchpolicy/${this.winupdatepolicy.id}/`,
+              this.winupdatepolicy
+            )
+            .then(() => {
               this.$q.loading.hide();
               this.$emit("close");
               this.notifySuccess("Patch policy was edited successfully!");
             })
-            .catch(error => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         } else {
           // adding patch policy
           this.$axios
             .post("/automation/patchpolicy/", this.winupdatepolicy)
-            .then(response => {
+            .then(() => {
               this.$q.loading.hide();
               this.$emit("close");
               this.notifySuccess("Patch policy was created successfully!");
             })
-            .catch(error => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         }
@@ -275,12 +329,12 @@ export default {
           this.$q.loading.show();
           this.$axios
             .delete(`/automation/patchpolicy/${policy.id}/`)
-            .then(r => {
+            .then(() => {
               this.$q.loading.hide();
               this.$emit("close");
               this.notifySuccess("Patch policy was deleted successfully!");
             })
-            .catch(error => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });

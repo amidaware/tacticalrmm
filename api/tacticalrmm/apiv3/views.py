@@ -1,30 +1,44 @@
 import asyncio
-import time
 
-from accounts.models import User
-from agents.models import Agent, AgentHistory
-from agents.serializers import AgentHistorySerializer
-from autotasks.models import AutomatedTask, TaskResult
-from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
-from checks.models import Check, CheckResult
-from checks.serializers import CheckRunnerGetSerializer
-from core.utils import get_core_settings
-from core.utils import download_mesh_agent, get_mesh_device_id, get_mesh_ws_url
 from django.conf import settings
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from logs.models import DebugLog, PendingAction
 from packaging import version as pyver
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from software.models import InstalledSoftware
-from winupdate.models import WinUpdate, WinUpdatePolicy
 
-from tacticalrmm.constants import MeshAgentIdent
-from tacticalrmm.utils import notify_error, reload_nats
+from accounts.models import User
+from agents.models import Agent, AgentHistory
+from agents.serializers import AgentHistorySerializer
+from autotasks.models import AutomatedTask, TaskResult
+from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
+from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
+from checks.models import Check, CheckResult
+from checks.serializers import CheckRunnerGetSerializer
+from core.utils import (
+    download_mesh_agent,
+    get_core_settings,
+    get_mesh_device_id,
+    get_mesh_ws_url,
+)
+from logs.models import DebugLog, PendingAction
+from software.models import InstalledSoftware
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    AuditActionType,
+    AuditObjType,
+    CheckStatus,
+    DebugLogType,
+    MeshAgentIdent,
+    PAStatus,
+)
+from tacticalrmm.helpers import notify_error
+from tacticalrmm.utils import reload_nats
+from winupdate.models import WinUpdate, WinUpdatePolicy
 
 
 class CheckIn(APIView):
@@ -34,7 +48,9 @@ class CheckIn(APIView):
 
     # called once during tacticalagent windows service startup
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         if not agent.choco_installed:
             asyncio.run(agent.nats_cmd({"func": "installchoco"}, wait=False))
 
@@ -47,7 +63,9 @@ class SyncMeshNodeID(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         if agent.mesh_node_id != request.data["nodeid"]:
             agent.mesh_node_id = request.data["nodeid"]
             agent.save(update_fields=["mesh_node_id"])
@@ -60,7 +78,9 @@ class Choco(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         agent.choco_installed = request.data["installed"]
         agent.save(update_fields=["choco_installed"])
         return Response("ok")
@@ -71,7 +91,9 @@ class WinUpdates(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
 
         needs_reboot: bool = request.data["needs_reboot"]
         agent.needs_reboot = needs_reboot
@@ -89,7 +111,7 @@ class WinUpdates(APIView):
             asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
             DebugLog.info(
                 agent=agent,
-                log_type="windows_updates",
+                log_type=DebugLogType.WIN_UPDATES,
                 message=f"{agent.hostname} is rebooting after updates were installed.",
             )
 
@@ -97,7 +119,9 @@ class WinUpdates(APIView):
         return Response("ok")
 
     def patch(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         u = agent.winupdates.filter(guid=request.data["guid"]).last()  # type: ignore
         if not u:
             raise WinUpdate.DoesNotExist
@@ -124,8 +148,14 @@ class WinUpdates(APIView):
         return Response("ok")
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         updates = request.data["wua_updates"]
+        if not updates:
+            return notify_error("Empty payload")
+
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
+
         for update in updates:
             if agent.winupdates.filter(guid=update["guid"]).exists():  # type: ignore
                 u = agent.winupdates.filter(guid=update["guid"]).last()  # type: ignore
@@ -164,7 +194,9 @@ class SupersededWinUpdate(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
         updates = agent.winupdates.filter(guid=request.data["guid"])  # type: ignore
         for u in updates:
             u.delete()
@@ -177,7 +209,12 @@ class RunChecks(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER).prefetch_related(
+                Prefetch("agentchecks", queryset=Check.objects.select_related("script"))
+            ),
+            agent_id=agentid,
+        )
         checks = agent.get_checks_with_policies(exclude_overridden=True)
         ret = {
             "agent": agent.pk,
@@ -194,7 +231,12 @@ class CheckRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER).prefetch_related(
+                Prefetch("agentchecks", queryset=Check.objects.select_related("script"))
+            ),
+            agent_id=agentid,
+        )
         checks = agent.get_checks_with_policies(exclude_overridden=True)
 
         run_list = [
@@ -225,25 +267,31 @@ class CheckRunner(APIView):
         return Response(ret)
 
     def patch(self, request):
-        check = get_object_or_404(Check, pk=request.data["id"])
-
         if "agent_id" not in request.data.keys():
             return notify_error("Agent upgrade required")
 
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        check = get_object_or_404(
+            Check.objects.defer(*CHECK_DEFER),
+            pk=request.data["id"],
+        )
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+        )
 
-        # check check result or create if doesn't exist
-        try:
-            check_result = CheckResult.objects.get(assigned_check=check, agent=agent)
-        except CheckResult.DoesNotExist:
-            check_result = CheckResult(assigned_check=check, agent=agent)
+        # get check result or create if doesn't exist
+        check_result, created = CheckResult.objects.defer(
+            *CHECK_RESULT_DEFER
+        ).get_or_create(
+            assigned_check=check,
+            agent=agent,
+        )
 
-        check_result.last_run = djangotime.now()
-        check_result.save()
+        if created:
+            check_result.save()
 
-        status = check_result.handle_check(request.data)
-        if status == "failing" and check.assignedtasks.exists():  # type: ignore
-            for task in check.assignedtasks.all():  # type: ignore
+        status = check_result.handle_check(request.data, check, agent)
+        if status == CheckStatus.FAILING and check.assignedtasks.exists():
+            for task in check.assignedtasks.all():
                 if task.enabled:
                     if task.policy:
                         task.run_win_task(agent)
@@ -258,7 +306,10 @@ class CheckRunnerInterval(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER).prefetch_related("agentchecks"),
+            agent_id=agentid,
+        )
 
         return Response(
             {"agent": agent.pk, "check_interval": agent.check_run_interval()}
@@ -270,19 +321,28 @@ class TaskRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(Agent.objects.defer(*AGENT_DEFER), agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
         return Response(TaskGOGetSerializer(task, context={"agent": agent}).data)
 
     def patch(self, request, pk, agentid):
         from alerts.models import Alert
 
-        agent = get_object_or_404(Agent, agent_id=agentid)
-        task = get_object_or_404(AutomatedTask, pk=pk)
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER),
+            agent_id=agentid,
+        )
+        task = get_object_or_404(
+            AutomatedTask.objects.select_related("custom_field"), pk=pk
+        )
 
-        # check check result or create if doesn't exist
+        # get task result or create if doesn't exist
         try:
-            task_result = TaskResult.objects.get(task=task, agent=agent)
+            task_result = (
+                TaskResult.objects.select_related("agent")
+                .defer("agent__services", "agent__wmi_detail")
+                .get(task=task, agent=agent)
+            )
             serializer = TaskResultSerializer(
                 data=request.data, instance=task_result, partial=True
             )
@@ -294,7 +354,7 @@ class TaskRunner(APIView):
 
         AgentHistory.objects.create(
             agent=agent,
-            type="task_run",
+            type=AuditActionType.TASK_RUN,
             command=task.name,
             script_results=request.data,
         )
@@ -305,11 +365,13 @@ class TaskRunner(APIView):
 
                 task_result.save_collector_results()
 
-                status = "passing"
+                status = CheckStatus.PASSING
             else:
-                status = "failing"
+                status = CheckStatus.FAILING
         else:
-            status = "failing" if task_result.retcode != 0 else "passing"
+            status = (
+                CheckStatus.FAILING if task_result.retcode != 0 else CheckStatus.PASSING
+            )
 
         if task_result:
             task_result.status = status
@@ -318,27 +380,12 @@ class TaskRunner(APIView):
             task_result.status = status
             task.save(update_fields=["status"])
 
-        if status == "passing":
+        if status == CheckStatus.PASSING:
             if Alert.create_or_return_task_alert(task, agent=agent, skip_create=True):
                 Alert.handle_alert_resolve(task_result)
         else:
             Alert.handle_alert_failure(task_result)
 
-        return Response("ok")
-
-
-class SysInfo(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def patch(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-
-        if not isinstance(request.data["sysinfo"], dict):
-            return notify_error("err")
-
-        agent.wmi_detail = request.data["sysinfo"]
-        agent.save(update_fields=["wmi_detail"])
         return Response("ok")
 
 
@@ -418,8 +465,8 @@ class NewAgent(APIView):
         AuditLog.objects.create(
             username=request.user,
             agent=agent.hostname,
-            object_type="agent",
-            action="agent_install",
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.AGENT_INSTALL,
             message=f"{request.user} installed new agent {agent.hostname}",
             after_value=Agent.serialize(agent),
             debug_info={"ip": request._client_ip},
@@ -491,7 +538,7 @@ class ChocoResult(APIView):
 
         action.details["output"] = results
         action.details["installed"] = installed
-        action.status = "completed"
+        action.status = PAStatus.COMPLETED
         action.save(update_fields=["details", "status"])
         return Response("ok")
 
@@ -501,8 +548,9 @@ class AgentHistoryResult(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, agentid, pk):
-        _ = get_object_or_404(Agent, agent_id=agentid)
-        hist = get_object_or_404(AgentHistory, pk=pk)
+        hist = get_object_or_404(
+            AgentHistory.objects.filter(agent__agent_id=agentid), pk=pk
+        )
         s = AgentHistorySerializer(instance=hist, data=request.data, partial=True)
         s.is_valid(raise_exception=True)
         s.save()

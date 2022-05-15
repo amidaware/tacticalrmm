@@ -2,12 +2,12 @@ from django.core.management.base import BaseCommand
 
 from agents.tasks import agent_outages_task, auto_self_agent_update_task
 from alerts.tasks import unsnooze_alerts
+from autotasks.tasks import remove_orphaned_win_tasks
 from core.tasks import (
     cache_db_fields_task,
     core_maintenance_tasks,
     handle_resolved_stuff,
 )
-from autotasks.tasks import remove_orphaned_win_tasks
 from winupdate.tasks import auto_approve_updates_task, check_agent_update_schedule_task
 
 

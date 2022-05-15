@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union, Optional, Dict, Any, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel, DebugLog
 
+from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.constants import CheckType, DebugLogType
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -85,10 +86,10 @@ class Alert(models.Model):
     )
 
     def __str__(self) -> str:
-        return self.message
+        return f"{self.alert_type} - {self.message}"
 
     @property
-    def assigned_agent(self) -> "Agent":
+    def assigned_agent(self) -> "Optional[Agent]":
         return self.agent
 
     @property
@@ -176,7 +177,12 @@ class Alert(models.Model):
                     alert_type="check",
                     severity=check.alert_severity
                     if check.check_type
-                    not in ["memory", "cpuload", "diskspace", "script"]
+                    not in [
+                        CheckType.MEMORY,
+                        CheckType.CPU_LOAD,
+                        CheckType.DISK_SPACE,
+                        CheckType.SCRIPT,
+                    ]
                     else alert_severity,
                     message=f"{agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                     hidden=True,
@@ -298,12 +304,12 @@ class Alert(models.Model):
             maintenance_mode = instance.maintenance_mode
             alert_severity = "error"
             agent = instance
+            dashboard_severities = ["error"]
+            email_severities = ["error"]
+            text_severities = ["error"]
 
             # set alert_template settings
             if alert_template:
-                dashboard_severities = ["error"]
-                email_severities = ["error"]
-                text_severities = ["error"]
                 always_dashboard = alert_template.agent_always_alert
                 always_email = alert_template.agent_always_email
                 always_text = alert_template.agent_always_text
@@ -327,16 +333,33 @@ class Alert(models.Model):
             alert_severity = (
                 instance.assigned_check.alert_severity
                 if instance.assigned_check.check_type
-                not in ["memory", "cpuload", "diskspace", "script"]
+                not in [
+                    CheckType.MEMORY,
+                    CheckType.CPU_LOAD,
+                    CheckType.DISK_SPACE,
+                    CheckType.SCRIPT,
+                ]
                 else instance.alert_severity
             )
             agent = instance.agent
 
             # set alert_template settings
             if alert_template:
-                dashboard_severities = alert_template.check_dashboard_alert_severity
-                email_severities = alert_template.check_email_alert_severity
-                text_severities = alert_template.check_text_alert_severity
+                dashboard_severities = (
+                    alert_template.check_dashboard_alert_severity
+                    if alert_template.check_dashboard_alert_severity
+                    else ["error", "warning", "info"]
+                )
+                email_severities = (
+                    alert_template.check_email_alert_severity
+                    if alert_template.check_email_alert_severity
+                    else ["error", "warning"]
+                )
+                text_severities = (
+                    alert_template.check_text_alert_severity
+                    if alert_template.check_text_alert_severity
+                    else ["error", "warning"]
+                )
                 always_dashboard = alert_template.check_always_alert
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
@@ -359,9 +382,21 @@ class Alert(models.Model):
 
             # set alert_template settings
             if alert_template:
-                dashboard_severities = alert_template.task_dashboard_alert_severity
-                email_severities = alert_template.task_email_alert_severity
-                text_severities = alert_template.task_text_alert_severity
+                dashboard_severities = (
+                    alert_template.task_dashboard_alert_severity
+                    if alert_template.task_dashboard_alert_severity
+                    else ["error", "warning"]
+                )
+                email_severities = (
+                    alert_template.task_email_alert_severity
+                    if alert_template.task_email_alert_severity
+                    else ["error", "warning"]
+                )
+                text_severities = (
+                    alert_template.task_text_alert_severity
+                    if alert_template.task_text_alert_severity
+                    else ["error", "warning"]
+                )
                 always_dashboard = alert_template.task_always_alert
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text
@@ -449,7 +484,7 @@ class Alert(models.Model):
             else:
                 DebugLog.error(
                     agent=agent,
-                    log_type="scripting",
+                    log_type=DebugLogType.SCRIPTING,
                     message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
                 )
 
@@ -573,7 +608,7 @@ class Alert(models.Model):
             else:
                 DebugLog.error(
                     agent=agent,
-                    log_type="scripting",
+                    log_type=DebugLogType.SCRIPTING,
                     message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
                 )
 
@@ -600,7 +635,7 @@ class Alert(models.Model):
                 try:
                     temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
                 except Exception as e:
-                    DebugLog.error(log_type="scripting", message=str(e))
+                    DebugLog.error(log_type=DebugLogType.SCRIPTING, message=str(e))
                     continue
 
             else:

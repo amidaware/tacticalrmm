@@ -16,8 +16,23 @@
       no-data-label="No notes"
     >
       <template v-slot:top>
-        <q-btn class="q-mr-sm" dense flat push @click="getNotes" icon="refresh" />
-        <q-btn icon="add" label="Add Note" no-caps dense flat push @click="addNote" />
+        <q-btn
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          @click="getNotes"
+          icon="refresh"
+        />
+        <q-btn
+          icon="add"
+          label="Add Note"
+          no-caps
+          dense
+          flat
+          push
+          @click="addNote"
+        />
         <q-space />
         <export-table-btn :data="notes" :columns="columns" />
       </template>
@@ -31,21 +46,31 @@
           <q-card-section>
             <div class="row">
               <div class="col">
-                <div class="text-subtitle2">{{ formatDate(props.row.entry_time) }}</div>
+                <div class="text-subtitle2">
+                  {{ formatDate(props.row.entry_time) }}
+                </div>
                 <div class="text-caption">{{ props.row.username }}</div>
               </div>
               <div class="col-auto">
                 <q-btn color="grey-7" round flat icon="more_vert">
                   <q-menu cover auto-close>
                     <q-list dense>
-                      <q-item clickable v-close-popup @click="editNote(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="editNote(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="edit" />
                         </q-item-section>
                         <q-item-section>Edit</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="deleteNote(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="deleteNote(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="delete" />
                         </q-item-section>
@@ -71,7 +96,12 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
-import { fetchAgentNotes, editAgentNote, saveAgentNote, removeAgentNote } from "@/api/agents";
+import {
+  fetchAgentNotes,
+  editAgentNote,
+  saveAgentNote,
+  removeAgentNote,
+} from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
@@ -101,7 +131,7 @@ export default {
   components: {
     ExportTableBtn,
   },
-  setup(props) {
+  setup() {
     // setup vuex
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
@@ -134,7 +164,7 @@ export default {
         prompt: {
           model: noteText,
           type: "textarea",
-          isValid: val => !!val,
+          isValid: (val) => !!val,
         },
         style: "width: 30vw; max-width: 50vw;",
         ok: { label: "Add" },
@@ -142,7 +172,10 @@ export default {
       }).onOk(async () => {
         loading.value = true;
         try {
-          const result = await saveAgentNote({ agent_id: selectedAgent.value, note: noteText.value });
+          const result = await saveAgentNote({
+            agent_id: selectedAgent.value,
+            note: noteText.value,
+          });
           notifySuccess(result);
           await getNotes();
         } catch (e) {
@@ -158,12 +191,12 @@ export default {
         prompt: {
           model: note.note,
           type: "textarea",
-          isValid: val => !!val,
+          isValid: (val) => !!val,
         },
         style: "width: 30vw; max-width: 50vw;",
         ok: { label: "Save" },
         cancel: true,
-      }).onOk(async data => {
+      }).onOk(async (data) => {
         loading.value = true;
         try {
           const result = await editAgentNote(note.pk, { note: data });
@@ -194,7 +227,7 @@ export default {
       });
     }
 
-    watch(selectedAgent, (newValue, oldValue) => {
+    watch(selectedAgent, (newValue) => {
       if (newValue) {
         getNotes();
       }

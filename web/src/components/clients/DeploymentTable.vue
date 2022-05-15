@@ -2,7 +2,14 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card style="min-width: 70vw; height: 70vh">
       <q-bar>
-        <q-btn @click="getDeployments" class="q-mr-sm" dense flat push icon="refresh" />
+        <q-btn
+          @click="getDeployments"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />
         Manage Deployments
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
@@ -11,7 +18,10 @@
       </q-bar>
       <q-table
         dense
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         class="audit-mgr-tbl-sticky"
         style="max-height: 65vh"
         binary-state-sort
@@ -29,7 +39,11 @@
         </template>
 
         <template v-slot:body="props">
-          <q-tr :props="props" class="cursor-pointer" @dblclick="copyLink(props.row)">
+          <q-tr
+            :props="props"
+            class="cursor-pointer"
+            @dblclick="copyLink(props.row)"
+          >
             <q-menu context-menu auto-close>
               <q-list dense style="min-width: 200px">
                 <q-item clickable @click="deleteDeployment(props.row)">
@@ -48,13 +62,20 @@
             <q-td key="site" :props="props">{{ props.row.site_name }}</q-td>
             <q-td key="mon_type" :props="props">{{ props.row.mon_type }}</q-td>
             <q-td key="arch" :props="props"
-              ><span v-if="props.row.arch === '64'">64 bit</span><span v-else>32 bit</span></q-td
+              ><span v-if="props.row.arch === '64'">64 bit</span
+              ><span v-else>32 bit</span></q-td
             >
-            <q-td key="expiry" :props="props">{{ formatDate(props.row.expiry) }}</q-td>
-            <q-td key="created" :props="props">{{ formatDate(props.row.created) }}</q-td>
+            <q-td key="expiry" :props="props">{{
+              formatDate(props.row.expiry)
+            }}</q-td>
+            <q-td key="created" :props="props">{{
+              formatDate(props.row.created)
+            }}</q-td>
             <q-td key="flags" :props="props"
               ><q-badge color="grey-8" label="View Flags" />
-              <q-tooltip style="font-size: 12px">{{ props.row.install_flags }}</q-tooltip>
+              <q-tooltip style="font-size: 12px">{{
+                props.row.install_flags
+              }}</q-tooltip>
             </q-td>
             <q-td key="link" :props="props">
               <q-btn
@@ -88,20 +109,50 @@ import NewDeployment from "@/components/clients/NewDeployment";
 
 // static data
 const columns = [
-  { name: "client", label: "Client", field: "client_name", align: "left", sortable: true },
-  { name: "site", label: "Site", field: "site_name", align: "left", sortable: true },
-  { name: "mon_type", label: "Type", field: "mon_type", align: "left", sortable: true },
+  {
+    name: "client",
+    label: "Client",
+    field: "client_name",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "site",
+    label: "Site",
+    field: "site_name",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "mon_type",
+    label: "Type",
+    field: "mon_type",
+    align: "left",
+    sortable: true,
+  },
   { name: "arch", label: "Arch", field: "arch", align: "left", sortable: true },
-  { name: "expiry", label: "Expiry", field: "expiry", align: "left", sortable: true },
-  { name: "created", label: "Created", field: "created", align: "left", sortable: true },
+  {
+    name: "expiry",
+    label: "Expiry",
+    field: "expiry",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "created",
+    label: "Created",
+    field: "created",
+    align: "left",
+    sortable: true,
+  },
   { name: "flags", label: "Flags", field: "install_flags", align: "left" },
   { name: "link", label: "Download Link", align: "left" },
 ];
 
 export default {
-  name: "Deployment",
+  name: "DeploymentTable",
   emits: [...useDialogPluginComponent.emits],
-  setup(props) {
+  setup() {
     // quasar dialog setup
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
     const $q = useQuasar();

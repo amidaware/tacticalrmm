@@ -1,22 +1,22 @@
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
+
+from django.conf import settings
+from django.db.models import Prefetch
+from packaging import version as pyver
 
 from agents.models import Agent
 from agents.tasks import clear_faults_task, prune_agent_history
 from alerts.models import Alert
 from alerts.tasks import prune_resolved_alerts
 from autotasks.models import TaskResult
+from checks.models import Check, CheckResult
 from checks.tasks import prune_check_history
 from clients.models import Client, Site
-from checks.models import Check, CheckResult
 from core.utils import get_core_settings
-from django.conf import settings
-from django.db.models import Prefetch
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
-from packaging import version as pyver
-
 from tacticalrmm.celery import app
-from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER, PAAction, PAStatus
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -58,7 +58,7 @@ def handle_resolved_stuff() -> None:
     actions = (
         PendingAction.objects.select_related("agent")
         .defer("agent__services", "agent__wmi_detail")
-        .filter(action_type="agentupdate", status="pending")
+        .filter(action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING)
     )
 
     to_update = [
@@ -68,7 +68,7 @@ def handle_resolved_stuff() -> None:
         and action.agent.status == "online"
     ]
 
-    PendingAction.objects.filter(pk__in=to_update).update(status="completed")
+    PendingAction.objects.filter(pk__in=to_update).update(status=PAStatus.COMPLETED)
 
     agent_queryset = (
         Agent.objects.defer(*AGENT_DEFER)

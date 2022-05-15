@@ -11,12 +11,23 @@
       <q-form @submit="submit">
         <!-- name -->
         <q-card-section>
-          <q-input label="Name" outlined dense v-model="localAction.name" :rules="[val => !!val || '*Required']" />
+          <q-input
+            label="Name"
+            outlined
+            dense
+            v-model="localAction.name"
+            :rules="[(val) => !!val || '*Required']"
+          />
         </q-card-section>
 
         <!-- description -->
         <q-card-section>
-          <q-input label="Description" outlined dense v-model="localAction.desc" />
+          <q-input
+            label="Description"
+            outlined
+            dense
+            v-model="localAction.desc"
+          />
         </q-card-section>
 
         <!-- pattern -->
@@ -26,7 +37,7 @@
             outlined
             dense
             v-model="localAction.pattern"
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
           />
         </q-card-section>
 
@@ -75,23 +86,23 @@ export default {
       if (this.editing) {
         this.$axios
           .put(`/core/urlaction/${data.id}/`, data)
-          .then(r => {
+          .then(() => {
             this.$q.loading.hide();
             this.onOk();
             this.notifySuccess("Url Action was edited!");
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       } else {
         this.$axios
           .post("/core/urlaction/", data)
-          .then(r => {
+          .then(() => {
             this.$q.loading.hide();
             this.onOk();
             this.notifySuccess("URL Action was added!");
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       }

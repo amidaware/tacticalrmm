@@ -1,19 +1,19 @@
 import smtplib
 from email.message import EmailMessage
+from typing import TYPE_CHECKING, List, Optional, Union, cast
 
-from typing import Optional, Union, List, cast, TYPE_CHECKING
 import pytz
 import requests
-from django.core.cache import cache
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
-from logs.models import LOG_LEVEL_CHOICES, BaseAuditModel, DebugLog
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwClient
 
-from tacticalrmm.constants import CORESETTINGS_CACHE_KEY
+from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, DebugLogLevel
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
@@ -57,7 +57,7 @@ class CoreSettings(BaseAuditModel):
     debug_log_prune_days = models.PositiveIntegerField(default=30)
     audit_log_prune_days = models.PositiveIntegerField(default=0)
     agent_debug_level = models.CharField(
-        max_length=20, choices=LOG_LEVEL_CHOICES, default="info"
+        max_length=20, choices=DebugLogLevel.choices, default=DebugLogLevel.INFO
     )
     clear_faults_days = models.IntegerField(default=0)
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")

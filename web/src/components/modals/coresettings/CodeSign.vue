@@ -13,7 +13,10 @@
         class="full-width"
         @click="doCodeSign"
       >
-        <q-tooltip>Force all existing agents to be updated to the code-signed version</q-tooltip>
+        <q-tooltip
+          >Force all existing agents to be updated to the code-signed
+          version</q-tooltip
+        >
       </q-btn>
     </q-card-section>
     <q-form @submit.prevent="editToken">
@@ -25,7 +28,7 @@
           dense
           v-model="settings.token"
           class="col-9 q-pa-none"
-          :rules="[val => !!val || 'Token is required']"
+          :rules="[(val) => !!val || 'Token is required']"
         />
       </q-card-section>
       <q-card-section class="row items-center">
@@ -49,22 +52,19 @@ export default {
   },
   methods: {
     getToken() {
-      this.$axios
-        .get("/core/codesign/")
-        .then(r => {
-          this.settings = r.data;
-        })
-        .catch(e => {});
+      this.$axios.get("/core/codesign/").then((r) => {
+        this.settings = r.data;
+      });
     },
     editToken() {
       this.$q.loading.show();
       this.$axios
         .patch("/core/codesign/", this.settings)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -72,7 +72,7 @@ export default {
       this.$q.loading.show();
       this.$axios
         .post("/core/codesign/")
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
         })

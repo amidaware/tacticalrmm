@@ -1,22 +1,24 @@
 import asyncio
 import random
 import string
-import pytz
-from typing import TYPE_CHECKING, List, Dict, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from alerts.models import SEVERITY_CHOICES
-from django.core.validators import MaxValueValidator, MinValueValidator
+import pytz
 from django.core.cache import cache
-from django.utils import timezone as djangotime
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.fields import DateTimeField
 from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
-from logs.models import BaseAuditModel, DebugLog
+from django.utils import timezone as djangotime
+
+from alerts.models import SEVERITY_CHOICES
 from core.utils import get_core_settings
+from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     FIELDS_TRIGGER_TASK_UPDATE_AGENT,
     POLICY_TASK_FIELDS_TO_COPY,
+    DebugLogType,
 )
 
 if TYPE_CHECKING:
@@ -366,7 +368,7 @@ class AutomatedTask(BaseAuditModel):
             task_result.save(update_fields=["sync_status"])
             DebugLog.warning(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"Unable to create scheduled task {self.name} on {task_result.agent.hostname}. It will be created when the agent checks in.",
             )
             return "timeout"
@@ -375,7 +377,7 @@ class AutomatedTask(BaseAuditModel):
             task_result.save(update_fields=["sync_status"])
             DebugLog.info(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"{task_result.agent.hostname} task {self.name} was successfully created",
             )
 
@@ -405,7 +407,7 @@ class AutomatedTask(BaseAuditModel):
             task_result.save(update_fields=["sync_status"])
             DebugLog.warning(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"Unable to modify scheduled task {self.name} on {task_result.agent.hostname}({task_result.agent.agent_id}). It will try again on next agent checkin",
             )
             return "timeout"
@@ -414,7 +416,7 @@ class AutomatedTask(BaseAuditModel):
             task_result.save(update_fields=["sync_status"])
             DebugLog.info(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"{task_result.agent.hostname} task {self.name} was successfully modified",
             )
 
@@ -448,7 +450,7 @@ class AutomatedTask(BaseAuditModel):
 
             DebugLog.warning(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"{task_result.agent.hostname} task {self.name} will be deleted on next checkin",
             )
             return "timeout"
@@ -456,7 +458,7 @@ class AutomatedTask(BaseAuditModel):
             self.delete()
             DebugLog.info(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"{task_result.agent.hostname}({task_result.agent.agent_id}) task {self.name} was deleted",
             )
 

@@ -1,5 +1,6 @@
-from autotasks.tasks import remove_orphaned_win_tasks
 from django.core.management.base import BaseCommand
+
+from autotasks.tasks import remove_orphaned_win_tasks
 
 
 class Command(BaseCommand):

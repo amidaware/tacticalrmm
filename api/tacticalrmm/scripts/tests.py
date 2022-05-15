@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.test import override_settings
 from model_bakery import baker
 
+from tacticalrmm.constants import ScriptShell, ScriptType
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Script, ScriptSnippet
@@ -36,7 +37,7 @@ class TestScriptViews(TacticalTestCase):
         data = {
             "name": "Name",
             "description": "Description",
-            "shell": "powershell",
+            "shell": ScriptShell.POWERSHELL,
             "category": "New",
             "script_body": "Test Script",
             "default_timeout": 99,
@@ -93,7 +94,9 @@ class TestScriptViews(TacticalTestCase):
             "description": "New Desc",
             "script_body": "aasdfdsf",
         }  # Test
-        builtin_script = baker.make_recipe("scripts.script", script_type="builtin")
+        builtin_script = baker.make_recipe(
+            "scripts.script", script_type=ScriptType.BUILT_IN
+        )
 
         resp = self.client.put(f"/scripts/{builtin_script.pk}/", data, format="json")
         self.assertEqual(resp.status_code, 400)
@@ -136,7 +139,7 @@ class TestScriptViews(TacticalTestCase):
             "code": "some_code",
             "timeout": 90,
             "args": [],
-            "shell": "powershell",
+            "shell": ScriptShell.POWERSHELL,
         }
 
         resp = self.client.post(url, data, format="json")
@@ -159,7 +162,7 @@ class TestScriptViews(TacticalTestCase):
         self.assertFalse(Script.objects.filter(pk=script.pk).exists())
 
         # test delete community script
-        script = baker.make_recipe("scripts.script", script_type="builtin")
+        script = baker.make_recipe("scripts.script", script_type=ScriptType.BUILT_IN)
         url = f"/scripts/{script.pk}/"
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 400)
@@ -175,7 +178,9 @@ class TestScriptViews(TacticalTestCase):
 
         # test powershell file
         script = baker.make(
-            "scripts.Script", script_body="Test Script Body", shell="powershell"
+            "scripts.Script",
+            script_body="Test Script Body",
+            shell=ScriptShell.POWERSHELL,
         )
         url = f"/scripts/{script.pk}/download/"
 
@@ -187,7 +192,7 @@ class TestScriptViews(TacticalTestCase):
 
         # test batch file
         script = baker.make(
-            "scripts.Script", script_body="Test Script Body", shell="cmd"
+            "scripts.Script", script_body="Test Script Body", shell=ScriptShell.CMD
         )
         url = f"/scripts/{script.pk}/download/"
 
@@ -199,7 +204,7 @@ class TestScriptViews(TacticalTestCase):
 
         # test python file
         script = baker.make(
-            "scripts.Script", script_body="Test Script Body", shell="python"
+            "scripts.Script", script_body="Test Script Body", shell=ScriptShell.PYTHON
         )
         url = f"/scripts/{script.pk}/download/"
 
@@ -228,7 +233,7 @@ class TestScriptViews(TacticalTestCase):
                 f"-Client '{agent.client.name}'",
                 f"-Site '{agent.site.name}'",
             ],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
     def test_script_arg_replacement_custom_field(self):
@@ -246,7 +251,7 @@ class TestScriptViews(TacticalTestCase):
         # test default value
         self.assertEqual(
             ["-Parameter", "-Another 'DEFAULT'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
         # test with set value
@@ -258,7 +263,7 @@ class TestScriptViews(TacticalTestCase):
         )
         self.assertEqual(
             ["-Parameter", "-Another 'CUSTOM VALUE'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
     def test_script_arg_replacement_client_custom_fields(self):
@@ -276,7 +281,7 @@ class TestScriptViews(TacticalTestCase):
         # test default value
         self.assertEqual(
             ["-Parameter", "-Another 'DEFAULT'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
         # test with set value
@@ -288,7 +293,7 @@ class TestScriptViews(TacticalTestCase):
         )
         self.assertEqual(
             ["-Parameter", "-Another 'CUSTOM VALUE'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
     def test_script_arg_replacement_site_custom_fields(self):
@@ -306,7 +311,7 @@ class TestScriptViews(TacticalTestCase):
         # test default value
         self.assertEqual(
             ["-Parameter", "-Another 'DEFAULT'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
         # test with set value
@@ -318,7 +323,7 @@ class TestScriptViews(TacticalTestCase):
         )
         self.assertEqual(
             ["-Parameter", "-Another 'CUSTOM VALUE'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
         # test with set but empty field value
@@ -327,7 +332,7 @@ class TestScriptViews(TacticalTestCase):
 
         self.assertEqual(
             ["-Parameter", "-Another 'DEFAULT'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
         # test blank default and value
@@ -336,7 +341,7 @@ class TestScriptViews(TacticalTestCase):
 
         self.assertEqual(
             ["-Parameter", "-Another ''"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
     def test_script_arg_replacement_array_fields(self):
@@ -354,7 +359,7 @@ class TestScriptViews(TacticalTestCase):
         # test default value
         self.assertEqual(
             ["-Parameter", "-Another 'this,is,an,array'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
         # test with set value and python shell
@@ -366,7 +371,7 @@ class TestScriptViews(TacticalTestCase):
         )
         self.assertEqual(
             ["-Parameter", "-Another 'this,is,new'"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
     def test_script_arg_replacement_boolean_fields(self):
@@ -384,7 +389,7 @@ class TestScriptViews(TacticalTestCase):
         # test default value with python
         self.assertEqual(
             ["-Parameter", "-Another 1"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
         # test with set value and python shell
@@ -396,19 +401,21 @@ class TestScriptViews(TacticalTestCase):
         )
         self.assertEqual(
             ["-Parameter", "-Another 0"],
-            Script.parse_script_args(agent=agent, shell="python", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
         # test with set value and cmd shell
         self.assertEqual(
             ["-Parameter", "-Another 0"],
-            Script.parse_script_args(agent=agent, shell="cmd", args=args),
+            Script.parse_script_args(agent=agent, shell=ScriptShell.CMD, args=args),
         )
 
         # test with set value and powershell
         self.assertEqual(
             ["-Parameter", "-Another $False"],
-            Script.parse_script_args(agent=agent, shell="powershell", args=args),
+            Script.parse_script_args(
+                agent=agent, shell=ScriptShell.POWERSHELL, args=args
+            ),
         )
 
         # test with True value powershell
@@ -417,7 +424,9 @@ class TestScriptViews(TacticalTestCase):
 
         self.assertEqual(
             ["-Parameter", "-Another $True"],
-            Script.parse_script_args(agent=agent, shell="powershell", args=args),
+            Script.parse_script_args(
+                agent=agent, shell=ScriptShell.POWERSHELL, args=args
+            ),
         )
 
 
@@ -443,7 +452,7 @@ class TestScriptSnippetViews(TacticalTestCase):
         data = {
             "name": "Name",
             "description": "Description",
-            "shell": "powershell",
+            "shell": ScriptShell.POWERSHELL,
             "code": "Test",
         }
 

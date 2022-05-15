@@ -3,7 +3,14 @@
     <div class="row">
       <div class="text-subtitle2">API Keys</div>
       <q-space />
-      <q-btn size="sm" color="grey-5" icon="fas fa-plus" text-color="black" label="Add key" @click="addAPIKey" />
+      <q-btn
+        size="sm"
+        color="grey-5"
+        icon="fas fa-plus"
+        text-color="black"
+        label="Add key"
+        @click="addAPIKey"
+      />
     </div>
     <q-separator />
     <q-table
@@ -25,7 +32,11 @@
 
       <!-- body slots -->
       <template v-slot:body="props">
-        <q-tr :props="props" class="cursor-pointer" @dblclick="editAPIKey(props.row)">
+        <q-tr
+          :props="props"
+          class="cursor-pointer"
+          @dblclick="editAPIKey(props.row)"
+        >
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
@@ -65,7 +76,11 @@
             {{ formatDate(props.row.created_time) }}
           </q-td>
           <q-td>
-            <q-icon size="sm" name="content_copy" @click="copyKeyToClipboard(props.row.key)">
+            <q-icon
+              size="sm"
+              name="content_copy"
+              @click="copyKeyToClipboard(props.row.key)"
+            >
               <q-tooltip>Copy API Key to clipboard</q-tooltip>
             </q-icon>
           </q-td>

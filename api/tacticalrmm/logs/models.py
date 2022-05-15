@@ -1,71 +1,28 @@
 from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast
 
 from django.db import models
+
 from core.utils import get_core_settings
-from typing import Optional, Dict, Any, Union, cast, Tuple, TYPE_CHECKING
+from tacticalrmm.constants import (
+    AuditActionType,
+    AuditObjType,
+    DebugLogLevel,
+    DebugLogType,
+    PAAction,
+    PAStatus,
+)
 from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
+    from agents.models import Agent
     from clients.models import Client, Site
     from core.models import URLAction
-    from agents.models import Agent
 
 
 def get_debug_level() -> str:
     return get_core_settings().agent_debug_level
-
-
-ACTION_TYPE_CHOICES = [
-    ("schedreboot", "Scheduled Reboot"),
-    ("agentupdate", "Agent Update"),
-    ("chocoinstall", "Chocolatey Software Install"),
-    ("runcmd", "Run Command"),
-    ("runscript", "Run Script"),
-    ("runpatchscan", "Run Patch Scan"),
-    ("runpatchinstall", "Run Patch Install"),
-]
-
-AUDIT_ACTION_TYPE_CHOICES = [
-    ("login", "User Login"),
-    ("failed_login", "Failed User Login"),
-    ("delete", "Delete Object"),
-    ("modify", "Modify Object"),
-    ("add", "Add Object"),
-    ("view", "View Object"),
-    ("check_run", "Check Run"),
-    ("task_run", "Task Run"),
-    ("agent_install", "Agent Install"),
-    ("remote_session", "Remote Session"),
-    ("execute_script", "Execute Script"),
-    ("execute_command", "Execute Command"),
-    ("bulk_action", "Bulk Action"),
-    ("url_action", "URL Action"),
-]
-
-AUDIT_OBJECT_TYPE_CHOICES = [
-    ("user", "User"),
-    ("script", "Script"),
-    ("agent", "Agent"),
-    ("policy", "Policy"),
-    ("winupdatepolicy", "Patch Policy"),
-    ("client", "Client"),
-    ("site", "Site"),
-    ("check", "Check"),
-    ("automatedtask", "Automated Task"),
-    ("coresettings", "Core Settings"),
-    ("bulk", "Bulk"),
-    ("alerttemplate", "Alert Template"),
-    ("role", "Role"),
-    ("urlaction", "URL Action"),
-    ("keystore", "Global Key Store"),
-    ("customfield", "Custom Field"),
-]
-
-STATUS_CHOICES = [
-    ("pending", "Pending"),
-    ("completed", "Completed"),
-]
 
 
 class AuditLog(models.Model):
@@ -73,8 +30,8 @@ class AuditLog(models.Model):
     agent = models.CharField(max_length=255, null=True, blank=True)
     agent_id = models.CharField(max_length=255, blank=True, null=True)
     entry_time = models.DateTimeField(auto_now_add=True)
-    action = models.CharField(max_length=100, choices=AUDIT_ACTION_TYPE_CHOICES)
-    object_type = models.CharField(max_length=100, choices=AUDIT_OBJECT_TYPE_CHOICES)
+    action = models.CharField(max_length=100, choices=AuditActionType.choices)
+    object_type = models.CharField(max_length=100, choices=AuditObjType.choices)
     before_value = models.JSONField(null=True, blank=True)
     after_value = models.JSONField(null=True, blank=True)
     message = models.CharField(max_length=255, null=True, blank=True)
@@ -101,8 +58,8 @@ class AuditLog(models.Model):
             username=username,
             agent=agent.hostname,
             agent_id=agent.agent_id,
-            object_type="agent",
-            action="remote_session",
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.REMOTE_SESSION,
             message=f"{username} used Mesh Central to initiate a remote session to {agent.hostname}.",
             debug_info=debug_info,
         )
@@ -119,8 +76,8 @@ class AuditLog(models.Model):
             username=username,
             agent=agent.hostname,
             agent_id=agent.agent_id,
-            object_type="agent",
-            action="execute_command",
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.EXEC_COMMAND,
             message=f"{username} issued {shell} command on {agent.hostname}.",
             after_value=cmd,
             debug_info=debug_info,
@@ -138,9 +95,9 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=before["hostname"] if object_type == "agent" else None,
-            agent_id=before["agent_id"] if object_type == "agent" else None,
-            action="modify",
+            agent=before["hostname"] if object_type == AuditObjType.AGENT else None,
+            agent_id=before["agent_id"] if object_type == AuditObjType.AGENT else None,
+            action=AuditActionType.MODIFY,
             message=f"{username} modified {object_type} {name}",
             before_value=before,
             after_value=after,
@@ -158,9 +115,9 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=after["hostname"] if object_type == "agent" else None,
-            agent_id=after["agent_id"] if object_type == "agent" else None,
-            action="add",
+            agent=after["hostname"] if object_type == AuditObjType.AGENT else None,
+            agent_id=after["agent_id"] if object_type == AuditObjType.AGENT else None,
+            action=AuditActionType.ADD,
             message=f"{username} added {object_type} {name}",
             after_value=after,
             debug_info=debug_info,
@@ -177,9 +134,9 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=before["hostname"] if object_type == "agent" else None,
-            agent_id=before["agent_id"] if object_type == "agent" else None,
-            action="delete",
+            agent=before["hostname"] if object_type == AuditObjType.AGENT else None,
+            agent_id=before["agent_id"] if object_type == AuditObjType.AGENT else None,
+            action=AuditActionType.DELETE,
             message=f"{username} deleted {object_type} {name}",
             before_value=before,
             debug_info=debug_info,
@@ -193,8 +150,8 @@ class AuditLog(models.Model):
             agent=agent.hostname,
             agent_id=agent.agent_id,
             username=username,
-            object_type="agent",
-            action="execute_script",
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.EXEC_SCRIPT,
             message=f'{username} ran script: "{script}" on {agent.hostname}',
             debug_info=debug_info,
         )
@@ -203,8 +160,8 @@ class AuditLog(models.Model):
     def audit_user_failed_login(username: str, debug_info: Dict[Any, Any] = {}) -> None:
         AuditLog.objects.create(
             username=username,
-            object_type="user",
-            action="failed_login",
+            object_type=AuditObjType.USER,
+            action=AuditActionType.FAILED_LOGIN,
             message=f"{username} failed to login: Credentials were rejected",
             debug_info=debug_info,
         )
@@ -215,8 +172,8 @@ class AuditLog(models.Model):
     ) -> None:
         AuditLog.objects.create(
             username=username,
-            object_type="user",
-            action="failed_login",
+            object_type=AuditObjType.USER,
+            action=AuditActionType.FAILED_LOGIN,
             message=f"{username} failed to login: Two Factor token rejected",
             debug_info=debug_info,
         )
@@ -227,8 +184,8 @@ class AuditLog(models.Model):
     ) -> None:
         AuditLog.objects.create(
             username=username,
-            object_type="user",
-            action="login",
+            object_type=AuditObjType.USER,
+            action=AuditActionType.LOGIN,
             message=f"{username} logged in successfully",
             debug_info=debug_info,
         )
@@ -249,7 +206,7 @@ class AuditLog(models.Model):
             agent=name if isinstance(instance, Agent) else None,
             agent_id=instance.agent_id if isinstance(instance, Agent) else None,
             object_type=classname.lower(),
-            action="url_action",
+            action=AuditActionType.URL_ACTION,
             message=f"{username} ran url action: {urlaction.pattern} on {classname}: {name}",
             debug_info=debug_info,
         )
@@ -291,28 +248,12 @@ class AuditLog(models.Model):
 
         AuditLog.objects.create(
             username=username,
-            object_type="bulk",
-            action="bulk_action",
+            object_type=AuditObjType.BULK,
+            action=AuditActionType.BULK_ACTION,
             message=f"{username} executed bulk {action} {target}",
             debug_info=debug_info,
             after_value=affected,
         )
-
-
-LOG_LEVEL_CHOICES = [
-    ("info", "Info"),
-    ("warning", "Warning"),
-    ("error", "Error"),
-    ("critical", "Critical"),
-]
-
-LOG_TYPE_CHOICES = [
-    ("agent_update", "Agent Update"),
-    ("agent_issues", "Agent Issues"),
-    ("win_updates", "Windows Updates"),
-    ("system_issues", "System Issues"),
-    ("scripting", "Scripting"),
-]
 
 
 class DebugLog(models.Model):
@@ -327,10 +268,10 @@ class DebugLog(models.Model):
         blank=True,
     )
     log_level = models.CharField(
-        max_length=50, choices=LOG_LEVEL_CHOICES, default="info"
+        max_length=50, choices=DebugLogLevel.choices, default=DebugLogLevel.INFO
     )
     log_type = models.CharField(
-        max_length=50, choices=LOG_TYPE_CHOICES, default="system_issues"
+        max_length=50, choices=DebugLogType.choices, default=DebugLogType.SYSTEM_ISSUES
     )
     message = models.TextField(null=True, blank=True)
 
@@ -339,11 +280,14 @@ class DebugLog(models.Model):
         cls,
         message: str,
         agent: "Optional[Agent]" = None,
-        log_type: str = "system_issues",
+        log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in ["info"]:
+        if get_debug_level() in [DebugLogLevel.INFO]:
             cls.objects.create(
-                log_level="info", agent=agent, log_type=log_type, message=message
+                log_level=DebugLogLevel.INFO,
+                agent=agent,
+                log_type=log_type,
+                message=message,
             )
 
     @classmethod
@@ -351,11 +295,14 @@ class DebugLog(models.Model):
         cls,
         message: str,
         agent: "Optional[Agent]" = None,
-        log_type: str = "system_issues",
+        log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in ["info", "warning"]:
+        if get_debug_level() in [DebugLogLevel.INFO, DebugLogLevel.WARN]:
             cls.objects.create(
-                log_level="warning", agent=agent, log_type=log_type, message=message
+                log_level=DebugLogLevel.INFO,
+                agent=agent,
+                log_type=log_type,
+                message=message,
             )
 
     @classmethod
@@ -363,11 +310,18 @@ class DebugLog(models.Model):
         cls,
         message: str,
         agent: "Optional[Agent]" = None,
-        log_type: str = "system_issues",
+        log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in ["info", "warning", "error"]:
+        if get_debug_level() in [
+            DebugLogLevel.INFO,
+            DebugLogLevel.WARN,
+            DebugLogLevel.ERROR,
+        ]:
             cls.objects.create(
-                log_level="error", agent=agent, log_type=log_type, message=message
+                log_level=DebugLogLevel.ERROR,
+                agent=agent,
+                log_type=log_type,
+                message=message,
             )
 
     @classmethod
@@ -375,15 +329,24 @@ class DebugLog(models.Model):
         cls,
         message: str,
         agent: "Optional[Agent]" = None,
-        log_type: str = "system_issues",
+        log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in ["info", "warning", "error", "critical"]:
+        if get_debug_level() in [
+            DebugLogLevel.INFO,
+            DebugLogLevel.WARN,
+            DebugLogLevel.ERROR,
+            DebugLogLevel.CRITICAL,
+        ]:
             cls.objects.create(
-                log_level="critical", agent=agent, log_type=log_type, message=message
+                log_level=DebugLogLevel.CRITICAL,
+                agent=agent,
+                log_type=log_type,
+                message=message,
             )
 
 
 class PendingAction(models.Model):
+
     objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(
@@ -393,15 +356,13 @@ class PendingAction(models.Model):
     )
     entry_time = models.DateTimeField(auto_now_add=True)
     action_type = models.CharField(
-        max_length=255, choices=ACTION_TYPE_CHOICES, null=True, blank=True
+        max_length=255, choices=PAAction.choices, null=True, blank=True
     )
     status = models.CharField(
         max_length=255,
-        choices=STATUS_CHOICES,
-        default="pending",
+        choices=PAStatus.choices,
+        default=PAStatus.PENDING,
     )
-    cancelable = models.BooleanField(blank=True, default=False)
-    celery_id = models.CharField(null=True, blank=True, max_length=255)
     details = models.JSONField(null=True, blank=True)
 
     def __str__(self) -> str:
@@ -409,31 +370,31 @@ class PendingAction(models.Model):
 
     @property
     def due(self) -> str:
-        if self.action_type == "schedreboot":
+        if self.action_type == PAAction.SCHED_REBOOT:
             return cast(str, self.details["time"])
-        elif self.action_type == "agentupdate":
+        elif self.action_type == PAAction.AGENT_UPDATE:
             return "Next update cycle"
-        elif self.action_type == "chocoinstall":
+        elif self.action_type == PAAction.CHOCO_INSTALL:
             return "ASAP"
         else:
             return "On next checkin"
 
     @property
     def description(self) -> Optional[str]:
-        if self.action_type == "schedreboot":
+        if self.action_type == PAAction.SCHED_REBOOT:
             return "Device pending reboot"
 
-        elif self.action_type == "agentupdate":
+        elif self.action_type == PAAction.AGENT_UPDATE:
             return f"Agent update to {self.details['version']}"
 
-        elif self.action_type == "chocoinstall":
+        elif self.action_type == PAAction.CHOCO_INSTALL:
             return f"{self.details['name']} software install"
 
         elif self.action_type in [
-            "runcmd",
-            "runscript",
-            "runpatchscan",
-            "runpatchinstall",
+            PAAction.RUN_CMD,
+            PAAction.RUN_SCRIPT,
+            PAAction.RUN_PATCH_SCAN,
+            PAAction.RUN_PATCH_INSTALL,
         ]:
             return f"{self.action_type}"
         else:

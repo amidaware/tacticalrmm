@@ -3,7 +3,15 @@
     <div class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
       <q-card>
         <q-bar>
-          <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
+          <q-btn
+            ref="refresh"
+            @click="refresh"
+            class="q-mr-sm"
+            dense
+            flat
+            push
+            icon="refresh"
+          />Automation Manager
           <q-space />
           <q-btn dense flat icon="close" v-close-popup>
             <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -11,7 +19,16 @@
         </q-bar>
         <q-card-section>
           <div class="q-gutter-sm">
-            <q-btn label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyForm" />
+            <q-btn
+              label="New"
+              dense
+              flat
+              push
+              unelevated
+              no-caps
+              icon="add"
+              @click="showAddPolicyForm"
+            />
             <q-btn
               label="Policy Overview"
               dense
@@ -25,7 +42,10 @@
           </div>
           <div class="scroll" style="min-height: 35vh; max-height: 35vh">
             <q-table
-              :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+              :table-class="{
+                'table-bgcolor': !$q.dark.isActive,
+                'table-bgcolor-dark': $q.dark.isActive,
+              }"
               class="tabs-tbl-sticky"
               :rows="policies"
               :columns="columns"
@@ -50,7 +70,10 @@
               <template v-slot:header-cell-enforced="props">
                 <q-th :props="props" auto-width>
                   <q-icon name="security" size="1.5em">
-                    <q-tooltip>Enforce Policy (Will override Agent tasks/checks)</q-tooltip>
+                    <q-tooltip
+                      >Enforce Policy (Will override Agent
+                      tasks/checks)</q-tooltip
+                    >
                   </q-icon>
                 </q-th>
               </template>
@@ -68,21 +91,33 @@
                   <!-- context menu -->
                   <q-menu context-menu>
                     <q-list dense style="min-width: 200px">
-                      <q-item clickable v-close-popup @click="showEditPolicyForm(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showEditPolicyForm(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="edit" />
                         </q-item-section>
                         <q-item-section>Edit</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="showCopyPolicyForm(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showCopyPolicyForm(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="content_copy" />
                         </q-item-section>
                         <q-item-section>Copy</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="deletePolicy(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="deletePolicy(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="delete" />
                         </q-item-section>
@@ -91,32 +126,52 @@
 
                       <q-separator></q-separator>
 
-                      <q-item clickable v-close-popup @click="showRelations(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showRelations(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="account_tree" />
                         </q-item-section>
                         <q-item-section>Show Relations</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="showPolicyExclusions(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showPolicyExclusions(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="rule" />
                         </q-item-section>
                         <q-item-section>Policy Exclusions</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="showPatchPolicyForm(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showPatchPolicyForm(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="system_update" />
                         </q-item-section>
-                        <q-item-section>{{ patchPolicyText(props.row) }}</q-item-section>
+                        <q-item-section>{{
+                          patchPolicyText(props.row)
+                        }}</q-item-section>
                       </q-item>
 
-                      <q-item clickable v-close-popup @click="showAlertTemplateAdd(props.row)">
+                      <q-item
+                        clickable
+                        v-close-popup
+                        @click="showAlertTemplateAdd(props.row)"
+                      >
                         <q-item-section side>
                           <q-icon name="warning" />
                         </q-item-section>
-                        <q-item-section>{{ alertTemplateText(props.row) }}</q-item-section>
+                        <q-item-section>{{
+                          alertTemplateText(props.row)
+                        }}</q-item-section>
                       </q-item>
 
                       <q-separator></q-separator>
@@ -138,16 +193,26 @@
                   <q-td>
                     <q-checkbox
                       dense
-                      @update:model-value="toggleCheckbox(props.row, 'Enforced')"
+                      @update:model-value="
+                        toggleCheckbox(props.row, 'Enforced')
+                      "
                       v-model="props.row.enforced"
                     />
                   </q-td>
                   <q-td>
                     {{ props.row.name }}
-                    <q-chip v-if="props.row.default_server_policy" color="primary" text-color="white" size="sm"
+                    <q-chip
+                      v-if="props.row.default_server_policy"
+                      color="primary"
+                      text-color="white"
+                      size="sm"
                       >Default Server</q-chip
                     >
-                    <q-chip v-if="props.row.default_workstation_policy" color="primary" text-color="white" size="sm"
+                    <q-chip
+                      v-if="props.row.default_workstation_policy"
+                      color="primary"
+                      text-color="white"
+                      size="sm"
                       >Default Workstation</q-chip
                     >
                   </q-td>
@@ -191,7 +256,11 @@
                     >
                   </q-td>
                   <q-td>
-                    <q-icon name="content_copy" size="1.5em" @click="showCopyPolicyForm(props.row)">
+                    <q-icon
+                      name="content_copy"
+                      size="1.5em"
+                      @click="showCopyPolicyForm(props.row)"
+                    >
                       <q-tooltip>Create a copy of this policy</q-tooltip>
                     </q-icon>
                   </q-td>
@@ -220,12 +289,18 @@
           <q-tab-panels v-model="subtab" :animated="false">
             <q-tab-panel name="checks">
               <div class="scroll" style="min-height: 25vh; max-height: 25vh">
-                <PolicyChecksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
+                <PolicyChecksTab
+                  v-if="!!selectedPolicy"
+                  :selectedPolicy="selectedPolicy.id"
+                />
               </div>
             </q-tab-panel>
             <q-tab-panel name="tasks">
               <div class="scroll" style="min-height: 25vh; max-height: 25vh">
-                <PolicyAutomatedTasksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
+                <PolicyAutomatedTasksTab
+                  v-if="!!selectedPolicy"
+                  :selectedPolicy="selectedPolicy.id"
+                />
               </div>
             </q-tab-panel>
           </q-tab-panels>
@@ -259,7 +334,12 @@ export default {
       selectedPolicy: null,
       columns: [
         { name: "active", label: "Active", field: "active", align: "left" },
-        { name: "enforced", label: "Enforced", field: "enforced", align: "left" },
+        {
+          name: "enforced",
+          label: "Enforced",
+          field: "enforced",
+          align: "left",
+        },
         {
           name: "name",
           label: "Name",
@@ -315,11 +395,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/automation/policies/")
-        .then(r => {
+        .then((r) => {
           this.policies = r.data;
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -341,13 +421,13 @@ export default {
           this.$q.loading.show();
           this.$axios
             .delete(`/automation/policies/${policy.id}/`)
-            .then(r => {
+            .then(() => {
               this.refresh();
               this.$q.loading.hide();
               this.notifySuccess("Policy was deleted!");
               this.$store.dispatch("loadTree");
             })
-            .catch(error => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });
@@ -365,7 +445,7 @@ export default {
         component: PolicyOverview,
       });
     },
-    showAddPolicyForm(policy = undefined) {
+    showAddPolicyForm() {
       this.$q
         .dialog({
           component: PolicyForm,
@@ -374,7 +454,7 @@ export default {
           this.refresh();
         });
     },
-    showCopyPolicyForm(policy = undefined) {
+    showCopyPolicyForm(policy) {
       this.$q
         .dialog({
           component: PolicyForm,
@@ -416,7 +496,10 @@ export default {
         .dialog({
           component: DialogWrapper,
           componentProps: {
-            title: policy.winupdatepolicy.length > 0 ? "Edit Patch Policy" : "Add Patch Policy",
+            title:
+              policy.winupdatepolicy.length > 0
+                ? "Edit Patch Policy"
+                : "Add Patch Policy",
             vuecomponent: PatchPolicyForm,
             componentProps: {
               policy: policy,
@@ -450,32 +533,41 @@ export default {
       };
 
       if (type === "Active") {
-        text = !policy.active ? "Policy enabled successfully" : "Policy disabled successfully";
+        text = !policy.active
+          ? "Policy enabled successfully"
+          : "Policy disabled successfully";
         data["active"] = !policy.active;
       } else if (type === "Enforced") {
-        text = !policy.enforced ? "Policy enforced successfully" : "Policy enforcement disabled";
+        text = !policy.enforced
+          ? "Policy enforced successfully"
+          : "Policy enforcement disabled";
         data["enforced"] = !policy.enforced;
       }
 
       this.$axios
         .put(`/automation/policies/${data.id}/`, data)
-        .then(r => {
+        .then(() => {
           this.refresh();
           this.$q.loading.hide();
           this.notifySuccess(text);
         })
-        .catch(error => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
     patchPolicyText(policy) {
-      return policy.winupdatepolicy.length > 0 ? "Modify Patch Policy" : "Create Patch Policy";
+      return policy.winupdatepolicy.length > 0
+        ? "Modify Patch Policy"
+        : "Create Patch Policy";
     },
     alertTemplateText(policy) {
-      return policy.alert_template ? "Modify Alert Template" : "Assign Alert Template";
+      return policy.alert_template
+        ? "Modify Alert Template"
+        : "Assign Alert Template";
     },
     rowSelectedClass(id, selectedPolicy) {
-      if (selectedPolicy && selectedPolicy.id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
+      if (selectedPolicy && selectedPolicy.id === id)
+        return this.$q.dark.isActive ? "highlight-dark" : "highlight";
     },
     show() {
       this.$refs.dialog.show();

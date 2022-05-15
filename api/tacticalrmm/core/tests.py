@@ -1,20 +1,22 @@
 from unittest.mock import patch
 
 import requests
-from django.conf import settings
 from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
+from django.conf import settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 
-from tacticalrmm.test import TacticalTestCase
+from agents.models import Agent
 from core.utils import get_core_settings
+from logs.models import PendingAction
+from tacticalrmm.constants import PAAction, PAStatus
+from tacticalrmm.test import TacticalTestCase
+
 from .consumers import DashInfo
 from .models import CustomField, GlobalKVStore, URLAction
 from .serializers import CustomFieldSerializer, KeyStoreSerializer, URLActionSerializer
 from .tasks import core_maintenance_tasks, handle_resolved_stuff
-from logs.models import PendingAction
-from agents.models import Agent
 
 
 class TestCodeSign(TacticalTestCase):
@@ -410,10 +412,10 @@ class TestCoreTasks(TacticalTestCase):
         handle_resolved_stuff()
 
         complete = PendingAction.objects.filter(
-            action_type="agentupdate", status="completed"
+            action_type=PAAction.AGENT_UPDATE, status=PAStatus.COMPLETED
         ).count()
         old = PendingAction.objects.filter(
-            action_type="agentupdate", status="pending"
+            action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
         ).count()
 
         self.assertEqual(complete, 20)

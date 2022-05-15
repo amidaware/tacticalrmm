@@ -5,6 +5,8 @@ from django.db.models.signals import post_init
 from django.dispatch import receiver
 from django.utils import timezone as djangotime
 
+from tacticalrmm.constants import PAAction, PAStatus
+
 from .models import PendingAction
 
 
@@ -12,7 +14,10 @@ from .models import PendingAction
 def handle_status(sender, instance: PendingAction, **kwargs):
     if instance.pk:
         # change status to completed once scheduled reboot date/time has expired
-        if instance.action_type == "schedreboot" and instance.status == "pending":
+        if (
+            instance.action_type == PAAction.SCHED_REBOOT
+            and instance.status == PAStatus.PENDING
+        ):
 
             reboot_time = dt.datetime.strptime(
                 instance.details["time"], "%Y-%m-%d %H:%M:%S"
@@ -26,5 +31,5 @@ def handle_status(sender, instance: PendingAction, **kwargs):
             reboot_time_utc = localized.astimezone(pytz.utc)
 
             if now > reboot_time_utc:
-                instance.status = "completed"
+                instance.status = PAStatus.COMPLETED
                 instance.save(update_fields=["status"])

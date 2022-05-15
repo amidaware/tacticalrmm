@@ -1,8 +1,18 @@
 <template>
   <q-dialog ref="dialog" @hide="onHide">
-    <q-card class="q-dialog-plugin" style="min-width: 80vw; min-height: 65vh; overflow-x: hidden">
+    <q-card
+      class="q-dialog-plugin"
+      style="min-width: 80vw; min-height: 65vh; overflow-x: hidden"
+    >
       <q-bar>
-        <q-btn @click="getChartData" class="q-mr-sm" dense flat push icon="refresh" />
+        <q-btn
+          @click="getChartData"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />
         {{ title }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
@@ -112,11 +122,13 @@ export default {
     seriesName() {
       if (this.check.check_type === "cpuload") return "CPU Load";
       else if (this.check.check_type === "memory") return "Memory Usage";
-      else if (this.check.check_type === "diskspace") return "Disk Space Remaining";
+      else if (this.check.check_type === "diskspace")
+        return "Disk Space Remaining";
       else if (this.check.check_type === "script") return "Script Results";
       else if (this.check.check_type === "eventlog") return "Status";
       else if (this.check.check_type === "winsvc") return "Status";
       else if (this.check.check_type === "ping") return "Status";
+      else return "";
     },
   },
   methods: {
@@ -124,8 +136,10 @@ export default {
       this.$q.loading.show();
 
       this.$axios
-        .patch(`/checks/${this.check.check_result.id}/history/`, { timeFilter: this.timeFilter })
-        .then(r => {
+        .patch(`/checks/${this.check.check_result.id}/history/`, {
+          timeFilter: this.timeFilter,
+        })
+        .then((r) => {
           this.history = Object.freeze(r.data);
 
           // save copy of data to reference results in chart tooltip
@@ -139,7 +153,7 @@ export default {
 
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -208,7 +222,7 @@ export default {
         min: 0,
         max: 100,
         labels: {
-          formatter: (val, index) => {
+          formatter: (val) => {
             return val + "%";
           },
         },
@@ -227,7 +241,7 @@ export default {
         forceNiceScale: true,
         labels: {
           minWidth: 50,
-          formatter: (val, index) => {
+          formatter: (val) => {
             if (val === 0) return "Passing";
             else if (val === 1) return "Failing";
             else return "";
@@ -238,17 +252,29 @@ export default {
       // customize the yaxis tooltip to include more information
       this.chartOptions["tooltip"]["y"] = {
         title: {
-          formatter: val => {
+          formatter: () => {
             return "";
           },
         },
-        formatter: (value, { series, seriesIndex, dataPointIndex, w }) => {
+        formatter: (value, { dataPointIndex }) => {
           let formatted = "";
           if (this.check.check_type === "script") {
-            formatted += "Return Code: " + this.results[dataPointIndex].results.retcode + "<br/>";
-            formatted += "Std Out: " + this.results[dataPointIndex].results.stdout + "<br/>";
-            formatted += "Err Out: " + this.results[dataPointIndex].results.errout + "<br/>";
-            formatted += "Execution Time: " + this.results[dataPointIndex].results.execution_time + "<br/>";
+            formatted +=
+              "Return Code: " +
+              this.results[dataPointIndex].results.retcode +
+              "<br/>";
+            formatted +=
+              "Std Out: " +
+              this.results[dataPointIndex].results.stdout +
+              "<br/>";
+            formatted +=
+              "Err Out: " +
+              this.results[dataPointIndex].results.errout +
+              "<br/>";
+            formatted +=
+              "Execution Time: " +
+              this.results[dataPointIndex].results.execution_time +
+              "<br/>";
           } else {
             formatted += this.results[dataPointIndex].results;
           }

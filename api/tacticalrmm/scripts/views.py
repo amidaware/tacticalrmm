@@ -1,13 +1,14 @@
 import asyncio
 
-from agents.permissions import RunScriptPerms
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from tacticalrmm.utils import notify_error
+from agents.permissions import RunScriptPerms
+from tacticalrmm.constants import ScriptShell, ScriptType
+from tacticalrmm.helpers import notify_error
 
 from .models import Script, ScriptSnippet
 from .permissions import ScriptsPerms
@@ -27,7 +28,7 @@ class GetAddScripts(APIView):
         showHiddenScripts = request.GET.get("showHiddenScripts", False)
 
         if not showCommunityScripts or showCommunityScripts == "false":
-            scripts = Script.objects.filter(script_type="userdefined")
+            scripts = Script.objects.filter(script_type=ScriptType.USER_DEFINED)
         else:
             scripts = Script.objects.all()
 
@@ -61,7 +62,7 @@ class GetUpdateDeleteScript(APIView):
 
         data = request.data
 
-        if script.script_type == "builtin":
+        if script.script_type == ScriptType.BUILT_IN:
             # allow only favoriting builtin scripts
             if "favorite" in data:
                 # overwrite request data
@@ -83,7 +84,7 @@ class GetUpdateDeleteScript(APIView):
         script = get_object_or_404(Script, pk=pk)
 
         # this will never trigger but check anyway
-        if script.script_type == "builtin":
+        if script.script_type == ScriptType.BUILT_IN:
             return notify_error("Community scripts cannot be deleted")
 
         script.delete()
@@ -172,16 +173,21 @@ def download(request, pk):
     if with_snippets == "false":
         with_snippets = False
 
-    if script.shell == "powershell":
-        filename = f"{script.name}.ps1"
-    elif script.shell == "cmd":
-        filename = f"{script.name}.bat"
-    else:
-        filename = f"{script.name}.py"
+    match script.shell:
+        case ScriptShell.POWERSHELL:
+            ext = ".ps1"
+        case ScriptShell.CMD:
+            ext = ".bat"
+        case ScriptShell.PYTHON:
+            ext = ".py"
+        case ScriptShell.SHELL:
+            ext = ".sh"
+        case _:
+            ext = ""
 
     return Response(
         {
-            "filename": filename,
+            "filename": f"{script.name}{ext}",
             "code": script.code if with_snippets else script.code_no_snippets,
         }
     )

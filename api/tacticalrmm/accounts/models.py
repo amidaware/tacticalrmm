@@ -1,30 +1,17 @@
-from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.db.models.fields import CharField, DateTimeField
-from django.core.cache import cache
-from logs.models import BaseAuditModel
-
 from typing import Optional
 
-from tacticalrmm.constants import ROLE_CACHE_PREFIX
+from django.contrib.auth.models import AbstractUser
+from django.core.cache import cache
+from django.db import models
+from django.db.models.fields import CharField, DateTimeField
 
-AGENT_DBLCLICK_CHOICES = [
-    ("editagent", "Edit Agent"),
-    ("takecontrol", "Take Control"),
-    ("remotebg", "Remote Background"),
-    ("urlaction", "URL Action"),
-]
-
-AGENT_TBL_TAB_CHOICES = [
-    ("server", "Servers"),
-    ("workstation", "Workstations"),
-    ("mixed", "Mixed"),
-]
-
-CLIENT_TREE_SORT_CHOICES = [
-    ("alphafail", "Move failing clients to the top"),
-    ("alpha", "Sort alphabetically"),
-]
+from logs.models import BaseAuditModel
+from tacticalrmm.constants import (
+    ROLE_CACHE_PREFIX,
+    AgentDblClick,
+    AgentTableTabs,
+    ClientTreeSort,
+)
 
 
 class User(AbstractUser, BaseAuditModel):
@@ -34,7 +21,7 @@ class User(AbstractUser, BaseAuditModel):
     dark_mode = models.BooleanField(default=True)
     show_community_scripts = models.BooleanField(default=True)
     agent_dblclick_action = models.CharField(
-        max_length=50, choices=AGENT_DBLCLICK_CHOICES, default="editagent"
+        max_length=50, choices=AgentDblClick.choices, default=AgentDblClick.EDIT_AGENT
     )
     url_action = models.ForeignKey(
         "core.URLAction",
@@ -44,11 +31,11 @@ class User(AbstractUser, BaseAuditModel):
         on_delete=models.SET_NULL,
     )
     default_agent_tbl_tab = models.CharField(
-        max_length=50, choices=AGENT_TBL_TAB_CHOICES, default="server"
+        max_length=50, choices=AgentTableTabs.choices, default=AgentTableTabs.SERVER
     )
     agents_per_page = models.PositiveIntegerField(default=50)  # not currently used
     client_tree_sort = models.CharField(
-        max_length=50, choices=CLIENT_TREE_SORT_CHOICES, default="alphafail"
+        max_length=50, choices=ClientTreeSort.choices, default=ClientTreeSort.ALPHA_FAIL
     )
     client_tree_splitter = models.PositiveIntegerField(default=11)
     loading_bar_color = models.CharField(max_length=255, default="red")

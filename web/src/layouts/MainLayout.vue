@@ -1,9 +1,18 @@
 <template>
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-grey-9 text-white">
-      <q-banner v-if="needRefresh" inline-actions class="bg-red text-white text-center">
+      <q-banner
+        v-if="needRefresh"
+        inline-actions
+        class="bg-red text-white text-center"
+      >
         You are viewing an outdated version of this page.
-        <q-btn color="dark" icon="refresh" label="Refresh" @click="$store.dispatch('reload')" />
+        <q-btn
+          color="dark"
+          icon="refresh"
+          label="Refresh"
+          @click="$store.dispatch('reload')"
+        />
       </q-banner>
       <q-toolbar>
         <q-btn
@@ -13,27 +22,47 @@
           icon="refresh"
           v-if="$route.name === 'Dashboard'"
         />
-        <q-btn v-else dense flat @click="$router.push({ name: 'Dashboard' })" icon="dashboard">
+        <q-btn
+          v-else
+          dense
+          flat
+          @click="$router.push({ name: 'Dashboard' })"
+          icon="dashboard"
+        >
           <q-tooltip>Back to Dashboard</q-tooltip>
         </q-btn>
         <q-toolbar-title>
-          Tactical RMM<span class="text-overline q-ml-sm">v{{ currentTRMMVersion }}</span>
+          Tactical RMM<span class="text-overline q-ml-sm"
+            >v{{ currentTRMMVersion }}</span
+          >
           <span
             class="text-overline q-ml-md"
-            v-if="latestTRMMVersion !== 'error' && currentTRMMVersion !== latestTRMMVersion"
+            v-if="
+              latestTRMMVersion !== 'error' &&
+              currentTRMMVersion !== latestTRMMVersion
+            "
             ><q-badge color="warning"
-              ><a :href="latestReleaseURL" target="_blank">v{{ latestTRMMVersion }} available</a></q-badge
+              ><a :href="latestReleaseURL" target="_blank"
+                >v{{ latestTRMMVersion }} available</a
+              ></q-badge
             ></span
           >
         </q-toolbar-title>
 
         <!-- temp dark mode toggle -->
-        <q-toggle v-model="darkMode" class="q-mr-sm" checked-icon="nights_stay" unchecked-icon="wb_sunny" />
+        <q-toggle
+          v-model="darkMode"
+          class="q-mr-sm"
+          checked-icon="nights_stay"
+          unchecked-icon="wb_sunny"
+        />
 
         <!-- Devices Chip -->
         <q-chip class="cursor-pointer">
           <q-avatar size="md" icon="devices" color="primary" />
-          <q-tooltip :delay="600" anchor="top middle" self="top middle">Agent Count</q-tooltip>
+          <q-tooltip :delay="600" anchor="top middle" self="top middle"
+            >Agent Count</q-tooltip
+          >
           {{ serverCount + workstationCount }}
           <q-menu>
             <q-list dense>
@@ -72,7 +101,9 @@
                 </q-item-section>
 
                 <q-item-section no-wrap>
-                  <q-item-label>Offline: {{ workstationOfflineCount }}</q-item-label>
+                  <q-item-label
+                    >Offline: {{ workstationOfflineCount }}</q-item-label
+                  >
                 </q-item-section>
               </q-item>
             </q-list>
@@ -83,7 +114,12 @@
 
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
-            <q-item clickable v-ripple @click="showUserPreferences" v-close-popup>
+            <q-item
+              clickable
+              v-ripple
+              @click="showUserPreferences"
+              v-close-popup
+            >
               <q-item-section>
                 <q-item-label>Preferences</q-item-label>
               </q-item-section>
@@ -117,7 +153,7 @@ import UserPreferences from "@/components/modals/coresettings/UserPreferences";
 export default {
   name: "MainLayout",
   components: { AlertsIcon },
-  setup(props) {
+  setup() {
     const store = useStore();
     const $q = useQuasar();
 
@@ -125,8 +161,8 @@ export default {
       get: () => {
         return $q.dark.isActive;
       },
-      set: value => {
-        axios.patch("/accounts/users/ui/", { dark_mode: value }).catch(e => {});
+      set: (value) => {
+        axios.patch("/accounts/users/ui/", { dark_mode: value });
         $q.dark.set(value);
       },
     });
@@ -164,19 +200,24 @@ export default {
       // when ws is closed causing ws to connect with expired token
       const token = computed(() => store.state.token);
       console.log("Starting websocket");
-      const proto = process.env.NODE_ENV === "production" || process.env.DOCKER_BUILD ? "wss" : "ws";
-      ws.value = new WebSocket(`${proto}://${wsUrl()}/ws/dashinfo/?access_token=${token.value}`);
-      ws.value.onopen = e => {
+      const proto =
+        process.env.NODE_ENV === "production" || process.env.DOCKER_BUILD
+          ? "wss"
+          : "ws";
+      ws.value = new WebSocket(
+        `${proto}://${wsUrl()}/ws/dashinfo/?access_token=${token.value}`
+      );
+      ws.value.onopen = () => {
         console.log("Connected to ws");
       };
-      ws.value.onmessage = e => {
+      ws.value.onmessage = (e) => {
         const data = JSON.parse(e.data);
         serverCount.value = data.total_server_count;
         serverOfflineCount.value = data.total_server_offline_count;
         workstationCount.value = data.total_workstation_count;
         workstationOfflineCount.value = data.total_workstation_offline_count;
       };
-      ws.value.onclose = e => {
+      ws.value.onclose = (e) => {
         try {
           console.log(`Closed code: ${e.code}`);
           console.log("Retrying websocket connection...");
@@ -187,7 +228,7 @@ export default {
           console.log("Websocket connection closed");
         }
       };
-      ws.value.onerror = err => {
+      ws.value.onerror = () => {
         console.log("There was an error");
         ws.value.onclose();
       };

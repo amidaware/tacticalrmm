@@ -1,11 +1,12 @@
 import threading
+from typing import Any, Dict, Optional
 
 from django.conf import settings
 from ipware import get_client_ip
-from typing import Dict, Optional, Any
 from rest_framework.exceptions import AuthenticationFailed
 
-from tacticalrmm.constants import DEMO_NOT_ALLOWED, LINUX_NOT_IMPLEMENTED
+from tacticalrmm.constants import DEMO_NOT_ALLOWED
+from tacticalrmm.helpers import notify_error
 
 request_local = threading.local()
 
@@ -24,6 +25,11 @@ EXCLUDE_PATHS = (
     f"/{settings.ADMIN_URL}",
     "/logout",
     "/agents/installer",
+    "/api/schema",
+)
+
+DEMO_EXCLUDE_PATHS = (
+    "/api/v3",
     "/api/schema",
 )
 
@@ -59,12 +65,16 @@ class AuditMiddleware:
             try:
                 if hasattr(request, "user") and request.user.is_authenticated:
 
+                    try:
+                        view_Name = view_func.__dict__["view_class"].__name__
+                    except:
+                        view_Name = view_func.__name__
                     debug_info = {}
                     # gather and save debug info
                     debug_info["url"] = request.path
                     debug_info["method"] = request.method
                     debug_info["view_class"] = view_func.cls.__name__
-                    debug_info["view_func"] = view_func.__name__
+                    debug_info["view_func"] = view_Name
                     debug_info["view_args"] = view_args
                     debug_info["view_kwargs"] = view_kwargs
                     debug_info["ip"] = request._client_ip
@@ -91,7 +101,7 @@ class LogIPMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        client_ip, is_routable = get_client_ip(request)
+        client_ip, _ = get_client_ip(request)
 
         request._client_ip = client_ip
         response = self.get_response(request)
@@ -115,50 +125,14 @@ class DemoMiddleware:
         return view.finalize_response(request, resp).render()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        from .utils import notify_error
-
         err = "Not available in demo"
-        excludes = ("/api/v3",)
-
-        if request.path.startswith(excludes):
+        if request.path.startswith(DEMO_EXCLUDE_PATHS):
             return self.drf_mock_response(request, notify_error(err))
 
+        try:
+            view_Name = view_func.__dict__["view_class"].__name__
+        except:
+            return
         for i in self.not_allowed:
-            if view_func.__name__ == i["name"] and request.method in i["methods"]:
+            if view_Name == i["name"] and request.method in i["methods"]:
                 return self.drf_mock_response(request, notify_error(err))
-
-
-class LinuxMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-        self.not_implemented = LINUX_NOT_IMPLEMENTED
-
-    def __call__(self, request):
-        return self.get_response(request)
-
-    def drf_mock_response(self, request, resp):
-        from rest_framework.views import APIView
-
-        view = APIView()
-        view.headers = view.default_response_headers
-        return view.finalize_response(request, resp).render()
-
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        if not request.path.startswith(EXCLUDE_PATHS):
-            if "agent_id" in view_kwargs.keys():
-                from agents.models import Agent
-
-                err = "Not currently implemented for linux"
-                agent = Agent.objects.only("id", "agent_id", "plat").get(
-                    agent_id=view_kwargs["agent_id"]
-                )
-                if agent.plat == "linux":
-                    from .utils import notify_error
-
-                    for i in self.not_implemented:
-                        if (
-                            view_func.__name__ == i["name"]
-                            and request.method in i["methods"]
-                        ):
-                            return self.drf_mock_response(request, notify_error(err))

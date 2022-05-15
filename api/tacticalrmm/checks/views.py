@@ -1,9 +1,6 @@
 import asyncio
 from datetime import datetime as dt
 
-from agents.models import Agent
-from alerts.models import Alert
-from automation.models import Policy
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -13,8 +10,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from agents.models import Agent
+from alerts.models import Alert
+from automation.models import Policy
+from tacticalrmm.constants import CheckStatus, CheckType
+from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import _has_perm_on_agent
-from tacticalrmm.utils import notify_error
 
 from .models import Check, CheckHistory, CheckResult
 from .permissions import ChecksPerms, RunChecksPerms
@@ -48,7 +49,7 @@ class GetAddChecks(APIView):
 
         # set event id to 0 if wildcard because it needs to be an integer field for db
         # will be ignored anyway by the agent when doing wildcard check
-        if data["check_type"] == "eventlog" and data["event_id_is_wildcard"]:
+        if data["check_type"] == CheckType.EVENT_LOG and data["event_id_is_wildcard"]:
             data["event_id"] = 0
 
         serializer = CheckSerializer(data=data, partial=True)
@@ -81,7 +82,7 @@ class GetUpdateDeleteCheck(APIView):
 
         # set event id to 0 if wildcard because it needs to be an integer field for db
         # will be ignored anyway by the agent when doing wildcard check
-        if check.check_type == "eventlog":
+        if check.check_type == CheckType.EVENT_LOG:
             try:
                 data["event_id_is_wildcard"]
             except KeyError:
@@ -116,7 +117,7 @@ class ResetCheck(APIView):
         if result.agent and not _has_perm_on_agent(request.user, result.agent.agent_id):
             raise PermissionDenied()
 
-        result.status = "passing"
+        result.status = CheckStatus.PASSING
         result.save()
 
         # resolve any alerts that are open

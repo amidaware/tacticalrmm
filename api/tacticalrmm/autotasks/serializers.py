@@ -1,6 +1,6 @@
 from rest_framework import serializers
+
 from scripts.models import Script
-from django.core.exceptions import ObjectDoesNotExist
 
 from .models import AutomatedTask, TaskResult
 
@@ -9,6 +9,7 @@ class TaskResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskResult
         fields = "__all__"
+        read_only_fields = ("agent", "task")
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -198,7 +199,7 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
     def get_task_actions(self, obj):
         tmp = []
         actions_to_remove = []
-        agent = self.context["agent"] if "agent" in self.context.keys() else obj.agent
+        agent = self.context["agent"]
         for action in obj.actions:
             if action["type"] == "cmd":
                 tmp.append(
@@ -216,7 +217,7 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
             elif action["type"] == "script":
                 try:
                     script = Script.objects.get(pk=action["script"])
-                except ObjectDoesNotExist:
+                except Script.DoesNotExist:
                     # script doesn't exist so remove it
                     actions_to_remove.append(action["script"])
                     continue

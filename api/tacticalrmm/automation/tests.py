@@ -1,12 +1,12 @@
 from itertools import cycle
 from unittest.mock import patch
 
+from model_bakery import baker, seq
+
 from agents.models import Agent
 from core.utils import get_core_settings
-from model_bakery import baker, seq
-from winupdate.models import WinUpdatePolicy
-
 from tacticalrmm.test import TacticalTestCase
+from winupdate.models import WinUpdatePolicy
 
 from .serializers import (
     PolicyCheckStatusSerializer,

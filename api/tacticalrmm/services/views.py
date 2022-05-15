@@ -1,20 +1,20 @@
 import asyncio
+from typing import Dict, Tuple, Union
 
-from agents.models import Agent
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from tacticalrmm.utils import notify_error
 
-from typing import Union, Dict, Tuple
+from agents.models import Agent
+from tacticalrmm.helpers import notify_error
 
 from .permissions import WinSvcsPerms
 
 
 def process_nats_response(data: Union[str, Dict]) -> Tuple[bool, bool, str]:
-    natserror = True if isinstance(data, str) else False
+    natserror = isinstance(data, str)
     success = (
         data["success"]
         if isinstance(data, dict) and isinstance(data["success"], bool)

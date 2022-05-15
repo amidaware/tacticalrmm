@@ -6,21 +6,10 @@ from typing import List
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import CharField, TextField
+
 from logs.models import BaseAuditModel
-
+from tacticalrmm.constants import ScriptShell, ScriptType
 from tacticalrmm.utils import replace_db_values
-
-SCRIPT_SHELLS = [
-    ("powershell", "Powershell"),
-    ("cmd", "Batch (CMD)"),
-    ("python", "Python"),
-    ("shell", "Shell"),
-]
-
-SCRIPT_TYPES = [
-    ("userdefined", "User Defined"),
-    ("builtin", "Built In"),
-]
 
 
 class Script(BaseAuditModel):
@@ -29,10 +18,10 @@ class Script(BaseAuditModel):
     description = models.TextField(null=True, blank=True, default="")
     filename = models.CharField(max_length=255, null=True, blank=True)
     shell = models.CharField(
-        max_length=100, choices=SCRIPT_SHELLS, default="powershell"
+        max_length=100, choices=ScriptShell.choices, default=ScriptShell.POWERSHELL
     )
     script_type = models.CharField(
-        max_length=100, choices=SCRIPT_TYPES, default="userdefined"
+        max_length=100, choices=ScriptType.choices, default=ScriptType.USER_DEFINED
     )
     args = ArrayField(
         models.TextField(null=True, blank=True),
@@ -108,7 +97,9 @@ class Script(BaseAuditModel):
 
         for script in info:
             if os.path.exists(os.path.join(scripts_dir, script["filename"])):
-                s = cls.objects.filter(script_type="builtin", guid=script["guid"])
+                s = cls.objects.filter(
+                    script_type=ScriptType.BUILT_IN, guid=script["guid"]
+                )
 
                 category = (
                     script["category"] if "category" in script.keys() else "Community"
@@ -163,7 +154,7 @@ class Script(BaseAuditModel):
                             name=script["name"],
                             description=script["description"],
                             shell=script["shell"],
-                            script_type="builtin",
+                            script_type=ScriptType.BUILT_IN,
                             category=category,
                             default_timeout=default_timeout,
                             args=args,
@@ -178,7 +169,7 @@ class Script(BaseAuditModel):
 
         # check for community scripts that were deleted from json and scripts folder
         count, _ = (
-            Script.objects.filter(script_type="builtin")
+            Script.objects.filter(script_type=ScriptType.BUILT_IN)
             .exclude(guid__in=community_scripts_processed)
             .delete()
         )
@@ -210,7 +201,12 @@ class Script(BaseAuditModel):
             if match:
                 # only get the match between the () in regex
                 string = match.group(1)
-                value = replace_db_values(string=string, instance=agent, shell=shell)
+                value = replace_db_values(
+                    string=string,
+                    instance=agent,
+                    shell=shell,
+                    quotes=True if shell != ScriptShell.CMD else False,
+                )
 
                 if value:
                     temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
@@ -228,7 +224,9 @@ class ScriptSnippet(models.Model):
     name = CharField(max_length=40, unique=True)
     desc = CharField(max_length=50, blank=True, default="")
     code = TextField(default="")
-    shell = CharField(max_length=15, choices=SCRIPT_SHELLS, default="powershell")
+    shell = CharField(
+        max_length=15, choices=ScriptShell.choices, default=ScriptShell.POWERSHELL
+    )
 
     def __str__(self):
         return self.name

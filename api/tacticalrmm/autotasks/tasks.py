@@ -2,15 +2,16 @@ import asyncio
 import datetime as dt
 import random
 from time import sleep
-from typing import Union, Optional
+from typing import Optional, Union
 
-from autotasks.models import AutomatedTask
-from agents.models import Agent
 from django.utils import timezone as djangotime
-from logs.models import DebugLog
+
+from agents.models import Agent
 from alerts.models import Alert
-from autotasks.models import TaskResult
+from autotasks.models import AutomatedTask, TaskResult
+from logs.models import DebugLog
 from tacticalrmm.celery import app
+from tacticalrmm.constants import DebugLogType
 
 
 @app.task
@@ -83,7 +84,7 @@ def remove_orphaned_win_tasks() -> None:
         if not isinstance(r, list):  # empty list
             DebugLog.error(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"Unable to pull list of scheduled tasks on {agent.hostname}: {r}",
             )
             return
@@ -114,13 +115,13 @@ def remove_orphaned_win_tasks() -> None:
                 if ret != "ok":
                     DebugLog.error(
                         agent=agent,
-                        log_type="agent_issues",
+                        log_type=DebugLogType.AGENT_ISSUES,
                         message=f"Unable to clean up orphaned task {task} on {agent.hostname}: {ret}",
                     )
                 else:
                     DebugLog.info(
                         agent=agent,
-                        log_type="agent_issues",
+                        log_type=DebugLogType.AGENT_ISSUES,
                         message=f"Removed orphaned task {task} from {agent.hostname}",
                     )
 

@@ -1,28 +1,24 @@
 import asyncio
-from meshctrl.utils import get_auth_token
 
 from django.core.management.base import BaseCommand
+from meshctrl.utils import get_auth_token
 
-from core.utils import (
-    get_mesh_device_id,
-    get_mesh_ws_url,
-    get_core_settings,
-)
+from core.utils import get_core_settings, get_mesh_device_id, get_mesh_ws_url
 
 
 class Command(BaseCommand):
     help = "Mesh troubleshooting script"
 
-    def _success(self, *args):
+    def _success(self, *args) -> None:
         self.stdout.write(self.style.SUCCESS(" ".join(args)))
 
-    def _error(self, *args):
+    def _error(self, *args) -> None:
         self.stdout.write(self.style.ERROR(" ".join(args)))
 
-    def _warning(self, *args):
+    def _warning(self, *args) -> None:
         self.stdout.write(self.style.WARNING(" ".join(args)))
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **kwargs) -> None:
         core = get_core_settings()
 
         self._warning("Mesh site:", core.mesh_site)

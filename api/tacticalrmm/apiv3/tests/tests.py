@@ -1,11 +1,7 @@
-import json
-import os
-
-from autotasks.models import TaskResult
-from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
 
+from autotasks.models import TaskResult
 from tacticalrmm.test import TacticalTestCase
 
 
@@ -70,24 +66,6 @@ class TestAPIv3(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    def test_sysinfo(self):
-        # TODO replace this with golang wmi sample data
-
-        url = "/api/v3/sysinfo/"
-        with open(
-            os.path.join(
-                settings.BASE_DIR, "tacticalrmm/test_data/wmi_python_agent.json"
-            )
-        ) as f:
-            wmi_py = json.load(f)
-
-        payload = {"agent_id": self.agent.agent_id, "sysinfo": wmi_py}
-
-        r = self.client.patch(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("patch", url)
-
     def test_checkrunner_interval(self):
         url = f"/api/v3/{self.agent.agent_id}/checkinterval/"
         r = self.client.get(url, format="json")
@@ -137,8 +115,6 @@ class TestAPIv3(TacticalTestCase):
         self.assertEqual(len(r.json()["checks"]), 15)
 
     def test_task_runner_get(self):
-        from autotasks.serializers import TaskGOGetSerializer
-
         r = self.client.get("/api/v3/500/asdf9df9dfdf/taskrunner/")
         self.assertEqual(r.status_code, 404)
 
@@ -163,7 +139,6 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskGOGetSerializer(task).data, r.data)
 
     def test_task_runner_results(self):
         from agents.models import AgentCustomField

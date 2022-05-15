@@ -4,40 +4,36 @@ import os
 import random
 import string
 import time
-from meshctrl.utils import get_login_token
 
-from core.models import CodeSignToken
-from core.utils import (
-    get_mesh_ws_url,
-    remove_mesh_agent,
-    send_command_with_mesh,
-    get_core_settings,
-)
 from django.conf import settings
-from django.db.models import Q, Prefetch, Exists, Count, OuterRef
+from django.db.models import Count, Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from logs.models import AuditLog, DebugLog, PendingAction
+from meshctrl.utils import get_login_token
 from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from core.models import CodeSignToken
+from core.utils import get_core_settings, get_mesh_ws_url, remove_mesh_agent
+from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from winupdate.serializers import WinUpdatePolicySerializer
-from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
-from winupdate.models import WinUpdate
-
-from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER, EvtLogNames, PAAction, PAStatus
+from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
     _has_perm_on_site,
 )
-from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
+from tacticalrmm.utils import get_default_timezone, reload_nats
+from winupdate.models import WinUpdate
+from winupdate.serializers import WinUpdatePolicySerializer
+from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
 from .permissions import (
@@ -119,7 +115,8 @@ class GetAgents(APIView):
                 )
                 .annotate(
                     pending_actions_count=Count(
-                        "pendingactions", filter=Q(pendingactions__status="pending")
+                        "pendingactions",
+                        filter=Q(pendingactions__status=PAStatus.PENDING),
                     )
                 )
                 .annotate(
@@ -356,7 +353,7 @@ def get_event_log(request, agent_id, logtype, days):
         return demo_get_eventlog()
 
     agent = get_object_or_404(Agent, agent_id=agent_id)
-    timeout = 180 if logtype == "Security" else 30
+    timeout = 180 if logtype == EvtLogNames.SECURITY else 30
 
     data = {
         "func": "eventlog",
@@ -430,6 +427,8 @@ class Reboot(APIView):
     # reboot later
     def patch(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
+        if agent.is_posix:
+            return notify_error(f"Not currently implemented for {agent.plat}")
 
         try:
             obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M:%S")
@@ -471,7 +470,7 @@ class Reboot(APIView):
 
         details = {"taskname": task_name, "time": str(obj)}
         PendingAction.objects.create(
-            agent=agent, action_type="schedreboot", details=details
+            agent=agent, action_type=PAAction.SCHED_REBOOT, details=details
         )
         nice_time = dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
         return Response(
@@ -482,9 +481,10 @@ class Reboot(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
+    from knox.models import AuthToken
+
     from accounts.models import User
     from agents.utils import get_agent_url
-    from knox.models import AuthToken
 
     client_id = request.data["client"]
     site_id = request.data["site"]
@@ -639,28 +639,23 @@ def install_agent(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RecoverAgentPerms])
-def recover(request, agent_id):
-    agent = get_object_or_404(Agent, agent_id=agent_id)
+def recover(request, agent_id: str) -> Response:
+    agent: Agent = get_object_or_404(
+        Agent.objects.defer(*AGENT_DEFER), agent_id=agent_id
+    )
     mode = request.data["mode"]
 
     if mode == "tacagent":
-        if agent.is_posix:
-            cmd = "systemctl restart tacticalagent.service"
-            shell = 3
-        else:
-            cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
-            shell = 1
         uri = get_mesh_ws_url()
-        asyncio.run(send_command_with_mesh(cmd, uri, agent.mesh_node_id, shell, 0))
+        agent.recover(mode, uri, wait=False)
         return Response("Recovery will be attempted shortly")
 
     elif mode == "mesh":
-        data = {"func": "recover", "payload": {"mode": mode}}
-        r = asyncio.run(agent.nats_cmd(data, timeout=20))
-        if r == "ok":
-            return Response("Successfully completed recovery")
+        r, err = agent.recover(mode, "")
+        if err:
+            return notify_error(f"Unable to complete recovery: {r}")
 
-    return notify_error("Something went wrong")
+    return Response("Successfully completed recovery")
 
 
 @api_view(["POST"])

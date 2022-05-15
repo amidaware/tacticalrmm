@@ -1,6 +1,10 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" v-bind="dialogProps">
-    <q-card v-if="!noCard" class="q-dialog-plugin" :style="`min-width: ${width}vw`">
+    <q-card
+      v-if="!noCard"
+      class="q-dialog-plugin"
+      :style="`min-width: ${width}vw`"
+    >
       <q-bar>
         {{ title }}
         <q-space />
@@ -17,7 +21,12 @@
         />
       </div>
     </q-card>
-    <component v-else class="q-dialog-plugin" :is="vuecomponent" v-bind="{ ...$attrs, ...componentProps }" />
+    <component
+      v-else
+      class="q-dialog-plugin"
+      :is="vuecomponent"
+      v-bind="{ ...$attrs, ...componentProps }"
+    />
   </q-dialog>
 </template>
 
@@ -47,7 +56,8 @@ export default {
   },
   inheritAttrs: false,
   setup() {
-    const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginComponent();
+    const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
+      useDialogPluginComponent();
 
     return {
       // quasar dialog plugin

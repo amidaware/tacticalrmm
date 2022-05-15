@@ -9,18 +9,25 @@
         </q-btn>
       </q-bar>
       <q-card-section class="text-subtitle3">
-        Reset the patch policies for agents in a specific client or site. You can also leave the client and site blank
-        to reset the patch policy for all agents. (This might take a while)
+        Reset the patch policies for agents in a specific client or site. You
+        can also leave the client and site blank to reset the patch policy for
+        all agents. (This might take a while)
       </q-card-section>
 
       <q-card-section>
-        <q-option-group v-model="target" :options="targetOptions" color="primary" inline dense />
+        <q-option-group
+          v-model="target"
+          :options="targetOptions"
+          color="primary"
+          inline
+          dense
+        />
       </q-card-section>
 
       <q-form @submit="submit">
         <q-card-section v-if="target == 'client'">
           <tactical-dropdown
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             label="Clients"
             mapOptions
             filterable
@@ -32,7 +39,7 @@
         </q-card-section>
         <q-card-section v-if="target == 'site'">
           <tactical-dropdown
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             label="Sites"
             mapOptions
             filterable
@@ -49,7 +56,11 @@
             flat
             dense
             push
-            :label="target == 'all' ? 'Clear Policies for ALL Agents' : 'Clear Policies'"
+            :label="
+              target == 'all'
+                ? 'Clear Policies for ALL Agents'
+                : 'Clear Policies'
+            "
             color="primary"
             type="submit"
           />
@@ -83,7 +94,7 @@ export default {
     TacticalDropdown,
   },
   emits: [...useDialogPluginComponent.emits],
-  setup(props) {
+  setup() {
     // setup quasar dialog plugin
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
@@ -100,7 +111,7 @@ export default {
     const target = ref("all");
     const loading = ref(false);
 
-    watch(target, (newValue, oldValue) => {
+    watch(target, () => {
       state.value.client = null;
       state.value.site = null;
     });

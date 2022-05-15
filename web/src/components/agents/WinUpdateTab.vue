@@ -6,7 +6,10 @@
   <div v-else>
     <q-table
       dense
-      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+      :table-class="{
+        'table-bgcolor': !$q.dark.isActive,
+        'table-bgcolor-dark': $q.dark.isActive,
+      }"
       class="tabs-tbl-sticky"
       :style="{ 'max-height': tabHeight }"
       :rows="updates"
@@ -21,12 +24,42 @@
       no-data-label="No Windows Updates"
     >
       <template v-slot:top>
-        <q-btn dense flat push @click="getUpdates" icon="refresh" class="q-mr-sm" />
-        <q-btn label="Run Update Scan" dense flat push no-caps @click="updateScan" class="q-mr-sm" />
-        <q-btn label="Install Approved Updates" dense flat push no-caps @click="installUpdates" class="q-mr-sm" />
+        <q-btn
+          dense
+          flat
+          push
+          @click="getUpdates"
+          icon="refresh"
+          class="q-mr-sm"
+        />
+        <q-btn
+          label="Run Update Scan"
+          dense
+          flat
+          push
+          no-caps
+          @click="updateScan"
+          class="q-mr-sm"
+        />
+        <q-btn
+          label="Install Approved Updates"
+          dense
+          flat
+          push
+          no-caps
+          @click="installUpdates"
+          class="q-mr-sm"
+        />
         <q-space />
 
-        <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+        <q-input
+          v-model="filter"
+          outlined
+          label="Search"
+          dense
+          clearable
+          class="q-pr-sm"
+        >
           <template v-slot:prepend>
             <q-icon name="search" color="primary" />
           </template>
@@ -78,27 +111,55 @@
           </q-menu>
           <!-- policy -->
           <q-td>
-            <q-icon v-if="props.row.action === 'nothing'" name="fiber_manual_record" color="grey">
+            <q-icon
+              v-if="props.row.action === 'nothing'"
+              name="fiber_manual_record"
+              color="grey"
+            >
               <q-tooltip>Do Nothing</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.action === 'approve'" name="fas fa-check" color="primary">
+            <q-icon
+              v-else-if="props.row.action === 'approve'"
+              name="fas fa-check"
+              color="primary"
+            >
               <q-tooltip>Approve</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.action === 'ignore'" name="fas fa-check" color="negative">
+            <q-icon
+              v-else-if="props.row.action === 'ignore'"
+              name="fas fa-check"
+              color="negative"
+            >
               <q-tooltip>Ignore</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.action === 'inherit'" name="fiber_manual_record" color="accent">
+            <q-icon
+              v-else-if="props.row.action === 'inherit'"
+              name="fiber_manual_record"
+              color="accent"
+            >
               <q-tooltip>Inherit</q-tooltip>
             </q-icon>
           </q-td>
           <q-td>
-            <q-icon v-if="props.row.installed" name="fas fa-check" color="positive">
+            <q-icon
+              v-if="props.row.installed"
+              name="fas fa-check"
+              color="positive"
+            >
               <q-tooltip>Installed</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.action == 'approve'" name="fas fa-tasks" color="primary">
+            <q-icon
+              v-else-if="props.row.action == 'approve'"
+              name="fas fa-tasks"
+              color="primary"
+            >
               <q-tooltip>Pending</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.action == 'ignore'" name="fas fa-ban" color="negative">
+            <q-icon
+              v-else-if="props.row.action == 'ignore'"
+              name="fas fa-ban"
+              color="negative"
+            >
               <q-tooltip>Ignored</q-tooltip>
             </q-icon>
             <q-icon v-else name="fas fa-exclamation" color="warning">
@@ -108,9 +169,11 @@
           <q-td>{{ !props.row.severity ? "Other" : props.row.severity }}</q-td>
           <q-td>{{ truncateText(props.row.title, 50) }}</q-td>
           <q-td @click="showUpdateDetails(props.row)">
-            <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
-              truncateText(props.row.description, 50)
-            }}</span>
+            <span
+              style="cursor: pointer; text-decoration: underline"
+              class="text-primary"
+              >{{ truncateText(props.row.description, 50) }}</span
+            >
           </q-td>
           <q-td>{{ formatDate(props.row.date_installed) }}</q-td>
         </q-tr>
@@ -124,7 +187,12 @@
 import { ref, computed, watch, inject, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
-import { fetchAgentUpdates, editAgentUpdate, runAgentUpdateScan, runAgentUpdateInstall } from "@/api/winupdates";
+import {
+  fetchAgentUpdates,
+  editAgentUpdate,
+  runAgentUpdateScan,
+  runAgentUpdateInstall,
+} from "@/api/winupdates";
 import { notifySuccess } from "@/utils/notify";
 import { truncateText } from "@/utils/format";
 
@@ -176,7 +244,7 @@ const columns = [
 export default {
   name: "WindowsUpdates",
   components: { ExportTableBtn },
-  setup(props) {
+  setup() {
     // setup vuex
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
@@ -243,7 +311,7 @@ export default {
 
     function showUpdateDetails(update) {
       let support_urls = "";
-      update.more_info_urls.forEach(u => {
+      update.more_info_urls.forEach((u) => {
         support_urls += `<a href='${u}' target='_blank'>${u}</a><br/>`;
       });
       let cats = update.categories.join(", ");
@@ -259,7 +327,7 @@ export default {
       });
     }
 
-    watch(selectedAgent, (newValue, oldValue) => {
+    watch(selectedAgent, (newValue) => {
       if (newValue) {
         getUpdates();
       }

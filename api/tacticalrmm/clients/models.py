@@ -1,11 +1,12 @@
 import uuid
+from typing import Dict
+
+from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
+from django.db import models
 
 from agents.models import Agent
-from django.core.cache import cache
-from django.contrib.postgres.fields import ArrayField
-from django.db import models
 from logs.models import BaseAuditModel
-from typing import Dict
 from tacticalrmm.constants import AGENT_DEFER
 from tacticalrmm.models import PermissionQuerySet
 

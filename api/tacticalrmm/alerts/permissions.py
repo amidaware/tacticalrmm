@@ -1,6 +1,8 @@
+from typing import TYPE_CHECKING
+
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
-from typing import TYPE_CHECKING
+
 from tacticalrmm.permissions import _has_perm, _has_perm_on_agent
 
 if TYPE_CHECKING:

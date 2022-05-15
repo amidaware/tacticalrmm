@@ -1,24 +1,60 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide" :maximized="maximized">
-    <q-card class="q-dialog-plugin" :style="maximized ? '' : 'width: 90vw; max-width: 90vw'">
+  <q-dialog
+    ref="dialogRef"
+    @hide="onDialogHide"
+    persistent
+    @keydown.esc="onDialogHide"
+    :maximized="maximized"
+  >
+    <q-card
+      class="q-dialog-plugin"
+      :style="maximized ? '' : 'width: 90vw; max-width: 90vw'"
+    >
       <q-bar>
         {{ title }}
         <q-space />
-        <q-btn dense flat icon="minimize" @click="maximized = false" :disable="!maximized">
-          <q-tooltip v-if="maximized" class="bg-white text-primary">Minimize</q-tooltip>
+        <q-btn
+          dense
+          flat
+          icon="minimize"
+          @click="maximized = false"
+          :disable="!maximized"
+        >
+          <q-tooltip v-if="maximized" class="bg-white text-primary"
+            >Minimize</q-tooltip
+          >
         </q-btn>
-        <q-btn dense flat icon="crop_square" @click="maximized = true" :disable="maximized">
-          <q-tooltip v-if="!maximized" class="bg-white text-primary">Maximize</q-tooltip>
+        <q-btn
+          dense
+          flat
+          icon="crop_square"
+          @click="maximized = true"
+          :disable="maximized"
+        >
+          <q-tooltip v-if="!maximized" class="bg-white text-primary"
+            >Maximize</q-tooltip
+          >
         </q-btn>
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-form @submit="submitForm">
-        <q-banner v-if="missingShebang" dense inline-actions class="text-black bg-warning">
-          <template v-slot:avatar> <q-icon class="text-center" name="warning" color="black" /> </template>Shell/Python
-          scripts on Linux/Mac need a shebang at the top of the script e.g. <code>#!/bin/bash</code> or
-          <code>#!/usr/bin/python3</code><br />Add one to get rid of this warning. Ignore if windows.
+        <q-banner
+          v-if="missingShebang"
+          dense
+          inline-actions
+          class="text-black bg-warning"
+        >
+          <template v-slot:avatar>
+            <q-icon
+              class="text-center"
+              name="warning"
+              color="black"
+            /> </template
+          >Shell/Python scripts on Linux/Mac need a shebang at the top of the
+          script e.g. <code>#!/bin/bash</code> or <code>#!/usr/bin/python3</code
+          ><br />Add one to get rid of this warning. Ignore if windows.
         </q-banner>
         <div class="row q-pa-sm">
           <div class="col-4 q-gutter-sm q-pr-sm">
@@ -28,10 +64,16 @@
               :readonly="readonly"
               v-model="formScript.name"
               label="Name"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
               hide-bottom-space
             />
-            <q-input filled dense :readonly="readonly" v-model="formScript.description" label="Description" />
+            <q-input
+              filled
+              dense
+              :readonly="readonly"
+              v-model="formScript.description"
+              label="Description"
+            />
             <q-select
               :readonly="readonly"
               options-dense
@@ -83,7 +125,7 @@
               :readonly="readonly"
               v-model.number="formScript.default_timeout"
               label="Timeout (seconds)"
-              :rules="[val => val >= 5 || 'Minimum is 5']"
+              :rules="[(val) => val >= 5 || 'Minimum is 5']"
               hide-bottom-space
             />
             <q-input
@@ -126,14 +168,26 @@
                 dense
                 flat
                 label="Test Script"
-                :disable="!agent || !formScript.script_body || !formScript.default_timeout"
+                :disable="
+                  !agent ||
+                  !formScript.script_body ||
+                  !formScript.default_timeout
+                "
                 @click="openTestScriptModal"
               />
             </template>
           </tactical-dropdown>
           <q-space />
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn v-if="!readonly" :loading="loading" dense flat label="Save" color="primary" type="submit" />
+          <q-btn
+            v-if="!readonly"
+            :loading="loading"
+            dense
+            flat
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -194,7 +248,12 @@ export default {
     // script form logic
     const script = props.script
       ? ref(Object.assign({}, { ...props.script, script_body: "" }))
-      : ref({ shell: "powershell", default_timeout: 90, args: [], script_body: "" });
+      : ref({
+          shell: "powershell",
+          default_timeout: 90,
+          args: [],
+          script_body: "",
+        });
 
     if (props.clone) script.value.name = `(Copy) ${script.value.name}`;
     const maximized = ref(false);
@@ -204,6 +263,8 @@ export default {
     const missingShebang = computed(() => {
       if (script.value.shell === "shell" || script.value.shell === "python") {
         return !script.value.script_body.includes("#!");
+      } else {
+        return false;
       }
     });
 
@@ -230,9 +291,11 @@ export default {
 
     // get code if editing or cloning script
     if (props.script)
-      downloadScript(script.value.id, { with_snippets: props.readonly }).then(r => {
-        script.value.script_body = r.code;
-      });
+      downloadScript(script.value.id, { with_snippets: props.readonly }).then(
+        (r) => {
+          script.value.script_body = r.code;
+        }
+      );
 
     async function submitForm() {
       loading.value = true;

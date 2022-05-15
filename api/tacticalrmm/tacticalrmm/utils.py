@@ -7,24 +7,27 @@ from typing import List, Optional, Union
 
 import pytz
 import requests
-from agents.models import Agent
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
-from core.models import CodeSignToken
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import FileResponse
 from knox.auth import TokenAuthentication
-from logs.models import DebugLog
-from rest_framework import status
 from rest_framework.response import Response
+
+from agents.models import Agent
+from core.models import CodeSignToken
 from core.utils import get_core_settings
-
-from tacticalrmm.constants import MONTH_DAYS, MONTHS, WEEK_DAYS, WEEKS
-
-
-def notify_error(msg: str) -> Response:
-    return Response(msg, status=status.HTTP_400_BAD_REQUEST)
+from logs.models import DebugLog
+from tacticalrmm.constants import (
+    MONTH_DAYS,
+    MONTHS,
+    WEEK_DAYS,
+    WEEKS,
+    DebugLogType,
+    ScriptShell,
+)
+from tacticalrmm.helpers import get_certs, notify_error
 
 
 def generate_winagent_exe(
@@ -188,17 +191,11 @@ def reload_nats() -> None:
         except:
             DebugLog.critical(
                 agent=agent,
-                log_type="agent_issues",
+                log_type=DebugLogType.AGENT_ISSUES,
                 message=f"{agent.hostname} does not have a user account, NATS will not work",
             )
 
-    domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
-    cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-    key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
-    if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
-        cert_file = settings.CERT_FILE
-        key_file = settings.KEY_FILE
-
+    cert_file, key_file = get_certs()
     config = {
         "tls": {
             "cert_file": cert_file,
@@ -285,7 +282,7 @@ def replace_db_values(
             return f"'{value}'" if quotes else value
         else:
             DebugLog.error(
-                log_type="scripting",
+                log_type=DebugLogType.SCRIPTING,
                 message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
             )
             return ""
@@ -319,7 +316,7 @@ def replace_db_values(
     else:
         # ignore arg since it is invalid
         DebugLog.error(
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f"{instance} Not enough information to find value for: {string}. Only agent, site, client, and global are supported.",
         )
         return ""
@@ -361,7 +358,7 @@ def replace_db_values(
     else:
         # ignore arg since property is invalid
         DebugLog.error(
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f"{instance} Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property",
         )
         return ""
@@ -371,13 +368,13 @@ def replace_db_values(
         return value
     else:
         DebugLog.error(
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f" {instance}({instance.pk}) Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property",
         )
         return ""
 
 
-def format_shell_array(value: list) -> str:
+def format_shell_array(value: list[str]) -> str:
     temp_string = ""
     for item in value:
         temp_string += item + ","
@@ -385,7 +382,7 @@ def format_shell_array(value: list) -> str:
 
 
 def format_shell_bool(value: bool, shell: Optional[str]) -> str:
-    if shell == "powershell":
+    if shell == ScriptShell.POWERSHELL:
         return "$True" if value else "$False"
     else:
         return "1" if value else "0"

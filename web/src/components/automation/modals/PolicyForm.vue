@@ -18,7 +18,12 @@
         <q-card-section class="row">
           <div class="col-2">Name:</div>
           <div class="col-10">
-            <q-input outlined dense v-model="localPolicy.name" :rules="[val => !!val || '*Required']" />
+            <q-input
+              outlined
+              dense
+              v-model="localPolicy.name"
+              :rules="[(val) => !!val || '*Required']"
+            />
           </div>
         </q-card-section>
         <q-card-section class="row">
@@ -85,12 +90,12 @@ export default {
       if (this.editing) {
         this.$axios
           .put(`/automation/policies/${data.id}/`, data)
-          .then(r => {
+          .then(() => {
             this.$q.loading.hide();
             this.onOk();
             this.notifySuccess("Policy edited!");
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       } else {
@@ -100,12 +105,14 @@ export default {
 
         this.$axios
           .post("/automation/policies/", data)
-          .then(r => {
+          .then(() => {
             this.$q.loading.hide();
             this.onOk();
-            this.notifySuccess("Policy added. Now you can add Tasks and Checks!");
+            this.notifySuccess(
+              "Policy added. Now you can add Tasks and Checks!"
+            );
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       }

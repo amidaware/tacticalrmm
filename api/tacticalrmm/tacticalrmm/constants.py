@@ -229,6 +229,7 @@ CHECKS_NON_EDITABLE_FIELDS = [
 ]
 
 POLICY_CHECK_FIELDS_TO_COPY = [
+    "check_type",
     "warning_threshold",
     "error_threshold",
     "alert_severity",

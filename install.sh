@@ -713,8 +713,13 @@ echo "${meshservice}" | sudo tee /etc/systemd/system/meshcentral.service > /dev/
 
 sudo systemctl daemon-reload
 
-sudo chown -R $USER:$GROUP /home/${USER}/.npm
-sudo chown -R $USER:$GROUP /home/${USER}/.config
+if [ -d ~/.npm ]; then
+  sudo chown -R $USER:$GROUP ~/.npm
+fi
+
+if [ -d ~/.config ]; then
+  sudo chown -R $USER:$GROUP ~/.config
+fi
 
 quasarenv="$(cat << EOF
 PROD_URL = "https://${rmmdomain}"

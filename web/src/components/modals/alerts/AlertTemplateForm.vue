@@ -334,8 +334,8 @@
                 >Alert Failure Settings
                 <q-tooltip>
                   Select what notifications should be sent when an agent is
-                  overdue. Enabled will override the agent notification setting
-                  sand always notify. Not configured will use what notification
+                  overdue. Enabled will override the agent notification settings
+                  and always notify. Not configured will use what notification
                   settings are configured on the agent. Disabled will override
                   the agent notification settings and never notify.
                 </q-tooltip>

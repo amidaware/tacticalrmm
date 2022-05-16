@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
 
-from tacticalrmm.constants import PAAction, PAStatus, DebugLogLevel, DebugLogType
+from tacticalrmm.constants import DebugLogLevel, DebugLogType, PAAction, PAStatus
 from tacticalrmm.test import TacticalTestCase
 
 base_url = "/logs"

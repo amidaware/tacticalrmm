@@ -240,6 +240,7 @@ export default {
       loading.value = true;
       summary.value = await fetchAgent(selectedAgent.value);
       store.commit("setRefreshSummaryTab", false);
+      store.commit("setAgentPlatform", summary.value.plat);
       loading.value = false;
     }
 

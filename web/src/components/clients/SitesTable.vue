@@ -19,7 +19,7 @@
         dense
         :rows="sites"
         :columns="columns"
-        :pagination="{ rowsPerPage: 0, sortBy: 'name', descending: true }"
+        :pagination="{ rowsPerPage: 0, sortBy: 'name', descending: false }"
         row-key="id"
         binary-state-sort
         virtual-scroll

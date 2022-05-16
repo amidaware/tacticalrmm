@@ -5,12 +5,12 @@ from django.db import models
 
 from core.utils import get_core_settings
 from tacticalrmm.constants import (
-    PAAction,
-    PAStatus,
     AuditActionType,
     AuditObjType,
     DebugLogLevel,
     DebugLogType,
+    PAAction,
+    PAStatus,
 )
 from tacticalrmm.middleware import get_debug_info, get_username
 from tacticalrmm.models import PermissionQuerySet

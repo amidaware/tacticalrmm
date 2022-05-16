@@ -87,7 +87,7 @@ def remove_orphaned_win_tasks() -> None:
                 log_type=DebugLogType.AGENT_ISSUES,
                 message=f"Unable to pull list of scheduled tasks on {agent.hostname}: {r}",
             )
-            return
+            continue
 
         agent_task_names = [
             task.win_task_name for task in agent.get_tasks_with_policies()

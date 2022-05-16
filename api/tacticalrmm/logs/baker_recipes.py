@@ -2,7 +2,7 @@ from itertools import cycle
 
 from model_bakery.recipe import Recipe
 
-from tacticalrmm.constants import PAAction, PAStatus, AuditObjType, AuditActionType
+from tacticalrmm.constants import AuditActionType, AuditObjType, PAAction, PAStatus
 
 object_types = [
     AuditObjType.USER,

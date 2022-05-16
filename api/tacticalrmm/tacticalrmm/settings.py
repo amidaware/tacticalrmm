@@ -17,22 +17,22 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.13.4-dev"
+TRMM_VERSION = "0.13.5-dev"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.163"
+APP_VER = "0.0.164"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.0.3"
+LATEST_AGENT_VER = "2.0.4"
 
-MESH_VER = "1.0.2"
+MESH_VER = "1.0.22"
 
-NATS_SERVER_VER = "2.8.1"
+NATS_SERVER_VER = "2.8.2"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "29"
-NPM_VER = "32"
+PIP_VER = "30"
+NPM_VER = "33"
 
 SETUPTOOLS_VER = "59.6.0"
 WHEEL_VER = "0.37.1"
@@ -48,7 +48,7 @@ ASGI_APPLICATION = "tacticalrmm.asgi.application"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = True
+USE_I18N = False  # disabled for performance, enable when we add translation support
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -65,6 +65,7 @@ REST_KNOX = {
 DEMO = False
 DEBUG = False
 ADMIN_ENABLED = False
+HOSTED = False
 REDIS_HOST = "127.0.0.1"
 
 try:
@@ -156,16 +157,12 @@ CACHES = {
 }
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",  ##
     "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
-    "tacticalrmm.middleware.LinuxMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 if DEBUG and not DEMO:
@@ -182,6 +179,14 @@ if ADMIN_ENABLED:
         "django.contrib.admin",
         "django.contrib.messages",
     )
+
+if HOSTED:
+    try:
+        import trmm_mon
+    except ImportError:
+        pass
+    else:
+        INSTALLED_APPS += ("trmm_mon",)
 
 if DEMO:
     MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)

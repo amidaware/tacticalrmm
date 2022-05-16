@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from core.utils import get_core_settings
 from logs.models import AuditLog
-from tacticalrmm.constants import PAStatus, AuditActionType
+from tacticalrmm.constants import AuditActionType, PAStatus
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,

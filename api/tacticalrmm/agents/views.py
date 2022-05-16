@@ -19,16 +19,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import CodeSignToken
-from core.utils import (
-    get_core_settings,
-    get_mesh_ws_url,
-    remove_mesh_agent,
-    send_command_with_mesh,
-)
+from core.utils import get_core_settings, get_mesh_ws_url, remove_mesh_agent
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.constants import AGENT_DEFER, PAAction, PAStatus, EvtLogNames
+from tacticalrmm.constants import AGENT_DEFER, EvtLogNames, PAAction, PAStatus
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
@@ -432,6 +427,8 @@ class Reboot(APIView):
     # reboot later
     def patch(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
+        if agent.is_posix:
+            return notify_error(f"Not currently implemented for {agent.plat}")
 
         try:
             obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M:%S")
@@ -642,28 +639,23 @@ def install_agent(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RecoverAgentPerms])
-def recover(request, agent_id):
-    agent = get_object_or_404(Agent, agent_id=agent_id)
+def recover(request, agent_id: str) -> Response:
+    agent: Agent = get_object_or_404(
+        Agent.objects.defer(*AGENT_DEFER), agent_id=agent_id
+    )
     mode = request.data["mode"]
 
     if mode == "tacagent":
-        if agent.is_posix:
-            cmd = "systemctl restart tacticalagent.service"
-            shell = 3
-        else:
-            cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
-            shell = 1
         uri = get_mesh_ws_url()
-        asyncio.run(send_command_with_mesh(cmd, uri, agent.mesh_node_id, shell, 0))
+        agent.recover(mode, uri, wait=False)
         return Response("Recovery will be attempted shortly")
 
     elif mode == "mesh":
-        data = {"func": "recover", "payload": {"mode": mode}}
-        r = asyncio.run(agent.nats_cmd(data, timeout=20))
-        if r == "ok":
-            return Response("Successfully completed recovery")
+        r, err = agent.recover(mode, "")
+        if err:
+            return notify_error(f"Unable to complete recovery: {r}")
 
-    return notify_error("Something went wrong")
+    return Response("Successfully completed recovery")
 
 
 @api_view(["POST"])

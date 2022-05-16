@@ -7,8 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from agents.permissions import RunScriptPerms
+from tacticalrmm.constants import ScriptShell, ScriptType
 from tacticalrmm.helpers import notify_error
-from tacticalrmm.constants import ScriptType, ScriptShell
 
 from .models import Script, ScriptSnippet
 from .permissions import ScriptsPerms

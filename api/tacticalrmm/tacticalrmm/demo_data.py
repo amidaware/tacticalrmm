@@ -183,6 +183,44 @@ with os.scandir(temp_dir) as it:
 
 """
 
+redhat_insights = r"""
+#!/bin/bash
+
+# poor man’s red hat insights
+
+# this script mimics what ansible does with red hat insights
+# pass it a file containing all RHSA’s you want to patch, one per line
+# it concatenates the advisories into a single yum command
+
+if [ $# -eq 0 ]
+then
+  echo "Usage:  $0 <SRCFILE>"
+  exit 1
+fi
+
+DT=$(date '+%m%d%Y%H%M')
+
+SRCFILE=$1
+
+for i in $(cat $SRCFILE)
+do
+  ARGS+=" --advisory $i"
+done
+
+CHECK="yum check-update -q"
+CMD_CHECK="${CHECK}${ARGS}"
+
+eval ${CMD_CHECK} >> /var/tmp/patch-$(hostname)-${DT}.output 2>&1
+
+if [ $? -eq 100 ]; then
+  UPDATE="yum update -d 2 -y"
+  CMD_UPDATE="${UPDATE}${ARGS}"
+  eval ${CMD_UPDATE} >> /var/tmp/patch-$(hostname)-${DT}.output 2>&1
+else
+  echo "error: exit code must be 100. fix yum errors and try again"
+fi
+"""
+
 ping_success_output = """
 Pinging 8.8.8.8 with 32 bytes of data:
 Reply from 8.8.8.8: bytes=32 time=28ms TTL=116

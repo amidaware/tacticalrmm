@@ -17,9 +17,9 @@ from nats.errors import TimeoutError
 from packaging import version as pyver
 
 from core.models import TZ_CHOICES
-from core.utils import get_core_settings
+from core.utils import get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import ONLINE_AGENTS, CheckType, CheckStatus, DebugLogType
+from tacticalrmm.constants import ONLINE_AGENTS, CheckStatus, CheckType, DebugLogType
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -763,6 +763,38 @@ class Agent(BaseAuditModel):
             await nc.publish(self.agent_id, msgpack.dumps(data))
             await nc.flush()
             await nc.close()
+
+    def recover(self, mode: str, mesh_uri: str, wait: bool = True) -> tuple[str, bool]:
+        """
+        Return type: tuple(message: str, error: bool)
+        """
+        if mode == "tacagent":
+            if self.is_posix:
+                cmd = "systemctl restart tacticalagent.service"
+                shell = 3
+            else:
+                cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
+                shell = 1
+
+            asyncio.run(
+                send_command_with_mesh(cmd, mesh_uri, self.mesh_node_id, shell, 0)
+            )
+            return ("ok", False)
+
+        elif mode == "mesh":
+            data = {"func": "recover", "payload": {"mode": mode}}
+            if wait:
+                r = asyncio.run(self.nats_cmd(data, timeout=20))
+                if r == "ok":
+                    return ("ok", False)
+                else:
+                    return (str(r), True)
+            else:
+                asyncio.run(self.nats_cmd(data, timeout=20, wait=False))
+
+            return ("ok", False)
+
+        return ("invalid", True)
 
     @staticmethod
     def serialize(agent: "Agent") -> Dict[str, Any]:

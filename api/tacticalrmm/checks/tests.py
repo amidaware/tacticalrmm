@@ -1,12 +1,11 @@
 from unittest.mock import patch
 
 from django.conf import settings
-from django.test import modify_settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from checks.models import CheckHistory, CheckResult
-from tacticalrmm.constants import CheckType, CheckStatus, EvtLogTypes, EvtLogFailWhen
+from tacticalrmm.constants import CheckStatus, CheckType, EvtLogFailWhen, EvtLogTypes
 from tacticalrmm.test import TacticalTestCase
 
 from .serializers import CheckSerializer
@@ -14,11 +13,6 @@ from .serializers import CheckSerializer
 base_url = "/checks"
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestCheckViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()

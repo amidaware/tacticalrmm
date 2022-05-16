@@ -14,7 +14,7 @@ from core.utils import get_core_settings
 from logs.models import DebugLog, PendingAction
 from scripts.models import Script
 from tacticalrmm.celery import app
-from tacticalrmm.constants import PAAction, PAStatus, CheckStatus, DebugLogType
+from tacticalrmm.constants import CheckStatus, DebugLogType, PAAction, PAStatus
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:

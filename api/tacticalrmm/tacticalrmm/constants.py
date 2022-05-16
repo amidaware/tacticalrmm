@@ -19,6 +19,24 @@ CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
 
 
+class ClientTreeSort(models.TextChoices):
+    ALPHA_FAIL = "alphafail", "Move failing clients to the top"
+    ALPHA = "alpha", "Sort alphabetically"
+
+
+class AgentTableTabs(models.TextChoices):
+    SERVER = "server", "Servers"
+    WORKSTATION = "workstation", "Workstations"
+    MIXED = "mixed", "Mixed"
+
+
+class AgentDblClick(models.TextChoices):
+    EDIT_AGENT = "editagent", "Edit Agent"
+    TAKE_CONTROL = "takecontrol", "Take Control"
+    REMOTE_BG = "remotebg", "Remote Background"
+    URL_ACTION = "urlaction", "URL Action"
+
+
 class ScriptShell(models.TextChoices):
     POWERSHELL = "powershell", "Powershell"
     CMD = "cmd", "Batch (CMD)"
@@ -211,6 +229,7 @@ CHECKS_NON_EDITABLE_FIELDS = [
 ]
 
 POLICY_CHECK_FIELDS_TO_COPY = [
+    "check_type",
     "warning_threshold",
     "error_threshold",
     "alert_severity",
@@ -308,10 +327,4 @@ DEMO_NOT_ALLOWED = [
     {"name": "InstallWindowsUpdates", "methods": ["POST"]},
     {"name": "PendingActions", "methods": ["DELETE"]},
     {"name": "clear_cache", "methods": ["GET"]},
-]
-
-LINUX_NOT_IMPLEMENTED = [
-    {"name": "ScanWindowsUpdates", "methods": ["POST"]},
-    {"name": "GetSoftware", "methods": ["POST", "PUT"]},
-    {"name": "Reboot", "methods": ["PATCH"]},  # TODO implement reboot later
 ]

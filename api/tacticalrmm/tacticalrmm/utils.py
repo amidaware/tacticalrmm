@@ -24,10 +24,10 @@ from tacticalrmm.constants import (
     MONTHS,
     WEEK_DAYS,
     WEEKS,
-    ScriptShell,
     DebugLogType,
+    ScriptShell,
 )
-from tacticalrmm.helpers import notify_error
+from tacticalrmm.helpers import get_certs, notify_error
 
 
 def generate_winagent_exe(
@@ -195,13 +195,7 @@ def reload_nats() -> None:
                 message=f"{agent.hostname} does not have a user account, NATS will not work",
             )
 
-    domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
-    cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-    key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
-    if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
-        cert_file = settings.CERT_FILE
-        key_file = settings.KEY_FILE
-
+    cert_file, key_file = get_certs()
     config = {
         "tls": {
             "cert_file": cert_file,

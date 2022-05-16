@@ -20,7 +20,7 @@
 
 <script>
 // composition imports
-import { ref } from "vue";
+import { defineComponent, ref, watch } from "vue";
 import { useStore } from "vuex";
 import { useRoute } from "vue-router";
 import { useQuasar } from "quasar";
@@ -29,7 +29,7 @@ import { useQuasar } from "quasar";
 import SummaryTab from "@/components/agents/SummaryTab";
 import SubTableTabs from "@/components/SubTableTabs";
 
-export default {
+export default defineComponent({
   name: "AgentView",
   components: {
     SummaryTab,
@@ -51,9 +51,17 @@ export default {
     store.commit("setActiveRow", route.params.agent_id);
     store.state.tabHeight = `${tabHeight.value}px`;
 
+    // watch for route change
+    watch(
+      () => route.params.agent_id,
+      () => {
+        store.commit("setActiveRow", route.params.agent_id);
+      }
+    );
+
     return {
       tabHeight,
     };
   },
-};
+});
 </script>

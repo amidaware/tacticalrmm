@@ -5,6 +5,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone as djangotime
 
 from alerts.models import SEVERITY_CHOICES
 from core.utils import get_core_settings
@@ -12,15 +13,16 @@ from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
     CHECKS_NON_EDITABLE_FIELDS,
     POLICY_CHECK_FIELDS_TO_COPY,
-    CheckType,
     CheckStatus,
+    CheckType,
+    EvtLogFailWhen,
     EvtLogNames,
     EvtLogTypes,
-    EvtLogFailWhen,
 )
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
+    from agents.models import Agent  # pragma: no cover
     from alerts.models import Alert, AlertTemplate  # pragma: no cover
     from automation.models import Policy  # pragma: no cover
 
@@ -363,11 +365,10 @@ class CheckResult(models.Model):
             skip_create=not self.assigned_check.should_create_alert(alert_template),
         )
 
-    def handle_check(self, data):
+    def handle_check(self, data, check: "Check", agent: "Agent"):
         from alerts.models import Alert
 
-        check = self.assigned_check
-
+        update_fields = []
         # cpuload or mem checks
         if check.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
 
@@ -376,7 +377,7 @@ class CheckResult(models.Model):
             if len(self.history) > 15:
                 self.history = self.history[-15:]
 
-            self.save(update_fields=["history"])
+            update_fields.extend(["history"])
 
             avg = int(mean(self.history))
 
@@ -390,7 +391,7 @@ class CheckResult(models.Model):
                 self.status = CheckStatus.PASSING
 
             # add check history
-            check.add_check_history(data["percent"], self.agent.agent_id)
+            check.add_check_history(data["percent"], agent.agent_id)
 
         # diskspace checks
         elif check.check_type == CheckType.DISK_SPACE:
@@ -415,13 +416,13 @@ class CheckResult(models.Model):
                 self.more_info = data["more_info"]
 
                 # add check history
-                check.add_check_history(100 - percent_used, self.agent.agent_id)
+                check.add_check_history(100 - percent_used, agent.agent_id)
             else:
                 self.status = CheckStatus.FAILING
                 self.alert_severity = "error"
                 self.more_info = f"Disk {check.disk} does not exist"
 
-            self.save(update_fields=["more_info"])
+            update_fields.extend(["more_info"])
 
         # script checks
         elif check.check_type == CheckType.SCRIPT:
@@ -442,8 +443,8 @@ class CheckResult(models.Model):
             else:
                 self.status = CheckStatus.PASSING
 
-            self.save(
-                update_fields=[
+            update_fields.extend(
+                [
                     "stdout",
                     "stderr",
                     "retcode",
@@ -454,7 +455,7 @@ class CheckResult(models.Model):
             # add check history
             check.add_check_history(
                 1 if self.status == CheckStatus.FAILING else 0,
-                self.agent.agent_id,
+                agent.agent_id,
                 {
                     "retcode": data["retcode"],
                     "stdout": data["stdout"][:60],
@@ -467,11 +468,11 @@ class CheckResult(models.Model):
         elif check.check_type == CheckType.PING:
             self.status = data["status"]
             self.more_info = data["output"]
-            self.save(update_fields=["more_info"])
+            update_fields.extend(["more_info"])
 
             check.add_check_history(
                 1 if self.status == CheckStatus.FAILING else 0,
-                self.agent.agent_id,
+                agent.agent_id,
                 self.more_info[:60],
             )
 
@@ -479,11 +480,11 @@ class CheckResult(models.Model):
         elif check.check_type == CheckType.WINSVC:
             self.status = data["status"]
             self.more_info = data["more_info"]
-            self.save(update_fields=["more_info"])
+            update_fields.extend(["more_info"])
 
             check.add_check_history(
                 1 if self.status == CheckStatus.FAILING else 0,
-                self.agent.agent_id,
+                agent.agent_id,
                 self.more_info[:60],
             )
 
@@ -502,29 +503,35 @@ class CheckResult(models.Model):
                     self.status = CheckStatus.FAILING
 
             self.extra_details = {"log": log}
-            self.save(update_fields=["extra_details"])
+            update_fields.extend(["extra_details"])
 
             check.add_check_history(
                 1 if self.status == CheckStatus.FAILING else 0,
-                self.agent.agent_id,
+                agent.agent_id,
                 "Events Found:" + str(len(self.extra_details["log"])),
             )
 
+        self.last_run = djangotime.now()
         # handle status
         if self.status == CheckStatus.FAILING:
             self.fail_count += 1
-            self.save(update_fields=["status", "fail_count", "alert_severity"])
+            update_fields.extend(["status", "fail_count", "alert_severity", "last_run"])
+            self.save(update_fields=update_fields)
 
             if self.fail_count >= check.fails_b4_alert:
                 Alert.handle_alert_failure(self)
 
         elif self.status == CheckStatus.PASSING:
             self.fail_count = 0
-            self.save(update_fields=["status", "fail_count", "alert_severity"])
+            update_fields.extend(["status", "fail_count", "alert_severity", "last_run"])
+            self.save(update_fields=update_fields)
             if Alert.objects.filter(
-                assigned_check=check, agent=self.agent, resolved=False
+                assigned_check=check, agent=agent, resolved=False
             ).exists():
                 Alert.handle_alert_resolve(self)
+        else:
+            update_fields.extend(["last_run"])
+            self.save(update_fields=update_fields)
 
         return self.status
 

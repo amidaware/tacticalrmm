@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from django.test import TestCase, override_settings
+from django.test import TestCase, modify_settings, override_settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from agents.models import Agent
     from automation.models import Policy
     from checks.models import Check
+    from clients.models import Client, Site
+    from core.models import CustomField
     from scripts.models import Script
 
 TEST_CACHE = {
@@ -26,6 +28,24 @@ TEST_CACHE = {
 
 @override_settings(
     CACHES=TEST_CACHE,
+    DEBUG=False,
+    ADMIN_ENABLED=False,
+)
+@modify_settings(
+    INSTALLED_APPS={
+        "remove": [
+            "django.contrib.admin",
+            "django.contrib.messages",
+            "django_extensions",
+            "silk",
+        ]
+    },
+    MIDDLEWARE={
+        "remove": [
+            "silk.middleware.SilkyMiddleware",
+            "django.contrib.messages.middleware.MessageMiddleware",
+        ]
+    },
 )
 class TacticalTestCase(TestCase):
     client: APIClient
@@ -150,3 +170,19 @@ class TacticalTestCase(TestCase):
 
         new_role.save()
         return baker.make("accounts.User", role=new_role, is_active=True)
+
+    def setup_base_instance(self):
+        self.company1: "Client" = baker.make("clients.Client")
+        self.company2: "Client" = baker.make("clients.Client")
+        self.site1: "Site" = baker.make("clients.Site", client=self.company1)
+        self.site2: "Site" = baker.make("clients.Site", client=self.company1)
+        self.site3: "Site" = baker.make("clients.Site", client=self.company2)
+        self.client_customfield: "CustomField" = baker.make(
+            "core.CustomField", model="client", type="text", name="clientCustomField"
+        )
+        self.site_customfield: "CustomField" = baker.make(
+            "core.CustomField", model="site", type="text", name="siteCustomField"
+        )
+        self.agent_customfield: "CustomField" = baker.make(
+            "core.CustomField", model="agent", type="text", name="agentCustomField"
+        )

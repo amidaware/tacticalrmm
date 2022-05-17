@@ -353,8 +353,8 @@ import { notifySuccess, notifyError } from "@/utils/notify";
 import { truncateText } from "@/utils/format";
 
 // ui imports
-import AutomatedTaskForm from "@/components/tasks/AutomatedTaskForm";
-import ScriptOutput from "@/components/checks/ScriptOutput";
+import AutomatedTaskForm from "@/components/tasks/AutomatedTaskForm.vue";
+import ScriptOutput from "@/components/checks/ScriptOutput.vue";
 
 // static data
 const columns = [

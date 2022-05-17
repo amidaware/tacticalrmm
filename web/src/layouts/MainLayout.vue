@@ -147,8 +147,8 @@ import axios from "axios";
 import { getBaseUrl } from "@/boot/axios";
 
 // ui imports
-import AlertsIcon from "@/components/AlertsIcon";
-import UserPreferences from "@/components/modals/coresettings/UserPreferences";
+import AlertsIcon from "@/components/AlertsIcon.vue";
+import UserPreferences from "@/components/modals/coresettings/UserPreferences.vue";
 
 export default {
   name: "MainLayout",

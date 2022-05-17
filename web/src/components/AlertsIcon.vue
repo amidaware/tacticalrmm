@@ -60,7 +60,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import AlertsOverview from "@/components/modals/alerts/AlertsOverview";
+import AlertsOverview from "@/components/modals/alerts/AlertsOverview.vue";
 import { getTimeLapse } from "@/utils/format";
 
 export default {

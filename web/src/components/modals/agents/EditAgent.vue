@@ -375,9 +375,9 @@
 <script>
 import { useDialogPluginComponent } from "quasar";
 import mixins from "@/mixins/mixins";
-import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
-import CustomField from "@/components/ui/CustomField";
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm.vue";
+import CustomField from "@/components/ui/CustomField.vue";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 import { capitalize } from "@/utils/format";
 
 export default {

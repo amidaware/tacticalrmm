@@ -223,9 +223,9 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import AlertTemplateForm from "@/components/modals/alerts/AlertTemplateForm";
-import AlertExclusions from "@/components/modals/alerts/AlertExclusions";
-import AlertTemplateRelated from "@/components/modals/alerts/AlertTemplateRelated";
+import AlertTemplateForm from "@/components/modals/alerts/AlertTemplateForm.vue";
+import AlertExclusions from "@/components/modals/alerts/AlertExclusions.vue";
+import AlertTemplateRelated from "@/components/modals/alerts/AlertTemplateRelated.vue";
 
 export default {
   name: "AlertsManager",

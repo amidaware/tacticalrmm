@@ -203,8 +203,8 @@ import { useAgentDropdown, agentPlatformOptions } from "@/composables/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import TestScriptModal from "@/components/scripts/TestScriptModal";
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import TestScriptModal from "@/components/scripts/TestScriptModal.vue";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 import { VAceEditor } from "vue3-ace-editor";
 
 // imports for ace editor

@@ -217,7 +217,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import ScriptOutput from "@/components/checks/ScriptOutput";
+import ScriptOutput from "@/components/checks/ScriptOutput.vue";
 import { computed } from "vue";
 import { useStore } from "vuex";
 

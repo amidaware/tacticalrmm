@@ -26,8 +26,8 @@ import { useRoute } from "vue-router";
 import { useQuasar } from "quasar";
 
 // ui imports
-import SummaryTab from "@/components/agents/SummaryTab";
-import SubTableTabs from "@/components/SubTableTabs";
+import SummaryTab from "@/components/agents/SummaryTab.vue";
+import SubTableTabs from "@/components/SubTableTabs.vue";
 
 export default defineComponent({
   name: "AgentView",

@@ -74,7 +74,7 @@
 </template>
 
 <script>
-import URLActionsForm from "@/components/modals/coresettings/URLActionsForm";
+import URLActionsForm from "@/components/modals/coresettings/URLActionsForm.vue";
 import mixins from "@/mixins/mixins";
 
 export default {

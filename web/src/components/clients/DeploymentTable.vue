@@ -105,7 +105,7 @@ import { notifySuccess } from "@/utils/notify";
 import { getBaseUrl } from "@/boot/axios";
 
 // ui imports
-import NewDeployment from "@/components/clients/NewDeployment";
+import NewDeployment from "@/components/clients/NewDeployment.vue";
 
 // static data
 const columns = [

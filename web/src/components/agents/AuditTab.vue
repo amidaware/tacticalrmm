@@ -11,7 +11,7 @@ import { computed } from "vue";
 import { useStore } from "vuex";
 
 // ui imports
-import AuditManager from "@/components/logs/AuditManager";
+import AuditManager from "@/components/logs/AuditManager.vue";
 
 export default {
   name: "AuditTab",

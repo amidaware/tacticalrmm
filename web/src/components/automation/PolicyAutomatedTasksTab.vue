@@ -198,8 +198,8 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import AutomatedTaskForm from "@/components/tasks/AutomatedTaskForm";
-import PolicyStatus from "@/components/automation/modals/PolicyStatus";
+import AutomatedTaskForm from "@/components/tasks/AutomatedTaskForm.vue";
+import PolicyStatus from "@/components/automation/modals/PolicyStatus.vue";
 
 export default {
   name: "PolicyAutomatedTasksTab",

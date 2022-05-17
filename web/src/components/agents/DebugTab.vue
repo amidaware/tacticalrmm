@@ -11,7 +11,7 @@ import { computed } from "vue";
 import { useStore } from "vuex";
 
 // ui imports
-import DebugLog from "@/components/logs/DebugLog";
+import DebugLog from "@/components/logs/DebugLog.vue";
 
 export default {
   name: "DebugTab",

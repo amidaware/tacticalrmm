@@ -170,16 +170,16 @@
 import { ref } from "vue";
 
 // ui imports
-import SummaryTab from "@/components/agents/SummaryTab";
-import ChecksTab from "@/components/agents/ChecksTab";
-import AutomatedTasksTab from "@/components/agents/AutomatedTasksTab";
-import WinUpdateTab from "@/components/agents/WinUpdateTab";
-import SoftwareTab from "@/components/agents/SoftwareTab";
-import HistoryTab from "@/components/agents/HistoryTab";
-import AuditTab from "@/components/agents/AuditTab";
-import DebugTab from "@/components/agents/DebugTab";
-import AssetsTab from "@/components/agents/AssetsTab";
-import NotesTab from "@/components/agents/NotesTab";
+import SummaryTab from "@/components/agents/SummaryTab.vue";
+import ChecksTab from "@/components/agents/ChecksTab.vue";
+import AutomatedTasksTab from "@/components/agents/AutomatedTasksTab.vue";
+import WinUpdateTab from "@/components/agents/WinUpdateTab.vue";
+import SoftwareTab from "@/components/agents/SoftwareTab.vue";
+import HistoryTab from "@/components/agents/HistoryTab.vue";
+import AuditTab from "@/components/agents/AuditTab.vue";
+import DebugTab from "@/components/agents/DebugTab.vue";
+import AssetsTab from "@/components/agents/AssetsTab.vue";
+import NotesTab from "@/components/agents/NotesTab.vue";
 
 export default {
   name: "SubTableTabs",

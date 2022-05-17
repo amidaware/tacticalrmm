@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 import mixins from "@/mixins/mixins";
 export default {
   name: "PolicyExclusions",

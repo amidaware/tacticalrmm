@@ -126,10 +126,10 @@ import { fetchClients, removeClient } from "@/api/clients";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import ClientsForm from "@/components/clients/ClientsForm";
-import SitesForm from "@/components/clients/SitesForm";
-import DeleteClient from "@/components/clients/DeleteClient";
-import SitesTable from "@/components/clients/SitesTable";
+import ClientsForm from "@/components/clients/ClientsForm.vue";
+import SitesForm from "@/components/clients/SitesForm.vue";
+import DeleteClient from "@/components/clients/DeleteClient.vue";
+import SitesTable from "@/components/clients/SitesTable.vue";
 
 // static data
 const columns = [

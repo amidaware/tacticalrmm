@@ -79,7 +79,7 @@ import { sendPatchPolicyReset } from "@/api/automation";
 import { notifySuccess } from "@/utils/notify";
 
 //ui imports
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 
 // static data
 const targetOptions = [

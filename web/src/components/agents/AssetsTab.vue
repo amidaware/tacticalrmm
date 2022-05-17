@@ -82,7 +82,7 @@ import { useStore } from "vuex";
 import { fetchAgent } from "@/api/agents";
 
 // ui imports
-import WmiDetail from "@/components/agents/WmiDetail";
+import WmiDetail from "@/components/agents/WmiDetail.vue";
 
 export default {
   name: "AssetsTab",

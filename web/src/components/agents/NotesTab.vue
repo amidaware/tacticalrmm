@@ -105,7 +105,7 @@ import {
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import ExportTableBtn from "@/components/ui/ExportTableBtn";
+import ExportTableBtn from "@/components/ui/ExportTableBtn.vue";
 
 // static data
 const columns = [

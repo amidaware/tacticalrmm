@@ -54,8 +54,8 @@
 </template>
 
 <script>
-import CustomFieldsTable from "@/components/modals/coresettings/CustomFieldsTable";
-import CustomFieldsForm from "@/components/modals/coresettings/CustomFieldsForm";
+import CustomFieldsTable from "@/components/modals/coresettings/CustomFieldsTable.vue";
+import CustomFieldsForm from "@/components/modals/coresettings/CustomFieldsForm.vue";
 
 export default {
   name: "CustomFields",

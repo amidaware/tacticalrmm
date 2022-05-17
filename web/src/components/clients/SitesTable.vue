@@ -110,8 +110,8 @@ import { fetchClient, removeSite } from "@/api/clients";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import SitesForm from "@/components/clients/SitesForm";
-import DeleteClient from "@/components/clients/DeleteClient";
+import SitesForm from "@/components/clients/SitesForm.vue";
+import DeleteClient from "@/components/clients/DeleteClient.vue";
 
 // static data
 const columns = [

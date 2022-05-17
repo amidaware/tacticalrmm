@@ -72,8 +72,8 @@ import { formatTableColumnText, truncateText } from "@/utils/format";
 import { fetchAgentHistory } from "@/api/agents";
 
 // ui imports
-import ScriptOutput from "@/components/checks/ScriptOutput";
-import ExportTableBtn from "@/components/ui/ExportTableBtn";
+import ScriptOutput from "@/components/checks/ScriptOutput.vue";
+import ExportTableBtn from "@/components/ui/ExportTableBtn.vue";
 
 // static data
 const columns = [

@@ -327,9 +327,9 @@
 import mixins from "@/mixins/mixins";
 import { mapState } from "vuex";
 import { date } from "quasar";
-import EditAgent from "@/components/modals/agents/EditAgent";
-import PendingActions from "@/components/logs/PendingActions";
-import AgentActionMenu from "@/components/agents/AgentActionMenu";
+import EditAgent from "@/components/modals/agents/EditAgent.vue";
+import PendingActions from "@/components/logs/PendingActions.vue";
+import AgentActionMenu from "@/components/agents/AgentActionMenu.vue";
 import { runURLAction } from "@/api/core";
 import { runTakeControl, runRemoteBackground } from "@/api/agents";
 import { capitalize } from "@vue/shared";

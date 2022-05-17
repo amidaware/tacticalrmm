@@ -2,12 +2,12 @@ const routes = [
   {
     path: "/",
     name: "MainLayout",
-    component: () => import("@/layouts/MainLayout"),
+    component: () => import("@/layouts/MainLayout.vue"),
     children: [
       {
         path: "agents/:agent_id",
         name: "Agent",
-        component: () => import("@/views/AgentView"),
+        component: () => import("@/views/AgentView.vue"),
         meta: {
           requireAuth: true,
         },
@@ -15,7 +15,7 @@ const routes = [
       {
         path: "",
         name: "Dashboard",
-        component: () => import("@/views/DashboardView"),
+        component: () => import("@/views/DashboardView.vue"),
         meta: {
           requireAuth: true,
         },
@@ -25,7 +25,7 @@ const routes = [
   {
     path: "/setup",
     name: "InitialSetup",
-    component: () => import("@/views/InitialSetup"),
+    component: () => import("@/views/InitialSetup.vue"),
     meta: {
       requireAuth: true,
     },
@@ -33,7 +33,7 @@ const routes = [
   {
     path: "/totp_setup",
     name: "TOTPSetup",
-    component: () => import("@/views/TOTPSetup"),
+    component: () => import("@/views/TOTPSetup.vue"),
     meta: {
       requireAuth: true,
     },
@@ -41,7 +41,7 @@ const routes = [
   {
     path: "/takecontrol/:agent_id",
     name: "TakeControl",
-    component: () => import("@/views/TakeControl"),
+    component: () => import("@/views/TakeControl.vue"),
     meta: {
       requireAuth: true,
     },
@@ -49,7 +49,7 @@ const routes = [
   {
     path: "/remotebackground/:agent_id",
     name: "RemoteBackground",
-    component: () => import("@/views/RemoteBackground"),
+    component: () => import("@/views/RemoteBackground.vue"),
     meta: {
       requireAuth: true,
     },
@@ -57,7 +57,7 @@ const routes = [
   {
     path: "/login",
     name: "Login",
-    component: () => import("@/views/LoginView"),
+    component: () => import("@/views/LoginView.vue"),
     meta: {
       requiresVisitor: true,
     },
@@ -65,9 +65,9 @@ const routes = [
   {
     path: "/expired",
     name: "SessionExpired",
-    component: () => import("@/views/SessionExpired"),
+    component: () => import("@/views/SessionExpired.vue"),
   },
-  { path: "/:catchAll(.*)*", component: () => import("@/views/NotFound") },
+  { path: "/:catchAll(.*)*", component: () => import("@/views/NotFound.vue") },
 ];
 
 export default routes;

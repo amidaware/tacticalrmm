@@ -210,25 +210,25 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import DialogWrapper from "@/components/ui/DialogWrapper";
-import DebugLog from "@/components/logs/DebugLog";
-import PendingActions from "@/components/logs/PendingActions";
-import ClientsManager from "@/components/clients/ClientsManager";
-import ClientsForm from "@/components/clients/ClientsForm";
-import SitesForm from "@/components/clients/SitesForm";
-import UpdateAgents from "@/components/modals/agents/UpdateAgents";
-import ScriptManager from "@/components/scripts/ScriptManager";
-import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
-import AlertsManager from "@/components/AlertsManager";
-import AutomationManager from "@/components/automation/AutomationManager";
-import AdminManager from "@/components/AdminManager";
-import InstallAgent from "@/components/modals/agents/InstallAgent";
-import AuditManager from "@/components/logs/AuditManager";
-import BulkAction from "@/components/modals/agents/BulkAction";
-import DeploymentTable from "@/components/clients/DeploymentTable";
-import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
-import CodeSign from "@/components/modals/coresettings/CodeSign";
-import PermissionsManager from "@/components/accounts/PermissionsManager";
+import DialogWrapper from "@/components/ui/DialogWrapper.vue";
+import DebugLog from "@/components/logs/DebugLog.vue";
+import PendingActions from "@/components/logs/PendingActions.vue";
+import ClientsManager from "@/components/clients/ClientsManager.vue";
+import ClientsForm from "@/components/clients/ClientsForm.vue";
+import SitesForm from "@/components/clients/SitesForm.vue";
+import UpdateAgents from "@/components/modals/agents/UpdateAgents.vue";
+import ScriptManager from "@/components/scripts/ScriptManager.vue";
+import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings.vue";
+import AlertsManager from "@/components/AlertsManager.vue";
+import AutomationManager from "@/components/automation/AutomationManager.vue";
+import AdminManager from "@/components/AdminManager.vue";
+import InstallAgent from "@/components/modals/agents/InstallAgent.vue";
+import AuditManager from "@/components/logs/AuditManager.vue";
+import BulkAction from "@/components/modals/agents/BulkAction.vue";
+import DeploymentTable from "@/components/clients/DeploymentTable.vue";
+import ServerMaintenance from "@/components/modals/core/ServerMaintenance.vue";
+import CodeSign from "@/components/modals/coresettings/CodeSign.vue";
+import PermissionsManager from "@/components/accounts/PermissionsManager.vue";
 
 export default {
   name: "FileBar",

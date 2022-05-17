@@ -97,7 +97,7 @@ import { useStore } from "vuex";
 import { fetchAPIKeys, removeAPIKey } from "@/api/accounts";
 import { useQuasar, copyToClipboard } from "quasar";
 import { notifySuccess, notifyError } from "@/utils/notify";
-import APIKeysForm from "@/components/core/APIKeysForm";
+import APIKeysForm from "@/components/core/APIKeysForm.vue";
 
 const columns = [
   {

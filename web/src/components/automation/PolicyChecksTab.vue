@@ -218,14 +218,14 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import PolicyStatus from "@/components/automation/modals/PolicyStatus";
-import DiskSpaceCheck from "@/components/checks/DiskSpaceCheck";
-import PingCheck from "@/components/checks/PingCheck";
-import CpuLoadCheck from "@/components/checks/CpuLoadCheck";
-import MemCheck from "@/components/checks/MemCheck";
-import WinSvcCheck from "@/components/checks/WinSvcCheck";
-import ScriptCheck from "@/components/checks/ScriptCheck";
-import EventLogCheck from "@/components/checks/EventLogCheck";
+import PolicyStatus from "@/components/automation/modals/PolicyStatus.vue";
+import DiskSpaceCheck from "@/components/checks/DiskSpaceCheck.vue";
+import PingCheck from "@/components/checks/PingCheck.vue";
+import CpuLoadCheck from "@/components/checks/CpuLoadCheck.vue";
+import MemCheck from "@/components/checks/MemCheck.vue";
+import WinSvcCheck from "@/components/checks/WinSvcCheck.vue";
+import ScriptCheck from "@/components/checks/ScriptCheck.vue";
+import EventLogCheck from "@/components/checks/EventLogCheck.vue";
 
 export default {
   name: "PolicyChecksTab",

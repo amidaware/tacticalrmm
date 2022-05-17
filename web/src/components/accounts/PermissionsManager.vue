@@ -92,7 +92,7 @@ import { fetchRoles, removeRole } from "@/api/accounts";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import RolesForm from "@/components/accounts/RolesForm";
+import RolesForm from "@/components/accounts/RolesForm.vue";
 
 // static data
 const columns = [

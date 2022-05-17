@@ -404,15 +404,15 @@
 import mixins from "@/mixins/mixins";
 import { openURL } from "quasar";
 import { mapState } from "vuex";
-import FileBar from "@/components/FileBar";
-import AgentTable from "@/components/AgentTable";
-import SubTableTabs from "@/components/SubTableTabs";
-import PolicyAdd from "@/components/automation/modals/PolicyAdd";
-import ClientsForm from "@/components/clients/ClientsForm";
-import SitesForm from "@/components/clients/SitesForm";
-import DeleteClient from "@/components/clients/DeleteClient";
-import InstallAgent from "@/components/modals/agents/InstallAgent";
-import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
+import FileBar from "@/components/FileBar.vue";
+import AgentTable from "@/components/AgentTable.vue";
+import SubTableTabs from "@/components/SubTableTabs.vue";
+import PolicyAdd from "@/components/automation/modals/PolicyAdd.vue";
+import ClientsForm from "@/components/clients/ClientsForm.vue";
+import SitesForm from "@/components/clients/SitesForm.vue";
+import DeleteClient from "@/components/clients/DeleteClient.vue";
+import InstallAgent from "@/components/modals/agents/InstallAgent.vue";
+import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd.vue";
 
 import { removeClient, removeSite } from "@/api/clients";
 

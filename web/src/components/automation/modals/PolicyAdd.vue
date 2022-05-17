@@ -73,7 +73,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 
 export default {
   name: "PolicyAdd",

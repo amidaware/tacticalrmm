@@ -217,13 +217,13 @@ import { fetchScripts } from "@/api/scripts";
 import { notifySuccess, notifyWarning, notifyError } from "@/utils/notify";
 
 // ui imports
-import PendingActions from "@/components/logs/PendingActions";
-import AgentRecovery from "@/components/modals/agents/AgentRecovery";
-import PolicyAdd from "@/components/automation/modals/PolicyAdd";
-import RebootLater from "@/components/modals/agents/RebootLater";
-import EditAgent from "@/components/modals/agents/EditAgent";
-import SendCommand from "@/components/modals/agents/SendCommand";
-import RunScript from "@/components/modals/agents/RunScript";
+import PendingActions from "@/components/logs/PendingActions.vue";
+import AgentRecovery from "@/components/modals/agents/AgentRecovery.vue";
+import PolicyAdd from "@/components/automation/modals/PolicyAdd.vue";
+import RebootLater from "@/components/modals/agents/RebootLater.vue";
+import EditAgent from "@/components/modals/agents/EditAgent.vue";
+import SendCommand from "@/components/modals/agents/SendCommand.vue";
+import RunScript from "@/components/modals/agents/RunScript.vue";
 
 export default {
   name: "AgentActionMenu",

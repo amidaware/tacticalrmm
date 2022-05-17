@@ -104,7 +104,7 @@ import { fetchAgentEventLog } from "@/api/agents";
 import { truncateText } from "@/utils/format";
 
 // ui imports
-import ExportTableBtn from "@/components/ui/ExportTableBtn";
+import ExportTableBtn from "@/components/ui/ExportTableBtn.vue";
 
 // static data
 const columns = [

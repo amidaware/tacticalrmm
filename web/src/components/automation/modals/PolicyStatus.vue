@@ -149,8 +149,8 @@
 <script>
 import { computed } from "vue";
 import { useStore } from "vuex";
-import ScriptOutput from "@/components/checks/ScriptOutput";
-import EventLogCheckOutput from "@/components/checks/EventLogCheckOutput";
+import ScriptOutput from "@/components/checks/ScriptOutput.vue";
+import EventLogCheckOutput from "@/components/checks/EventLogCheckOutput.vue";
 
 export default {
   name: "PolicyStatus",

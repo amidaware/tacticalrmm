@@ -70,8 +70,8 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
-import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
+import PolicyChecksTab from "@/components/automation/PolicyChecksTab.vue";
+import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab.vue";
 
 export default {
   name: "PolicyOverview",

@@ -312,15 +312,15 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import DialogWrapper from "@/components/ui/DialogWrapper";
-import PolicyForm from "@/components/automation/modals/PolicyForm";
-import PolicyOverview from "@/components/automation/PolicyOverview";
-import RelationsView from "@/components/automation/modals/RelationsView";
-import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
-import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
-import PolicyExclusions from "@/components/automation/modals/PolicyExclusions";
-import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
-import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
+import DialogWrapper from "@/components/ui/DialogWrapper.vue";
+import PolicyForm from "@/components/automation/modals/PolicyForm.vue";
+import PolicyOverview from "@/components/automation/PolicyOverview.vue";
+import RelationsView from "@/components/automation/modals/RelationsView.vue";
+import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm.vue";
+import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd.vue";
+import PolicyExclusions from "@/components/automation/modals/PolicyExclusions.vue";
+import PolicyChecksTab from "@/components/automation/PolicyChecksTab.vue";
+import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab.vue";
 
 export default {
   name: "AutomationManager",

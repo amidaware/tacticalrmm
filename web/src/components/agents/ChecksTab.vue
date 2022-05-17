@@ -422,16 +422,16 @@ import { truncateText } from "@/utils/format";
 import { notifySuccess, notifyWarning } from "@/utils/notify";
 
 // ui imports
-import DiskSpaceCheck from "@/components/checks/DiskSpaceCheck";
-import MemCheck from "@/components/checks/MemCheck";
-import CpuLoadCheck from "@/components/checks/CpuLoadCheck";
-import PingCheck from "@/components/checks/PingCheck";
-import WinSvcCheck from "@/components/checks/WinSvcCheck";
-import EventLogCheck from "@/components/checks/EventLogCheck";
-import ScriptCheck from "@/components/checks/ScriptCheck";
-import ScriptOutput from "@/components/checks/ScriptOutput";
-import EventLogCheckOutput from "@/components/checks/EventLogCheckOutput";
-import CheckGraph from "@/components/graphs/CheckGraph";
+import DiskSpaceCheck from "@/components/checks/DiskSpaceCheck.vue";
+import MemCheck from "@/components/checks/MemCheck.vue";
+import CpuLoadCheck from "@/components/checks/CpuLoadCheck.vue";
+import PingCheck from "@/components/checks/PingCheck.vue";
+import WinSvcCheck from "@/components/checks/WinSvcCheck.vue";
+import EventLogCheck from "@/components/checks/EventLogCheck.vue";
+import ScriptCheck from "@/components/checks/ScriptCheck.vue";
+import ScriptOutput from "@/components/checks/ScriptOutput.vue";
+import EventLogCheckOutput from "@/components/checks/EventLogCheckOutput.vue";
+import CheckGraph from "@/components/graphs/CheckGraph.vue";
 
 // static data
 const columns = [

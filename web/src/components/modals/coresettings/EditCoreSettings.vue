@@ -547,11 +547,11 @@
 <script>
 import { openURL } from "quasar";
 import mixins from "@/mixins/mixins";
-import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
-import CustomFields from "@/components/modals/coresettings/CustomFields";
-import KeyStoreTable from "@/components/modals/coresettings/KeyStoreTable";
-import URLActionsTable from "@/components/modals/coresettings/URLActionsTable";
-import APIKeysTable from "@/components/core/APIKeysTable";
+import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy.vue";
+import CustomFields from "@/components/modals/coresettings/CustomFields.vue";
+import KeyStoreTable from "@/components/modals/coresettings/KeyStoreTable.vue";
+import URLActionsTable from "@/components/modals/coresettings/URLActionsTable.vue";
+import APIKeysTable from "@/components/core/APIKeysTable.vue";
 
 export default {
   name: "EditCoreSettings",

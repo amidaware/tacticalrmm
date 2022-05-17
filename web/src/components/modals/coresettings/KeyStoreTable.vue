@@ -70,7 +70,7 @@
 </template>
 
 <script>
-import KeyStoreForm from "@/components/modals/coresettings/KeyStoreForm";
+import KeyStoreForm from "@/components/modals/coresettings/KeyStoreForm.vue";
 import mixins from "@/mixins/mixins";
 
 export default {

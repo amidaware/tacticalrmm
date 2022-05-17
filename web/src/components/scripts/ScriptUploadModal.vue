@@ -130,7 +130,7 @@ import { agentPlatformOptions } from "@/composables/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 
 // static data
 import { shellOptions } from "@/composables/scripts";

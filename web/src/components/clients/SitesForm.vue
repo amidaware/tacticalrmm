@@ -65,8 +65,8 @@ import { formatCustomFields } from "@/utils/format";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import CustomField from "@/components/ui/CustomField";
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import CustomField from "@/components/ui/CustomField.vue";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 
 export default {
   name: "SitesForm",

@@ -55,7 +55,7 @@ import { fetchClients, removeClient, removeSite } from "@/api/clients";
 import { formatSiteOptions } from "@/utils/format";
 
 // ui imports
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 
 export default {
   name: "DeleteClient",

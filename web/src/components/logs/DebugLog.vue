@@ -133,7 +133,7 @@ import { fetchDebugLog } from "@/api/logs";
 import { formatTableColumnText } from "@/utils/format";
 
 // ui components
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 import ExportTableBtn from "@/components/ui/ExportTableBtn.vue";
 
 // static data

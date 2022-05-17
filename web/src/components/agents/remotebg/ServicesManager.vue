@@ -95,8 +95,8 @@ import { notifySuccess } from "@/utils/notify";
 import { truncateText } from "@/utils/format";
 
 // ui imports
-import ServiceDetail from "@/components/agents/remotebg/ServiceDetail";
-import ExportTableBtn from "@/components/ui/ExportTableBtn";
+import ServiceDetail from "@/components/agents/remotebg/ServiceDetail.vue";
+import ExportTableBtn from "@/components/ui/ExportTableBtn.vue";
 
 // static data
 const columns = [

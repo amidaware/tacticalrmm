@@ -143,7 +143,7 @@ import { fetchScriptSnippets, removeScriptSnippet } from "@/api/scripts";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import ScriptSnippetFormModal from "@/components/scripts/ScriptSnippetFormModal";
+import ScriptSnippetFormModal from "@/components/scripts/ScriptSnippetFormModal.vue";
 
 // static data
 const columns = [

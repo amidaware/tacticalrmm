@@ -84,7 +84,7 @@
 </template>
 
 <script>
-import CustomFieldsForm from "@/components/modals/coresettings/CustomFieldsForm";
+import CustomFieldsForm from "@/components/modals/coresettings/CustomFieldsForm.vue";
 import mixins from "@/mixins/mixins";
 
 export default {

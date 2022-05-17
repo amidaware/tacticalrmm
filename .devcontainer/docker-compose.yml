@@ -26,7 +26,8 @@ services:
     container_name: trmm-app-dev
     image: node:16-alpine
     restart: always
-    command: /bin/sh -c "npm install npm@latest -g && npm install && npm run serve -- --host 0.0.0.0 --port ${APP_PORT}"
+    command: /bin/sh -c "npm install --cache ~/.npm && npm run serve"
+    user: 1000:1000
     working_dir: /workspace/web
     volumes:
       - ..:/workspace:cached

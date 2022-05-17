@@ -61,7 +61,7 @@ import { formatCustomFields } from "@/utils/format";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import CustomField from "@/components/ui/CustomField";
+import CustomField from "@/components/ui/CustomField.vue";
 
 export default {
   name: "ClientsForm",

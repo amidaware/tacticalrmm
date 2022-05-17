@@ -542,9 +542,9 @@ import { truncateText } from "@/utils/format";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import ScriptUploadModal from "@/components/scripts/ScriptUploadModal";
-import ScriptFormModal from "@/components/scripts/ScriptFormModal";
-import ScriptSnippets from "@/components/scripts/ScriptSnippets";
+import ScriptUploadModal from "@/components/scripts/ScriptUploadModal.vue";
+import ScriptFormModal from "@/components/scripts/ScriptFormModal.vue";
+import ScriptSnippets from "@/components/scripts/ScriptSnippets.vue";
 
 // static data
 const columns = [

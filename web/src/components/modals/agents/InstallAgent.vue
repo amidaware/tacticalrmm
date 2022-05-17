@@ -175,7 +175,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import AgentDownload from "@/components/modals/agents/AgentDownload";
+import AgentDownload from "@/components/modals/agents/AgentDownload.vue";
 import { getBaseUrl } from "@/boot/axios";
 
 export default {

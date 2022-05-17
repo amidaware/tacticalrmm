@@ -150,8 +150,8 @@
 import mixins from "@/mixins/mixins";
 import { computed } from "vue";
 import { mapState, useStore } from "vuex";
-import UserForm from "@/components/modals/admin/UserForm";
-import UserResetPasswordForm from "@/components/modals/admin/UserResetPasswordForm";
+import UserForm from "@/components/modals/admin/UserForm.vue";
+import UserResetPasswordForm from "@/components/modals/admin/UserResetPasswordForm.vue";
 
 export default {
   name: "AdminManager",

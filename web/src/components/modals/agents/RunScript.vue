@@ -179,7 +179,7 @@ import {
 } from "@/utils/format";
 
 //ui imports
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 
 // static data
 const outputOptions = [

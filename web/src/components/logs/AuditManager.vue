@@ -163,9 +163,9 @@ import { fetchAuditLog } from "@/api/logs";
 import { formatTableColumnText } from "@/utils/format";
 
 // ui imported
-import AuditLogDetailModal from "@/components/logs/AuditLogDetailModal";
-import ExportTableBtn from "@/components/ui/ExportTableBtn";
-import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import AuditLogDetailModal from "@/components/logs/AuditLogDetailModal.vue";
+import ExportTableBtn from "@/components/ui/ExportTableBtn.vue";
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
 
 // static data
 const columns = [

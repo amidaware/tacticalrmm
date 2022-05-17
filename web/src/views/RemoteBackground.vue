@@ -86,9 +86,9 @@ import { fetchAgentMeshCentralURLs } from "@/api/agents";
 import { fetchDashboardInfo } from "@/api/core";
 
 // ui imports
-import ProcessManager from "@/components/agents/remotebg/ProcessManager";
-import ServicesManager from "@/components/agents/remotebg/ServicesManager";
-import EventLogManager from "@/components/agents/remotebg/EventLogManager";
+import ProcessManager from "@/components/agents/remotebg/ProcessManager.vue";
+import ServicesManager from "@/components/agents/remotebg/ServicesManager.vue";
+import EventLogManager from "@/components/agents/remotebg/EventLogManager.vue";
 
 export default {
   name: "RemoteBackground",

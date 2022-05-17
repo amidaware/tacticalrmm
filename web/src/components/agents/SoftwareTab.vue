@@ -73,8 +73,8 @@ import { useStore } from "vuex";
 import { fetchAgentSoftware, refreshAgentSoftware } from "@/api/software";
 
 // ui imports
-import InstallSoftware from "@/components/software/InstallSoftware";
-import ExportTableBtn from "@/components/ui/ExportTableBtn";
+import InstallSoftware from "@/components/software/InstallSoftware.vue";
+import ExportTableBtn from "@/components/ui/ExportTableBtn.vue";
 
 // static data
 const columns = [

@@ -195,7 +195,7 @@ import {
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import AgentActionMenu from "@/components/agents/AgentActionMenu";
+import AgentActionMenu from "@/components/agents/AgentActionMenu.vue";
 
 export default {
   name: "SummaryTab",

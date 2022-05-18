@@ -2,7 +2,7 @@ from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from autotasks.models import TaskResult
-from tacticalrmm.constants import TaskStatus
+from tacticalrmm.constants import CustomFieldModel, CustomFieldType, TaskStatus
 from tacticalrmm.test import TacticalTestCase
 
 
@@ -183,12 +183,23 @@ class TestAPIv3(TacticalTestCase):
         )
 
         # test collector task
-        text = baker.make("core.CustomField", model="agent", type="text", name="Test")
+        text = baker.make(
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.TEXT,
+            name="Test",
+        )
         boolean = baker.make(
-            "core.CustomField", model="agent", type="checkbox", name="Test1"
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.CHECKBOX,
+            name="Test1",
         )
         multiple = baker.make(
-            "core.CustomField", model="agent", type="multiple", name="Test2"
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.MULTIPLE,
+            name="Test2",
         )
 
         # test text fields

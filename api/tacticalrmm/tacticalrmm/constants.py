@@ -23,6 +23,21 @@ AGENT_STATUS_OFFLINE = "offline"
 AGENT_STATUS_OVERDUE = "overdue"
 
 
+class CustomFieldModel(models.TextChoices):
+    CLIENT = "client", "Client"
+    SITE = "site", "Site"
+    AGENT = "agent", "Agent"
+
+
+class CustomFieldType(models.TextChoices):
+    TEXT = "text", "Text"
+    NUMBER = "number", "Number"
+    SINGLE = "single", "Single"
+    MULTIPLE = "multiple", "Multiple"
+    CHECKBOX = "checkbox", "Checkbox"
+    DATETIME = "datetime", "DateTime"
+
+
 class TaskSyncStatus(models.TextChoices):
     SYNCED = "synced", "Synced With Agent"
     NOT_SYNCED = "notsynced", "Waiting On Agent Checkin"

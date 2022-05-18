@@ -25,6 +25,7 @@ from tacticalrmm.constants import (
     WEEK_DAYS,
     WEEKS,
     AgentPlat,
+    CustomFieldType,
     DebugLogType,
     ScriptShell,
 )
@@ -335,9 +336,12 @@ def replace_db_values(
         model_fields = getattr(field, f"{model}_fields")
         value = None
         if model_fields.filter(**{model: obj}).exists():
-            if field.type != "checkbox" and model_fields.get(**{model: obj}).value:
+            if (
+                field.type != CustomFieldType.CHECKBOX
+                and model_fields.get(**{model: obj}).value
+            ):
                 value = model_fields.get(**{model: obj}).value
-            elif field.type == "checkbox":
+            elif field.type == CustomFieldType.CHECKBOX:
                 value = model_fields.get(**{model: obj}).value
 
         # need explicit None check since a false boolean value will pass default value
@@ -345,13 +349,13 @@ def replace_db_values(
             value = field.default_value
 
         # check if value exists and if not use default
-        if value and field.type == "multiple":
+        if value and field.type == CustomFieldType.MULTIPLE:
             value = (
                 f"'{format_shell_array(value)}'"
                 if quotes
                 else format_shell_array(value)
             )
-        elif value != None and field.type == "checkbox":
+        elif value != None and field.type == CustomFieldType.CHECKBOX:
             value = format_shell_bool(value, shell)
         else:
             value = f"'{value}'" if quotes else value

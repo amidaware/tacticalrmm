@@ -10,7 +10,7 @@ from rest_framework.authtoken.models import Token
 from agents.models import Agent
 from core.utils import get_core_settings
 from logs.models import PendingAction
-from tacticalrmm.constants import PAAction, PAStatus
+from tacticalrmm.constants import CustomFieldModel, PAAction, PAStatus
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
@@ -172,7 +172,9 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/customfields/"
 
         # setup
-        custom_fields = baker.make("core.CustomField", model="agent", _quantity=5)
+        custom_fields = baker.make(
+            "core.CustomField", model=CustomFieldModel.AGENT, _quantity=5
+        )
         baker.make("core.CustomField", model="client", _quantity=5)
 
         # will error if request invalid

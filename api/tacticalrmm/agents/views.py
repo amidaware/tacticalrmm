@@ -30,6 +30,7 @@ from tacticalrmm.constants import (
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
+    CustomFieldModel,
     EvtLogNames,
     PAAction,
     PAStatus,
@@ -728,11 +729,11 @@ def run_script(request, agent_id):
 
         custom_field = CustomField.objects.get(pk=request.data["custom_field"])
 
-        if custom_field.model == "agent":
+        if custom_field.model == CustomFieldModel.AGENT:
             field = custom_field.get_or_create_field_value(agent)
-        elif custom_field.model == "client":
+        elif custom_field.model == CustomFieldModel.CLIENT:
             field = custom_field.get_or_create_field_value(agent.client)
-        elif custom_field.model == "site":
+        elif custom_field.model == CustomFieldModel.SITE:
             field = custom_field.get_or_create_field_value(agent.site)
         else:
             return notify_error("Custom Field was invalid")

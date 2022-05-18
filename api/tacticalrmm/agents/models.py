@@ -30,6 +30,7 @@ from tacticalrmm.constants import (
     AlertSeverity,
     CheckStatus,
     CheckType,
+    CustomFieldType,
     DebugLogType,
 )
 from tacticalrmm.models import PermissionQuerySet
@@ -965,26 +966,26 @@ class AgentCustomField(models.Model):
 
     @property
     def value(self) -> Union[List[Any], bool, str]:
-        if self.field.type == "multiple":
+        if self.field.type == CustomFieldType.MULTIPLE:
             return cast(List[str], self.multiple_value)
-        elif self.field.type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             return self.bool_value
         else:
             return cast(str, self.string_value)
 
     def save_to_field(self, value: Union[List[Any], bool, str]) -> None:
         if self.field.type in [
-            "text",
-            "number",
-            "single",
-            "datetime",
+            CustomFieldType.TEXT,
+            CustomFieldType.NUMBER,
+            CustomFieldType.SINGLE,
+            CustomFieldType.DATETIME,
         ]:
             self.string_value = cast(str, value)
             self.save()
-        elif self.field.type == "multiple":
+        elif self.field.type == CustomFieldType.MULTIPLE:
             self.multiple_value = value.split(",")
             self.save()
-        elif self.field.type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             self.bool_value = bool(value)
             self.save()
 

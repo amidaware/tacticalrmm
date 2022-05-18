@@ -23,6 +23,8 @@ from tacticalrmm.constants import (
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
     AgentMonType,
+    CustomFieldModel,
+    CustomFieldType,
     EvtLogNames,
     PAAction,
     PAStatus,
@@ -170,7 +172,11 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(data["run_time_days"], [2, 3, 6])
 
         # test adding custom fields
-        field = baker.make("core.CustomField", model="agent", type="number")
+        field = baker.make(
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.NUMBER,
+        )
         data = {
             "site": site.pk,
             "description": "asjdk234andasd",
@@ -659,7 +665,7 @@ class TestAgentViews(TacticalTestCase):
         # test collector
 
         # save to agent custom field
-        custom_field = baker.make("core.CustomField", model="agent")
+        custom_field = baker.make("core.CustomField", model=CustomFieldModel.AGENT)
         data = {
             "script": script.pk,
             "output": "collector",
@@ -723,7 +729,7 @@ class TestAgentViews(TacticalTestCase):
         )
 
         # save to client custom field
-        custom_field = baker.make("core.CustomField", model="client")
+        custom_field = baker.make("core.CustomField", model=CustomFieldModel.CLIENT)
         data = {
             "script": script.pk,
             "output": "collector",

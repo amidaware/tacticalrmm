@@ -23,6 +23,17 @@ AGENT_STATUS_OFFLINE = "offline"
 AGENT_STATUS_OVERDUE = "overdue"
 
 
+class TaskType(models.TextChoices):
+    DAILY = "daily", "Daily"
+    WEEKLY = "weekly", "Weekly"
+    MONTHLY = "monthly", "Monthly"
+    MONTHLY_DOW = "monthlydow", "Monthly Day of Week"
+    CHECK_FAILURE = "checkfailure", "On Check Failure"
+    MANUAL = "manual", "Manual"
+    RUN_ONCE = "runonce", "Run Once"
+    SCHEDULED = "scheduled", "Scheduled"  # deprecated
+
+
 class AlertSeverity(models.TextChoices):
     INFO = "info", "Informational"
     WARNING = "warning", "Warning"

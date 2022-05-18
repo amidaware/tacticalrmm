@@ -3,6 +3,7 @@ from unittest.mock import call, patch
 from django.utils import timezone as djangotime
 from model_bakery import baker
 
+from tacticalrmm.constants import TaskType
 from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask, TaskResult
@@ -454,7 +455,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            task_type="daily",
+            task_type=TaskType.DAILY,
             daily_interval=1,
             run_time_date=djangotime.now() + djangotime.timedelta(hours=3, minutes=30),
         )
@@ -502,7 +503,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            task_type="weekly",
+            task_type=TaskType.WEEKLY,
             weekly_interval=1,
             run_asap_after_missed=True,
             run_time_bit_weekdays=127,
@@ -549,7 +550,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            task_type="monthly",
+            task_type=TaskType.MONTHLY,
             random_task_delay="3M",
             task_repetition_interval="15M",
             task_repetition_duration="1D",
@@ -597,7 +598,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 1",
-            task_type="monthlydow",
+            task_type=TaskType.MONTHLY_DOW,
             run_time_bit_weekdays=56,
             monthly_months_of_year=0x400,
             monthly_weeks_of_month=3,
@@ -637,7 +638,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 2",
-            task_type="runonce",
+            task_type=TaskType.RUN_ONCE,
             run_time_date=djangotime.now() + djangotime.timedelta(hours=22),
             run_asap_after_missed=True,
         )
@@ -672,7 +673,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 3",
-            task_type="runonce",
+            task_type=TaskType.RUN_ONCE,
             run_asap_after_missed=True,
             run_time_date=djangotime.datetime(2018, 6, 1, 23, 23, 23),
         )
@@ -703,7 +704,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             "autotasks.AutomatedTask",
             agent=agent,
             name="test task 4",
-            task_type="checkfailure",
+            task_type=TaskType.CHECK_FAILURE,
             assigned_check=check,
         )
         nats_cmd.return_value = "ok"
@@ -731,7 +732,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         task1 = AutomatedTask.objects.create(
             agent=agent,
             name="test task 5",
-            task_type="manual",
+            task_type=TaskType.MANUAL,
         )
         nats_cmd.return_value = "ok"
         create_win_task_schedule(pk=task1.pk)

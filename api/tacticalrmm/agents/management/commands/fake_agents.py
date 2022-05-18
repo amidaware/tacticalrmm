@@ -29,6 +29,7 @@ from tacticalrmm.constants import (
     EvtLogTypes,
     PAAction,
     ScriptShell,
+    TaskType,
 )
 from tacticalrmm.demo_data import (
     check_network_loc_aware_ps1,
@@ -610,7 +611,7 @@ class Command(BaseCommand):
             nla_task.actions = actions
             nla_task.assigned_check = check6
             nla_task.name = "Restart NLA"
-            nla_task.task_type = "checkfailure"
+            nla_task.task_type = TaskType.CHECK_FAILURE
             nla_task.save()
 
             nla_task_result = TaskResult()
@@ -637,7 +638,7 @@ class Command(BaseCommand):
             ]
             spool_task.actions = actions
             spool_task.name = "Clear the print spooler"
-            spool_task.task_type = "daily"
+            spool_task.task_type = TaskType.DAILY
             spool_task.run_time_date = django_now + djangotime.timedelta(minutes=10)
             spool_task.expire_date = django_now + djangotime.timedelta(days=753)
             spool_task.daily_interval = 1
@@ -669,7 +670,7 @@ class Command(BaseCommand):
                 }
             ]
             tmp_dir_task.actions = actions
-            tmp_dir_task.task_type = "manual"
+            tmp_dir_task.task_type = TaskType.MANUAL
             tmp_dir_task.save()
 
             tmp_dir_task_result = TaskResult()

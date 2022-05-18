@@ -19,6 +19,7 @@ from tacticalrmm.constants import (
     POLICY_TASK_FIELDS_TO_COPY,
     AlertSeverity,
     DebugLogType,
+    TaskType,
 )
 
 if TYPE_CHECKING:
@@ -35,17 +36,6 @@ from tacticalrmm.utils import (
     bitweeks_to_string,
     convert_to_iso_duration,
 )
-
-TASK_TYPE_CHOICES = [
-    ("daily", "Daily"),
-    ("weekly", "Weekly"),
-    ("monthly", "Monthly"),
-    ("monthlydow", "Monthly Day of Week"),
-    ("checkfailure", "On Check Failure"),
-    ("manual", "Manual"),
-    ("runonce", "Run Once"),
-    ("scheduled", "Scheduled"),  # deprecated
-]
 
 SYNC_STATUS_CHOICES = [
     ("synced", "Synced With Agent"),
@@ -114,7 +104,7 @@ class AutomatedTask(BaseAuditModel):
     # options sent to agent for task creation
     # general task settings
     task_type = models.CharField(
-        max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
+        max_length=100, choices=TaskType.choices, default=TaskType.MANUAL
     )
     win_task_name = models.CharField(
         max_length=255, unique=True, blank=True, default=generate_task_name
@@ -199,31 +189,31 @@ class AutomatedTask(BaseAuditModel):
 
     @property
     def schedule(self) -> Optional[str]:
-        if self.task_type == "manual":
+        if self.task_type == TaskType.MANUAL:
             return "Manual"
-        elif self.task_type == "checkfailure":
+        elif self.task_type == TaskType.CHECK_FAILURE:
             return "Every time check fails"
-        elif self.task_type == "runonce":
+        elif self.task_type == TaskType.RUN_ONCE:
             return f'Run once on {self.run_time_date.strftime("%m/%d/%Y %I:%M%p")}'
-        elif self.task_type == "daily":
+        elif self.task_type == TaskType.DAILY:
             run_time_nice = self.run_time_date.strftime("%I:%M%p")
             if self.daily_interval == 1:
                 return f"Daily at {run_time_nice}"
             else:
                 return f"Every {self.daily_interval} days at {run_time_nice}"
-        elif self.task_type == "weekly":
+        elif self.task_type == TaskType.WEEKLY:
             run_time_nice = self.run_time_date.strftime("%I:%M%p")
             days = bitdays_to_string(self.run_time_bit_weekdays)
             if self.weekly_interval != 1:
                 return f"{days} at {run_time_nice}"
             else:
                 return f"{days} at {run_time_nice} every {self.weekly_interval} weeks"
-        elif self.task_type == "monthly":
+        elif self.task_type == TaskType.MONTHLY:
             run_time_nice = self.run_time_date.strftime("%I:%M%p")
             months = bitmonths_to_string(self.monthly_months_of_year)
             days = bitmonthdays_to_string(self.monthly_days_of_month)
             return f"Runs on {months} on days {days} at {run_time_nice}"
-        elif self.task_type == "monthlydow":
+        elif self.task_type == TaskType.MONTHLY_DOW:
             run_time_nice = self.run_time_date.strftime("%I:%M%p")
             months = bitmonths_to_string(self.monthly_months_of_year)
             weeks = bitweeks_to_string(self.monthly_weeks_of_month)
@@ -267,7 +257,9 @@ class AutomatedTask(BaseAuditModel):
             "name": self.win_task_name,
             "overwrite_task": editing,
             "enabled": self.enabled,
-            "trigger": self.task_type if self.task_type != "checkfailure" else "manual",
+            "trigger": self.task_type
+            if self.task_type != TaskType.CHECK_FAILURE
+            else TaskType.MANUAL,
             "multiple_instances": self.task_instance_policy
             if self.task_instance_policy
             else 0,
@@ -275,15 +267,21 @@ class AutomatedTask(BaseAuditModel):
             if self.expire_date
             else False,
             "start_when_available": self.run_asap_after_missed
-            if self.task_type != "runonce"
+            if self.task_type != TaskType.RUN_ONCE
             else True,
         }
 
-        if self.task_type in ["runonce", "daily", "weekly", "monthly", "monthlydow"]:
+        if self.task_type in [
+            TaskType.RUN_ONCE,
+            TaskType.DAILY,
+            TaskType.WEEKLY,
+            TaskType.MONTHLY,
+            TaskType.MONTHLY_DOW,
+        ]:
             # set runonce task in future if creating and run_asap_after_missed is set
             if (
                 not editing
-                and self.task_type == "runonce"
+                and self.task_type == TaskType.RUN_ONCE
                 and self.run_asap_after_missed
                 and agent
                 and self.run_time_date
@@ -318,14 +316,14 @@ class AutomatedTask(BaseAuditModel):
                 )
                 task["stop_at_duration_end"] = self.stop_task_at_duration_end
 
-            if self.task_type == "daily":
+            if self.task_type == TaskType.DAILY:
                 task["day_interval"] = self.daily_interval
 
-            elif self.task_type == "weekly":
+            elif self.task_type == TaskType.WEEKLY:
                 task["week_interval"] = self.weekly_interval
                 task["days_of_week"] = self.run_time_bit_weekdays
 
-            elif self.task_type == "monthly":
+            elif self.task_type == TaskType.MONTHLY:
 
                 # check if "last day is configured"
                 if self.monthly_days_of_month >= 0x80000000:
@@ -337,7 +335,7 @@ class AutomatedTask(BaseAuditModel):
 
                 task["months_of_year"] = self.monthly_months_of_year
 
-            elif self.task_type == "monthlydow":
+            elif self.task_type == TaskType.MONTHLY_DOW:
                 task["days_of_week"] = self.run_time_bit_weekdays
                 task["months_of_year"] = self.monthly_months_of_year
                 task["weeks_of_month"] = self.monthly_weeks_of_month

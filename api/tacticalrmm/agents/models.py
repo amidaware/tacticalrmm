@@ -22,6 +22,9 @@ from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     ONLINE_AGENTS,
     AgentPlat,
+    AGENT_STATUS_ONLINE,
+    AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_OVERDUE,
     CheckStatus,
     CheckType,
     DebugLogType,
@@ -156,13 +159,13 @@ class Agent(BaseAuditModel):
 
         if self.last_seen is not None:
             if (self.last_seen < offline) and (self.last_seen > overdue):
-                return "offline"
+                return AGENT_STATUS_OFFLINE
             elif (self.last_seen < offline) and (self.last_seen < overdue):
-                return "overdue"
+                return AGENT_STATUS_OVERDUE
             else:
-                return "online"
+                return AGENT_STATUS_ONLINE
         else:
-            return "offline"
+            return AGENT_STATUS_OFFLINE
 
     @property
     def checks(self) -> Dict[str, Any]:
@@ -361,10 +364,14 @@ class Agent(BaseAuditModel):
                 i
                 for i in cls.objects.only(*ONLINE_AGENTS)
                 if pyver.parse(i.version) >= pyver.parse(min_version)
-                and i.status == "online"
+                and i.status == AGENT_STATUS_ONLINE
             ]
 
-        return [i for i in cls.objects.only(*ONLINE_AGENTS) if i.status == "online"]
+        return [
+            i
+            for i in cls.objects.only(*ONLINE_AGENTS)
+            if i.status == AGENT_STATUS_ONLINE
+        ]
 
     def is_supported_script(self, platforms: List[str]) -> bool:
         return self.plat.lower() in platforms if platforms else True

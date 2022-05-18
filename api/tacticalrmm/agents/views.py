@@ -26,6 +26,8 @@ from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.constants import (
     AGENT_DEFER,
     AgentPlat,
+    AGENT_STATUS_ONLINE,
+    AGENT_STATUS_OFFLINE,
     EvtLogNames,
     PAAction,
     PAStatus,
@@ -333,12 +335,12 @@ def update_agents(request):
 @permission_classes([IsAuthenticated, PingAgentPerms])
 def ping(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
-    status = "offline"
+    status = AGENT_STATUS_OFFLINE
     attempts = 0
     while 1:
         r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=2))
         if r == "pong":
-            status = "online"
+            status = AGENT_STATUS_ONLINE
             break
         else:
             attempts += 1

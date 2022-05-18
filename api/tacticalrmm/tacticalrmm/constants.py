@@ -18,6 +18,10 @@ class MeshAgentIdent(Enum):
 CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
 
+AGENT_STATUS_ONLINE = "online"
+AGENT_STATUS_OFFLINE = "offline"
+AGENT_STATUS_OVERDUE = "overdue"
+
 
 class AgentPlat(models.TextChoices):
     WINDOWS = "windows", "Windows"

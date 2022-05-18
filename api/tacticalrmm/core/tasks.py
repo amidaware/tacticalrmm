@@ -16,7 +16,7 @@ from core.utils import get_core_settings
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
 from tacticalrmm.celery import app
-from tacticalrmm.constants import AGENT_DEFER, PAAction, PAStatus
+from tacticalrmm.constants import AGENT_DEFER, AGENT_STATUS_ONLINE, PAAction, PAStatus
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -65,7 +65,7 @@ def handle_resolved_stuff() -> None:
         action.id
         for action in actions
         if pyver.parse(action.agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
-        and action.agent.status == "online"
+        and action.agent.status == AGENT_STATUS_ONLINE
     ]
 
     PendingAction.objects.filter(pk__in=to_update).update(status=PAStatus.COMPLETED)
@@ -100,7 +100,7 @@ def handle_resolved_stuff() -> None:
     for agent in agent_queryset:
         if (
             pyver.parse(agent.version) >= pyver.parse("1.6.0")
-            and agent.status == "online"
+            and agent.status == AGENT_STATUS_ONLINE
         ):
             # sync scheduled tasks
             for task in agent.get_tasks_with_policies():

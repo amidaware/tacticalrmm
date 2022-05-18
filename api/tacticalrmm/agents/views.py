@@ -25,9 +25,10 @@ from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.constants import (
     AGENT_DEFER,
-    AgentPlat,
-    AGENT_STATUS_ONLINE,
     AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_ONLINE,
+    AgentMonType,
+    AgentPlat,
     EvtLogNames,
     PAAction,
     PAStatus,
@@ -82,7 +83,7 @@ class GetAgents(APIView):
 
         monitoring_type = request.query_params.get("monitoring_type", None)
         if monitoring_type:
-            if monitoring_type in ["server", "workstation"]:
+            if monitoring_type in AgentMonType.values:
                 monitoring_type_filter = Q(monitoring_type=monitoring_type)
             else:
                 return notify_error("monitoring type does not exist")
@@ -858,9 +859,9 @@ def bulk(request):
         return notify_error("Something went wrong")
 
     if request.data["monType"] == "servers":
-        q = q.filter(monitoring_type="server")
+        q = q.filter(monitoring_type=AgentMonType.SERVER)
     elif request.data["monType"] == "workstations":
-        q = q.filter(monitoring_type="workstation")
+        q = q.filter(monitoring_type=AgentMonType.WORKSTATION)
 
     if request.data["osType"] == AgentPlat.WINDOWS:
         q = q.filter(plat=AgentPlat.WINDOWS)

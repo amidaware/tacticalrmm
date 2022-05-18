@@ -20,8 +20,9 @@ from agents.serializers import (
 from agents.tasks import auto_self_agent_update_task
 from logs.models import PendingAction
 from tacticalrmm.constants import (
-    AGENT_STATUS_ONLINE,
     AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_ONLINE,
+    AgentMonType,
     EvtLogNames,
     PAAction,
     PAStatus,
@@ -52,24 +53,27 @@ class TestAgentsList(TacticalTestCase):
         site3: "Site" = baker.make("clients.Site", client=company2)
 
         baker.make_recipe(
-            "agents.online_agent", site=site1, monitoring_type="server", _quantity=15
+            "agents.online_agent",
+            site=site1,
+            monitoring_type=AgentMonType.SERVER,
+            _quantity=15,
         )
         baker.make_recipe(
             "agents.online_agent",
             site=site2,
-            monitoring_type="workstation",
+            monitoring_type=AgentMonType.WORKSTATION,
             _quantity=10,
         )
         baker.make_recipe(
             "agents.online_agent",
             site=site3,
-            monitoring_type="server",
+            monitoring_type=AgentMonType.SERVER,
             _quantity=4,
         )
         baker.make_recipe(
             "agents.online_agent",
             site=site3,
-            monitoring_type="workstation",
+            monitoring_type=AgentMonType.WORKSTATION,
             _quantity=7,
         )
 
@@ -223,7 +227,7 @@ class TestAgentViews(TacticalTestCase):
         self.agent.save(update_fields=["policy"])
         _ = self.agent.get_patch_policy()
 
-        self.agent.monitoring_type = "workstation"
+        self.agent.monitoring_type = AgentMonType.WORKSTATION
         self.agent.save(update_fields=["monitoring_type"])
         _ = self.agent.get_patch_policy()
 
@@ -235,7 +239,7 @@ class TestAgentViews(TacticalTestCase):
         self.coresettings.save(update_fields=["server_policy", "workstation_policy"])
         _ = self.agent.get_patch_policy()
 
-        self.agent.monitoring_type = "server"
+        self.agent.monitoring_type = AgentMonType.SERVER
         self.agent.save(update_fields=["monitoring_type"])
         _ = self.agent.get_patch_policy()
 

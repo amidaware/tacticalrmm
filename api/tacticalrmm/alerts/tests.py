@@ -10,7 +10,7 @@ from alerts.tasks import cache_agents_alert_template
 from autotasks.models import TaskResult
 from core.tasks import cache_db_fields_task, handle_resolved_stuff
 from core.utils import get_core_settings
-from tacticalrmm.constants import CheckStatus
+from tacticalrmm.constants import AgentMonType, CheckStatus
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Alert, AlertTemplate
@@ -392,8 +392,10 @@ class TestAlertTasks(TacticalTestCase):
 
         core = get_core_settings()
         # setup data
-        workstation = baker.make_recipe("agents.agent", monitoring_type="workstation")
-        server = baker.make_recipe("agents.agent", monitoring_type="server")
+        workstation = baker.make_recipe(
+            "agents.agent", monitoring_type=AgentMonType.WORKSTATION
+        )
+        server = baker.make_recipe("agents.agent", monitoring_type=AgentMonType.SERVER)
 
         policy = baker.make("automation.Policy", active=True)
 

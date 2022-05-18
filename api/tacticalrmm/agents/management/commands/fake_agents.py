@@ -18,6 +18,7 @@ from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
+    AgentMonType,
     AgentPlat,
     CheckStatus,
     CheckType,
@@ -174,7 +175,7 @@ class Command(BaseCommand):
             "LAPTOP-55443",
         )
         descriptions = ("Bob's computer", "Primary DC", "File Server", "Karen's Laptop")
-        modes = ("server", "workstation")
+        modes = AgentMonType.values
         op_systems_servers = (
             "Microsoft Windows Server 2016 Standard, 64bit (build 14393)",
             "Microsoft Windows Server 2012 R2 Standard, 64bit (build 9600)",
@@ -305,7 +306,7 @@ class Command(BaseCommand):
             plat_pick = random.randint(1, 15)
             if plat_pick in (7, 11):
                 agent.plat = AgentPlat.LINUX
-                mode = "server"
+                mode = AgentMonType.SERVER
                 # pi arm
                 if plat_pick == 7:
                     agent.goarch = "arm"
@@ -324,7 +325,7 @@ class Command(BaseCommand):
                 agent.wmi_detail = random.choice(wmi_details)
                 agent.services = services
                 agent.disks = random.choice(disks)
-                if mode == "server":
+                if mode == AgentMonType.SERVER:
                     agent.operating_system = random.choice(op_systems_servers)
                 else:
                     agent.operating_system = random.choice(op_systems_workstations)
@@ -353,7 +354,7 @@ class Command(BaseCommand):
             if agent.plat == AgentPlat.WINDOWS:
                 InstalledSoftware(agent=agent, software=random.choice(softwares)).save()
 
-            if mode == "workstation":
+            if mode == AgentMonType.WORKSTATION:
                 WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
             else:
                 WinUpdatePolicy(agent=agent).save()

@@ -20,11 +20,12 @@ from core.models import TZ_CHOICES
 from core.utils import get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
-    ONLINE_AGENTS,
-    AgentPlat,
-    AGENT_STATUS_ONLINE,
     AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
+    ONLINE_AGENTS,
+    AgentMonType,
+    AgentPlat,
     CheckStatus,
     CheckType,
     DebugLogType,
@@ -67,7 +68,9 @@ class Agent(BaseAuditModel):
     boot_time = models.FloatField(null=True, blank=True)
     logged_in_username = models.CharField(null=True, blank=True, max_length=255)
     last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
-    monitoring_type = models.CharField(max_length=30)
+    monitoring_type = models.CharField(
+        max_length=30, choices=AgentMonType.choices, default=AgentMonType.SERVER
+    )
     description = models.CharField(null=True, blank=True, max_length=255)
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
     overdue_email_alert = models.BooleanField(default=False)

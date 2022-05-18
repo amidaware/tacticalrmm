@@ -9,7 +9,7 @@ from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import CheckType, DebugLogType
+from tacticalrmm.constants import AgentMonType, CheckType, DebugLogType
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -773,9 +773,9 @@ class AlertTemplate(BaseAuditModel):
             agent in self.excluded_agents.all()
             or agent.site in self.excluded_sites.all()
             or agent.client in self.excluded_clients.all()
-            or agent.monitoring_type == "workstation"
+            or agent.monitoring_type == AgentMonType.WORKSTATION
             and self.exclude_workstations
-            or agent.monitoring_type == "server"
+            or agent.monitoring_type == AgentMonType.SERVER
             and self.exclude_servers
         )
 

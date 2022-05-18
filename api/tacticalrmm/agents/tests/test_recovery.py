@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from model_bakery import baker
 
-from tacticalrmm.constants import AgentPlat
+from tacticalrmm.constants import AgentMonType, AgentPlat
 from tacticalrmm.test import TacticalTestCase
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ class TestRecovery(TacticalTestCase):
         agent = baker.make_recipe(
             "agents.online_agent",
             site=self.site1,
-            monitoring_type="server",
+            monitoring_type=AgentMonType.SERVER,
             plat=AgentPlat.WINDOWS,
         )
 

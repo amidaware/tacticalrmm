@@ -23,6 +23,11 @@ AGENT_STATUS_OFFLINE = "offline"
 AGENT_STATUS_OVERDUE = "overdue"
 
 
+class AgentMonType(models.TextChoices):
+    SERVER = "server", "Server"
+    WORKSTATION = "workstation", "Workstation"
+
+
 class AgentPlat(models.TextChoices):
     WINDOWS = "windows", "Windows"
     LINUX = "linux", "Linux"

@@ -6,7 +6,12 @@ from django.db import models
 from agents.models import Agent
 from clients.models import Client, Site
 from logs.models import BaseAuditModel
-from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, AgentPlat, CheckType
+from tacticalrmm.constants import (
+    CORESETTINGS_CACHE_KEY,
+    AgentMonType,
+    AgentPlat,
+    CheckType,
+)
 
 if TYPE_CHECKING:
     from autotasks.models import AutomatedTask
@@ -123,7 +128,7 @@ class Policy(BaseAuditModel):
                 .exclude(id__in=excluded_agents_ids)
                 .exclude(site_id__in=excluded_sites_ids)
                 .exclude(site__client_id__in=excluded_clients_ids)
-                .filter(monitoring_type="server")
+                .filter(monitoring_type=AgentMonType.SERVER)
                 .only("id")
                 .values_list("id", flat=True)
             )
@@ -136,7 +141,7 @@ class Policy(BaseAuditModel):
                 .exclude(id__in=excluded_agents_ids)
                 .exclude(site_id__in=excluded_sites_ids)
                 .exclude(site__client_id__in=excluded_clients_ids)
-                .filter(monitoring_type="workstation")
+                .filter(monitoring_type=AgentMonType.WORKSTATION)
                 .only("id")
                 .values_list("id", flat=True)
             )
@@ -155,7 +160,7 @@ class Policy(BaseAuditModel):
         explicit_clients_qs = Client.objects.none()
         explicit_sites_qs = Site.objects.none()
 
-        if not mon_type or mon_type == "workstation":
+        if not mon_type or mon_type == AgentMonType.WORKSTATION:
             explicit_clients_qs |= self.workstation_clients.exclude(  # type: ignore
                 id__in=excluded_clients_ids
             )
@@ -163,7 +168,7 @@ class Policy(BaseAuditModel):
                 id__in=excluded_sites_ids
             )
 
-        if not mon_type or mon_type == "server":
+        if not mon_type or mon_type == AgentMonType.SERVER:
             explicit_clients_qs |= self.server_clients.exclude(  # type: ignore
                 id__in=excluded_clients_ids
             )

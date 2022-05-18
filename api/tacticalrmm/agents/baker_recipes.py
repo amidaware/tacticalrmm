@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery.recipe import Recipe, foreign_key, seq
 
-from tacticalrmm.constants import AgentPlat
+from tacticalrmm.constants import AgentMonType, AgentPlat
 
 
 def generate_agent_id(hostname):
@@ -31,18 +31,18 @@ agent = Recipe(
     site=foreign_key(site),
     hostname="DESKTOP-TEST123",
     version="1.3.0",
-    monitoring_type=cycle(["workstation", "server"]),
+    monitoring_type=cycle(AgentMonType.values),
     agent_id=seq(generate_agent_id("DESKTOP-TEST123")),
     last_seen=djangotime.now() - djangotime.timedelta(days=5),
     plat=AgentPlat.WINDOWS,
 )
 
 server_agent = agent.extend(
-    monitoring_type="server",
+    monitoring_type=AgentMonType.SERVER,
 )
 
 workstation_agent = agent.extend(
-    monitoring_type="workstation",
+    monitoring_type=AgentMonType.WORKSTATION,
 )
 
 online_agent = agent.extend(last_seen=djangotime.now())

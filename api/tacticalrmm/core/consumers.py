@@ -7,6 +7,7 @@ from django.db.models import F
 from django.utils import timezone as djangotime
 
 from agents.models import Agent
+from tacticalrmm.constants import AgentMonType
 
 
 class DashInfo(AsyncJsonWebsocketConsumer):
@@ -38,12 +39,12 @@ class DashInfo(AsyncJsonWebsocketConsumer):
     def get_dashboard_info(self):
         total_server_agents_count = (
             Agent.objects.filter_by_role(self.user)
-            .filter(monitoring_type="server")
+            .filter(monitoring_type=AgentMonType.SERVER)
             .count()
         )
         offline_server_agents_count = (
             Agent.objects.filter_by_role(self.user)
-            .filter(monitoring_type="server")
+            .filter(monitoring_type=AgentMonType.SERVER)
             .filter(
                 last_seen__lt=djangotime.now()
                 - (djangotime.timedelta(minutes=1) * F("offline_time"))
@@ -52,12 +53,12 @@ class DashInfo(AsyncJsonWebsocketConsumer):
         )
         total_workstation_agents_count = (
             Agent.objects.filter_by_role(self.user)
-            .filter(monitoring_type="workstation")
+            .filter(monitoring_type=AgentMonType.WORKSTATION)
             .count()
         )
         offline_workstation_agents_count = (
             Agent.objects.filter_by_role(self.user)
-            .filter(monitoring_type="workstation")
+            .filter(monitoring_type=AgentMonType.WORKSTATION)
             .filter(
                 last_seen__lt=djangotime.now()
                 - (djangotime.timedelta(minutes=1) * F("offline_time"))

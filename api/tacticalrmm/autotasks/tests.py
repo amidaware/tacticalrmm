@@ -6,7 +6,7 @@ from model_bakery import baker
 from tacticalrmm.constants import TaskType
 from tacticalrmm.test import TacticalTestCase
 
-from .models import AutomatedTask, TaskResult
+from .models import AutomatedTask, TaskResult, TaskSyncStatus
 from .serializers import TaskSerializer
 from .tasks import create_win_task_schedule, remove_orphaned_win_tasks, run_win_task
 
@@ -488,13 +488,15 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         )
         nats_cmd.reset_mock()
         self.assertEqual(
-            TaskResult.objects.get(task=task1, agent=agent).sync_status, "synced"
+            TaskResult.objects.get(task=task1, agent=agent).sync_status,
+            TaskSyncStatus.SYNCED,
         )
 
         nats_cmd.return_value = "timeout"
         create_win_task_schedule(pk=task1.pk)
         self.assertEqual(
-            TaskResult.objects.get(task=task1, agent=agent).sync_status, "initial"
+            TaskResult.objects.get(task=task1, agent=agent).sync_status,
+            TaskSyncStatus.INITIAL,
         )
         nats_cmd.reset_mock()
 

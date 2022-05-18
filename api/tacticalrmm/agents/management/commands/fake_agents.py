@@ -29,6 +29,7 @@ from tacticalrmm.constants import (
     EvtLogTypes,
     PAAction,
     ScriptShell,
+    TaskSyncStatus,
     TaskType,
 )
 from tacticalrmm.demo_data import (
@@ -621,7 +622,7 @@ class Command(BaseCommand):
             nla_task_result.last_run = django_now
             nla_task_result.stdout = "no stdout"
             nla_task_result.retcode = 0
-            nla_task_result.sync_status = "synced"
+            nla_task_result.sync_status = TaskSyncStatus.SYNCED
             nla_task_result.save()
 
             spool_task = AutomatedTask()
@@ -654,7 +655,7 @@ class Command(BaseCommand):
             spool_task_result.last_run = django_now
             spool_task_result.retcode = 0
             spool_task_result.stdout = spooler_stdout
-            spool_task_result.sync_status = "synced"
+            spool_task_result.sync_status = TaskSyncStatus.SYNCED
             spool_task_result.save()
 
             tmp_dir_task = AutomatedTask()
@@ -679,7 +680,7 @@ class Command(BaseCommand):
             tmp_dir_task_result.last_run = django_now
             tmp_dir_task_result.stdout = temp_dir_stdout
             tmp_dir_task_result.retcode = 0
-            tmp_dir_task_result.sync_status = "synced"
+            tmp_dir_task_result.sync_status = TaskSyncStatus.SYNCED
             tmp_dir_task_result.save()
 
             check7 = Check()

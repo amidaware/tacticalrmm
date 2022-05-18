@@ -19,10 +19,13 @@ from tacticalrmm.celery import app
 from tacticalrmm.constants import (
     AGENT_DEFER,
     AGENT_STATUS_ONLINE,
+    AGENT_STATUS_OVERDUE,
     AlertSeverity,
     AlertType,
     PAAction,
     PAStatus,
+    TaskStatus,
+    TaskSyncStatus,
 )
 
 if TYPE_CHECKING:
@@ -111,13 +114,16 @@ def handle_resolved_stuff() -> None:
         ):
             # sync scheduled tasks
             for task in agent.get_tasks_with_policies():
-                if not task.task_result or task.task_result.sync_status == "initial":
+                if (
+                    not task.task_result
+                    or task.task_result.sync_status == TaskSyncStatus.INITIAL
+                ):
                     task.create_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == "pendingdeletion":
+                elif task.task_result.sync_status == TaskSyncStatus.PENDING_DELETION:
                     task.delete_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == "notsynced":
+                elif task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED:
                     task.modify_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == "synced":
+                elif task.task_result.sync_status == TaskSyncStatus.SYNCED:
                     continue
 
             # handles any alerting actions
@@ -138,7 +144,7 @@ def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
             or agent.overdue_text_alert
             or agent.overdue_dashboard_alert
         ):
-            if agent.status == "overdue":
+            if agent.status == AGENT_STATUS_OVERDUE:
                 data["error"] = True
                 break
 
@@ -159,13 +165,13 @@ def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
                     continue
                 elif (
                     not data["error"]
-                    and task.task_result.status == "failing"
+                    and task.task_result.status == TaskStatus.FAILING
                     and task.alert_severity == AlertSeverity.ERROR
                 ):
                     data["error"] = True
                 elif (
                     not data["warning"]
-                    and task.task_result.status == "failing"
+                    and task.task_result.status == TaskStatus.FAILING
                     and task.alert_severity == AlertSeverity.WARNING
                 ):
                     data["warning"]

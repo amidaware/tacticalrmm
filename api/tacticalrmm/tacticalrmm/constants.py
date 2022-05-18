@@ -23,6 +23,19 @@ AGENT_STATUS_OFFLINE = "offline"
 AGENT_STATUS_OVERDUE = "overdue"
 
 
+class TaskSyncStatus(models.TextChoices):
+    SYNCED = "synced", "Synced With Agent"
+    NOT_SYNCED = "notsynced", "Waiting On Agent Checkin"
+    PENDING_DELETION = "pendingdeletion", "Pending Deletion on Agent"
+    INITIAL = "initial", "Initial Task Sync"
+
+
+class TaskStatus(models.TextChoices):
+    PASSING = "passing", "Passing"
+    FAILING = "failing", "Failing"
+    PENDING = "pending", "Pending"
+
+
 class TaskType(models.TextChoices):
     DAILY = "daily", "Daily"
     WEEKLY = "weekly", "Weekly"

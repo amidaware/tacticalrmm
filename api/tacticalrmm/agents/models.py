@@ -119,7 +119,7 @@ class Agent(BaseAuditModel):
 
     @property
     def is_posix(self) -> bool:
-        return self.plat == AgentPlat.WINDOWS or self.plat == AgentPlat.DARWIN
+        return self.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}
 
     @property
     def arch(self) -> Optional[str]:

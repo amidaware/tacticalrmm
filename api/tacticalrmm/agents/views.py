@@ -504,7 +504,13 @@ def install_agent(request):
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )
 
-    download_url = get_agent_url(arch, request.data["installMethod"])
+    # TODO refactor this, install method should not be same as plat
+    if request.data["installMethod"] == AgentPlat.LINUX:
+        plat = AgentPlat.LINUX
+    else:
+        plat = AgentPlat.WINDOWS
+
+    download_url = get_agent_url(arch, plat)
 
     installer_user = User.objects.filter(is_installer_user=True).first()
 

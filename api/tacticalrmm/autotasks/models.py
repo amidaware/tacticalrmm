@@ -12,12 +12,12 @@ from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
 
-from alerts.models import SEVERITY_CHOICES
 from core.utils import get_core_settings
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     FIELDS_TRIGGER_TASK_UPDATE_AGENT,
     POLICY_TASK_FIELDS_TO_COPY,
+    AlertSeverity,
     DebugLogType,
 )
 
@@ -105,7 +105,7 @@ class AutomatedTask(BaseAuditModel):
     enabled = models.BooleanField(default=True)
     continue_on_error = models.BooleanField(default=True)
     alert_severity = models.CharField(
-        max_length=30, choices=SEVERITY_CHOICES, default="info"
+        max_length=30, choices=AlertSeverity.choices, default=AlertSeverity.INFO
     )
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)

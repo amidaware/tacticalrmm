@@ -16,7 +16,14 @@ from core.utils import get_core_settings
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
 from tacticalrmm.celery import app
-from tacticalrmm.constants import AGENT_DEFER, AGENT_STATUS_ONLINE, PAAction, PAStatus
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    AGENT_STATUS_ONLINE,
+    AlertSeverity,
+    AlertType,
+    PAAction,
+    PAStatus,
+)
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -115,7 +122,7 @@ def handle_resolved_stuff() -> None:
 
             # handles any alerting actions
             if Alert.objects.filter(
-                alert_type="availability", agent=agent, resolved=False
+                alert_type=AlertType.AVAILABILITY, agent=agent, resolved=False
             ).exists():
                 Alert.handle_alert_resolve(agent)
 
@@ -153,13 +160,13 @@ def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
                 elif (
                     not data["error"]
                     and task.task_result.status == "failing"
-                    and task.alert_severity == "error"
+                    and task.alert_severity == AlertSeverity.ERROR
                 ):
                     data["error"] = True
                 elif (
                     not data["warning"]
                     and task.task_result.status == "failing"
-                    and task.alert_severity == "warning"
+                    and task.alert_severity == AlertSeverity.WARNING
                 ):
                     data["warning"]
 

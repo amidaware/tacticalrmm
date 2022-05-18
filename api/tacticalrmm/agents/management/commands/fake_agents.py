@@ -21,6 +21,7 @@ from tacticalrmm.constants import (
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
+    AlertSeverity,
     CheckStatus,
     CheckType,
     EvtLogFailWhen,
@@ -441,7 +442,7 @@ class Command(BaseCommand):
 
             if site in sites5:
                 check2.name = "Synology NAS"
-                check2.alert_severity = "error"
+                check2.alert_severity = AlertSeverity.ERROR
                 check_result2.status = CheckStatus.FAILING
                 check2.ip = "172.17.14.26"
                 check_result2.more_info = ping_fail_output

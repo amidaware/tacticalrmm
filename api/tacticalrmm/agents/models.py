@@ -27,6 +27,7 @@ from tacticalrmm.constants import (
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
+    AlertSeverity,
     CheckStatus,
     CheckType,
     DebugLogType,
@@ -200,11 +201,11 @@ class Agent(BaseAuditModel):
                     ]
                     else check.alert_severity
                 )
-                if alert_severity == "error":
+                if alert_severity == AlertSeverity.ERROR:
                     failing += 1
-                elif alert_severity == "warning":
+                elif alert_severity == AlertSeverity.WARNING:
                     warning += 1
-                elif alert_severity == "info":
+                elif alert_severity == AlertSeverity.INFO:
                     info += 1
 
         ret = {

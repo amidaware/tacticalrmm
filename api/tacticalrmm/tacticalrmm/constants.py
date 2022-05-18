@@ -23,6 +23,19 @@ AGENT_STATUS_OFFLINE = "offline"
 AGENT_STATUS_OVERDUE = "overdue"
 
 
+class AlertSeverity(models.TextChoices):
+    INFO = "info", "Informational"
+    WARNING = "warning", "Warning"
+    ERROR = "error", "Error"
+
+
+class AlertType(models.TextChoices):
+    AVAILABILITY = "availability", "Availability"
+    CHECK = "check", "Check"
+    TASK = "task", "Task"
+    CUSTOM = "custom", "Custom"
+
+
 class AgentHistoryType(models.TextChoices):
     TASK_RUN = "task_run", "Task Run"
     SCRIPT_RUN = "script_run", "Script Run"

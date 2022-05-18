@@ -19,7 +19,13 @@ from packaging import version as pyver
 from core.models import TZ_CHOICES
 from core.utils import get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import ONLINE_AGENTS, CheckStatus, CheckType, DebugLogType
+from tacticalrmm.constants import (
+    ONLINE_AGENTS,
+    AgentPlat,
+    CheckStatus,
+    CheckType,
+    DebugLogType,
+)
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -44,7 +50,9 @@ class Agent(BaseAuditModel):
 
     version = models.CharField(default="0.1.0", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
-    plat = models.CharField(max_length=255, default="windows")
+    plat = models.CharField(
+        max_length=255, choices=AgentPlat.choices, default=AgentPlat.WINDOWS
+    )
     goarch = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
     agent_id = models.CharField(max_length=200, unique=True)
@@ -111,7 +119,7 @@ class Agent(BaseAuditModel):
 
     @property
     def is_posix(self) -> bool:
-        return self.plat == "linux" or self.plat == "darwin"
+        return self.plat == AgentPlat.WINDOWS or self.plat == AgentPlat.DARWIN
 
     @property
     def arch(self) -> Optional[str]:

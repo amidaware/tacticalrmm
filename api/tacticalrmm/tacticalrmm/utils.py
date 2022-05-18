@@ -24,6 +24,7 @@ from tacticalrmm.constants import (
     MONTHS,
     WEEK_DAYS,
     WEEKS,
+    AgentPlat,
     DebugLogType,
     ScriptShell,
 )
@@ -51,7 +52,7 @@ def generate_winagent_exe(
         else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
     )
 
-    dl_url = get_agent_url(arch, "windows")
+    dl_url = get_agent_url(arch, AgentPlat.WINDOWS)
 
     try:
         codetoken = CodeSignToken.objects.first().token  # type:ignore

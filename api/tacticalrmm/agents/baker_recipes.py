@@ -8,6 +8,8 @@ from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery.recipe import Recipe, foreign_key, seq
 
+from tacticalrmm.constants import AgentPlat
+
 
 def generate_agent_id(hostname):
     rand = "".join(random.choice(string.ascii_letters) for _ in range(35))
@@ -32,7 +34,7 @@ agent = Recipe(
     monitoring_type=cycle(["workstation", "server"]),
     agent_id=seq(generate_agent_id("DESKTOP-TEST123")),
     last_seen=djangotime.now() - djangotime.timedelta(days=5),
-    plat="windows",
+    plat=AgentPlat.WINDOWS,
 )
 
 server_agent = agent.extend(

@@ -18,6 +18,7 @@ from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
+    AgentPlat,
     CheckStatus,
     CheckType,
     EvtLogFailWhen,
@@ -303,7 +304,7 @@ class Command(BaseCommand):
 
             plat_pick = random.randint(1, 15)
             if plat_pick in (7, 11):
-                agent.plat = "linux"
+                agent.plat = AgentPlat.LINUX
                 mode = "server"
                 # pi arm
                 if plat_pick == 7:
@@ -317,7 +318,7 @@ class Command(BaseCommand):
                     agent.disks = disks_linux_deb
                     agent.operating_system = linux_deb_os
             else:
-                agent.plat = "windows"
+                agent.plat = AgentPlat.WINDOWS
                 agent.goarch = "amd64"
                 mode = random.choice(modes)
                 agent.wmi_detail = random.choice(wmi_details)
@@ -349,7 +350,7 @@ class Command(BaseCommand):
 
             agent.save()
 
-            if agent.plat == "windows":
+            if agent.plat == AgentPlat.WINDOWS:
                 InstalledSoftware(agent=agent, software=random.choice(softwares)).save()
 
             if mode == "workstation":
@@ -357,7 +358,7 @@ class Command(BaseCommand):
             else:
                 WinUpdatePolicy(agent=agent).save()
 
-            if agent.plat == "windows":
+            if agent.plat == AgentPlat.WINDOWS:
                 # windows updates load
                 guids = [i for i in windows_updates.keys()]
                 for i in guids:
@@ -394,7 +395,7 @@ class Command(BaseCommand):
             }
             hist1.save()
 
-            if agent.plat == "windows":
+            if agent.plat == AgentPlat.WINDOWS:
                 # disk space check
                 check1 = Check()
                 check1.agent = agent
@@ -708,7 +709,7 @@ class Command(BaseCommand):
                 check7_history.y = 0
                 check7_history.save()
 
-            if agent.plat == "windows":
+            if agent.plat == AgentPlat.WINDOWS:
                 check8 = Check()
                 check8.agent = agent
                 check8.check_type = CheckType.WINSVC

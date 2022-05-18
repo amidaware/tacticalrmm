@@ -23,7 +23,13 @@ from core.utils import get_core_settings, get_mesh_ws_url, remove_mesh_agent
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.constants import AGENT_DEFER, EvtLogNames, PAAction, PAStatus
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    AgentPlat,
+    EvtLogNames,
+    PAAction,
+    PAStatus,
+)
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
@@ -197,7 +203,7 @@ class GetUpdateDeleteAgent(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
         code = "foo"
-        if agent.plat == "linux":
+        if agent.plat == AgentPlat.LINUX:
             with open(settings.LINUX_AGENT_SCRIPT, "r") as f:
                 code = f.read()
 
@@ -497,12 +503,8 @@ def install_agent(request):
     inno = (
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )
-    if request.data["installMethod"] == "linux":
-        plat = "linux"
-    else:
-        plat = "windows"
 
-    download_url = get_agent_url(arch, plat)
+    download_url = get_agent_url(arch, request.data["installMethod"])
 
     installer_user = User.objects.filter(is_installer_user=True).first()
 
@@ -526,7 +528,7 @@ def install_agent(request):
             file_name=request.data["fileName"],
         )
 
-    elif request.data["installMethod"] == "linux":
+    elif request.data["installMethod"] == AgentPlat.LINUX:
         # TODO
         # linux agents are in beta for now, only available for sponsors for testing
         # remove this after it's out of beta
@@ -852,10 +854,10 @@ def bulk(request):
     elif request.data["monType"] == "workstations":
         q = q.filter(monitoring_type="workstation")
 
-    if request.data["osType"] == "windows":
-        q = q.filter(plat="windows")
-    elif request.data["osType"] == "linux":
-        q = q.filter(plat="linux")
+    if request.data["osType"] == AgentPlat.WINDOWS:
+        q = q.filter(plat=AgentPlat.WINDOWS)
+    elif request.data["osType"] == AgentPlat.LINUX:
+        q = q.filter(plat=AgentPlat.LINUX)
 
     agents: list[int] = [agent.pk for agent in q]
 

@@ -19,6 +19,12 @@ CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
 
 
+class AgentPlat(models.TextChoices):
+    WINDOWS = "windows", "Windows"
+    LINUX = "linux", "Linux"
+    DARWIN = "darwin", "macOS"
+
+
 class ClientTreeSort(models.TextChoices):
     ALPHA_FAIL = "alphafail", "Move failing clients to the top"
     ALPHA = "alpha", "Sort alphabetically"

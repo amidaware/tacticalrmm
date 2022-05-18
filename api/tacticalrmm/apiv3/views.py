@@ -29,6 +29,7 @@ from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    AgentPlat,
     AuditActionType,
     AuditObjType,
     CheckStatus,
@@ -394,9 +395,9 @@ class MeshExe(APIView):
 
     def post(self, request):
         match request.data:
-            case {"arch": "64", "plat": "windows"}:
+            case {"arch": "64", "plat": AgentPlat.WINDOWS}:
                 arch = MeshAgentIdent.WIN64
-            case {"arch": "32", "plat": "windows"}:
+            case {"arch": "32", "plat": AgentPlat.WINDOWS}:
                 arch = MeshAgentIdent.WIN32
             case _:
                 return notify_error("Arch not specified")

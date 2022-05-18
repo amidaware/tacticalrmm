@@ -6,7 +6,7 @@ from django.db import models
 from agents.models import Agent
 from clients.models import Client, Site
 from logs.models import BaseAuditModel
-from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, CheckType
+from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, AgentPlat, CheckType
 
 if TYPE_CHECKING:
     from autotasks.models import AutomatedTask
@@ -279,7 +279,10 @@ class Policy(BaseAuditModel):
 
         # Loop over checks in with enforced policies first, then non-enforced policies
         for check in enforced_checks + agent_checks + policy_checks:
-            if check.check_type == CheckType.DISK_SPACE and agent.plat == "windows":
+            if (
+                check.check_type == CheckType.DISK_SPACE
+                and agent.plat == AgentPlat.WINDOWS
+            ):
                 # Check if drive letter was already added
                 if check.disk not in added_diskspace_checks:
                     added_diskspace_checks.append(check.disk)
@@ -299,7 +302,10 @@ class Policy(BaseAuditModel):
                 elif check.agent:
                     overridden_checks.append(check.pk)
 
-            elif check.check_type == CheckType.CPU_LOAD and agent.plat == "windows":
+            elif (
+                check.check_type == CheckType.CPU_LOAD
+                and agent.plat == AgentPlat.WINDOWS
+            ):
                 # Check if cpuload list is empty
                 if not added_cpuload_checks:
                     added_cpuload_checks.append(check.pk)
@@ -309,7 +315,9 @@ class Policy(BaseAuditModel):
                 elif check.agent:
                     overridden_checks.append(check.pk)
 
-            elif check.check_type == CheckType.MEMORY and agent.plat == "windows":
+            elif (
+                check.check_type == CheckType.MEMORY and agent.plat == AgentPlat.WINDOWS
+            ):
                 # Check if memory check list is empty
                 if not added_memory_checks:
                     added_memory_checks.append(check.pk)
@@ -319,7 +327,9 @@ class Policy(BaseAuditModel):
                 elif check.agent:
                     overridden_checks.append(check.pk)
 
-            elif check.check_type == CheckType.WINSVC and agent.plat == "windows":
+            elif (
+                check.check_type == CheckType.WINSVC and agent.plat == AgentPlat.WINDOWS
+            ):
                 # Check if service name was already added
                 if check.svc_name not in added_winsvc_checks:
                     added_winsvc_checks.append(check.svc_name)
@@ -341,7 +351,10 @@ class Policy(BaseAuditModel):
                 elif check.agent:
                     overridden_checks.append(check.pk)
 
-            elif check.check_type == CheckType.EVENT_LOG and agent.plat == "windows":
+            elif (
+                check.check_type == CheckType.EVENT_LOG
+                and agent.plat == AgentPlat.WINDOWS
+            ):
                 # Check if events were already added
                 if [check.log_name, check.event_id] not in added_eventlog_checks:
                     added_eventlog_checks.append([check.log_name, check.event_id])

@@ -23,6 +23,12 @@ AGENT_STATUS_OFFLINE = "offline"
 AGENT_STATUS_OVERDUE = "overdue"
 
 
+class AgentHistoryType(models.TextChoices):
+    TASK_RUN = "task_run", "Task Run"
+    SCRIPT_RUN = "script_run", "Script Run"
+    CMD_RUN = "cmd_run", "CMD Run"
+
+
 class AgentMonType(models.TextChoices):
     SERVER = "server", "Server"
     WORKSTATION = "workstation", "Workstation"

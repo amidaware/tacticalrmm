@@ -4,6 +4,7 @@ from typing import List
 from agents.models import Agent, AgentHistory
 from scripts.models import Script
 from tacticalrmm.celery import app
+from tacticalrmm.constants import AgentHistoryType
 
 
 @app.task
@@ -21,7 +22,7 @@ def handle_bulk_command_task(
     for agent in Agent.objects.filter(pk__in=agentpks):
         hist = AgentHistory.objects.create(
             agent=agent,
-            type="cmd_run",
+            type=AgentHistoryType.CMD_RUN,
             command=cmd,
             username=username,
         )
@@ -38,7 +39,7 @@ def handle_bulk_script_task(
     for agent in Agent.objects.filter(pk__in=agentpks):
         hist = AgentHistory.objects.create(
             agent=agent,
-            type="script_run",
+            type=AgentHistoryType.SCRIPT_RUN,
             script=script,
             username=username,
         )

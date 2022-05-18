@@ -24,6 +24,7 @@ from tacticalrmm.constants import (
     AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
     ONLINE_AGENTS,
+    AgentHistoryType,
     AgentMonType,
     AgentPlat,
     CheckStatus,
@@ -987,15 +988,6 @@ class AgentCustomField(models.Model):
             self.save()
 
 
-AGENT_HISTORY_TYPES = (
-    ("task_run", "Task Run"),
-    ("script_run", "Script Run"),
-    ("cmd_run", "CMD Run"),
-)
-
-AGENT_HISTORY_STATUS = (("success", "Success"), ("failure", "Failure"))
-
-
 class AgentHistory(models.Model):
     objects = PermissionQuerySet.as_manager()
 
@@ -1006,12 +998,11 @@ class AgentHistory(models.Model):
     )
     time = models.DateTimeField(auto_now_add=True)
     type = models.CharField(
-        max_length=50, choices=AGENT_HISTORY_TYPES, default="cmd_run"
+        max_length=50,
+        choices=AgentHistoryType.choices,
+        default=AgentHistoryType.CMD_RUN,
     )
     command = models.TextField(null=True, blank=True, default="")
-    status = models.CharField(
-        max_length=50, choices=AGENT_HISTORY_STATUS, default="success"
-    )
     username = models.CharField(max_length=255, default="system")
     results = models.TextField(null=True, blank=True)
     script = models.ForeignKey(

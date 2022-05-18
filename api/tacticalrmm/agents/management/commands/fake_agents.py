@@ -18,6 +18,7 @@ from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
+    AgentHistoryType,
     AgentMonType,
     AgentPlat,
     CheckStatus,
@@ -377,7 +378,7 @@ class Command(BaseCommand):
             # agent histories
             hist = AgentHistory()
             hist.agent = agent
-            hist.type = "cmd_run"
+            hist.type = AgentHistoryType.CMD_RUN
             hist.command = "ping google.com"
             hist.username = "demo"
             hist.results = ping_success_output
@@ -385,7 +386,7 @@ class Command(BaseCommand):
 
             hist1 = AgentHistory()
             hist1.agent = agent
-            hist1.type = "script_run"
+            hist1.type = AgentHistoryType.SCRIPT_RUN
             hist1.script = clear_spool
             hist1.script_results = {
                 "id": 1,

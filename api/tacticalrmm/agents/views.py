@@ -27,6 +27,7 @@ from tacticalrmm.constants import (
     AGENT_DEFER,
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
+    AgentHistoryType,
     AgentMonType,
     AgentPlat,
     EvtLogNames,
@@ -400,7 +401,7 @@ def send_raw_cmd(request, agent_id):
 
     hist = AgentHistory.objects.create(
         agent=agent,
-        type="cmd_run",
+        type=AgentHistoryType.CMD_RUN,
         command=request.data["cmd"],
         username=request.user.username[:50],
     )
@@ -687,7 +688,7 @@ def run_script(request, agent_id):
 
     hist = AgentHistory.objects.create(
         agent=agent,
-        type="script_run",
+        type=AgentHistoryType.SCRIPT_RUN,
         script=script,
         username=request.user.username[:50],
     )

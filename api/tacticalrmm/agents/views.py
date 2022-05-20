@@ -23,7 +23,18 @@ from core.utils import get_core_settings, get_mesh_ws_url, remove_mesh_agent
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.constants import AGENT_DEFER, EvtLogNames, PAAction, PAStatus
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_ONLINE,
+    AgentHistoryType,
+    AgentMonType,
+    AgentPlat,
+    CustomFieldModel,
+    EvtLogNames,
+    PAAction,
+    PAStatus,
+)
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
@@ -74,7 +85,7 @@ class GetAgents(APIView):
 
         monitoring_type = request.query_params.get("monitoring_type", None)
         if monitoring_type:
-            if monitoring_type in ["server", "workstation"]:
+            if monitoring_type in AgentMonType.values:
                 monitoring_type_filter = Q(monitoring_type=monitoring_type)
             else:
                 return notify_error("monitoring type does not exist")
@@ -197,7 +208,7 @@ class GetUpdateDeleteAgent(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
         code = "foo"
-        if agent.plat == "linux":
+        if agent.plat == AgentPlat.LINUX:
             with open(settings.LINUX_AGENT_SCRIPT, "r") as f:
                 code = f.read()
 
@@ -327,12 +338,12 @@ def update_agents(request):
 @permission_classes([IsAuthenticated, PingAgentPerms])
 def ping(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
-    status = "offline"
+    status = AGENT_STATUS_OFFLINE
     attempts = 0
     while 1:
         r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=2))
         if r == "pong":
-            status = "online"
+            status = AGENT_STATUS_ONLINE
             break
         else:
             attempts += 1
@@ -391,7 +402,7 @@ def send_raw_cmd(request, agent_id):
 
     hist = AgentHistory.objects.create(
         agent=agent,
-        type="cmd_run",
+        type=AgentHistoryType.CMD_RUN,
         command=request.data["cmd"],
         username=request.user.username[:50],
     )
@@ -497,10 +508,12 @@ def install_agent(request):
     inno = (
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )
-    if request.data["installMethod"] == "linux":
-        plat = "linux"
+
+    # TODO refactor this, install method should not be same as plat
+    if request.data["installMethod"] == AgentPlat.LINUX:
+        plat = AgentPlat.LINUX
     else:
-        plat = "windows"
+        plat = AgentPlat.WINDOWS
 
     download_url = get_agent_url(arch, plat)
 
@@ -526,7 +539,7 @@ def install_agent(request):
             file_name=request.data["fileName"],
         )
 
-    elif request.data["installMethod"] == "linux":
+    elif request.data["installMethod"] == AgentPlat.LINUX:
         # TODO
         # linux agents are in beta for now, only available for sponsors for testing
         # remove this after it's out of beta
@@ -676,7 +689,7 @@ def run_script(request, agent_id):
 
     hist = AgentHistory.objects.create(
         agent=agent,
-        type="script_run",
+        type=AgentHistoryType.SCRIPT_RUN,
         script=script,
         username=request.user.username[:50],
     )
@@ -716,11 +729,11 @@ def run_script(request, agent_id):
 
         custom_field = CustomField.objects.get(pk=request.data["custom_field"])
 
-        if custom_field.model == "agent":
+        if custom_field.model == CustomFieldModel.AGENT:
             field = custom_field.get_or_create_field_value(agent)
-        elif custom_field.model == "client":
+        elif custom_field.model == CustomFieldModel.CLIENT:
             field = custom_field.get_or_create_field_value(agent.client)
-        elif custom_field.model == "site":
+        elif custom_field.model == CustomFieldModel.SITE:
             field = custom_field.get_or_create_field_value(agent.site)
         else:
             return notify_error("Custom Field was invalid")
@@ -848,14 +861,14 @@ def bulk(request):
         return notify_error("Something went wrong")
 
     if request.data["monType"] == "servers":
-        q = q.filter(monitoring_type="server")
+        q = q.filter(monitoring_type=AgentMonType.SERVER)
     elif request.data["monType"] == "workstations":
-        q = q.filter(monitoring_type="workstation")
+        q = q.filter(monitoring_type=AgentMonType.WORKSTATION)
 
-    if request.data["osType"] == "windows":
-        q = q.filter(plat="windows")
-    elif request.data["osType"] == "linux":
-        q = q.filter(plat="linux")
+    if request.data["osType"] == AgentPlat.WINDOWS:
+        q = q.filter(plat=AgentPlat.WINDOWS)
+    elif request.data["osType"] == AgentPlat.LINUX:
+        q = q.filter(plat=AgentPlat.LINUX)
 
     agents: list[int] = [agent.pk for agent in q]
 

@@ -18,6 +18,10 @@ from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
+    AgentHistoryType,
+    AgentMonType,
+    AgentPlat,
+    AlertSeverity,
     CheckStatus,
     CheckType,
     EvtLogFailWhen,
@@ -25,6 +29,8 @@ from tacticalrmm.constants import (
     EvtLogTypes,
     PAAction,
     ScriptShell,
+    TaskSyncStatus,
+    TaskType,
 )
 from tacticalrmm.demo_data import (
     check_network_loc_aware_ps1,
@@ -173,7 +179,7 @@ class Command(BaseCommand):
             "LAPTOP-55443",
         )
         descriptions = ("Bob's computer", "Primary DC", "File Server", "Karen's Laptop")
-        modes = ("server", "workstation")
+        modes = AgentMonType.values
         op_systems_servers = (
             "Microsoft Windows Server 2016 Standard, 64bit (build 14393)",
             "Microsoft Windows Server 2012 R2 Standard, 64bit (build 9600)",
@@ -303,8 +309,8 @@ class Command(BaseCommand):
 
             plat_pick = random.randint(1, 15)
             if plat_pick in (7, 11):
-                agent.plat = "linux"
-                mode = "server"
+                agent.plat = AgentPlat.LINUX
+                mode = AgentMonType.SERVER
                 # pi arm
                 if plat_pick == 7:
                     agent.goarch = "arm"
@@ -317,13 +323,13 @@ class Command(BaseCommand):
                     agent.disks = disks_linux_deb
                     agent.operating_system = linux_deb_os
             else:
-                agent.plat = "windows"
+                agent.plat = AgentPlat.WINDOWS
                 agent.goarch = "amd64"
                 mode = random.choice(modes)
                 agent.wmi_detail = random.choice(wmi_details)
                 agent.services = services
                 agent.disks = random.choice(disks)
-                if mode == "server":
+                if mode == AgentMonType.SERVER:
                     agent.operating_system = random.choice(op_systems_servers)
                 else:
                     agent.operating_system = random.choice(op_systems_workstations)
@@ -349,15 +355,15 @@ class Command(BaseCommand):
 
             agent.save()
 
-            if agent.plat == "windows":
+            if agent.plat == AgentPlat.WINDOWS:
                 InstalledSoftware(agent=agent, software=random.choice(softwares)).save()
 
-            if mode == "workstation":
+            if mode == AgentMonType.WORKSTATION:
                 WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
             else:
                 WinUpdatePolicy(agent=agent).save()
 
-            if agent.plat == "windows":
+            if agent.plat == AgentPlat.WINDOWS:
                 # windows updates load
                 guids = [i for i in windows_updates.keys()]
                 for i in guids:
@@ -375,7 +381,7 @@ class Command(BaseCommand):
             # agent histories
             hist = AgentHistory()
             hist.agent = agent
-            hist.type = "cmd_run"
+            hist.type = AgentHistoryType.CMD_RUN
             hist.command = "ping google.com"
             hist.username = "demo"
             hist.results = ping_success_output
@@ -383,7 +389,7 @@ class Command(BaseCommand):
 
             hist1 = AgentHistory()
             hist1.agent = agent
-            hist1.type = "script_run"
+            hist1.type = AgentHistoryType.SCRIPT_RUN
             hist1.script = clear_spool
             hist1.script_results = {
                 "id": 1,
@@ -394,7 +400,7 @@ class Command(BaseCommand):
             }
             hist1.save()
 
-            if agent.plat == "windows":
+            if agent.plat == AgentPlat.WINDOWS:
                 # disk space check
                 check1 = Check()
                 check1.agent = agent
@@ -438,7 +444,7 @@ class Command(BaseCommand):
 
             if site in sites5:
                 check2.name = "Synology NAS"
-                check2.alert_severity = "error"
+                check2.alert_severity = AlertSeverity.ERROR
                 check_result2.status = CheckStatus.FAILING
                 check2.ip = "172.17.14.26"
                 check_result2.more_info = ping_fail_output
@@ -606,7 +612,7 @@ class Command(BaseCommand):
             nla_task.actions = actions
             nla_task.assigned_check = check6
             nla_task.name = "Restart NLA"
-            nla_task.task_type = "checkfailure"
+            nla_task.task_type = TaskType.CHECK_FAILURE
             nla_task.save()
 
             nla_task_result = TaskResult()
@@ -616,7 +622,7 @@ class Command(BaseCommand):
             nla_task_result.last_run = django_now
             nla_task_result.stdout = "no stdout"
             nla_task_result.retcode = 0
-            nla_task_result.sync_status = "synced"
+            nla_task_result.sync_status = TaskSyncStatus.SYNCED
             nla_task_result.save()
 
             spool_task = AutomatedTask()
@@ -633,7 +639,7 @@ class Command(BaseCommand):
             ]
             spool_task.actions = actions
             spool_task.name = "Clear the print spooler"
-            spool_task.task_type = "daily"
+            spool_task.task_type = TaskType.DAILY
             spool_task.run_time_date = django_now + djangotime.timedelta(minutes=10)
             spool_task.expire_date = django_now + djangotime.timedelta(days=753)
             spool_task.daily_interval = 1
@@ -649,7 +655,7 @@ class Command(BaseCommand):
             spool_task_result.last_run = django_now
             spool_task_result.retcode = 0
             spool_task_result.stdout = spooler_stdout
-            spool_task_result.sync_status = "synced"
+            spool_task_result.sync_status = TaskSyncStatus.SYNCED
             spool_task_result.save()
 
             tmp_dir_task = AutomatedTask()
@@ -665,7 +671,7 @@ class Command(BaseCommand):
                 }
             ]
             tmp_dir_task.actions = actions
-            tmp_dir_task.task_type = "manual"
+            tmp_dir_task.task_type = TaskType.MANUAL
             tmp_dir_task.save()
 
             tmp_dir_task_result = TaskResult()
@@ -674,7 +680,7 @@ class Command(BaseCommand):
             tmp_dir_task_result.last_run = django_now
             tmp_dir_task_result.stdout = temp_dir_stdout
             tmp_dir_task_result.retcode = 0
-            tmp_dir_task_result.sync_status = "synced"
+            tmp_dir_task_result.sync_status = TaskSyncStatus.SYNCED
             tmp_dir_task_result.save()
 
             check7 = Check()
@@ -708,7 +714,7 @@ class Command(BaseCommand):
                 check7_history.y = 0
                 check7_history.save()
 
-            if agent.plat == "windows":
+            if agent.plat == AgentPlat.WINDOWS:
                 check8 = Check()
                 check8.agent = agent
                 check8.check_type = CheckType.WINSVC

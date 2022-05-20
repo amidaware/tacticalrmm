@@ -5,7 +5,13 @@ from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from checks.models import CheckHistory, CheckResult
-from tacticalrmm.constants import CheckStatus, CheckType, EvtLogFailWhen, EvtLogTypes
+from tacticalrmm.constants import (
+    AlertSeverity,
+    CheckStatus,
+    CheckType,
+    EvtLogFailWhen,
+    EvtLogTypes,
+)
 from tacticalrmm.test import TacticalTestCase
 
 from .serializers import CheckSerializer
@@ -343,7 +349,7 @@ class TestCheckTasks(TacticalTestCase):
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "error")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.ERROR)
 
         # test passing
         data = {
@@ -381,7 +387,7 @@ class TestCheckTasks(TacticalTestCase):
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "info")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.INFO)
 
         # test failing warning
         check.warning_return_codes = [80, 100, 1040]
@@ -402,7 +408,7 @@ class TestCheckTasks(TacticalTestCase):
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "warning")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.WARNING)
 
     def test_handle_diskspace_check(self):
         url = "/api/v3/checkrunner/"
@@ -431,7 +437,7 @@ class TestCheckTasks(TacticalTestCase):
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "warning")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.WARNING)
 
         # test error failure
         data = {
@@ -450,7 +456,7 @@ class TestCheckTasks(TacticalTestCase):
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "error")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.ERROR)
 
         # test disk not exist
         data = {"id": check.id, "agent_id": self.agent.agent_id, "exists": False}
@@ -461,7 +467,7 @@ class TestCheckTasks(TacticalTestCase):
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "error")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.ERROR)
 
         # test warning threshold 0
         check.warning_threshold = 0
@@ -482,7 +488,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "error")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.ERROR)
 
         # test error threshold 0
         check.warning_threshold = 50
@@ -503,7 +509,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "warning")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.WARNING)
 
         # test passing
         data = {
@@ -541,7 +547,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "warning")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.WARNING)
 
         # test failing error
         data = {"id": check.id, "agent_id": self.agent.agent_id, "percent": 95}
@@ -555,7 +561,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "error")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.ERROR)
 
         # test passing
         data = {"id": check.id, "agent_id": self.agent.agent_id, "percent": 50}
@@ -584,7 +590,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "error")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.ERROR)
 
         # test error threshold 0
         check.warning_threshold = 50
@@ -601,7 +607,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "warning")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.WARNING)
 
     def test_handle_memory_check(self):
         url = "/api/v3/checkrunner/"
@@ -621,7 +627,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "warning")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.WARNING)
 
         # test failing error
         data = {"id": check.id, "agent_id": self.agent.agent_id, "percent": 95}
@@ -635,7 +641,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "error")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.ERROR)
 
         # test passing
         data = {"id": check.id, "agent_id": self.agent.agent_id, "percent": 50}
@@ -664,7 +670,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "error")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.ERROR)
 
         # test error threshold 0
         check.warning_threshold = 50
@@ -681,13 +687,13 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check_result.alert_severity, "warning")
+        self.assertEqual(check_result.alert_severity, AlertSeverity.WARNING)
 
     def test_handle_ping_check(self):
         url = "/api/v3/checkrunner/"
 
         check = baker.make_recipe(
-            "checks.ping_check", agent=self.agent, alert_severity="info"
+            "checks.ping_check", agent=self.agent, alert_severity=AlertSeverity.INFO
         )
 
         # test failing info
@@ -703,10 +709,10 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check.alert_severity, "info")
+        self.assertEqual(check.alert_severity, AlertSeverity.INFO)
 
         # test failing warning
-        check.alert_severity = "warning"
+        check.alert_severity = AlertSeverity.WARNING
         check.save()
 
         resp = self.client.patch(url, data, format="json")
@@ -714,10 +720,10 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check.alert_severity, "warning")
+        self.assertEqual(check.alert_severity, AlertSeverity.WARNING)
 
         # test failing error
-        check.alert_severity = "error"
+        check.alert_severity = AlertSeverity.ERROR
         check.save()
 
         resp = self.client.patch(url, data, format="json")
@@ -725,7 +731,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check.alert_severity, "error")
+        self.assertEqual(check.alert_severity, AlertSeverity.ERROR)
 
         # test failing error
         resp = self.client.patch(url, data, format="json")
@@ -733,7 +739,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check.alert_severity, "error")
+        self.assertEqual(check.alert_severity, AlertSeverity.ERROR)
 
         # test passing
         data = {
@@ -754,7 +760,7 @@ class TestCheckTasks(TacticalTestCase):
         url = "/api/v3/checkrunner/"
 
         check = baker.make_recipe(
-            "checks.winsvc_check", agent=self.agent, alert_severity="info"
+            "checks.winsvc_check", agent=self.agent, alert_severity=AlertSeverity.INFO
         )
 
         # test passing running
@@ -784,7 +790,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check.alert_severity, "info")
+        self.assertEqual(check.alert_severity, AlertSeverity.INFO)
 
     def test_handle_eventlog_check(self):
         url = "/api/v3/checkrunner/"
@@ -794,7 +800,7 @@ class TestCheckTasks(TacticalTestCase):
             event_type=EvtLogTypes.WARNING,
             fail_when=EvtLogFailWhen.CONTAINS,
             event_id=123,
-            alert_severity="warning",
+            alert_severity=AlertSeverity.WARNING,
             agent=self.agent,
         )
 
@@ -837,7 +843,7 @@ class TestCheckTasks(TacticalTestCase):
 
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
-        self.assertEqual(check.alert_severity, "warning")
+        self.assertEqual(check.alert_severity, AlertSeverity.WARNING)
         self.assertEqual(check_result.status, CheckStatus.FAILING)
 
         # test passing when contains
@@ -850,7 +856,7 @@ class TestCheckTasks(TacticalTestCase):
 
         # test failing when not contains and message and source
         check.fail_when = EvtLogFailWhen.NOT_CONTAINS
-        check.alert_severity = "error"
+        check.alert_severity = AlertSeverity.ERROR
         check.save()
 
         resp = self.client.patch(url, no_logs_data, format="json")
@@ -859,7 +865,7 @@ class TestCheckTasks(TacticalTestCase):
         check_result = CheckResult.objects.get(assigned_check=check, agent=self.agent)
 
         self.assertEqual(check_result.status, CheckStatus.FAILING)
-        self.assertEqual(check.alert_severity, "error")
+        self.assertEqual(check.alert_severity, AlertSeverity.ERROR)
 
         # test passing when contains with source and message
         resp = self.client.patch(url, data, format="json")

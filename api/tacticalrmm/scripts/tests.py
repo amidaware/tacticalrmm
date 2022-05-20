@@ -3,7 +3,12 @@ from unittest.mock import patch
 from django.test import override_settings
 from model_bakery import baker
 
-from tacticalrmm.constants import ScriptShell, ScriptType
+from tacticalrmm.constants import (
+    CustomFieldModel,
+    CustomFieldType,
+    ScriptShell,
+    ScriptType,
+)
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Script, ScriptSnippet
@@ -241,8 +246,8 @@ class TestScriptViews(TacticalTestCase):
         field = baker.make(
             "core.CustomField",
             name="Test Field",
-            model="agent",
-            type="text",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.TEXT,
             default_value_string="DEFAULT",
         )
 
@@ -271,8 +276,8 @@ class TestScriptViews(TacticalTestCase):
         field = baker.make(
             "core.CustomField",
             name="Test Field",
-            model="client",
-            type="text",
+            model=CustomFieldModel.CLIENT,
+            type=CustomFieldType.TEXT,
             default_value_string="DEFAULT",
         )
 
@@ -301,8 +306,8 @@ class TestScriptViews(TacticalTestCase):
         field = baker.make(
             "core.CustomField",
             name="Test Field",
-            model="site",
-            type="text",
+            model=CustomFieldModel.SITE,
+            type=CustomFieldType.TEXT,
             default_value_string="DEFAULT",
         )
 
@@ -349,8 +354,8 @@ class TestScriptViews(TacticalTestCase):
         field = baker.make(
             "core.CustomField",
             name="Test Field",
-            model="agent",
-            type="multiple",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.MULTIPLE,
             default_values_multiple=["this", "is", "an", "array"],
         )
 
@@ -379,8 +384,8 @@ class TestScriptViews(TacticalTestCase):
         field = baker.make(
             "core.CustomField",
             name="Test Field",
-            model="agent",
-            type="checkbox",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.CHECKBOX,
             default_value_bool=True,
         )
 

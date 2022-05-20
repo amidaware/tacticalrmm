@@ -10,6 +10,7 @@ from accounts.models import User
 from agents.models import Agent
 from automation.models import Policy
 from core.models import CoreSettings
+from tacticalrmm.constants import CustomFieldModel, CustomFieldType
 
 if TYPE_CHECKING:
     from agents.models import Agent
@@ -178,11 +179,20 @@ class TacticalTestCase(TestCase):
         self.site2: "Site" = baker.make("clients.Site", client=self.company1)
         self.site3: "Site" = baker.make("clients.Site", client=self.company2)
         self.client_customfield: "CustomField" = baker.make(
-            "core.CustomField", model="client", type="text", name="clientCustomField"
+            "core.CustomField",
+            model=CustomFieldModel.CLIENT,
+            type=CustomFieldType.TEXT,
+            name="clientCustomField",
         )
         self.site_customfield: "CustomField" = baker.make(
-            "core.CustomField", model="site", type="text", name="siteCustomField"
+            "core.CustomField",
+            model=CustomFieldModel.SITE,
+            type=CustomFieldType.TEXT,
+            name="siteCustomField",
         )
         self.agent_customfield: "CustomField" = baker.make(
-            "core.CustomField", model="agent", type="text", name="agentCustomField"
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.TEXT,
+            name="agentCustomField",
         )

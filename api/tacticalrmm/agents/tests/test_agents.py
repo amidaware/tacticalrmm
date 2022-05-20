@@ -19,7 +19,16 @@ from agents.serializers import (
 )
 from agents.tasks import auto_self_agent_update_task
 from logs.models import PendingAction
-from tacticalrmm.constants import EvtLogNames, PAAction, PAStatus
+from tacticalrmm.constants import (
+    AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_ONLINE,
+    AgentMonType,
+    CustomFieldModel,
+    CustomFieldType,
+    EvtLogNames,
+    PAAction,
+    PAStatus,
+)
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -46,24 +55,27 @@ class TestAgentsList(TacticalTestCase):
         site3: "Site" = baker.make("clients.Site", client=company2)
 
         baker.make_recipe(
-            "agents.online_agent", site=site1, monitoring_type="server", _quantity=15
+            "agents.online_agent",
+            site=site1,
+            monitoring_type=AgentMonType.SERVER,
+            _quantity=15,
         )
         baker.make_recipe(
             "agents.online_agent",
             site=site2,
-            monitoring_type="workstation",
+            monitoring_type=AgentMonType.WORKSTATION,
             _quantity=10,
         )
         baker.make_recipe(
             "agents.online_agent",
             site=site3,
-            monitoring_type="server",
+            monitoring_type=AgentMonType.SERVER,
             _quantity=4,
         )
         baker.make_recipe(
             "agents.online_agent",
             site=site3,
-            monitoring_type="workstation",
+            monitoring_type=AgentMonType.WORKSTATION,
             _quantity=7,
         )
 
@@ -160,7 +172,11 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(data["run_time_days"], [2, 3, 6])
 
         # test adding custom fields
-        field = baker.make("core.CustomField", model="agent", type="number")
+        field = baker.make(
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.NUMBER,
+        )
         data = {
             "site": site.pk,
             "description": "asjdk234andasd",
@@ -217,7 +233,7 @@ class TestAgentViews(TacticalTestCase):
         self.agent.save(update_fields=["policy"])
         _ = self.agent.get_patch_policy()
 
-        self.agent.monitoring_type = "workstation"
+        self.agent.monitoring_type = AgentMonType.WORKSTATION
         self.agent.save(update_fields=["monitoring_type"])
         _ = self.agent.get_patch_policy()
 
@@ -229,7 +245,7 @@ class TestAgentViews(TacticalTestCase):
         self.coresettings.save(update_fields=["server_policy", "workstation_policy"])
         _ = self.agent.get_patch_policy()
 
-        self.agent.monitoring_type = "server"
+        self.agent.monitoring_type = AgentMonType.SERVER
         self.agent.save(update_fields=["monitoring_type"])
         _ = self.agent.get_patch_policy()
 
@@ -286,25 +302,25 @@ class TestAgentViews(TacticalTestCase):
         nats_cmd.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        ret = {"name": self.agent.hostname, "status": "offline"}
+        ret = {"name": self.agent.hostname, "status": AGENT_STATUS_OFFLINE}
         self.assertEqual(r.json(), ret)
 
         nats_cmd.return_value = "natsdown"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        ret = {"name": self.agent.hostname, "status": "offline"}
+        ret = {"name": self.agent.hostname, "status": AGENT_STATUS_OFFLINE}
         self.assertEqual(r.json(), ret)
 
         nats_cmd.return_value = "pong"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        ret = {"name": self.agent.hostname, "status": "online"}
+        ret = {"name": self.agent.hostname, "status": AGENT_STATUS_ONLINE}
         self.assertEqual(r.json(), ret)
 
         nats_cmd.return_value = "asdasjdaksdasd"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        ret = {"name": self.agent.hostname, "status": "offline"}
+        ret = {"name": self.agent.hostname, "status": AGENT_STATUS_OFFLINE}
         self.assertEqual(r.json(), ret)
 
         self.check_not_authenticated("get", url)
@@ -649,7 +665,7 @@ class TestAgentViews(TacticalTestCase):
         # test collector
 
         # save to agent custom field
-        custom_field = baker.make("core.CustomField", model="agent")
+        custom_field = baker.make("core.CustomField", model=CustomFieldModel.AGENT)
         data = {
             "script": script.pk,
             "output": "collector",
@@ -713,7 +729,7 @@ class TestAgentViews(TacticalTestCase):
         )
 
         # save to client custom field
-        custom_field = baker.make("core.CustomField", model="client")
+        custom_field = baker.make("core.CustomField", model=CustomFieldModel.CLIENT)
         data = {
             "script": script.pk,
             "output": "collector",

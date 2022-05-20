@@ -1,6 +1,7 @@
 import pytz
 from rest_framework import serializers
 
+from tacticalrmm.constants import AGENT_STATUS_ONLINE
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
@@ -103,7 +104,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             }
 
     def get_logged_username(self, obj) -> str:
-        if obj.logged_in_username == "None" and obj.status == "online":
+        if obj.logged_in_username == "None" and obj.status == AGENT_STATUS_ONLINE:
             return obj.last_logged_in_user
         elif obj.logged_in_username != "None":
             return obj.logged_in_username
@@ -111,7 +112,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             return "-"
 
     def get_italic(self, obj) -> bool:
-        return obj.logged_in_username == "None" and obj.status == "online"
+        return obj.logged_in_username == "None" and obj.status == AGENT_STATUS_ONLINE
 
     class Meta:
         model = Agent

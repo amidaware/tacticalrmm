@@ -14,7 +14,13 @@ from core.utils import get_core_settings
 from logs.models import DebugLog, PendingAction
 from scripts.models import Script
 from tacticalrmm.celery import app
-from tacticalrmm.constants import CheckStatus, DebugLogType, PAAction, PAStatus
+from tacticalrmm.constants import (
+    AGENT_STATUS_OVERDUE,
+    CheckStatus,
+    DebugLogType,
+    PAAction,
+    PAStatus,
+)
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:
@@ -210,7 +216,7 @@ def agent_outages_task() -> None:
     )
 
     for agent in agents:
-        if agent.status == "overdue":
+        if agent.status == AGENT_STATUS_OVERDUE:
             Alert.handle_alert_failure(agent)
 
 

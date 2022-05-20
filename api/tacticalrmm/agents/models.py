@@ -19,7 +19,20 @@ from packaging import version as pyver
 from core.models import TZ_CHOICES
 from core.utils import get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import ONLINE_AGENTS, CheckStatus, CheckType, DebugLogType
+from tacticalrmm.constants import (
+    AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_ONLINE,
+    AGENT_STATUS_OVERDUE,
+    ONLINE_AGENTS,
+    AgentHistoryType,
+    AgentMonType,
+    AgentPlat,
+    AlertSeverity,
+    CheckStatus,
+    CheckType,
+    CustomFieldType,
+    DebugLogType,
+)
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -44,7 +57,9 @@ class Agent(BaseAuditModel):
 
     version = models.CharField(default="0.1.0", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
-    plat = models.CharField(max_length=255, default="windows")
+    plat = models.CharField(
+        max_length=255, choices=AgentPlat.choices, default=AgentPlat.WINDOWS
+    )
     goarch = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
     agent_id = models.CharField(max_length=200, unique=True)
@@ -56,7 +71,9 @@ class Agent(BaseAuditModel):
     boot_time = models.FloatField(null=True, blank=True)
     logged_in_username = models.CharField(null=True, blank=True, max_length=255)
     last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
-    monitoring_type = models.CharField(max_length=30)
+    monitoring_type = models.CharField(
+        max_length=30, choices=AgentMonType.choices, default=AgentMonType.SERVER
+    )
     description = models.CharField(null=True, blank=True, max_length=255)
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
     overdue_email_alert = models.BooleanField(default=False)
@@ -111,7 +128,7 @@ class Agent(BaseAuditModel):
 
     @property
     def is_posix(self) -> bool:
-        return self.plat == "linux" or self.plat == "darwin"
+        return self.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}
 
     @property
     def arch(self) -> Optional[str]:
@@ -148,13 +165,13 @@ class Agent(BaseAuditModel):
 
         if self.last_seen is not None:
             if (self.last_seen < offline) and (self.last_seen > overdue):
-                return "offline"
+                return AGENT_STATUS_OFFLINE
             elif (self.last_seen < offline) and (self.last_seen < overdue):
-                return "overdue"
+                return AGENT_STATUS_OVERDUE
             else:
-                return "online"
+                return AGENT_STATUS_ONLINE
         else:
-            return "offline"
+            return AGENT_STATUS_OFFLINE
 
     @property
     def checks(self) -> Dict[str, Any]:
@@ -185,11 +202,11 @@ class Agent(BaseAuditModel):
                     ]
                     else check.alert_severity
                 )
-                if alert_severity == "error":
+                if alert_severity == AlertSeverity.ERROR:
                     failing += 1
-                elif alert_severity == "warning":
+                elif alert_severity == AlertSeverity.WARNING:
                     warning += 1
-                elif alert_severity == "info":
+                elif alert_severity == AlertSeverity.INFO:
                     info += 1
 
         ret = {
@@ -353,10 +370,14 @@ class Agent(BaseAuditModel):
                 i
                 for i in cls.objects.only(*ONLINE_AGENTS)
                 if pyver.parse(i.version) >= pyver.parse(min_version)
-                and i.status == "online"
+                and i.status == AGENT_STATUS_ONLINE
             ]
 
-        return [i for i in cls.objects.only(*ONLINE_AGENTS) if i.status == "online"]
+        return [
+            i
+            for i in cls.objects.only(*ONLINE_AGENTS)
+            if i.status == AGENT_STATUS_ONLINE
+        ]
 
     def is_supported_script(self, platforms: List[str]) -> bool:
         return self.plat.lower() in platforms if platforms else True
@@ -945,37 +966,28 @@ class AgentCustomField(models.Model):
 
     @property
     def value(self) -> Union[List[Any], bool, str]:
-        if self.field.type == "multiple":
+        if self.field.type == CustomFieldType.MULTIPLE:
             return cast(List[str], self.multiple_value)
-        elif self.field.type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             return self.bool_value
         else:
             return cast(str, self.string_value)
 
     def save_to_field(self, value: Union[List[Any], bool, str]) -> None:
         if self.field.type in [
-            "text",
-            "number",
-            "single",
-            "datetime",
+            CustomFieldType.TEXT,
+            CustomFieldType.NUMBER,
+            CustomFieldType.SINGLE,
+            CustomFieldType.DATETIME,
         ]:
             self.string_value = cast(str, value)
             self.save()
-        elif self.field.type == "multiple":
+        elif self.field.type == CustomFieldType.MULTIPLE:
             self.multiple_value = value.split(",")
             self.save()
-        elif self.field.type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             self.bool_value = bool(value)
             self.save()
-
-
-AGENT_HISTORY_TYPES = (
-    ("task_run", "Task Run"),
-    ("script_run", "Script Run"),
-    ("cmd_run", "CMD Run"),
-)
-
-AGENT_HISTORY_STATUS = (("success", "Success"), ("failure", "Failure"))
 
 
 class AgentHistory(models.Model):
@@ -988,12 +1000,11 @@ class AgentHistory(models.Model):
     )
     time = models.DateTimeField(auto_now_add=True)
     type = models.CharField(
-        max_length=50, choices=AGENT_HISTORY_TYPES, default="cmd_run"
+        max_length=50,
+        choices=AgentHistoryType.choices,
+        default=AgentHistoryType.CMD_RUN,
     )
     command = models.TextField(null=True, blank=True, default="")
-    status = models.CharField(
-        max_length=50, choices=AGENT_HISTORY_STATUS, default="success"
-    )
     username = models.CharField(max_length=255, default="system")
     results = models.TextField(null=True, blank=True)
     script = models.ForeignKey(

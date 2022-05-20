@@ -7,12 +7,12 @@ from django.http import FileResponse
 
 from core.models import CodeSignToken
 from core.utils import get_core_settings, get_mesh_device_id, get_mesh_ws_url
-from tacticalrmm.constants import MeshAgentIdent
+from tacticalrmm.constants import AgentPlat, MeshAgentIdent
 
 
 def get_agent_url(arch: str, plat: str) -> str:
 
-    if plat == "windows":
+    if plat == AgentPlat.WINDOWS:
         endpoint = "winagents"
         dl_url = settings.DL_32 if arch == "32" else settings.DL_64
     else:

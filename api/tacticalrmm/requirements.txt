@@ -1,6 +1,6 @@
 asgiref==3.5.1
 celery==5.2.6
-certifi==2021.10.8
+certifi==2022.5.18
 cffi==1.15.0
 channels==3.0.4
 channels_redis==3.4.0

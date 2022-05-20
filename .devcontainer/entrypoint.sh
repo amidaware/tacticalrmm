@@ -146,7 +146,7 @@ if [ "$1" = 'tactical-init-dev' ]; then
   webenv="$(cat << EOF
 PROD_URL = "${HTTP_PROTOCOL}://${API_HOST}"
 DEV_URL = "${HTTP_PROTOCOL}://${API_HOST}"
-APP_URL = "https://${APP_HOST}"
+DEV_PORT = ${APP_PORT}
 DOCKER_BUILD = 1
 EOF
 )"

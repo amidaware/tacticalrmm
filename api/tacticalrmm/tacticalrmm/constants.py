@@ -18,6 +18,79 @@ class MeshAgentIdent(Enum):
 CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
 
+AGENT_STATUS_ONLINE = "online"
+AGENT_STATUS_OFFLINE = "offline"
+AGENT_STATUS_OVERDUE = "overdue"
+
+
+class CustomFieldModel(models.TextChoices):
+    CLIENT = "client", "Client"
+    SITE = "site", "Site"
+    AGENT = "agent", "Agent"
+
+
+class CustomFieldType(models.TextChoices):
+    TEXT = "text", "Text"
+    NUMBER = "number", "Number"
+    SINGLE = "single", "Single"
+    MULTIPLE = "multiple", "Multiple"
+    CHECKBOX = "checkbox", "Checkbox"
+    DATETIME = "datetime", "DateTime"
+
+
+class TaskSyncStatus(models.TextChoices):
+    SYNCED = "synced", "Synced With Agent"
+    NOT_SYNCED = "notsynced", "Waiting On Agent Checkin"
+    PENDING_DELETION = "pendingdeletion", "Pending Deletion on Agent"
+    INITIAL = "initial", "Initial Task Sync"
+
+
+class TaskStatus(models.TextChoices):
+    PASSING = "passing", "Passing"
+    FAILING = "failing", "Failing"
+    PENDING = "pending", "Pending"
+
+
+class TaskType(models.TextChoices):
+    DAILY = "daily", "Daily"
+    WEEKLY = "weekly", "Weekly"
+    MONTHLY = "monthly", "Monthly"
+    MONTHLY_DOW = "monthlydow", "Monthly Day of Week"
+    CHECK_FAILURE = "checkfailure", "On Check Failure"
+    MANUAL = "manual", "Manual"
+    RUN_ONCE = "runonce", "Run Once"
+    SCHEDULED = "scheduled", "Scheduled"  # deprecated
+
+
+class AlertSeverity(models.TextChoices):
+    INFO = "info", "Informational"
+    WARNING = "warning", "Warning"
+    ERROR = "error", "Error"
+
+
+class AlertType(models.TextChoices):
+    AVAILABILITY = "availability", "Availability"
+    CHECK = "check", "Check"
+    TASK = "task", "Task"
+    CUSTOM = "custom", "Custom"
+
+
+class AgentHistoryType(models.TextChoices):
+    TASK_RUN = "task_run", "Task Run"
+    SCRIPT_RUN = "script_run", "Script Run"
+    CMD_RUN = "cmd_run", "CMD Run"
+
+
+class AgentMonType(models.TextChoices):
+    SERVER = "server", "Server"
+    WORKSTATION = "workstation", "Workstation"
+
+
+class AgentPlat(models.TextChoices):
+    WINDOWS = "windows", "Windows"
+    LINUX = "linux", "Linux"
+    DARWIN = "darwin", "macOS"
+
 
 class ClientTreeSort(models.TextChoices):
     ALPHA_FAIL = "alphafail", "Move failing clients to the top"

@@ -75,7 +75,6 @@ fi
 
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
-cp /rmm/web/.env ${tmp_dir}/rmm/env
 
 tar -cf /rmmbackups/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
 

@@ -433,6 +433,7 @@ class TestCoreMgmtCommands(TacticalTestCase):
         names = (
             "api",
             "version",
+            "webversion",
             "meshver",
             "natsver",
             "frontend",

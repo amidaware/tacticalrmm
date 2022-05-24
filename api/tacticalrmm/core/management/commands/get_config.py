@@ -14,6 +14,8 @@ class Command(BaseCommand):
                 self.stdout.write(settings.ALLOWED_HOSTS[0])
             case "version":
                 self.stdout.write(settings.TRMM_VERSION)
+            case "webversion":
+                self.stdout.write(settings.WEB_VERSION)
             case "meshver":
                 self.stdout.write(settings.MESH_VER)
             case "natsver":

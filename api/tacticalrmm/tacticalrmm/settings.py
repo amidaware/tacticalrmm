@@ -30,9 +30,8 @@ MESH_VER = "1.0.22"
 
 NATS_SERVER_VER = "2.8.2"
 
-# for the update script, bump when need to recreate venv or npm install
+# for the update script, bump when need to recreate venv
 PIP_VER = "30"
-NPM_VER = "33"
 
 SETUPTOOLS_VER = "59.6.0"
 WHEEL_VER = "0.37.1"

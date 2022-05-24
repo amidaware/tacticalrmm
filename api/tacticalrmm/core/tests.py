@@ -4,6 +4,7 @@ import requests
 from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.conf import settings
+from django.core.management import call_command
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 
@@ -422,6 +423,32 @@ class TestCoreTasks(TacticalTestCase):
 
         self.assertEqual(complete, 20)
         self.assertEqual(old, 20)
+
+
+class TestCoreMgmtCommands(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    def test_get_config(self):
+        names = (
+            "api",
+            "version",
+            "meshver",
+            "natsver",
+            "frontend",
+            "djangoadmin",
+            "setuptoolsver",
+            "wheelver",
+            "dbname",
+            "dbuser",
+            "dbpw",
+            "dbport",
+            "meshsite",
+            "meshuser",
+            "meshtoken",
+        )
+        for name in names:
+            call_command("get_config", name)
 
 
 class TestCorePermissions(TacticalTestCase):

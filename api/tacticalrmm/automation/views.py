@@ -108,7 +108,9 @@ class PolicyCheck(APIView):
 class OverviewPolicy(APIView):
     def get(self, request):
 
-        clients = Client.objects.all()
+        clients = Client.objects.filter_by_role(request.user).select_related(
+            "workstation_policy", "server_policy"
+        )
         return Response(PolicyOverviewSerializer(clients, many=True).data)
 
 

@@ -4,26 +4,49 @@ version: "3.7"
 networks:
   proxy:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: ${PROXY_NET_NAME}
     ipam:
       driver: default
       config:
-        - subnet: 172.20.0.0/24
-  api-db: null
-  redis: null
-  mesh-db: null
+        - subnet: ${PROXY_SUBNET}/24
+          gateway: ${PROXY_GATEWAY}
+  api-db:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: ${NATS_NET_NAME}
+    ipam:
+      driver: default
+      config:
+        - subnet: ${API_DB_SUBNET}/24
+          gateway: ${API_DB_GATEWAY}
+  redis:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${REDIS_SUBNET}/24
+          gateway: ${REDIS_GATEWAY}
+  mesh-db:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${MESH_SUBNET}/24
+          gateway: ${MESH_GATEWAY}
 
 # docker managed persistent volumes
 volumes:
-  tactical_data: null
-  postgres_data: null
-  mongo_data: null
-  mesh_data: null
-  redis_data: null
+  tactical_data:
+  postgres_data:
+  mongo_data:
+  mesh_data:
+  redis_data:
 
 services:
   # postgres database for api service
   tactical-postgres:
-    container_name: trmm-postgres
+    container_name: ${CONTAINER_PREFIX}-postgres
     image: postgres:13-alpine
     restart: always
     environment:
@@ -37,7 +60,7 @@ services:
 
   # redis container for celery tasks
   tactical-redis:
-    container_name: trmm-redis
+    container_name: ${CONTAINER_PREFIX}-redis
     image: redis:6.0-alpine
     user: 1000:1000
     command: redis-server
@@ -49,7 +72,7 @@ services:
 
   # used to initialize the docker environment
   tactical-init:
-    container_name: trmm-init
+    container_name: ${CONTAINER_PREFIX}-init
     image: ${IMAGE_REPO}tactical:${VERSION}
     restart: on-failure
     command: [ "tactical-init" ]
@@ -78,25 +101,25 @@ services:
 
   # nats
   tactical-nats:
-    container_name: trmm-nats
+    container_name: ${CONTAINER_PREFIX}-nats
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
     user: 1000:1000
     restart: always
     environment:
       API_HOST: ${API_HOST}
     ports:
-      - "4222:4222"
+      - ${NATS_PORT}:4222
     volumes:
       - tactical_data:/opt/tactical
     networks:
-      api-db: null
+      api-db:
       proxy:
         aliases:
           - ${API_HOST}
 
   # meshcentral container
   tactical-meshcentral:
-    container_name: trmm-meshcentral
+    container_name: ${CONTAINER_PREFIX}-meshcentral
     image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
     user: 1000:1000
     restart: always
@@ -107,11 +130,12 @@ services:
       MONGODB_USER: ${MONGODB_USER}
       MONGODB_PASSWORD: ${MONGODB_PASSWORD}
       MESH_PERSISTENT_CONFIG: ${MESH_PERSISTENT_CONFIG}
+      NGINX_HOST_IP: ${PROXY_IP}
     networks:
       proxy:
         aliases:
           - ${MESH_HOST}
-      mesh-db: null
+      mesh-db:
     volumes:
       - tactical_data:/opt/tactical
       - mesh_data:/home/node/app/meshcentral-data
@@ -120,7 +144,7 @@ services:
 
   # mongodb container for meshcentral
   tactical-mongodb:
-    container_name: trmm-mongodb
+    container_name: ${CONTAINER_PREFIX}-mongodb
     image: mongo:4.4
     user: 1000:1000
     restart: always
@@ -135,7 +159,7 @@ services:
 
   # container that hosts vue frontend
   tactical-frontend:
-    container_name: trmm-frontend
+    container_name: ${CONTAINER_PREFIX}-frontend
     image: ${IMAGE_REPO}tactical-frontend:${VERSION}
     user: 1000:1000
     restart: always
@@ -148,7 +172,7 @@ services:
 
   # container for django backend
   tactical-backend:
-    container_name: trmm-backend
+    container_name: ${CONTAINER_PREFIX}-backend
     image: ${IMAGE_REPO}tactical:${VERSION}
     user: 1000:1000
     command: [ "tactical-backend" ]
@@ -164,7 +188,7 @@ services:
 
   # container for django websockets connections
   tactical-websockets:
-    container_name: trmm-websockets
+    container_name: ${CONTAINER_PREFIX}-websockets
     image: ${IMAGE_REPO}tactical:${VERSION}
     user: 1000:1000
     command: [ "tactical-websockets" ]
@@ -181,7 +205,7 @@ services:
 
   # container for tactical reverse proxy
   tactical-nginx:
-    container_name: trmm-nginx
+    container_name: ${CONTAINER_PREFIX}-nginx
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
     user: 1000:1000
     restart: always
@@ -193,16 +217,16 @@ services:
       CERT_PRIV_KEY: ${CERT_PRIV_KEY}
     networks:
       proxy:
-        ipv4_address: 172.20.0.20
+        ipv4_address: ${PROXY_IP}
     ports:
-      - "80:8080"
-      - "443:4443"
+      - ${PROXY_HTTP_PORT}:8080
+      - ${PROXY_HTTPS_PORT}:4443
     volumes:
       - tactical_data:/opt/tactical
 
   # container for celery worker service
   tactical-celery:
-    container_name: trmm-celery
+    container_name: ${CONTAINER_PREFIX}-celery
     image: ${IMAGE_REPO}tactical:${VERSION}
     user: 1000:1000
     command: [ "tactical-celery" ]
@@ -219,7 +243,7 @@ services:
 
   # container for celery beat service
   tactical-celerybeat:
-    container_name: trmm-celerybeat
+    container_name: ${CONTAINER_PREFIX}-celerybeat
     image: ${IMAGE_REPO}tactical:${VERSION}
     user: 1000:1000
     command: [ "tactical-celerybeat" ]

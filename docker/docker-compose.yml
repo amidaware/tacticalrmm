@@ -141,6 +141,8 @@ services:
     restart: always
     networks:
       - proxy
+    volumes:
+      - tactical_data:/opt/tactical
     environment:
       API_HOST: ${API_HOST}
 

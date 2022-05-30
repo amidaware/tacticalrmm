@@ -18,6 +18,8 @@ set -e
 : "${SMTP_USER:=mesh@example.com}"
 : "${SMTP_PASS:=mesh-smtp-pass}"
 : "${SMTP_TLS:=false}"
+: "${MESH_AGENT_ALIAS_PORT:=443}"
+: "${MESH_ALIAS_PORT:=443}"
 
 if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 0 ]]; then
 
@@ -33,8 +35,8 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "WANonly": true,
     "Minify": 1,
     "Port": 4443,
-    "AgentAliasPort": 443,
-    "aliasPort": 443,
+    "AgentAliasPort": "${MESH_AGENT_ALIAS_PORT}",
+    "aliasPort": "${MESH_ALIAS_PORT}",
     "AllowLoginToken": true,
     "AllowFraming": true,
     "_AgentPing": 60,

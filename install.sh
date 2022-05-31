@@ -1,20 +1,39 @@
 #!/bin/bash
 
+# For first time Dev testing use --prereq to get cert and python setup in place
+#
+# For Dev testing use --devtest
+#
+# For Dev testing to define a different repo url use: -u URL
+# 
+# For Dev testing to device a different repo branch name use: -b develop
+
+### 1. -prereq (does python and certs prep)
+### 2. Snapshot vm
+### 3. Run -devtest to skip python and certs with either -u and/or -b depending on what you're testing
+### 4. Install completes and you test
+### 5. Ready to re-test, restore snapshot from 2. and redo
+
+### Install script Info
 SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
-sudo apt install -y curl wget dirmngr gnupg lsb-release
+### Install script pre-reqs
+sudo apt update && sudo apt install -y curl wget dirmngr gnupg lsb-release software-properties-common openssl ca-certificates
 
+### Set colors for some reason
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+### Misc info
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
+### Check for new version
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
@@ -29,6 +48,18 @@ fi
 
 rm -f $TMP_FILE
 
+### Check for dev flags - Commented for troubleshooting
+#while getopts b:u: flag
+#do
+#    case "${flag}" in
+#        b) devbranch=${OPTARG};;
+#        u) devurl=${OPTARG};;
+#    esac
+#done
+#echo "devbranch: $devbranch";
+#echo "devurl: $devurl";
+
+### Gather OS info
 osname=$(lsb_release -si); osname=${osname^}
 osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
 fullrel=$(lsb_release -sd)
@@ -36,28 +67,29 @@ codename=$(lsb_release -sc)
 relno=$(lsb_release -sr | cut -d. -f1)
 fullrelno=$(lsb_release -sr)
 
-# Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
+### Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
 if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
   osname=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
   osname=${osname^}
 fi
 
-
-# determine system
-if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
+### Verify compatible OS and version
+if ([ "$osname" = "ubuntu" ] && ([ "$fullrelno" = "20.04" ] || [ "$fullrelno" = "22.04" ])) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
   echo $fullrel
 else
  echo $fullrel
- echo -ne "${RED}Supported versions: Ubuntu 20.04, Debian 10 and 11\n"
+ echo -ne "${RED}Supported versions: Ubuntu 20.04 and 22.04, Debian 10 and 11\n"
  echo -ne "Your system does not appear to be supported${NC}\n"
  exit 1
 fi
 
+### Check if root
 if [ $EUID -eq 0 ]; then
   echo -ne "${RED}Do NOT run this script as root. Exiting.${NC}\n"
   exit 1
 fi
 
+### Check language/locale
 if [[ "$LANG" != *".UTF-8" ]]; then
   printf >&2 "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
   printf >&2 "${RED}Run the following command and change the default locale to your language of choice${NC}\n\n"
@@ -66,21 +98,28 @@ if [[ "$LANG" != *".UTF-8" ]]; then
   exit 1
 fi
 
-if ([ "$osname" = "ubuntu" ]); then
+### Repo info for Postegres and Mongo
+# There is no Jammy repo yet so use Focal for Ubuntu 22.04
+if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]); then
   mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
-# there is no bullseye repo yet for mongo so just use buster on debian 11
-elif ([ "$osname" = "debian" ] && [ $relno -eq 11 ]); then
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname buster/mongodb-org/4.4 main"
+elif ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "22.04" ]); then
+  codename="focal"
+  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
+# There is no bullseye repo yet for mongo so just use Buster on Debian 11
+elif ([ "$osname" = "debian" ] && [ $relno -eq 10 ]); then
+  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
 else
+  codename="buster"
   mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
 fi
 
 postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 
-# prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
+### Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
 
+### Create usernames and passwords
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
@@ -102,34 +141,49 @@ print_green() {
 
 cls
 
-while [[ $rmmdomain != *[.]*[.]* ]]
-do
-echo -ne "${YELLOW}Enter the subdomain for the backend (e.g. api.example.com)${NC}: "
-read rmmdomain
+### Get host/domain info
+hostsconfirm="n"
+
+until [ $hostsconfirm == "y" ]; do
+  rootdomain="none"
+  while [[ $rootdomain != *[.]* ]]
+  do
+    read -p "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: " rootdomain
+    rootdomain="$(lowerCase $rootdomain)"
+    echo " "
+  done
+
+  read -p "${YELLOW}Enter the hostname for the backend (e.g. api)${NC}: " rmmhost
+  rmmhost="$(lowerCase $rmmhost)"
+  echo " "
+
+  read -p "${YELLOW}Enter the hostname for the frontend (e.g. rmm)${NC}: " frontendhost
+  frontendhost="$(lowerCase $frontendhost)"
+  echo " "
+
+  read -p "${YELLOW}Enter the hostname for meshcentral (e.g. mesh)${NC}: " meshhost
+  meshhost="$(lowerCase $meshhost)"
+  echo " "
+
+  while [[ $letsemail != *[@]*[.]* ]]
+  do
+    read -p "${YELLOW}Enter a valid e-mail address for django, meshcentral, and letsencrypt${NC}: " letsemail 
+    letsemail="$(lowerCase $letsemail)"
+    echo " "
+  done
+
+  echo " "
+  echo "${YELLOW}root domain${NC}: $rootdomain"
+  echo "${YELLOW}backend${NC}: $rmmhost.$rootdomain"
+  echo "${YELLOW}frontend${NC}: $frontendhost.$rootdomain"
+  echo "${YELLOW}meshcentral${NC}: $meshhost.$rootdomain"
+  echo "${YELLOW}e-mail address${NC}: $letsemail"
+  echo " "
+  read -p "${YELLOW}Is this correct? y or n${NC}: " hostsconfirm
+  hostsconfirm="$(lowerCase $hostsconfirm)"
 done
 
-while [[ $frontenddomain != *[.]*[.]* ]]
-do
-echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. rmm.example.com)${NC}: "
-read frontenddomain
-done
-
-while [[ $meshdomain != *[.]*[.]* ]]
-do
-echo -ne "${YELLOW}Enter the subdomain for meshcentral (e.g. mesh.example.com)${NC}: "
-read meshdomain
-done
-
-echo -ne "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: "
-read rootdomain
-
-while [[ $letsemail != *[@]*[.]* ]]
-do
-echo -ne "${YELLOW}Enter a valid email address for django and meshcentral${NC}: "
-read letsemail
-done
-
-# if server is behind NAT we need to add the 3 subdomains to the host file
+# If server is behind NAT we need to add the 3 subdomains to the host file
 # so that nginx can properly route between the frontend, backend and meshcentral
 # EDIT 8-29-2020
 # running this even if server is __not__ behind NAT just to make DNS resolving faster
@@ -152,9 +206,8 @@ if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192
     BEHIND_NAT=true
 fi
 
-sudo apt install -y software-properties-common
-sudo apt update
-sudo apt install -y certbot openssl
+### Certificate generation
+sudo apt install -y certbot
 
 print_green 'Getting wildcard cert'
 
@@ -170,6 +223,7 @@ CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
+### Install Nginx
 print_green 'Installing Nginx'
 
 sudo apt install -y nginx
@@ -177,20 +231,19 @@ sudo systemctl stop nginx
 sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
 
+### Install NodeJS
 print_green 'Installing NodeJS'
 
 curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-sudo apt update
-sudo apt install -y gcc g++ make
-sudo apt install -y nodejs
+sudo apt update && sudo apt install -y gcc g++ make nodejs
 sudo npm install -g npm
 
+### Install MongoDB
 print_green 'Installing MongoDB'
 
 wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
 echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-sudo apt update
-sudo apt install -y mongodb-org
+sudo apt update && sudo apt install -y mongodb-org
 sudo systemctl enable mongod
 sudo systemctl restart mongod
 
@@ -208,22 +261,23 @@ sudo make altinstall
 cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
-
+### Installing Redis and Git
 print_green 'Installing redis and git'
-sudo apt install -y ca-certificates redis git
+sudo apt install -y redis git
 
+### Installing Postgresql
 print_green 'Installing postgresql'
 
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo apt update
-sudo apt install -y postgresql-14
+wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update && sudo apt install -y postgresql-14
 sleep 2
 sudo systemctl enable postgresql
 sudo systemctl restart postgresql
 sleep 5
 
+### Postgres DB creation
 print_green 'Creating database for the rmm'
 
 sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
@@ -233,6 +287,7 @@ sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isola
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
 
+### Clone T-RMM repos
 print_green 'Cloning repos'
 
 sudo mkdir /rmm
@@ -253,6 +308,7 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout main
 
+### Installing NATS
 print_green 'Downloading NATS'
 
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
@@ -264,6 +320,7 @@ sudo chmod +x /usr/local/bin/nats-server
 sudo chown ${USER}:${USER} /usr/local/bin/nats-server
 rm -rf ${nats_tmp}
 
+### Install MeshCentral
 print_green 'Installing MeshCentral'
 
 MESH_VER=$(grep "^MESH_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')

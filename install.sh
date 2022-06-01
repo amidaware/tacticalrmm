@@ -19,7 +19,7 @@ SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 ### Install script pre-reqs
-sudo apt update && sudo apt install -y curl wget dirmngr gnupg lsb-release software-properties-common openssl ca-certificates apt-transport-https
+sudo apt update && sudo apt install -y curl wget dirmngr gnupg lsb-release software-properties-common openssl ca-certificates apt-transport-https gcc g++ make build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev git
 
 ### Set colors for some reason
 GREEN='\033[0;32m'
@@ -239,7 +239,7 @@ sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 6
 print_green 'Installing NodeJS'
 
 curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-sudo apt update && sudo apt install -y gcc g++ make nodejs
+sudo apt update && sudo apt install -y nodejs
 sudo npm install -g npm
 
 ### Install MongoDB
@@ -251,9 +251,9 @@ sudo apt update && sudo apt install -y mongodb-org
 sudo systemctl enable mongod
 sudo systemctl restart mongod
 
+### Install Python
 print_green "Installing Python ${PYTHON_VER}"
 
-sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)
 cd ~
 wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
@@ -265,9 +265,10 @@ sudo make altinstall
 cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
-### Installing Redis and Git
-print_green 'Installing redis and git'
-sudo apt install -y redis git
+### Installing Redis
+print_green 'Installing redis'
+
+sudo apt install -y redis
 
 ### Installing Postgresql
 print_green 'Installing postgresql'
@@ -353,10 +354,10 @@ meshcfg="$(cat << EOF
     "MongoDbName": "meshcentral",
     "WANonly": true,
     "Minify": 1,
-    "Port": 4430,
+    "Port": 4443,
     "AgentAliasPort": 443,
     "AliasPort": 443,
-    "RedirPort": 800,
+    "RedirPort": 8080,
     "AllowLoginToken": true,
     "AllowFraming": true,
     "_AgentPing": 60,
@@ -669,7 +670,7 @@ server {
     add_header X-Content-Type-Options nosniff;
 
     location / {
-        proxy_pass http://127.0.0.1:4430/;
+        proxy_pass http://127.0.0.1:4443/;
         proxy_http_version 1.1;
 
         proxy_set_header Host \$host;
@@ -841,7 +842,7 @@ echo "${nginxfrontend}" | sudo tee /etc/nginx/sites-available/frontend.conf > /d
 
 sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/frontend.conf
 
-
+### Enable services
 print_green 'Enabling Services'
 
 for i in rmm.service daphne.service celery.service celerybeat.service nginx
@@ -898,7 +899,7 @@ while ! [[ $CHECK_MESH_READY2 ]]; do
   sleep 3
 done
 
-node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
+node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain} --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
 sleep 1
 
 sudo systemctl enable nats.service
@@ -916,6 +917,7 @@ sudo systemctl start nats-api.service
 ### Disable django admin
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
+### Restart services
 print_green 'Restarting services'
 for i in rmm.service daphne.service celery.service celerybeat.service
 do

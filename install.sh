@@ -901,7 +901,7 @@ EOF
 )"
 echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
 
-### Configuring MeshCentral User and Group, restart service
+### Configuring MeshCentral admin user and device group, restart service
 print_green 'Creating meshcentral account and group'
 
 sudo systemctl stop meshcentral

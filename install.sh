@@ -48,7 +48,7 @@ fi
 
 rm -f $TMP_FILE
 
-### Check for dev flags - Commented for troubleshooting
+### Check for dev flags
 #while getopts b:u: flag
 #do
 #    case "${flag}" in
@@ -298,11 +298,21 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
+
+#if [[ $devurl ]]; then
+#  git clone ${devurl} /rmm/
+#else
 git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+#fi
+
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
+#if [[ $devbranch ]]; then
+#  git checkout ${branch}
+#else
 git checkout master
+#fi
 
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}

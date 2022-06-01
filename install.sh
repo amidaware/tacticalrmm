@@ -14,12 +14,16 @@
 ### 4. Install completes and you test
 ### 5. Ready to re-test, restore snapshot from 2. and redo
 
+### Import functions
+. $PWD/bashfunctions.cfg
+
 ### Install script Info
 SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 ### Install script pre-reqs
-sudo apt update && sudo apt install -y curl wget dirmngr gnupg lsb-release software-properties-common openssl ca-certificates apt-transport-https gcc g++ make build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev git
+#sudo apt update && sudo apt install -y curl wget dirmngr gnupg lsb-release software-properties-common openssl ca-certificates apt-transport-https gcc g++ make build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev git
+installPreReqs;
 
 ### Set colors for some reason
 GREEN='\033[0;32m'
@@ -120,14 +124,15 @@ postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $cod
 sudo systemctl restart systemd-journald.service
 
 ### Create usernames and passwords
-manualpass="n"
-
-
+manualpass="derp"
 
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 
-if [ $manualpass == "n" ]; then
+echo " "
+read -p "${YELLOW}Enter the MeshCentral admin username${NC}: " meshusername
+
+if [ $manualpass != "y" ]; then
   MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
   pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
   pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
@@ -145,7 +150,7 @@ elif [ $manualpass == "y" ]; then
     read -p "${YELLOW}Enter the MeshCentral admin username${NC}: " meshusername
     echo " "
     read -p "${YELLOW}Is this correct? y or n${NC}: $meshusername " userconfirm
-    userconfirm="$(lowerCase $userconfirm)"
+    userconfirm="$(translateToLowerCase $userconfirm)"
     echo " "
   done
   userconfirm="n"
@@ -167,7 +172,7 @@ elif [ $manualpass == "y" ]; then
     read -p "${YELLOW}Enter the Postgresql admin username${NC}: " pgusername
     echo " "
     read -p "${YELLOW}Is this correct? y or n${NC}: $pgusername " userconfirm
-    userconfirm="$(lowerCase $userconfirm)"
+    userconfirm="$(translateToLowerCase $userconfirm)"
     echo " "
   done
   userconfirm="n"
@@ -207,26 +212,26 @@ until [ $hostsconfirm == "y" ]; do
   while [[ $rootdomain != *[.]* ]]
   do
     read -p "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: " rootdomain
-    rootdomain="$(lowerCase $rootdomain)"
+    rootdomain="$(translateToLowerCase $rootdomain)"
     echo " "
   done
 
   read -p "${YELLOW}Enter the hostname for the backend (e.g. api)${NC}: " rmmhost
-  rmmhost="$(lowerCase $rmmhost)"
+  rmmhost="$(translateToLowerCase $rmmhost)"
   echo " "
 
   read -p "${YELLOW}Enter the hostname for the frontend (e.g. rmm)${NC}: " frontendhost
-  frontendhost="$(lowerCase $frontendhost)"
+  frontendhost="$(translateToLowerCase $frontendhost)"
   echo " "
 
   read -p "${YELLOW}Enter the hostname for meshcentral (e.g. mesh)${NC}: " meshhost
-  meshhost="$(lowerCase $meshhost)"
+  meshhost="$(translateToLowerCase $meshhost)"
   echo " "
 
   while [[ $letsemail != *[@]*[.]* ]]
   do
     read -p "${YELLOW}Enter a valid e-mail address for django, meshcentral, and letsencrypt${NC}: " letsemail 
-    letsemail="$(lowerCase $letsemail)"
+    letsemail="$(translateToLowerCase $letsemail)"
     echo " "
   done
 
@@ -238,7 +243,7 @@ until [ $hostsconfirm == "y" ]; do
   echo "${YELLOW}e-mail address${NC}: $letsemail"
   echo " "
   read -p "${YELLOW}Is this correct? y or n${NC}: " hostsconfirm
-  hostsconfirm="$(lowerCase $hostsconfirm)"
+  hostsconfirm="$(translateToLowerCase $hostsconfirm)"
 done
 
 rmmdomain="$rmmhost.$rootdomain"
@@ -349,6 +354,29 @@ sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+
+### Clone main repo
+print_green 'Cloning repo'
+
+sudo mkdir /rmm
+sudo chown ${USER}:${USER} /rmm
+sudo mkdir -p /var/log/celery
+sudo chown ${USER}:${USER} /var/log/celery
+
+#if [[ $devurl ]]; then
+#  git clone ${devurl} /rmm/
+#else
+git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+#fi
+
+cd /rmm
+git config user.email "admin@example.com"
+git config user.name "Bob"
+#if [[ $devbranch ]]; then
+#  git checkout ${branch}
+#else
+  git checkout master
+#fi
 
 ### Clone scripts repo
 sudo mkdir -p ${SCRIPTS_DIR}

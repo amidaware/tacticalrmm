@@ -11,7 +11,7 @@ from rest_framework.authtoken.models import Token
 from agents.models import Agent
 from core.utils import get_core_settings
 from logs.models import PendingAction
-from tacticalrmm.constants import CustomFieldModel, PAAction, PAStatus
+from tacticalrmm.constants import CustomFieldModel, PAAction, PAStatus, CONFIG_MGMT_CMDS
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
@@ -430,26 +430,8 @@ class TestCoreMgmtCommands(TacticalTestCase):
         self.setup_coresettings()
 
     def test_get_config(self):
-        names = (
-            "api",
-            "version",
-            "webversion",
-            "meshver",
-            "natsver",
-            "frontend",
-            "djangoadmin",
-            "setuptoolsver",
-            "wheelver",
-            "dbname",
-            "dbuser",
-            "dbpw",
-            "dbport",
-            "meshsite",
-            "meshuser",
-            "meshtoken",
-        )
-        for name in names:
-            call_command("get_config", name)
+        for cmd in CONFIG_MGMT_CMDS:
+            call_command("get_config", cmd)
 
 
 class TestCorePermissions(TacticalTestCase):

@@ -458,7 +458,7 @@ python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
-
+### Determine Proc setting for UWSGI
 echo 'Optimizing for number of processors'
 uwsgiprocs=4
 if [[ "$numprocs" == "1" ]]; then

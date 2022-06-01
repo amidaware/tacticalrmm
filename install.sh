@@ -346,6 +346,7 @@ cd /meshcentral
 npm install meshcentral@${MESH_VER}
 sudo chown ${USER}:${USER} -R /meshcentral
 
+### Create MeshCentral config
 meshcfg="$(cat << EOF
 {
   "settings": {
@@ -386,6 +387,7 @@ EOF
 )"
 echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
 
+### Create local settings file
 localvars="$(cat << EOF
 SECRET_KEY = "${DJANGO_SEKRET}"
 
@@ -455,6 +457,7 @@ python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
+
 echo 'Optimizing for number of processors'
 uwsgiprocs=4
 if [[ "$numprocs" == "1" ]]; then
@@ -463,6 +466,7 @@ else
   uwsgiprocs=$numprocs
 fi
 
+### Create UWSGI config
 uwsgini="$(cat << EOF
 [uwsgi]
 chdir = /rmm/api/tacticalrmm
@@ -484,7 +488,7 @@ EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
 
-
+### Create RMM UWSGI systemd service
 rmmservice="$(cat << EOF
 [Unit]
 Description=tacticalrmm uwsgi daemon
@@ -505,6 +509,7 @@ EOF
 )"
 echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service > /dev/null
 
+### Create Daphne systemd service
 daphneservice="$(cat << EOF
 [Unit]
 Description=django channels daemon
@@ -525,6 +530,7 @@ EOF
 )"
 echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
 
+### Create NATS systemd service
 natsservice="$(cat << EOF
 [Unit]
 Description=NATS Server
@@ -548,6 +554,7 @@ EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
 
+### Create NATS-api systemd service
 natsapi="$(cat << EOF
 [Unit]
 Description=TacticalRMM Nats Api v1
@@ -567,6 +574,7 @@ EOF
 )"
 echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service > /dev/null
 
+### Create RMM Nginx site config
 nginxrmm="$(cat << EOF
 server_tokens off;
 
@@ -640,7 +648,7 @@ EOF
 )"
 echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf > /dev/null
 
-
+### Create MeshCentral Nginx configuration
 nginxmesh="$(cat << EOF
 server {
   listen 80;
@@ -685,11 +693,14 @@ EOF
 )"
 echo "${nginxmesh}" | sudo tee /etc/nginx/sites-available/meshcentral.conf > /dev/null
 
+### Enable Mesh and RMM sites
 sudo ln -s /etc/nginx/sites-available/rmm.conf /etc/nginx/sites-enabled/rmm.conf
 sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/meshcentral.conf
 
+### Create conf directory
 sudo mkdir /etc/conf.d
 
+### Create Celery systemd service
 celeryservice="$(cat << EOF
 [Unit]
 Description=Celery Service V2
@@ -713,6 +724,7 @@ EOF
 )"
 echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service > /dev/null
 
+### Configure Celery service
 celeryconf="$(cat << EOF
 CELERYD_NODES="w1"
 
@@ -734,7 +746,7 @@ EOF
 )"
 echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf > /dev/null
 
-
+### Create CeleryBeat systemd service
 celerybeatservice="$(cat << EOF
 [Unit]
 Description=Celery Beat Service V2
@@ -758,6 +770,7 @@ echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service > 
 
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 
+### Create MeshCentral systemd service
 meshservice="$(cat << EOF
 [Unit]
 Description=MeshCentral Server
@@ -779,8 +792,10 @@ EOF
 )"
 echo "${meshservice}" | sudo tee /etc/systemd/system/meshcentral.service > /dev/null
 
+### Update services info
 sudo systemctl daemon-reload
 
+### Verify and correct permissions
 if [ -d ~/.npm ]; then
   sudo chown -R $USER:$GROUP ~/.npm
 fi
@@ -789,6 +804,7 @@ if [ -d ~/.config ]; then
   sudo chown -R $USER:$GROUP ~/.config
 fi
 
+### Install front end
 print_green 'Installing the frontend'
 
 webtar="trmm-web-v${WEB_VERSION}.tar.gz"
@@ -799,6 +815,7 @@ echo "window._env_ = {PROD_URL: \"https://${rmmdomain}\"}" | sudo tee /var/www/r
 sudo chown www-data:www-data -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
 
+### Set front end Nginx config and enable
 nginxfrontend="$(cat << EOF
 server {
     server_name ${frontenddomain};
@@ -840,9 +857,10 @@ EOF
 )"
 echo "${nginxfrontend}" | sudo tee /etc/nginx/sites-available/frontend.conf > /dev/null
 
+### Enable Frontend site
 sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/frontend.conf
 
-### Enable services
+### Enable RMM, Daphne, Celery, and Nginx services
 print_green 'Enabling Services'
 
 for i in rmm.service daphne.service celery.service celerybeat.service nginx
@@ -852,6 +870,8 @@ do
   sudo systemctl start ${i}
 done
 sleep 5
+
+### Enable MeshCentral service
 sudo systemctl enable meshcentral
 
 print_green 'Starting meshcentral and waiting for it to install plugins'
@@ -869,6 +889,7 @@ while ! [[ $CHECK_MESH_READY ]]; do
   sleep 3
 done
 
+### Generating MeshCentral key
 print_green 'Generating meshcentral login token key'
 
 MESHTOKENKEY=$(node /meshcentral/node_modules/meshcentral --logintokenkey)
@@ -879,7 +900,7 @@ EOF
 )"
 echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
 
-
+### Configuring MeshCentral User and Group, restart service
 print_green 'Creating meshcentral account and group'
 
 sudo systemctl stop meshcentral
@@ -902,6 +923,7 @@ done
 node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain} --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
 sleep 1
 
+### Enable and configure NATS service
 sudo systemctl enable nats.service
 cd /rmm/api/tacticalrmm
 source /rmm/api/env/bin/activate
@@ -917,7 +939,7 @@ sudo systemctl start nats-api.service
 ### Disable django admin
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
-### Restart services
+### Restart core services
 print_green 'Restarting services'
 for i in rmm.service daphne.service celery.service celerybeat.service
 do

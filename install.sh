@@ -227,7 +227,7 @@ CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
-### Install Nginx
+### Install Nginx, edit default config
 print_green 'Installing Nginx'
 
 sudo apt install -y nginx
@@ -242,7 +242,7 @@ curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 sudo apt update && sudo apt install -y nodejs
 sudo npm install -g npm
 
-### Install MongoDB
+### Install and enable MongoDB
 print_green 'Installing MongoDB'
 
 wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/mongo.gpg > /dev/null
@@ -270,7 +270,7 @@ print_green 'Installing redis'
 
 sudo apt install -y redis
 
-### Installing Postgresql
+### Install and enable Postgresql
 print_green 'Installing postgresql'
 
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
@@ -358,7 +358,6 @@ meshcfg="$(cat << EOF
     "Port": 4443,
     "AgentAliasPort": 443,
     "AliasPort": 443,
-    "RedirPort": 8080,
     "AllowLoginToken": true,
     "AllowFraming": true,
     "_AgentPing": 60,
@@ -420,10 +419,12 @@ EOF
 )"
 echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
+### Install NATS-API and correct permissions
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
+### Install backend, configure primary admin user, setup admin 2fa
 print_green 'Installing the backend'
 
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')

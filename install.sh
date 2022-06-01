@@ -120,12 +120,72 @@ postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $cod
 sudo systemctl restart systemd-journald.service
 
 ### Create usernames and passwords
+manualpass="n"
+
+
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
-MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
-pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
-pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+
+if [ $manualpass == "n" ]; then
+  MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
+  pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+  pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+  meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+elif [ $manualpass == "y" ]; then
+  passinput="none"
+  MESHPASSWD=""
+  pgusername=""
+  pgpw=""
+  meshusername=""
+
+  until [ "$passinput" == "$MESHPASSWD" ]; do
+    read -s -p "${YELLOW}Enter the MeshCentral password${NC}: " MESHPASSWD
+    echo " "
+    read -s -p "${YELLOW}Re-enter the MeshCentral password${NC}: " passinput
+    if [ "$passinput" != "$MESHPASSWD" ]
+      echo " "
+      read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
+    else
+      echo " "
+    fi
+  done
+
+  until [ "$passinput" == "$MESHPASSWD" ]; do
+    read -s -p "${YELLOW}Enter the MeshCentral password${NC}: " MESHPASSWD
+    echo " "
+    read -s -p "${YELLOW}Re-enter the MeshCentral password${NC}: " passinput
+    if [ "$passinput" != "$MESHPASSWD" ]
+      echo " "
+      read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
+    else
+      echo " "
+    fi
+  done
+
+  until [ "$passinput" == "$MESHPASSWD" ]; do
+    read -s -p "${YELLOW}Enter the MeshCentral password${NC}: " MESHPASSWD
+    echo " "
+    read -s -p "${YELLOW}Re-enter the MeshCentral password${NC}: " passinput
+    if [ "$passinput" != "$MESHPASSWD" ]
+      echo " "
+      read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
+    else
+      echo " "
+    fi
+  done
+
+  until [ "$passinput" == "$MESHPASSWD" ]; do
+    read -s -p "${YELLOW}Enter the MeshCentral password${NC}: " MESHPASSWD
+    echo " "
+    read -s -p "${YELLOW}Re-enter the MeshCentral password${NC}: " passinput
+    if [ "$passinput" != "$MESHPASSWD" ]
+      echo " "
+      read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
+    else
+      echo " "
+    fi
+  done
+fi
 
 cls() {
   printf "\033c"
@@ -292,29 +352,7 @@ sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isola
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
 
-### Clone T-RMM repos
-print_green 'Cloning repos'
-
-sudo mkdir /rmm
-sudo chown ${USER}:${USER} /rmm
-sudo mkdir -p /var/log/celery
-sudo chown ${USER}:${USER} /var/log/celery
-
-#if [[ $devurl ]]; then
-#  git clone ${devurl} /rmm/
-#else
-git clone https://github.com/amidaware/tacticalrmm.git /rmm/
-#fi
-
-cd /rmm
-git config user.email "admin@example.com"
-git config user.name "Bob"
-#if [[ $devbranch ]]; then
-#  git checkout ${branch}
-#else
-git checkout master
-#fi
-
+### Clone scripts repo
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
 git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/

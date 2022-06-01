@@ -123,6 +123,7 @@ sudo systemctl restart systemd-journald.service
 manualpass="n"
 
 
+
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 
@@ -132,16 +133,27 @@ if [ $manualpass == "n" ]; then
   pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
   meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 elif [ $manualpass == "y" ]; then
-  passinput="none"
+  passinput=""
+  userconfirm="n"
   MESHPASSWD=""
   pgusername=""
   pgpw=""
   meshusername=""
 
-  until [ "$passinput" == "$MESHPASSWD" ]; do
-    read -s -p "${YELLOW}Enter the MeshCentral password${NC}: " MESHPASSWD
+  until [ "$userconfirm" == "y" ]; do
     echo " "
-    read -s -p "${YELLOW}Re-enter the MeshCentral password${NC}: " passinput
+    read -p "${YELLOW}Enter the MeshCentral admin username${NC}: " meshusername
+    echo " "
+    read -p "${YELLOW}Is this correct? y or n${NC}: $meshusername " userconfirm
+    userconfirm="$(lowerCase $userconfirm)"
+    echo " "
+  done
+  userconfirm="n"
+
+  until [ "$passinput" == "$MESHPASSWD" ]; do
+    read -s -p "${YELLOW}Enter the MeshCentral admin password${NC}: " MESHPASSWD
+    echo " "
+    read -s -p "${YELLOW}Re-enter the MeshCentral admin password${NC}: " passinput
     if [ "$passinput" != "$MESHPASSWD" ]
       echo " "
       read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
@@ -150,35 +162,21 @@ elif [ $manualpass == "y" ]; then
     fi
   done
 
-  until [ "$passinput" == "$MESHPASSWD" ]; do
-    read -s -p "${YELLOW}Enter the MeshCentral password${NC}: " MESHPASSWD
+  until [ "$userconfirm" == "y" ]; do
     echo " "
-    read -s -p "${YELLOW}Re-enter the MeshCentral password${NC}: " passinput
-    if [ "$passinput" != "$MESHPASSWD" ]
-      echo " "
-      read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
-    else
-      echo " "
-    fi
+    read -p "${YELLOW}Enter the Postgresql admin username${NC}: " pgusername
+    echo " "
+    read -p "${YELLOW}Is this correct? y or n${NC}: $pgusername " userconfirm
+    userconfirm="$(lowerCase $userconfirm)"
+    echo " "
   done
+  userconfirm="n"
 
-  until [ "$passinput" == "$MESHPASSWD" ]; do
-    read -s -p "${YELLOW}Enter the MeshCentral password${NC}: " MESHPASSWD
+  until [ "$passinput" == "$pgpw" ]; do
+    read -s -p "${YELLOW}Enter the Postgresql admin password${NC}: " pgpw
     echo " "
-    read -s -p "${YELLOW}Re-enter the MeshCentral password${NC}: " passinput
-    if [ "$passinput" != "$MESHPASSWD" ]
-      echo " "
-      read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
-    else
-      echo " "
-    fi
-  done
-
-  until [ "$passinput" == "$MESHPASSWD" ]; do
-    read -s -p "${YELLOW}Enter the MeshCentral password${NC}: " MESHPASSWD
-    echo " "
-    read -s -p "${YELLOW}Re-enter the MeshCentral password${NC}: " passinput
-    if [ "$passinput" != "$MESHPASSWD" ]
+    read -s -p "${YELLOW}Re-enter the Postgresql admin password${NC}: " passinput
+    if [ "$passinput" != "$pgpw" ]
       echo " "
       read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
     else

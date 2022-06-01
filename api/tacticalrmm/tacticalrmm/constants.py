@@ -401,3 +401,23 @@ DEMO_NOT_ALLOWED = [
     {"name": "PendingActions", "methods": ["DELETE"]},
     {"name": "clear_cache", "methods": ["GET"]},
 ]
+
+CONFIG_MGMT_CMDS = (
+    "api",
+    "version",
+    "webversion",
+    "meshver",
+    "natsver",
+    "frontend",
+    "djangoadmin",
+    "setuptoolsver",
+    "wheelver",
+    "dbname",
+    "dbuser",
+    "dbhost",
+    "dbpw",
+    "dbport",
+    "meshsite",
+    "meshuser",
+    "meshtoken",
+)

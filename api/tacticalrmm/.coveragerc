@@ -6,7 +6,6 @@ include = *.py
 omit =
     */__pycache__/*
     */env/*
-    */management/*
     */migrations/*
     */static/*
     manage.py

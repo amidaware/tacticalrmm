@@ -2,12 +2,12 @@ SECRET_KEY = "DJANGO_SEKRET"
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['rmmdomain']
+ALLOWED_HOSTS = ['api.example.com']
 
 ADMIN_URL = "ADMINURL/"
 
 CORS_ORIGIN_WHITELIST = [
-    "https://frontenddomain"
+    "https://rmm.example.com"
 ]
 
 DATABASES = {
@@ -22,6 +22,6 @@ DATABASES = {
 }
 
 MESH_USERNAME = "meshusername"
-MESH_SITE = "https://meshdomain"
+MESH_SITE = "https://mesh.example.com"
 REDIS_HOST    = "localhost"
 ADMIN_ENABLED = True

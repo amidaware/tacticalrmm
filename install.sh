@@ -19,7 +19,7 @@ SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 ### Install script pre-reqs
-sudo apt update && sudo apt install -y curl wget dirmngr gnupg lsb-release software-properties-common openssl ca-certificates
+sudo apt update && sudo apt install -y curl wget dirmngr gnupg lsb-release software-properties-common openssl ca-certificates apt-transport-https
 
 ### Set colors for some reason
 GREEN='\033[0;32m'
@@ -183,6 +183,10 @@ until [ $hostsconfirm == "y" ]; do
   hostsconfirm="$(lowerCase $hostsconfirm)"
 done
 
+rmmdomain="$rmmhost.$rootdomain"
+meshdomain="$meshhost.$rootdomain"
+frontenddomain="$frontendhost.$rootdomain"
+
 # If server is behind NAT we need to add the 3 subdomains to the host file
 # so that nginx can properly route between the frontend, backend and meshcentral
 # EDIT 8-29-2020
@@ -241,7 +245,7 @@ sudo npm install -g npm
 ### Install MongoDB
 print_green 'Installing MongoDB'
 
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/mongo.gpg > /dev/null
 echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 sudo apt update && sudo apt install -y mongodb-org
 sudo systemctl enable mongod
@@ -270,7 +274,7 @@ print_green 'Installing postgresql'
 
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
-wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/postgresql.gpg > /dev/null
 sudo apt update && sudo apt install -y postgresql-14
 sleep 2
 sudo systemctl enable postgresql
@@ -340,6 +344,7 @@ meshcfg="$(cat << EOF
     "WANonly": true,
     "Minify": 1,
     "Port": 4430,
+    "AgentAliasPort": 443,
     "AliasPort": 443,
     "RedirPort": 800,
     "AllowLoginToken": true,
@@ -359,7 +364,7 @@ meshcfg="$(cat << EOF
       "Title": "Tactical RMM",
       "Title2": "Tactical RMM",
       "NewAccounts": false,
-      "CertUrl": "https://${meshdomain}:443/",
+      "CertUrl": "https://${meshdomain}/",
       "GeoLocation": true,
       "CookieIpCheck": false,
       "mstsc": true
@@ -898,7 +903,7 @@ sleep 1
 sudo systemctl enable nats-api.service
 sudo systemctl start nats-api.service
 
-## disable django admin
+### Disable django admin
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_green 'Restarting services'

@@ -73,19 +73,8 @@ sudo systemctl restart systemd-journald.service
 ### Create usernames and passwords
 generateUsersAndPass;
 
-cls() {
-  printf "\033c"
-}
-
-print_green() {
-  printf >&2 "${GREEN}%0.s-${NC}" {1..80}
-  printf >&2 "\n"
-  printf >&2 "${GREEN}${1}${NC}\n"
-  printf >&2 "${GREEN}%0.s-${NC}" {1..80}
-  printf >&2 "\n"
-}
-
-cls
+### This does... something
+cls;
 
 ### Get host/domain info
 getHostAndDomainInfo;

@@ -36,6 +36,9 @@ getOSInfo;
 ### Install script pre-reqs
 installPreReqs;
 
+### Check for new functions version
+checkCfgVer "$THIS_SCRIPT";
+
 ### Check for new version
 checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
 

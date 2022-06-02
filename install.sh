@@ -65,22 +65,7 @@ checkRoot;
 checkLocale;
 
 ### Repo info for Postegres and Mongo
-# There is no Jammy repo yet so use Focal for Ubuntu 22.04
-if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]); then
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
-elif ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "22.04" ]); then
-  codename="focal"
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
-# There is no bullseye repo yet for mongo so just use Buster on Debian 11
-elif ([ "$osname" = "debian" ] && [ $relno -eq 10 ]); then
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
-else
-  codename="buster"
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
-fi
-
-postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
-
+setInstallRepos;
 
 ### Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service

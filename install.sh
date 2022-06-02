@@ -146,6 +146,8 @@ installRedis;
 installPostgresql;
 
 ### Postgres DB creation
+print_green 'Creating database for the rmm'
+
 createPGDB;
 
 ### Clone main repo

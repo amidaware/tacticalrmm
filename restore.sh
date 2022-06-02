@@ -204,18 +204,14 @@ sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
+### Restore Postgres database
 print_green 'Restoring the database'
 
 pgusername=$(grep -w USER /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 pgpw=$(grep -w PASSWORD /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS tacticalrmm"
-sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
-sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+createPGDB;
 
 gzip -d $tmp_dir/postgres/*.psql.gz
 PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql

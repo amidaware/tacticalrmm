@@ -53,35 +53,16 @@ installAdditionalPreReqs;
 #echo "devurl: $devurl";
 
 ### Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
-if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
-  osname=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
-  osname=${osname^}
-fi
+wutOSThis;
 
 ### Verify compatible OS and version
-if ([ "$osname" = "ubuntu" ] && ([ "$fullrelno" = "20.04" ] || [ "$fullrelno" = "22.04" ])) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
-  echo $fullrel
-else
- echo $fullrel
- echo -e "${RED}Supported versions: Ubuntu 20.04 and 22.04, Debian 10 and 11.${NC}"
- echo -e "${RED}Your system does not appear to be supported.${NC}"
- exit 1
-fi
+verifySupportedOS;
 
 ### Check if root
-if [ $EUID -eq 0 ]; then
-  echo -e "${RED}Do NOT run this script as root. Exiting.${NC}"
-  exit 1
-fi
+checkRoot;
 
 ### Check language/locale
-if [[ "$LANG" != *".UTF-8" ]]; then
-  printf >&2 "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
-  printf >&2 "${RED}Run the following command and change the default locale to your language of choice${NC}\n\n"
-  printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
-  printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
-  exit 1
-fi
+checkLocale;
 
 ### Repo info for Postegres and Mongo
 # There is no Jammy repo yet so use Focal for Ubuntu 22.04

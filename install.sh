@@ -17,6 +17,7 @@
 ### Script Info
 SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
+THIS_SCRIPT=$(readlink -f "$0")
 
 ### Misc info
 SCRIPTS_DIR='/opt/trmm-community-scripts'
@@ -36,7 +37,7 @@ getOSInfo;
 installPreReqs;
 
 ### Check for new version
-checkScriptVer;
+checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
 
 ### Install additional prereqs
 installAdditionalPreReqs;

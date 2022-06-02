@@ -73,10 +73,12 @@ fi
 ### Install NodeJS
 installNodeJS;
 
-print_green 'Restoring Nginx'
+### Install Nginx
+installNginx;
 
-sudo apt install -y nginx
-sudo systemctl stop nginx
+### Restore Nginx configuration
+print_green 'Restoring Nginx configuration'
+
 sudo rm -rf /etc/nginx
 sudo mkdir /etc/nginx
 sudo tar -xzf $tmp_dir/nginx/etc-nginx.tar.gz -C /etc/nginx

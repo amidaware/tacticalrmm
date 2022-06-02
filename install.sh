@@ -123,11 +123,10 @@ CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
-### Install Nginx, edit default config
-print_green 'Installing Nginx'
+### Install Nginx
+installNginx;
 
-sudo apt install -y nginx
-sudo systemctl stop nginx
+### Make basic Nginx conf changes
 sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
 
@@ -147,14 +146,7 @@ installRedis;
 installPostgresql;
 
 ### Postgres DB creation
-print_green 'Creating database for the rmm'
-
-sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
-sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+createPGDB;
 
 ### Clone main repo
 print_green 'Cloning repo'

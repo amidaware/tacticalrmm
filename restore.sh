@@ -146,13 +146,8 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
 
-sudo mkdir -p ${SCRIPTS_DIR}
-sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
-git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
-cd ${SCRIPTS_DIR}
-git config user.email "admin@example.com"
-git config user.name "Bob"
-git checkout main
+### Clone scripts repo
+cloneScriptsRepo;
 
 ### Installing NATS
 installNats;
@@ -245,15 +240,8 @@ deactivate
 sudo systemctl enable nats.service
 sudo systemctl start nats.service
 
-print_green 'Restoring the frontend'
-
-webtar="trmm-web-v${WEB_VERSION}.tar.gz"
-wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
-sudo mkdir -p /var/www/rmm
-sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
-echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js > /dev/null
-sudo chown www-data:www-data -R /var/www/rmm/dist
-rm -f /tmp/${webtar}
+### Install frontend
+installFrontEnd;
 
 
 # reset perms
@@ -264,8 +252,10 @@ sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
 sudo chown -R $USER:$GROUP /home/${USER}/.cache
 
-print_green 'Enabling Services'
+### Update services info
 sudo systemctl daemon-reload
+
+print_green 'Enabling Services'
 
 for i in celery.service celerybeat.service rmm.service daphne.service nats-api.service nginx
 do

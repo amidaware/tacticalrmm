@@ -14,43 +14,32 @@
 ### 4. Install completes and you test
 ### 5. Ready to re-test, restore snapshot from 2. and redo
 
-### Import functions
-. $PWD/bashfunctions.cfg
-
-### Install script Info
+### Script Info
 SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
-
-### Install script pre-reqs
-#sudo apt update && sudo apt install -y curl wget dirmngr gnupg lsb-release software-properties-common openssl ca-certificates apt-transport-https gcc g++ make build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev git
-installPreReqs;
-
-### Set colors for some reason
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m'
 
 ### Misc info
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
+### Import functions
+. $PWD/bashfunctions.cfg
+
+### Set colors
+setColors;
+
+### Gather OS info
+getOSInfo;
+
+### Install script pre-reqs
+installPreReqs;
+
 ### Check for new version
-TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
-curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
-NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+checkScriptVer;
 
-if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}Old install script detected, downloading and replacing with the latest version...${NC}\n"
-    wget -q "${SCRIPT_URL}" -O install.sh
-    printf >&2 "${YELLOW}Script updated! Please re-run ./install.sh${NC}\n"
-    rm -f $TMP_FILE
-    exit 1
-fi
-
-rm -f $TMP_FILE
+### Install additional prereqs
+installAdditionalPreReqs;
 
 ### Check for dev flags
 #while getopts b:u: flag
@@ -63,14 +52,6 @@ rm -f $TMP_FILE
 #echo "devbranch: $devbranch";
 #echo "devurl: $devurl";
 
-### Gather OS info
-osname=$(lsb_release -si); osname=${osname^}
-osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
-fullrel=$(lsb_release -sd)
-codename=$(lsb_release -sc)
-relno=$(lsb_release -sr | cut -d. -f1)
-fullrelno=$(lsb_release -sr)
-
 ### Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
 if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
   osname=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
@@ -82,14 +63,14 @@ if ([ "$osname" = "ubuntu" ] && ([ "$fullrelno" = "20.04" ] || [ "$fullrelno" = 
   echo $fullrel
 else
  echo $fullrel
- echo -ne "${RED}Supported versions: Ubuntu 20.04 and 22.04, Debian 10 and 11\n"
- echo -ne "Your system does not appear to be supported${NC}\n"
+ echo -e "${RED}Supported versions: Ubuntu 20.04 and 22.04, Debian 10 and 11.${NC}"
+ echo -e "${RED}Your system does not appear to be supported.${NC}"
  exit 1
 fi
 
 ### Check if root
 if [ $EUID -eq 0 ]; then
-  echo -ne "${RED}Do NOT run this script as root. Exiting.${NC}\n"
+  echo -e "${RED}Do NOT run this script as root. Exiting.${NC}"
   exit 1
 fi
 
@@ -130,7 +111,8 @@ DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 
 echo " "
-read -p "${YELLOW}Enter the MeshCentral admin username${NC}: " meshusername
+echo -ne "${YELLOW}Enter the MeshCentral admin username${NC}: "
+read meshusername
 
 if [ $manualpass != "y" ]; then
   MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
@@ -147,21 +129,24 @@ elif [ $manualpass == "y" ]; then
 
   until [ "$userconfirm" == "y" ]; do
     echo " "
-    read -p "${YELLOW}Enter the MeshCentral admin username${NC}: " meshusername
+    echo -ne "${YELLOW}Enter the MeshCentral admin username${NC}: "
+    read meshusername
     echo " "
-    read -p "${YELLOW}Is this correct? y or n${NC}: $meshusername " userconfirm
+    echo -ne "${YELLOW}Is this correct? y or n${NC}: $meshusername "
+    read userconfirm
     userconfirm="$(translateToLowerCase $userconfirm)"
     echo " "
   done
   userconfirm="n"
 
   until [ "$passinput" == "$MESHPASSWD" ]; do
-    read -s -p "${YELLOW}Enter the MeshCentral admin password${NC}: " MESHPASSWD
+    read -s -p "Enter the MeshCentral admin password: " MESHPASSWD
     echo " "
-    read -s -p "${YELLOW}Re-enter the MeshCentral admin password${NC}: " passinput
+    read -s -p "Re-enter the MeshCentral admin password: " passinput
     if [ "$passinput" != "$MESHPASSWD" ]
       echo " "
-      read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
+      echo -ne "${YELLOW}Passwords do not match. Press any key to try again${NC}: "
+      read anykey
     else
       echo " "
     fi
@@ -169,9 +154,11 @@ elif [ $manualpass == "y" ]; then
 
   until [ "$userconfirm" == "y" ]; do
     echo " "
-    read -p "${YELLOW}Enter the Postgresql admin username${NC}: " pgusername
+    echo -ne "${YELLOW}Enter the Postgresql admin username${NC}: "
+    read pgusername
     echo " "
-    read -p "${YELLOW}Is this correct? y or n${NC}: $pgusername " userconfirm
+    echo -ne "${YELLOW}Is this correct? y or n${NC}: $pgusername "
+    read userconfirm
     userconfirm="$(translateToLowerCase $userconfirm)"
     echo " "
   done

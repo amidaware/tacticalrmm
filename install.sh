@@ -71,77 +71,7 @@ setInstallRepos;
 sudo systemctl restart systemd-journald.service
 
 ### Create usernames and passwords
-manualpass="derp"
-
-DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
-
-echo " "
-echo -ne "${YELLOW}Enter the MeshCentral admin username${NC}: "
-read meshusername
-
-if [ $manualpass != "y" ]; then
-  MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
-  pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
-  pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-  meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
-elif [ $manualpass == "y" ]; then
-  passinput=""
-  userconfirm="n"
-  MESHPASSWD=""
-  pgusername=""
-  pgpw=""
-  meshusername=""
-
-  until [ "$userconfirm" == "y" ]; do
-    echo " "
-    echo -ne "${YELLOW}Enter the MeshCentral admin username${NC}: "
-    read meshusername
-    echo " "
-    echo -ne "${YELLOW}Is this correct? y or n${NC}: $meshusername "
-    read userconfirm
-    userconfirm="$(translateToLowerCase $userconfirm)"
-    echo " "
-  done
-  userconfirm="n"
-
-  until [ "$passinput" == "$MESHPASSWD" ]; do
-    read -s -p "Enter the MeshCentral admin password: " MESHPASSWD
-    echo " "
-    read -s -p "Re-enter the MeshCentral admin password: " passinput
-    if [ "$passinput" != "$MESHPASSWD" ]
-      echo " "
-      echo -ne "${YELLOW}Passwords do not match. Press any key to try again${NC}: "
-      read anykey
-    else
-      echo " "
-    fi
-  done
-
-  until [ "$userconfirm" == "y" ]; do
-    echo " "
-    echo -ne "${YELLOW}Enter the Postgresql admin username${NC}: "
-    read pgusername
-    echo " "
-    echo -ne "${YELLOW}Is this correct? y or n${NC}: $pgusername "
-    read userconfirm
-    userconfirm="$(translateToLowerCase $userconfirm)"
-    echo " "
-  done
-  userconfirm="n"
-
-  until [ "$passinput" == "$pgpw" ]; do
-    read -s -p "${YELLOW}Enter the Postgresql admin password${NC}: " pgpw
-    echo " "
-    read -s -p "${YELLOW}Re-enter the Postgresql admin password${NC}: " passinput
-    if [ "$passinput" != "$pgpw" ]
-      echo " "
-      read -p "${YELLOW}Passwords do not match. Press any key to try again${NC}: " anykey
-    else
-      echo " "
-    fi
-  done
-fi
+generateUsersAndPass;
 
 cls() {
   printf "\033c"
@@ -158,50 +88,7 @@ print_green() {
 cls
 
 ### Get host/domain info
-hostsconfirm="n"
-
-until [ $hostsconfirm == "y" ]; do
-  rootdomain="none"
-  while [[ $rootdomain != *[.]* ]]
-  do
-    read -p "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: " rootdomain
-    rootdomain="$(translateToLowerCase $rootdomain)"
-    echo " "
-  done
-
-  read -p "${YELLOW}Enter the hostname for the backend (e.g. api)${NC}: " rmmhost
-  rmmhost="$(translateToLowerCase $rmmhost)"
-  echo " "
-
-  read -p "${YELLOW}Enter the hostname for the frontend (e.g. rmm)${NC}: " frontendhost
-  frontendhost="$(translateToLowerCase $frontendhost)"
-  echo " "
-
-  read -p "${YELLOW}Enter the hostname for meshcentral (e.g. mesh)${NC}: " meshhost
-  meshhost="$(translateToLowerCase $meshhost)"
-  echo " "
-
-  while [[ $letsemail != *[@]*[.]* ]]
-  do
-    read -p "${YELLOW}Enter a valid e-mail address for django, meshcentral, and letsencrypt${NC}: " letsemail 
-    letsemail="$(translateToLowerCase $letsemail)"
-    echo " "
-  done
-
-  echo " "
-  echo "${YELLOW}root domain${NC}: $rootdomain"
-  echo "${YELLOW}backend${NC}: $rmmhost.$rootdomain"
-  echo "${YELLOW}frontend${NC}: $frontendhost.$rootdomain"
-  echo "${YELLOW}meshcentral${NC}: $meshhost.$rootdomain"
-  echo "${YELLOW}e-mail address${NC}: $letsemail"
-  echo " "
-  read -p "${YELLOW}Is this correct? y or n${NC}: " hostsconfirm
-  hostsconfirm="$(translateToLowerCase $hostsconfirm)"
-done
-
-rmmdomain="$rmmhost.$rootdomain"
-meshdomain="$meshhost.$rootdomain"
-frontenddomain="$frontendhost.$rootdomain"
+getHostAndDomainInfo;
 
 # If server is behind NAT we need to add the 3 subdomains to the host file
 # so that nginx can properly route between the frontend, backend and meshcentral

@@ -132,51 +132,19 @@ sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
 
 ### Install NodeJS
-print_green 'Installing NodeJS'
-
-curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-sudo apt update && sudo apt install -y nodejs
-sudo npm install -g npm
+installNodeJS;
 
 ### Install and enable MongoDB
-print_green 'Installing MongoDB'
-
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/mongo.gpg > /dev/null
-echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-sudo apt update && sudo apt install -y mongodb-org
-sudo systemctl enable mongod
-sudo systemctl restart mongod
+installMongo;
 
 ### Install Python
-print_green "Installing Python ${PYTHON_VER}"
-
-numprocs=$(nproc)
-cd ~
-wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
-tar -xf Python-${PYTHON_VER}.tgz
-cd Python-${PYTHON_VER}
-./configure --enable-optimizations
-make -j $numprocs
-sudo make altinstall
-cd ~
-sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+installPython;
 
 ### Installing Redis
-print_green 'Installing redis'
-
-sudo apt install -y redis
+installRedis;
 
 ### Install and enable Postgresql
-print_green 'Installing postgresql'
-
-echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
-
-wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/postgresql.gpg > /dev/null
-sudo apt update && sudo apt install -y postgresql-14
-sleep 2
-sudo systemctl enable postgresql
-sudo systemctl restart postgresql
-sleep 5
+installPostgresql;
 
 ### Postgres DB creation
 print_green 'Creating database for the rmm'
@@ -221,16 +189,7 @@ git config user.name "Bob"
 git checkout main
 
 ### Installing NATS
-print_green 'Downloading NATS'
-
-NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
-tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
-sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
-sudo chmod +x /usr/local/bin/nats-server
-sudo chown ${USER}:${USER} /usr/local/bin/nats-server
-rm -rf ${nats_tmp}
+installNats;
 
 ### Install MeshCentral
 print_green 'Installing MeshCentral'

@@ -49,7 +49,7 @@ setInstallRepos;
 ### Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
 
-
+### Extract backup
 if [ ! -f "${1}" ]; then
   echo -ne "\n${RED}usage: ./restore.sh rmm-backup-xxxx.tar${NC}\n"
   exit 1
@@ -60,9 +60,9 @@ tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
 
 tar -xf ${1} -C $tmp_dir
 
+### Check if original user
 strip="User="
 ORIGUSER=$(grep ${strip} $tmp_dir/systemd/rmm.service | sed -e "s/^${strip}//")
-
 
 if [ "$ORIGUSER" != "$USER" ]; then
   printf >&2 "${RED}ERROR: You must run this restore script from the same user account used on your old server: ${GREEN}${ORIGUSER}${NC}\n"
@@ -70,15 +70,8 @@ if [ "$ORIGUSER" != "$USER" ]; then
   exit 1
 fi
 
-sudo apt update
-
-print_green 'Installing NodeJS'
-
-curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-sudo apt update
-sudo apt install -y gcc g++ make
-sudo apt install -y nodejs
-sudo npm install -g npm
+### Install NodeJS
+installNodeJS;
 
 print_green 'Restoring Nginx'
 
@@ -104,8 +97,7 @@ fi
 
 print_green 'Restoring certbot'
 
-sudo apt install -y software-properties-common
-sudo apt install -y certbot openssl
+sudo apt install -y certbot
 
 print_green 'Restoring certs'
 
@@ -126,43 +118,21 @@ print_green 'Restoring systemd services'
 sudo cp $tmp_dir/systemd/* /etc/systemd/system/
 sudo systemctl daemon-reload
 
-print_green 'Installing Python 3.10.4'
+### Install Python
+installPython;
 
-sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
-numprocs=$(nproc)
-cd ~
-wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
-tar -xf Python-${PYTHON_VER}.tgz
-cd Python-${PYTHON_VER}
-./configure --enable-optimizations
-make -j $numprocs
-sudo make altinstall
-cd ~
-sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+### Installing Redis
+installRedis;
 
+### Install and enable Postgresql
+installPostgresql;
 
-print_green 'Installing redis and git'
-sudo apt install -y ca-certificates redis git
+### Install and enable MongoDB
+installMongo;
 
-print_green 'Installing postgresql'
-
-echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo apt update
-sudo apt install -y postgresql-14
-sleep 2
-sudo systemctl enable postgresql
-sudo systemctl restart postgresql
-
+### Restore Mongo database
 print_green 'Restoring MongoDB'
 
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-sudo apt update
-sudo apt install -y mongodb-org
-sudo systemctl enable mongod
-sudo systemctl restart mongod
-sleep 5
 mongorestore --gzip $tmp_dir/meshcentral/mongo
 
 
@@ -184,16 +154,8 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout main
 
-print_green 'Restoring NATS'
-
-NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
-tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
-sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
-sudo chmod +x /usr/local/bin/nats-server
-sudo chown ${USER}:${USER} /usr/local/bin/nats-server
-rm -rf ${nats_tmp}
+### Installing NATS
+installNats;
 
 print_green 'Restoring MeshCentral'
 

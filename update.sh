@@ -1,39 +1,35 @@
 #!/bin/bash
 
+### Script info
 SCRIPT_VERSION="135"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
+### Misc info
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
-TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
-curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
-NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+### Import functions
+. $PWD/bashfunctions.cfg
 
-if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}Old update script detected, downloading and replacing with the latest version...${NC}\n"
-    wget -q "${SCRIPT_URL}" -O update.sh
-    exec ${THIS_SCRIPT}
-fi
+### Set colors
+setColors;
 
-rm -f $TMP_FILE
+### Check for new functions version, only include script name as variable
+checkCfgVer "$THIS_SCRIPT";
+
+### Check for new script version, pass script version, url, and script name variables in that order
+checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
 
 force=false
 if [[ $* == *--force* ]]; then
     force=true
 fi
 
-if [ $EUID -eq 0 ]; then
-  echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
-  exit 1
-fi
+### Check if root
+checkRoot;
 
 sudo apt update
 
@@ -63,9 +59,8 @@ NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{prin
 
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-cls() {
-  printf "\033c"
-}
+### This does... something
+cls;
 
 
 CHECK_NATS_LIMITNOFILE=$(grep LimitNOFILE /etc/systemd/system/nats.service)

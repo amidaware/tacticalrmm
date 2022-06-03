@@ -71,7 +71,11 @@ from .serializers import (
     AgentSerializer,
     AgentTableSerializer,
 )
-from .tasks import run_script_email_results_task, send_agent_update_task
+from .tasks import (
+    run_script_email_results_task,
+    send_agent_update_task,
+    bulk_recover_agents_task,
+)
 
 
 class GetAgents(APIView):
@@ -957,6 +961,13 @@ def agent_maintenance(request):
         return Response(
             f"No agents have been put in maintenance mode. You might not have permissions to the resources."
         )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, RecoverAgentPerms])
+def bulk_agent_recovery(request):
+    bulk_recover_agents_task.delay()
+    return Response("Agents will now be recovered")
 
 
 class WMI(APIView):

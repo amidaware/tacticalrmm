@@ -17,11 +17,17 @@ SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 ### Set colors
 setColors;
 
+### Install script pre-reqs
+installPreReqs;
+
 ### Check for new functions version, only include script name as variable
 checkCfgVer "$THIS_SCRIPT";
 
 ### Check for new script version, pass script version, url, and script name variables in that order
 checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
+
+### Install additional prereqs
+installAdditionalPreReqs;
 
 force=false
 if [[ $* == *--force* ]]; then
@@ -31,8 +37,7 @@ fi
 ### Check if root
 checkRoot;
 
-sudo apt update
-
+### Check if user is same as during installation
 strip="User="
 ORIGUSER=$(grep ${strip} /etc/systemd/system/rmm.service | sed -e "s/^${strip}//")
 
@@ -41,6 +46,7 @@ if [ "$ORIGUSER" != "$USER" ]; then
   exit 1
 fi
 
+### Get current release version and check if update is necessary
 TMP_SETTINGS=$(mktemp -p "" "rmmsettings_XXXXXXXXXX")
 curl -s -L "${LATEST_SETTINGS_URL}" > ${TMP_SETTINGS}
 
@@ -53,6 +59,7 @@ if [[ "${CURRENT_TRMM_VER}" == "${LATEST_TRMM_VER}" ]] && ! [[ "$force" = true ]
   exit 0
 fi
 
+### Get current versions of necessary included apps
 LATEST_MESH_VER=$(grep "^MESH_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 LATEST_PIP_VER=$(grep "^PIP_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
@@ -90,9 +97,12 @@ WantedBy=multi-user.target
 EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
+
+### Update services
 sudo systemctl daemon-reload
 fi
 
+### Check Nginx config
 if ! sudo nginx -t > /dev/null 2>&1; then
   sudo nginx -t
   echo -ne "\n"
@@ -101,12 +111,14 @@ if ! sudo nginx -t > /dev/null 2>&1; then
   exit 1
 fi
 
+### Stop services
 for i in nginx nats-api nats rmm daphne celery celerybeat
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
 
+### Rebuild uwsgi config
 rm -f /rmm/api/tacticalrmm/app.ini
 
 numprocs=$(nproc)
@@ -138,6 +150,7 @@ EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
 
+
 CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" /etc/nginx/nginx.conf)
 if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
   printf >&2 "${GREEN}Changing nginx worker connections to 2048${NC}\n"
@@ -146,33 +159,18 @@ fi
 
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
 
+### Check if Python is up to date, if not, update
 HAS_PY310=$(python3.10 --version | grep ${PYTHON_VER})
 if ! [[ $HAS_PY310 ]]; then
   printf >&2 "${GREEN}Updating to ${PYTHON_VER}${NC}\n"
-  sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
-  numprocs=$(nproc)
-  cd ~
-  wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
-  tar -xf Python-${PYTHON_VER}.tgz
-  cd Python-${PYTHON_VER}
-  ./configure --enable-optimizations
-  make -j $numprocs
-  sudo make altinstall
-  cd ~
-  sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+  installPython;
 fi
 
+### Check if NATS is up to date, if not, update
 HAS_LATEST_NATS=$(/usr/local/bin/nats-server -version | grep "${NATS_SERVER_VER}")
 if ! [[ $HAS_LATEST_NATS ]]; then
   printf >&2 "${GREEN}Updating nats to v${NATS_SERVER_VER}${NC}\n"
-  nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-  wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
-  tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
-  sudo rm -f /usr/local/bin/nats-server
-  sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
-  sudo chmod +x /usr/local/bin/nats-server
-  sudo chown ${USER}:${USER} /usr/local/bin/nats-server
-  rm -rf ${nats_tmp}
+  installNats "update";
 fi
 
 if [ -d ~/.npm ]; then

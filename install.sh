@@ -177,7 +177,7 @@ git config user.name "Bob"
 cloneScriptsRepo;
 
 ### Installing NATS
-installNats;
+installNats "install";
 
 ### Install MeshCentral
 print_green 'Installing MeshCentral'

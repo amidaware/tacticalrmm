@@ -27,6 +27,9 @@ class AgentPerms(permissions.BasePermission):
 
 class RecoverAgentPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
+        if "agent_id" not in view.kwargs.keys():
+            return _has_perm(r, "can_recover_agents")
+
         return _has_perm(r, "can_recover_agents") and _has_perm_on_agent(
             r.user, view.kwargs["agent_id"]
         )

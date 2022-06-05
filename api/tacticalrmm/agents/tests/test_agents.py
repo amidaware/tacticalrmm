@@ -119,6 +119,17 @@ class TestAgentViews(TacticalTestCase):
         )
         baker.make_recipe("winupdate.winupdate_policy", agent=self.agent)
 
+    @patch("agents.tasks.bulk_recover_agents_task.delay")
+    def test_bulk_agent_recovery(self, mock_task):
+        mock_task.return_value = None
+        url = f"{base_url}/bulkrecovery/"
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        mock_task.assert_called_once()
+
+        self.check_not_authenticated("get", url)
+
     def test_get_agent(self):
         url = f"{base_url}/{self.agent.agent_id}/"
 

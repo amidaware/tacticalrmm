@@ -5,6 +5,7 @@ from time import sleep
 from typing import Optional
 
 from django.conf import settings
+from django.core.management import call_command
 from django.utils import timezone as djangotime
 from packaging import version as pyver
 
@@ -325,3 +326,8 @@ def prune_agent_history(older_than_days: int) -> str:
     ).delete()
 
     return "ok"
+
+
+@app.task
+def bulk_recover_agents_task() -> None:
+    call_command("bulk_restart_agents")

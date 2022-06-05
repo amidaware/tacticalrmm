@@ -124,30 +124,31 @@ sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
 ### Install Nginx
+print_green 'Installing Nginx'
 installNginx;
 
-### Make basic Nginx conf changes
-sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
-sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
-
 ### Install NodeJS
+print_green 'Installing NodeJS'
 installNodeJS;
 
 ### Install and enable MongoDB
+print_green 'Installing MongoDB'
 installMongo;
 
 ### Install Python
+print_green "Installing Python ${PYTHON_VER}"
 installPython;
 
 ### Installing Redis
+print_green 'Installing redis'
 installRedis;
 
 ### Install and enable Postgresql
+print_green 'Installing postgresql'
 installPostgresql;
 
 ### Postgres DB creation
 print_green 'Creating database for the rmm'
-
 createPGDB;
 
 ### Clone main repo
@@ -177,6 +178,7 @@ git config user.name "Bob"
 cloneScriptsRepo;
 
 ### Installing NATS
+print_green 'Installing NATS'
 installNats "install";
 
 ### Install MeshCentral
@@ -650,6 +652,7 @@ if [ -d ~/.config ]; then
 fi
 
 ### Install frontend
+print_green 'Installing the frontend'
 installFrontEnd;
 
 ### Set front end Nginx config and enable

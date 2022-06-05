@@ -29,6 +29,7 @@ checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
 ### Install additional prereqs
 installAdditionalPreReqs;
 
+### Check for force update flag
 force=false
 if [[ $* == *--force* ]]; then
     force=true
@@ -103,13 +104,7 @@ sudo systemctl daemon-reload
 fi
 
 ### Check Nginx config
-if ! sudo nginx -t > /dev/null 2>&1; then
-  sudo nginx -t
-  echo -ne "\n"
-  echo -ne "${RED}You have syntax errors in your nginx configs. See errors above. Please fix them and re-run this script.${NC}\n"
-  echo -ne "${RED}Aborting...${NC}\n"
-  exit 1
-fi
+installNginx "updatepart1";
 
 ### Stop services
 for i in nginx nats-api nats rmm daphne celery celerybeat
@@ -150,28 +145,14 @@ EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
 
-
-CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" /etc/nginx/nginx.conf)
-if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
-  printf >&2 "${GREEN}Changing nginx worker connections to 2048${NC}\n"
-  sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
-fi
-
-sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
+### Check additional Nginx settings and update
+installNginx "updatepart2";
 
 ### Check if Python is up to date, if not, update
-HAS_PY310=$(python3.10 --version | grep ${PYTHON_VER})
-if ! [[ $HAS_PY310 ]]; then
-  printf >&2 "${GREEN}Updating to ${PYTHON_VER}${NC}\n"
-  installPython;
-fi
+installPython "update";
 
 ### Check if NATS is up to date, if not, update
-HAS_LATEST_NATS=$(/usr/local/bin/nats-server -version | grep "${NATS_SERVER_VER}")
-if ! [[ $HAS_LATEST_NATS ]]; then
-  printf >&2 "${GREEN}Updating nats to v${NATS_SERVER_VER}${NC}\n"
-  installNats "update";
-fi
+installNats "update";
 
 if [ -d ~/.npm ]; then
   sudo rm -rf ~/.npm
@@ -185,25 +166,8 @@ if [ -d ~/.config ]; then
   sudo chown -R $USER:$GROUP ~/.config
 fi
 
-HAS_NODE16=$(node --version | grep v16)
-if ! [[ $HAS_NODE16 ]]; then
-  printf >&2 "${GREEN}Updating NodeJS to v16${NC}\n"
-  rm -rf /rmm/web/node_modules
-  sudo systemctl stop meshcentral
-  sudo apt remove -y nodejs
-  sudo rm -rf /usr/lib/node_modules
-  curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-  sudo apt update
-  sudo apt install -y nodejs
-  sudo npm install -g npm
-  sudo chown ${USER}:${USER} -R /meshcentral
-  cd /meshcentral
-  rm -rf node_modules/
-  npm install meshcentral@${LATEST_MESH_VER}
-  sudo systemctl start meshcentral
-fi
-
-sudo npm install -g npm
+### Check NodeJS version, update if needed and update MeshCentral
+installNodeJS "update";
 
 # update from main repo
 cd /rmm

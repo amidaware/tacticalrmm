@@ -16,14 +16,32 @@
     </q-banner>
     <q-card-section>
       Select Version
-      <q-select square disable dense options-dense outlined v-model="version" :options="versions" />
+      <q-select
+        square
+        disable
+        dense
+        options-dense
+        outlined
+        v-model="version"
+        :options="versions"
+      />
     </q-card-section>
     <q-card-section v-show="version !== null">
       Select Agent
       <br />
       <q-separator />
-      <q-checkbox v-model="selectAll" label="Select All" @update:model-value="selectAllAction" />
-      <q-btn v-show="group.length !== 0" label="Update" color="primary" @click="update" class="q-ml-xl" />
+      <q-checkbox
+        v-model="selectAll"
+        label="Select All"
+        @update:model-value="selectAllAction"
+      />
+      <q-btn
+        v-show="group.length !== 0"
+        label="Update"
+        color="primary"
+        @click="update"
+        class="q-ml-xl"
+      />
       <q-separator />
       <q-option-group
         v-model="group"
@@ -60,7 +78,7 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/agents/versions/")
-        .then(r => {
+        .then((r) => {
           this.versions = r.data.versions;
           this.version = r.data.versions[0];
           this.agents = r.data.agents;
@@ -72,18 +90,15 @@ export default {
     },
     update() {
       const data = { agent_ids: this.group };
-      this.$axios
-        .post("/agents/update/", data)
-        .then(r => {
-          this.$emit("close");
-          this.notifySuccess("Agents will now be updated");
-        })
-        .catch(e => {});
+      this.$axios.post("/agents/update/", data).then(() => {
+        this.$emit("close");
+        this.notifySuccess("Agents will now be updated");
+      });
     },
   },
   computed: {
     agentIds() {
-      return this.agents.map(k => k.agent_id);
+      return this.agents.map((k) => k.agent_id);
     },
     agentOptions() {
       const options = [];

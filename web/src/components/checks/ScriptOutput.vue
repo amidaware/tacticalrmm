@@ -47,7 +47,7 @@ export default {
   name: "ScriptOutput",
   emits: [...useDialogPluginComponent.emits],
   props: { scriptInfo: !Object },
-  setup(props) {
+  setup() {
     // setup vuex
     const store = useStore();
     const formatDate = computed(() => store.getters.formatDate);

@@ -11,12 +11,24 @@
       <q-form @submit="submit">
         <!-- name -->
         <q-card-section>
-          <q-input label="Name" outlined dense v-model="localKey.name" :rules="[val => !!val || '*Required']" />
+          <q-input
+            label="Name"
+            outlined
+            dense
+            v-model="localKey.name"
+            :rules="[(val) => !!val || '*Required']"
+          />
         </q-card-section>
 
         <!-- value -->
         <q-card-section>
-          <q-input label="Value" outlined dense v-model="localKey.value" :rules="[val => !!val || '*Required']" />
+          <q-input
+            label="Value"
+            outlined
+            dense
+            v-model="localKey.value"
+            :rules="[(val) => !!val || '*Required']"
+          />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -63,23 +75,23 @@ export default {
       if (this.editing) {
         this.$axios
           .put(`/core/keystore/${data.id}/`, data)
-          .then(r => {
+          .then(() => {
             this.$q.loading.hide();
             this.onOk();
             this.notifySuccess("Key was edited!");
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       } else {
         this.$axios
           .post("/core/keystore/", data)
-          .then(r => {
+          .then(() => {
             this.$q.loading.hide();
             this.onOk();
             this.notifySuccess("Key was added!");
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       }

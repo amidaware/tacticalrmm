@@ -47,8 +47,14 @@
         </q-card-section>
 
         <q-card-section>
-          <q-checkbox v-model="localTemplate.exclude_workstations" label="Exclude Workstations" />
-          <q-checkbox v-model="localTemplate.exclude_servers" label="Exclude Servers" />
+          <q-checkbox
+            v-model="localTemplate.exclude_workstations"
+            label="Exclude Workstations"
+          />
+          <q-checkbox
+            v-model="localTemplate.exclude_servers"
+            label="Exclude Servers"
+          />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -90,12 +96,12 @@ export default {
       this.$q.loading.show();
       this.$axios
         .put(`alerts/templates/${this.template.id}/`, this.localTemplate)
-        .then(r => {
+        .then(() => {
           this.$q.loading.hide();
           this.onOk();
           this.notifySuccess("Alert Template exclusions added");
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -103,12 +109,17 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/clients/")
-        .then(r => {
-          this.clientOptions = r.data.map(client => ({ label: client.name, value: client.id }));
+        .then((r) => {
+          this.clientOptions = r.data.map((client) => ({
+            label: client.name,
+            value: client.id,
+          }));
 
-          r.data.forEach(client => {
+          r.data.forEach((client) => {
             this.siteOptions.push({ category: client.name });
-            client.sites.forEach(site => this.siteOptions.push({ label: site.name, value: site.id }));
+            client.sites.forEach((site) =>
+              this.siteOptions.push({ label: site.name, value: site.id })
+            );
           });
           this.$q.loading.hide();
         })
@@ -117,7 +128,9 @@ export default {
         });
     },
     getOptions() {
-      this.getAgentOptions("id").then(options => (this.agentOptions = Object.freeze(options)));
+      this.getAgentOptions("id").then(
+        (options) => (this.agentOptions = Object.freeze(options))
+      );
       this.getClientsandSites();
     },
     show() {
@@ -141,7 +154,8 @@ export default {
     this.localTemplate.excluded_sites = this.template.excluded_sites;
     this.localTemplate.excluded_agents = this.template.excluded_agents;
     this.localTemplate.exclude_servers = this.template.exclude_servers;
-    this.localTemplate.exclude_workstations = this.template.exclude_workstations;
+    this.localTemplate.exclude_workstations =
+      this.template.exclude_workstations;
     this.getOptions();
   },
 };

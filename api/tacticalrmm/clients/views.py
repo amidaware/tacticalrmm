@@ -42,7 +42,8 @@ class GetAddClients(APIView):
                 ),
                 Prefetch(
                     "sites",
-                    queryset=Site.objects.select_related("client")
+                    queryset=Site.objects.order_by("name")
+                    .select_related("client")
                     .filter_by_role(request.user)
                     .prefetch_related("custom_fields__field")
                     .annotate(
@@ -119,7 +120,8 @@ class GetUpdateDeleteClient(APIView):
             [client],
             Prefetch(
                 "sites",
-                queryset=Site.objects.select_related("client")
+                queryset=Site.objects.order_by("name")
+                .select_related("client")
                 .filter_by_role(request.user)
                 .prefetch_related("custom_fields__field")
                 .annotate(

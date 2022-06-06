@@ -4,11 +4,10 @@ from django.core.management.base import BaseCommand
 
 from accounts.models import User
 from agents.models import Agent
-from alerts.models import Alert
 from autotasks.models import AutomatedTask
 from checks.models import Check, CheckHistory
 from scripts.models import Script
-from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER, ScriptType
 
 
 class Command(BaseCommand):
@@ -27,7 +26,7 @@ class Command(BaseCommand):
                 user.save()
 
         # convert script base64 field to text field
-        user_scripts = Script.objects.exclude(script_type="builtin").filter(
+        user_scripts = Script.objects.exclude(script_type=ScriptType.BUILT_IN).filter(
             script_body=""
         )
         for script in user_scripts:

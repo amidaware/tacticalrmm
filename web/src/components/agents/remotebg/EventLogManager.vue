@@ -5,16 +5,28 @@
   <div v-else>
     <div class="row q-pt-sm q-pl-sm">
       <div class="col-2">
-        <q-select dense options-dense outlined v-model="days" :options="lastDaysOptions" :label="showDays" />
+        <q-select
+          dense
+          options-dense
+          outlined
+          v-model="days"
+          :options="lastDaysOptions"
+          :label="showDays"
+        />
       </div>
       <div class="col-7"></div>
       <div class="col-3">
-        <code v-if="events">{{ logType }} log total records: {{ events.length }}</code>
+        <code v-if="events"
+          >{{ logType }} log total records: {{ events.length }}</code
+        >
       </div>
     </div>
     <q-table
       dense
-      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+      :table-class="{
+        'table-bgcolor': !$q.dark.isActive,
+        'table-bgcolor-dark': $q.dark.isActive,
+      }"
       class="remote-bg-tbl-sticky"
       :rows="events"
       :columns="columns"
@@ -38,15 +50,32 @@
           @update:model-value="getEventLog"
         />
         <q-radio v-model="logType" color="cyan" val="System" label="System" />
-        <q-radio v-model="logType" color="cyan" val="Security" label="Security" />
+        <q-radio
+          v-model="logType"
+          color="cyan"
+          val="Security"
+          label="Security"
+        />
         <q-space />
-        <q-input v-model="filter" style="width: 300px" outlined label="Search" dense clearable>
+        <q-input
+          v-model="filter"
+          style="width: 300px"
+          outlined
+          label="Search"
+          dense
+          clearable
+        >
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
         </q-input>
         <!-- file download doesn't work so disabling -->
-        <export-table-btn v-show="false" class="q-ml-sm" :columns="columns" :data="events" />
+        <export-table-btn
+          v-show="false"
+          class="q-ml-sm"
+          :columns="columns"
+          :data="events"
+        />
       </template>
       <template v-slot:body="props">
         <q-tr :props="props">
@@ -55,9 +84,11 @@
           <q-td>{{ props.row.eventID }}</q-td>
           <q-td>{{ props.row.time }}</q-td>
           <q-td @click="showEventMessage(props.row.message)">
-            <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
-              truncateText(props.row.message, 30)
-            }}</span>
+            <span
+              style="cursor: pointer; text-decoration: underline"
+              class="text-primary"
+              >{{ truncateText(props.row.message, 30) }}</span
+            >
           </q-td>
         </q-tr>
       </template>
@@ -77,11 +108,35 @@ import ExportTableBtn from "@/components/ui/ExportTableBtn";
 
 // static data
 const columns = [
-  { name: "eventType", label: "Type", field: "eventType", align: "left", sortable: true },
-  { name: "source", label: "Source", field: "source", align: "left", sortable: true },
-  { name: "eventID", label: "Event ID", field: "eventID", align: "left", sortable: true },
+  {
+    name: "eventType",
+    label: "Type",
+    field: "eventType",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "source",
+    label: "Source",
+    field: "source",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "eventID",
+    label: "Event ID",
+    field: "eventID",
+    align: "left",
+    sortable: true,
+  },
   { name: "time", label: "Time", field: "time", align: "left", sortable: true },
-  { name: "message", label: "Message (click to view full)", field: "message", align: "left", sortable: true },
+  {
+    name: "message",
+    label: "Message (click to view full)",
+    field: "message",
+    align: "left",
+    sortable: true,
+  },
 ];
 
 const lastDaysOptions = [1, 2, 3, 4, 5, 10, 30, 60, 90, 180, 360, 9999];
@@ -112,7 +167,11 @@ export default {
 
     async function getEventLog() {
       loading.value = true;
-      events.value = await fetchAgentEventLog(props.agent_id, logType.value, days.value);
+      events.value = await fetchAgentEventLog(
+        props.agent_id,
+        logType.value,
+        days.value
+      );
       loading.value = false;
     }
 

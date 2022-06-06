@@ -2,7 +2,15 @@
   <div style="width: 900px; max-width: 90vw">
     <q-card>
       <q-bar>
-        <q-btn ref="refresh" @click="getUsers" class="q-mr-sm" dense flat push icon="refresh" />User Administration
+        <q-btn
+          ref="refresh"
+          @click="getUsers"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />User Administration
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -10,7 +18,17 @@
       </q-bar>
       <div class="q-pa-md">
         <div class="q-gutter-sm">
-          <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddUserModal" />
+          <q-btn
+            ref="new"
+            label="New"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="add"
+            @click="showAddUserModal"
+          />
         </div>
         <q-table
           dense
@@ -40,11 +58,19 @@
 
           <!-- body slots -->
           <template v-slot:body="props">
-            <q-tr :props="props" class="cursor-pointer" @dblclick="showEditUserModal(props.row)">
+            <q-tr
+              :props="props"
+              class="cursor-pointer"
+              @dblclick="showEditUserModal(props.row)"
+            >
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="showEditUserModal(props.row)">
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="showEditUserModal(props.row)"
+                  >
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
@@ -64,14 +90,24 @@
 
                   <q-separator></q-separator>
 
-                  <q-item clickable v-close-popup @click="ResetPassword(props.row)" id="context-reset">
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="ResetPassword(props.row)"
+                    id="context-reset"
+                  >
                     <q-item-section side>
                       <q-icon name="autorenew" />
                     </q-item-section>
                     <q-item-section>Reset Password</q-item-section>
                   </q-item>
 
-                  <q-item clickable v-close-popup @click="reset2FA(props.row)" id="context-reset">
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="reset2FA(props.row)"
+                    id="context-reset"
+                  >
                     <q-item-section side>
                       <q-icon name="autorenew" />
                     </q-item-section>
@@ -97,7 +133,9 @@
               <q-td>{{ props.row.username }}</q-td>
               <q-td>{{ props.row.first_name }} {{ props.row.last_name }}</q-td>
               <q-td>{{ props.row.email }}</q-td>
-              <q-td v-if="props.row.last_login">{{ formatDate(props.row.last_login) }}</q-td>
+              <q-td v-if="props.row.last_login">{{
+                formatDate(props.row.last_login)
+              }}</q-td>
               <q-td v-else>Never</q-td>
               <q-td>{{ props.row.last_login_ip }}</q-td>
             </q-tr>
@@ -118,7 +156,7 @@ import UserResetPasswordForm from "@/components/modals/admin/UserResetPasswordFo
 export default {
   name: "AdminManager",
   mixins: [mixins],
-  setup(props) {
+  setup() {
     // setup vuex
     const store = useStore();
     const formatDate = computed(() => store.getters.formatDate);
@@ -131,8 +169,19 @@ export default {
     return {
       users: [],
       columns: [
-        { name: "is_active", label: "Active", field: "is_active", align: "left" },
-        { name: "username", label: "Username", field: "username", align: "left", sortable: true },
+        {
+          name: "is_active",
+          label: "Active",
+          field: "is_active",
+          align: "left",
+        },
+        {
+          name: "username",
+          label: "Username",
+          field: "username",
+          align: "left",
+          sortable: true,
+        },
         {
           name: "name",
           label: "Name",
@@ -174,7 +223,7 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/accounts/users/")
-        .then(r => {
+        .then((r) => {
           this.users = r.data;
           this.$q.loading.hide();
         })
@@ -190,13 +239,10 @@ export default {
           ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
-          this.$axios
-            .delete(`/accounts/${user.id}/users/`)
-            .then(() => {
-              this.getUsers();
-              this.notifySuccess(`User ${user.username} was deleted!`);
-            })
-            .catch(e => {});
+          this.$axios.delete(`/accounts/${user.id}/users/`).then(() => {
+            this.getUsers();
+            this.notifySuccess(`User ${user.username} was deleted!`);
+          });
         });
     },
     showEditUserModal(user) {
@@ -224,19 +270,18 @@ export default {
       if (user.username === this.logged_in_user) {
         return;
       }
-      let text = !user.is_active ? "User enabled successfully" : "User disabled successfully";
+      let text = !user.is_active
+        ? "User enabled successfully"
+        : "User disabled successfully";
 
       const data = {
         id: user.id,
         is_active: !user.is_active,
       };
 
-      this.$axios
-        .put(`/accounts/${data.id}/users/`, data)
-        .then(() => {
-          this.notifySuccess(text);
-        })
-        .catch(e => {});
+      this.$axios.put(`/accounts/${data.id}/users/`, data).then(() => {
+        this.notifySuccess(text);
+      });
     },
     ResetPassword(user) {
       this.$q
@@ -262,15 +307,17 @@ export default {
           ok: { label: "Reset", color: "positive" },
         })
         .onOk(() => {
-          this.$axios.put("/accounts/users/reset_totp/", data).then(response => {
-            this.notifySuccess(response.data, 4000);
-          });
+          this.$axios
+            .put("/accounts/users/reset_totp/", data)
+            .then((response) => {
+              this.notifySuccess(response.data, 4000);
+            });
         });
     },
   },
   computed: {
     ...mapState({
-      logged_in_user: state => state.username,
+      logged_in_user: (state) => state.username,
     }),
   },
   mounted() {

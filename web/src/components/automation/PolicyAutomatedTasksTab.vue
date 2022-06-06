@@ -1,10 +1,30 @@
 <template>
   <div class="row">
     <div class="col-12">
-      <q-btn v-if="!!selectedPolicy" class="q-mr-sm" dense flat push @click="getTasks" icon="refresh" />
-      <q-btn v-if="!!selectedPolicy" icon="add" label="Add Task" no-caps dense flat push @click="showAddTask" />
+      <q-btn
+        v-if="!!selectedPolicy"
+        class="q-mr-sm"
+        dense
+        flat
+        push
+        @click="getTasks"
+        icon="refresh"
+      />
+      <q-btn
+        v-if="!!selectedPolicy"
+        icon="add"
+        label="Add Task"
+        no-caps
+        dense
+        flat
+        push
+        @click="showAddTask"
+      />
       <q-table
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :table-class="{
+          'table-bgcolor': !$q.dark.isActive,
+          'table-bgcolor-dark': $q.dark.isActive,
+        }"
         class="tabs-tbl-sticky"
         :rows="tasks"
         :columns="columns"
@@ -19,7 +39,9 @@
         <!-- No data Slot -->
         <template v-slot:no-data>
           <div class="full-width row flex-center q-gutter-sm">
-            <span v-if="!selectedPolicy">Click on a policy to see the tasks</span>
+            <span v-if="!selectedPolicy"
+              >Click on a policy to see the tasks</span
+            >
             <span v-else>There are no tasks added to this policy</span>
           </div>
         </template>
@@ -62,7 +84,7 @@
         </template>
 
         <!-- body slots -->
-        <template v-slot:body="props" :props="props">
+        <template v-slot:body="props">
           <q-tr class="cursor-pointer" @dblclick="showEditTask(props.row)">
             <!-- context menu -->
             <q-menu context-menu>
@@ -73,7 +95,11 @@
                   </q-item-section>
                   <q-item-section>Run task now</q-item-section>
                 </q-item>
-                <q-item clickable v-close-popup @click="showEditTask(props.row)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="showEditTask(props.row)"
+                >
                   <q-item-section side>
                     <q-icon name="edit" />
                   </q-item-section>
@@ -102,7 +128,9 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="editTask(props.row, { enabled: !props.row.enabled })"
+                @update:model-value="
+                  editTask(props.row, { enabled: !props.row.enabled })
+                "
                 v-model="props.row.enabled"
               />
             </q-td>
@@ -110,7 +138,9 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="editTask(props.row, { text_alert: !props.row.text_alert })"
+                @update:model-value="
+                  editTask(props.row, { text_alert: !props.row.text_alert })
+                "
                 v-model="props.row.text_alert"
               />
             </q-td>
@@ -118,7 +148,9 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="editTask(props.row, { email_alert: !props.row.email_alert })"
+                @update:model-value="
+                  editTask(props.row, { email_alert: !props.row.email_alert })
+                "
                 v-model="props.row.email_alert"
               />
             </q-td>
@@ -126,14 +158,24 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="editTask(props.row, { dashboard_alert: !props.row.dashboard_alert })"
+                @update:model-value="
+                  editTask(props.row, {
+                    dashboard_alert: !props.row.dashboard_alert,
+                  })
+                "
                 v-model="props.row.dashboard_alert"
               />
             </q-td>
             <!-- is collector task -->
             <q-td>
-              <q-icon v-if="!!props.row.custom_field" style="font-size: 1.3rem" name="check">
-                <q-tooltip>The task updates a custom field on the agent</q-tooltip>
+              <q-icon
+                v-if="!!props.row.custom_field"
+                style="font-size: 1.3rem"
+                name="check"
+              >
+                <q-tooltip
+                  >The task updates a custom field on the agent</q-tooltip
+                >
               </q-icon>
             </q-td>
             <q-td>{{ props.row.name }}</q-td>
@@ -173,8 +215,20 @@ export default {
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "dashboardalert", field: "dashboard_alert", align: "left" },
-        { name: "collector", label: "Collector", field: "custom_field", align: "left", sortable: true },
-        { name: "name", label: "Name", field: "name", align: "left", sortable: true },
+        {
+          name: "collector",
+          label: "Collector",
+          field: "custom_field",
+          align: "left",
+          sortable: true,
+        },
+        {
+          name: "name",
+          label: "Name",
+          field: "name",
+          align: "left",
+          sortable: true,
+        },
         {
           name: "schedule",
           label: "Schedule",
@@ -214,23 +268,23 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/automation/policies/${this.selectedPolicy}/tasks/`)
-        .then(r => {
+        .then((r) => {
           this.tasks = r.data;
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
     editTask(task, data) {
       this.$axios
         .put(`/tasks/${task.id}/`, data)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
           this.getTasks();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -266,18 +320,20 @@ export default {
     },
     runTask(task) {
       if (!task.enabled) {
-        this.notifyError("Task cannot be run when it's disabled. Enable it first.");
+        this.notifyError(
+          "Task cannot be run when it's disabled. Enable it first."
+        );
         return;
       }
 
       this.$q.loading.show();
       this.$axios
         .post(`/automation/tasks/${task.id}/run/`)
-        .then(r => {
+        .then(() => {
           this.$q.loading.hide();
           this.notifySuccess("The task was initated on all affected agents");
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -293,12 +349,12 @@ export default {
           this.$q.loading.show();
           this.$axios
             .delete(`/tasks/${task.id}/`)
-            .then(r => {
+            .then(() => {
               this.getTasks();
               this.$q.loading.hide();
               this.notifySuccess("Task was deleted successfully");
             })
-            .catch(e => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });
@@ -309,4 +365,3 @@ export default {
   },
 };
 </script>
-

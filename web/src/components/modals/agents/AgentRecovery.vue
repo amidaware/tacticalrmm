@@ -12,18 +12,32 @@
         <q-card-section>
           <div class="q-gutter-sm">
             <q-radio dense v-model="state.mode" val="mesh" label="Mesh Agent" />
-            <q-radio dense v-model="state.mode" val="tacagent" label="Tactical Agent" />
+            <q-radio
+              dense
+              v-model="state.mode"
+              val="tacagent"
+              label="Tactical Agent"
+            />
           </div>
         </q-card-section>
         <q-card-section v-if="state.mode === 'mesh'">
-          Fix issues with the Mesh Agent which handles take control, live terminal and file browser.
+          Fix issues with the Mesh Agent which handles take control, live
+          terminal and file browser.
         </q-card-section>
         <q-card-section v-else-if="state.mode === 'tacagent'">
           Fix issues with the Tactical RMM Agent service.
         </q-card-section>
         <q-card-actions align="right">
           <q-btn dense flat push label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat push label="Recover" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            push
+            label="Recover"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -57,7 +71,10 @@ export default {
     async function sendRecovery() {
       loading.value = true;
       try {
-        const result = await sendAgentRecovery(props.agent.agent_id, state.value);
+        const result = await sendAgentRecovery(
+          props.agent.agent_id,
+          state.value
+        );
         notifySuccess(result);
         onDialogOK();
       } catch (e) {

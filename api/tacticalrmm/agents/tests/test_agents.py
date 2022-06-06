@@ -6,24 +6,23 @@ from unittest.mock import patch
 
 import pytz
 from django.conf import settings
-from django.test import modify_settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
 from packaging import version as pyver
 
-from logs.models import PendingAction
-from tacticalrmm.test import TacticalTestCase
-from winupdate.models import WinUpdatePolicy
-from winupdate.serializers import WinUpdatePolicySerializer
-
-from .models import Agent, AgentCustomField, AgentHistory, Note
-from .serializers import (
+from agents.models import Agent, AgentCustomField, AgentHistory, Note
+from agents.serializers import (
     AgentHistorySerializer,
     AgentHostnameSerializer,
     AgentNoteSerializer,
     AgentSerializer,
 )
-from .tasks import auto_self_agent_update_task
+from agents.tasks import auto_self_agent_update_task
+from logs.models import PendingAction
+from tacticalrmm.constants import EvtLogNames, PAAction, PAStatus
+from tacticalrmm.test import TacticalTestCase
+from winupdate.models import WinUpdatePolicy
+from winupdate.serializers import WinUpdatePolicySerializer
 
 if TYPE_CHECKING:
     from clients.models import Client, Site
@@ -31,11 +30,6 @@ if TYPE_CHECKING:
 base_url = "/agents"
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentsList(TacticalTestCase):
     def setUp(self) -> None:
         self.authenticate()
@@ -101,11 +95,6 @@ class TestAgentsList(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -375,7 +364,7 @@ class TestAgentViews(TacticalTestCase):
                 "func": "eventlog",
                 "timeout": 30,
                 "payload": {
-                    "logname": "Application",
+                    "logname": EvtLogNames.APPLICATION,
                     "days": str(22),
                 },
             },
@@ -390,7 +379,7 @@ class TestAgentViews(TacticalTestCase):
                 "func": "eventlog",
                 "timeout": 180,
                 "payload": {
-                    "logname": "Security",
+                    "logname": EvtLogNames.SECURITY,
                     "days": str(6),
                 },
             },
@@ -580,9 +569,8 @@ class TestAgentViews(TacticalTestCase):
     @patch("agents.tasks.run_script_email_results_task.delay")
     @patch("agents.models.Agent.run_script")
     def test_run_script(self, run_script, email_task):
+        from agents.models import AgentCustomField, AgentHistory, Note
         from clients.models import ClientCustomField, SiteCustomField
-
-        from .models import AgentCustomField, AgentHistory, Note
 
         run_script.return_value = "ok"
         url = f"/agents/{self.agent.agent_id}/runscript/"
@@ -887,11 +875,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.data, data)  # type:ignore
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -926,11 +909,6 @@ class TestAgentViewsNew(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentPermissions(TacticalTestCase):
     def setUp(self):
         self.setup_client()
@@ -1404,11 +1382,6 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized_superuser("get", unauthorized_url)
 
 
-@modify_settings(
-    MIDDLEWARE={
-        "remove": "tacticalrmm.middleware.LinuxMiddleware",
-    }
-)
 class TestAgentTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -1447,8 +1420,8 @@ class TestAgentTasks(TacticalTestCase):
         r = agent_update(agent64_nosign.agent_id)
         self.assertEqual(r, "created")
         action = PendingAction.objects.get(agent__agent_id=agent64_nosign.agent_id)
-        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
-        self.assertEqual(action.status, PendingAction.PENDING)
+        self.assertEqual(action.action_type, PAAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PAStatus.PENDING)
         self.assertEqual(
             action.details["url"],
             f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
@@ -1493,8 +1466,8 @@ class TestAgentTasks(TacticalTestCase):
             wait=False,
         )
         action = PendingAction.objects.get(agent__pk=agent64_sign.pk)
-        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
-        self.assertEqual(action.status, PendingAction.PENDING)
+        self.assertEqual(action.action_type, PAAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PAStatus.PENDING)
 
         # test __with__ code signing (32 bit)
         agent32_sign = baker.make_recipe(
@@ -1519,8 +1492,8 @@ class TestAgentTasks(TacticalTestCase):
             wait=False,
         )
         action = PendingAction.objects.get(agent__pk=agent32_sign.pk)
-        self.assertEqual(action.action_type, PendingAction.AGENT_UPDATE)
-        self.assertEqual(action.status, PendingAction.PENDING) """
+        self.assertEqual(action.action_type, PAAction.AGENT_UPDATE)
+        self.assertEqual(action.status, PAStatus.PENDING) """
 
     @patch("agents.tasks.agent_update")
     @patch("agents.tasks.sleep", return_value=None)
@@ -1551,7 +1524,7 @@ class TestAgentTasks(TacticalTestCase):
         self.assertEqual(agent_update.call_count, 33)
 
     def test_agent_history_prune_task(self):
-        from .tasks import prune_agent_history
+        from agents.tasks import prune_agent_history
 
         # setup data
         agent = baker.make_recipe("agents.agent")

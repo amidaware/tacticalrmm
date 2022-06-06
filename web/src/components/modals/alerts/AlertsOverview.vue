@@ -1,5 +1,11 @@
 <template>
-  <q-dialog ref="dialog" @hide="onHide" maximized transition-show="slide-up" transition-hide="slide-down">
+  <q-dialog
+    ref="dialog"
+    @hide="onHide"
+    maximized
+    transition-show="slide-up"
+    transition-hide="slide-down"
+  >
     <q-card>
       <q-bar>
         <q-btn @click="search" class="q-mr-sm" dense flat push icon="refresh" />
@@ -40,11 +46,29 @@
           />
         </div>
         <div class="q-pa-sm col-2">
-          <q-select outlined dense v-model="timeFilter" label="Time" emit-value map-options :options="timeOptions" />
+          <q-select
+            outlined
+            dense
+            v-model="timeFilter"
+            label="Time"
+            emit-value
+            map-options
+            :options="timeOptions"
+          />
         </div>
         <div class="q-pa-sm col-2">
-          <q-checkbox outlined dense v-model="includeSnoozed" label="Include snoozed" />
-          <q-checkbox outlined dense v-model="includeResolved" label="Include resolved" />
+          <q-checkbox
+            outlined
+            dense
+            v-model="includeSnoozed"
+            label="Include snoozed"
+          />
+          <q-checkbox
+            outlined
+            dense
+            v-model="includeResolved"
+            label="Include resolved"
+          />
         </div>
         <div class="q-pa-sm col-2">
           <q-btn color="primary" label="Search" @click="search" />
@@ -55,7 +79,10 @@
 
       <q-card-section>
         <q-table
-          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+          :table-class="{
+            'table-bgcolor': !$q.dark.isActive,
+            'table-bgcolor-dark': $q.dark.isActive,
+          }"
           class="audit-mgr-tbl-sticky"
           :rows="alerts"
           :columns="columns"
@@ -73,9 +100,17 @@
           <template v-slot:top>
             <div class="col-1 q-table__title">Alerts</div>
 
-            <q-btn-dropdown flat label="Bulk Actions" :disable="selectedAlerts.length === 0 || includeResolved">
+            <q-btn-dropdown
+              flat
+              label="Bulk Actions"
+              :disable="selectedAlerts.length === 0 || includeResolved"
+            >
               <q-list dense>
-                <q-item clickable v-close-popup @click="snoozeAlertBulk(selectedAlerts)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="snoozeAlertBulk(selectedAlerts)"
+                >
                   <q-item-section avatar>
                     <q-icon name="alarm_off" />
                   </q-item-section>
@@ -83,7 +118,11 @@
                     <q-item-label>Snooze alerts</q-item-label>
                   </q-item-section>
                 </q-item>
-                <q-item clickable v-close-popup @click="resolveAlertBulk(selectedAlerts)">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="resolveAlertBulk(selectedAlerts)"
+                >
                   <q-item-section avatar>
                     <q-icon name="flag" />
                   </q-item-section>
@@ -147,7 +186,9 @@
 
           <template v-slot:body-cell-severity="props">
             <q-td :props="props">
-              <q-badge :color="alertColor(props.row.severity)">{{ capitalize(props.row.severity) }}</q-badge>
+              <q-badge :color="alertColor(props.row.severity)">{{
+                capitalize(props.row.severity)
+              }}</q-badge>
             </q-td>
           </template>
 
@@ -184,7 +225,7 @@ export default {
   name: "AlertsOverview",
   emits: ["hide"],
   mixins: [mixins],
-  setup(props) {
+  setup() {
     // setup vuex store
     const store = useStore();
     const formatDate = computed(() => store.getters.formatDate);
@@ -225,17 +266,35 @@ export default {
           align: "left",
           sortable: true,
         },
-        { name: "hostname", label: "Agent", field: "hostname", align: "left", sortable: true },
+        {
+          name: "hostname",
+          label: "Agent",
+          field: "hostname",
+          align: "left",
+          sortable: true,
+        },
         {
           name: "alert_type",
           label: "Type",
           field: "alert_type",
           align: "left",
           sortable: true,
-          format: a => this.capitalize(a, true),
+          format: (a) => this.capitalize(a, true),
         },
-        { name: "severity", label: "Severity", field: "severity", align: "left", sortable: true },
-        { name: "message", label: "Message", field: "message", align: "left", sortable: true },
+        {
+          name: "severity",
+          label: "Severity",
+          field: "severity",
+          align: "left",
+          sortable: true,
+        },
+        {
+          name: "message",
+          label: "Message",
+          field: "message",
+          align: "left",
+          sortable: true,
+        },
         {
           name: "resolve_on",
           label: "Resolved On",
@@ -261,10 +320,12 @@ export default {
   },
   computed: {
     noDataText() {
-      return this.searched ? "No data found. Try to refine you search" : "Click search to find alerts";
+      return this.searched
+        ? "No data found. Try to refine you search"
+        : "Click search to find alerts";
     },
     visibleColumns() {
-      return this.columns.map(column => {
+      return this.columns.map((column) => {
         if (column.name === "snoozed_until") {
           if (this.includeSnoozed) return column.name;
         } else if (column.name === "resolve_on") {
@@ -277,12 +338,11 @@ export default {
   },
   methods: {
     getClients() {
-      this.$axios
-        .get("/clients/")
-        .then(r => {
-          this.clientsOptions = Object.freeze(r.data.map(client => ({ label: client.name, value: client.id })));
-        })
-        .catch(e => {});
+      this.$axios.get("/clients/").then((r) => {
+        this.clientsOptions = Object.freeze(
+          r.data.map((client) => ({ label: client.name, value: client.id }))
+        );
+      });
     },
     search() {
       this.$q.loading.show();
@@ -295,17 +355,19 @@ export default {
         resolvedFilter: this.includeResolved,
       };
 
-      if (this.clientFilter.length > 0) data["clientFilter"] = this.clientFilter;
+      if (this.clientFilter.length > 0)
+        data["clientFilter"] = this.clientFilter;
       if (this.timeFilter) data["timeFilter"] = this.timeFilter;
-      if (this.severityFilter.length > 0) data["severityFilter"] = this.severityFilter;
+      if (this.severityFilter.length > 0)
+        data["severityFilter"] = this.severityFilter;
 
       this.$axios
         .patch("/alerts/", data)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.alerts = Object.freeze(r.data);
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -317,11 +379,11 @@ export default {
           prompt: {
             model: "",
             type: "number",
-            isValid: val => !!val && val > 0 && val < 9999,
+            isValid: (val) => !!val && val > 0 && val < 9999,
           },
           cancel: true,
         })
-        .onOk(days => {
+        .onOk((days) => {
           this.$q.loading.show();
 
           const data = {
@@ -332,12 +394,12 @@ export default {
 
           this.$axios
             .put(`alerts/${alert.id}/`, data)
-            .then(r => {
+            .then(() => {
               this.search();
               this.$q.loading.hide();
               this.notifySuccess(`The alert has been snoozed for ${days} days`);
             })
-            .catch(e => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });
@@ -352,12 +414,12 @@ export default {
 
       this.$axios
         .put(`alerts/${alert.id}/`, data)
-        .then(r => {
+        .then(() => {
           this.search();
           this.$q.loading.hide();
-          this.notifySuccess(`The alert has been unsnoozed`);
+          this.notifySuccess("The alert has been unsnoozed");
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -371,12 +433,12 @@ export default {
 
       this.$axios
         .put(`alerts/${alert.id}/`, data)
-        .then(r => {
+        .then(() => {
           this.search();
           this.$q.loading.hide();
           this.notifySuccess("The alert has been resolved");
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -384,18 +446,18 @@ export default {
       this.$q.loading.show();
 
       const data = {
-        alerts: alerts.map(alert => alert.id),
+        alerts: alerts.map((alert) => alert.id),
         bulk_action: "resolve",
       };
 
       this.$axios
         .post("alerts/bulk/", data)
-        .then(r => {
+        .then(() => {
           this.search();
           this.$q.loading.hide();
           this.notifySuccess("Alerts were resolved");
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -407,27 +469,27 @@ export default {
           prompt: {
             model: "",
             type: "number",
-            isValid: val => !!val && val > 0 && val < 9999,
+            isValid: (val) => !!val && val > 0 && val < 9999,
           },
           cancel: true,
         })
-        .onOk(days => {
+        .onOk((days) => {
           this.$q.loading.show();
 
           const data = {
-            alerts: alerts.map(alert => alert.id),
+            alerts: alerts.map((alert) => alert.id),
             bulk_action: "snooze",
             snooze_days: days,
           };
 
           this.$axios
             .post("alerts/bulk/", data)
-            .then(r => {
+            .then(() => {
               this.search();
               this.$q.loading.hide();
               this.notifySuccess(`Alerts were snoozed for ${days} days`);
             })
-            .catch(e => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });

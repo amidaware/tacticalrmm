@@ -17,7 +17,7 @@
               outlined
               v-model="state.name"
               label="Descriptive Name"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
             />
           </q-card-section>
           <q-card-section>
@@ -48,16 +48,29 @@
               outlined
               v-model="state.event_id"
               label="Event ID (Use * to match every event ID)"
-              :rules="[val => validateEventID(val) || 'Invalid Event ID']"
+              :rules="[(val) => validateEventID(val) || 'Invalid Event ID']"
             />
           </q-card-section>
           <q-card-section>
             <q-checkbox v-model="eventSource" label="Event source" />
-            <q-input dense outlined v-model="state.event_source" :disable="!eventSource" />
+            <q-input
+              dense
+              outlined
+              v-model="state.event_source"
+              :disable="!eventSource"
+            />
           </q-card-section>
           <q-card-section>
-            <q-checkbox v-model="eventMessage" label="Message contains string" />
-            <q-input dense outlined v-model="state.event_message" :disable="!eventMessage" />
+            <q-checkbox
+              v-model="eventMessage"
+              label="Message contains string"
+            />
+            <q-input
+              dense
+              outlined
+              v-model="state.event_message"
+              :disable="!eventMessage"
+            />
           </q-card-section>
           <q-card-section>
             <q-input
@@ -66,20 +79,45 @@
               v-model.number="state.search_last_days"
               label="How many previous days to search (Enter 0 for the entire log)"
               :rules="[
-                val => !!val.toString() || '*Required',
-                val => val >= 0 || 'Min 0',
-                val => val <= 9999 || 'Max 9999',
+                (val) => !!val.toString() || '*Required',
+                (val) => val >= 0 || 'Min 0',
+                (val) => val <= 9999 || 'Max 9999',
               ]"
             />
           </q-card-section>
           <q-card-section>
             <span>Event Type:</span>
             <div class="q-gutter-sm">
-              <q-radio dense v-model="state.event_type" val="INFO" label="Information" />
-              <q-radio dense v-model="state.event_type" val="WARNING" label="Warning" />
-              <q-radio dense v-model="state.event_type" val="ERROR" label="Error" />
-              <q-radio dense v-model="state.event_type" val="AUDIT_SUCCESS" label="Success Audit" />
-              <q-radio dense v-model="state.event_type" val="AUDIT_FAILURE" label="Failure Audit" />
+              <q-radio
+                dense
+                v-model="state.event_type"
+                val="INFO"
+                label="Information"
+              />
+              <q-radio
+                dense
+                v-model="state.event_type"
+                val="WARNING"
+                label="Warning"
+              />
+              <q-radio
+                dense
+                v-model="state.event_type"
+                val="ERROR"
+                label="Error"
+              />
+              <q-radio
+                dense
+                v-model="state.event_type"
+                val="AUDIT_SUCCESS"
+                label="Success Audit"
+              />
+              <q-radio
+                dense
+                v-model="state.event_type"
+                val="AUDIT_FAILURE"
+                label="Failure Audit"
+              />
             </div>
           </q-card-section>
           <q-card-section>
@@ -126,7 +164,14 @@
         </div>
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat label="Save" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -152,7 +197,15 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
     // check logic
-    const { state, loading, submit, failOptions, logNameOptions, failWhenOptions, severityOptions } = useCheckModal({
+    const {
+      state,
+      loading,
+      submit,
+      failOptions,
+      logNameOptions,
+      failWhenOptions,
+      severityOptions,
+    } = useCheckModal({
       editCheck: props.check,
       initialState: {
         ...props.parent,
@@ -188,17 +241,18 @@ export default {
       }
     }
 
-    watch(eventMessage, (newValue, oldValue) => {
+    watch(eventMessage, () => {
       state.value.event_message = null;
     });
 
-    watch(eventSource, (newValue, oldValue) => {
+    watch(eventSource, () => {
       state.value.event_source = null;
     });
 
     function beforeSubmit() {
       // format check data for saving
-      state.value.event_id_is_wildcard = state.value.event_id === "*" ? true : false;
+      state.value.event_id_is_wildcard =
+        state.value.event_id === "*" ? true : false;
       if (state.value.event_source === "") state.value.event_source = null;
       if (state.value.event_message === "") state.value.event_message = null;
 

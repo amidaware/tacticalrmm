@@ -9,6 +9,7 @@ from packaging import version as pyver
 from agents.models import Agent
 from logs.models import DebugLog
 from tacticalrmm.celery import app
+from tacticalrmm.constants import DebugLogType
 
 
 @app.task
@@ -101,7 +102,7 @@ def check_agent_update_schedule_task() -> None:
                 # initiate update on agent asynchronously and don't worry about ret code
                 DebugLog.info(
                     agent=agent,
-                    log_type="windows_updates",
+                    log_type=DebugLogType.WIN_UPDATES,
                     message=f"Installing windows updates on {agent.hostname}",
                 )
                 nats_data = {

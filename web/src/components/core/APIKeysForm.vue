@@ -14,7 +14,13 @@
         </q-card-section>
         <!-- name -->
         <q-card-section>
-          <q-input label="Name" outlined dense v-model="localKey.name" :rules="[val => !!val || '*Required']" />
+          <q-input
+            label="Name"
+            outlined
+            dense
+            v-model="localKey.name"
+            :rules="[(val) => !!val || '*Required']"
+          />
         </q-card-section>
 
         <!-- user -->
@@ -48,7 +54,13 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cancel" v-close-popup />
-          <q-btn flat label="Submit" color="primary" type="submit" :loading="loading" />
+          <q-btn
+            flat
+            label="Submit"
+            color="primary"
+            type="submit"
+            :loading="loading"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -62,7 +74,10 @@ import { useDialogPluginComponent } from "quasar";
 import { saveAPIKey, editAPIKey } from "@/api/accounts";
 import { useUserDropdown } from "@/composables/accounts";
 import { notifySuccess } from "@/utils/notify";
-import { formatDateInputField, formatDateStringwithTimezone } from "@/utils/format";
+import {
+  formatDateInputField,
+  formatDateStringwithTimezone,
+} from "@/utils/format";
 
 // ui imports
 import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
@@ -80,7 +95,9 @@ export default {
     const { userOptions } = useUserDropdown(true);
 
     // setup api key form logic
-    const key = props.APIKey ? ref(Object.assign({}, props.APIKey)) : ref({ name: "", expiration: null });
+    const key = props.APIKey
+      ? ref(Object.assign({}, props.APIKey))
+      : ref({ name: "", expiration: null });
     const loading = ref(false);
 
     // remove Z from date string
@@ -88,7 +105,9 @@ export default {
       key.value.expiration = formatDateInputField(key.value.expiration);
     }
 
-    const title = computed(() => (props.APIKey ? "Edit API Key" : "Add API Key"));
+    const title = computed(() =>
+      props.APIKey ? "Edit API Key" : "Add API Key"
+    );
 
     async function submitForm() {
       loading.value = true;
@@ -98,10 +117,13 @@ export default {
       };
 
       // convert date to local timezone if exists
-      if (data.expiration) data.expiration = formatDateStringwithTimezone(data.expiration);
+      if (data.expiration)
+        data.expiration = formatDateStringwithTimezone(data.expiration);
 
       try {
-        const result = props.APIKey ? await editAPIKey(data) : await saveAPIKey(data);
+        const result = props.APIKey
+          ? await editAPIKey(data)
+          : await saveAPIKey(data);
         onDialogOK();
         notifySuccess(result);
         loading.value = false;

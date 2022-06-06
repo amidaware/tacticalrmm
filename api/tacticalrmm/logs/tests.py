@@ -4,8 +4,8 @@ from unittest.mock import patch
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
 
+from tacticalrmm.constants import DebugLogLevel, DebugLogType, PAAction, PAStatus
 from tacticalrmm.test import TacticalTestCase
-from .models import PendingAction
 
 base_url = "/logs"
 
@@ -169,15 +169,15 @@ class TestAuditViews(TacticalTestCase):
         baker.make(
             "logs.PendingAction",
             agent=agent1,
-            action_type=PendingAction.CHOCO_INSTALL,
+            action_type=PAAction.CHOCO_INSTALL,
             details={"name": "googlechrome", "output": None, "installed": False},
             _quantity=12,
         )
         baker.make(
             "logs.PendingAction",
             agent=agent2,
-            action_type=PendingAction.CHOCO_INSTALL,
-            status=PendingAction.COMPLETED,
+            action_type=PAAction.CHOCO_INSTALL,
+            status=PAStatus.COMPLETED,
             details={"name": "adobereader", "output": None, "installed": False},
             _quantity=14,
         )
@@ -195,7 +195,7 @@ class TestAuditViews(TacticalTestCase):
         action = baker.make(
             "logs.PendingAction",
             agent=agent,
-            action_type=PendingAction.SCHED_REBOOT,
+            action_type=PAAction.SCHED_REBOOT,
             details={
                 "time": "2021-01-13 18:20:00",
                 "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",
@@ -221,7 +221,7 @@ class TestAuditViews(TacticalTestCase):
         action2 = baker.make(
             "logs.PendingAction",
             agent=agent,
-            action_type=PendingAction.SCHED_REBOOT,
+            action_type=PAAction.SCHED_REBOOT,
             details={
                 "time": "2021-01-13 18:20:00",
                 "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",
@@ -244,16 +244,16 @@ class TestAuditViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         baker.make(
             "logs.DebugLog",
-            log_level=cycle(["error", "info", "warning", "critical"]),
-            log_type="agent_issues",
+            log_level=cycle([i.value for i in DebugLogLevel]),
+            log_type=DebugLogType.AGENT_ISSUES,
             agent=agent,
             _quantity=4,
         )
 
         logs = baker.make(
             "logs.DebugLog",
-            log_type="system_issues",
-            log_level=cycle(["error", "info", "warning", "critical"]),
+            log_type=DebugLogType.SYSTEM_ISSUES,
+            log_level=cycle([i.value for i in DebugLogLevel]),
             _quantity=15,
         )
 
@@ -270,7 +270,10 @@ class TestAuditViews(TacticalTestCase):
         self.assertEqual(len(resp.data), 1)
 
         # test time filter with other
-        data = {"logTypeFilter": "system_issues", "logLevelFilter": "error"}
+        data = {
+            "logTypeFilter": DebugLogType.SYSTEM_ISSUES.value,
+            "logLevelFilter": "error",
+        }
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 4)
@@ -325,24 +328,24 @@ class TestAuditViews(TacticalTestCase):
         agent2 = baker.make_recipe("agents.agent")
         baker.make(
             "logs.DebugLog",
-            log_level=cycle(["error", "info", "warning", "critical"]),
-            log_type="agent_issues",
+            log_level=cycle([i.value for i in DebugLogLevel]),
+            log_type=DebugLogType.AGENT_ISSUES,
             agent=agent,
             _quantity=4,
         )
 
         baker.make(
             "logs.DebugLog",
-            log_level=cycle(["error", "info", "warning", "critical"]),
-            log_type="agent_issues",
+            log_level=cycle([i.value for i in DebugLogLevel]),
+            log_type=DebugLogType.AGENT_ISSUES,
             agent=agent2,
             _quantity=8,
         )
 
         baker.make(
             "logs.DebugLog",
-            log_type="system_issues",
-            log_level=cycle(["error", "info", "warning", "critical"]),
+            log_type=DebugLogType.SYSTEM_ISSUES,
+            log_level=cycle([i.value for i in DebugLogLevel]),
             _quantity=15,
         )
 

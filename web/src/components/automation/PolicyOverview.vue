@@ -2,7 +2,14 @@
   <q-dialog ref="dialog" @hide="onHide">
     <q-card class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
       <q-bar>
-        <q-btn @click="getPolicyTree" class="q-mr-sm" dense flat push icon="refresh" />Policy Overview
+        <q-btn
+          @click="getPolicyTree"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />Policy Overview
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -36,7 +43,12 @@
             <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
             <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
           </q-tabs>
-          <q-tab-panels v-model="selectedTab" animated transition-prev="jump-up" transition-next="jump-up">
+          <q-tab-panels
+            v-model="selectedTab"
+            animated
+            transition-prev="jump-up"
+            transition-next="jump-up"
+          >
             <q-tab-panel name="checks">
               <PolicyChecksTab
                 v-if="!!selectedPolicyId"
@@ -82,11 +94,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get("/automation/policies/overview/")
-        .then(r => {
+        .then((r) => {
           this.processTreeDataFromApi(r.data);
           this.$q.loading.hide();
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -152,7 +164,8 @@ export default {
             disabled = " (disabled)";
           }
 
-          const label = client.workstation_policy.name + " (Workstations)" + disabled;
+          const label =
+            client.workstation_policy.name + " (Workstations)" + disabled;
           client_temp["children"].push({
             label: label,
             icon: "policy",
@@ -201,7 +214,8 @@ export default {
               disabled = " (disabled)";
             }
 
-            const label = site.workstation_policy.name + " (Workstations)" + disabled;
+            const label =
+              site.workstation_policy.name + " (Workstations)" + disabled;
             site_temp["children"].push({
               label: label,
               icon: "policy",

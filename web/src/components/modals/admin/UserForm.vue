@@ -15,7 +15,7 @@
               outlined
               dense
               v-model="localUser.username"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
               class="q-pa-none"
             />
           </div>
@@ -28,7 +28,7 @@
               dense
               v-model="localUser.password"
               :type="isPwd ? 'password' : 'text'"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
               class="q-pa-none"
             >
               <template v-slot:append>
@@ -48,7 +48,7 @@
               outlined
               dense
               v-model="localUser.email"
-              :rules="[val => isValidEmail(val) || 'Invalid email']"
+              :rules="[(val) => isValidEmail(val) || 'Invalid email']"
               class="q-pa-none"
             />
           </div>
@@ -68,13 +68,19 @@
         <q-card-section class="row">
           <div class="col-2">Active:</div>
           <div class="col-10">
-            <q-checkbox v-model="localUser.is_active" :disable="localUser.username === logged_in_user" />
+            <q-checkbox
+              v-model="localUser.is_active"
+              :disable="localUser.username === logged_in_user"
+            />
           </div>
         </q-card-section>
         <q-card-section class="row">
           <div class="col-2">Role:</div>
           <template v-if="roles.length === 0"
-            ><span>No roles have been created. Create some from Settings > Permissions Manager</span></template
+            ><span
+              >No roles have been created. Create some from Settings >
+              Permissions Manager</span
+            ></template
           >
           <template v-else
             ><q-select
@@ -97,7 +103,12 @@
           />
         </q-card-section>
         <q-card-section class="row items-center">
-          <q-btn :disable="!disableSave" label="Save" color="primary" type="submit" />
+          <q-btn
+            :disable="!disableSave"
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-section>
       </q-form>
     </q-card>
@@ -135,17 +146,17 @@ export default {
       return this.user ? "Edit User" : "Add User";
     },
     ...mapState({
-      logged_in_user: state => state.username,
+      logged_in_user: (state) => state.username,
     }),
   },
   methods: {
     getRoles() {
-      this.$axios
-        .get("/accounts/roles/")
-        .then(r => {
-          this.roles = r.data.map(role => ({ label: role.name, value: role.id }));
-        })
-        .catch(() => {});
+      this.$axios.get("/accounts/roles/").then((r) => {
+        this.roles = r.data.map((role) => ({
+          label: role.name,
+          value: role.id,
+        }));
+      });
     },
     onSubmit() {
       this.$q.loading.show();
@@ -171,7 +182,7 @@ export default {
       } else {
         this.$axios
           .post("/accounts/users/", this.localUser)
-          .then(r => {
+          .then((r) => {
             this.$q.loading.hide();
             this.onOk();
             this.notifySuccess(`User ${r.data} was added!`);

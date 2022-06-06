@@ -1,4 +1,4 @@
-  <template>
+<template>
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card style="width: 600px; max-width: 80vw">
       <q-bar>
@@ -23,7 +23,9 @@
         <div class="row">
           <div class="col-3">Description:</div>
           <div class="col-9">
-            <q-field outlined :color="$q.dark.isActive ? 'white' : 'black'">{{ service.description }}</q-field>
+            <q-field outlined :color="$q.dark.isActive ? 'white' : 'black'">{{
+              service.description
+            }}</q-field>
           </div>
         </div>
         <br />
@@ -61,7 +63,10 @@
           <q-btn-group color="primary" push>
             <q-btn label="Start" @click="sendServiceAction(service, 'start')" />
             <q-btn label="Stop" @click="sendServiceAction(service, 'stop')" />
-            <q-btn label="Restart" @click="sendServiceAction(service, 'restart')" />
+            <q-btn
+              label="Restart"
+              @click="sendServiceAction(service, 'restart')"
+            />
           </q-btn-group>
         </div>
       </q-card-section>
@@ -86,7 +91,10 @@
 // composition imports
 import { ref, computed, onMounted } from "vue";
 import { useDialogPluginComponent } from "quasar";
-import { editAgentServiceStartType, sendAgentServiceAction } from "@/api/services";
+import {
+  editAgentServiceStartType,
+  sendAgentServiceAction,
+} from "@/api/services";
 import { notifySuccess } from "@/utils/notify";
 
 // static data
@@ -124,7 +132,10 @@ export default {
     const loading = ref(false);
 
     const startupTypeEdited = computed(() => {
-      if (props.service.start_type.toLowerCase() === "automatic" && props.service.autodelay)
+      if (
+        props.service.start_type.toLowerCase() === "automatic" &&
+        props.service.autodelay
+      )
         return startupType.value !== "autodelay";
       else return props.service.start_type.toLowerCase() !== startupType.value;
     });
@@ -132,7 +143,11 @@ export default {
     async function sendServiceAction(service, action) {
       loading.value = true;
       try {
-        const result = await sendAgentServiceAction(props.agent_id, service.name, { sv_action: action });
+        const result = await sendAgentServiceAction(
+          props.agent_id,
+          service.name,
+          { sv_action: action }
+        );
         notifySuccess(result);
         onDialogOK();
       } catch (e) {
@@ -143,12 +158,17 @@ export default {
 
     async function editServiceStartup() {
       const data = {
-        startType: startupType.value === "automatic" ? "auto" : startupType.value,
+        startType:
+          startupType.value === "automatic" ? "auto" : startupType.value,
       };
 
       loading.value = true;
       try {
-        const result = await editAgentServiceStartType(props.agent_id, props.service.name, data);
+        const result = await editAgentServiceStartType(
+          props.agent_id,
+          props.service.name,
+          data
+        );
         notifySuccess(result);
         onDialogOK();
       } catch (e) {
@@ -158,7 +178,10 @@ export default {
     }
 
     onMounted(() => {
-      if (props.service.start_type.toLowerCase() === "automatic" && props.service.autodelay)
+      if (
+        props.service.start_type.toLowerCase() === "automatic" &&
+        props.service.autodelay
+      )
         startupType.value = "autodelay";
       else startupType.value = props.service.start_type.toLowerCase();
     });

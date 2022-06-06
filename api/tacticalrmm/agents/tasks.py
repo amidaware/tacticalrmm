@@ -14,6 +14,7 @@ from core.utils import get_core_settings
 from logs.models import DebugLog, PendingAction
 from scripts.models import Script
 from tacticalrmm.celery import app
+from tacticalrmm.constants import CheckStatus, DebugLogType, PAAction, PAStatus
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:
@@ -27,7 +28,7 @@ def agent_update(agent_id: str, force: bool = False) -> str:
     if agent.arch is None:
         DebugLog.warning(
             agent=agent,
-            log_type="agent_issues",
+            log_type=DebugLogType.AGENT_ISSUES,
             message=f"Unable to determine arch on {agent.hostname}({agent.agent_id}). Skipping agent update.",
         )
         return "noarch"
@@ -38,15 +39,15 @@ def agent_update(agent_id: str, force: bool = False) -> str:
 
     if not force:
         if agent.pendingactions.filter(
-            action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
+            action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
         ).exists():
             agent.pendingactions.filter(
-                action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING
+                action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
             ).delete()
 
         PendingAction.objects.create(
             agent=agent,
-            action_type=PendingAction.AGENT_UPDATE,
+            action_type=PAAction.AGENT_UPDATE,
             details={
                 "url": url,
                 "version": version,
@@ -235,7 +236,7 @@ def run_script_email_results_task(
     if r == "timeout":
         DebugLog.error(
             agent=agent,
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f"{agent.hostname}({agent.pk}) timed out running script.",
         )
         return
@@ -289,7 +290,7 @@ def clear_faults_task(older_than_days: int) -> None:
         for check in agent.get_checks_with_policies():
             # reset check status
             if check.check_result:
-                check.check_result.status = "passing"
+                check.check_result.status = CheckStatus.PASSING
                 check.check_result.save(update_fields=["status"])
             if check.alert.filter(agent=agent, resolved=False).exists():
                 alert = Alert.create_or_return_check_alert(check, agent=agent)

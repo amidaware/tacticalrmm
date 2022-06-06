@@ -17,7 +17,10 @@
               type="number"
               v-model.number="state.warning_threshold"
               label="Warning Threshold (%)"
-              :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
+              :rules="[
+                (val) => val >= 0 || 'Minimum threshold is 0',
+                (val) => val < 100 || 'Maximum threshold is 99',
+              ]"
             />
           </q-card-section>
           <q-card-section>
@@ -27,7 +30,10 @@
               type="number"
               v-model.number="state.error_threshold"
               label="Error Threshold (%)"
-              :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
+              :rules="[
+                (val) => val >= 0 || 'Minimum threshold is 0',
+                (val) => val < 100 || 'Maximum threshold is 99',
+              ]"
             />
           </q-card-section>
           <q-card-section>
@@ -53,7 +59,14 @@
         </div>
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat label="Save" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>

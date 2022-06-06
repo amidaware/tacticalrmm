@@ -17,11 +17,17 @@
               dense
               v-model="state.name"
               label="Descriptive Name"
-              :rules="[val => !!val || '*Required']"
+              :rules="[(val) => !!val || '*Required']"
             />
           </q-card-section>
           <q-card-section>
-            <q-input dense outlined v-model="state.ip" label="Hostname or IP" :rules="[val => !!val || '*Required']" />
+            <q-input
+              dense
+              outlined
+              v-model="state.ip"
+              label="Hostname or IP"
+              :rules="[(val) => !!val || '*Required']"
+            />
           </q-card-section>
           <q-card-section>
             <q-select
@@ -60,7 +66,14 @@
         </div>
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat label="Save" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -84,18 +97,19 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
     // check logic
-    const { state, loading, submit, failOptions, severityOptions } = useCheckModal({
-      editCheck: props.check,
-      initialState: {
-        ...props.parent,
-        check_type: "ping",
-        name: null,
-        ip: null,
-        alert_severity: "warning",
-        fails_b4_alert: 1,
-        run_interval: 0,
-      },
-    });
+    const { state, loading, submit, failOptions, severityOptions } =
+      useCheckModal({
+        editCheck: props.check,
+        initialState: {
+          ...props.parent,
+          check_type: "ping",
+          name: null,
+          ip: null,
+          alert_severity: "warning",
+          fails_b4_alert: 1,
+          run_interval: 0,
+        },
+      });
 
     return {
       // reactive data
@@ -113,24 +127,6 @@ export default {
       dialogRef,
       onDialogHide,
       onDialogOK,
-    };
-  },
-  data() {
-    return {
-      pingcheck: {
-        check_type: "ping",
-        name: null,
-        ip: null,
-        alert_severity: "warning",
-        fails_b4_alert: 1,
-        run_interval: 0,
-      },
-      severityOptions: [
-        { label: "Informational", value: "info" },
-        { label: "Warning", value: "warning" },
-        { label: "Error", value: "error" },
-      ],
-      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
 };

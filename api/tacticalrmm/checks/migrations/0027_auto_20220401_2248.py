@@ -3,6 +3,8 @@
 from django.db import migrations, transaction
 from django.db.utils import IntegrityError
 
+from tacticalrmm.constants import CheckType
+
 
 def migrate_check_results(apps, schema_editor):
     Check = apps.get_model("checks", "Check")
@@ -28,7 +30,12 @@ def migrate_check_results(apps, schema_editor):
                         history=check.history,
                         alert_severity=check.alert_severity
                         if check.check_type
-                        in ["cpuload", "memory", "diskspace", "script"]
+                        in [
+                            CheckType.MEMORY,
+                            CheckType.CPU_LOAD,
+                            CheckType.DISK_SPACE,
+                            CheckType.SCRIPT,
+                        ]
                         else None,
                     )
 
@@ -49,7 +56,12 @@ def migrate_check_results(apps, schema_editor):
                         history=check.history,
                         alert_severity=check.alert_severity
                         if check.check_type
-                        in ["cpuload", "memory", "diskspace", "script"]
+                        in [
+                            CheckType.MEMORY,
+                            CheckType.CPU_LOAD,
+                            CheckType.DISK_SPACE,
+                            CheckType.SCRIPT,
+                        ]
                         else None,
                     )
         except IntegrityError:

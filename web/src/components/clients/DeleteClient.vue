@@ -10,7 +10,8 @@
       </q-bar>
       <q-form @submit="submit">
         <q-card-section v-if="siteOptions.length === 0">
-          There are no valid sites to move agents to. Add another site and try again
+          There are no valid sites to move agents to. Add another site and try
+          again
         </q-card-section>
         <q-card-section v-if="siteOptions.length > 0">
           <tactical-dropdown
@@ -19,7 +20,10 @@
             v-model="site"
             :options="siteOptions"
             mapOptions
-            :rules="[val => !!val || 'Select the site that the agents should be moved to']"
+            :rules="[
+              (val) =>
+                !!val || 'Select the site that the agents should be moved to',
+            ]"
             hint="The client you are deleting has agents assigned to it. Select a Site below to move the agents to."
             filterable
           />
@@ -84,7 +88,9 @@ export default {
         try {
           const result =
             props.type === "client"
-              ? await removeClient(props.object.id, { move_to_site: site.value })
+              ? await removeClient(props.object.id, {
+                  move_to_site: site.value,
+                })
               : await removeSite(props.object.id, { move_to_site: site.value });
           notifySuccess(result);
           onDialogOK();
@@ -102,10 +108,19 @@ export default {
 
       if (props.type === "client") {
         // filter out client that is being deleted
-        siteOptions.value = Object.freeze(formatSiteOptions(clients.filter(client => client.id !== props.object.id)));
+        siteOptions.value = Object.freeze(
+          formatSiteOptions(
+            clients.filter((client) => client.id !== props.object.id)
+          )
+        );
       } else {
         // filter out site that is being dleted
-        clients.forEach(client => (client.sites = client.sites.filter(site => site.id !== props.object.id)));
+        clients.forEach(
+          (client) =>
+            (client.sites = client.sites.filter(
+              (site) => site.id !== props.object.id
+            ))
+        );
         siteOptions.value = Object.freeze(formatSiteOptions(clients));
       }
     }

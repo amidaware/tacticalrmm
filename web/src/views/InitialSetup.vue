@@ -10,7 +10,12 @@
           <q-form @submit.prevent="finish">
             <q-card-section>
               <div>Add Client:</div>
-              <q-input dense outlined v-model="client.name" :rules="[val => !!val || '*Required']">
+              <q-input
+                dense
+                outlined
+                v-model="client.name"
+                :rules="[(val) => !!val || '*Required']"
+              >
                 <template v-slot:prepend>
                   <q-icon name="business" />
                 </template>
@@ -18,7 +23,12 @@
             </q-card-section>
             <q-card-section>
               <div>Add Site:</div>
-              <q-input dense outlined v-model="site.name" :rules="[val => !!val || '*Required']">
+              <q-input
+                dense
+                outlined
+                v-model="site.name"
+                :rules="[(val) => !!val || '*Required']"
+              >
                 <template v-slot:prepend>
                   <q-icon name="apartment" />
                 </template>
@@ -26,10 +36,21 @@
             </q-card-section>
             <q-card-section>
               <div>Default timezone for agents:</div>
-              <q-select dense options-dense outlined v-model="timezone" :options="allTimezones" />
+              <q-select
+                dense
+                options-dense
+                outlined
+                v-model="timezone"
+                :options="allTimezones"
+              />
             </q-card-section>
             <q-card-actions align="center">
-              <q-btn label="Finish" color="primary" class="full-width" type="submit" />
+              <q-btn
+                label="Finish"
+                color="primary"
+                class="full-width"
+                type="submit"
+              />
             </q-card-actions>
           </q-form>
         </q-card>
@@ -76,13 +97,10 @@ export default {
         .catch(() => this.$q.loading.hide());
     },
     getSettings() {
-      this.$axios
-        .get("/core/settings/")
-        .then(r => {
-          this.allTimezones = Object.freeze(r.data.all_timezones);
-          this.timezone = r.data.default_time_zone;
-        })
-        .catch(() => {});
+      this.$axios.get("/core/settings/").then((r) => {
+        this.allTimezones = Object.freeze(r.data.all_timezones);
+        this.timezone = r.data.default_time_zone;
+      });
     },
   },
   mounted() {

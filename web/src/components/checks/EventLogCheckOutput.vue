@@ -12,7 +12,10 @@
         <q-table
           dense
           style="height: 65vh"
-          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+          :table-class="{
+            'table-bgcolor': !$q.dark.isActive,
+            'table-bgcolor-dark': $q.dark.isActive,
+          }"
           class="tabs-tbl-sticky"
           :filter="filter"
           :rows="evtLogData.check_result.extra_details.log"
@@ -26,12 +29,22 @@
         >
           <template v-slot:top>
             <q-space />
-            <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+            <q-input
+              v-model="filter"
+              outlined
+              label="Search"
+              dense
+              clearable
+              class="q-pr-sm"
+            >
               <template v-slot:prepend>
                 <q-icon name="search" color="primary" />
               </template>
             </q-input>
-            <export-table-btn :data="evtLogData.check_result.extra_details.log" :columns="columns" />
+            <export-table-btn
+              :data="evtLogData.check_result.extra_details.log"
+              :columns="columns"
+            />
           </template>
         </q-table>
       </div>
@@ -50,23 +63,51 @@ import ExportTableBtn from "@/components/ui/ExportTableBtn";
 
 // static data
 const columns = [
-  { name: "eventType", label: "Type", field: "eventType", align: "left", sortable: true },
-  { name: "source", label: "Source", field: "source", align: "left", sortable: true },
-  { name: "eventID", label: "Event ID", field: "eventID", align: "left", sortable: true },
+  {
+    name: "eventType",
+    label: "Type",
+    field: "eventType",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "source",
+    label: "Source",
+    field: "source",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "eventID",
+    label: "Event ID",
+    field: "eventID",
+    align: "left",
+    sortable: true,
+  },
   { name: "time", label: "Time", field: "time", align: "left", sortable: true },
-  { name: "message", label: "Message", field: "message", align: "left", sortable: true },
+  {
+    name: "message",
+    label: "Message",
+    field: "message",
+    align: "left",
+    sortable: true,
+  },
 ];
 export default {
   name: "EventLogCheckOutput",
   components: { ExportTableBtn },
   emits: [...useDialogPluginComponent.emits],
   props: { evtLogData: !Object },
-  setup(props) {
+  setup() {
     // setup quasar
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
     const filter = ref("");
-    const pagination = ref({ rowsPerPage: 0, sortBy: "time", descending: true });
+    const pagination = ref({
+      rowsPerPage: 0,
+      sortBy: "time",
+      descending: true,
+    });
 
     return {
       // reactive data

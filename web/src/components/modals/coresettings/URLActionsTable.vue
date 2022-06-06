@@ -3,7 +3,14 @@
     <div class="row">
       <div class="text-subtitle2">URL Actions</div>
       <q-space />
-      <q-btn size="sm" color="grey-5" icon="fas fa-plus" text-color="black" label="Add URL Action" @click="addAction" />
+      <q-btn
+        size="sm"
+        color="grey-5"
+        icon="fas fa-plus"
+        text-color="black"
+        label="Add URL Action"
+        @click="addAction"
+      />
     </div>
     <q-separator />
     <q-table
@@ -20,7 +27,11 @@
     >
       <!-- body slots -->
       <template v-slot:body="props">
-        <q-tr :props="props" class="cursor-pointer" @dblclick="editAction(props.row)">
+        <q-tr
+          :props="props"
+          class="cursor-pointer"
+          @dblclick="editAction(props.row)"
+        >
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
@@ -108,11 +119,11 @@ export default {
 
       this.$axios
         .get("/core/urlaction/")
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.actions = r.data;
         })
-        .catch(e => {
+        .catch(() => {
           this.$q.loading.hide();
         });
     },
@@ -148,12 +159,12 @@ export default {
           this.$q.loading.show();
           this.$axios
             .delete(`/core/urlaction/${action.id}/`)
-            .then(r => {
+            .then(() => {
               this.getURLActions();
               this.$q.loading.hide();
               this.notifySuccess(`URL Action: ${action.name} was deleted!`);
             })
-            .catch(error => {
+            .catch(() => {
               this.$q.loading.hide();
             });
         });

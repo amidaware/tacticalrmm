@@ -10,23 +10,36 @@ on:
 
 jobs:
   test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    name: Tests
+    strategy:
+      matrix:
+        python-version: ['3.10.4']
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Setup virtual env and install requirements
+      - uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: '14'
+          postgresql db: 'pipeline'
+          postgresql user: 'pipeline'
+          postgresql password: 'pipeline123456'
+      
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install redis
         run: |
-          sudo -u postgres psql -c 'DROP DATABASE IF EXISTS pipeline'
-          sudo -u postgres psql -c 'DROP DATABASE IF EXISTS test_pipeline'
-          sudo -u postgres psql -c 'CREATE DATABASE pipeline'
-          sudo -u postgres psql -c "SET client_encoding = 'UTF8'" pipeline
-          pwd
-          rm -rf /actions-runner/_work/trmm-actions/trmm-actions/api/env
-          cd api
-          python3.10 -m venv env
-          source env/bin/activate
-          cd tacticalrmm
+          sudo apt update
+          sudo apt install -y redis
+          redis-server --version
+
+      - name: Install requirements
+        working-directory: api/tacticalrmm
+        run: |
           python --version
           SETTINGS_FILE="tacticalrmm/settings.py"
           SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
@@ -38,19 +51,16 @@ jobs:
       - name: Run django tests
         env:
           GHACTIONS: "yes"
+        working-directory: api/tacticalrmm
         run: |
-          cd api/tacticalrmm
-          source ../env/bin/activate
-          rm -f .coverage coverage.lcov
           pytest
           if [ $? -ne 0 ]; then
               exit 1
           fi
 
       - name: Codestyle black
+        working-directory: api/tacticalrmm
         run: |
-          cd api
-          source env/bin/activate
           black --exclude migrations/ --check tacticalrmm
           if [ $? -ne 0 ]; then
               exit 1

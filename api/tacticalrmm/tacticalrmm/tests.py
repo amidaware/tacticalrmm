@@ -3,6 +3,7 @@ from unittest.mock import mock_open, patch
 import requests
 from django.test import override_settings
 
+from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
 from tacticalrmm.constants import (
     AGENT_DEFER,
     CHECKS_NON_EDITABLE_FIELDS,
@@ -101,13 +102,14 @@ class TestUtils(TacticalTestCase):
     def test_constants_fields_exist(self) -> None:
         from agents.models import Agent
         from autotasks.models import AutomatedTask
-        from checks.models import Check
+        from checks.models import Check, CheckResult
 
         agent_fields = [i.name for i in Agent._meta.get_fields()]
         agent_fields.append("pk")
 
         autotask_fields = [i.name for i in AutomatedTask._meta.get_fields()]
         check_fields = [i.name for i in Check._meta.get_fields()]
+        check_result_fields = [i.name for i in CheckResult._meta.get_fields()]
 
         for i in AGENT_DEFER:
             self.assertIn(i, agent_fields)
@@ -126,3 +128,9 @@ class TestUtils(TacticalTestCase):
 
         for i in POLICY_CHECK_FIELDS_TO_COPY:
             self.assertIn(i, check_fields)
+
+        for i in CHECK_DEFER:
+            self.assertIn(i, check_fields)
+
+        for i in CHECK_RESULT_DEFER:
+            self.assertIn(i, check_result_fields)

@@ -16,7 +16,7 @@ from core.utils import get_core_settings
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
 from tacticalrmm.celery import app
-from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER, PAAction, PAStatus
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -58,7 +58,7 @@ def handle_resolved_stuff() -> None:
     actions = (
         PendingAction.objects.select_related("agent")
         .defer("agent__services", "agent__wmi_detail")
-        .filter(action_type=PendingAction.AGENT_UPDATE, status=PendingAction.PENDING)
+        .filter(action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING)
     )
 
     to_update = [
@@ -68,9 +68,7 @@ def handle_resolved_stuff() -> None:
         and action.agent.status == "online"
     ]
 
-    PendingAction.objects.filter(pk__in=to_update).update(
-        status=PendingAction.COMPLETED
-    )
+    PendingAction.objects.filter(pk__in=to_update).update(status=PAStatus.COMPLETED)
 
     agent_queryset = (
         Agent.objects.defer(*AGENT_DEFER)

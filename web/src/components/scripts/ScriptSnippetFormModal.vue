@@ -1,14 +1,39 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide" :maximized="maximized">
-    <q-card class="q-dialog-plugin" :style="maximized ? '' : 'width: 70vw; max-width: 90vw'">
+  <q-dialog
+    ref="dialogRef"
+    @hide="onDialogHide"
+    persistent
+    @keydown.esc="onDialogHide"
+    :maximized="maximized"
+  >
+    <q-card
+      class="q-dialog-plugin"
+      :style="maximized ? '' : 'width: 70vw; max-width: 90vw'"
+    >
       <q-bar>
         {{ title }}
         <q-space />
-        <q-btn dense flat icon="minimize" @click="maximized = false" :disable="!maximized">
-          <q-tooltip v-if="maximized" class="bg-white text-primary">Minimize</q-tooltip>
+        <q-btn
+          dense
+          flat
+          icon="minimize"
+          @click="maximized = false"
+          :disable="!maximized"
+        >
+          <q-tooltip v-if="maximized" class="bg-white text-primary"
+            >Minimize</q-tooltip
+          >
         </q-btn>
-        <q-btn dense flat icon="crop_square" @click="maximized = true" :disable="maximized">
-          <q-tooltip v-if="!maximized" class="bg-white text-primary">Maximize</q-tooltip>
+        <q-btn
+          dense
+          flat
+          icon="crop_square"
+          @click="maximized = true"
+          :disable="maximized"
+        >
+          <q-tooltip v-if="!maximized" class="bg-white text-primary"
+            >Maximize</q-tooltip
+          >
         </q-btn>
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -17,7 +42,7 @@
       <q-form @submit="submitForm">
         <div class="row">
           <q-input
-            :rules="[val => !!val || '*Required']"
+            :rules="[(val) => !!val || '*Required']"
             class="q-pa-sm col-4"
             v-model="formSnippet.name"
             label="Name"
@@ -35,7 +60,13 @@
             emit-value
             map-options
           />
-          <q-input class="q-pa-sm col-6" filled dense v-model="formSnippet.desc" label="Description" />
+          <q-input
+            class="q-pa-sm col-6"
+            filled
+            dense
+            v-model="formSnippet.desc"
+            label="Description"
+          />
         </div>
 
         <v-ace-editor
@@ -49,7 +80,14 @@
         />
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" dense flat label="Save" color="primary" type="submit" />
+          <q-btn
+            :loading="loading"
+            dense
+            flat
+            label="Save"
+            color="primary"
+            type="submit"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -117,7 +155,9 @@ export default {
     async function submitForm() {
       loading.value = true;
       try {
-        const result = props.snippet ? await editScriptSnippet(snippet.value) : await saveScriptSnippet(snippet.value);
+        const result = props.snippet
+          ? await editScriptSnippet(snippet.value)
+          : await saveScriptSnippet(snippet.value);
         onDialogOK();
         notifySuccess(result);
       } catch (e) {

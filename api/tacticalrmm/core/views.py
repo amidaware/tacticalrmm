@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from core.utils import get_core_settings
 from logs.models import AuditLog
+from tacticalrmm.constants import AuditActionType, PAStatus
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
@@ -132,14 +133,12 @@ def server_maintenance(request):
         tables = request.data["prune_tables"]
         records_count = 0
         if "audit_logs" in tables:
-            auditlogs = AuditLog.objects.filter(action="check_run")
+            auditlogs = AuditLog.objects.filter(action=AuditActionType.CHECK_RUN)
             records_count += auditlogs.count()
             auditlogs.delete()
 
         if "pending_actions" in tables:
-            pendingactions = PendingAction.objects.filter(
-                status=PendingAction.COMPLETED
-            )
+            pendingactions = PendingAction.objects.filter(status=PAStatus.COMPLETED)
             records_count += pendingactions.count()
             pendingactions.delete()
 

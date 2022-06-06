@@ -21,7 +21,7 @@ class CoreSettingsNotFound(Exception):
 
 
 def clear_entire_cache() -> None:
-    cache.delete(f"{ROLE_CACHE_PREFIX}*")
+    cache.delete_many_pattern(f"{ROLE_CACHE_PREFIX}*")
     cache.delete(CORESETTINGS_CACHE_KEY)
     cache.delete_many_pattern("site_*")
     cache.delete_many_pattern("agent_*")

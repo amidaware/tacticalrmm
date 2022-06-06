@@ -14,12 +14,16 @@
 ### 4. Install completes and you test
 ### 5. Ready to re-test, restore snapshot from 2. and redo
 
-### Script Info
+INPUT=/tmp/menu.sh.$$
+menuselection=""
+declare -a menuoptions=('Dev Test Prereqs' 'Dev Test Install' 'Standard Install' 'Standard Update' 'Force Update' 'Backup' 'Restore')
+
+### Script Info variables
 SCRIPT_VERSION="63"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 THIS_SCRIPT=$(readlink -f "$0")
 
-### Misc info
+### Misc info variables
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'

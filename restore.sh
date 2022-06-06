@@ -71,9 +71,11 @@ if [ "$ORIGUSER" != "$USER" ]; then
 fi
 
 ### Install NodeJS
+print_green 'Installing NodeJS'
 installNodeJS;
 
 ### Install Nginx
+print_green 'Installing Nginx'
 installNginx;
 
 ### Restore Nginx configuration
@@ -121,15 +123,19 @@ sudo cp $tmp_dir/systemd/* /etc/systemd/system/
 sudo systemctl daemon-reload
 
 ### Install Python
+print_green "Installing Python ${PYTHON_VER}"
 installPython;
 
 ### Installing Redis
+print_green 'Installing redis'
 installRedis;
 
 ### Install and enable Postgresql
+print_green 'Installing postgresql'
 installPostgresql;
 
 ### Install and enable MongoDB
+print_green 'Installing MongoDB'
 installMongo;
 
 ### Restore Mongo database
@@ -152,6 +158,7 @@ git checkout master
 cloneScriptsRepo;
 
 ### Installing NATS
+print_green 'Installing NATS'
 installNats;
 
 print_green 'Restoring MeshCentral'
@@ -239,6 +246,7 @@ sudo systemctl enable nats.service
 sudo systemctl start nats.service
 
 ### Install frontend
+print_green 'Installing the frontend'
 installFrontEnd;
 
 
@@ -253,6 +261,7 @@ sudo chown -R $USER:$GROUP /home/${USER}/.cache
 ### Update services info
 sudo systemctl daemon-reload
 
+### Enable RMM, Daphne, Celery, Nats-api, and Nginx services
 print_green 'Enabling Services'
 
 for i in celery.service celerybeat.service rmm.service daphne.service nats-api.service nginx

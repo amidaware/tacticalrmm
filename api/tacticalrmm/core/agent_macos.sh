@@ -25,8 +25,8 @@ binName='tacticalagent'
 agentConf='/etc/tacticalagent'
 agentSvcName='com.tactical'
 agentSysD="/Library/LaunchDaemons/com.tactical.plist"
-meshDir='/opt/tacticalmesh'
-meshSystemBin="${meshDir}/meshagent"
+meshDir='/usr/local/mesh_services/meshagent'
+meshSystemBin="${meshDir}/meshagent_osx64"
 
 if [[ "${uninstall}" -eq 1 ]]; then
     echo "Uninstalling Tactical and Mesh Agent..."
@@ -62,13 +62,11 @@ else
     echo "Downloading mesh agent..."
 
     meshTmpDir="/tmp/mesh"
-    meshTmpBin="${meshTmpDir}/meshagent"
+    meshTmpBin="${meshTmpDir}/MeshAgent.mpkg"
     mkdir -p ${meshTmpDir}
     curl --insecure -k "${meshDL}" -Lo ${meshTmpBin}
-    chmod +x ${meshTmpBin}
-    mkdir -p ${meshDir}
-    eval env LC_ALL=en_US.UTF-8 LANGUAGE=en_US ${meshTmpBin} -install --installPath=${meshDir}
-    sleep 2
+    installer -pkg ${meshTmpBin} -target /
+    sleep 5
     rm -rf ${meshTmpDir}
 
     echo "Getting mesh node id..."

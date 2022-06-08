@@ -51,8 +51,8 @@ then
             "-p proxy (optional)"\
             "-g (debug optional)"
 else
-    meshDL="http://mesh.${domain}/meshagents?id=10005"
-    apiURL="http://api.${domain}"
+    meshDL="https://mesh.${domain}/meshagents?id=10005"
+    apiURL="https://api.${domain}"
     agentBin="${agentBinPath}/${binName}"
     mkdir -p ${agentBinPath}
     echo "Downloading tactical agent..."

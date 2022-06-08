@@ -23,6 +23,13 @@ AGENT_STATUS_OFFLINE = "offline"
 AGENT_STATUS_OVERDUE = "overdue"
 
 
+class GoArch(models.TextChoices):
+    AMD64 = "amd64", "amd64"
+    i386 = "386", "386"
+    ARM64 = "arm64", "arm64"
+    ARM32 = "arm", "arm"
+
+
 class CustomFieldModel(models.TextChoices):
     CLIENT = "client", "Client"
     SITE = "site", "Site"

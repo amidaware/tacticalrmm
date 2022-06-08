@@ -32,6 +32,7 @@ from tacticalrmm.constants import (
     CheckType,
     CustomFieldType,
     DebugLogType,
+    GoArch,
 )
 from tacticalrmm.models import PermissionQuerySet
 
@@ -60,7 +61,9 @@ class Agent(BaseAuditModel):
     plat = models.CharField(
         max_length=255, choices=AgentPlat.choices, default=AgentPlat.WINDOWS
     )
-    goarch = models.CharField(max_length=255, null=True, blank=True)
+    goarch = models.CharField(
+        max_length=255, choices=GoArch.choices, null=True, blank=True
+    )
     hostname = models.CharField(max_length=255)
     agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)

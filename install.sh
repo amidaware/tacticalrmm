@@ -15,7 +15,7 @@ CERTRENEW=""
 
 ### Script Info variables
 SCRIPT_VERSION="63"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
+SCRIPT_URL='https://raw.githubusercontent.com/ninjamonkey198206/tacticalrmm/develop-bash-updates/install.sh'
 THIS_SCRIPT=$(readlink -f "$0")
 
 ### Misc info variables

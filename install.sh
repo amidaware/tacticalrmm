@@ -234,22 +234,8 @@ mainInstall()
   sleep 5
 
   ### Enable MeshCentral service
-  sudo systemctl enable meshcentral
-
   print_green 'Starting meshcentral and waiting for it to install plugins'
-
-  sudo systemctl restart meshcentral
-
-  sleep 3
-
-  # The first time we start meshcentral, it will need some time to generate certs and install plugins.
-  # This will take anywhere from a few seconds to a few minutes depending on the server's hardware
-  # We will know it's ready once the last line of the systemd service stdout is 'MeshCentral HTTP server running on port.....'
-  while ! [[ $CHECK_MESH_READY ]]; do
-    CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
-    echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
-    sleep 3
-  done
+  enableMeshService;
 
   ### Generating MeshCentral key
   print_green 'Generating meshcentral login token key'

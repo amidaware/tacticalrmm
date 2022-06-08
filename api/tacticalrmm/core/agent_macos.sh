@@ -34,6 +34,7 @@ if [[ "${uninstall}" -eq 1 ]]; then
     launchctl unload ${agentSysD}
     rm ${agentSysD}
     rm "${agentBinPath}/${binName}"
+    rm /etc/tacticalagent
     ${meshSystemBin} -uninstall
     exit
 fi

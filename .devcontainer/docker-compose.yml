@@ -72,6 +72,7 @@ services:
       MONGODB_USER: ${MONGODB_USER}
       MONGODB_PASSWORD: ${MONGODB_PASSWORD}
       NGINX_HOST_IP: ${DOCKER_NGINX_IP}
+      NGINX_HOST_PORT: ${APP_PORT}
     networks:
       dev:
         aliases:

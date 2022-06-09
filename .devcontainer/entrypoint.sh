@@ -142,16 +142,6 @@ if [ "$1" = 'tactical-init-dev' ]; then
 
   django_setup
 
-  # create .env file for frontend
-  webenv="$(cat << EOF
-PROD_URL = "${HTTP_PROTOCOL}://${API_HOST}"
-DEV_URL = "${HTTP_PROTOCOL}://${API_HOST}"
-DEV_PORT = ${APP_PORT}
-DOCKER_BUILD = 1
-EOF
-)"
-  echo "${webenv}" | tee "${WORKSPACE_DIR}"/web/.env > /dev/null
-
   # chown everything to tactical user
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${WORKSPACE_DIR}"
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"

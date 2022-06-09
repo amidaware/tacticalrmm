@@ -21,6 +21,7 @@ func setupNatsOptions(key string) []nats.Option {
 		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(-1),
 		nats.ReconnectBufSize(-1),
+		nats.Secure(),
 	}
 	return opts
 }

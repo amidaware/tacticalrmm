@@ -4,7 +4,7 @@ set -e
 
 : "${WORKER_CONNECTIONS:=2048}"
 : "${APP_PORT:=8080}"
-: "${API_PORT:=8080}"
+: "${API_PORT:=8000}"
 : "${NGINX_RESOLVER:=127.0.0.11}"
 : "${BACKEND_SERVICE:=tactical-backend}"
 : "${FRONTEND_SERVICE:=tactical-frontend}"
@@ -33,9 +33,15 @@ fi
 # increase default nginx worker connections
 /bin/bash -c "sed -i 's/worker_connections.*/worker_connections ${WORKER_CONNECTIONS};/g' /etc/nginx/nginx.conf"
 
-
 if [[ $DEV -eq 1 ]]; then
-    API_NGINX="
+    nginx_config="$(cat << EOF
+# backend config
+server  {
+    resolver ${NGINX_RESOLVER} valid=30s;
+
+    server_name ${API_HOST};
+
+    location / {
         #Using variable to disable start checks
         set \$api http://${BACKEND_SERVICE}:${API_PORT};
         proxy_pass \$api;
@@ -50,18 +56,107 @@ if [[ $DEV -eq 1 ]]; then
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host  \$host;
         proxy_set_header X-Forwarded-Port  \$server_port;
-"
-else
-    API_NGINX="
+    }
+
+    location /static/ {
+        root ${TACTICAL_DIR}/api;
+    }
+
+    location /private/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "http://${APP_HOST}:${APP_PORT}";
+        alias ${TACTICAL_DIR}/api/tacticalrmm/private/;
+    }
+
+    location ~ ^/ws/ {
+        set \$api http://${WEBSOCKETS_SERVICE}:8383;
+        proxy_pass \$api;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_redirect     off;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Host \$server_name;
+    }
+
+    client_max_body_size 300M;
+
+    listen 8080;
+}
+
+# frontend config
+server  {
+    resolver ${NGINX_RESOLVER} valid=30s;
+    
+    server_name ${APP_HOST};
+
+    location / {
         #Using variable to disable start checks
-        set \$api ${BACKEND_SERVICE}:${API_PORT};
+        set \$app http://${FRONTEND_SERVICE}:${APP_PORT};
 
-        include         uwsgi_params;
-        uwsgi_pass      \$api;
-"
-fi
+        proxy_pass \$app;
+        proxy_http_version  1.1;
+        proxy_cache_bypass  \$http_upgrade;
+        
+        proxy_set_header Upgrade           \$http_upgrade;
+        proxy_set_header Connection        "upgrade";
+        proxy_set_header Host              \$host;
+        proxy_set_header X-Real-IP         \$remote_addr;
+        proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host  \$host;
+        proxy_set_header X-Forwarded-Port  \$server_port;
+    }
 
-nginx_config="$(cat << EOF
+    listen 8080;
+}
+
+# meshcentral config
+server {
+    resolver ${NGINX_RESOLVER} valid=30s;
+
+    listen 8080;
+    proxy_send_timeout 330s;
+    proxy_read_timeout 330s;
+    server_name ${MESH_HOST};
+    ssl_certificate ${CERT_PUB_PATH};
+    ssl_certificate_key ${CERT_PRIV_PATH};
+    
+    ssl_session_cache shared:WEBSSL:10m;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
+
+    location / {
+        #Using variable to disable start checks
+        set \$meshcentral http://${MESH_SERVICE}:4443;
+
+        proxy_pass \$meshcentral;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-Host \$host:\$server_port;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+)"
+else
+    nginx_config="$(cat << EOF
 # backend config
 server  {
     resolver ${NGINX_RESOLVER} valid=30s;
@@ -69,7 +164,11 @@ server  {
     server_name ${API_HOST};
 
     location / {
-        ${API_NGINX}
+        #Using variable to disable start checks
+        set \$api ${BACKEND_SERVICE}:${API_PORT};
+
+        include         uwsgi_params;
+        uwsgi_pass      \$api;
     }
 
     location /static/ {
@@ -212,5 +311,6 @@ server {
 }
 EOF
 )"
+fi
 
 echo "${nginx_config}" > /etc/nginx/conf.d/default.conf

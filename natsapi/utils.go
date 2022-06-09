@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"io/ioutil"
 	"time"
 
@@ -21,8 +22,13 @@ func setupNatsOptions(key string) []nats.Option {
 		nats.RetryOnFailedConnect(true),
 		nats.MaxReconnects(-1),
 		nats.ReconnectBufSize(-1),
-		nats.Secure(),
 	}
+
+	dev := os.Getenv("DEV")
+	if(dev == "1") {
+		opts = append(opts, nats.Secure())
+	}
+
 	return opts
 }
 

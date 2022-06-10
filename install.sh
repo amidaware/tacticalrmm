@@ -14,12 +14,12 @@ REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-bash-updates"
 
 SCRIPT_VERSION="63"
-SCRIPT_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh'
+SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
 CFG_VERSION="2"
-CFG_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg'
-REPO_URL='https://github.com/${REPO_OWNER}/tacticalrmm.git'
-SCRIPTS_REPO_URL='https://github.com/amidaware/community-scripts.git'
-FRONTEND_URL='https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}'
+CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
+REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
+SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
+FRONTEND_URL="https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}"
 THIS_SCRIPT=$(readlink -f "$0")
 
 ### Misc info variables
@@ -28,7 +28,7 @@ UPDATE_TYPE="standard"
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py'
+LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 
 ### Get cfg file
 wget -q "${CFG_URL}" -O bashfunctions.cfg

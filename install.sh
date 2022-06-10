@@ -8,23 +8,24 @@ declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Dev Test Prereqs' 'Dev Test Install' 'Standard Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Force Update' 'Return' 'Exit')
 declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Troubleshoot' 'Return' 'Exit')
-REPO_URL='https://github.com/ninjamonkey198206/tacticalrmm.git'
-SCRIPTS_REPO_URL='https://github.com/amidaware/community-scripts.git'
-FRONTEND_URL='https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}'
+REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-bash-updates"
 INSTALL_TYPE="install"
 UPDATE_TYPE="standard"
+REPO_URL='https://github.com/${REPO_OWNER}/tacticalrmm.git'
+SCRIPTS_REPO_URL='https://github.com/amidaware/community-scripts.git'
+FRONTEND_URL='https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}'
 
 ### Script Info variables
 SCRIPT_VERSION="63"
-SCRIPT_URL='https://raw.githubusercontent.com/ninjamonkey198206/tacticalrmm/develop-bash-updates/install.sh'
+SCRIPT_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh'
 THIS_SCRIPT=$(readlink -f "$0")
 
 ### Misc info variables
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/ninjamonkey198206/tacticalrmm/develop-bash-updates/api/tacticalrmm/tacticalrmm/settings.py'
+LATEST_SETTINGS_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py'
 
 ### Import functions
 . $PWD/bashfunctions.cfg
@@ -69,24 +70,27 @@ sudo systemctl restart systemd-journald.service
 # Installation menu
 installMenu()
 {
-  until [ "$menuselection" = "0" ]; do
+  	until [ "$menuselection" = "0" ]; do
 		dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Installation Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections.\n\nSelect Return to return to the previous menu." 0 0 0 \
 			1 "${installmenuoptions[0]}" \
-      2 "${installmenuoptions[1]}" \
-      3 "${installmenuoptions[2]}" \
-      4 "${installmenuoptions[3]}" \
+      		2 "${installmenuoptions[1]}" \
+      		3 "${installmenuoptions[2]}" \
+      		4 "${installmenuoptions[3]}" \
 			5 "${installmenuoptions[4]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
 			1 ) INSTALL_TYPE="devprep"
-        mainInstall;;
-      2 ) INSTALL_TYPE="devinstall"
-        mainInstall;;
-      3 ) INSTALL_TYPE="install"
-        mainInstall;;
-      4 ) return;;
+				decideMainRepos
+        		mainInstall;;
+      		2 ) INSTALL_TYPE="devinstall"
+			  	decideMainRepos
+        		mainInstall;;
+      		3 ) INSTALL_TYPE="install"
+			  	decideMainRepos
+        		mainInstall;;
+      		4 ) return;;
 			5 ) [ -f $INPUT ] && rm $INPUT
 				exit;;
 			* ) derpDerp;;
@@ -99,24 +103,24 @@ installMenu()
 # Utilities menu
 utilityMenu()
 {
-  until [ "$menuselection" = "0" ]; do
+  	until [ "$menuselection" = "0" ]; do
 		dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Utility Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections.\n\nSelect Return to return to the previous menu." 0 0 0 \
 			1 "${utilitymenuoptions[0]}" \
-      2 "${utilitymenuoptions[1]}" \
-      3 "${utilitymenuoptions[2]}" \
-      4 "${utilitymenuoptions[3]}" \
-      5 "${utilitymenuoptions[4]}" \
+      		2 "${utilitymenuoptions[1]}" \
+      		3 "${utilitymenuoptions[2]}" \
+      		4 "${utilitymenuoptions[3]}" \
+      		5 "${utilitymenuoptions[4]}" \
 			6 "${utilitymenuoptions[5]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
 			1 ) backupTRMM;;
-      2 ) restoreTRMM;;
-      3 ) return;;
-        #renewCerts;;
-      4 ) troubleShoot;;
-      5 ) return;;
+      		2 ) restoreTRMM;;
+      		3 ) return;;
+        		#renewCerts;;
+      		4 ) troubleShoot;;
+      		5 ) return;;
 			6 ) [ -f $INPUT ] && rm $INPUT
 				exit;;
 			* ) derpDerp;;
@@ -129,21 +133,21 @@ utilityMenu()
 # Update menu
 updateMenu()
 {
-  until [ "$menuselection" = "0" ]; do
+  	until [ "$menuselection" = "0" ]; do
 		dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Update Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections.\n\nSelect Return to return to the previous menu." 0 0 0 \
 			1 "${updatemenuoptions[0]}" \
-      2 "${updatemenuoptions[1]}" \
-      3 "${updatemenuoptions[2]}" \
+      		2 "${updatemenuoptions[1]}" \
+      		3 "${updatemenuoptions[2]}" \
 			4 "${updatemenuoptions[3]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
 			1 ) UPDATE_TYPE="standard"
-        updateTRMM;;
-      2 ) UPDATE_TYPE="forced"
-        updateTRMM;;
-      3 ) return;;
+        		updateTRMM;;
+      		2 ) UPDATE_TYPE="forced"
+        		updateTRMM;;
+      		3 ) return;;
 			4 ) [ -f $INPUT ] && rm $INPUT
 				exit;;
 			* ) derpDerp;;
@@ -159,16 +163,16 @@ mainMenu()
 	until [ "$menuselection" = "0" ]; do
 		dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Main Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections." 0 0 0 \
 			1 "${mainmenuoptions[0]}" \
-      2 "${mainmenuoptions[1]}" \
-      3 "${mainmenuoptions[2]}" \
+      		2 "${mainmenuoptions[1]}" \
+      		3 "${mainmenuoptions[2]}" \
 			4 "${mainmenuoptions[3]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
 			1 ) installMenu;;
-      2 ) updateMenu;;
-      3 ) utilityMenu;;
+      		2 ) updateMenu;;
+      		3 ) utilityMenu;;
 			4 ) [ -f $INPUT ] && rm $INPUT
 				exit;;
 			* ) derpDerp;;

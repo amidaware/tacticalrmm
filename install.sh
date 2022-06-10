@@ -5,7 +5,7 @@ INPUT=/tmp/menu.sh.$$
 menuselection=""
 #declare -a menuoptions=('Test Install' 'Exit')
 declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
-declare -a installmenuoptions=('Dev Test Prereqs' 'Dev Test Install' 'Standard Install' 'Return' 'Exit')
+declare -a installmenuoptions=('Standard Install' 'Dev Test Prereqs' 'Dev Test Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Force Update' 'Return' 'Exit')
 declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Troubleshoot' 'Return' 'Exit')
 
@@ -13,9 +13,9 @@ declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Troubleshoot' '
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-bash-updates"
 
-SCRIPT_VERSION="63"
+SCRIPT_VERSION='64'
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
-CFG_VERSION="2"
+CFG_VERSION='3'
 CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
@@ -87,13 +87,12 @@ installMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) INSTALL_TYPE="devprep"
-				decideMainRepos
+			1 ) INSTALL_TYPE="install"
         		mainInstall;;
-      		2 ) INSTALL_TYPE="devinstall"
+      		2 ) INSTALL_TYPE="devprep"
+        		mainInstall;;
+      		3 ) INSTALL_TYPE="devinstall"
 			  	decideMainRepos
-        		mainInstall;;
-      		3 ) INSTALL_TYPE="install"
         		mainInstall;;
       		4 ) return;;
 			5 ) [ -f $INPUT ] && rm $INPUT

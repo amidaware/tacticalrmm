@@ -8,24 +8,30 @@ declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Dev Test Prereqs' 'Dev Test Install' 'Standard Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Force Update' 'Return' 'Exit')
 declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Troubleshoot' 'Return' 'Exit')
+
+### Script Info variables
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-bash-updates"
-INSTALL_TYPE="install"
-UPDATE_TYPE="standard"
+
+SCRIPT_VERSION="63"
+SCRIPT_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh'
+CFG_VERSION="2"
+CFG_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg'
 REPO_URL='https://github.com/${REPO_OWNER}/tacticalrmm.git'
 SCRIPTS_REPO_URL='https://github.com/amidaware/community-scripts.git'
 FRONTEND_URL='https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}'
-
-### Script Info variables
-SCRIPT_VERSION="63"
-SCRIPT_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh'
 THIS_SCRIPT=$(readlink -f "$0")
 
 ### Misc info variables
+INSTALL_TYPE="install"
+UPDATE_TYPE="standard"
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py'
+
+### Get cfg file
+wget -q "${CFG_URL}" -O bashfunctions.cfg
 
 ### Import functions
 . $PWD/bashfunctions.cfg
@@ -88,7 +94,6 @@ installMenu()
 			  	decideMainRepos
         		mainInstall;;
       		3 ) INSTALL_TYPE="install"
-			  	decideMainRepos
         		mainInstall;;
       		4 ) return;;
 			5 ) [ -f $INPUT ] && rm $INPUT

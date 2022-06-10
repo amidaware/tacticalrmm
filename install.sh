@@ -46,7 +46,7 @@ getOSInfo;
 installPreReqs;
 
 ### Check for new functions version, only include script name as variable
-checkCfgVer "$THIS_SCRIPT";
+checkCfgVer "$CFG_VERSION" "$CFG_URL" "$THIS_SCRIPT";
 
 ### Check for new script version, pass script version, url, and script name variables in that order
 checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";

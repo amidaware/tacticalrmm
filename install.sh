@@ -12,11 +12,9 @@ declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Troubleshoot' '
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-bash-updates"
-
+CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
 SCRIPT_VERSION='64'
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
-CFG_VERSION='3'
-CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
 FRONTEND_URL="https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}"
@@ -46,7 +44,7 @@ getOSInfo;
 installPreReqs;
 
 ### Check for new functions version, only include script name as variable
-checkCfgVer "$CFG_VERSION" "$CFG_URL" "$THIS_SCRIPT";
+checkCfgVer "$CFG_URL" "$THIS_SCRIPT";
 
 ### Check for new script version, pass script version, url, and script name variables in that order
 checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";

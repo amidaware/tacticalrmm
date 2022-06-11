@@ -7,7 +7,7 @@ menuselection=""
 declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Standard Install' 'Dev Test Prereqs' 'Dev Test Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Force Update' 'Return' 'Exit')
-declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Troubleshoot' 'Return' 'Exit')
+declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Edit UWSGI config' 'Troubleshoot' 'Return' 'Exit')
 
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"
@@ -85,17 +85,23 @@ installMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) INSTALL_TYPE="install"
+			1 ) clear -x
+				INSTALL_TYPE="install"
         		mainInstall;;
-      		2 ) INSTALL_TYPE="devprep"
+      		2 ) clear -x
+			  	INSTALL_TYPE="devprep"
         		mainInstall;;
-      		3 ) INSTALL_TYPE="devinstall"
+      		3 ) clear -x
+			  	INSTALL_TYPE="devinstall"
 			  	decideMainRepos
         		mainInstall;;
-      		4 ) return;;
+      		4 ) clear -x
+			  	return;;
 			5 ) [ -f $INPUT ] && rm $INPUT
+				clear -x
 				exit;;
-			* ) derpDerp;;
+			* ) clear -x
+				derpDerp;;
 		esac
 	done
 
@@ -117,15 +123,22 @@ utilityMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) backupTRMM;;
-      		2 ) restoreTRMM;;
-      		3 ) return;;
+			1 ) clear -x
+				backupTRMM;;
+      		2 ) clear -x
+			  	restoreTRMM;;
+      		3 ) clear -x
+			  	return;;
         		#renewCerts;;
-      		4 ) troubleShoot;;
-      		5 ) return;;
+      		4 ) clear -x
+			  	troubleShoot;;
+      		5 ) clear -x
+			  	return;;
 			6 ) [ -f $INPUT ] && rm $INPUT
+				clear -x
 				exit;;
-			* ) derpDerp;;
+			* ) clear -x
+				derpDerp;;
 		esac
 	done
 
@@ -145,14 +158,19 @@ updateMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) UPDATE_TYPE="standard"
+			1 ) clear -x
+				UPDATE_TYPE="standard"
         		updateTRMM;;
-      		2 ) UPDATE_TYPE="forced"
+      		2 ) clear -x
+			  	UPDATE_TYPE="forced"
         		updateTRMM;;
-      		3 ) return;;
+      		3 ) clear -x
+			  	return;;
 			4 ) [ -f $INPUT ] && rm $INPUT
+				clear -x
 				exit;;
-			* ) derpDerp;;
+			* ) clear -x
+				derpDerp;;
 		esac
 	done
 
@@ -172,12 +190,17 @@ mainMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) installMenu;;
-      		2 ) updateMenu;;
-      		3 ) utilityMenu;;
+			1 ) clear -x
+				installMenu;;
+      		2 ) clear -x
+			  	updateMenu;;
+      		3 )	clear -x
+			  	utilityMenu;;
 			4 ) [ -f $INPUT ] && rm $INPUT
+				clear -x
 				exit;;
-			* ) derpDerp;;
+			* ) clear -x
+				derpDerp;;
 		esac
 	done
 

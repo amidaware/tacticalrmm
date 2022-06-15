@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ### Menu option variables
 INPUT=/tmp/menu.sh.$$
@@ -85,23 +85,18 @@ installMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) clear -x
-				INSTALL_TYPE="install"
+			1 ) INSTALL_TYPE="install"
         		mainInstall;;
-      		2 ) clear -x
-			  	INSTALL_TYPE="devprep"
+      		2 ) INSTALL_TYPE="devprep"
         		mainInstall;;
-      		3 ) clear -x
-			  	INSTALL_TYPE="devinstall"
+      		3 ) INSTALL_TYPE="devinstall"
 			  	decideMainRepos
         		mainInstall;;
-      		4 ) clear -x
-			  	return;;
+      		4 ) return;;
 			5 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
-			* ) clear -x
-				derpDerp;;
+			* ) derpDerp;;
 		esac
 	done
 
@@ -118,27 +113,27 @@ utilityMenu()
       		3 "${utilitymenuoptions[2]}" \
       		4 "${utilitymenuoptions[3]}" \
       		5 "${utilitymenuoptions[4]}" \
-			6 "${utilitymenuoptions[5]}" 2>"${INPUT}"
+			6 "${utilitymenuoptions[5]}" \
+			7 "${utilitymenuoptions[6]}" \
+			8 "${utilitymenuoptions[7]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) clear -x
-				backupTRMM;;
-      		2 ) clear -x
-			  	restoreTRMM;;
-      		3 ) clear -x
-			  	return;;
+			1 ) backupTRMM;;
+      		2 ) restoreTRMM;;
+      		3 ) return;;
         		#renewCerts;;
-      		4 ) clear -x
-			  	troubleShoot;;
-      		5 ) clear -x
-			  	return;;
-			6 ) [ -f $INPUT ] && rm $INPUT
+			4 ) return;;
+				#importCerts;;
+			5 ) return;;
+				#changeUWSGI;;
+      		6 ) troubleShoot;;
+      		7 ) return;;
+			8 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
-			* ) clear -x
-				derpDerp;;
+			* ) derpDerp;;
 		esac
 	done
 
@@ -158,19 +153,15 @@ updateMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) clear -x
-				UPDATE_TYPE="standard"
+			1 ) UPDATE_TYPE="standard"
         		updateTRMM;;
-      		2 ) clear -x
-			  	UPDATE_TYPE="forced"
+      		2 ) UPDATE_TYPE="forced"
         		updateTRMM;;
-      		3 ) clear -x
-			  	return;;
+      		3 ) return;;
 			4 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
-			* ) clear -x
-				derpDerp;;
+			* ) derpDerp;;
 		esac
 	done
 
@@ -190,17 +181,13 @@ mainMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) clear -x
-				installMenu;;
-      		2 ) clear -x
-			  	updateMenu;;
-      		3 )	clear -x
-			  	utilityMenu;;
+			1 ) installMenu;;
+      		2 ) updateMenu;;
+      		3 )	utilityMenu;;
 			4 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
-			* ) clear -x
-				derpDerp;;
+			* ) derpDerp;;
 		esac
 	done
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Tactical RMM install troubleshooting script
 # Contributed by https://github.com/dinger1986

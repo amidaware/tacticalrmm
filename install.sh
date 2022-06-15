@@ -10,8 +10,8 @@ declare -a updatemenuoptions=('Standard Update' 'Force Update' 'Return' 'Exit')
 declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Edit UWSGI config' 'Troubleshoot' 'Return' 'Exit')
 
 ### Script Info variables
-REPO_OWNER="ninjamonkey198206"
-BRANCH="develop-bash-updates"
+REPO_OWNER="amidaware"
+BRANCH="master"
 CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
 SCRIPT_VERSION="64"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"

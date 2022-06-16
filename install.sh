@@ -7,7 +7,7 @@ menuselection=""
 declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Standard Install' 'Dev Test Prereqs' 'Dev Test Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Force Update' 'Return' 'Exit')
-declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Edit UWSGI config' 'Troubleshoot' 'Return' 'Exit')
+declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Edit UWSGI config' 'Add Fail2ban' 'Troubleshoot' 'Return' 'Exit')
 
 ### Script Info variables
 REPO_OWNER="amidaware"
@@ -115,7 +115,8 @@ utilityMenu()
       		5 "${utilitymenuoptions[4]}" \
 			6 "${utilitymenuoptions[5]}" \
 			7 "${utilitymenuoptions[6]}" \
-			8 "${utilitymenuoptions[7]}" 2>"${INPUT}"
+			8 "${utilitymenuoptions[6]}" \
+			9 "${utilitymenuoptions[7]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 
@@ -128,9 +129,11 @@ utilityMenu()
 				#importCerts;;
 			5 ) return;;
 				#changeUWSGI;;
-      		6 ) troubleShoot;;
-      		7 ) return;;
-			8 ) [ -f $INPUT ] && rm $INPUT
+			6 ) return;;
+				#installFail2ban;;
+      		7 ) troubleShoot;;
+      		8 ) return;;
+			9 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
 			* ) derpDerp;;

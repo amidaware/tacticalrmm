@@ -13,7 +13,7 @@ declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' '
 REPO_OWNER="amidaware"
 BRANCH="master"
 CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
-SCRIPT_VERSION="64"
+readonly SCRIPT_VERSION="64"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
@@ -23,9 +23,9 @@ THIS_SCRIPT=$(readlink -f "$0")
 ### Misc info variables
 INSTALL_TYPE="install"
 UPDATE_TYPE="standard"
-SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.4'
-SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
+readonly SCRIPTS_DIR='/opt/trmm-community-scripts'
+readonly PYTHON_VER='3.10.4'
+readonly SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 
 ### Get cfg file

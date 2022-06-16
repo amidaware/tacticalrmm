@@ -69,7 +69,7 @@ random_text() {
     local alphanumeric="${2:-"YES"}"
     local transmod='a-zA-Z0-9'
     if [ "$(uc "${alphanumeric}")" = "NO" ]; then
-      transmod='a-z'
+      transmod='a-zA-Z'
     fi
     cat /dev/urandom | tr -dc $transmod | fold -w "${min_length}" | head -n 1
     return

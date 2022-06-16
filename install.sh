@@ -82,7 +82,7 @@ random_text() {
 print_info() {
   printf >&2 "${GREEN}%0.s-${NC}" {1..80}
   printf >&2 "\n"
-  printf >&2 "${GREEN}%s${NC}\n" ${1}
+  printf >&2 "${GREEN}%s${NC}\n" "${1}"
   printf >&2 "${GREEN}%0.s-${NC}" {1..80}
   printf >&2 "\n"
 }
@@ -238,8 +238,8 @@ done
 # EDIT 8-29-2020
 # running this even if server is __not__ behind NAT just to make DNS resolving faster
 # this also allows the install script to properly finish even if DNS has not fully propagated
-CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
-HAS_11=$(grep 127.0.1.1 /etc/hosts)
+CHECK_HOSTS=$(grep '127.0.1.1' /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
+HAS_11=$(grep '127.0.1.1' /etc/hosts)
 
 if ! [[ $CHECK_HOSTS ]]; then
   print_info 'Adding subdomains to hosts file'

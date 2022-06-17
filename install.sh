@@ -28,8 +28,10 @@ LETS_ENCRYPT_PATH="/etc/letsencrypt"
 
 CPU_CORES=$(nproc)
 
-## To enable verbose script output, run: export TRMM_SCRIPT_DEBUG="YES"
+## Script modifiers (e.g. run: export TRMM_SCRIPT_DEBUG="YES")
+## Enable verbose script output
 : "${TRMM_SCRIPT_DEBUG:="NO"}"
+
 
 ################################################################################
 ## Convert string to lowercase
@@ -76,13 +78,29 @@ random_text() {
 }
 
 ################################################################################
-## Print info in green
+## Print info/warnings/errors
 ################################################################################
 
 print_info() {
+  printf >&2 "${GREEN}%s${NC}\n" "${1}"
+}
+
+print_warn() {
+  printf >&2 "${YELLOW}%s${NC}\n" "${1}"
+}
+
+print_error() {
+  printf >&2 "${RED}%s${NC}\n" "${1}"
+}
+
+print_error2() {
+  printf "${RED}%s${NC}\n" "${1}"
+}
+
+print_header() {
   printf >&2 "${GREEN}%0.s-${NC}" {1..80}
   printf >&2 "\n"
-  printf >&2 "${GREEN}%s${NC}\n" "${1}"
+  print_info "${1}"
   printf >&2 "${GREEN}%0.s-${NC}" {1..80}
   printf >&2 "\n"
 }
@@ -97,10 +115,11 @@ update_script() {
   curl -s -L "${SCRIPT_URL}" >"${tmp_file}"
   new_version=$(grep "^SCRIPT_VERSION" "$tmp_file" | awk -F'[="]' '{print $3}')
 
+  ## todo: 2022-06-17: maybe: change to 'less than' instead?
   if [ "${SCRIPT_VERSION}" -ne "${new_version}" ]; then
-    printf >&2 "${YELLOW}Old install script detected, downloading and replacing with the latest version...${NC}\n"
+    print_warn "Old install script detected, downloading and replacing with the latest version..."
     wget -q "${SCRIPT_URL}" -O install.sh
-    printf >&2 "${YELLOW}Script updated! Please re-run ./install.sh${NC}\n"
+    print_warn "Script updated! Please re-run ./install.sh"
     rm -f $tmp_file
     exit 1
   fi
@@ -175,16 +194,18 @@ esac
 
 ## Check if root
 if [ $EUID -eq 0 ]; then
-  echo -ne "${RED}Do NOT run this script as root. Exiting.${NC}\n"
+  print_error "Do NOT run this script as root. Exiting."
   exit 1
 fi
 
 ## Check system locale
 if [[ "$LANG" != *".UTF-8" ]]; then
   printf >&2 "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
-  printf >&2 "${RED}Run the following command and change the default locale to your language of choice${NC}\n\n"
-  printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
-  printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
+  print_error "Run the following command and change the default locale to your language of choice\n\n"
+  printf "\t"
+  print_info "sudo dpkg-reconfigure locales"
+  printf "\n\n"
+  print_error "You will need to log out & back in for changes to take effect, then re-run this script."
   exit 1
 fi
 
@@ -242,7 +263,7 @@ CHECK_HOSTS=$(grep '127.0.1.1' /etc/hosts | grep "$rmmdomain" | grep "$meshdomai
 HAS_11=$(grep '127.0.1.1' /etc/hosts)
 
 if ! [[ $CHECK_HOSTS ]]; then
-  print_info 'Adding subdomains to hosts file'
+  print_header 'Adding subdomains to hosts file'
   if [[ $HAS_11 ]]; then
     sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} ${frontenddomain} ${meshdomain}/" /etc/hosts
   else
@@ -260,7 +281,7 @@ sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y certbot openssl
 
-print_info 'Getting wildcard cert'
+print_header 'Getting wildcard cert'
 
 sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
 while [[ $? -ne 0 ]]; do
@@ -273,14 +294,14 @@ readonly CERT_PUB_KEY="${LETS_ENCRYPT_PATH}/live/${rootdomain}/fullchain.pem"
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${LETS_ENCRYPT_PATH}"
 sudo chmod 775 -R "${LETS_ENCRYPT_PATH}"
 
-print_info 'Installing Nginx'
+print_header 'Installing Nginx'
 
 sudo apt install -y nginx
 sudo systemctl stop nginx
-sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' ${NGINX_CONF}
-sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' ${NGINX_CONF}
+sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' "${NGINX_CONF}"
+sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' "${NGINX_CONF}"
 
-print_info 'Installing NodeJS'
+print_header 'Installing NodeJS'
 
 curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 sudo apt update
@@ -288,7 +309,7 @@ sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
 sudo npm install -g npm
 
-print_info 'Installing MongoDB'
+print_header 'Installing MongoDB'
 
 wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
 echo "$MONGODB_REPO" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
@@ -297,7 +318,7 @@ sudo apt install -y mongodb-org
 sudo systemctl enable mongod
 sudo systemctl restart mongod
 
-print_info "Installing Python $PYTHON_VER"
+print_header "Installing Python $PYTHON_VER"
 
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 cd ~
@@ -310,10 +331,10 @@ sudo make altinstall
 cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
-print_info 'Installing redis and git'
+print_header 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
 
-print_info 'Installing postgresql'
+print_header 'Installing postgresql'
 
 echo "$POSTGRESQL_REPO" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
@@ -325,7 +346,7 @@ sudo systemctl enable postgresql
 sudo systemctl restart postgresql
 sleep 5
 
-print_info 'Creating database for the rmm'
+print_header 'Creating database for the rmm'
 
 sudo -u postgres psql -c "CREATE DATABASE ${TRMM_DB_NAME}"
 sudo -u postgres psql -c "CREATE USER ${TRMM_DB_USER} WITH PASSWORD '${TRMM_DB_PASS}'"
@@ -334,7 +355,7 @@ sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET default_transaction_iso
 sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${TRMM_DB_NAME} TO ${TRMM_DB_USER}"
 
-print_info 'Cloning repos'
+print_header 'Cloning repos'
 
 sudo mkdir /rmm
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" /rmm
@@ -354,7 +375,7 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout main
 
-print_info 'Downloading NATS'
+print_header 'Downloading NATS'
 
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
 
@@ -366,7 +387,7 @@ sudo chmod +x /usr/local/bin/nats-server
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-server
 rm -rf ${nats_tmp}
 
-print_info 'Installing MeshCentral'
+print_header 'Installing MeshCentral'
 
 MESH_VER=$(grep "^MESH_VER" "$TRMM_SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
@@ -376,7 +397,7 @@ cd /meshcentral
 npm install meshcentral@${MESH_VER}
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R /meshcentral
 
-meshcfg="$(
+MESH_CONF="$(
   cat <<EOF
 {
   "settings": {
@@ -414,7 +435,7 @@ meshcfg="$(
 }
 EOF
 )"
-echo "${meshcfg}" >/meshcentral/meshcentral-data/config.json
+echo "${MESH_CONF}" >/meshcentral/meshcentral-data/config.json
 
 localvars="$(
   cat <<EOF
@@ -453,7 +474,7 @@ sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
-print_info 'Installing the backend'
+print_header 'Installing the backend'
 
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$TRMM_SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$TRMM_SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
@@ -828,7 +849,7 @@ if [ -d ~/.config ]; then
   sudo chown -R "${TRMM_USER}:${TRMM_GROUP}" ~/.config
 fi
 
-print_info 'Installing the frontend'
+print_header 'Installing the frontend'
 
 webtar="trmm-web-v${WEB_VERSION}.tar.gz"
 wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
@@ -882,7 +903,7 @@ echo "${nginxfrontend}" | sudo tee /etc/nginx/sites-available/frontend.conf >/de
 
 sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/frontend.conf
 
-print_info 'Enabling Services'
+print_header 'Enabling Services'
 
 for i in rmm.service daphne.service celery.service celerybeat.service nginx; do
   sudo systemctl enable ${i}
@@ -892,7 +913,7 @@ done
 sleep 5
 sudo systemctl enable meshcentral
 
-print_info 'Starting meshcentral and waiting for it to install plugins'
+print_header 'Starting meshcentral and waiting for it to install plugins'
 
 sudo systemctl restart meshcentral
 
@@ -907,7 +928,7 @@ while ! [[ $CHECK_MESH_READY ]]; do
   sleep 3
 done
 
-print_info 'Generating meshcentral login token key'
+print_header 'Generating meshcentral login token key'
 
 MESHTOKENKEY=$(node /meshcentral/node_modules/meshcentral --logintokenkey)
 
@@ -918,7 +939,7 @@ EOF
 )"
 echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
 
-print_info 'Creating meshcentral account and group'
+print_header 'Creating meshcentral account and group'
 
 sudo systemctl stop meshcentral
 sleep 1
@@ -955,7 +976,7 @@ sudo systemctl start nats-api.service
 ## disable django admin
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
-print_info 'Restarting services'
+print_header 'Restarting services'
 for i in rmm.service daphne.service celery.service celerybeat.service; do
   sudo systemctl stop ${i}
   sudo systemctl start ${i}

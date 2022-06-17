@@ -115,8 +115,8 @@ utilityMenu()
       		5 "${utilitymenuoptions[4]}" \
 			6 "${utilitymenuoptions[5]}" \
 			7 "${utilitymenuoptions[6]}" \
-			8 "${utilitymenuoptions[6]}" \
-			9 "${utilitymenuoptions[7]}" 2>"${INPUT}"
+			8 "${utilitymenuoptions[7]}" \
+			9 "${utilitymenuoptions[8]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 

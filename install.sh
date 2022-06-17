@@ -3,8 +3,14 @@
 # See https://docs.tacticalrmm.com/install_server/ for more information.
 #
 
+## Script modifiers (e.g. run: export TRMM_SCRIPT_DEBUG="YES")
+## Enable verbose script output
+: "${TRMM_SCRIPT_DEBUG:="NO"}"
+## Switch between production and development branches
+: "${TRMM_SCRIPT_BRANCH:="master"}"
+
 readonly SCRIPT_VERSION="63"
-readonly SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
+readonly SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/${TRMM_SCRIPT_BRANCH}/install.sh"
 readonly TRMM_SERVER_REPO='https://github.com/amidaware/tacticalrmm.git'
 readonly COMMUNITY_SCRIPTS_REPO='https://github.com/amidaware/community-scripts.git'
 
@@ -27,11 +33,6 @@ NGINX_CONF="/etc/nginx/nginx.conf"
 LETS_ENCRYPT_PATH="/etc/letsencrypt"
 
 CPU_CORES=$(nproc)
-
-## Script modifiers (e.g. run: export TRMM_SCRIPT_DEBUG="YES")
-## Enable verbose script output
-: "${TRMM_SCRIPT_DEBUG:="NO"}"
-
 
 ################################################################################
 ## Convert string to lowercase
@@ -125,6 +126,8 @@ update_script() {
   fi
 
   rm -f $tmp_file
+
+  return
 }
 
 ################################################################################
@@ -220,16 +223,17 @@ TRMM_DB_USER=$(lc "$(random_text 8 no)")
 TRMM_DB_PASS=$(random_text 20)
 
 if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
-  printf "Django Secret: %s\n" ${DJANGO_SEKRET}
-  printf "Mesh Admin URL: %s\n" ${MESH_ADMIN_URL}
-  printf "Mesh Username: %s\n" ${MESH_USERNAME}
-  printf "Mesh Password: %s\n" ${MESH_PASSWORD}
-  printf "TRMM DB Username: %s\n" ${TRMM_DB_USER}
-  printf "TRMM DB Password: %s\n" ${TRMM_DB_PASS}
-  printf "TRMM DB Database: %s\n" ${TRMM_DB_NAME}
+  printf "Django Secret: %s\n" "${DJANGO_SEKRET}"
+  printf "Mesh Admin URL: %s\n" "${MESH_ADMIN_URL}"
+  printf "Mesh Username: %s\n" "${MESH_USERNAME}"
+  printf "Mesh Password: %s\n" "${MESH_PASSWORD}"
+  printf "TRMM DB Username: %s\n" "${TRMM_DB_USER}"
+  printf "TRMM DB Password: %s\n" "${TRMM_DB_PASS}"
+  printf "TRMM DB Database: %s\n" "${TRMM_DB_NAME}"
+  printf "Script branch: %s\n" "${TRMM_SCRIPT_BRANCH}"
+else
+  cls
 fi
-
-cls
 
 while [[ $rmmdomain != *[.]*[.]* ]]; do
   echo -ne "${YELLOW}Enter the subdomain for the backend (e.g. api.example.com)${NC}: "
@@ -281,7 +285,7 @@ sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y certbot openssl
 
-print_header 'Getting wildcard cert'
+print_header 'Preparing certificate request'
 
 sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
 while [[ $? -ne 0 ]]; do
@@ -332,9 +336,10 @@ cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_header 'Installing redis and git'
+
 sudo apt install -y ca-certificates redis git
 
-print_header 'Installing postgresql'
+print_header 'Installing PostgreSQL'
 
 echo "$POSTGRESQL_REPO" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
@@ -346,7 +351,7 @@ sudo systemctl enable postgresql
 sudo systemctl restart postgresql
 sleep 5
 
-print_header 'Creating database for the rmm'
+print_header 'Creating TRMM database'
 
 sudo -u postgres psql -c "CREATE DATABASE ${TRMM_DB_NAME}"
 sudo -u postgres psql -c "CREATE USER ${TRMM_DB_USER} WITH PASSWORD '${TRMM_DB_PASS}'"
@@ -365,7 +370,7 @@ git clone ${TRMM_SERVER_REPO} /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
-git checkout master
+git checkout "${TRMM_SCRIPT_BRANCH}"
 
 sudo mkdir -p ${COMMUNITY_SCRIPTS_DIR}
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" ${COMMUNITY_SCRIPTS_DIR}
@@ -375,7 +380,7 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout main
 
-print_header 'Downloading NATS'
+print_header 'Installing NATS'
 
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
 
@@ -397,6 +402,7 @@ cd /meshcentral
 npm install meshcentral@${MESH_VER}
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R /meshcentral
 
+## todo: 2022-06-17: redo:
 MESH_CONF="$(
   cat <<EOF
 {
@@ -437,6 +443,7 @@ EOF
 )"
 echo "${MESH_CONF}" >/meshcentral/meshcentral-data/config.json
 
+## todo: 2022-06-17: redo:
 localvars="$(
   cat <<EOF
 SECRET_KEY = "${DJANGO_SEKRET}"
@@ -515,6 +522,7 @@ else
   uwsgiprocs=$CPU_CORES
 fi
 
+## todo: 2022-06-17: redo:
 uwsgini="$(
   cat <<EOF
 [uwsgi]
@@ -603,6 +611,7 @@ EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service >/dev/null
 
+## todo: 2022-06-17: redo:
 natsapi="$(
   cat <<EOF
 [Unit]

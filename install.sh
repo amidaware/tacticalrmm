@@ -125,8 +125,7 @@ utilityMenu()
       		2 ) restoreTRMM;;
       		3 ) renewCerts;;
 			4 ) importCerts;;
-			5 ) return;;
-				#changeUWSGIProcs;;
+			5 ) changeUWSGIProcs;;
 			6 ) return;;
 				#installFail2ban;;
       		7 ) troubleShoot;;

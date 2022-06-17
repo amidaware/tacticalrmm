@@ -13,7 +13,7 @@ declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' '
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-bash-updates"
 readonly CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
-readonly SCRIPT_VERSION="64"
+readonly SCRIPT_VERSION="65"
 readonly SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
 readonly REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 readonly SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
@@ -29,7 +29,9 @@ readonly SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 readonly LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 
 ### Get cfg file
-wget -q "${CFG_URL}" -O bashfunctions.cfg
+if [ ! -f "$PWD/bashfunctions.cfg" ]; then
+	wget -q "${CFG_URL}" -O bashfunctions.cfg
+fi
 
 ### Import functions
 . $PWD/bashfunctions.cfg

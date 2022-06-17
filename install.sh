@@ -10,10 +10,13 @@
 : "${TRMM_SCRIPT_BRANCH:="master"}"
 ## Switch between 'live' and 'staging' ACME servers
 : "${TRMM_SCRIPT_ACME_SERVER:="live"}"
+## Additional parameters to pass ACME
+: "${ACME_ADDITIONAL_PARAMS:=""}"
 
 readonly SCRIPT_VERSION="63"
 readonly SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/${TRMM_SCRIPT_BRANCH}/install.sh"
 readonly TRMM_SERVER_REPO='https://github.com/amidaware/tacticalrmm.git'
+readonly TRMM_FRONTEND_REPO='https://github.com/amidaware/tacticalrmm-web'
 readonly COMMUNITY_SCRIPTS_REPO='https://github.com/amidaware/community-scripts.git'
 
 readonly TRMM_USER="${USER}"
@@ -29,14 +32,25 @@ readonly CYAN="\033[0;36m"
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 
-PYTHON_VER='3.10.4'
-COMMUNITY_SCRIPTS_DIR='/opt/trmm-community-scripts'
-TRMM_SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-NGINX_CONF="/etc/nginx/nginx.conf"
+REQ_PYTHON_VER='3.10.4'
+TRMM_COMMSCRIPTS_PATH='/opt/trmm-community-scripts'
+TRMM_ROOT_PATH='/rmm'
+TRMM_SETTINGS_FILE="${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/settings.py"
+TRMM_LOCAL_CONF="${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/local_settings.py"
+TRMM_WEB_PATH="/var/www/rmm"
+MESH_ROOT_PATH="/meshcentral"
+MESH_CONF_FILE="${MESH_ROOT_PATH}/meshcentral-data/config.json"
+NGINX_PATH="/etc/nginx"
+NGINX_CONF="${NGINX_PATH}/nginx.conf"
 LETS_ENCRYPT_PATH="/etc/letsencrypt"
+ETC_CONFD="/etc/conf.d"
+CELERY_CONF_FILE="${ETC_CONFD}/celery.conf"
+CELERY_LOG_PATH="/var/log/celery"
 
 ## Runtime discovery
 CPU_CORES=$(nproc)
+NODE_BIN=$(which node)
+PYTHON_BIN=$(which python3.10)
 
 ################################################################################
 ## Convert string to lowercase
@@ -99,7 +113,10 @@ print_error() {
 }
 
 print_debug() {
-  printf "${CYAN}%s${NC}\n" "${1}"
+  ## This is currently redundant, I know. Temp workaround. :)
+  if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
+    printf "${CYAN}%s${NC}\n" "${1}"
+  fi
 }
 
 print_header() {
@@ -142,6 +159,39 @@ update_script() {
 }
 
 ################################################################################
+## Install Python
+################################################################################
+
+install_python() {
+  ## todo: 2022-06-17: there must be a better way to do this (use 'packaging.version.parse'?)
+  if [ ! -x "${PYTHON_BIN}" ] || [ "$(${PYTHON_BIN} --version | cut -d' ' -f2)" != "${REQ_PYTHON_VER}" ]; then
+      print_header "Installing Python $REQ_PYTHON_VER"
+
+      sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+      cd ~
+
+      if [ ! -d "Python-${REQ_PYTHON_VER}" ]; then
+        wget -q "https://www.python.org/ftp/python/${REQ_PYTHON_VER}/Python-${REQ_PYTHON_VER}.tgz"
+      fi
+      tar -xf "Python-${REQ_PYTHON_VER}.tgz"
+      cd "Python-${REQ_PYTHON_VER}" || exit 1
+      ./configure --enable-optimizations
+      make -j "$CPU_CORES"
+      sudo make altinstall
+      ## todo: 2022-06-17: check for exit code before deleting the tarball
+      cd ~
+      sudo rm -rf "Python-${REQ_PYTHON_VER}" "Python-${REQ_PYTHON_VER}.tgz"
+      PYTHON_BIN=$(which python3.10) ## move this
+  elif [ "$(${PYTHON_BIN} --version | cut -d' ' -f2)" = "${REQ_PYTHON_VER}" ]; then
+    print_info "Python ${REQ_PYTHON_VER} was found, skipping installation."
+  else
+    print_error "Python is missing."
+    exit 1
+  fi
+  return
+}
+
+################################################################################
 ## Clear screen (or why not just use 'clear'?)
 ################################################################################
 
@@ -152,6 +202,7 @@ cls() {
 ################################################################################
 
 ## Install dependencies
+## todo: 2022-06-17: remove curl and lsb-release
 sudo apt install -y curl wget dirmngr gnupg lsb-release
 
 update_script
@@ -200,8 +251,7 @@ case "${OS_NAME}" in
 
   *)
     echo "$OS_FULL_REL"
-    echo -ne "${RED}Supported versions: Ubuntu 20.04, Debian 10 and 11\n"
-    echo -ne "Your system does not appear to be supported${NC}\n"
+    print_error "This operating system is unsupported. Please use Ubuntu 20.04 or Debian 10/11"
     exit 1
   ;;
 esac
@@ -295,6 +345,8 @@ fi
 
 ################################################################################
 
+print_header "Installing Let's Encrypt"
+
 sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y certbot openssl
@@ -305,9 +357,14 @@ if [ "${TRMM_SCRIPT_ACME_SERVER}" = "staging" ]; then
   ACME_ADDITIONAL_PARAMS="${ACME_ADDITIONAL_PARAMS} --test-cert"
 fi
 
-sudo certbot certonly --manual -d "*.${rootdomain}" --agree-tos --no-bootstrap --preferred-challenges dns -m "${letsemail}" --no-eff-email "${ACME_ADDITIONAL_PARAMS}"
+CERTBOT_CMD="sudo certbot certonly --manual -d \"*.${rootdomain}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${letsemail}\" --no-eff-email ${ACME_ADDITIONAL_PARAMS}"
+
+print_debug "Certbot command: ${CERTBOT_CMD}"
+
+eval "${CERTBOT_CMD}"
+
 while [[ $? -ne 0 ]]; do
-  sudo certbot certonly --manual -d "*.${rootdomain}" --agree-tos --no-bootstrap --preferred-challenges dns -m "${letsemail}" --no-eff-email "${ACME_ADDITIONAL_PARAMS}"
+  eval "${CERTBOT_CMD}"
 done
 
 readonly CERT_PRIV_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${rootdomain}/privkey.pem"
@@ -329,11 +386,15 @@ sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 6
 
 print_header 'Installing NodeJS'
 
+## todo: 2022-06-17: replace with wget and remove curl dep
 curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
 sudo npm install -g npm
+
+## todo: 2022-06-17: move
+NODE_BIN=$(which node)
 
 ################################################################################
 
@@ -348,18 +409,7 @@ sudo systemctl restart mongod
 
 ################################################################################
 
-print_header "Installing Python $PYTHON_VER"
-
-sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
-cd ~
-wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
-tar -xf Python-${PYTHON_VER}.tgz
-cd Python-${PYTHON_VER}
-./configure --enable-optimizations
-make -j $CPU_CORES
-sudo make altinstall
-cd ~
-sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+install_python
 
 ################################################################################
 
@@ -373,7 +423,7 @@ print_header 'Installing PostgreSQL'
 
 echo "$POSTGRESQL_REPO" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+wget -q -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
 sudo apt install -y postgresql-14
 sleep 2
@@ -396,20 +446,21 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${TRMM_DB_NAME} TO ${
 
 print_header 'Cloning repos'
 
-sudo mkdir /rmm
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" /rmm
-sudo mkdir -p /var/log/celery
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" /var/log/celery
-git clone ${TRMM_SERVER_REPO} /rmm/
-cd /rmm
+sudo mkdir "${TRMM_ROOT_PATH}"
+sudo chown "${TRMM_USER}:${TRMM_GROUP}" "${TRMM_ROOT_PATH}"
+sudo mkdir -p "${CELERY_LOG_PATH}"
+sudo chown "${TRMM_USER}:${TRMM_GROUP}" "${CELERY_LOG_PATH}"
+
+git clone "${TRMM_SERVER_REPO}" "${TRMM_ROOT_PATH}/"
+cd "${TRMM_ROOT_PATH}"
 git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout "${TRMM_SCRIPT_BRANCH}"
 
-sudo mkdir -p ${COMMUNITY_SCRIPTS_DIR}
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" ${COMMUNITY_SCRIPTS_DIR}
-git clone $COMMUNITY_SCRIPTS_REPO ${COMMUNITY_SCRIPTS_DIR}/
-cd ${COMMUNITY_SCRIPTS_DIR}
+sudo mkdir -p "${TRMM_COMMSCRIPTS_PATH}"
+sudo chown "${TRMM_USER}:${TRMM_GROUP}" "${TRMM_COMMSCRIPTS_PATH}"
+git clone $COMMUNITY_SCRIPTS_REPO "${TRMM_COMMSCRIPTS_PATH}/"
+cd "${TRMM_COMMSCRIPTS_PATH}"
 git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout main
@@ -421,7 +472,7 @@ print_header 'Installing NATS'
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
 
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
+wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P "${nats_tmp}"
 tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
 sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
 sudo chmod +x /usr/local/bin/nats-server
@@ -432,16 +483,16 @@ rm -rf ${nats_tmp}
 
 print_header 'Installing MeshCentral'
 
-MESH_VER=$(grep "^MESH_VER" "$TRMM_SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+MESH_VER=$(grep "^MESH_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
 
-sudo mkdir -p /meshcentral/meshcentral-data
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R /meshcentral
-cd /meshcentral
-npm install meshcentral@${MESH_VER}
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R /meshcentral
+sudo mkdir -p "${MESH_ROOT_PATH}/meshcentral-data"
+sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
+cd "${MESH_ROOT_PATH}"
+npm install "meshcentral@${MESH_VER}"
+sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
 
 ## todo: 2022-06-17: redo:
-MESH_CONF="$(
+MESH_CONF_DATA="$(
   cat <<EOF
 {
   "settings": {
@@ -479,10 +530,10 @@ MESH_CONF="$(
 }
 EOF
 )"
-echo "${MESH_CONF}" >/meshcentral/meshcentral-data/config.json
+echo "${MESH_CONF_DATA}" >"${MESH_CONF_FILE}"
 
 ## todo: 2022-06-17: redo:
-localvars="$(
+TRMM_LOCAL_CONF_DATA="$(
   cat <<EOF
 SECRET_KEY = "${DJANGO_SEKRET}"
 
@@ -499,7 +550,7 @@ CORS_ORIGIN_WHITELIST = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tacticalrmm',
+        'NAME': '${TRMM_DB_NAME}',
         'USER': '${TRMM_DB_USER}',
         'PASSWORD': '${TRMM_DB_PASS}',
         'HOST': 'localhost',
@@ -513,9 +564,10 @@ REDIS_HOST    = "localhost"
 ADMIN_ENABLED = True
 EOF
 )"
-echo "${localvars}" >/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+echo "${TRMM_LOCAL_CONF_DATA}" >"${TRMM_LOCAL_CONF}"
 
-sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
+## todo: 2022-06-17: verify:
+sudo cp "${TRMM_ROOT_PATH}/natsapi/bin/nats-api" /usr/local/bin
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
@@ -524,24 +576,26 @@ print_header 'Installing the backend'
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$TRMM_SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$TRMM_SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-cd /rmm/api
-python3.10 -m venv env
-source /rmm/api/env/bin/activate
-cd /rmm/api/tacticalrmm
+cd "${TRMM_ROOT_PATH}/api"
+${PYTHON_BIN} -m venv env
+source "${TRMM_ROOT_PATH}/api/env/bin/activate"
+cd "${TRMM_ROOT_PATH}/api/tacticalrmm"
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
-pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
+pip install --no-cache-dir setuptools=="${SETUPTOOLS_VER}" wheel=="${WHEEL_VER}"
+pip install --no-cache-dir -r "${TRMM_ROOT_PATH}/api/tacticalrmm/requirements.txt"
 python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
+
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
+
 echo -ne "Username: "
 read djangousername
 python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
@@ -564,14 +618,14 @@ fi
 uwsgini="$(
   cat <<EOF
 [uwsgi]
-chdir = /rmm/api/tacticalrmm
+chdir = ${TRMM_ROOT_PATH}/api/tacticalrmm
 module = tacticalrmm.wsgi
-home = /rmm/api/env
+home = ${TRMM_ROOT_PATH}/api/env
 master = true
 processes = ${uwsgiprocs}
 threads = ${uwsgiprocs}
 enable-threads = true
-socket = /rmm/api/tacticalrmm/tacticalrmm.sock
+socket = ${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm.sock
 harakiri = 300
 chmod-socket = 660
 buffer-size = 65535
@@ -581,8 +635,9 @@ max-requests = 500
 disable-logging = true
 EOF
 )"
-echo "${uwsgini}" >/rmm/api/tacticalrmm/app.ini
+echo "${uwsgini}" >${TRMM_ROOT_PATH}/api/tacticalrmm/app.ini
 
+## todo: 2022-06-17: redo:
 rmmservice="$(
   cat <<EOF
 [Unit]
@@ -592,9 +647,9 @@ After=network.target postgresql.service
 [Service]
 User=${TRMM_USER}
 Group=${WWW_GROUP}
-WorkingDirectory=/rmm/api/tacticalrmm
-Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/uwsgi --ini app.ini
+WorkingDirectory=${TRMM_ROOT_PATH}/api/tacticalrmm
+Environment="PATH=${TRMM_ROOT_PATH}/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=${TRMM_ROOT_PATH}/api/env/bin/uwsgi --ini app.ini
 Restart=always
 RestartSec=10s
 
@@ -604,6 +659,7 @@ EOF
 )"
 echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service >/dev/null
 
+## todo: 2022-06-17: redo:
 daphneservice="$(
   cat <<EOF
 [Unit]
@@ -613,9 +669,9 @@ After=network.target
 [Service]
 User=${TRMM_USER}
 Group=${WWW_GROUP}
-WorkingDirectory=/rmm/api/tacticalrmm
-Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+WorkingDirectory=${TRMM_ROOT_PATH}/api/tacticalrmm
+Environment="PATH=${TRMM_ROOT_PATH}/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=${TRMM_ROOT_PATH}/api/env/bin/daphne -u ${TRMM_ROOT_PATH}/daphne.sock tacticalrmm.asgi:application
 Restart=always
 RestartSec=3s
 
@@ -625,6 +681,7 @@ EOF
 )"
 echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
 
+## todo: 2022-06-17: redo:
 natsservice="$(
   cat <<EOF
 [Unit]
@@ -634,7 +691,7 @@ After=network.target
 [Service]
 PrivateTmp=true
 Type=simple
-ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecStart=/usr/local/bin/nats-server -c ${TRMM_ROOT_PATH}/api/tacticalrmm/nats-rmm.conf
 ExecReload=/usr/bin/kill -s HUP \$MAINPID
 ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
 User=${TRMM_USER}
@@ -670,12 +727,13 @@ EOF
 )"
 echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service >/dev/null
 
+## todo: 2022-06-17: redo:
 nginxrmm="$(
   cat <<EOF
 server_tokens off;
 
 upstream tacticalrmm {
-    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+    server unix:///${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -696,8 +754,8 @@ server {
     listen [::]:443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
-    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
-    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    access_log "${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/private/log/access.log" combined if=\$ignore_ua;
+    error_log "${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/private/log/error.log";
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
     
@@ -710,17 +768,17 @@ server {
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
-        root /rmm/api/tacticalrmm;
+        root "${TRMM_ROOT_PATH}/api/tacticalrmm";
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+        alias "${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/private/";
     }
 
     location ~ ^/ws/ {
-        proxy_pass http://unix:/rmm/daphne.sock;
+        proxy_pass http://unix:${TRMM_ROOT_PATH}/daphne.sock;
 
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
@@ -735,15 +793,16 @@ server {
 
     location / {
         uwsgi_pass  tacticalrmm;
-        include     /etc/nginx/uwsgi_params;
+        include     ${NGINX_PATH}/uwsgi_params;
         uwsgi_read_timeout 300s;
         uwsgi_ignore_client_abort on;
     }
 }
 EOF
 )"
-echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
+echo "${nginxrmm}" | sudo tee "${NGINX_PATH}/sites-available/rmm.conf" >/dev/null
 
+## todo: 2022-06-17: redo:
 nginxmesh="$(
   cat <<EOF
 server {
@@ -754,7 +813,6 @@ server {
 }
 
 server {
-
     listen 443 ssl;
     listen [::]:443 ssl;
     proxy_send_timeout 330s;
@@ -787,13 +845,14 @@ server {
 }
 EOF
 )"
-echo "${nginxmesh}" | sudo tee /etc/nginx/sites-available/meshcentral.conf >/dev/null
+echo "${nginxmesh}" | sudo tee "${NGINX_PATH}/sites-available/meshcentral.conf" >/dev/null
 
-sudo ln -s /etc/nginx/sites-available/rmm.conf /etc/nginx/sites-enabled/rmm.conf
-sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/meshcentral.conf
+sudo ln -s "${NGINX_PATH}/sites-available/rmm.conf" "${NGINX_PATH}/sites-enabled/rmm.conf"
+sudo ln -s "${NGINX_PATH}/sites-available/meshcentral.conf" "${NGINX_PATH}/sites-enabled/meshcentral.conf"
 
-sudo mkdir /etc/conf.d
+sudo mkdir "${ETC_CONFD}"
 
+## todo: 2022-06-17: redo:
 celeryservice="$(
   cat <<EOF
 [Unit]
@@ -804,8 +863,8 @@ After=network.target redis-server.service postgresql.service
 Type=forking
 User=${TRMM_USER}
 Group=${TRMM_GROUP}
-EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
+EnvironmentFile=${CELERY_CONF_FILE}
+WorkingDirectory=${TRMM_ROOT_PATH}/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
 ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
@@ -818,11 +877,12 @@ EOF
 )"
 echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service >/dev/null
 
+## todo: 2022-06-17: redo:
 celeryconf="$(
   cat <<EOF
 CELERYD_NODES="w1"
 
-CELERY_BIN="/rmm/api/env/bin/celery"
+CELERY_BIN="${TRMM_ROOT_PATH}/api/env/bin/celery"
 
 CELERY_APP="tacticalrmm"
 
@@ -830,16 +890,17 @@ CELERYD_MULTI="multi"
 
 CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"
 
-CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
-CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
+CELERYD_PID_FILE="${TRMM_ROOT_PATH}/api/tacticalrmm/%n.pid"
+CELERYD_LOG_FILE="${CELERY_LOG_PATH}/%n%I.log"
 CELERYD_LOG_LEVEL="ERROR"
 
-CELERYBEAT_PID_FILE="/rmm/api/tacticalrmm/beat.pid"
-CELERYBEAT_LOG_FILE="/var/log/celery/beat.log"
+CELERYBEAT_PID_FILE="${TRMM_ROOT_PATH}/api/tacticalrmm/beat.pid"
+CELERYBEAT_LOG_FILE="${CELERY_LOG_PATH}/beat.log"
 EOF
 )"
-echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf >/dev/null
+echo "${celeryconf}" | sudo tee ${CELERY_CONF_FILE} >/dev/null
 
+## todo: 2022-06-17: redo:
 celerybeatservice="$(
   cat <<EOF
 [Unit]
@@ -850,8 +911,8 @@ After=network.target redis-server.service postgresql.service
 Type=simple
 User=${TRMM_USER}
 Group=${TRMM_GROUP}
-EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
+EnvironmentFile=${CELERY_CONF_FILE}
+WorkingDirectory=${TRMM_ROOT_PATH}/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
 Restart=always
 RestartSec=10s
@@ -862,8 +923,9 @@ EOF
 )"
 echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null
 
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R /etc/conf.d/
+sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${ETC_CONFD}"
 
+## todo: 2022-06-17: redo:
 meshservice="$(
   cat <<EOF
 [Unit]
@@ -872,9 +934,9 @@ After=network.target mongod.service nginx.service
 [Service]
 Type=simple
 LimitNOFILE=1000000
-ExecStart=/usr/bin/node node_modules/meshcentral
+ExecStart=${NODE_BIN} node_modules/meshcentral
 Environment=NODE_ENV=production
-WorkingDirectory=/meshcentral
+WorkingDirectory=${MESH_ROOT_PATH}
 User=${TRMM_USER}
 Group=${TRMM_GROUP}
 Restart=always
@@ -901,12 +963,12 @@ fi
 print_header 'Installing the frontend'
 
 webtar="trmm-web-v${WEB_VERSION}.tar.gz"
-wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
-sudo mkdir -p /var/www/rmm
-sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
-echo "window._env_ = {PROD_URL: \"https://${rmmdomain}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null
-sudo chown ${WWW_USER}:${WWW_GROUP} -R /var/www/rmm/dist
-rm -f /tmp/${webtar}
+wget -q "${TRMM_FRONTEND_REPO}/releases/download/v${WEB_VERSION}/${webtar}" -O "/tmp/${webtar}"
+sudo mkdir -p "${TRMM_WEB_PATH}"
+sudo tar -xzf /tmp/${webtar} -C ${TRMM_WEB_PATH}
+echo "window._env_ = {PROD_URL: \"https://${rmmdomain}\"}" | sudo tee "${TRMM_WEB_PATH}/dist/env-config.js" >/dev/null
+sudo chown "${WWW_USER}:${WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
+rm -f "/tmp/${webtar}"
 
 nginxfrontend="$(
   cat <<EOF
@@ -914,7 +976,7 @@ server {
     server_name ${frontenddomain};
     charset utf-8;
     location / {
-        root /var/www/rmm/dist;
+        root "${TRMM_WEB_PATH}/dist";
         try_files \$uri \$uri/ /index.html;
         add_header Cache-Control "no-store, no-cache, must-revalidate";
         add_header Pragma "no-cache";
@@ -948,9 +1010,9 @@ server {
 }
 EOF
 )"
-echo "${nginxfrontend}" | sudo tee /etc/nginx/sites-available/frontend.conf >/dev/null
+echo "${nginxfrontend}" | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
 
-sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/frontend.conf
+sudo ln -s "${NGINX_PATH}/sites-available/frontend.conf" "${NGINX_PATH}/sites-enabled/frontend.conf"
 
 ################################################################################
 
@@ -975,46 +1037,46 @@ sleep 3
 # We will know it's ready once the last line of the systemd service stdout is 'MeshCentral HTTP server running on port.....'
 while ! [[ $CHECK_MESH_READY ]]; do
   CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
-  echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
+  print_warn "MeshCentral is not ready yet..."
   sleep 3
 done
 
 print_header 'Generating MeshCentral login token key'
 
-MESHTOKENKEY=$(node /meshcentral/node_modules/meshcentral --logintokenkey)
+MESHTOKENKEY=$(${NODE_BIN} "${MESH_ROOT_PATH}/node_modules/meshcentral" --logintokenkey)
 
 meshtoken="$(
   cat <<EOF
 MESH_TOKEN_KEY = "${MESHTOKENKEY}"
 EOF
 )"
-echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
+echo "${meshtoken}" | tee --append "${TRMM_LOCAL_CONF}" >/dev/null
 
-print_header 'Creating meshcentral account and group'
+print_header 'Creating MeshCentral account and group'
 
 sudo systemctl stop meshcentral
 sleep 1
-cd /meshcentral
+cd "${MESH_ROOT_PATH}"
 
-node node_modules/meshcentral --createaccount ${MESH_USERNAME} --pass ${MESH_PASSWORD} --email ${letsemail}
+${NODE_BIN} node_modules/meshcentral --createaccount "${MESH_USERNAME}" --pass "${MESH_PASSWORD}" --email "${letsemail}"
 sleep 1
-node node_modules/meshcentral --adminaccount ${MESH_USERNAME}
+${NODE_BIN} node_modules/meshcentral --adminaccount "${MESH_USERNAME}"
 
 sudo systemctl start meshcentral
 sleep 5
 
 while ! [[ $CHECK_MESH_READY2 ]]; do
   CHECK_MESH_READY2=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
-  echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
+  print_warn "MeshCentral is not ready yet"
   sleep 3
 done
 
-node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${MESH_USERNAME} --loginpass ${MESH_PASSWORD} AddDeviceGroup --name TacticalRMM
+${NODE_BIN} node_modules/meshcentral/meshctrl.js --url "wss://${meshdomain}:443" --loginuser "${MESH_USERNAME}" --loginpass "${MESH_PASSWORD}" AddDeviceGroup --name TacticalRMM
 sleep 1
 
 sudo systemctl enable nats.service
-cd /rmm/api/tacticalrmm
-source /rmm/api/env/bin/activate
+cd "${TRMM_ROOT_PATH}/api/tacticalrmm"
+source "${TRMM_ROOT_PATH}/api/env/bin/activate"
 python manage.py initial_db_setup
 python manage.py reload_nats
 deactivate
@@ -1025,7 +1087,7 @@ sudo systemctl enable nats-api.service
 sudo systemctl start nats-api.service
 
 ## disable django admin
-sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' "${TRMM_SETTINGS_FILE}"
 
 print_header 'Restarting services'
 
@@ -1050,6 +1112,6 @@ if [ "$BEHIND_NAT" = true ]; then
   echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443 and 4222 tcp.${NC}\n\n"
 fi
 
-printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"
+printf >&2 "${YELLOW}Please refer to the Github README for next steps${NC}\n\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

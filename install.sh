@@ -7,7 +7,7 @@ menuselection=""
 declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Standard Install' 'Dev Test Prereqs' 'Dev Test Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Force Update' 'Return' 'Exit')
-declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Edit UWSGI config' 'Add Fail2ban' 'Troubleshoot' 'Return' 'Exit')
+declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'TODO Edit UWSGI config' 'TODO Add Fail2ban' 'Run Server Troubleshooter' 'Return' 'Exit')
 
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"

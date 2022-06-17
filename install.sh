@@ -123,10 +123,8 @@ utilityMenu()
 		case $menuselection in
 			1 ) backupTRMM;;
       		2 ) restoreTRMM;;
-      		3 ) return;;
-        		#renewCerts;;
-			4 ) return;;
-				#importCerts;;
+      		3 ) renewCerts;;
+			4 ) importCerts;;
 			5 ) return;;
 				#changeUWSGI;;
 			6 ) return;;

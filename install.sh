@@ -6,7 +6,7 @@ menuselection=""
 #declare -a menuoptions=('Test Install' 'Exit')
 declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Standard Install' 'Dev Test Prereqs' 'Dev Test Install' 'Return' 'Exit')
-declare -a updatemenuoptions=('Standard Update' 'Force Update' 'Return' 'Exit')
+declare -a updatemenuoptions=('Standard Update' 'Backup and Update' 'Force Update' 'Return' 'Exit')
 declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'TODO Edit UWSGI config' 'TODO Add Fail2ban' 'Run Server Troubleshooter' 'Return' 'Exit')
 
 ### Script Info variables
@@ -126,7 +126,7 @@ utilityMenu()
       		3 ) renewCerts;;
 			4 ) importCerts;;
 			5 ) return;;
-				#changeUWSGI;;
+				#changeUWSGIProcs;;
 			6 ) return;;
 				#installFail2ban;;
       		7 ) troubleShoot;;
@@ -149,17 +149,21 @@ updateMenu()
 			1 "${updatemenuoptions[0]}" \
       		2 "${updatemenuoptions[1]}" \
       		3 "${updatemenuoptions[2]}" \
-			4 "${updatemenuoptions[3]}" 2>"${INPUT}"
+			4 "${updatemenuoptions[3]}" \
+			5 "${updatemenuoptions[4]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
 			1 ) UPDATE_TYPE="standard"
         		updateTRMM;;
-      		2 ) UPDATE_TYPE="forced"
+      		2 ) UPDATE_TYPE="standard"
+				backupTRMM
         		updateTRMM;;
-      		3 ) return;;
-			4 ) [ -f $INPUT ] && rm $INPUT
+			3 ) UPDATE_TYPE="forced"
+        		updateTRMM;;
+      		4 ) return;;
+			5 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
 			* ) derpDerp;;

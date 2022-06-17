@@ -8,6 +8,8 @@
 : "${TRMM_SCRIPT_DEBUG:="NO"}"
 ## Switch between production and development branches
 : "${TRMM_SCRIPT_BRANCH:="master"}"
+## Switch between 'live' and 'staging' ACME servers
+: "${TRMM_SCRIPT_ACME_SERVER:="live"}"
 
 readonly SCRIPT_VERSION="63"
 readonly SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/${TRMM_SCRIPT_BRANCH}/install.sh"
@@ -32,6 +34,7 @@ TRMM_SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 NGINX_CONF="/etc/nginx/nginx.conf"
 LETS_ENCRYPT_PATH="/etc/letsencrypt"
 
+## Runtime discovery
 CPU_CORES=$(nproc)
 
 ################################################################################
@@ -196,6 +199,7 @@ case "${OS_NAME}" in
 esac
 
 ## Check if root
+## todo: 2022-06-17: instead of this, run the script as root and avoid sudo altogether
 if [ $EUID -eq 0 ]; then
   print_error "Do NOT run this script as root. Exiting."
   exit 1
@@ -281,22 +285,30 @@ if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192
   BEHIND_NAT=true
 fi
 
+################################################################################
+
 sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y certbot openssl
 
 print_header 'Preparing certificate request'
 
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
+if [ "${TRMM_SCRIPT_ACME_SERVER}" = "staging" ]; then
+  ACME_ADDITIONAL_PARAMS="${ACME_ADDITIONAL_PARAMS} --test-cert"
+fi
+
+sudo certbot certonly --manual -d "*.${rootdomain}" --agree-tos --no-bootstrap --preferred-challenges dns -m "${letsemail}" --no-eff-email "${ACME_ADDITIONAL_PARAMS}"
 while [[ $? -ne 0 ]]; do
-  sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
+  sudo certbot certonly --manual -d "*.${rootdomain}" --agree-tos --no-bootstrap --preferred-challenges dns -m "${letsemail}" --no-eff-email "${ACME_ADDITIONAL_PARAMS}"
 done
 
-readonly CERT_PRIV_KEY="${LETS_ENCRYPT_PATH}/live/${rootdomain}/privkey.pem"
-readonly CERT_PUB_KEY="${LETS_ENCRYPT_PATH}/live/${rootdomain}/fullchain.pem"
+readonly CERT_PRIV_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${rootdomain}/privkey.pem"
+readonly CERT_PUB_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${rootdomain}/fullchain.pem"
 
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${LETS_ENCRYPT_PATH}"
 sudo chmod 775 -R "${LETS_ENCRYPT_PATH}"
+
+################################################################################
 
 print_header 'Installing Nginx'
 
@@ -304,6 +316,8 @@ sudo apt install -y nginx
 sudo systemctl stop nginx
 sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' "${NGINX_CONF}"
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' "${NGINX_CONF}"
+
+################################################################################
 
 print_header 'Installing NodeJS'
 
@@ -313,6 +327,8 @@ sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
 sudo npm install -g npm
 
+################################################################################
+
 print_header 'Installing MongoDB'
 
 wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
@@ -321,6 +337,8 @@ sudo apt update
 sudo apt install -y mongodb-org
 sudo systemctl enable mongod
 sudo systemctl restart mongod
+
+################################################################################
 
 print_header "Installing Python $PYTHON_VER"
 
@@ -335,9 +353,13 @@ sudo make altinstall
 cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
+################################################################################
+
 print_header 'Installing redis and git'
 
 sudo apt install -y ca-certificates redis git
+
+################################################################################
 
 print_header 'Installing PostgreSQL'
 
@@ -351,6 +373,8 @@ sudo systemctl enable postgresql
 sudo systemctl restart postgresql
 sleep 5
 
+################################################################################
+
 print_header 'Creating TRMM database'
 
 sudo -u postgres psql -c "CREATE DATABASE ${TRMM_DB_NAME}"
@@ -359,6 +383,8 @@ sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET client_encoding TO 'utf
 sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET default_transaction_isolation TO 'read committed'"
 sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${TRMM_DB_NAME} TO ${TRMM_DB_USER}"
+
+################################################################################
 
 print_header 'Cloning repos'
 
@@ -380,6 +406,8 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout main
 
+################################################################################
+
 print_header 'Installing NATS'
 
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
@@ -391,6 +419,8 @@ sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr
 sudo chmod +x /usr/local/bin/nats-server
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-server
 rm -rf ${nats_tmp}
+
+################################################################################
 
 print_header 'Installing MeshCentral'
 
@@ -858,6 +888,8 @@ if [ -d ~/.config ]; then
   sudo chown -R "${TRMM_USER}:${TRMM_GROUP}" ~/.config
 fi
 
+################################################################################
+
 print_header 'Installing the frontend'
 
 webtar="trmm-web-v${WEB_VERSION}.tar.gz"
@@ -912,6 +944,8 @@ echo "${nginxfrontend}" | sudo tee /etc/nginx/sites-available/frontend.conf >/de
 
 sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/frontend.conf
 
+################################################################################
+
 print_header 'Enabling Services'
 
 for i in rmm.service daphne.service celery.service celerybeat.service nginx; do
@@ -922,7 +956,7 @@ done
 sleep 5
 sudo systemctl enable meshcentral
 
-print_header 'Starting meshcentral and waiting for it to install plugins'
+print_header 'Starting MeshCentral and waiting for it to install plugins'
 
 sudo systemctl restart meshcentral
 
@@ -937,7 +971,7 @@ while ! [[ $CHECK_MESH_READY ]]; do
   sleep 3
 done
 
-print_header 'Generating meshcentral login token key'
+print_header 'Generating MeshCentral login token key'
 
 MESHTOKENKEY=$(node /meshcentral/node_modules/meshcentral --logintokenkey)
 
@@ -986,6 +1020,7 @@ sudo systemctl start nats-api.service
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_header 'Restarting services'
+
 for i in rmm.service daphne.service celery.service celerybeat.service; do
   sudo systemctl stop ${i}
   sudo systemctl start ${i}

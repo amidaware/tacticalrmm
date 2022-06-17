@@ -25,6 +25,7 @@ readonly WWW_GROUP="www-data"
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
+readonly CYAN="\033[0;36m"
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 
@@ -97,8 +98,8 @@ print_error() {
   printf >&2 "${RED}%s${NC}\n" "${1}"
 }
 
-print_error2() {
-  printf "${RED}%s${NC}\n" "${1}"
+print_debug() {
+  printf "${CYAN}%s${NC}\n" "${1}"
 }
 
 print_header() {
@@ -115,20 +116,27 @@ print_header() {
 
 update_script() {
   local tmp_file new_version
-  tmp_file=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
-  curl -s -L "${SCRIPT_URL}" >"${tmp_file}"
-  new_version=$(grep "^SCRIPT_VERSION" "$tmp_file" | awk -F'[="]' '{print $3}')
+  tmp_file="$(mktemp -p "" "rmminstall_XXXXXXXXXX")"
 
-  ## todo: 2022-06-17: maybe: change to 'less than' instead?
-  if [ "${SCRIPT_VERSION}" -ne "${new_version}" ]; then
-    print_warn "Old install script detected, downloading and replacing with the latest version..."
-    wget -q "${SCRIPT_URL}" -O install.sh
-    print_warn "Script updated! Please re-run ./install.sh"
-    rm -f $tmp_file
-    exit 1
+  if [[ "$(wget -q "${SCRIPT_URL}" -O "${tmp_file}")" -eq 0 ]]; then
+    new_version=$(grep "SCRIPT_VERSION=" "$tmp_file" | awk -F'[="]' '{print $3}')
+
+    if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
+      print_debug "Script version: ${SCRIPT_VERSION}, latest online: ${new_version}"
+    fi
+
+    ## todo: 2022-06-17: maybe: change to 'less than' instead?
+    if [ "${SCRIPT_VERSION}" -ne "${new_version}" ]; then
+      print_warn "Install script is outdated, replacing with the latest version..."
+      chmod +x "$tmp_file" && mv -f "$tmp_file" install.sh
+      print_warn "Script updated! Please re-run ./install.sh"
+      exit 0
+    fi
+  else
+    print_warn "Script update check failed."
   fi
 
-  rm -f $tmp_file
+  rm -f "$tmp_file"
 
   return
 }
@@ -234,7 +242,7 @@ if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
   printf "TRMM DB Username: %s\n" "${TRMM_DB_USER}"
   printf "TRMM DB Password: %s\n" "${TRMM_DB_PASS}"
   printf "TRMM DB Database: %s\n" "${TRMM_DB_NAME}"
-  printf "Script branch: %s\n" "${TRMM_SCRIPT_BRANCH}"
+  print_debug "Script branch: ${TRMM_SCRIPT_BRANCH}"
 else
   cls
 fi

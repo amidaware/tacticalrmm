@@ -7,7 +7,7 @@ menuselection=""
 declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Standard Install' 'Dev Test Prereqs' 'Dev Test Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Backup and Update' 'Force Update' 'Return' 'Exit')
-declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Edit UWSGI config' 'TODO Add Fail2ban' 'Run Server Troubleshooter' 'Return' 'Exit')
+declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Edit UWSGI config' 'Add Fail2ban - Use at your own risk' 'Run Server Troubleshooter' 'Return' 'Exit')
 
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"
@@ -126,8 +126,7 @@ utilityMenu()
       		3 ) renewCerts;;
 			4 ) importCerts;;
 			5 ) changeUWSGIProcs;;
-			6 ) return;;
-				#installFail2ban;;
+			6 ) installFail2ban;;
       		7 ) troubleShoot;;
       		8 ) return;;
 			9 ) [ -f $INPUT ] && rm $INPUT

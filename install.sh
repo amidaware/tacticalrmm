@@ -12,21 +12,21 @@ declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' '
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-bash-updates"
-readonly CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
-readonly SCRIPT_VERSION="66"
-readonly SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
-readonly REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
-readonly SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
-readonly FRONTEND_URL="https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}"
+CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
+SCRIPT_VERSION="66"
+SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
+REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
+SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
+FRONTEND_URL="https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}"
 THIS_SCRIPT=$(readlink -f "$0")
 
 ### Misc info variables
 INSTALL_TYPE="install"
 UPDATE_TYPE="standard"
-readonly SCRIPTS_DIR='/opt/trmm-community-scripts'
-readonly PYTHON_VER='3.10.4'
-readonly SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-readonly LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
+SCRIPTS_DIR='/opt/trmm-community-scripts'
+PYTHON_VER='3.10.4'
+SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
+LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 
 ### Get cfg file
 if [ ! -f "$PWD/bashfunctions.cfg" ]; then

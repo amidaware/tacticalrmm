@@ -12,7 +12,7 @@ declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' '
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-bash-updates"
-CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/bashfunctions.cfg"
+CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 SCRIPT_VERSION="66"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
@@ -28,16 +28,22 @@ PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 
-### Get cfg file
-if [ ! -f "$PWD/bashfunctions.cfg" ]; then
-	wget -q "${CFG_URL}" -O bashfunctions.cfg
-fi
+### Get cfg files function
+getCfgFiles()
+{
+	if [ ! -f "$PWD/$2" ]; then
+		wget -q "$1/$2" -O "$2"
+	fi
+}
+
+### Get bashfunctions file
+getCfgFiles "$CFG_URL" "bashfunctions.cfg";
 
 ### Import functions
 . $PWD/bashfunctions.cfg
 
 ### Set colors
-setColors;
+setColors;		# MiscFunctions
 
 ### Gather OS info
 getOSInfo;		# SystemInfoFunctions

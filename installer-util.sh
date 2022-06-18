@@ -11,7 +11,7 @@ declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' '
 
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"
-BRANCH="develop-bash-updates"
+BRANCH="develop-installer-update"
 CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 SCRIPT_VERSION="66"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"

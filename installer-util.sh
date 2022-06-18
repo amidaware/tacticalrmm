@@ -40,7 +40,7 @@ fi
 setColors;
 
 ### Gather OS info
-getOSInfo;
+getOSInfo;		# SystemInfoFunctions
 
 ### Install script pre-reqs
 installPreReqs;
@@ -54,17 +54,17 @@ checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
 ### Install additional prereqs
 installAdditionalPreReqs;
 
-### Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
-wutOSThis;
+### Fallback if lsb_release -si returns anything else than Ubuntu, Debian, or Raspbian
+wutOSThis;		# SystemInfoFunctions
 
 ### Verify compatible OS and version
-verifySupportedOS;
+verifySupportedOS;		# SystemInfoFunctions
 
 ### Check if root
-checkRoot;
+checkRoot;		# MiscFunctions
 
 ### Check language/locale
-checkLocale;
+checkLocale;	# SystemInfoFunctions
 
 ### Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service

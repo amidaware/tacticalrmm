@@ -3,18 +3,20 @@
 ### Menu option variables
 INPUT=/tmp/menu.sh.$$
 menuselection=""
-#declare -a menuoptions=('Test Install' 'Exit')
+
+### Arrays
 declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Standard Install' 'Dev Test Prereqs' 'Dev Test Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Backup and Update' 'Force Update' 'Return' 'Exit')
 declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Edit UWSGI config' 'Add Fail2ban - Use at your own risk' 'Run Server Troubleshooter' 'Return' 'Exit')
+declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunctions.cfg' 'UserInput.cfg' 'NetworkFunctions.cfg' 'InstallFunctions.cfg' 'DatabaseFunctions.cfg' 'CertificateFunctions.cfg' 'ConfigAndServiceFunctions.cfg' 'UpdateRestoreFunctions.cfg' 'TroubleshootingFunctions.cfg' 'ParentFunctions.cfg')
 
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-installer-update"
-CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
+BASE_SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 SCRIPT_VERSION="66"
-SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/install.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
 FRONTEND_URL="https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}"
@@ -37,7 +39,7 @@ getCfgFiles()
 }
 
 ### Get bashfunctions file
-getCfgFiles "$CFG_URL" "bashfunctions.cfg";
+getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
 
 ### Import functions
 . $PWD/bashfunctions.cfg
@@ -49,16 +51,16 @@ setColors;		# MiscFunctions
 getOSInfo;		# SystemInfoFunctions
 
 ### Install script pre-reqs
-installPreReqs;
+installPreReqs;		# InstallFunctions
 
 ### Check for new functions version, only include script name as variable
-checkCfgVer "$CFG_URL" "$THIS_SCRIPT";
+checkCfgVer "$BASE_SCRIPT_URL" "bashfunctions.cfg" "$THIS_SCRIPT";
 
 ### Check for new script version, pass script version, url, and script name variables in that order
 checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
 
 ### Install additional prereqs
-installAdditionalPreReqs;
+installAdditionalPreReqs;		# InstallFunctions
 
 ### Fallback if lsb_release -si returns anything else than Ubuntu, Debian, or Raspbian
 wutOSThis;		# SystemInfoFunctions

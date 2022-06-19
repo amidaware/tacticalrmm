@@ -15,7 +15,7 @@ declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunction
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-installer-update"
 BASE_SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
-SCRIPT_VERSION="67"
+SCRIPT_VERSION="68"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
@@ -41,7 +41,11 @@ getCfgFiles()
 ### Get bashfunctions file
 getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
 
-#mkdir -p $PWD/bash
+### Check if directory exists, if not, create
+#if [ ! -d $PWD/bash-cfg ]; then
+#	mkdir bash-cfg
+#fi
+
 ### Get cfg files
 #for i in "${cfgfiles[@]}"
 #do
@@ -50,6 +54,18 @@ getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
 
 ### Import functions
 . $PWD/bashfunctions.cfg
+. $PWD/InputAndError.cfg
+. $PWD/MiscFunctions.cfg
+. $PWD/SystemInfoFunctions.cfg
+. $PWD/UserInput.cfg
+. $PWD/NetworkFunctions.cfg
+. $PWD/InstallFunctions.cfg
+. $PWD/DatabaseFunctions.cfg
+. $PWD/CertificateFunctions.cfg
+. $PWD/ConfigAndServiceFunctions.cfg
+. $PWD/UpdateRestoreFunctions.cfg
+. $PWD/TroubleshootingFunctions.cfg
+. $PWD/ParentFunctions.cfg
 
 ### Set colors
 setColors;		# MiscFunctions

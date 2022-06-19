@@ -54,18 +54,18 @@ getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
 
 ### Import functions
 . $PWD/bashfunctions.cfg
-. $PWD/InputAndError.cfg
-. $PWD/MiscFunctions.cfg
-. $PWD/SystemInfoFunctions.cfg
-. $PWD/UserInput.cfg
-. $PWD/NetworkFunctions.cfg
-. $PWD/InstallFunctions.cfg
-. $PWD/DatabaseFunctions.cfg
-. $PWD/CertificateFunctions.cfg
-. $PWD/ConfigAndServiceFunctions.cfg
-. $PWD/UpdateRestoreFunctions.cfg
-. $PWD/TroubleshootingFunctions.cfg
-. $PWD/ParentFunctions.cfg
+#. $PWD/InputAndError.cfg
+#. $PWD/MiscFunctions.cfg
+#. $PWD/SystemInfoFunctions.cfg
+#. $PWD/UserInput.cfg
+#. $PWD/NetworkFunctions.cfg
+#. $PWD/InstallFunctions.cfg
+#. $PWD/DatabaseFunctions.cfg
+#. $PWD/CertificateFunctions.cfg
+#. $PWD/ConfigAndServiceFunctions.cfg
+#. $PWD/UpdateRestoreFunctions.cfg
+#. $PWD/TroubleshootingFunctions.cfg
+#. $PWD/ParentFunctions.cfg
 
 ### Set colors
 setColors;		# MiscFunctions

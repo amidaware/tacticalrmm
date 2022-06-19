@@ -15,7 +15,7 @@ declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunction
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-installer-update"
 BASE_SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
-SCRIPT_VERSION="66"
+SCRIPT_VERSION="67"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
@@ -34,19 +34,19 @@ LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm
 getCfgFiles()
 {
 	if [ ! -f "$PWD/$2" ]; then
-		wget -q "$1/bash/$2" -O "$PWD/bash/$2"
+		wget -q "$1/$2" -O "$PWD/$2"
 	fi
 }
 
 ### Get bashfunctions file
 getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
 
-mkdir -p $PWD/bash
+#mkdir -p $PWD/bash
 ### Get cfg files
-for i in "${cfgfiles[@]}"
-do
-	getCfgFiles "$BASE_SCRIPT_URL" "$i";
-done
+#for i in "${cfgfiles[@]}"
+#do
+#	getCfgFiles "$BASE_SCRIPT_URL" "$i";
+#done
 
 ### Import functions
 . $PWD/bashfunctions.cfg

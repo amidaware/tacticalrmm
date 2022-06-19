@@ -41,6 +41,7 @@ getCfgFiles()
 ### Get bashfunctions file
 getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
 
+mkdir -p $PWD/bash
 ### Get cfg files
 for i in "${cfgfiles[@]}"
 do

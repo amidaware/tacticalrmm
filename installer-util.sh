@@ -34,12 +34,18 @@ LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm
 getCfgFiles()
 {
 	if [ ! -f "$PWD/$2" ]; then
-		wget -q "$1/$2" -O "$2"
+		wget -q "$1/bash/$2" -O "$PWD/bash/$2"
 	fi
 }
 
 ### Get bashfunctions file
 getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
+
+### Get cfg files
+for i in "${cfgfiles[@]}"
+do
+	getCfgFiles "$BASE_SCRIPT_URL" "$i";
+done
 
 ### Import functions
 . $PWD/bashfunctions.cfg

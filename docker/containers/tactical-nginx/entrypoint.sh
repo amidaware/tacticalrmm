@@ -10,6 +10,8 @@ set -e
 : "${FRONTEND_SERVICE:=tactical-frontend}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
 : "${WEBSOCKETS_SERVICE:=tactical-websockets}"
+: "${PROXY_PROTOCOL_ENABLED:=no}"
+: "${PROXY_PROTOCOL_TRUSTED_IP:=127.0.0.1}"
 : "${DEV:=0}"
 
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
@@ -61,6 +63,17 @@ else
 "
 fi
 
+if [[ $PROXY_PROTOCOL_ENABLED = "yes" ]]; then
+    PROXY_PROTOCOL="proxy_protocol"
+    X_REAL_IP="\$proxy_protocol_addr"
+    X_FORWARDED_FOR="\$proxy_protocol_addr"
+    REAL_IP_HEADER="proxy_protocol"
+else
+    X_REAL_IP="\$remote_addr"
+    X_FORWARDED_FOR="\$proxy_add_x_forwarded_for"
+    REAL_IP_HEADER="X-Forwarded-For"
+fi
+
 nginx_config="$(cat << EOF
 # backend config
 server  {
@@ -92,14 +105,14 @@ server  {
 
         proxy_redirect     off;
         proxy_set_header   Host \$host;
-        proxy_set_header   X-Real-IP \$remote_addr;
-        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Real-IP ${X_REAL_IP};
+        proxy_set_header   X-Forwarded-For ${X_FORWARDED_FOR};
         proxy_set_header   X-Forwarded-Host \$server_name;
     }
 
     client_max_body_size 300M;
 
-    listen 4443 ssl;
+    listen 4443 ssl ${PROXY_PROTOCOL};
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
 
@@ -110,11 +123,14 @@ server  {
     ssl_stapling on;
     ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
+
+    set_real_ip_from ${PROXY_PROTOCOL_TRUSTED_IP};
+    real_ip_header ${REAL_IP_HEADER};
     
 }
 
 server {
-    listen 8080;
+    listen 8080 ${PROXY_PROTOCOL};
     server_name ${API_HOST};
     return 301 https://\$server_name\$request_uri;
 }
@@ -136,8 +152,8 @@ server  {
         proxy_set_header Upgrade           \$http_upgrade;
         proxy_set_header Connection        "upgrade";
         proxy_set_header Host              \$host;
-        proxy_set_header X-Real-IP         \$remote_addr;
-        proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP         ${X_REAL_IP};
+        proxy_set_header X-Forwarded-For   ${X_FORWARDED_FOR};
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host  \$host;
         proxy_set_header X-Forwarded-Port  \$server_port;
@@ -154,6 +170,9 @@ server  {
     ssl_stapling on;
     ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
+
+    set_real_ip_from ${PROXY_PROTOCOL_TRUSTED_IP};
+    real_ip_header ${REAL_IP_HEADER};
     
 }
 
@@ -185,6 +204,9 @@ server {
     ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
 
+    set_real_ip_from ${PROXY_PROTOCOL_TRUSTED_IP};
+    real_ip_header ${REAL_IP_HEADER};
+
     location / {
         #Using variable to disable start checks
         set \$meshcentral http://${MESH_SERVICE}:4443;
@@ -196,9 +218,9 @@ server {
         proxy_set_header Connection "upgrade";
 
         proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Real-IP ${X_REAL_IP};
+        proxy_set_header X-Forwarded-For ${X_FORWARDED_FOR};
         proxy_set_header X-Forwarded-Host \$host:\$server_port;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }

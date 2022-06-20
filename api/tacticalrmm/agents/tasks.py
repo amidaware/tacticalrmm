@@ -1,115 +1,42 @@
-import asyncio
 import datetime as dt
 import random
 from time import sleep
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from django.conf import settings
+
 from django.core.management import call_command
 from django.utils import timezone as djangotime
-from packaging import version as pyver
+
 
 from agents.models import Agent
-from agents.utils import get_agent_url
+
 from core.utils import get_core_settings
-from logs.models import DebugLog, PendingAction
+from logs.models import DebugLog
 from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.constants import (
+    AGENT_DEFER,
     AGENT_STATUS_OVERDUE,
     CheckStatus,
     DebugLogType,
-    PAAction,
-    PAStatus,
 )
 
-
-def agent_update(agent_id: str, force: bool = False) -> str:
-
-    agent = Agent.objects.get(agent_id=agent_id)
-
-    if pyver.parse(agent.version) <= pyver.parse("1.3.0"):
-        return "not supported"
-
-    # skip if we can't determine the arch
-    if agent.arch is None:
-        DebugLog.warning(
-            agent=agent,
-            log_type=DebugLogType.AGENT_ISSUES,
-            message=f"Unable to determine arch on {agent.hostname}({agent.agent_id}). Skipping agent update.",
-        )
-        return "noarch"
-
-    version = settings.LATEST_AGENT_VER
-    inno = agent.win_inno_exe
-    url = get_agent_url(agent.arch, agent.plat)
-
-    if not force:
-        if agent.pendingactions.filter(
-            action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
-        ).exists():
-            agent.pendingactions.filter(
-                action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
-            ).delete()
-
-        PendingAction.objects.create(
-            agent=agent,
-            action_type=PAAction.AGENT_UPDATE,
-            details={
-                "url": url,
-                "version": version,
-                "inno": inno,
-            },
-        )
-
-    nats_data = {
-        "func": "agentupdate",
-        "payload": {
-            "url": url,
-            "version": version,
-            "inno": inno,
-        },
-    }
-    asyncio.run(agent.nats_cmd(nats_data, wait=False))
-    return "created"
+if TYPE_CHECKING:
+    from django.db.models.query import QuerySet
 
 
 @app.task
-def force_code_sign(agent_ids: list[str]) -> None:
-    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
-    for chunk in chunks:
-        for agent_id in chunk:
-            agent_update(agent_id=agent_id, force=True)
-        sleep(2)
-
-
-@app.task
-def send_agent_update_task(agent_ids: list[str]) -> None:
-    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
-    for chunk in chunks:
-        for agent_id in chunk:
-            agent_update(agent_id)
-        sleep(2)
+def send_agent_update_task(*, agent_ids: list[str], token: str, force: bool) -> None:
+    agents: "QuerySet[Agent]" = Agent.objects.defer(*AGENT_DEFER).filter(
+        agent_id__in=agent_ids
+    )
+    for agent in agents:
+        agent.do_update(token=token, force=force)
 
 
 @app.task
 def auto_self_agent_update_task() -> None:
-    core = get_core_settings()
-    if not core.agent_auto_update:
-        return
-
-    q = Agent.objects.only("agent_id", "version")
-    agent_ids: list[str] = [
-        i.agent_id
-        for i in q
-        if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
-    ]
-
-    chunks = (agent_ids[i : i + 70] for i in range(0, len(agent_ids), 70))
-    for chunk in chunks:
-        for agent_id in chunk:
-            agent_update(agent_id)
-        sleep(2)
+    call_command("update_agents")
 
 
 @app.task

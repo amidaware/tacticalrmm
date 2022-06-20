@@ -15,7 +15,8 @@ declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunction
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-installer-update"
 SCRIPT_VERSION="69"
-SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
+CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
+SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
 FRONTEND_URL="https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}"
@@ -46,7 +47,7 @@ fi
 ### Get cfg files
 for i in "${cfgfiles[@]}"
 do
-	getCfgFiles "$SCRIPT_URL" "$i";
+	getCfgFiles "$CFG_URL" "$i";
 done
 
 ### Import functions
@@ -75,7 +76,7 @@ installPreReqs;		# InstallFunctions
 ### Check for new functions versions, include url, filename, and script name as variables
 for i in "${cfgfiles[@]}"
 do
-	checkCfgVer "$SCRIPT_URL" "$i" "$THIS_SCRIPT";		# MiscFunctions
+	checkCfgVer "$CFG_URL" "$i" "$THIS_SCRIPT";		# MiscFunctions
 done
 
 ### Check for new script version, pass script version, url, and script name variables in that order

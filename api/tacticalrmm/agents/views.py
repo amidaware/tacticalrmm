@@ -18,8 +18,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import CodeSignToken
-from core.utils import get_core_settings, get_mesh_ws_url, remove_mesh_agent
+from core.utils import (
+    get_core_settings,
+    get_mesh_ws_url,
+    remove_mesh_agent,
+    token_is_valid,
+)
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
@@ -334,7 +338,9 @@ def update_agents(request):
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
-    send_agent_update_task.delay(agent_ids=agent_ids)
+
+    token, _ = token_is_valid()
+    send_agent_update_task.delay(agent_ids=agent_ids, token=token, force=False)
     return Response("ok")
 
 
@@ -500,18 +506,20 @@ def install_agent(request):
 
     from accounts.models import User
     from agents.utils import get_agent_url
+    from core.utils import token_is_valid
 
     client_id = request.data["client"]
     site_id = request.data["site"]
     version = settings.LATEST_AGENT_VER
-    arch = request.data["arch"]
+    goarch = request.data["goarch"]
+    plat = request.data["plat"]
 
     if not _has_perm_on_site(request.user, site_id):
         raise PermissionDenied()
 
-    inno = (
-        f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
-    )
+    codesign_token, is_valid = token_is_valid()
+
+    inno = f"tacticalagent-v{version}-{plat}-{goarch}.exe"
 
     # TODO refactor this, install method should not be same as plat
     if request.data["installMethod"] == AgentPlat.LINUX:
@@ -519,7 +527,7 @@ def install_agent(request):
     else:
         plat = AgentPlat.WINDOWS
 
-    download_url = get_agent_url(arch, plat)
+    download_url = get_agent_url(goarch=goarch, plat=plat, token=codesign_token)
 
     installer_user = User.objects.filter(is_installer_user=True).first()
 
@@ -537,7 +545,7 @@ def install_agent(request):
             rdp=request.data["rdp"],
             ping=request.data["ping"],
             power=request.data["power"],
-            arch=arch,
+            goarch=goarch,
             token=token,
             api=request.data["api"],
             file_name=request.data["fileName"],
@@ -548,12 +556,10 @@ def install_agent(request):
         # linux agents are in beta for now, only available for sponsors for testing
         # remove this after it's out of beta
 
-        code_token = CodeSignToken.objects.first()
-        if not code_token:
-            return notify_error("Missing code signing token")
-
-        if not code_token.is_valid:
-            return notify_error("Code signing token is not valid")
+        if not is_valid:
+            return notify_error(
+                "Missing code signing token, or token is no longer valid. Please read the docs for more info."
+            )
 
         from agents.utils import generate_linux_install
 
@@ -561,7 +567,7 @@ def install_agent(request):
             client=str(client_id),
             site=str(site_id),
             agent_type=request.data["agenttype"],
-            arch=arch,
+            arch=goarch,
             token=token,
             api=request.data["api"],
             download_url=download_url,

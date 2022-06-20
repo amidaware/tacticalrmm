@@ -5,34 +5,23 @@ import urllib.parse
 from django.conf import settings
 from django.http import FileResponse
 
-from core.models import CodeSignToken
 from core.utils import get_core_settings, get_mesh_device_id, get_mesh_ws_url
-from tacticalrmm.constants import AgentPlat, MeshAgentIdent
+from tacticalrmm.constants import MeshAgentIdent
 
 
-def get_agent_url(arch: str, plat: str) -> str:
-
-    if plat == AgentPlat.WINDOWS:
-        endpoint = "winagents"
-        dl_url = settings.DL_32 if arch == "32" else settings.DL_64
-    else:
-        endpoint = "linuxagents"
-        dl_url = ""
-
-    token = CodeSignToken.objects.first()
-    if not token:
-        return dl_url
-
-    if token.is_valid:
-        base_url = settings.EXE_GEN_URL + f"/api/v1/{endpoint}/?"
+def get_agent_url(*, goarch: str, plat: str, token: str = "") -> str:
+    ver = settings.LATEST_AGENT_VER
+    if token:
         params = {
-            "version": settings.LATEST_AGENT_VER,
-            "arch": arch,
-            "token": token.token,
+            "version": ver,
+            "arch": goarch,
+            "token": token,
+            "plat": plat,
+            "api": settings.ALLOWED_HOSTS[0],
         }
-        dl_url = base_url + urllib.parse.urlencode(params)
+        return settings.AGENTS_URL + urllib.parse.urlencode(params)
 
-    return dl_url
+    return f"https://github.com/amidaware/rmmagent/releases/download/v{ver}/tacticalagent-v{ver}-{plat}-{goarch}.exe"
 
 
 def generate_linux_install(

@@ -1,7 +1,7 @@
 import json
 import tempfile
 from base64 import b64encode
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, Optional
 
 import requests
 import websockets
@@ -13,7 +13,7 @@ from meshctrl.utils import get_auth_token
 from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, ROLE_CACHE_PREFIX
 
 if TYPE_CHECKING:
-    from core.models import CoreSettings
+    from core.models import CoreSettings, CodeSignToken
 
 
 class CoreSettingsNotFound(Exception):
@@ -25,6 +25,25 @@ def clear_entire_cache() -> None:
     cache.delete(CORESETTINGS_CACHE_KEY)
     cache.delete_many_pattern("site_*")
     cache.delete_many_pattern("agent_*")
+
+
+def token_is_valid() -> tuple[str, bool]:
+    """
+    Return type: token: str, is_valid: bool. Token wil be an empty string is not valid.
+    """
+    from core.models import CodeSignToken
+
+    t: "Optional[CodeSignToken]" = CodeSignToken.objects.first()
+    if not t:
+        return "", False
+
+    if not t.token:
+        return "", False
+
+    if t.is_valid:
+        return t.token, True
+
+    return "", False
 
 
 def get_core_settings() -> "CoreSettings":

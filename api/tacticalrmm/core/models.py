@@ -340,7 +340,7 @@ class CustomField(BaseAuditModel):
 
 
 class CodeSignToken(models.Model):
-    token = models.CharField(max_length=255, null=True, blank=True)
+    token: str = models.CharField(max_length=255, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.pk and CodeSignToken.objects.exists():
@@ -355,8 +355,8 @@ class CodeSignToken(models.Model):
 
         try:
             r = requests.post(
-                f"{settings.EXE_GEN_URL}/api/v1/checktoken",
-                json={"token": self.token},
+                settings.CHECK_TOKEN_URL,
+                json={"token": self.token, "api": settings.ALLOWED_HOSTS[0]},
                 headers={"Content-type": "application/json"},
                 timeout=15,
             )

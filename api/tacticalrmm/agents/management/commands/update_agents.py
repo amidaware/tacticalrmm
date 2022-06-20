@@ -4,7 +4,7 @@ from packaging import version as pyver
 
 from agents.models import Agent
 from agents.tasks import send_agent_update_task
-from core.utils import get_core_settings
+from core.utils import get_core_settings, token_is_valid
 from tacticalrmm.constants import AGENT_DEFER
 
 
@@ -22,4 +22,5 @@ class Command(BaseCommand):
             for i in q
             if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
         ]
-        send_agent_update_task.delay(agent_ids=agent_ids)
+        token, _ = token_is_valid()
+        send_agent_update_task.delay(agent_ids=agent_ids, token=token, force=False)

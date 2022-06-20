@@ -16,9 +16,10 @@ from django.utils import timezone as djangotime
 from nats.errors import TimeoutError
 from packaging import version as pyver
 
+from agents.utils import get_agent_url
 from core.models import TZ_CHOICES
 from core.utils import get_core_settings, send_command_with_mesh
-from logs.models import BaseAuditModel, DebugLog
+from logs.models import BaseAuditModel, DebugLog, PendingAction
 from tacticalrmm.constants import (
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
@@ -33,6 +34,8 @@ from tacticalrmm.constants import (
     CustomFieldType,
     DebugLogType,
     GoArch,
+    PAAction,
+    PAStatus,
 )
 from tacticalrmm.models import PermissionQuerySet
 
@@ -58,10 +61,10 @@ class Agent(BaseAuditModel):
 
     version = models.CharField(default="0.1.0", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
-    plat = models.CharField(
+    plat: "AgentPlat" = models.CharField(  # type: ignore
         max_length=255, choices=AgentPlat.choices, default=AgentPlat.WINDOWS
     )
-    goarch = models.CharField(
+    goarch: "GoArch" = models.CharField(  # type: ignore
         max_length=255, choices=GoArch.choices, null=True, blank=True
     )
     hostname = models.CharField(max_length=255)
@@ -133,6 +136,7 @@ class Agent(BaseAuditModel):
     def is_posix(self) -> bool:
         return self.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}
 
+    # DEPRECATED, use goarch instead
     @property
     def arch(self) -> Optional[str]:
         if self.is_posix:
@@ -145,21 +149,51 @@ class Agent(BaseAuditModel):
                 return "32"
         return None
 
-    @property
-    def winagent_dl(self) -> Optional[str]:
-        if self.arch == "64":
-            return settings.DL_64
-        elif self.arch == "32":
-            return settings.DL_32
-        return None
+    def do_update(self, *, token: str = "", force: bool = False) -> str:
+        ver = settings.LATEST_AGENT_VER
 
-    @property
-    def win_inno_exe(self) -> Optional[str]:
-        if self.arch == "64":
-            return f"winagent-v{settings.LATEST_AGENT_VER}.exe"
-        elif self.arch == "32":
-            return f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
-        return None
+        if not self.goarch:
+            DebugLog.warning(
+                agent=self,
+                log_type=DebugLogType.AGENT_ISSUES,
+                message=f"Unable to determine arch on {self.hostname}({self.agent_id}). Skipping agent update.",
+            )
+            return "noarch"
+
+        if pyver.parse(self.version) <= pyver.parse("1.3.0"):
+            return "not supported"
+
+        url = get_agent_url(goarch=self.goarch, plat=self.plat, token=token)
+        bin = f"tacticalagent-v{ver}-{self.plat}-{self.goarch}.exe"
+
+        if not force:
+            if self.pendingactions.filter(  # type: ignore
+                action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
+            ).exists():
+                self.pendingactions.filter(  # type: ignore
+                    action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
+                ).delete()
+
+            PendingAction.objects.create(
+                agent=self,
+                action_type=PAAction.AGENT_UPDATE,
+                details={
+                    "url": url,
+                    "version": ver,
+                    "inno": bin,
+                },
+            )
+
+        nats_data = {
+            "func": "agentupdate",
+            "payload": {
+                "url": url,
+                "version": ver,
+                "inno": bin,
+            },
+        }
+        asyncio.run(self.nats_cmd(nats_data, wait=False))
+        return "created"
 
     @property
     def status(self) -> str:
@@ -1002,7 +1036,7 @@ class AgentHistory(models.Model):
         on_delete=models.CASCADE,
     )
     time = models.DateTimeField(auto_now_add=True)
-    type = models.CharField(
+    type: "AgentHistoryType" = models.CharField(
         max_length=50,
         choices=AgentHistoryType.choices,
         default=AgentHistoryType.CMD_RUN,

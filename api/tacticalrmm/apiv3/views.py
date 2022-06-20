@@ -35,6 +35,7 @@ from tacticalrmm.constants import (
     AuditObjType,
     CheckStatus,
     DebugLogType,
+    GoArch,
     MeshAgentIdent,
     PAStatus,
 )
@@ -396,9 +397,9 @@ class MeshExe(APIView):
 
     def post(self, request):
         match request.data:
-            case {"arch": "64", "plat": AgentPlat.WINDOWS}:
+            case {"goarch": GoArch.AMD64, "plat": AgentPlat.WINDOWS}:
                 arch = MeshAgentIdent.WIN64
-            case {"arch": "32", "plat": AgentPlat.WINDOWS}:
+            case {"goarch": GoArch.i386, "plat": AgentPlat.WINDOWS}:
                 arch = MeshAgentIdent.WIN32
             case _:
                 return notify_error("Arch not specified")

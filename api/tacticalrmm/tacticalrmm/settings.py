@@ -31,7 +31,7 @@ LATEST_AGENT_VER = "2.0.4"
 
 MESH_VER = "1.0.22"
 
-NATS_SERVER_VER = "2.8.2"
+NATS_SERVER_VER = "2.8.4"
 
 # for the update script, bump when need to recreate venv
 PIP_VER = "30"
@@ -39,10 +39,10 @@ PIP_VER = "30"
 SETUPTOOLS_VER = "59.6.0"
 WHEEL_VER = "0.37.1"
 
-DL_64 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
-DL_32 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
-
-EXE_GEN_URL = "https://agents.tacticalrmm.com"
+AGENT_BASE_URL = "https://agents.tacticalrmm.com"
+CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"
+AGENTS_URL = f"{AGENT_BASE_URL}/api/v2/agents/?"
+EXE_GEN_URL = f"{AGENT_BASE_URL}/api/v2/exe"
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
@@ -81,7 +81,6 @@ if "GHACTIONS" in os.environ:
     DEMO = False
 
 REST_FRAMEWORK = {
-    # "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",

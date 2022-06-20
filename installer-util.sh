@@ -31,41 +31,49 @@ SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 
 ### Get cfg files function
+#getCfgFiles()
+##{
+#	if [ ! -f "$PWD/$2" ]; then
+#		wget -q "$1/$2" -O "$PWD/$2"
+#	fi
+#}
+
+### Get cfg files function
 getCfgFiles()
 {
-	if [ ! -f "$PWD/$2" ]; then
-		wget -q "$1/$2" -O "$PWD/$2"
+	if [ ! -f "$PWD/script-cfg/$2" ]; then
+		wget -q "$1/script-cfg/$2" -O "$PWD/script-cfg/$2"
 	fi
 }
 
 ### Get bashfunctions file
-getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
+#getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
 
 ### Check if directory exists, if not, create
-#if [ ! -d $PWD/bash-cfg ]; then
-#	mkdir bash-cfg
-#fi
+if [ ! -d $PWD/script-cfg ]; then
+	mkdir $PWD/script-cfg
+fi
 
 ### Get cfg files
-#for i in "${cfgfiles[@]}"
-#do
-#	getCfgFiles "$BASE_SCRIPT_URL" "$i";
-#done
+for i in "${cfgfiles[@]}"
+do
+	getCfgFiles "$BASE_SCRIPT_URL" "$i";
+done
 
 ### Import functions
-. $PWD/bashfunctions.cfg
-#. $PWD/InputAndError.cfg
-#. $PWD/MiscFunctions.cfg
-#. $PWD/SystemInfoFunctions.cfg
-#. $PWD/UserInput.cfg
-#. $PWD/NetworkFunctions.cfg
-#. $PWD/InstallFunctions.cfg
-#. $PWD/DatabaseFunctions.cfg
-#. $PWD/CertificateFunctions.cfg
-#. $PWD/ConfigAndServiceFunctions.cfg
-#. $PWD/UpdateRestoreFunctions.cfg
-#. $PWD/TroubleshootingFunctions.cfg
-#. $PWD/ParentFunctions.cfg
+#. $PWD/bashfunctions.cfg
+. $PWD/script-cfg/InputAndError.cfg
+. $PWD/script-cfg/MiscFunctions.cfg
+. $PWD/script-cfg/SystemInfoFunctions.cfg
+. $PWD/script-cfg/UserInput.cfg
+. $PWD/script-cfg/NetworkFunctions.cfg
+. $PWD/script-cfg/InstallFunctions.cfg
+. $PWD/script-cfg/DatabaseFunctions.cfg
+. $PWD/script-cfg/CertificateFunctions.cfg
+. $PWD/script-cfg/ConfigAndServiceFunctions.cfg
+. $PWD/script-cfg/UpdateRestoreFunctions.cfg
+. $PWD/script-cfg/TroubleshootingFunctions.cfg
+. $PWD/script-cfg/ParentFunctions.cfg
 
 ### Set colors
 setColors;		# MiscFunctions
@@ -76,11 +84,17 @@ getOSInfo;		# SystemInfoFunctions
 ### Install script pre-reqs
 installPreReqs;		# InstallFunctions
 
-### Check for new functions version, only include script name as variable
-checkCfgVer "$BASE_SCRIPT_URL" "bashfunctions.cfg" "$THIS_SCRIPT";
+### Check for new functions version, include url, filename, and script name as variables
+#checkCfgVer "$BASE_SCRIPT_URL" "bashfunctions.cfg" "$THIS_SCRIPT";		# MiscFunctions
+
+### Check for new functions versions, include url, filename, and script name as variables
+for i in "${cfgfiles[@]}"
+do
+	checkCfgVer "$BASE_SCRIPT_URL" "$i" "$THIS_SCRIPT";		# MiscFunctions
+done
 
 ### Check for new script version, pass script version, url, and script name variables in that order
-checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
+checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";		# MiscFunctions
 
 ### Install additional prereqs
 installAdditionalPreReqs;		# InstallFunctions

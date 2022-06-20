@@ -14,9 +14,8 @@ declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunction
 ### Script Info variables
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-installer-update"
-BASE_SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 SCRIPT_VERSION="69"
-SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
 FRONTEND_URL="https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}"
@@ -30,13 +29,6 @@ PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 
-### Get cfg files function
-#getCfgFiles()
-##{
-#	if [ ! -f "$PWD/$2" ]; then
-#		wget -q "$1/$2" -O "$PWD/$2"
-#	fi
-#}
 
 ### Get cfg files function
 getCfgFiles()
@@ -46,9 +38,6 @@ getCfgFiles()
 	fi
 }
 
-### Get bashfunctions file
-#getCfgFiles "$BASE_SCRIPT_URL" "bashfunctions.cfg";
-
 ### Check if directory exists, if not, create
 if [ ! -d $PWD/script-cfg ]; then
 	mkdir $PWD/script-cfg
@@ -57,11 +46,10 @@ fi
 ### Get cfg files
 for i in "${cfgfiles[@]}"
 do
-	getCfgFiles "$BASE_SCRIPT_URL" "$i";
+	getCfgFiles "$SCRIPT_URL" "$i";
 done
 
 ### Import functions
-#. $PWD/bashfunctions.cfg
 . $PWD/script-cfg/InputAndError.cfg
 . $PWD/script-cfg/MiscFunctions.cfg
 . $PWD/script-cfg/SystemInfoFunctions.cfg
@@ -84,13 +72,10 @@ getOSInfo;		# SystemInfoFunctions
 ### Install script pre-reqs
 installPreReqs;		# InstallFunctions
 
-### Check for new functions version, include url, filename, and script name as variables
-#checkCfgVer "$BASE_SCRIPT_URL" "bashfunctions.cfg" "$THIS_SCRIPT";		# MiscFunctions
-
 ### Check for new functions versions, include url, filename, and script name as variables
 for i in "${cfgfiles[@]}"
 do
-	checkCfgVer "$BASE_SCRIPT_URL" "$i" "$THIS_SCRIPT";		# MiscFunctions
+	checkCfgVer "$SCRIPT_URL" "$i" "$THIS_SCRIPT";		# MiscFunctions
 done
 
 ### Check for new script version, pass script version, url, and script name variables in that order

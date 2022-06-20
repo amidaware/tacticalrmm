@@ -16,8 +16,7 @@ from knox.auth import TokenAuthentication
 from rest_framework.response import Response
 
 from agents.models import Agent
-from core.models import CodeSignToken
-from core.utils import get_core_settings
+from core.utils import get_core_settings, token_is_valid
 from logs.models import DebugLog
 from tacticalrmm.constants import (
     MONTH_DAYS,
@@ -33,13 +32,14 @@ from tacticalrmm.helpers import get_certs, notify_error
 
 
 def generate_winagent_exe(
+    *,
     client: int,
     site: int,
     agent_type: str,
     rdp: int,
     ping: int,
     power: int,
-    arch: str,
+    goarch: str,
     token: str,
     api: str,
     file_name: str,
@@ -48,17 +48,12 @@ def generate_winagent_exe(
     from agents.utils import get_agent_url
 
     inno = (
-        f"winagent-v{settings.LATEST_AGENT_VER}.exe"
-        if arch == "64"
-        else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
+        f"tacticalagent-v{settings.LATEST_AGENT_VER}-{AgentPlat.WINDOWS}-{goarch}.exe"
     )
 
-    dl_url = get_agent_url(arch, AgentPlat.WINDOWS)
+    codetoken, _ = token_is_valid()
 
-    try:
-        codetoken = CodeSignToken.objects.first().token  # type:ignore
-    except:
-        codetoken = ""
+    dl_url = get_agent_url(goarch=goarch, plat=AgentPlat.WINDOWS, token=codetoken)
 
     data = {
         "client": client,
@@ -67,7 +62,7 @@ def generate_winagent_exe(
         "rdp": str(rdp),
         "ping": str(ping),
         "power": str(power),
-        "goarch": "amd64" if arch == "64" else "386",
+        "goarch": goarch,
         "token": token,
         "inno": inno,
         "url": dl_url,
@@ -80,7 +75,7 @@ def generate_winagent_exe(
 
         try:
             r = requests.post(
-                f"{settings.EXE_GEN_URL}/api/v1/exe",
+                settings.EXE_GEN_URL,
                 json=data,
                 headers=headers,
                 stream=True,

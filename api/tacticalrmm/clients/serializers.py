@@ -141,7 +141,7 @@ class DeploymentSerializer(ModelSerializer):
             "client_name",
             "site_name",
             "mon_type",
-            "arch",
+            "goarch",
             "expiry",
             "install_flags",
             "created",

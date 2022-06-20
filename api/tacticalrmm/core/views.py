@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.utils import get_core_settings
+from core.utils import get_core_settings, token_is_valid
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
 from tacticalrmm.helpers import notify_error
@@ -216,8 +216,8 @@ class CodeSign(APIView):
 
         try:
             r = requests.post(
-                f"{settings.EXE_GEN_URL}/api/v1/checktoken",
-                json={"token": request.data["token"]},
+                settings.CHECK_TOKEN_URL,
+                json={"token": request.data["token"], "api": settings.ALLOWED_HOSTS[0]},
                 headers={"Content-type": "application/json"},
                 timeout=15,
             )
@@ -244,20 +244,16 @@ class CodeSign(APIView):
 
     def post(self, request):
         from agents.models import Agent
-        from agents.tasks import force_code_sign
+        from agents.tasks import send_agent_update_task
 
-        err = "A valid token must be saved first"
-        token = CodeSignToken.objects.first()
-        if not token:
-            raise CodeSignToken.DoesNotExist
-
-        if token.token is None or token.token == "":
-            return notify_error(err)
+        token, is_valid = token_is_valid()
+        if not is_valid:
+            return notify_error("Invalid token")
 
         agent_ids: list[str] = list(
             Agent.objects.only("pk", "agent_id").values_list("agent_id", flat=True)
         )
-        force_code_sign.delay(agent_ids=agent_ids)
+        send_agent_update_task.delay(agent_ids=agent_ids, token=token, force=True)
         return Response("Agents will be code signed shortly")
 
 

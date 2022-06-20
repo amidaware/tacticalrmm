@@ -20,7 +20,7 @@ class User(AbstractUser, BaseAuditModel):
     totp_key = models.CharField(max_length=50, null=True, blank=True)
     dark_mode = models.BooleanField(default=True)
     show_community_scripts = models.BooleanField(default=True)
-    agent_dblclick_action = models.CharField(
+    agent_dblclick_action: "AgentDblClick" = models.CharField(
         max_length=50, choices=AgentDblClick.choices, default=AgentDblClick.EDIT_AGENT
     )
     url_action = models.ForeignKey(

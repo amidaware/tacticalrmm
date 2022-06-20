@@ -325,7 +325,7 @@ class AgentDeployment(APIView):
             site=site,
             expiry=expires,
             mon_type=request.data["agenttype"],
-            arch=request.data["arch"],
+            goarch=request.data["goarch"],
             auth_token=obj,
             token_key=token,
             install_flags=flags,
@@ -365,8 +365,7 @@ class GenerateAgent(APIView):
         site = d.site.name.replace(" ", "").lower()
         client = re.sub(r"([^a-zA-Z0-9]+)", "", client)
         site = re.sub(r"([^a-zA-Z0-9]+)", "", site)
-        ext = ".exe" if d.arch == "64" else "-x86.exe"
-        file_name = f"rmm-{client}-{site}-{d.mon_type}{ext}"
+        file_name = f"trmm-{client}-{site}-{d.mon_type}-{d.goarch}.exe"
 
         return generate_winagent_exe(
             client=d.client.pk,
@@ -375,7 +374,7 @@ class GenerateAgent(APIView):
             rdp=d.install_flags["rdp"],
             ping=d.install_flags["ping"],
             power=d.install_flags["power"],
-            arch=d.arch,
+            goarch=d.goarch,
             token=d.token_key,
             api=f"https://{request.get_host()}",
             file_name=file_name,

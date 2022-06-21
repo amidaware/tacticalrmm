@@ -94,6 +94,9 @@ verifySupportedOS;		# SystemInfoFunctions
 ### Check if root
 checkRoot;		# MiscFunctions
 
+### Check if Tactical user exists, if not prompt to create it
+checkTacticalUser;		# MiscFunctions
+
 ### Check language/locale
 checkLocale;	# SystemInfoFunctions
 

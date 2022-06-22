@@ -280,7 +280,7 @@ def replace_db_values(
         else:
             DebugLog.error(
                 log_type=DebugLogType.SCRIPTING,
-                message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
+                message=f"Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
             )
             return ""
 

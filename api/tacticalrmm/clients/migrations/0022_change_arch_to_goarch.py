@@ -1,4 +1,5 @@
 from django.db import migrations
+
 from tacticalrmm.constants import GoArch
 
 

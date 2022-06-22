@@ -8,7 +8,6 @@ import pytz
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
-from packaging import version as pyver
 
 from agents.models import Agent, AgentCustomField, AgentHistory, Note
 from agents.serializers import (
@@ -17,8 +16,6 @@ from agents.serializers import (
     AgentNoteSerializer,
     AgentSerializer,
 )
-from agents.tasks import auto_self_agent_update_task
-from logs.models import PendingAction
 from tacticalrmm.constants import (
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
@@ -26,8 +23,6 @@ from tacticalrmm.constants import (
     CustomFieldModel,
     CustomFieldType,
     EvtLogNames,
-    PAAction,
-    PAStatus,
 )
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
@@ -271,40 +266,6 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.tasks.send_agent_update_task.delay")
-    def test_update_agents(self, mock_task):
-        url = f"{base_url}/update/"
-        baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version=settings.LATEST_AGENT_VER,
-            _quantity=15,
-        )
-        baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.3.0",
-            _quantity=15,
-        )
-
-        agent_ids: list[str] = list(
-            Agent.objects.only("agent_id", "version").values_list("agent_id", flat=True)
-        )
-
-        data = {"agent_ids": agent_ids}
-        expected: list[str] = [
-            i.agent_id
-            for i in Agent.objects.only("agent_id", "version")
-            if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
-        ]
-
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        mock_task.assert_called_with(agent_ids=expected)
-
-        self.check_not_authenticated("post", url)
-
     @patch("time.sleep", return_value=None)
     @patch("agents.models.Agent.nats_cmd")
     def test_agent_ping(self, nats_cmd, mock_sleep):
@@ -505,42 +466,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.data, "Invalid date")
 
         self.check_not_authenticated("patch", url)
-
-    def test_install_agent(self):
-        url = f"{base_url}/installer/"
-
-        site = baker.make("clients.Site")
-        data = {
-            "client": site.client.pk,
-            "site": site.pk,
-            "arch": "64",
-            "expires": 23,
-            "installMethod": "manual",
-            "api": "https://api.example.com",
-            "agenttype": "server",
-            "rdp": 1,
-            "ping": 0,
-            "power": 0,
-            "fileName": "rmm-client-site-server.exe",
-        }
-
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        data["arch"] = "64"
-        r = self.client.post(url, data, format="json")
-        self.assertIn("rdp", r.json()["cmd"])
-        self.assertNotIn("power", r.json()["cmd"])
-
-        data.update({"ping": 1, "power": 1})
-        r = self.client.post(url, data, format="json")
-        self.assertIn("power", r.json()["cmd"])
-        self.assertIn("ping", r.json()["cmd"])
-
-        data["installMethod"] = "powershell"
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("post", url)
 
     @patch("meshctrl.utils.get_login_token")
     def test_meshcentral_tabs(self, mock_token):
@@ -1131,55 +1056,6 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized("post", url, site_data)
         self.check_authorized("post", url, client_data)
 
-    @patch("agents.tasks.send_agent_update_task.delay")
-    def test_agent_update_permissions(self, update_task):
-        agents = baker.make_recipe("agents.agent", _quantity=5)
-        other_agents = baker.make_recipe("agents.agent", _quantity=7)
-
-        url = f"{base_url}/update/"
-
-        data = {
-            "agent_ids": [agent.agent_id for agent in agents]
-            + [agent.agent_id for agent in other_agents]
-        }
-
-        # test superuser access
-        self.check_authorized_superuser("post", url, data)
-        update_task.assert_called_with(agent_ids=data["agent_ids"])
-        update_task.reset_mock()
-
-        user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)
-
-        self.check_not_authorized("post", url, data)
-        update_task.assert_not_called()
-
-        user.role.can_update_agents = True
-        user.role.save()
-
-        self.check_authorized("post", url, data)
-        update_task.assert_called_with(agent_ids=data["agent_ids"])
-        update_task.reset_mock()
-
-        # limit to client
-        # user.role.can_view_clients.set([agents[0].client])
-        # self.check_authorized("post", url, data)
-        # update_task.assert_called_with(agent_ids=[agent.agent_id for agent in agents])
-        # update_task.reset_mock()
-
-        # add site
-        # user.role.can_view_sites.set([other_agents[0].site])
-        # self.check_authorized("post", url, data)
-        # update_task.assert_called_with(agent_ids=data["agent_ids"])
-        # update_task.reset_mock()
-
-        # remove client permissions
-        # user.role.can_view_clients.clear()
-        # self.check_authorized("post", url, data)
-        # update_task.assert_called_with(
-        #     agent_ids=[agent.agent_id for agent in other_agents]
-        # )
-
     def test_get_agent_version_permissions(self):
         agents = baker.make_recipe("agents.agent", _quantity=5)
         other_agents = baker.make_recipe("agents.agent", _quantity=7)
@@ -1413,142 +1289,6 @@ class TestAgentTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
-
-    @patch("agents.utils.get_agent_url")
-    @patch("agents.models.Agent.nats_cmd")
-    def test_agent_update(self, nats_cmd, get_url):
-        get_url.return_value = "https://exe.tacticalrmm.io"
-
-        from agents.tasks import agent_update
-
-        agent_noarch = baker.make_recipe(
-            "agents.agent",
-            operating_system="Error getting OS",
-            version=settings.LATEST_AGENT_VER,
-        )
-        r = agent_update(agent_noarch.agent_id)
-        self.assertEqual(r, "noarch")
-
-        agent_130 = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.3.0",
-        )
-        r = agent_update(agent_130.agent_id)
-        self.assertEqual(r, "not supported")
-
-        # test __without__ code signing
-        agent64_nosign = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.4.14",
-        )
-
-        r = agent_update(agent64_nosign.agent_id)
-        self.assertEqual(r, "created")
-        action = PendingAction.objects.get(agent__agent_id=agent64_nosign.agent_id)
-        self.assertEqual(action.action_type, PAAction.AGENT_UPDATE)
-        self.assertEqual(action.status, PAStatus.PENDING)
-        self.assertEqual(
-            action.details["url"],
-            f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
-        )
-        self.assertEqual(
-            action.details["inno"], f"winagent-v{settings.LATEST_AGENT_VER}.exe"
-        )
-        self.assertEqual(action.details["version"], settings.LATEST_AGENT_VER)
-        nats_cmd.assert_called_with(
-            {
-                "func": "agentupdate",
-                "payload": {
-                    "url": f"https://github.com/amidaware/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
-                    "version": settings.LATEST_AGENT_VER,
-                    "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
-                },
-            },
-            wait=False,
-        )
-
-        # test __with__ code signing (64 bit)
-        """ codesign = baker.make("core.CodeSignToken", token="testtoken123")
-        agent64_sign = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.4.14",
-        )
-
-        nats_cmd.return_value = "ok"
-        get_exe.return_value = "https://exe.tacticalrmm.io"
-        r = agent_update(agent64_sign.pk, codesign.token)  
-        self.assertEqual(r, "created")
-        nats_cmd.assert_called_with(
-            {
-                "func": "agentupdate",
-                "payload": {
-                    "url": f"https://exe.tacticalrmm.io/api/v1/winagents/?version={settings.LATEST_AGENT_VER}&arch=64&token=testtoken123",  
-                    "version": settings.LATEST_AGENT_VER,
-                    "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
-                },
-            },
-            wait=False,
-        )
-        action = PendingAction.objects.get(agent__pk=agent64_sign.pk)
-        self.assertEqual(action.action_type, PAAction.AGENT_UPDATE)
-        self.assertEqual(action.status, PAStatus.PENDING)
-
-        # test __with__ code signing (32 bit)
-        agent32_sign = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 32 bit (build 19041.450)",
-            version="1.4.14",
-        )
-
-        nats_cmd.return_value = "ok"
-        get_exe.return_value = "https://exe.tacticalrmm.io"
-        r = agent_update(agent32_sign.pk, codesign.token)  
-        self.assertEqual(r, "created")
-        nats_cmd.assert_called_with(
-            {
-                "func": "agentupdate",
-                "payload": {
-                    "url": f"https://exe.tacticalrmm.io/api/v1/winagents/?version={settings.LATEST_AGENT_VER}&arch=32&token=testtoken123",  
-                    "version": settings.LATEST_AGENT_VER,
-                    "inno": f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe",
-                },
-            },
-            wait=False,
-        )
-        action = PendingAction.objects.get(agent__pk=agent32_sign.pk)
-        self.assertEqual(action.action_type, PAAction.AGENT_UPDATE)
-        self.assertEqual(action.status, PAStatus.PENDING) """
-
-    @patch("agents.tasks.agent_update")
-    @patch("agents.tasks.sleep", return_value=None)
-    def test_auto_self_agent_update_task(self, mock_sleep, agent_update):
-        baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version=settings.LATEST_AGENT_VER,
-            _quantity=23,
-        )
-        baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.3.0",
-            _quantity=33,
-        )
-
-        self.coresettings.agent_auto_update = False
-        self.coresettings.save(update_fields=["agent_auto_update"])
-
-        r = auto_self_agent_update_task.s().apply()
-        self.assertEqual(agent_update.call_count, 0)
-
-        self.coresettings.agent_auto_update = True
-        self.coresettings.save(update_fields=["agent_auto_update"])
-
-        r = auto_self_agent_update_task.s().apply()
-        self.assertEqual(agent_update.call_count, 33)
 
     def test_agent_history_prune_task(self):
         from agents.tasks import prune_agent_history

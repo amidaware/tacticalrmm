@@ -405,7 +405,7 @@ class TestClientViews(TacticalTestCase):
             "ping": 0,
             "rdp": 1,
             "agenttype": "server",
-            "arch": "64",
+            "goarch": "amd64",
         }
 
         r = self.client.post(url, payload, format="json")

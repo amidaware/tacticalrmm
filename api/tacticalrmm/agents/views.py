@@ -76,9 +76,9 @@ from .serializers import (
     AgentTableSerializer,
 )
 from .tasks import (
+    bulk_recover_agents_task,
     run_script_email_results_task,
     send_agent_update_task,
-    bulk_recover_agents_task,
 )
 
 
@@ -520,13 +520,6 @@ def install_agent(request):
     codesign_token, is_valid = token_is_valid()
 
     inno = f"tacticalagent-v{version}-{plat}-{goarch}.exe"
-
-    # TODO refactor this, install method should not be same as plat
-    if request.data["installMethod"] == AgentPlat.LINUX:
-        plat = AgentPlat.LINUX
-    else:
-        plat = AgentPlat.WINDOWS
-
     download_url = get_agent_url(goarch=goarch, plat=plat, token=codesign_token)
 
     installer_user = User.objects.filter(is_installer_user=True).first()
@@ -551,7 +544,7 @@ def install_agent(request):
             file_name=request.data["fileName"],
         )
 
-    elif request.data["installMethod"] == AgentPlat.LINUX:
+    elif request.data["installMethod"] == "bash":
         # TODO
         # linux agents are in beta for now, only available for sponsors for testing
         # remove this after it's out of beta

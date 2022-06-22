@@ -1,7 +1,7 @@
 import json
 import tempfile
 from base64 import b64encode
-from typing import TYPE_CHECKING, cast, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 import requests
 import websockets
@@ -13,7 +13,7 @@ from meshctrl.utils import get_auth_token
 from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, ROLE_CACHE_PREFIX
 
 if TYPE_CHECKING:
-    from core.models import CoreSettings, CodeSignToken
+    from core.models import CodeSignToken, CoreSettings
 
 
 class CoreSettingsNotFound(Exception):

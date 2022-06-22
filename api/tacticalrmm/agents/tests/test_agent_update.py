@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.conf import settings
 from django.core.management import call_command
 from model_bakery import baker
+from packaging import version as pyver
 
 from agents.models import Agent
 from agents.tasks import auto_self_agent_update_task, send_agent_update_task
@@ -203,3 +204,110 @@ class TestAgentUpdate(TacticalTestCase):
         )
         send_agent_update_task(agent_ids=ids, token="", force=False)
         self.assertEqual(mock_update.call_count, 6)
+
+    @patch("agents.views.token_is_valid")
+    @patch("agents.tasks.send_agent_update_task.delay")
+    def test_update_agents(self, mock_update, mock_token):
+        mock_token.return_value = ("", False)
+        url = "/agents/update/"
+        baker.make_recipe(
+            "agents.online_agent",
+            site=self.site2,
+            monitoring_type=AgentMonType.SERVER,
+            plat=AgentPlat.WINDOWS,
+            version="2.3.0",
+            goarch=GoArch.AMD64,
+            _quantity=7,
+        )
+        baker.make_recipe(
+            "agents.online_agent",
+            site=self.site2,
+            monitoring_type=AgentMonType.SERVER,
+            plat=AgentPlat.WINDOWS,
+            version=settings.LATEST_AGENT_VER,
+            goarch=GoArch.AMD64,
+            _quantity=3,
+        )
+        baker.make_recipe(
+            "agents.online_agent",
+            site=self.site2,
+            monitoring_type=AgentMonType.WORKSTATION,
+            plat=AgentPlat.LINUX,
+            version="2.0.1",
+            goarch=GoArch.ARM32,
+            _quantity=9,
+        )
+
+        agent_ids: list[str] = list(
+            Agent.objects.only("agent_id").values_list("agent_id", flat=True)
+        )
+
+        data = {"agent_ids": agent_ids}
+        expected: list[str] = [
+            i.agent_id
+            for i in Agent.objects.only("agent_id", "version")
+            if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
+        ]
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        mock_update.assert_called_with(agent_ids=expected, token="", force=False)
+
+        self.check_not_authenticated("post", url)
+
+    @patch("agents.views.token_is_valid")
+    @patch("agents.tasks.send_agent_update_task.delay")
+    def test_agent_update_permissions(self, update_task, mock_token):
+        mock_token.return_value = ("", False)
+
+        agents = baker.make_recipe("agents.agent", _quantity=5)
+        other_agents = baker.make_recipe("agents.agent", _quantity=7)
+
+        url = f"/agents/update/"
+
+        data = {
+            "agent_ids": [agent.agent_id for agent in agents]
+            + [agent.agent_id for agent in other_agents]
+        }
+
+        # test superuser access
+        self.check_authorized_superuser("post", url, data)
+        update_task.assert_called_with(
+            agent_ids=data["agent_ids"], token="", force=False
+        )
+        update_task.reset_mock()
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        self.check_not_authorized("post", url, data)
+        update_task.assert_not_called()
+
+        user.role.can_update_agents = True
+        user.role.save()
+
+        self.check_authorized("post", url, data)
+        update_task.assert_called_with(
+            agent_ids=data["agent_ids"], token="", force=False
+        )
+        update_task.reset_mock()
+
+        # limit to client
+        # user.role.can_view_clients.set([agents[0].client])
+        # self.check_authorized("post", url, data)
+        # update_task.assert_called_with(agent_ids=[agent.agent_id for agent in agents])
+        # update_task.reset_mock()
+
+        # add site
+        # user.role.can_view_sites.set([other_agents[0].site])
+        # self.check_authorized("post", url, data)
+        # update_task.assert_called_with(agent_ids=data["agent_ids"])
+        # update_task.reset_mock()
+
+        # remove client permissions
+        # user.role.can_view_clients.clear()
+        # self.check_authorized("post", url, data)
+        # update_task.assert_called_with(
+        #     agent_ids=[agent.agent_id for agent in other_agents]
+        # )

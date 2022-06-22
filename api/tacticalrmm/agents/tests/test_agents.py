@@ -8,7 +8,6 @@ import pytz
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
-from packaging import version as pyver
 
 from agents.models import Agent, AgentCustomField, AgentHistory, Note
 from agents.serializers import (
@@ -17,8 +16,6 @@ from agents.serializers import (
     AgentNoteSerializer,
     AgentSerializer,
 )
-from agents.tasks import auto_self_agent_update_task
-from logs.models import PendingAction
 from tacticalrmm.constants import (
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
@@ -26,8 +23,6 @@ from tacticalrmm.constants import (
     CustomFieldModel,
     CustomFieldType,
     EvtLogNames,
-    PAAction,
-    PAStatus,
 )
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
@@ -271,40 +266,6 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.tasks.send_agent_update_task.delay")
-    def test_update_agents(self, mock_task):
-        url = f"{base_url}/update/"
-        baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version=settings.LATEST_AGENT_VER,
-            _quantity=15,
-        )
-        baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.3.0",
-            _quantity=15,
-        )
-
-        agent_ids: list[str] = list(
-            Agent.objects.only("agent_id", "version").values_list("agent_id", flat=True)
-        )
-
-        data = {"agent_ids": agent_ids}
-        expected: list[str] = [
-            i.agent_id
-            for i in Agent.objects.only("agent_id", "version")
-            if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
-        ]
-
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        mock_task.assert_called_with(agent_ids=expected)
-
-        self.check_not_authenticated("post", url)
-
     @patch("time.sleep", return_value=None)
     @patch("agents.models.Agent.nats_cmd")
     def test_agent_ping(self, nats_cmd, mock_sleep):
@@ -505,42 +466,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.data, "Invalid date")
 
         self.check_not_authenticated("patch", url)
-
-    def test_install_agent(self):
-        url = f"{base_url}/installer/"
-
-        site = baker.make("clients.Site")
-        data = {
-            "client": site.client.pk,
-            "site": site.pk,
-            "arch": "64",
-            "expires": 23,
-            "installMethod": "manual",
-            "api": "https://api.example.com",
-            "agenttype": "server",
-            "rdp": 1,
-            "ping": 0,
-            "power": 0,
-            "fileName": "rmm-client-site-server.exe",
-        }
-
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        data["arch"] = "64"
-        r = self.client.post(url, data, format="json")
-        self.assertIn("rdp", r.json()["cmd"])
-        self.assertNotIn("power", r.json()["cmd"])
-
-        data.update({"ping": 1, "power": 1})
-        r = self.client.post(url, data, format="json")
-        self.assertIn("power", r.json()["cmd"])
-        self.assertIn("ping", r.json()["cmd"])
-
-        data["installMethod"] = "powershell"
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("post", url)
 
     @patch("meshctrl.utils.get_login_token")
     def test_meshcentral_tabs(self, mock_token):
@@ -1130,55 +1055,6 @@ class TestAgentPermissions(TacticalTestCase):
         user.role.can_view_sites.set([site])
         self.check_authorized("post", url, site_data)
         self.check_authorized("post", url, client_data)
-
-    @patch("agents.tasks.send_agent_update_task.delay")
-    def test_agent_update_permissions(self, update_task):
-        agents = baker.make_recipe("agents.agent", _quantity=5)
-        other_agents = baker.make_recipe("agents.agent", _quantity=7)
-
-        url = f"{base_url}/update/"
-
-        data = {
-            "agent_ids": [agent.agent_id for agent in agents]
-            + [agent.agent_id for agent in other_agents]
-        }
-
-        # test superuser access
-        self.check_authorized_superuser("post", url, data)
-        update_task.assert_called_with(agent_ids=data["agent_ids"])
-        update_task.reset_mock()
-
-        user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)
-
-        self.check_not_authorized("post", url, data)
-        update_task.assert_not_called()
-
-        user.role.can_update_agents = True
-        user.role.save()
-
-        self.check_authorized("post", url, data)
-        update_task.assert_called_with(agent_ids=data["agent_ids"])
-        update_task.reset_mock()
-
-        # limit to client
-        # user.role.can_view_clients.set([agents[0].client])
-        # self.check_authorized("post", url, data)
-        # update_task.assert_called_with(agent_ids=[agent.agent_id for agent in agents])
-        # update_task.reset_mock()
-
-        # add site
-        # user.role.can_view_sites.set([other_agents[0].site])
-        # self.check_authorized("post", url, data)
-        # update_task.assert_called_with(agent_ids=data["agent_ids"])
-        # update_task.reset_mock()
-
-        # remove client permissions
-        # user.role.can_view_clients.clear()
-        # self.check_authorized("post", url, data)
-        # update_task.assert_called_with(
-        #     agent_ids=[agent.agent_id for agent in other_agents]
-        # )
 
     def test_get_agent_version_permissions(self):
         agents = baker.make_recipe("agents.agent", _quantity=5)

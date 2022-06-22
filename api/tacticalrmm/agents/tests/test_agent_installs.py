@@ -1,5 +1,7 @@
 from unittest.mock import patch
+
 from rest_framework.response import Response
+
 from tacticalrmm.test import TacticalTestCase
 
 

@@ -7,16 +7,16 @@ from packaging import version as pyver
 
 from agents.models import Agent
 from agents.tasks import auto_self_agent_update_task, send_agent_update_task
+from logs.models import PendingAction
 from tacticalrmm.constants import (
+    AGENT_DEFER,
     AgentMonType,
     AgentPlat,
-    AGENT_DEFER,
     GoArch,
     PAAction,
     PAStatus,
 )
 from tacticalrmm.test import TacticalTestCase
-from logs.models import PendingAction
 
 
 class TestAgentUpdate(TacticalTestCase):

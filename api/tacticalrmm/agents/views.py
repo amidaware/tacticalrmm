@@ -76,9 +76,9 @@ from .serializers import (
     AgentTableSerializer,
 )
 from .tasks import (
+    bulk_recover_agents_task,
     run_script_email_results_task,
     send_agent_update_task,
-    bulk_recover_agents_task,
 )
 
 

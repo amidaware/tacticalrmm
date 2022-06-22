@@ -69,4 +69,5 @@ jobs:
       - uses: codecov/codecov-action@v3
         with:
           directory: ./api/tacticalrmm
+          files: ./api/tacticalrmm/coverage.xml
           verbose: true

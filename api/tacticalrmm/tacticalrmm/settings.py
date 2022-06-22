@@ -27,7 +27,7 @@ WEB_VERSION = "0.100.0-dev"
 APP_VER = "0.0.164"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.0.4"
+LATEST_AGENT_VER = "2.1.0-dev"
 
 MESH_VER = "1.0.22"
 
@@ -39,7 +39,8 @@ PIP_VER = "30"
 SETUPTOOLS_VER = "59.6.0"
 WHEEL_VER = "0.37.1"
 
-AGENT_BASE_URL = "https://agents.tacticalrmm.com"
+# AGENT_BASE_URL = "https://agents.tacticalrmm.com"
+AGENT_BASE_URL = "https://trmm-test.tacticalrmm.com"
 CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"
 AGENTS_URL = f"{AGENT_BASE_URL}/api/v2/agents/?"
 EXE_GEN_URL = f"{AGENT_BASE_URL}/api/v2/exe"

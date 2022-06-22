@@ -48,6 +48,14 @@ jobs:
           pip install setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
           pip install -r requirements.txt -r requirements-test.txt
 
+      - name: Codestyle black
+        working-directory: api/tacticalrmm
+        run: |
+          black --exclude migrations/ --check tacticalrmm
+          if [ $? -ne 0 ]; then
+              exit 1
+          fi
+      
       - name: Run django tests
         env:
           GHACTIONS: "yes"
@@ -58,15 +66,7 @@ jobs:
               exit 1
           fi
 
-      - name: Codestyle black
-        working-directory: api/tacticalrmm
-        run: |
-          black --exclude migrations/ --check tacticalrmm
-          if [ $? -ne 0 ]; then
-              exit 1
-          fi
-
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           directory: ./api/tacticalrmm
           files: ./api/tacticalrmm/coverage.xml

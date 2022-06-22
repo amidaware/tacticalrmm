@@ -3,13 +3,10 @@ import random
 from time import sleep
 from typing import TYPE_CHECKING, Optional
 
-
 from django.core.management import call_command
 from django.utils import timezone as djangotime
 
-
 from agents.models import Agent
-
 from core.utils import get_core_settings
 from logs.models import DebugLog
 from scripts.models import Script

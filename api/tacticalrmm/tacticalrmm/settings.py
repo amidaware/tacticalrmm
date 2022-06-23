@@ -36,7 +36,7 @@ NATS_SERVER_VER = "2.8.4"
 # for the update script, bump when need to recreate venv
 PIP_VER = "30"
 
-SETUPTOOLS_VER = "59.6.0"
+SETUPTOOLS_VER = "62.6.0"
 WHEEL_VER = "0.37.1"
 
 # AGENT_BASE_URL = "https://agents.tacticalrmm.com"

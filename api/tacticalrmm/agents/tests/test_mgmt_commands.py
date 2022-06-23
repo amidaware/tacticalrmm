@@ -1,4 +1,3 @@
-from typing import TYPE_CHECKING
 from unittest.mock import call, patch
 
 from django.core.management import call_command
@@ -7,16 +6,12 @@ from model_bakery import baker
 from tacticalrmm.constants import AgentMonType, AgentPlat
 from tacticalrmm.test import TacticalTestCase
 
-if TYPE_CHECKING:
-    from clients.models import Client, Site
-
 
 class TestBulkRestartAgents(TacticalTestCase):
     def setUp(self) -> None:
         self.authenticate()
         self.setup_coresettings()
-        self.client1: "Client" = baker.make("clients.Client")
-        self.site1: "Site" = baker.make("clients.Site", client=self.client1)
+        self.setup_base_instance()
 
     @patch("core.management.commands.bulk_restart_agents.sleep")
     @patch("agents.models.Agent.recover")
@@ -35,7 +30,7 @@ class TestBulkRestartAgents(TacticalTestCase):
 
         baker.make_recipe(
             "agents.online_agent",
-            site=self.site1,
+            site=self.site3,
             monitoring_type=AgentMonType.SERVER,
             plat=AgentPlat.LINUX,
         )

@@ -30,6 +30,17 @@ PYTHON_VER='3.10.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 
+### Variables required for automated install
+autoinstall=""
+rmmhost=""
+frontendhost=""
+meshhost=""
+letsemail=""
+rootdomain=""
+sslcacert=""
+sslkey=""
+sslcert=""
+
 
 ### Get cfg files function
 getCfgFiles()
@@ -63,6 +74,57 @@ done
 . $PWD/script-cfg/UpdateRestoreFunctions.cfg
 . $PWD/script-cfg/TroubleshootingFunctions.cfg
 . $PWD/script-cfg/ParentFunctions.cfg
+
+### Get commandline input function
+getCommandLineArgs()
+{
+	while getopts "auto:api:branch:ca:cert:domain:email:help:key:mesh:repo:rmm:" option; do
+		case $option in
+      		auto ) autoinstall="1"
+				INSTALL_TYPE="${OPTARG}";;
+			api ) rmmhost="${OPTARG}";;
+			branch ) BRANCH="${OPTARG}";;
+			ca ) sslcacert="${OPTARG}";;
+			cert ) sslcert="${OPTARG}";;
+			domain ) rootdomain="${OPTARG}";;
+			email ) letsemail="${OPTARG}";;
+			help ) helpText
+				exit;;
+			key ) sslkey="${OPTARG}";;
+			mesh ) meshhost="${OPTARG}";;
+			repo ) REPO_OWNER="${OPTARG}";;
+			rmm ) frontendhost="${OPTARG}";;
+	     	\?) echo -e "Error: Invalid option"
+				clear -x
+				exit 1;;
+		esac
+	done
+
+	if [ "$autoinstall" == "1" ]; then
+		if [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$letsemail" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ]; then
+			echo -e "Error: To perform an automated installation, you must provide all required information."
+			echo -e "\n"
+			echo -e "api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, and Private key path are all required."
+			echo -e "\n"
+			echo -e "Run ./$THIS_SCRIPT -h for further details."
+			clear -x
+			exit 1
+		elif [ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]; then
+			if [ "$REPO_OWNER" == "amidaware" ] || [ "$BRANCH" == "master" ]; then
+				echo -e "Error: You've selected a developer installation type, but not changed the repo, branch, or both."
+				echo -e "\n"
+				echo -e "Run ./$THIS_SCRIPT -h for details on how to select them."
+				clear -x
+				exit 1
+			fi
+		else
+			return
+		fi
+	fi
+}				
+
+### Get commandline input
+getCommandLineArgs;
 
 ### Set colors
 setColors;		# MiscFunctions

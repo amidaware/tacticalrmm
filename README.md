@@ -33,7 +33,7 @@ Demo database resets every hour. A lot of features are disabled for obvious reas
 - Windows 7, 8.1, 10, 11, Server 2008R2, 2012R2, 2016, 2019, 2022
 
 ## Linux agent versions supported
-- Any distro with systemd
+- Any distro with systemd which includes but is not limited to: Debian (10, 11), Ubuntu x86_64 (18.04, 20.04, 22.04), Synology 7, centos, freepbx and more!
 
 ## Installation / Backup / Restore / Usage
 

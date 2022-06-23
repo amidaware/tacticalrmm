@@ -100,6 +100,7 @@ class TestAgentUpdate(TacticalTestCase):
 
         # test powershell
         data["installMethod"] = "powershell"
+        r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("post", url)

@@ -158,7 +158,8 @@ utilityMenu()
 
 		case $menuselection in
 			1 ) backupTRMM;;
-      		2 ) restoreTRMM;;
+      		2 ) INSTALL_TYPE="restore"
+				restoreTRMM;;
       		3 ) renewCerts;;
 			4 ) importCerts;;
 			5 ) changeUWSGIProcs;;
@@ -189,12 +190,15 @@ updateMenu()
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
-			1 ) UPDATE_TYPE="standard"
+			1 ) INSTALL_TYPE="update"
+				UPDATE_TYPE="standard"
         		updateTRMM;;
-      		2 ) UPDATE_TYPE="standard"
+      		2 ) INSTALL_TYPE="update"
+				UPDATE_TYPE="standard"
 				backupTRMM
         		updateTRMM;;
-			3 ) UPDATE_TYPE="forced"
+			3 ) INSTALL_TYPE="update"
+				UPDATE_TYPE="forced"
         		updateTRMM;;
       		4 ) return;;
 			5 ) [ -f $INPUT ] && rm $INPUT

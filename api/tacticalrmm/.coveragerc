@@ -1,0 +1,15 @@
+[run]
+include = *.py
+omit =
+    tacticalrmm/asgi.py
+    tacticalrmm/wsgi.py
+    manage.py
+    */__pycache__/*
+    */env/*
+    */baker_recipes.py
+    /usr/local/lib/*
+    **/migrations/*
+    **/test*.py
+    
+[report]
+show_missing = True

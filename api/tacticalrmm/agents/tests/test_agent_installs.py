@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from tacticalrmm.test import TacticalTestCase
 
 
-class TestAgentUpdate(TacticalTestCase):
+class TestAgentInstalls(TacticalTestCase):
     def setUp(self) -> None:
         self.authenticate()
         self.setup_coresettings()
@@ -100,6 +100,7 @@ class TestAgentUpdate(TacticalTestCase):
 
         # test powershell
         data["installMethod"] = "powershell"
+        r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("post", url)

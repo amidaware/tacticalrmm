@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from tacticalrmm.test import TacticalTestCase
 
 
-class TestAgentUpdate(TacticalTestCase):
+class TestAgentInstalls(TacticalTestCase):
     def setUp(self) -> None:
         self.authenticate()
         self.setup_coresettings()

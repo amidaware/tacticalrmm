@@ -142,6 +142,15 @@ getCommandLineArgs()
 			exit 1
 		fi
 
+		# Check that email address format is valid
+		if [[ $letsemail != *[@]*[.]* ]]; then
+			echo -e "Error: You've entered an invalid email address."
+			echo -e "\n"
+			echo -e "Run .$THIS_SCRIPT -h for details on the correct format."
+			clear -x
+			exit 1
+		fi
+
 		# Check subdomains are valid format
 		# User Input
 		subdomainCheck "$rmmhost" "api";

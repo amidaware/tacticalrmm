@@ -79,23 +79,23 @@ done
 # Get commandline input function
 getCommandLineArgs()
 {
-	while getopts "auto:api:branch:ca:cert:domain:email:help:key:mesh:pass:repo:rmm:username:" option; do
+	while getopts "auto:api:branch:ca:cert:domain:email:h:key:mesh:pass:repo:rmm:username:" option; do
 		case $option in
       		auto ) autoinstall="1"
-				INSTALL_TYPE="${OPTARG}";;
-			api ) rmmhost="${OPTARG}";;
-			branch ) BRANCH="${OPTARG}";;
+				INSTALL_TYPE="$(translateToLowerCase ${OPTARG})";;
+			api ) rmmhost="$(translateToLowerCase ${OPTARG})";;
+			branch ) BRANCH="$(translateToLowerCase ${OPTARG})";;
 			ca ) sslcacert="${OPTARG}";;
 			cert ) sslcert="${OPTARG}";;
-			domain ) rootdomain="${OPTARG}";;
-			email ) letsemail="${OPTARG}";;
-			help ) helpText
+			domain ) rootdomain="$(translateToLowerCase ${OPTARG})";;
+			email ) letsemail="$(translateToLowerCase ${OPTARG})";;
+			h ) helpText
 				exit;;
 			key ) sslkey="${OPTARG}";;
-			mesh ) meshhost="${OPTARG}";;
+			mesh ) meshhost="$(translateToLowerCase ${OPTARG})";;
 			pass ) trmmpass="${OPTARG}";;
-			repo ) REPO_OWNER="${OPTARG}";;
-			rmm ) frontendhost="${OPTARG}";;
+			repo ) REPO_OWNER="$(translateToLowerCase ${OPTARG})";;
+			rmm ) frontendhost="$(translateToLowerCase ${OPTARG})";;
 			username ) trmmuser="${OPTARG}";;
 	     	\?) echo -e "Error: Invalid option"
 				clear -x
@@ -104,25 +104,55 @@ getCommandLineArgs()
 	done
 
 	if [ "$autoinstall" == "1" ]; then
-		if [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
+		# Check all required input is available
+		if [ -z "$INSTALL_TYPE" ] || [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
 			echo -e "Error: To perform an automated installation, you must provide all required information."
 			echo -e "\n"
-			echo -e "api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required."
+			echo -e "install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required."
 			echo -e "\n"
 			echo -e "Run .$THIS_SCRIPT -h for further details."
 			clear -x
 			exit 1
-		elif [ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]; then
-			if [ "$REPO_OWNER" == "amidaware" ] || [ "$BRANCH" == "master" ]; then
-				echo -e "Error: You've selected a developer installation type, but not changed the repo, branch, or both."
-				echo -e "\n"
-				echo -e "Run .$THIS_SCRIPT -h for details on how to select them."
-				clear -x
-				exit 1
-			fi
-		else
-			return
 		fi
+
+		# Check that install type is valid
+		if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ]; then
+			echo -e "Error: You've selected an invalid installation type."
+			echo -e "\n"
+			echo -e "Run .$THIS_SCRIPT -h for details on the available options."
+			clear -x
+			exit 1
+		fi
+
+		# Check that repo and branch match install type
+		if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
+			echo -e "Error: You've selected a developer installation type, but not changed the repo, branch, or both."
+			echo -e "\n"
+			echo -e "Run .$THIS_SCRIPT -h for details on how to select them."
+			clear -x
+			exit 1
+		fi
+
+		# Check root domain is valid format
+		if [[ $rootdomain != *[.]* ]]; then
+			echo -e "Error: You've entered an invalid root domain."
+			echo -e "\n"
+			echo -e "Run .$THIS_SCRIPT -h for details on the correct format."
+			clear -x
+			exit 1
+		fi
+
+		# Check subdomains are valid format
+		# User Input
+		subdomainCheck "$rmmhost" "api";
+		subdomainCheck "$meshhost" "mesh";
+		subdomainCheck "$frontendhost" "rmm";
+
+		# Check that cert file exists
+		# User Input
+		checkCertExists "$sslcacert" "CA Chain";
+		checkCertExists "$sslcert" "Fullchain Cert";
+		checkCertExists "$sslkey" "Private Key";
 	fi
 }				
 

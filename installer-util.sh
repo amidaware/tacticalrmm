@@ -41,6 +41,7 @@ sslcacert=""
 sslkey=""
 sslcert=""
 trmmuser=""
+trmmpass=""
 
 # Get cfg files function
 getCfgFiles()
@@ -78,7 +79,7 @@ done
 # Get commandline input function
 getCommandLineArgs()
 {
-	while getopts "auto:api:branch:ca:cert:domain:email:help:key:mesh:repo:rmm:username:" option; do
+	while getopts "auto:api:branch:ca:cert:domain:email:help:key:mesh:pass:repo:rmm:username:" option; do
 		case $option in
       		auto ) autoinstall="1"
 				INSTALL_TYPE="${OPTARG}";;
@@ -92,6 +93,7 @@ getCommandLineArgs()
 				exit;;
 			key ) sslkey="${OPTARG}";;
 			mesh ) meshhost="${OPTARG}";;
+			pass ) trmmpass="${OPTARG}";;
 			repo ) REPO_OWNER="${OPTARG}";;
 			rmm ) frontendhost="${OPTARG}";;
 			username ) trmmuser="${OPTARG}";;
@@ -102,10 +104,10 @@ getCommandLineArgs()
 	done
 
 	if [ "$autoinstall" == "1" ]; then
-		if [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$letsemail" ]; then
+		if [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
 			echo -e "Error: To perform an automated installation, you must provide all required information."
 			echo -e "\n"
-			echo -e "api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username are all required."
+			echo -e "api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required."
 			echo -e "\n"
 			echo -e "Run .$THIS_SCRIPT -h for further details."
 			clear -x
@@ -128,42 +130,53 @@ getCommandLineArgs()
 getCommandLineArgs;
 
 # Set colors
-setColors;		# MiscFunctions
+# MiscFunctions
+setColors;
 
 # Gather OS info
-getOSInfo;		# SystemInfoFunctions
+# SystemInfoFunctions
+getOSInfo;
 
 # Install script pre-reqs
-installPreReqs;		# InstallFunctions
+# InstallFunctions
+installPreReqs;
 
-### Check for new functions versions, include url, filename, and script name as variables
+# Check for new functions versions, include url, filename, and script name as variables
 for i in "${cfgfiles[@]}"
 do
-	checkCfgVer "$CFG_URL" "$i" "$THIS_SCRIPT";		# MiscFunctions
+	# MiscFunctions
+	checkCfgVer "$CFG_URL" "$i" "$THIS_SCRIPT";
 done
 
-### Check for new script version, pass script version, url, and script name variables in that order
-checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";		# MiscFunctions
+# Check for new script version, pass script version, url, and script name variables in that order
+# MiscFunctions
+checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
 
-### Install additional prereqs
-installAdditionalPreReqs;		# InstallFunctions
+# Install additional prereqs
+# InstallFunctions
+installAdditionalPreReqs;
 
-### Fallback if lsb_release -si returns anything else than Ubuntu, Debian, or Raspbian
-wutOSThis;		# SystemInfoFunctions
+# Fallback if lsb_release -si returns anything else than Ubuntu, Debian, or Raspbian
+# SystemInfoFunctions
+wutOSThis;
 
-### Verify compatible OS and version
-verifySupportedOS;		# SystemInfoFunctions
+# Verify compatible OS and version
+# SystemInfoFunctions
+verifySupportedOS;
 
-### Check if root
-checkRoot;		# MiscFunctions
+# Check if root
+# MiscFunctions
+checkRoot;
 
-### Check if Tactical user exists, if not prompt to create it
-checkTacticalUser;		# MiscFunctions
+# Check if Tactical user exists, if not prompt to create it
+# MiscFunctions
+checkTacticalUser;
 
-### Check language/locale
-checkLocale;	# SystemInfoFunctions
+# Check language/locale
+# SystemInfoFunctions
+checkLocale;
 
-### Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
+# Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
 
 ####################

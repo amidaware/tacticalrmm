@@ -4,6 +4,7 @@ from knox import views as knox_views
 
 from accounts.views import CheckCreds, LoginView
 from core.consumers import DashInfo
+from agents.consumers import SendCMD
 
 
 class AgentIDConverter:
@@ -69,4 +70,5 @@ if getattr(settings, "HOSTED", False):
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
+    path("ws/sendcmd/", SendCMD.as_asgi()),
 ]

@@ -111,22 +111,12 @@ EOF
 
   echo "${localvars}" > ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
 
-  numprocs=$(nproc)
-  uwsgiprocs=4
-  if [[ "$numprocs" == "1" ]]; then
-    uwsgiprocs=2
-  else
-    uwsgiprocs=$numprocs
-  fi
-
 uwsgiconf="$(cat << EOF
 [uwsgi]
 chdir = /opt/tactical/api
 module = tacticalrmm.wsgi
 home = /opt/venv
 master = true
-processes = ${uwsgiprocs}
-threads = ${uwsgiprocs}
 enable-threads = true
 socket = 0.0.0.0:8080
 harakiri = 300
@@ -136,6 +126,16 @@ vacuum = true
 die-on-term = true
 max-requests = 500
 disable-logging = true
+cheaper-algo = busyness
+cheaper = 4
+cheaper-initial = 4
+workers = 20
+cheaper-step = 2
+cheaper-overload = 3
+cheaper-busyness-min = 5
+cheaper-busyness-max = 10
+# stats = /tmp/stats.socket # uncomment when debugging
+# cheaper-busyness-verbose = true # uncomment when debugging
 EOF
 )"
 

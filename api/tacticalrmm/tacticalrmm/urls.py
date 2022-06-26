@@ -3,8 +3,8 @@ from django.urls import include, path, register_converter
 from knox import views as knox_views
 
 from accounts.views import CheckCreds, LoginView
-from core.consumers import DashInfo
 from agents.consumers import SendCMD
+from core.consumers import DashInfo
 
 
 class AgentIDConverter:
@@ -59,14 +59,6 @@ if getattr(settings, "SWAGGER_ENABLED", False):
             name="swagger-ui",
         ),
     )
-
-if getattr(settings, "HOSTED", False):
-    try:
-        from trmm_mon import views
-
-        urlpatterns += (path("status/", views.status),)
-    except ImportError:
-        pass
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),

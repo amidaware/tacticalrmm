@@ -17,3 +17,13 @@ def get_certs() -> tuple[str, str]:
 
 def notify_error(msg: str) -> Response:
     return Response(msg, status=status.HTTP_400_BAD_REQUEST)
+
+
+def get_nats_ports() -> tuple[int, int]:
+    """
+    Returns: tuple[nats_standard_port: int, nats_websocket_port: int]
+    """
+    nats_standard_port = getattr(settings, "NATS_STANDARD_PORT", 4222)
+    nats_websocket_port = getattr(settings, "NATS_WEBSOCKET_PORT", 9235)
+
+    return (nats_standard_port, nats_websocket_port)

@@ -26,4 +26,4 @@ ENTRYPOINT [ "/entrypoint.sh" ]
 
 USER 1000
 
-EXPOSE 4222
+EXPOSE 4222 9235

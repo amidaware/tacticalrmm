@@ -10,6 +10,7 @@ set -e
 : "${FRONTEND_SERVICE:=tactical-frontend}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
 : "${WEBSOCKETS_SERVICE:=tactical-websockets}"
+: "${NATS_SERVICE:=tactical-nats}"
 : "${DEV:=0}"
 
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
@@ -95,6 +96,19 @@ server  {
         proxy_set_header   X-Real-IP \$remote_addr;
         proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Host \$server_name;
+    }
+
+    location ~ ^/natsws {
+        set \$natswebsocket http://${NATS_SERVICE}:9235;
+        proxy_pass \$natswebsocket;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host \$host;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Forwarded-Host \$host:\$server_port;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
     client_max_body_size 300M;

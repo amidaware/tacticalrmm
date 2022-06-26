@@ -77,9 +77,10 @@ done
 . $PWD/script-cfg/ParentFunctions.cfg
 
 # Get commandline input function
-getCommandLineArgs()
-{
-	while getopts "auto:api:branch:ca:cert:domain:email:h:key:mesh:pass:repo:rmm:username:" option; do
+#getCommandLineArgs()
+##{
+	while getopts auto:api:branch:ca:cert:domain:email:h:key:mesh:pass:repo:rmm:username: option
+	do
 		case $option in
       		auto ) autoinstall="1"
 				INSTALL_TYPE="$(translateToLowerCase ${OPTARG})";;
@@ -163,10 +164,10 @@ getCommandLineArgs()
 		checkCertExists "$sslcert" "Fullchain Cert";
 		checkCertExists "$sslkey" "Private Key";
 	fi
-}				
+#}				
 
 # Get commandline input
-getCommandLineArgs;
+#getCommandLineArgs;
 
 # Set colors
 # MiscFunctions

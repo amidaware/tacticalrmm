@@ -37,6 +37,7 @@ from tacticalrmm.constants import (
     PAAction,
     PAStatus,
 )
+from tacticalrmm.helpers import get_nats_ports
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -786,8 +787,9 @@ class Agent(BaseAuditModel):
     async def nats_cmd(
         self, data: Dict[Any, Any], timeout: int = 30, wait: bool = True
     ) -> Any:
+        nats_std_port, _ = get_nats_ports()
         options = {
-            "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+            "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
             "user": "tacticalrmm",
             "password": settings.SECRET_KEY,
             "connect_timeout": 3,

@@ -11,7 +11,6 @@ class SendCMD(AsyncJsonWebsocketConsumer):
     async def connect(self):
 
         self.user = self.scope["user"]
-        print(self.scope)
 
         if isinstance(self.user, AnonymousUser):
             await self.close()

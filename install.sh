@@ -556,6 +556,18 @@ server {
         proxy_set_header   X-Forwarded-Host \$server_name;
     }
 
+    location ~ ^/natsws {
+        proxy_pass http://127.0.0.1:9235;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host \$host;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Forwarded-Host \$host:\$server_port;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
     location / {
         uwsgi_pass  tacticalrmm;
         include     /etc/nginx/uwsgi_params;
@@ -864,7 +876,7 @@ if [ "$BEHIND_NAT" = true ]; then
     echo -ne "${GREEN}If you will be accessing the web interface of the RMM from the same LAN as this server,${NC}\n"
     echo -ne "${GREEN}you'll need to make sure your 3 subdomains resolve to ${IPV4}${NC}\n"
     echo -ne "${GREEN}This also applies to any agents that will be on the same local network as the rmm.${NC}\n"
-    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443 and 4222 tcp.${NC}\n\n"
+    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on port 443${NC}\n\n"
 fi
 
 printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"

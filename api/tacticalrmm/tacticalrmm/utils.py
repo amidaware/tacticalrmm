@@ -28,7 +28,7 @@ from tacticalrmm.constants import (
     DebugLogType,
     ScriptShell,
 )
-from tacticalrmm.helpers import get_certs, notify_error
+from tacticalrmm.helpers import get_certs, notify_error, get_nats_ports
 
 
 def generate_winagent_exe(
@@ -193,6 +193,8 @@ def reload_nats() -> None:
             )
 
     cert_file, key_file = get_certs()
+    nats_std_port, nats_ws_port = get_nats_ports()
+
     config = {
         "tls": {
             "cert_file": cert_file,
@@ -200,6 +202,11 @@ def reload_nats() -> None:
         },
         "authorization": {"users": users},
         "max_payload": 67108864,
+        "port": nats_std_port,  # internal only
+        "websocket": {
+            "port": nats_ws_port,
+            "no_tls": True,  # TLS is handled by nginx, so not needed here
+        },
     }
 
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")

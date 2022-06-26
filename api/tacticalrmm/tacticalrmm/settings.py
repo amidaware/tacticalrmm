@@ -182,14 +182,6 @@ if ADMIN_ENABLED:
         "django.contrib.messages",
     )
 
-if HOSTED:
-    try:
-        import trmm_mon
-    except ImportError:
-        pass
-    else:
-        INSTALLED_APPS += ("trmm_mon",)
-
 if DEMO:
     MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
 

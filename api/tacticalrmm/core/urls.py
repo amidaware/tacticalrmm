@@ -18,4 +18,5 @@ urlpatterns = [
     path("urlaction/run/", views.RunURLAction.as_view()),
     path("smstest/", views.TwilioSMSTest.as_view()),
     path("clearcache/", views.clear_cache),
+    path("status/", views.status),
 ]

@@ -1,4 +1,5 @@
 import json
+import subprocess
 import tempfile
 from base64 import b64encode
 from typing import TYPE_CHECKING, Optional, cast
@@ -135,3 +136,9 @@ async def remove_mesh_agent(uri: str, mesh_node_id: str) -> None:
                 }
             )
         )
+
+
+def sysd_svc_is_running(svc: str) -> bool:
+    cmd = ["systemctl", "is-active", "--quiet", svc]
+    r = subprocess.run(cmd, capture_output=True)
+    return not r.returncode

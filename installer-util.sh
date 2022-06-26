@@ -19,7 +19,6 @@ CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"
 REPO_URL="https://github.com/${REPO_OWNER}/tacticalrmm.git"
 SCRIPTS_REPO_URL="https://github.com/amidaware/community-scripts.git"
-FRONTEND_URL="https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar}"
 THIS_SCRIPT=$(readlink -f "$0")
 
 # Misc info variables

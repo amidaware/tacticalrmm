@@ -13,7 +13,7 @@ declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunction
 
 # Script Info variables
 REPO_OWNER="ninjamonkey198206"
-BRANCH="develop-installer-update"
+BRANCH="develop-installer-update-ws"
 SCRIPT_VERSION="69"
 CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"
@@ -75,98 +75,92 @@ done
 . $PWD/script-cfg/TroubleshootingFunctions.cfg
 . $PWD/script-cfg/ParentFunctions.cfg
 
-# Get commandline input function
-#getCommandLineArgs()
-##{
-	while getopts auto:api:branch:ca:cert:domain:email:h:key:mesh:pass:repo:rmm:username: option
-	do
-		case $option in
-      		auto ) autoinstall="1"
-				INSTALL_TYPE="$(translateToLowerCase ${OPTARG})";;
-			api ) rmmhost="$(translateToLowerCase ${OPTARG})";;
-			branch ) BRANCH="$(translateToLowerCase ${OPTARG})";;
-			ca ) sslcacert="${OPTARG}";;
-			cert ) sslcert="${OPTARG}";;
-			domain ) rootdomain="$(translateToLowerCase ${OPTARG})";;
-			email ) letsemail="$(translateToLowerCase ${OPTARG})";;
-			h ) helpText
-				exit;;
-			key ) sslkey="${OPTARG}";;
-			mesh ) meshhost="$(translateToLowerCase ${OPTARG})";;
-			pass ) trmmpass="${OPTARG}";;
-			repo ) REPO_OWNER="$(translateToLowerCase ${OPTARG})";;
-			rmm ) frontendhost="$(translateToLowerCase ${OPTARG})";;
-			username ) trmmuser="${OPTARG}";;
-	     	\?) echo -e "Error: Invalid option"
-				clear -x
-				exit 1;;
-		esac
-	done
-
-	if [ "$autoinstall" == "1" ]; then
-		# Check all required input is available
-		if [ -z "$INSTALL_TYPE" ] || [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
-			echo -e "Error: To perform an automated installation, you must provide all required information."
-			echo -e "\n"
-			echo -e "install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required."
-			echo -e "\n"
-			echo -e "Run .$THIS_SCRIPT -h for further details."
-			clear -x
-			exit 1
-		fi
-
-		# Check that install type is valid
-		if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ]; then
-			echo -e "Error: You've selected an invalid installation type."
-			echo -e "\n"
-			echo -e "Run .$THIS_SCRIPT -h for details on the available options."
-			clear -x
-			exit 1
-		fi
-
-		# Check that repo and branch match install type
-		if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
-			echo -e "Error: You've selected a developer installation type, but not changed the repo, branch, or both."
-			echo -e "\n"
-			echo -e "Run .$THIS_SCRIPT -h for details on how to select them."
-			clear -x
-			exit 1
-		fi
-
-		# Check root domain is valid format
-		if [[ $rootdomain != *[.]* ]]; then
-			echo -e "Error: You've entered an invalid root domain."
-			echo -e "\n"
-			echo -e "Run .$THIS_SCRIPT -h for details on the correct format."
-			clear -x
-			exit 1
-		fi
-
-		# Check that email address format is valid
-		if [[ $letsemail != *[@]*[.]* ]]; then
-			echo -e "Error: You've entered an invalid email address."
-			echo -e "\n"
-			echo -e "Run .$THIS_SCRIPT -h for details on the correct format."
-			clear -x
-			exit 1
-		fi
-
-		# Check subdomains are valid format
-		# User Input
-		subdomainCheck "$rmmhost" "api";
-		subdomainCheck "$meshhost" "mesh";
-		subdomainCheck "$frontendhost" "rmm";
-
-		# Check that cert file exists
-		# User Input
-		checkCertExists "$sslcacert" "CA Chain";
-		checkCertExists "$sslcert" "Fullchain Cert";
-		checkCertExists "$sslkey" "Private Key";
-	fi
-#}				
-
 # Get commandline input
-#getCommandLineArgs;
+while getopts auto:api:branch:ca:cert:domain:email:h:key:mesh:pass:repo:rmm:username: option
+do
+	case $option in
+      	auto ) autoinstall="1"
+			INSTALL_TYPE="$(translateToLowerCase ${OPTARG})";;
+		api ) rmmhost="$(translateToLowerCase ${OPTARG})";;
+		branch ) BRANCH="$(translateToLowerCase ${OPTARG})";;
+		ca ) sslcacert="${OPTARG}";;
+		cert ) sslcert="${OPTARG}";;
+		domain ) rootdomain="$(translateToLowerCase ${OPTARG})";;
+		email ) letsemail="$(translateToLowerCase ${OPTARG})";;
+		h ) helpText
+			exit 1;;
+		key ) sslkey="${OPTARG}";;
+		mesh ) meshhost="$(translateToLowerCase ${OPTARG})";;
+		pass ) trmmpass="${OPTARG}";;
+		repo ) REPO_OWNER="$(translateToLowerCase ${OPTARG})";;
+		rmm ) frontendhost="$(translateToLowerCase ${OPTARG})";;
+		username ) trmmuser="${OPTARG}";;
+	    \?) echo -e "Error: Invalid option"
+			clear -x
+			exit 1;;
+	esac
+done
+
+if [ "$autoinstall" == "1" ]; then
+	# Check all required input is available
+	if [ -z "$INSTALL_TYPE" ] || [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
+		echo -e "Error: To perform an automated installation, you must provide all required information."
+		echo -e "\n"
+		echo -e "install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required."
+		echo -e "\n"
+		echo -e "Run .$THIS_SCRIPT -h for further details."
+		clear -x
+		exit 1
+	fi
+
+	# Check that install type is valid
+	if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ]; then
+		echo -e "Error: You've selected an invalid installation type."
+		echo -e "\n"
+		echo -e "Run .$THIS_SCRIPT -h for details on the available options."
+		clear -x
+		exit 1
+	fi
+
+	# Check that repo and branch match install type
+	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
+		echo -e "Error: You've selected a developer installation type, but not changed the repo, branch, or both."
+		echo -e "\n"
+		echo -e "Run .$THIS_SCRIPT -h for details on how to select them."
+		clear -x
+		exit 1
+	fi
+
+	# Check root domain is valid format
+	if [[ $rootdomain != *[.]* ]]; then
+		echo -e "Error: You've entered an invalid root domain."
+		echo -e "\n"
+		echo -e "Run .$THIS_SCRIPT -h for details on the correct format."
+		clear -x
+		exit 1
+	fi
+
+	# Check that email address format is valid
+	if [[ $letsemail != *[@]*[.]* ]]; then
+		echo -e "Error: You've entered an invalid email address."
+		echo -e "\n"
+		echo -e "Run .$THIS_SCRIPT -h for details on the correct format."
+		clear -x
+		exit 1
+	fi
+
+	# Check subdomains are valid format
+	# User Input
+	subdomainCheck "$rmmhost" "api";
+	subdomainCheck "$meshhost" "mesh";
+	subdomainCheck "$frontendhost" "rmm";
+
+	# Check that cert file exists
+	# User Input
+	checkCertExists "$sslcacert" "CA Chain";
+	checkCertExists "$sslcert" "Fullchain Cert";
+	checkCertExists "$sslkey" "Private Key";
+fi
 
 # Set colors
 # MiscFunctions

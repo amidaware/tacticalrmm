@@ -25,7 +25,7 @@
       "Title": "Tactical RMM",
       "Title2": "Tactical RMM",
       "NewAccounts": false,
-      "CertUrl": "https://mesh.example.com/",
+      "CertUrl": "https://mesh.example.com:443/",
       "GeoLocation": true,
       "CookieIpCheck": false,
       "mstsc": true

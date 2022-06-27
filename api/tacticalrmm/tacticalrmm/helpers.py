@@ -5,8 +5,8 @@ from rest_framework.response import Response
 
 def get_certs() -> tuple[str, str]:
     domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
-    cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-    key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
+    cert_file = f"/etc/letsencrypt/live/${rootdomain}/fullchain.pem"
+    key_file = f"/etc/letsencrypt/live/${rootdomain}/privkey.pem"
 
     if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
         cert_file = settings.CERT_FILE

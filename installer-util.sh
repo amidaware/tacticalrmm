@@ -268,11 +268,7 @@ utilityMenu()
 			1 ) backupTRMM;;
       		2 ) INSTALL_TYPE="restore"
 				restoreTRMM;;
-      		3 ) if [ ! -f /etc/nginx/sites-available/rmm.conf ]; then
-					getHostAndDomainInfo
-				else
-					getExistingDomainInfo
-				fi
+      		3 ) getHostAndDomainInfo
 				renewCerts;;
 			4 ) if [ ! -f /etc/nginx/sites-available/rmm.conf ]; then
 					getHostAndDomainInfo "TS"

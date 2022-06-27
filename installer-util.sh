@@ -268,8 +268,18 @@ utilityMenu()
 			1 ) backupTRMM;;
       		2 ) INSTALL_TYPE="restore"
 				restoreTRMM;;
-      		3 ) renewCerts;;
-			4 ) importCerts;;
+      		3 ) if [ ! -f /etc/nginx/sites-available/rmm.conf ]; then
+					getHostAndDomainInfo
+				else
+					getExistingDomainInfo
+				fi
+				renewCerts;;
+			4 ) if [ ! -f /etc/nginx/sites-available/rmm.conf ]; then
+					getHostAndDomainInfo "TS"
+				else
+					getExistingDomainInfo
+				fi
+				importCerts;;
 			5 ) installFail2ban;;
       		6 ) troubleShoot;;
       		7 ) return;;

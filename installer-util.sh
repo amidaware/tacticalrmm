@@ -13,7 +13,7 @@ declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunction
 
 # Script Info variables
 REPO_OWNER="ninjamonkey198206"
-BRANCH="develop-installer-update-ws"
+BRANCH="develop-installer-update"
 SCRIPT_VERSION="69"
 CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"
@@ -268,8 +268,14 @@ utilityMenu()
 			1 ) backupTRMM;;
       		2 ) INSTALL_TYPE="restore"
 				restoreTRMM;;
-      		3 ) renewCerts;;
-			4 ) importCerts;;
+      		3 ) getHostAndDomainInfo
+				renewCerts;;
+			4 ) if [ ! -f /etc/nginx/sites-available/rmm.conf ]; then
+					getHostAndDomainInfo "TS"
+				else
+					getExistingDomainInfo
+				fi
+				importCerts;;
 			5 ) installFail2ban;;
       		6 ) troubleShoot;;
       		7 ) return;;

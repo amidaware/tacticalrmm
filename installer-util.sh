@@ -13,7 +13,7 @@ declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunction
 
 # Script Info variables
 REPO_OWNER="ninjamonkey198206"
-BRANCH="develop-installer-update"
+BRANCH="develop-installer-update-ws"
 SCRIPT_VERSION="69"
 CFG_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/installer-util.sh"

@@ -322,7 +322,7 @@ class CheckResult(models.Model):
     extra_details = models.JSONField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)
-    retcode = models.IntegerField(null=True, blank=True)
+    retcode = models.BigIntegerField(null=True, blank=True)
     execution_time = models.CharField(max_length=100, null=True, blank=True)
     # cpu and mem check history
     history = ArrayField(

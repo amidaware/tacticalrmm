@@ -131,15 +131,6 @@ if [ "$autoinstall" == "1" ]; then
 		exit 1
 	fi
 
-	# Check root domain is valid format
-	if [[ $rootdomain != *[.]* ]]; then
-		echo -e "Error: You've entered an invalid root domain."
-		echo -e "\n"
-		echo -e "Run .$THIS_SCRIPT -h for details on the correct format."
-		clear -x
-		exit 1
-	fi
-
 	# Check that email address format is valid
 	if [[ $letsemail != *[@]*[.]* ]]; then
 		echo -e "Error: You've entered an invalid email address."
@@ -154,6 +145,10 @@ if [ "$autoinstall" == "1" ]; then
 	subdomainFormatCheck "$rmmhost" "api";
 	subdomainFormatCheck "$meshhost" "mesh";
 	subdomainFormatCheck "$frontendhost" "rmm";
+
+	# Check root domain format is valid
+	# User Input
+	rootDomainFormatCheck "$rootdomain";
 
 	# Check that entries resolve via dns
 	# User Input

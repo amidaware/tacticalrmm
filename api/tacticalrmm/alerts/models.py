@@ -69,12 +69,12 @@ class Alert(models.Model):
     action_run = models.DateTimeField(null=True, blank=True)
     action_stdout = models.TextField(null=True, blank=True)
     action_stderr = models.TextField(null=True, blank=True)
-    action_retcode = models.IntegerField(null=True, blank=True)
+    action_retcode = models.BigIntegerField(null=True, blank=True)
     action_execution_time = models.CharField(max_length=100, null=True, blank=True)
     resolved_action_run = models.DateTimeField(null=True, blank=True)
     resolved_action_stdout = models.TextField(null=True, blank=True)
     resolved_action_stderr = models.TextField(null=True, blank=True)
-    resolved_action_retcode = models.IntegerField(null=True, blank=True)
+    resolved_action_retcode = models.BigIntegerField(null=True, blank=True)
     resolved_action_execution_time = models.CharField(
         max_length=100, null=True, blank=True
     )

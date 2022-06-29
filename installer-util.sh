@@ -151,9 +151,18 @@ if [ "$autoinstall" == "1" ]; then
 
 	# Check subdomains are valid format
 	# User Input
-	subdomainCheck "$rmmhost" "api";
-	subdomainCheck "$meshhost" "mesh";
-	subdomainCheck "$frontendhost" "rmm";
+	subdomainFormatCheck "$rmmhost" "api";
+	subdomainFormatCheck "$meshhost" "mesh";
+	subdomainFormatCheck "$frontendhost" "rmm";
+
+	# Check that entries resolve via dns
+	# User Input
+	rmmdomain="$rmmhost.$rootdomain"
+	frontenddomain="$frontendhost.$rootdomain"
+	meshdomain="$meshhost.$rootdomain"
+	checkDNSEntriesExist "$rmmdomain";
+	checkDNSEntriesExist "$frontenddomain";
+	checkDNSEntriesExist "$meshdomain";
 
 	# Check that cert file exists
 	# User Input

@@ -164,6 +164,10 @@ if [ "$autoinstall" == "1" ]; then
 	checkCertExists "$sslcacert" "CA Chain";
 	checkCertExists "$sslcert" "Fullchain Cert";
 	checkCertExists "$sslkey" "Private Key";
+
+	# Verify repo exists
+	# MiscFunctions
+	verifyRepoExists "$SCRIPT_URL";
 fi
 
 # Set colors

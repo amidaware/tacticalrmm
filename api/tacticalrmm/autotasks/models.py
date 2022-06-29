@@ -505,7 +505,7 @@ class TaskResult(models.Model):
         on_delete=models.CASCADE,
     )
 
-    retcode = models.IntegerField(null=True, blank=True)
+    retcode = models.BigIntegerField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)
     execution_time = models.CharField(max_length=100, default="0.0000")

@@ -5,13 +5,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/amidaware/tacticalrmm/natsapi"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	version = "3.0.5"
+	version = "3.1.0"
 	log     = logrus.New()
 )
 
@@ -22,7 +23,12 @@ func main() {
 	flag.Parse()
 
 	if *ver {
+
 		fmt.Println(version)
+		bi, ok := debug.ReadBuildInfo()
+		if ok {
+			fmt.Println(bi.String())
+		}
 		return
 	}
 

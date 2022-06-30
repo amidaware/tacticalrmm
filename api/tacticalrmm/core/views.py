@@ -262,6 +262,10 @@ class CodeSign(APIView):
         send_agent_update_task.delay(agent_ids=agent_ids, token=token, force=True)
         return Response("Agents will be code signed shortly")
 
+    def delete(self, request):
+        CodeSignToken.objects.all().delete()
+        return Response("ok")
+
 
 class GetAddKeyStore(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]

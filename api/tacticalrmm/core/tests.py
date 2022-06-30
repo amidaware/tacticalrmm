@@ -41,6 +41,12 @@ class TestCodeSign(TacticalTestCase):
 
         self.check_not_authenticated("patch", self.url)
 
+    def test_delete_codesign(self):
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("delete", self.url)
+
 
 class TestConsumers(TacticalTestCase):
     def setUp(self):

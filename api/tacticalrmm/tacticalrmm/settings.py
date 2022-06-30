@@ -29,7 +29,7 @@ APP_VER = "0.0.164"
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.1.0-dev"
 
-MESH_VER = "1.0.41"
+MESH_VER = "1.0.43"
 
 NATS_SERVER_VER = "2.8.4"
 
@@ -163,6 +163,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  ##
     "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
 ]

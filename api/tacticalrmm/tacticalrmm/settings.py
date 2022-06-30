@@ -163,6 +163,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  ##
     "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
 ]

@@ -202,9 +202,9 @@ verifySupportedOS;
 
 # Verify system meets minimum recommended specs
 # SystemInfoFunctions
-getTotalSystemMemory;
-getCPUAndThreadCount;
-
+checkTotalSystemMemory;
+checkCPUAndThreadCount;
+checkStorageCapacity;
 
 # Check if root
 # MiscFunctions

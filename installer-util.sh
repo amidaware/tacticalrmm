@@ -128,8 +128,8 @@ if [ "$autoinstall" == "1" ]; then
 	fi
 
 	# Check that install type is valid
-	if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ]; then
-		echo -e "${RED} Error: You've selected an invalid installation type.${NC}\n"
+	if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ] && [ "$INSTALL_TYPE" != "backup" ]; then
+		echo -e "${RED} Error: You've selected an invalid function type.${NC}\n"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options.${NC}"
 		exit 1
 	fi
@@ -364,6 +364,9 @@ mainMenu()
 	# Automated restore
 	elif [ "$autoinstall" == "1" ] && [ "$INSTALL_TYPE" == "restore" ]; then
 		restoreTRMM;
+	# Automated backup
+	elif [ "$autoinstall" == "1" ] && [ "$INSTALL_TYPE" == "backup" ]; then
+		backupTRMM;
 	else
 		until [ "$menuselection" = "0" ]; do
 			dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Main Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections." 0 0 0 \

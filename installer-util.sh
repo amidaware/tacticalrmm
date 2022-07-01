@@ -41,6 +41,13 @@ sslkey=""
 sslcert=""
 trmmuser=""
 trmmpass=""
+backupfile=""
+troubleshoot=""
+
+# Check if directory exists, if not, create
+if [ ! -d $PWD/script-cfg ]; then
+	mkdir $PWD/script-cfg
+fi
 
 # Get cfg files function
 getCfgFiles()
@@ -49,11 +56,6 @@ getCfgFiles()
 		wget -q "$1/script-cfg/$2" -O "$PWD/script-cfg/$2"
 	fi
 }
-
-# Check if directory exists, if not, create
-if [ ! -d $PWD/script-cfg ]; then
-	mkdir $PWD/script-cfg
-fi
 
 # Get cfg files
 for i in "${cfgfiles[@]}"
@@ -75,8 +77,12 @@ done
 . $PWD/script-cfg/TroubleshootingFunctions.cfg
 . $PWD/script-cfg/ParentFunctions.cfg
 
+# Set colors
+# MiscFunctions
+setColors;
+
 # Get commandline input
-while getopts auto:api:branch:ca:cert:domain:email:h:key:mesh:pass:repo:rmm:username: option
+while getopts auto:api:branch:ca:cert:domain:email:file:h:key:mesh:pass:repo:rmm:ts:update:username: option
 do
 	case $option in
       	auto ) autoinstall="1"
@@ -87,6 +93,7 @@ do
 		cert ) sslcert="${OPTARG}";;
 		domain ) rootdomain="$(translateToLowerCase ${OPTARG})";;
 		email ) letsemail="$(translateToLowerCase ${OPTARG})";;
+		file ) backupfile="${OPTARG}";;
 		h ) helpText
 			exit 1;;
 		key ) sslkey="${OPTARG}";;
@@ -94,44 +101,59 @@ do
 		pass ) trmmpass="${OPTARG}";;
 		repo ) REPO_OWNER="$(translateToLowerCase ${OPTARG})";;
 		rmm ) frontendhost="$(translateToLowerCase ${OPTARG})";;
+		ts ) troubleshoot="1"
+			troubleShoot;;
+		update ) UPDATE_TYPE="$(translateToLowerCase ${OPTARG})";;
 		username ) trmmuser="${OPTARG}";;
 	    \?) echo -e "Error: Invalid option"
-			clear -x
+			helpText
 			exit 1;;
 	esac
 done
 
 if [ "$autoinstall" == "1" ]; then
-	# Check all required input is available
-	if [ -z "$INSTALL_TYPE" ] || [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
-		echo -e "${RED} Error: To perform an automated installation, you must provide all required information.${NC}\n"
-		echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required.${NC}\n"
-		echo -e "${RED} Run .$THIS_SCRIPT -h help for further details.${NC}"
-		clear -x
+
+	# Check that update type is valid
+	if [ "$INSTALL_TYPE" == "update" ] && ([ "$UPDATE_TYPE" != "standard" ] && [ "$UPDATE_TYPE" != "forced" ]); then
+		echo -e "${RED} Error: You've selected update, but not selected an appropriate type.${NC}\n"
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
+		exit 1
+	fi
+
+	# Check that backup file exists
+	if [ "$INSTALL_TYPE" == "restore" ] && ([ -z "$backupfile" ] || [ ! -f "$backupfile" ]); then
+		echo -e "${RED} Error: You've selected restore, but not provided a valid backup file.${NC}\n"
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to enter this.${NC}"
 		exit 1
 	fi
 
 	# Check that install type is valid
-	if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ]; then
+	if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ]; then
 		echo -e "${RED} Error: You've selected an invalid installation type.${NC}\n"
-		echo -e "${RED} Run .$THIS_SCRIPT -h help for details on the available options.${NC}"
-		clear -x
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options.${NC}"
+		exit 1
+	fi
+
+	# Check all required input is available for install
+	if [ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" || "install" ]; then
+		if [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
+		echo -e "${RED} Error: To perform an automated installation, you must provide all required information.${NC}\n"
+		echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required.${NC}\n"
+		echo -e "${RED} Run $THIS_SCRIPT -h help for further details.${NC}"
 		exit 1
 	fi
 
 	# Check that repo and branch match install type
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
 		echo -e "${RED} Error: You've selected a developer installation type, but not changed the repo, branch, or both.${NC}\n"
-		echo -e "${RED} Run .$THIS_SCRIPT -h help for details on how to select them.${NC}"
-		clear -x
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
 		exit 1
 	fi
 
 	# Check that email address format is valid
 	if [[ $letsemail != *[@]*[.]* ]]; then
 		echo -e "${RED} Error: You've entered an invalid email address.${NC}\n"
-		echo -e "${RED} Run .$THIS_SCRIPT -h help for details on the correct format.${NC}"
-		clear -x
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on the correct format.${NC}"
 		exit 1
 	fi
 
@@ -164,10 +186,6 @@ if [ "$autoinstall" == "1" ]; then
 	# MiscFunctions
 	verifyRepoExists "$SCRIPT_URL";
 fi
-
-# Set colors
-# MiscFunctions
-setColors;
 
 # Gather OS info
 # SystemInfoFunctions
@@ -250,7 +268,7 @@ installMenu()
 			5 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
-			* ) derpDerp;;
+			\?) derpDerp;;
 		esac
 	done
 
@@ -280,7 +298,8 @@ utilityMenu()
       		3 ) getHostAndDomainInfo
 				renewCerts;;
 			4 ) if [ ! -f /etc/nginx/sites-available/rmm.conf ]; then
-					getHostAndDomainInfo "TS"
+					troubleshoot="1"
+					getHostAndDomainInfo
 				else
 					getExistingDomainInfo
 				fi
@@ -291,7 +310,7 @@ utilityMenu()
 			8 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
-			* ) derpDerp;;
+			\?) derpDerp;;
 		esac
 	done
 
@@ -326,7 +345,7 @@ updateMenu()
 			5 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
-			* ) derpDerp;;
+			\?) derpDerp;;
 		esac
 	done
 
@@ -336,8 +355,15 @@ updateMenu()
 # Main menu
 mainMenu()
 {
-	if [ "$autoinstall" == "1" ]; then
+	# Automated install types install, devprep, or devinstall
+	if [ "$autoinstall" == "1" ] && ([ "$INSTALL_TYPE" == "install" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "devprep" ]); then
 		mainInstall;
+	# Automated update
+	elif [ "$autoinstall" == "1" ] && [ "$INSTALL_TYPE" == "update" ]; then
+		updateTRMM;
+	# Automated restore
+	elif [ "$autoinstall" == "1" ] && [ "$INSTALL_TYPE" == "restore" ]; then
+		restoreTRMM;
 	else
 		until [ "$menuselection" = "0" ]; do
 			dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Main Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections." 0 0 0 \
@@ -355,7 +381,7 @@ mainMenu()
 				4 ) [ -f $INPUT ] && rm $INPUT
 					clear -x
 					exit;;
-				* ) derpDerp;;
+				\?) derpDerp;;
 			esac
 		done
 	fi

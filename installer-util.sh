@@ -104,38 +104,33 @@ done
 if [ "$autoinstall" == "1" ]; then
 	# Check all required input is available
 	if [ -z "$INSTALL_TYPE" ] || [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
-		echo -e "Error: To perform an automated installation, you must provide all required information."
-		echo -e "\n"
-		echo -e "install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required."
-		echo -e "\n"
-		echo -e "Run .$THIS_SCRIPT -h for further details."
+		echo -e "${RED} Error: To perform an automated installation, you must provide all required information.${NC}\n"
+		echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required.${NC}\n"
+		echo -e "${RED} Run .$THIS_SCRIPT -h help for further details.${NC}"
 		clear -x
 		exit 1
 	fi
 
 	# Check that install type is valid
 	if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ]; then
-		echo -e "Error: You've selected an invalid installation type."
-		echo -e "\n"
-		echo -e "Run .$THIS_SCRIPT -h for details on the available options."
+		echo -e "${RED} Error: You've selected an invalid installation type.${NC}\n"
+		echo -e "${RED} Run .$THIS_SCRIPT -h help for details on the available options.${NC}"
 		clear -x
 		exit 1
 	fi
 
 	# Check that repo and branch match install type
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
-		echo -e "Error: You've selected a developer installation type, but not changed the repo, branch, or both."
-		echo -e "\n"
-		echo -e "Run .$THIS_SCRIPT -h for details on how to select them."
+		echo -e "${RED} Error: You've selected a developer installation type, but not changed the repo, branch, or both.${NC}\n"
+		echo -e "${RED} Run .$THIS_SCRIPT -h help for details on how to select them.${NC}"
 		clear -x
 		exit 1
 	fi
 
 	# Check that email address format is valid
 	if [[ $letsemail != *[@]*[.]* ]]; then
-		echo -e "Error: You've entered an invalid email address."
-		echo -e "\n"
-		echo -e "Run .$THIS_SCRIPT -h for details on the correct format."
+		echo -e "${RED} Error: You've entered an invalid email address.${NC}\n"
+		echo -e "${RED} Run .$THIS_SCRIPT -h help for details on the correct format.${NC}"
 		clear -x
 		exit 1
 	fi
@@ -204,6 +199,11 @@ wutOSThis;
 # Verify compatible OS and version
 # SystemInfoFunctions
 verifySupportedOS;
+
+# Verify system meets minimum recommended specs
+# SystemInfoFunctions
+getTotalSystemMemory;
+GetCPUAndThreadCount;
 
 # Check if root
 # MiscFunctions

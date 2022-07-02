@@ -225,7 +225,6 @@ verifySupportedOS;
 # SystemInfoFunctions
 checkTotalSystemMemory;
 checkCPUAndThreadCount;
-checkStorageCapacity;
 
 # Check if root
 # MiscFunctions

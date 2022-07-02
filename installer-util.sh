@@ -101,8 +101,7 @@ do
 		p) trmmpass="${OPTARG}";;
 		r) REPO_OWNER="$(translateToLowerCase ${OPTARG})";;
 		o) frontendhost="$(translateToLowerCase ${OPTARG})";;
-		t) troubleshoot="1"
-			troubleShoot;;
+		t) troubleshoot="1";;
 		u) UPDATE_TYPE="$(translateToLowerCase ${OPTARG})";;
 		n) trmmuser="${OPTARG}";;
 	    \?) echo -e "Error: Invalid option"
@@ -369,6 +368,9 @@ mainMenu()
 	# Automated backup
 	elif [ "$autoinstall" == "1" ] && [ "$INSTALL_TYPE" == "backup" ]; then
 		backupTRMM;
+	# Automated troubleshoot
+	elif [ "$autoinstall" != "1" ] && [ "$troubleshoot" == "1" ]; then
+		troubleShoot;
 	else
 		until [ "$menuselection" = "0" ]; do
 			dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Main Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections." 0 0 0 \

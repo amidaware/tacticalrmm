@@ -82,29 +82,29 @@ done
 setColors;
 
 # Get commandline input
-while getopts auto:api:branch:ca:cert:domain:email:file:h:key:mesh:pass:repo:rmm:ts:update:username: option
+while getopts i:a:b:c:e:d:m:f:h:k:s:p:r:o:t:u:n: option
 do
 	case $option in
-      	auto ) autoinstall="1"
+      	i) autoinstall="1"
 			INSTALL_TYPE="$(translateToLowerCase ${OPTARG})";;
-		api ) rmmhost="$(translateToLowerCase ${OPTARG})";;
-		branch ) BRANCH="$(translateToLowerCase ${OPTARG})";;
-		ca ) sslcacert="${OPTARG}";;
-		cert ) sslcert="${OPTARG}";;
-		domain ) rootdomain="$(translateToLowerCase ${OPTARG})";;
-		email ) letsemail="$(translateToLowerCase ${OPTARG})";;
-		file ) backupfile="${OPTARG}";;
-		h ) helpText
+		a) rmmhost="$(translateToLowerCase ${OPTARG})";;
+		b) BRANCH="$(translateToLowerCase ${OPTARG})";;
+		c) sslcacert="${OPTARG}";;
+		e) sslcert="${OPTARG}";;
+		d) rootdomain="$(translateToLowerCase ${OPTARG})";;
+		m) letsemail="$(translateToLowerCase ${OPTARG})";;
+		f) backupfile="${OPTARG}";;
+		h) helpText
 			exit 1;;
-		key ) sslkey="${OPTARG}";;
-		mesh ) meshhost="$(translateToLowerCase ${OPTARG})";;
-		pass ) trmmpass="${OPTARG}";;
-		repo ) REPO_OWNER="$(translateToLowerCase ${OPTARG})";;
-		rmm ) frontendhost="$(translateToLowerCase ${OPTARG})";;
-		ts ) troubleshoot="1"
+		k) sslkey="${OPTARG}";;
+		s) meshhost="$(translateToLowerCase ${OPTARG})";;
+		p) trmmpass="${OPTARG}";;
+		r) REPO_OWNER="$(translateToLowerCase ${OPTARG})";;
+		o) frontendhost="$(translateToLowerCase ${OPTARG})";;
+		t) troubleshoot="1"
 			troubleShoot;;
-		update ) UPDATE_TYPE="$(translateToLowerCase ${OPTARG})";;
-		username ) trmmuser="${OPTARG}";;
+		u) UPDATE_TYPE="$(translateToLowerCase ${OPTARG})";;
+		n) trmmuser="${OPTARG}";;
 	    \?) echo -e "Error: Invalid option"
 			helpText
 			exit 1;;
@@ -114,29 +114,29 @@ done
 if [ "$autoinstall" == "1" ]; then
 
 	# Check that update type is valid
-	if [ "$INSTALL_TYPE" == "update" ] && ([ "$UPDATE_TYPE" != "standard" ] && [ "$UPDATE_TYPE" != "forced" ]); then
+	if ([ "$INSTALL_TYPE" == "update" ] && ([ "$UPDATE_TYPE" != "standard" ] && [ "$UPDATE_TYPE" != "forced" ])); then
 		echo -e "${RED} Error: You've selected update, but not selected an appropriate type.${NC}\n"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
 		exit 1
 	fi
 
 	# Check that backup file exists
-	if [ "$INSTALL_TYPE" == "restore" ] && ([ -z "$backupfile" ] || [ ! -f "$backupfile" ]); then
+	if ([ "$INSTALL_TYPE" == "restore" ] && ([ -z "$backupfile" ] || [ ! -f "$backupfile" ])); then
 		echo -e "${RED} Error: You've selected restore, but not provided a valid backup file.${NC}\n"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to enter this.${NC}"
 		exit 1
 	fi
 
 	# Check that install type is valid
-	if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ] && [ "$INSTALL_TYPE" != "backup" ]; then
+	if ([ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ] && [ "$INSTALL_TYPE" != "backup" ]); then
 		echo -e "${RED} Error: You've selected an invalid function type.${NC}\n"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options.${NC}"
 		exit 1
 	fi
 
 	# Check all required input is available for install
-	if [ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" || "install" ]; then
-		if [ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]; then
+	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" || "install" ]); then
+		if ([ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]); then
 			echo -e "${RED} Error: To perform an automated installation, you must provide all required information.${NC}\n"
 			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required.${NC}\n"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for further details.${NC}"
@@ -145,7 +145,7 @@ if [ "$autoinstall" == "1" ]; then
 	fi
 
 	# Check that email address format is valid
-	if [ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" || "install" ]; then
+	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" || "install" ]); then
 		if [[ $letsemail != *[@]*[.]* ]]; then
 			echo -e "${RED} Error: You've entered an invalid email address.${NC}\n"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the correct format.${NC}"
@@ -154,7 +154,7 @@ if [ "$autoinstall" == "1" ]; then
 	fi
 
 	# Check that repo and branch match install type
-	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
+	if (([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]); then
 		echo -e "${RED} Error: You've selected a developer installation type, but not changed the repo, branch, or both.${NC}\n"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
 		exit 1

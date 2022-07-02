@@ -153,36 +153,40 @@ if [ "$autoinstall" == "1" ]; then
 	fi
 
 	# Check that repo and branch match install type
-	if (([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]); then
+	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
 		echo -e "${RED} Error: You've selected a developer installation type, but not changed the repo, branch, or both.${NC}\n"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
 		exit 1
 	fi
 
-	# Check subdomains are valid format
-	# User Input
-	subdomainFormatCheck "$rmmhost" "api";
-	subdomainFormatCheck "$meshhost" "mesh";
-	subdomainFormatCheck "$frontendhost" "rmm";
+	if ([ ! -z "$rmmhost" ] && [ ! -z "$meshhost" ] && [ ! -z "$frontendhost" ] && [ ! -z "$rootdomain" ]); then
+		# Check subdomains are valid format
+		# User Input
+		subdomainFormatCheck "$rmmhost" "api";
+		subdomainFormatCheck "$meshhost" "mesh";
+		subdomainFormatCheck "$frontendhost" "rmm";
+	
+		# Check root domain format is valid
+		# User Input
+		rootDomainFormatCheck "$rootdomain";
+	
+		# Check that entries resolve via dns
+		# User Input
+		rmmdomain="$rmmhost.$rootdomain"
+		frontenddomain="$frontendhost.$rootdomain"
+		meshdomain="$meshhost.$rootdomain"
+		checkDNSEntriesExist "$rmmdomain";
+		checkDNSEntriesExist "$frontenddomain";
+		checkDNSEntriesExist "$meshdomain";
+	fi
 
-	# Check root domain format is valid
-	# User Input
-	rootDomainFormatCheck "$rootdomain";
-
-	# Check that entries resolve via dns
-	# User Input
-	rmmdomain="$rmmhost.$rootdomain"
-	frontenddomain="$frontendhost.$rootdomain"
-	meshdomain="$meshhost.$rootdomain"
-	checkDNSEntriesExist "$rmmdomain";
-	checkDNSEntriesExist "$frontenddomain";
-	checkDNSEntriesExist "$meshdomain";
-
-	# Check that cert file exists
-	# User Input
-	checkCertExists "$sslcacert" "CA Chain";
-	checkCertExists "$sslcert" "Fullchain Cert";
-	checkCertExists "$sslkey" "Private Key";
+	if ([ ! -z "$sslcacert" ] && [ ! -z "$sslcert" ] && [ ! -z "$sslkey" ]); then
+		# Check that cert file exists
+		# User Input
+		checkCertExists "$sslcacert" "CA Chain";
+		checkCertExists "$sslcert" "Fullchain Cert";
+		checkCertExists "$sslkey" "Private Key";
+	fi
 
 	# Verify repo exists
 	# MiscFunctions

@@ -135,7 +135,7 @@ if [ "$autoinstall" == "1" ]; then
 	fi
 
 	# Check all required input is available for install
-	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" || "install" ]); then
+	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
 		if ([ -z "$rmmhost" ] || [ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$rootdomain" ] || [ -z "$sslkey" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]); then
 			echo -e "${RED} Error: To perform an automated installation, you must provide all required information.${NC}\n"
 			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, CA cert path, Cert path, Private key path, and T-RMM username and password are all required.${NC}\n"
@@ -145,7 +145,7 @@ if [ "$autoinstall" == "1" ]; then
 	fi
 
 	# Check that email address format is valid
-	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" || "install" ]); then
+	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
 		if [[ $letsemail != *[@]*[.]* ]]; then
 			echo -e "${RED} Error: You've entered an invalid email address.${NC}\n"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the correct format.${NC}"

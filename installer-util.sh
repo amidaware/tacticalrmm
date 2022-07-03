@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Fix for ncurses derpy lines in putty and similar apps
+export NCURSES_NO_UTF8_ACS=1
+
 # Menu option variables
 INPUT=/tmp/menu.sh.$$
 menuselection=""

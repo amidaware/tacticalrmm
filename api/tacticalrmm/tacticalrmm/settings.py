@@ -39,8 +39,7 @@ PIP_VER = "30"
 SETUPTOOLS_VER = "62.6.0"
 WHEEL_VER = "0.37.1"
 
-# AGENT_BASE_URL = "https://agents.tacticalrmm.com"
-AGENT_BASE_URL = "https://trmm-test.tacticalrmm.com"
+AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"
 AGENTS_URL = f"{AGENT_BASE_URL}/api/v2/agents/?"
 EXE_GEN_URL = f"{AGENT_BASE_URL}/api/v2/exe"
@@ -69,6 +68,7 @@ DEMO = False
 DEBUG = False
 ADMIN_ENABLED = False
 HOSTED = False
+SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 
 try:
@@ -127,7 +127,6 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
-    "drf_spectacular",
 ]
 
 CHANNEL_LAYERS = {
@@ -167,6 +166,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
 ]
+
+if SWAGGER_ENABLED:
+    INSTALLED_APPS += ("drf_spectacular",)
 
 if DEBUG and not DEMO:
     INSTALLED_APPS += (

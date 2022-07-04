@@ -98,6 +98,28 @@ echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
 sudo systemctl daemon-reload
 fi
 
+rmmconf='/etc/nginx/sites-available/rmm.conf'
+CHECK_NATS_WEBSOCKET=$(grep natsws $rmmconf)
+if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
+  echo "Adding nats websocket to nginx config"
+  echo "$(awk '
+  /location \/ {/ {
+      print "    location ~ ^/natsws {"
+      print "        proxy_pass http://127.0.0.1:9235;"
+      print "        proxy_http_version 1.1;"
+      print "        proxy_set_header Host $host;"
+      print "        proxy_set_header Upgrade $http_upgrade;"
+      print "        proxy_set_header Connection \"upgrade\";"
+      print "        proxy_set_header X-Forwarded-Host $host:$server_port;"
+      print "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;"
+      print "        proxy_set_header X-Forwarded-Proto $scheme;"
+      print "    }"
+      print "\n"
+  }
+  { print }
+  ' $rmmconf)" | sudo tee $rmmconf > /dev/null
+fi
+
 if ! sudo nginx -t > /dev/null 2>&1; then
   sudo nginx -t
   echo -ne "\n"

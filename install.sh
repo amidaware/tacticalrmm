@@ -161,6 +161,21 @@ update_script() {
 }
 
 ################################################################################
+## Install MongoDB
+################################################################################
+
+install_mongodb() {
+  print_header 'Installing MongoDB'
+
+  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+  echo "$MONGODB_REPO" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+  sudo apt update
+  sudo apt install -y mongodb-org
+  sudo systemctl enable mongod
+  sudo systemctl restart mongod
+}
+
+################################################################################
 ## Install Python
 ################################################################################
 
@@ -437,16 +452,7 @@ NODE_BIN=$(which node)
 
 ################################################################################
 
-print_header 'Installing MongoDB'
-
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-echo "$MONGODB_REPO" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-sudo apt update
-sudo apt install -y mongodb-org
-sudo systemctl enable mongod
-sudo systemctl restart mongod
-
-################################################################################
+install_mongodb
 
 install_python
 

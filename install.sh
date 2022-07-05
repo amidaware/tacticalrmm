@@ -161,6 +161,21 @@ update_script() {
 }
 
 ################################################################################
+## Install nginx
+################################################################################
+
+install_nginx() {
+  print_header 'Installing Nginx'
+
+  sudo apt install -y nginx
+  sudo systemctl stop nginx
+  sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' "${NGINX_CONF}"
+  sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' "${NGINX_CONF}"
+
+  return
+}
+
+################################################################################
 ## Install NodeJS
 ################################################################################
 
@@ -447,14 +462,7 @@ sudo chmod 775 -R "${LETS_ENCRYPT_PATH}"
 
 ################################################################################
 
-print_header 'Installing Nginx'
-
-sudo apt install -y nginx
-sudo systemctl stop nginx
-sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' "${NGINX_CONF}"
-sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' "${NGINX_CONF}"
-
-################################################################################
+install_nginx
 
 install_nodejs
 

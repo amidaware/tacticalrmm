@@ -47,6 +47,7 @@ ETC_CONFD="/etc/conf.d"
 CELERY_CONF_FILE="${ETC_CONFD}/celery.conf"
 CELERY_LOG_PATH="/var/log/celery"
 HOSTS_FILE="/etc/hosts"
+SYSTEMD_PATH="/etc/systemd"
 
 ## Runtime discovery
 CPU_CORES=$(nproc)
@@ -669,7 +670,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service >/dev/null
+echo "${rmmservice}" | sudo tee "${SYSTEMD_PATH}/system/rmm.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 daphneservice="$(
@@ -691,7 +692,7 @@ RestartSec=3s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
+echo "${daphneservice}" | sudo tee "${SYSTEMD_PATH}/system/daphne.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 natsservice="$(
@@ -716,7 +717,7 @@ LimitNOFILE=1000000
 WantedBy=multi-user.target
 EOF
 )"
-echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service >/dev/null
+echo "${natsservice}" | sudo tee "${SYSTEMD_PATH}/system/nats.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 natsapi="$(
@@ -737,7 +738,7 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service >/dev/null
+echo "${natsapi}" | sudo tee "${SYSTEMD_PATH}/system/nats-api.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 nginxrmm="$(
@@ -887,7 +888,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service >/dev/null
+echo "${celeryservice}" | sudo tee "${SYSTEMD_PATH}/system/celery.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 celeryconf="$(
@@ -933,7 +934,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null
+echo "${celerybeatservice}" | sudo tee "${SYSTEMD_PATH}/system/celerybeat.service" >/dev/null
 
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${ETC_CONFD}"
 
@@ -958,7 +959,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${meshservice}" | sudo tee /etc/systemd/system/meshcentral.service >/dev/null
+echo "${meshservice}" | sudo tee "${SYSTEMD_PATH}/system/meshcentral.service" >/dev/null
 
 sudo systemctl daemon-reload
 

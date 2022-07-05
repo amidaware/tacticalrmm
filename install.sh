@@ -46,6 +46,7 @@ LETS_ENCRYPT_PATH="/etc/letsencrypt"
 ETC_CONFD="/etc/conf.d"
 CELERY_CONF_FILE="${ETC_CONFD}/celery.conf"
 CELERY_LOG_PATH="/var/log/celery"
+HOSTS_FILE="/etc/hosts"
 
 ## Runtime discovery
 CPU_CORES=$(nproc)
@@ -297,43 +298,62 @@ else
   cls
 fi
 
-while [[ $rmmdomain != *[.]*[.]* ]]; do
-  echo -ne "${YELLOW}Enter the subdomain for the backend (e.g. api.example.com)${NC}: "
-  read rmmdomain
+## 2022-07-05: Ask the user for the root FQDN first to (optionally) auto-fill the subdomains later.
+while [[ $USER_ROOT_DOMAIN != *[.]* ]]; do
+  read -p "Enter the root domain for your instance (e.g. example.com or example.co.uk): " USER_ROOT_DOMAIN
 done
 
-while [[ $frontenddomain != *[.]*[.]* ]]; do
-  echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. rmm.example.com)${NC}: "
-  read frontenddomain
+DEFAULT_BACKEND_DOMAIN="api.$USER_ROOT_DOMAIN"
+DEFAULT_FRONTEND_DOMAIN="rmm.$USER_ROOT_DOMAIN"
+DEFAULT_MESH_DOMAIN="mesh.$USER_ROOT_DOMAIN"
+
+while [[ $USER_BACKEND_DOMAIN != *[.]*[.]* ]]; do
+  read -p "Enter the subdomain for the backend [${DEFAULT_BACKEND_DOMAIN}]: " USER_BACKEND_DOMAIN
+  if [ -z "$USER_BACKEND_DOMAIN" ]; then
+    USER_BACKEND_DOMAIN=${USER_BACKEND_DOMAIN:-$DEFAULT_BACKEND_DOMAIN}
+    break
+  fi
 done
 
-while [[ $meshdomain != *[.]*[.]* ]]; do
-  echo -ne "${YELLOW}Enter the subdomain for MeshCentral (e.g. mesh.example.com)${NC}: "
-  read meshdomain
+while [[ $USER_FRONTEND_DOMAIN != *[.]*[.]* ]]; do
+  read -p "Enter the subdomain for the frontend [${DEFAULT_FRONTEND_DOMAIN}]: " USER_FRONTEND_DOMAIN
+  if [ -z "$USER_FRONTEND_DOMAIN" ]; then
+    USER_FRONTEND_DOMAIN=${USER_FRONTEND_DOMAIN:-$DEFAULT_FRONTEND_DOMAIN}
+    break
+  fi
 done
 
-echo -ne "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: "
-read rootdomain
-
-while [[ $letsemail != *[@]*[.]* ]]; do
-  echo -ne "${YELLOW}Enter a valid email address for django and MeshCentral${NC}: "
-  read letsemail
+while [[ $USER_MESH_DOMAIN != *[.]*[.]* ]]; do
+  read -p "Enter the subdomain for MeshCentral [${DEFAULT_MESH_DOMAIN}]: " USER_MESH_DOMAIN
+  if [ -z "$USER_MESH_DOMAIN" ]; then
+    USER_MESH_DOMAIN=${USER_MESH_DOMAIN:-$DEFAULT_MESH_DOMAIN}
+    break
+  fi
 done
 
-# if server is behind NAT we need to add the 3 subdomains to the host file
+print_debug "Root domain: $USER_ROOT_DOMAIN"
+print_debug "Backend domain: $USER_BACKEND_DOMAIN"
+print_debug "Frontend domain: $USER_FRONTEND_DOMAIN"
+print_debug "Mesh domain: $USER_MESH_DOMAIN"
+
+while [[ $USER_EMAIL_ADDRESS != *[@]*[.]* ]]; do
+  read -p "Enter a valid email address for Django and MeshCentral: " USER_EMAIL_ADDRESS
+done
+
+# If the server is behind NAT, we need to add the 3 subdomains to the host file
 # so that nginx can properly route between the frontend, backend and MeshCentral
 # EDIT 8-29-2020
-# running this even if server is __not__ behind NAT just to make DNS resolving faster
-# this also allows the install script to properly finish even if DNS has not fully propagated
-CHECK_HOSTS=$(grep '127.0.1.1' /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
-HAS_11=$(grep '127.0.1.1' /etc/hosts)
+# Running this even if the server is __not__ behind NAT just to make DNS resolving faster.
+# This also allows the install script to properly finish even if DNS has not fully propagated
+CHECK_HOSTS=$(grep '127.0.1.1' "$HOSTS_FILE" | grep "$USER_BACKEND_DOMAIN" | grep "$USER_MESH_DOMAIN" | grep "$USER_FRONTEND_DOMAIN")
+HAS_LOCALHOST=$(grep '127.0.1.1' "$HOSTS_FILE")
 
 if ! [[ $CHECK_HOSTS ]]; then
-  print_header 'Adding subdomains to hosts file'
-  if [[ $HAS_11 ]]; then
-    sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} ${frontenddomain} ${meshdomain}/" /etc/hosts
+  print_header 'Adding subdomains to the hosts file'
+  if [[ $HAS_LOCALHOST ]]; then
+    sudo sed -i "/127.0.1.1/s/$/ ${USER_BACKEND_DOMAIN} ${USER_FRONTEND_DOMAIN} ${USER_MESH_DOMAIN}/" "$HOSTS_FILE"
   else
-    echo "127.0.1.1 ${rmmdomain} ${frontenddomain} ${meshdomain}" | sudo tee --append /etc/hosts >/dev/null
+    echo "127.0.1.1 ${USER_BACKEND_DOMAIN} ${USER_FRONTEND_DOMAIN} ${USER_MESH_DOMAIN}" | sudo tee --append "$HOSTS_FILE" >/dev/null
   fi
 fi
 
@@ -357,7 +377,7 @@ if [ "${TRMM_SCRIPT_ACME_SERVER}" = "staging" ]; then
   ACME_ADDITIONAL_PARAMS="${ACME_ADDITIONAL_PARAMS} --test-cert"
 fi
 
-CERTBOT_CMD="sudo certbot certonly --manual -d \"*.${rootdomain}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${letsemail}\" --no-eff-email ${ACME_ADDITIONAL_PARAMS}"
+CERTBOT_CMD="sudo certbot certonly --manual -d \"*.${USER_ROOT_DOMAIN}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${USER_EMAIL_ADDRESS}\" --no-eff-email ${ACME_ADDITIONAL_PARAMS}"
 
 print_debug "Certbot command: ${CERTBOT_CMD}"
 
@@ -367,8 +387,8 @@ while [[ $? -ne 0 ]]; do
   eval "${CERTBOT_CMD}"
 done
 
-readonly CERT_PRIV_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${rootdomain}/privkey.pem"
-readonly CERT_PUB_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${rootdomain}/fullchain.pem"
+readonly CERT_PRIV_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${USER_ROOT_DOMAIN}/privkey.pem"
+readonly CERT_PUB_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${USER_ROOT_DOMAIN}/fullchain.pem"
 
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${LETS_ENCRYPT_PATH}"
 sudo chmod 775 -R "${LETS_ENCRYPT_PATH}"
@@ -496,7 +516,7 @@ MESH_CONF_DATA="$(
   cat <<EOF
 {
   "settings": {
-    "Cert": "${meshdomain}",
+    "Cert": "${USER_MESH_DOMAIN}",
     "MongoDb": "mongodb://127.0.0.1:27017",
     "MongoDbName": "meshcentral",
     "WANonly": true,
@@ -521,7 +541,7 @@ MESH_CONF_DATA="$(
       "Title": "Tactical RMM",
       "Title2": "Tactical RMM",
       "NewAccounts": false,
-      "CertUrl": "https://${meshdomain}:443/",
+      "CertUrl": "https://${USER_MESH_DOMAIN}:443/",
       "GeoLocation": true,
       "CookieIpCheck": false,
       "mstsc": true
@@ -539,12 +559,12 @@ SECRET_KEY = "${DJANGO_SEKRET}"
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['${rmmdomain}']
+ALLOWED_HOSTS = ['${USER_BACKEND_DOMAIN}']
 
 ADMIN_URL = "${MESH_ADMIN_URL}/"
 
 CORS_ORIGIN_WHITELIST = [
-    "https://${frontenddomain}"
+    "https://${USER_FRONTEND_DOMAIN}"
 ]
 
 DATABASES = {
@@ -559,7 +579,7 @@ DATABASES = {
 }
 
 MESH_USERNAME = "${MESH_USERNAME}"
-MESH_SITE = "https://${meshdomain}"
+MESH_SITE = "https://${USER_MESH_DOMAIN}"
 REDIS_HOST    = "localhost"
 ADMIN_ENABLED = True
 EOF
@@ -598,21 +618,13 @@ printf >&2 "\n"
 
 echo -ne "Username: "
 read djangousername
-python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
+python manage.py createsuperuser --username ${djangousername} --email ${USER_EMAIL_ADDRESS}
 python manage.py create_installer_user
 RANDBASE=$(python manage.py generate_totp)
 cls
-python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
+python manage.py generate_barcode ${RANDBASE} ${djangousername} ${USER_FRONTEND_DOMAIN}
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
-
-echo 'Optimizing for number of processors'
-uwsgiprocs=4
-if [[ "$CPU_CORES" == "1" ]]; then
-  uwsgiprocs=2
-else
-  uwsgiprocs=$CPU_CORES
-fi
 
 ## todo: 2022-06-17: redo:
 uwsgini="$(
@@ -745,14 +757,14 @@ map \$http_user_agent \$ignore_ua {
 server {
     listen 80;
     listen [::]:80;
-    server_name ${rmmdomain};
+    server_name ${USER_BACKEND_DOMAIN};
     return 301 https://\$server_name\$request_uri;
 }
 
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
-    server_name ${rmmdomain};
+    server_name ${USER_BACKEND_DOMAIN};
     client_max_body_size 300M;
     access_log "${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/private/log/access.log" combined if=\$ignore_ua;
     error_log "${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/private/log/error.log";
@@ -773,7 +785,7 @@ server {
 
     location /private/ {
         internal;
-        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
+        add_header "Access-Control-Allow-Origin" "https://${USER_FRONTEND_DOMAIN}";
         alias "${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/private/";
     }
 
@@ -808,7 +820,7 @@ nginxmesh="$(
 server {
   listen 80;
   listen [::]:80;
-  server_name ${meshdomain};
+  server_name ${USER_MESH_DOMAIN};
   return 301 https://\$server_name\$request_uri;
 }
 
@@ -817,7 +829,7 @@ server {
     listen [::]:443 ssl;
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
-    server_name ${meshdomain};
+    server_name ${USER_MESH_DOMAIN};
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
 
@@ -966,14 +978,14 @@ webtar="trmm-web-v${WEB_VERSION}.tar.gz"
 wget -q "${TRMM_FRONTEND_REPO}/releases/download/v${WEB_VERSION}/${webtar}" -O "/tmp/${webtar}"
 sudo mkdir -p "${TRMM_WEB_PATH}"
 sudo tar -xzf /tmp/${webtar} -C ${TRMM_WEB_PATH}
-echo "window._env_ = {PROD_URL: \"https://${rmmdomain}\"}" | sudo tee "${TRMM_WEB_PATH}/dist/env-config.js" >/dev/null
+echo "window._env_ = {PROD_URL: \"https://${USER_BACKEND_DOMAIN}\"}" | sudo tee "${TRMM_WEB_PATH}/dist/env-config.js" >/dev/null
 sudo chown "${WWW_USER}:${WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
 rm -f "/tmp/${webtar}"
 
 nginxfrontend="$(
   cat <<EOF
 server {
-    server_name ${frontenddomain};
+    server_name ${USER_FRONTEND_DOMAIN};
     charset utf-8;
     location / {
         root "${TRMM_WEB_PATH}/dist";
@@ -999,13 +1011,13 @@ server {
 }
 
 server {
-    if (\$host = ${frontenddomain}) {
+    if (\$host = ${USER_FRONTEND_DOMAIN}) {
         return 301 https://\$host\$request_uri;
     }
 
     listen 80;
     listen [::]:80;
-    server_name ${frontenddomain};
+    server_name ${USER_FRONTEND_DOMAIN};
     return 404;
 }
 EOF
@@ -1058,7 +1070,7 @@ sudo systemctl stop meshcentral
 sleep 1
 cd "${MESH_ROOT_PATH}"
 
-${NODE_BIN} node_modules/meshcentral --createaccount "${MESH_USERNAME}" --pass "${MESH_PASSWORD}" --email "${letsemail}"
+${NODE_BIN} node_modules/meshcentral --createaccount "${MESH_USERNAME}" --pass "${MESH_PASSWORD}" --email "${USER_EMAIL_ADDRESS}"
 sleep 1
 ${NODE_BIN} node_modules/meshcentral --adminaccount "${MESH_USERNAME}"
 
@@ -1071,7 +1083,7 @@ while ! [[ $CHECK_MESH_READY2 ]]; do
   sleep 3
 done
 
-${NODE_BIN} node_modules/meshcentral/meshctrl.js --url "wss://${meshdomain}:443" --loginuser "${MESH_USERNAME}" --loginpass "${MESH_PASSWORD}" AddDeviceGroup --name TacticalRMM
+${NODE_BIN} node_modules/meshcentral/meshctrl.js --url "wss://${USER_MESH_DOMAIN}:443" --loginuser "${MESH_USERNAME}" --loginpass "${MESH_PASSWORD}" AddDeviceGroup --name TacticalRMM
 sleep 1
 
 sudo systemctl enable nats.service
@@ -1099,8 +1111,8 @@ done
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
-printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
-printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${rmmdomain}/${MESH_ADMIN_URL}/${NC}\n\n"
+printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${USER_FRONTEND_DOMAIN}${NC}\n\n"
+printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${USER_BACKEND_DOMAIN}/${MESH_ADMIN_URL}/${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral username: ${GREEN}${MESH_USERNAME}${NC}\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESH_PASSWORD}${NC}\n\n"
 

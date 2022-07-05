@@ -1,13 +1,13 @@
 asgiref==3.5.2
 celery==5.2.7
 certifi==2022.6.15
-cffi==1.15.0
+cffi==1.15.1
 channels==3.0.5
 channels_redis==3.4.0
 chardet==4.0.0
-cryptography==37.0.2
+cryptography==37.0.4
 daphne==3.0.2
-Django==4.0.5
+Django==4.0.6
 django-cors-headers==3.13.0
 django-ipware==4.0.2
 django-rest-knox==4.2.0

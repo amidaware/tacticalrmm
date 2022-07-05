@@ -161,6 +161,23 @@ update_script() {
 }
 
 ################################################################################
+## Install NodeJS
+################################################################################
+
+install_nodejs() {
+  print_header 'Installing NodeJS'
+
+  wget -qO - https://deb.nodesource.com/setup_16.x | sudo -E bash -
+  sudo apt update
+  sudo apt install -y gcc g++ make
+  sudo apt install -y nodejs
+  sudo npm install -g npm
+
+  ## todo: 2022-06-17: move
+  NODE_BIN=$(which node)
+}
+
+################################################################################
 ## Install MongoDB
 ################################################################################
 
@@ -439,18 +456,7 @@ sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 6
 
 ################################################################################
 
-print_header 'Installing NodeJS'
-
-wget -qO - https://deb.nodesource.com/setup_16.x | sudo -E bash -
-sudo apt update
-sudo apt install -y gcc g++ make
-sudo apt install -y nodejs
-sudo npm install -g npm
-
-## todo: 2022-06-17: move
-NODE_BIN=$(which node)
-
-################################################################################
+install_nodejs
 
 install_mongodb
 

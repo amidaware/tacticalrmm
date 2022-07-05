@@ -204,8 +204,8 @@ cls() {
 ################################################################################
 
 ## Install dependencies
-## todo: 2022-06-17: remove curl and lsb-release
-sudo apt install -y curl wget dirmngr gnupg lsb-release
+## todo: 2022-06-17: remove lsb-release
+sudo apt install -y wget dirmngr gnupg lsb-release
 
 update_script
 
@@ -407,8 +407,7 @@ sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 6
 
 print_header 'Installing NodeJS'
 
-## todo: 2022-06-17: replace with wget and remove curl dep
-curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+wget -qO - https://deb.nodesource.com/setup_16.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs

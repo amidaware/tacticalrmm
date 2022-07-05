@@ -10,7 +10,7 @@
 : "${TRMM_SCRIPT_BRANCH:="master"}"
 ## Switch between 'live' and 'staging' ACME servers
 : "${TRMM_SCRIPT_ACME_SERVER:="live"}"
-## Additional parameters to pass ACME
+## Additional parameters to pass ACME ("--keep-until-expiring")
 : "${ACME_ADDITIONAL_PARAMS:=""}"
 
 readonly SCRIPT_VERSION="63"
@@ -218,23 +218,40 @@ install_mongodb() {
 install_python() {
   ## todo: 2022-06-17: there must be a better way to do this (use 'packaging.version.parse'?)
   if [ ! -x "${PYTHON_BIN}" ] || [ "$(${PYTHON_BIN} --version | cut -d' ' -f2)" != "${REQ_PYTHON_VER}" ]; then
-      print_header "Installing Python $REQ_PYTHON_VER"
+      print_header "Installing Python ${REQ_PYTHON_VER}"
+
+      local python_distname="Python-${REQ_PYTHON_VER}"
+      local python_distdir="${HOME}/${python_distname}"
+      local python_distfile="${python_distname}.tgz"
 
       sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
-      cd ~
 
-      if [ ! -d "Python-${REQ_PYTHON_VER}" ]; then
-        wget -q "https://www.python.org/ftp/python/${REQ_PYTHON_VER}/Python-${REQ_PYTHON_VER}.tgz"
+      if [ ! -d "${python_distdir}" ]; then
+        print_debug "Downloading ${python_distfile} to ${HOME}"
+        wget -q "https://www.python.org/ftp/python/${REQ_PYTHON_VER}/Python-${REQ_PYTHON_VER}.tgz" -O ~/"${python_distfile}"
+        print_debug "Extracting ${python_distfile}"
+        cd "${HOME}" && tar -xf "${python_distfile}"
+      else
+        print_debug "Existing Python build directory found. Running 'make distclean'."
+        sudo make --quiet -C "${python_distdir}" distclean
       fi
-      tar -xf "Python-${REQ_PYTHON_VER}.tgz"
-      cd "Python-${REQ_PYTHON_VER}" || exit 1
-      ./configure --enable-optimizations
-      make -j "$CPU_CORES"
+
+      cd "${python_distdir}" || exit 1
+      ./configure --quiet --enable-optimizations
+      make --quiet -j "$CPU_CORES"
+
+      print_debug "Python build finished. Running 'make altinstall'."
+
       sudo make altinstall
-      ## todo: 2022-06-17: check for exit code before deleting the tarball
-      cd ~
-      sudo rm -rf "Python-${REQ_PYTHON_VER}" "Python-${REQ_PYTHON_VER}.tgz"
-      PYTHON_BIN=$(which python3.10) ## move this
+
+      # if [ "$(sudo make altinstall)" = "0" ]; then
+        print_debug "Python was installed successfully. Deleting build directory and source tarball."
+        sudo rm -rf "${python_distdir}" "${python_distfile}"
+        PYTHON_BIN=$(which python3.10) ## todo: move this
+      # else
+      #  print_error "Python installation failure, code $?"
+      #  exit 1
+      # fi
   elif [ "$(${PYTHON_BIN} --version | cut -d' ' -f2)" = "${REQ_PYTHON_VER}" ]; then
     print_info "Python ${REQ_PYTHON_VER} was found, skipping installation."
   else

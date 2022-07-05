@@ -194,6 +194,25 @@ install_python() {
 }
 
 ################################################################################
+## Install NATS
+################################################################################
+
+install_nats() {
+  print_header 'Installing NATS'
+
+  NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
+
+  local nats_tmp
+  nats_tmp=$(mktemp -d -t "nats-XXXXXXXXXX")
+  wget "https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz" -P "${nats_tmp}"
+  tar -xzf "${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz" -C "${nats_tmp}"
+  sudo mv "${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server" /usr/local/bin/
+  sudo chmod +x /usr/local/bin/nats-server
+  sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-server
+  rm -rf "${nats_tmp}"
+}
+
+################################################################################
 ## Clear screen (or why not just use 'clear'?)
 ################################################################################
 
@@ -479,7 +498,7 @@ git checkout "${TRMM_SCRIPT_BRANCH}"
 
 sudo mkdir -p "${TRMM_COMMSCRIPTS_PATH}"
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" "${TRMM_COMMSCRIPTS_PATH}"
-git clone $COMMUNITY_SCRIPTS_REPO "${TRMM_COMMSCRIPTS_PATH}/"
+git clone "${COMMUNITY_SCRIPTS_REPO}" "${TRMM_COMMSCRIPTS_PATH}/"
 cd "${TRMM_COMMSCRIPTS_PATH}"
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -487,17 +506,7 @@ git checkout main
 
 ################################################################################
 
-print_header 'Installing NATS'
-
-NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
-
-nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P "${nats_tmp}"
-tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
-sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
-sudo chmod +x /usr/local/bin/nats-server
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-server
-rm -rf ${nats_tmp}
+install_nats
 
 ################################################################################
 

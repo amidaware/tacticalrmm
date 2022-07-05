@@ -190,6 +190,8 @@ install_nodejs() {
 
   ## todo: 2022-06-17: move
   NODE_BIN=$(which node)
+
+  return
 }
 
 ################################################################################
@@ -205,6 +207,8 @@ install_mongodb() {
   sudo apt install -y mongodb-org
   sudo systemctl enable mongod
   sudo systemctl restart mongod
+
+  return
 }
 
 ################################################################################
@@ -257,6 +261,8 @@ install_nats() {
   sudo chmod +x /usr/local/bin/nats-server
   sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-server
   rm -rf "${nats_tmp}"
+
+  return
 }
 
 ################################################################################

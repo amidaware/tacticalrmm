@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Fix for ncurses derpy lines in putty and similar apps
+export NCURSES_NO_UTF8_ACS=1
+
 # Menu option variables
 INPUT=/tmp/menu.sh.$$
 menuselection=""
@@ -26,6 +29,7 @@ INSTALL_TYPE="install"
 UPDATE_TYPE="standard"
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.10.4'
+NODE_MAJOR_VER='16'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 LATEST_SETTINGS_URL="https://raw.githubusercontent.com/${REPO_OWNER}/tacticalrmm/${BRANCH}/api/tacticalrmm/tacticalrmm/settings.py"
 

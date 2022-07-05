@@ -245,6 +245,36 @@ install_python() {
 }
 
 ################################################################################
+## Install PostgreSQL
+################################################################################
+
+install_postgresql() {
+  print_header 'Installing PostgreSQL'
+
+  wget -q -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+  echo "$POSTGRESQL_REPO" | sudo tee /etc/apt/sources.list.d/pgdg.list
+  sudo apt update
+  sudo apt install -y postgresql-14
+  sleep 2
+  sudo systemctl enable postgresql
+  sudo systemctl restart postgresql
+  sleep 5
+
+  ################################################################################
+
+  print_header 'Creating TRMM database'
+
+  sudo -u postgres psql -c "CREATE DATABASE ${TRMM_DB_NAME}"
+  sudo -u postgres psql -c "CREATE USER ${TRMM_DB_USER} WITH PASSWORD '${TRMM_DB_PASS}'"
+  sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET client_encoding TO 'utf8'"
+  sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET default_transaction_isolation TO 'read committed'"
+  sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET timezone TO 'UTC'"
+  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${TRMM_DB_NAME} TO ${TRMM_DB_USER}"
+
+  return
+}
+
+################################################################################
 ## Install NATS
 ################################################################################
 
@@ -484,28 +514,7 @@ sudo apt install -y ca-certificates redis git
 
 ################################################################################
 
-print_header 'Installing PostgreSQL'
-
-echo "$POSTGRESQL_REPO" | sudo tee /etc/apt/sources.list.d/pgdg.list
-
-wget -q -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo apt update
-sudo apt install -y postgresql-14
-sleep 2
-sudo systemctl enable postgresql
-sudo systemctl restart postgresql
-sleep 5
-
-################################################################################
-
-print_header 'Creating TRMM database'
-
-sudo -u postgres psql -c "CREATE DATABASE ${TRMM_DB_NAME}"
-sudo -u postgres psql -c "CREATE USER ${TRMM_DB_USER} WITH PASSWORD '${TRMM_DB_PASS}'"
-sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${TRMM_DB_NAME} TO ${TRMM_DB_USER}"
+install_postgresql
 
 ################################################################################
 

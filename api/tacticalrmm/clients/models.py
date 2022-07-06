@@ -241,10 +241,10 @@ class ClientCustomField(models.Model):
         ]:
             self.string_value = value
             self.save()
-        elif type == CustomFieldType.MULTIPLE:
+        elif self.field.type == CustomFieldType.MULTIPLE:
             self.multiple_value = value.split(",")
             self.save()
-        elif type == CustomFieldType.CHECKBOX:
+        elif self.field.type == CustomFieldType.CHECKBOX:
             self.bool_value = bool(value)
             self.save()
 
@@ -292,9 +292,9 @@ class SiteCustomField(models.Model):
         ]:
             self.string_value = value
             self.save()
-        elif type == CustomFieldType.MULTIPLE:
+        elif self.field.type == CustomFieldType.MULTIPLE:
             self.multiple_value = value.split(",")
             self.save()
-        elif type == CustomFieldType.CHECKBOX:
+        elif self.field.type == CustomFieldType.CHECKBOX:
             self.bool_value = bool(value)
             self.save()

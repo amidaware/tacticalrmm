@@ -137,25 +137,29 @@ update_script() {
   local tmp_file new_version
   tmp_file="$(mktemp -p "" "rmminstall_XXXXXXXXXX")"
 
-  if [[ "$(wget -q "${SCRIPT_URL}" -O "${tmp_file}")" -eq 0 ]]; then
-    new_version=$(grep "SCRIPT_VERSION=" "$tmp_file" | awk -F'[="]' '{print $3}')
+  if [ -x "$(which wget)" ]; then
+    if [[ "$(wget -q "${SCRIPT_URL}" -O "${tmp_file}")" -eq 0 ]]; then
+      new_version=$(grep "SCRIPT_VERSION=" "$tmp_file" | awk -F'[="]' '{print $3}')
 
-    if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
-      print_debug "Script version: ${SCRIPT_VERSION}, latest online: ${new_version}"
+      if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
+        print_debug "Script version: ${SCRIPT_VERSION}, latest online: ${new_version}"
+      fi
+
+      ## todo: 2022-06-17: maybe: change to 'less than' instead?
+      if [ "${SCRIPT_VERSION}" -ne "${new_version}" ]; then
+        print_warn "Install script is outdated, replacing with the latest version..."
+        chmod +x "$tmp_file" && mv -f "$tmp_file" install.sh
+        print_warn "Script updated! Please re-run ./install.sh"
+        exit 0
+      fi
+    else
+      print_warn "Script update check failed."
     fi
 
-    ## todo: 2022-06-17: maybe: change to 'less than' instead?
-    if [ "${SCRIPT_VERSION}" -ne "${new_version}" ]; then
-      print_warn "Install script is outdated, replacing with the latest version..."
-      chmod +x "$tmp_file" && mv -f "$tmp_file" install.sh
-      print_warn "Script updated! Please re-run ./install.sh"
-      exit 0
-    fi
+    rm -f "$tmp_file"
   else
-    print_warn "Script update check failed."
+    print_warn "wget was not found, skipping script update check."
   fi
-
-  rm -f "$tmp_file"
 
   return
 }
@@ -279,10 +283,25 @@ install_postgresql() {
 
   ################################################################################
 
-  print_header 'Creating TRMM database'
+  ## 2022-07-07: Look for an existing database instance.
+  local existing_db existing_user
+  existing_db=$(sudo -u postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${TRMM_DB_NAME}'" | grep -q 1)
+  existing_user=$(sudo -u postgres psql -U postgres -tc " SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = '${TRMM_DB_USER}'" | grep -q 1)
 
-  sudo -u postgres psql -c "CREATE DATABASE ${TRMM_DB_NAME}"
-  sudo -u postgres psql -c "CREATE USER ${TRMM_DB_USER} WITH PASSWORD '${TRMM_DB_PASS}'"
+  if [ "${existing_db}" != "0" ]; then
+    print_info 'Creating a new TRMM database instance.'
+    sudo -u postgres psql -c "CREATE DATABASE ${TRMM_DB_NAME}"
+  else
+    print_debug "Found existing TRMM database instance."
+  fi
+
+  if [ "${existing_user}" != "0" ]; then
+    print_info 'Creating a new TRMM database user.'
+    sudo -u postgres psql -c "CREATE USER ${TRMM_DB_USER} WITH PASSWORD '${TRMM_DB_PASS}'"
+  else
+    print_debug "Found existing TRMM database user."
+  fi
+
   sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET client_encoding TO 'utf8'"
   sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET default_transaction_isolation TO 'read committed'"
   sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET timezone TO 'UTC'"
@@ -322,19 +341,23 @@ cls() {
 
 ################################################################################
 
+update_script
+
+OS_UNAME=$(uname)
+
 ## Install dependencies
 ## todo: 2022-06-17: remove lsb-release
 sudo apt install -y wget dirmngr gnupg lsb-release
 
-update_script
-
-OS_NAME=$(lsb_release -si) ## "Ubuntu"
-OS_NAME="${OS_NAME^}" ## Why ^? needed?
-OS_NAME=$(lc "$OS_NAME")
-OS_FULL_REL=$(lsb_release -sd) ## "Ubuntu 20.04.2 LTS"
-OS_CODENAME=$(lsb_release -sc) ## "focal"
-OS_VERSION=$(lsb_release -sr) ## "20.04"
-OS_MAJOR=$(echo "$OS_VERSION" | cut -d. -f1 -) ## "20"
+if [ "${OS_UNAME}" = "Linux" ]; then
+  OS_NAME=$(lsb_release -si) ## "Ubuntu"
+  OS_NAME="${OS_NAME^}" ## Why ^? needed?
+  OS_NAME=$(lc "$OS_NAME")
+  OS_FULL_REL=$(lsb_release -sd) ## "Ubuntu 20.04.2 LTS"
+  OS_CODENAME=$(lsb_release -sc) ## "focal"
+  OS_VERSION=$(lsb_release -sr) ## "20.04"
+  OS_MAJOR=$(echo "$OS_VERSION" | cut -d. -f1 -) ## "20"
+fi
 
 if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
   printf "OS Name: %s (Codename: %s)\n" "${OS_NAME}" "${OS_CODENAME}"
@@ -398,12 +421,19 @@ fi
 # Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
 
+## 2022-07-07: Retrieve existing PGSQL credentials to resume or upgrade an installation (from restore.sh).
+if [ -e "${TRMM_LOCAL_CONF}" ]; then
+  print_debug "Existing local_settings.py file found; retrieving database credentials."
+  TRMM_DB_USER=$(grep -w USER "${TRMM_LOCAL_CONF}" | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
+  TRMM_DB_PASS=$(grep -w PASSWORD "${TRMM_LOCAL_CONF}" | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
+fi
+
 DJANGO_SEKRET=$(random_text 80)
 MESH_ADMIN_URL=$(random_text 70)
 MESH_USERNAME=$(lc "$(random_text 8 no)")
 MESH_PASSWORD=$(random_text 25)
-TRMM_DB_USER=$(lc "$(random_text 8 no)")
-TRMM_DB_PASS=$(random_text 20)
+TRMM_DB_USER=${TRMM_DB_USER:=$(lc "$(random_text 8 no)")}
+TRMM_DB_PASS=${TRMM_DB_PASS:=$(random_text 20)}
 
 if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
   printf "Django Secret: %s\n" "${DJANGO_SEKRET}"

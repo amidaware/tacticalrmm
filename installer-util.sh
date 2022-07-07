@@ -61,14 +61,14 @@ certtype=""
 
 # Check if directory exists, if not, create
 if [ ! -d $PWD/script-cfg ]; then
-	mkdir $PWD/script-cfg | tee -a "${currentlog}"
+	mkdir $PWD/script-cfg 2>&1 | tee -a "${currentlog}"
 fi
 
 # Get cfg files function
 getCfgFiles()
 {
 	if [ ! -f "$PWD/script-cfg/$2" ]; then
-		wget -q "$1/script-cfg/$2" -O "$PWD/script-cfg/$2" | tee -a "${currentlog}"
+		wget "$1/script-cfg/$2" -O "$PWD/script-cfg/$2" 2>&1 | tee -a "${currentlog}"
 	fi
 }
 
@@ -273,7 +273,7 @@ checkTacticalUser;
 checkLocale;
 
 # Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
-sudo systemctl restart systemd-journald.service | tee -a "${currentlog}"
+sudo systemctl restart systemd-journald.service 2>&1 | tee -a "${currentlog}"
 
 ####################
 #  Menu Functions  #

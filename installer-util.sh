@@ -130,46 +130,46 @@ if [ "$autoinstall" == "1" ]; then
 
 	# Check that update type is valid
 	if ([ "$INSTALL_TYPE" == "update" ] && ([ "$UPDATE_TYPE" != "standard" ] && [ "$UPDATE_TYPE" != "forced" ])); then
-		echo -e "${RED} Error: You've selected update, but not selected an appropriate type.${NC}\n" | tee -a "${currentlog}"
-		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
+		echo -e "${RED} Error: You've selected update, but not selected an appropriate type. ${NC}" | tee -a "${currentlog}"
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them. ${NC}"
 		exit 1
 	fi
 
 	# Check that backup file exists
 	if ([ "$INSTALL_TYPE" == "restore" ] && ([ -z "$backupfile" ] || [ ! -f "$backupfile" ])); then
-		echo -e "${RED} Error: You've selected restore, but not provided a valid backup file.${NC}\n" | tee -a "${currentlog}"
-		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to enter this.${NC}"
+		echo -e "${RED} Error: You've selected restore, but not provided a valid backup file. ${NC}" | tee -a "${currentlog}"
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to enter this. ${NC}"
 		exit 1
 	fi
 
 	# Check that install type is valid
 	if ([ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ] && [ "$INSTALL_TYPE" != "backup" ]); then
-		echo -e "${RED} Error: You've selected an invalid function type.${NC}\n" | tee -a "${currentlog}"
-		echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options.${NC}"
+		echo -e "${RED} Error: You've selected an invalid function type. ${NC}" | tee -a "${currentlog}"
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options. ${NC}"
 		exit 1
 	fi
 
 	# Check all required input is available for install
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
 		if ([ -z "$rmmhost" ] || [ -z "$certtype" ] || [ -z "$rootdomain" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]); then
-			echo -e "${RED} Error: To perform an automated installation, you must provide all required information.${NC}\n" | tee -a "${currentlog}"
-			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, and T-RMM username and password are all required.${NC}\n" | tee -a "${currentlog}"
-			echo -e "${RED} Run $THIS_SCRIPT -h help for further details.${NC}"
+			echo -e "${RED} Error: To perform an automated installation, you must provide all required information. ${NC}" | tee -a "${currentlog}"
+			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, and T-RMM username and password are all required. ${NC}" | tee -a "${currentlog}"
+			echo -e "${RED} Run $THIS_SCRIPT -h help for further details. ${NC}"
 			exit 1
 		fi
 
 		# Check that certificate install type is valid
 		if ([ "$certtype" != "import" ] && [ "$certtype" != "webroot" ]); then
-			echo -e "${RED} Error: You've selected an invalid certificate installation type.${NC}\n" | tee -a "${currentlog}"
-			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options.${NC}"
+			echo -e "${RED} Error: You've selected an invalid certificate installation type. ${NC}" | tee -a "${currentlog}"
+			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options. ${NC}"
 			exit 1
 		fi
 
 		# Check for required input if import certificate
 		if ([ "$certtype" == "import" ] && ([ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$sslkey" ])); then
-			echo -e "${RED} Error: To perform an automated installation using imported certificates, you must provide all required information.${NC}\n" | tee -a "${currentlog}"
-			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, CA cert path, Cert path, Private key path, and T-RMM username and password are all required.${NC}\n" | tee -a "${currentlog}"
-			echo -e "${RED} Run $THIS_SCRIPT -h help for further details.${NC}"
+			echo -e "${RED} Error: To perform an automated installation using imported certificates, you must provide all required information. ${NC}" | tee -a "${currentlog}"
+			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, CA cert path, Cert path, Private key path, and T-RMM username and password are all required. ${NC}" | tee -a "${currentlog}"
+			echo -e "${RED} Run $THIS_SCRIPT -h help for further details. ${NC}"
 			exit 1
 		fi
 	fi
@@ -177,16 +177,16 @@ if [ "$autoinstall" == "1" ]; then
 	# Check that email address format is valid
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
 		if [[ $letsemail != *[@]*[.]* ]]; then
-			echo -e "${RED} Error: You've entered an invalid email address.${NC}\n" | tee -a "${currentlog}"
-			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the correct format.${NC}"
+			echo -e "${RED} Error: You've entered an invalid email address. ${NC}" | tee -a "${currentlog}"
+			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the correct format. ${NC}"
 			exit 1
 		fi
 	fi
 
 	# Check that repo and branch match install type
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
-		echo -e "${RED} Error: You've selected a developer installation type, but not changed the repo, branch, or both.${NC}\n" | tee -a "${currentlog}"
-		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
+		echo -e "${RED} Error: You've selected a developer installation type, but not changed the repo, branch, or both. ${NC}" | tee -a "${currentlog}"
+		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them. ${NC}"
 		exit 1
 	fi
 

@@ -9,7 +9,13 @@ from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import CheckType, DebugLogType
+from tacticalrmm.constants import (
+    AgentMonType,
+    AlertSeverity,
+    AlertType,
+    CheckType,
+    DebugLogType,
+)
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -17,20 +23,6 @@ if TYPE_CHECKING:
     from autotasks.models import AutomatedTask, TaskResult
     from checks.models import Check, CheckResult
     from clients.models import Client, Site
-
-
-SEVERITY_CHOICES = [
-    ("info", "Informational"),
-    ("warning", "Warning"),
-    ("error", "Error"),
-]
-
-ALERT_TYPE_CHOICES = [
-    ("availability", "Availability"),
-    ("check", "Check"),
-    ("task", "Task"),
-    ("custom", "Custom"),
-]
 
 
 class Alert(models.Model):
@@ -58,7 +50,7 @@ class Alert(models.Model):
         blank=True,
     )
     alert_type = models.CharField(
-        max_length=20, choices=ALERT_TYPE_CHOICES, default="availability"
+        max_length=20, choices=AlertType.choices, default=AlertType.AVAILABILITY
     )
     message = models.TextField(null=True, blank=True)
     alert_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -66,7 +58,9 @@ class Alert(models.Model):
     snooze_until = models.DateTimeField(null=True, blank=True)
     resolved = models.BooleanField(default=False)
     resolved_on = models.DateTimeField(null=True, blank=True)
-    severity = models.CharField(max_length=30, choices=SEVERITY_CHOICES, default="info")
+    severity = models.CharField(
+        max_length=30, choices=AlertSeverity.choices, default=AlertSeverity.INFO
+    )
     email_sent = models.DateTimeField(null=True, blank=True)
     resolved_email_sent = models.DateTimeField(null=True, blank=True)
     sms_sent = models.DateTimeField(null=True, blank=True)
@@ -75,12 +69,12 @@ class Alert(models.Model):
     action_run = models.DateTimeField(null=True, blank=True)
     action_stdout = models.TextField(null=True, blank=True)
     action_stderr = models.TextField(null=True, blank=True)
-    action_retcode = models.IntegerField(null=True, blank=True)
+    action_retcode = models.BigIntegerField(null=True, blank=True)
     action_execution_time = models.CharField(max_length=100, null=True, blank=True)
     resolved_action_run = models.DateTimeField(null=True, blank=True)
     resolved_action_stdout = models.TextField(null=True, blank=True)
     resolved_action_stderr = models.TextField(null=True, blank=True)
-    resolved_action_retcode = models.IntegerField(null=True, blank=True)
+    resolved_action_retcode = models.BigIntegerField(null=True, blank=True)
     resolved_action_execution_time = models.CharField(
         max_length=100, null=True, blank=True
     )
@@ -112,7 +106,7 @@ class Alert(models.Model):
         cls, agent: Agent, skip_create: bool = False
     ) -> Optional[Alert]:
         if not cls.objects.filter(
-            agent=agent, alert_type="availability", resolved=False
+            agent=agent, alert_type=AlertType.AVAILABILITY, resolved=False
         ).exists():
             if skip_create:
                 return None
@@ -121,8 +115,8 @@ class Alert(models.Model):
                 Alert,
                 cls.objects.create(
                     agent=agent,
-                    alert_type="availability",
-                    severity="error",
+                    alert_type=AlertType.AVAILABILITY,
+                    severity=AlertSeverity.ERROR,
                     message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is overdue.",
                     hidden=True,
                 ),
@@ -132,12 +126,12 @@ class Alert(models.Model):
                 return cast(
                     Alert,
                     cls.objects.get(
-                        agent=agent, alert_type="availability", resolved=False
+                        agent=agent, alert_type=AlertType.AVAILABILITY, resolved=False
                     ),
                 )
             except cls.MultipleObjectsReturned:
                 alerts = cls.objects.filter(
-                    agent=agent, alert_type="availability", resolved=False
+                    agent=agent, alert_type=AlertType.AVAILABILITY, resolved=False
                 )
 
                 last_alert = cast(Alert, alerts.last())
@@ -174,7 +168,7 @@ class Alert(models.Model):
                 cls.objects.create(
                     assigned_check=check,
                     agent=agent,
-                    alert_type="check",
+                    alert_type=AlertType.CHECK,
                     severity=check.alert_severity
                     if check.check_type
                     not in [
@@ -236,7 +230,7 @@ class Alert(models.Model):
                 cls.objects.create(
                     assigned_task=task,
                     agent=agent,
-                    alert_type="task",
+                    alert_type=AlertType.TASK,
                     severity=task.alert_severity,
                     message=f"{agent.hostname} has task: {task.name} that failed.",
                     hidden=True,
@@ -302,11 +296,11 @@ class Alert(models.Model):
             dashboard_alert = instance.overdue_dashboard_alert
             alert_template = instance.alert_template
             maintenance_mode = instance.maintenance_mode
-            alert_severity = "error"
+            alert_severity = AlertSeverity.ERROR
             agent = instance
-            dashboard_severities = ["error"]
-            email_severities = ["error"]
-            text_severities = ["error"]
+            dashboard_severities = [AlertSeverity.ERROR]
+            email_severities = [AlertSeverity.ERROR]
+            text_severities = [AlertSeverity.ERROR]
 
             # set alert_template settings
             if alert_template:
@@ -348,17 +342,21 @@ class Alert(models.Model):
                 dashboard_severities = (
                     alert_template.check_dashboard_alert_severity
                     if alert_template.check_dashboard_alert_severity
-                    else ["error", "warning", "info"]
+                    else [
+                        AlertSeverity.ERROR,
+                        AlertSeverity.WARNING,
+                        AlertSeverity.INFO,
+                    ]
                 )
                 email_severities = (
                     alert_template.check_email_alert_severity
                     if alert_template.check_email_alert_severity
-                    else ["error", "warning"]
+                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
                 )
                 text_severities = (
                     alert_template.check_text_alert_severity
                     if alert_template.check_text_alert_severity
-                    else ["error", "warning"]
+                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
                 )
                 always_dashboard = alert_template.check_always_alert
                 always_email = alert_template.check_always_email
@@ -385,17 +383,17 @@ class Alert(models.Model):
                 dashboard_severities = (
                     alert_template.task_dashboard_alert_severity
                     if alert_template.task_dashboard_alert_severity
-                    else ["error", "warning"]
+                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
                 )
                 email_severities = (
                     alert_template.task_email_alert_severity
                     if alert_template.task_email_alert_severity
-                    else ["error", "warning"]
+                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
                 )
                 text_severities = (
                     alert_template.task_text_alert_severity
                     if alert_template.task_text_alert_severity
-                    else ["error", "warning"]
+                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
                 )
                 always_dashboard = alert_template.task_always_alert
                 always_email = alert_template.task_always_email
@@ -705,17 +703,17 @@ class AlertTemplate(BaseAuditModel):
 
     # check alert settings
     check_email_alert_severity = ArrayField(
-        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
+        models.CharField(max_length=25, blank=True, choices=AlertSeverity.choices),
         blank=True,
         default=list,
     )
     check_text_alert_severity = ArrayField(
-        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
+        models.CharField(max_length=25, blank=True, choices=AlertSeverity.choices),
         blank=True,
         default=list,
     )
     check_dashboard_alert_severity = ArrayField(
-        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
+        models.CharField(max_length=25, blank=True, choices=AlertSeverity.choices),
         blank=True,
         default=list,
     )
@@ -729,17 +727,17 @@ class AlertTemplate(BaseAuditModel):
 
     # task alert settings
     task_email_alert_severity = ArrayField(
-        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
+        models.CharField(max_length=25, blank=True, choices=AlertSeverity.choices),
         blank=True,
         default=list,
     )
     task_text_alert_severity = ArrayField(
-        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
+        models.CharField(max_length=25, blank=True, choices=AlertSeverity.choices),
         blank=True,
         default=list,
     )
     task_dashboard_alert_severity = ArrayField(
-        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
+        models.CharField(max_length=25, blank=True, choices=AlertSeverity.choices),
         blank=True,
         default=list,
     )
@@ -773,9 +771,9 @@ class AlertTemplate(BaseAuditModel):
             agent in self.excluded_agents.all()
             or agent.site in self.excluded_sites.all()
             or agent.client in self.excluded_clients.all()
-            or agent.monitoring_type == "workstation"
+            or agent.monitoring_type == AgentMonType.WORKSTATION
             and self.exclude_workstations
-            or agent.monitoring_type == "server"
+            or agent.monitoring_type == AgentMonType.SERVER
             and self.exclude_servers
         )
 

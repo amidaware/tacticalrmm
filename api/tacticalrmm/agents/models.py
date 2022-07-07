@@ -16,10 +16,28 @@ from django.utils import timezone as djangotime
 from nats.errors import TimeoutError
 from packaging import version as pyver
 
+from agents.utils import get_agent_url
 from core.models import TZ_CHOICES
 from core.utils import get_core_settings, send_command_with_mesh
-from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import ONLINE_AGENTS, CheckStatus, CheckType, DebugLogType
+from logs.models import BaseAuditModel, DebugLog, PendingAction
+from tacticalrmm.constants import (
+    AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_ONLINE,
+    AGENT_STATUS_OVERDUE,
+    ONLINE_AGENTS,
+    AgentHistoryType,
+    AgentMonType,
+    AgentPlat,
+    AlertSeverity,
+    CheckStatus,
+    CheckType,
+    CustomFieldType,
+    DebugLogType,
+    GoArch,
+    PAAction,
+    PAStatus,
+)
+from tacticalrmm.helpers import get_nats_ports
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -44,8 +62,12 @@ class Agent(BaseAuditModel):
 
     version = models.CharField(default="0.1.0", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
-    plat = models.CharField(max_length=255, default="windows")
-    goarch = models.CharField(max_length=255, null=True, blank=True)
+    plat: "AgentPlat" = models.CharField(  # type: ignore
+        max_length=255, choices=AgentPlat.choices, default=AgentPlat.WINDOWS
+    )
+    goarch: "GoArch" = models.CharField(  # type: ignore
+        max_length=255, choices=GoArch.choices, null=True, blank=True
+    )
     hostname = models.CharField(max_length=255)
     agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)
@@ -56,7 +78,9 @@ class Agent(BaseAuditModel):
     boot_time = models.FloatField(null=True, blank=True)
     logged_in_username = models.CharField(null=True, blank=True, max_length=255)
     last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
-    monitoring_type = models.CharField(max_length=30)
+    monitoring_type = models.CharField(
+        max_length=30, choices=AgentMonType.choices, default=AgentMonType.SERVER
+    )
     description = models.CharField(null=True, blank=True, max_length=255)
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
     overdue_email_alert = models.BooleanField(default=False)
@@ -111,8 +135,9 @@ class Agent(BaseAuditModel):
 
     @property
     def is_posix(self) -> bool:
-        return self.plat == "linux" or self.plat == "darwin"
+        return self.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}
 
+    # DEPRECATED, use goarch instead
     @property
     def arch(self) -> Optional[str]:
         if self.is_posix:
@@ -125,21 +150,51 @@ class Agent(BaseAuditModel):
                 return "32"
         return None
 
-    @property
-    def winagent_dl(self) -> Optional[str]:
-        if self.arch == "64":
-            return settings.DL_64
-        elif self.arch == "32":
-            return settings.DL_32
-        return None
+    def do_update(self, *, token: str = "", force: bool = False) -> str:
+        ver = settings.LATEST_AGENT_VER
 
-    @property
-    def win_inno_exe(self) -> Optional[str]:
-        if self.arch == "64":
-            return f"winagent-v{settings.LATEST_AGENT_VER}.exe"
-        elif self.arch == "32":
-            return f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
-        return None
+        if not self.goarch:
+            DebugLog.warning(
+                agent=self,
+                log_type=DebugLogType.AGENT_ISSUES,
+                message=f"Unable to determine arch on {self.hostname}({self.agent_id}). Skipping agent update.",
+            )
+            return "noarch"
+
+        if pyver.parse(self.version) <= pyver.parse("1.3.0"):
+            return "not supported"
+
+        url = get_agent_url(goarch=self.goarch, plat=self.plat, token=token)
+        bin = f"tacticalagent-v{ver}-{self.plat}-{self.goarch}.exe"
+
+        if not force:
+            if self.pendingactions.filter(  # type: ignore
+                action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
+            ).exists():
+                self.pendingactions.filter(  # type: ignore
+                    action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
+                ).delete()
+
+            PendingAction.objects.create(
+                agent=self,
+                action_type=PAAction.AGENT_UPDATE,
+                details={
+                    "url": url,
+                    "version": ver,
+                    "inno": bin,
+                },
+            )
+
+        nats_data = {
+            "func": "agentupdate",
+            "payload": {
+                "url": url,
+                "version": ver,
+                "inno": bin,
+            },
+        }
+        asyncio.run(self.nats_cmd(nats_data, wait=False))
+        return "created"
 
     @property
     def status(self) -> str:
@@ -148,13 +203,13 @@ class Agent(BaseAuditModel):
 
         if self.last_seen is not None:
             if (self.last_seen < offline) and (self.last_seen > overdue):
-                return "offline"
+                return AGENT_STATUS_OFFLINE
             elif (self.last_seen < offline) and (self.last_seen < overdue):
-                return "overdue"
+                return AGENT_STATUS_OVERDUE
             else:
-                return "online"
+                return AGENT_STATUS_ONLINE
         else:
-            return "offline"
+            return AGENT_STATUS_OFFLINE
 
     @property
     def checks(self) -> Dict[str, Any]:
@@ -185,11 +240,11 @@ class Agent(BaseAuditModel):
                     ]
                     else check.alert_severity
                 )
-                if alert_severity == "error":
+                if alert_severity == AlertSeverity.ERROR:
                     failing += 1
-                elif alert_severity == "warning":
+                elif alert_severity == AlertSeverity.WARNING:
                     warning += 1
-                elif alert_severity == "info":
+                elif alert_severity == AlertSeverity.INFO:
                     info += 1
 
         ret = {
@@ -353,10 +408,14 @@ class Agent(BaseAuditModel):
                 i
                 for i in cls.objects.only(*ONLINE_AGENTS)
                 if pyver.parse(i.version) >= pyver.parse(min_version)
-                and i.status == "online"
+                and i.status == AGENT_STATUS_ONLINE
             ]
 
-        return [i for i in cls.objects.only(*ONLINE_AGENTS) if i.status == "online"]
+        return [
+            i
+            for i in cls.objects.only(*ONLINE_AGENTS)
+            if i.status == AGENT_STATUS_ONLINE
+        ]
 
     def is_supported_script(self, platforms: List[str]) -> bool:
         return self.plat.lower() in platforms if platforms else True
@@ -728,8 +787,9 @@ class Agent(BaseAuditModel):
     async def nats_cmd(
         self, data: Dict[Any, Any], timeout: int = 30, wait: bool = True
     ) -> Any:
+        nats_std_port, _ = get_nats_ports()
         options = {
-            "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+            "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
             "user": "tacticalrmm",
             "password": settings.SECRET_KEY,
             "connect_timeout": 3,
@@ -945,37 +1005,28 @@ class AgentCustomField(models.Model):
 
     @property
     def value(self) -> Union[List[Any], bool, str]:
-        if self.field.type == "multiple":
+        if self.field.type == CustomFieldType.MULTIPLE:
             return cast(List[str], self.multiple_value)
-        elif self.field.type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             return self.bool_value
         else:
             return cast(str, self.string_value)
 
     def save_to_field(self, value: Union[List[Any], bool, str]) -> None:
         if self.field.type in [
-            "text",
-            "number",
-            "single",
-            "datetime",
+            CustomFieldType.TEXT,
+            CustomFieldType.NUMBER,
+            CustomFieldType.SINGLE,
+            CustomFieldType.DATETIME,
         ]:
             self.string_value = cast(str, value)
             self.save()
-        elif self.field.type == "multiple":
+        elif self.field.type == CustomFieldType.MULTIPLE:
             self.multiple_value = value.split(",")
             self.save()
-        elif self.field.type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             self.bool_value = bool(value)
             self.save()
-
-
-AGENT_HISTORY_TYPES = (
-    ("task_run", "Task Run"),
-    ("script_run", "Script Run"),
-    ("cmd_run", "CMD Run"),
-)
-
-AGENT_HISTORY_STATUS = (("success", "Success"), ("failure", "Failure"))
 
 
 class AgentHistory(models.Model):
@@ -987,13 +1038,12 @@ class AgentHistory(models.Model):
         on_delete=models.CASCADE,
     )
     time = models.DateTimeField(auto_now_add=True)
-    type = models.CharField(
-        max_length=50, choices=AGENT_HISTORY_TYPES, default="cmd_run"
+    type: "AgentHistoryType" = models.CharField(
+        max_length=50,
+        choices=AgentHistoryType.choices,
+        default=AgentHistoryType.CMD_RUN,
     )
     command = models.TextField(null=True, blank=True, default="")
-    status = models.CharField(
-        max_length=50, choices=AGENT_HISTORY_STATUS, default="success"
-    )
     username = models.CharField(max_length=255, default="system")
     results = models.TextField(null=True, blank=True)
     script = models.ForeignKey(

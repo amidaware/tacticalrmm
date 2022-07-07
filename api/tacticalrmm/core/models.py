@@ -1,6 +1,6 @@
 import smtplib
 from email.message import EmailMessage
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import pytz
 import requests
@@ -13,7 +13,12 @@ from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwClient
 
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, DebugLogLevel
+from tacticalrmm.constants import (
+    CORESETTINGS_CACHE_KEY,
+    CustomFieldModel,
+    CustomFieldType,
+    DebugLogLevel,
+)
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
@@ -267,23 +272,13 @@ class CoreSettings(BaseAuditModel):
         return CoreSerializer(core).data
 
 
-FIELD_TYPE_CHOICES = (
-    ("text", "Text"),
-    ("number", "Number"),
-    ("single", "Single"),
-    ("multiple", "Multiple"),
-    ("checkbox", "Checkbox"),
-    ("datetime", "DateTime"),
-)
-
-MODEL_CHOICES = (("client", "Client"), ("site", "Site"), ("agent", "Agent"))
-
-
 class CustomField(BaseAuditModel):
 
     order = models.PositiveIntegerField(default=0)
-    model = models.CharField(max_length=25, choices=MODEL_CHOICES)
-    type = models.CharField(max_length=25, choices=FIELD_TYPE_CHOICES, default="text")
+    model = models.CharField(max_length=25, choices=CustomFieldModel.choices)
+    type = models.CharField(
+        max_length=25, choices=CustomFieldType.choices, default=CustomFieldType.TEXT
+    )
     options = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
         null=True,
@@ -316,9 +311,9 @@ class CustomField(BaseAuditModel):
 
     @property
     def default_value(self):
-        if self.type == "multiple":
+        if self.type == CustomFieldType.MULTIPLE:
             return self.default_values_multiple
-        elif self.type == "checkbox":
+        elif self.type == CustomFieldType.CHECKBOX:
             return self.default_value_bool
         else:
             return self.default_value_string
@@ -345,7 +340,7 @@ class CustomField(BaseAuditModel):
 
 
 class CodeSignToken(models.Model):
-    token = models.CharField(max_length=255, null=True, blank=True)
+    token: str = models.CharField(max_length=255, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.pk and CodeSignToken.objects.exists():
@@ -360,8 +355,8 @@ class CodeSignToken(models.Model):
 
         try:
             r = requests.post(
-                f"{settings.EXE_GEN_URL}/api/v1/checktoken",
-                json={"token": self.token},
+                settings.CHECK_TOKEN_URL,
+                json={"token": self.token, "api": settings.ALLOWED_HOSTS[0]},
                 headers={"Content-type": "application/json"},
                 timeout=15,
             )

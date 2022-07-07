@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from scripts.models import Script
+from tacticalrmm.constants import TaskType
 
 from .models import AutomatedTask, TaskResult
 
@@ -98,7 +99,14 @@ class TaskSerializer(serializers.ModelSerializer):
 
         # run_time_date required
         if (
-            data["task_type"] in ["runonce", "daily", "weekly", "monthly", "monthlydow"]
+            data["task_type"]
+            in [
+                TaskType.RUN_ONCE,
+                TaskType.DAILY,
+                TaskType.WEEKLY,
+                TaskType.MONTHLY,
+                TaskType.MONTHLY_DOW,
+            ]
             and not data["run_time_date"]
         ):
             raise serializers.ValidationError(
@@ -106,14 +114,14 @@ class TaskSerializer(serializers.ModelSerializer):
             )
 
         # daily task type validation
-        if data["task_type"] == "daily":
+        if data["task_type"] == TaskType.DAILY:
             if "daily_interval" not in data or not data["daily_interval"]:
                 raise serializers.ValidationError(
                     f"daily_interval is required for task_type '{data['task_type']}'"
                 )
 
         # weekly task type validation
-        elif data["task_type"] == "weekly":
+        elif data["task_type"] == TaskType.WEEKLY:
             if "weekly_interval" not in data or not data["weekly_interval"]:
                 raise serializers.ValidationError(
                     f"weekly_interval is required for task_type '{data['task_type']}'"
@@ -125,7 +133,7 @@ class TaskSerializer(serializers.ModelSerializer):
                 )
 
         # monthly task type validation
-        elif data["task_type"] == "monthly":
+        elif data["task_type"] == TaskType.MONTHLY:
             if (
                 "monthly_months_of_year" not in data
                 or not data["monthly_months_of_year"]
@@ -140,7 +148,7 @@ class TaskSerializer(serializers.ModelSerializer):
                 )
 
         # monthly day of week task type validation
-        elif data["task_type"] == "monthlydow":
+        elif data["task_type"] == TaskType.MONTHLY_DOW:
             if (
                 "monthly_months_of_year" not in data
                 or not data["monthly_months_of_year"]
@@ -163,7 +171,7 @@ class TaskSerializer(serializers.ModelSerializer):
                 )
 
         # check failure task type validation
-        elif data["task_type"] == "checkfailure":
+        elif data["task_type"] == TaskType.CHECK_FAILURE:
             if "assigned_check" not in data or not data["assigned_check"]:
                 raise serializers.ValidationError(
                     f"assigned_check is required for task_type '{data['task_type']}'"

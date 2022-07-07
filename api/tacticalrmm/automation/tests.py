@@ -5,6 +5,7 @@ from model_bakery import baker, seq
 
 from agents.models import Agent
 from core.utils import get_core_settings
+from tacticalrmm.constants import AgentMonType, TaskSyncStatus
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 
@@ -496,7 +497,10 @@ class TestPolicyTasks(TacticalTestCase):
 
         agent = baker.make_recipe("agents.server_agent", policy=policy)
         task_result = baker.make(
-            "autotasks.TaskResult", task=task, agent=agent, sync_status="synced"
+            "autotasks.TaskResult",
+            task=task,
+            agent=agent,
+            sync_status=TaskSyncStatus.SYNCED,
         )
 
         # this change shouldn't trigger the task_result field to sync_status = "notsynced"
@@ -509,14 +513,15 @@ class TestPolicyTasks(TacticalTestCase):
         task.save()
 
         self.assertEqual(
-            TaskResult.objects.get(pk=task_result.id).sync_status, "synced"
+            TaskResult.objects.get(pk=task_result.id).sync_status, TaskSyncStatus.SYNCED
         )
 
         # task result should now be "notsynced"
         task.enabled = False
         task.save()
         self.assertEqual(
-            TaskResult.objects.get(pk=task_result.id).sync_status, "notsynced"
+            TaskResult.objects.get(pk=task_result.id).sync_status,
+            TaskSyncStatus.NOT_SYNCED,
         )
 
     def test_policy_exclusions(self):
@@ -526,7 +531,7 @@ class TestPolicyTasks(TacticalTestCase):
         baker.make_recipe("checks.memory_check", policy=policy)
         baker.make_recipe("autotasks.task", policy=policy)
         agent = baker.make_recipe(
-            "agents.agent", policy=policy, monitoring_type="server"
+            "agents.agent", policy=policy, monitoring_type=AgentMonType.SERVER
         )
 
         checks = agent.get_checks_with_policies()
@@ -622,7 +627,7 @@ class TestPolicyTasks(TacticalTestCase):
         policy = baker.make("automation.Policy", active=True)
         baker.make_recipe("checks.memory_check", policy=policy)
         baker.make_recipe("autotasks.task", policy=policy)
-        agent = baker.make_recipe("agents.agent", monitoring_type="server")
+        agent = baker.make_recipe("agents.agent", monitoring_type=AgentMonType.SERVER)
 
         core = get_core_settings()
         core.server_policy = policy

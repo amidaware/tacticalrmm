@@ -11,3 +11,7 @@ django-types
 djangorestframework-types
 celery-types
 msgpack-types
+types-Markdown
+types-requests
+types-PyYAML
+types-urllib3

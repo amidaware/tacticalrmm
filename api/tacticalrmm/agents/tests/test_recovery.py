@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from model_bakery import baker
 
+from tacticalrmm.constants import AgentMonType, AgentPlat
 from tacticalrmm.test import TacticalTestCase
 
 if TYPE_CHECKING:
@@ -24,8 +25,8 @@ class TestRecovery(TacticalTestCase):
         agent = baker.make_recipe(
             "agents.online_agent",
             site=self.site1,
-            monitoring_type="server",
-            plat="windows",
+            monitoring_type=AgentMonType.SERVER,
+            plat=AgentPlat.WINDOWS,
         )
 
         url = f"/agents/{agent.agent_id}/recover/"

@@ -9,7 +9,7 @@ from packaging import version as pyver
 from agents.models import Agent
 from logs.models import DebugLog
 from tacticalrmm.celery import app
-from tacticalrmm.constants import DebugLogType
+from tacticalrmm.constants import AGENT_STATUS_ONLINE, DebugLogType
 
 
 @app.task
@@ -29,7 +29,8 @@ def auto_approve_updates_task() -> None:
     online = [
         i
         for i in agents
-        if i.status == "online" and pyver.parse(i.version) >= pyver.parse("1.3.0")
+        if i.status == AGENT_STATUS_ONLINE
+        and pyver.parse(i.version) >= pyver.parse("1.3.0")
     ]
 
     chunks = (online[i : i + 40] for i in range(0, len(online), 40))

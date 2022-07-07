@@ -17,30 +17,32 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.13.4"
+TRMM_VERSION = "0.14.0"
+
+# https://github.com/amidaware/tacticalrmm-web
+WEB_VERSION = "0.100.4"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.164"
+APP_VER = "0.0.165"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.0.4"
+LATEST_AGENT_VER = "2.1.0"
 
-MESH_VER = "1.0.22"
+MESH_VER = "1.0.43"
 
-NATS_SERVER_VER = "2.8.2"
+NATS_SERVER_VER = "2.8.4"
 
-# for the update script, bump when need to recreate venv or npm install
-PIP_VER = "30"
-NPM_VER = "33"
+# for the update script, bump when need to recreate venv
+PIP_VER = "31"
 
-SETUPTOOLS_VER = "59.6.0"
+SETUPTOOLS_VER = "62.6.0"
 WHEEL_VER = "0.37.1"
 
-DL_64 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
-DL_32 = f"https://github.com/amidaware/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
-
-EXE_GEN_URL = "https://agents.tacticalrmm.com"
+AGENT_BASE_URL = "https://agents.tacticalrmm.com"
+CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"
+AGENTS_URL = f"{AGENT_BASE_URL}/api/v2/agents/?"
+EXE_GEN_URL = f"{AGENT_BASE_URL}/api/v2/exe"
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
@@ -66,6 +68,7 @@ DEMO = False
 DEBUG = False
 ADMIN_ENABLED = False
 HOSTED = False
+SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 
 try:
@@ -79,7 +82,6 @@ if "GHACTIONS" in os.environ:
     DEMO = False
 
 REST_FRAMEWORK = {
-    # "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",
@@ -125,7 +127,6 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
-    "drf_spectacular",
 ]
 
 CHANNEL_LAYERS = {
@@ -161,9 +162,13 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  ##
     "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
 ]
+
+if SWAGGER_ENABLED:
+    INSTALLED_APPS += ("drf_spectacular",)
 
 if DEBUG and not DEMO:
     INSTALLED_APPS += (
@@ -179,14 +184,6 @@ if ADMIN_ENABLED:
         "django.contrib.admin",
         "django.contrib.messages",
     )
-
-if HOSTED:
-    try:
-        import trmm_mon
-    except ImportError:
-        pass
-    else:
-        INSTALLED_APPS += ("trmm_mon",)
 
 if DEMO:
     MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)

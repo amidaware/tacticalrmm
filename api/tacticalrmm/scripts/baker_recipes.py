@@ -1,6 +1,6 @@
 from model_bakery.recipe import Recipe
 
-from tacticalrmm.constants import ScriptShell, ScriptType
+from tacticalrmm.constants import AgentPlat, ScriptShell, ScriptType
 from tacticalrmm.demo_data import (
     check_storage_pool_health_ps1,
     clear_print_spool_bat,
@@ -34,7 +34,7 @@ ps_script = Recipe(
     script_type=ScriptType.USER_DEFINED,
     script_body=check_storage_pool_health_ps1,
     args=["one"],
-    supported_platforms=["windows"],
+    supported_platforms=[AgentPlat.WINDOWS],
 )
 
 py_script = Recipe(
@@ -44,7 +44,7 @@ py_script = Recipe(
     shell=ScriptShell.PYTHON,
     script_body=show_temp_dir_py,
     script_type=ScriptType.USER_DEFINED,
-    supported_platforms=["windows", "linux"],
+    supported_platforms=[AgentPlat.WINDOWS, AgentPlat.LINUX],
     category="py stuff",
 )
 
@@ -56,6 +56,6 @@ bash_script = Recipe(
     script_body=redhat_insights,
     script_type=ScriptType.USER_DEFINED,
     args=["one"],
-    supported_platforms=["linux"],
+    supported_platforms=[AgentPlat.LINUX],
     category="RHSA",
 )

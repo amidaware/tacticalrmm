@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Tactical RMM install troubleshooting script
 # Contributed by https://github.com/dinger1986
@@ -269,15 +269,6 @@ wanip=$(dig @resolver4.opendns.com myip.opendns.com +short)
 
 echo -ne ${GREEN} WAN IP is $wanip | tee -a checklog.log
 printf >&2 "\n\n"
-
-#Check if NATs Port is open
-if ( nc -zv $wanip 4222 2>&1 >/dev/null ); then
-    echo -ne ${GREEN} 'NATs Port is open' | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-    echo -ne ${RED} 'NATs port is closed (you may want this if running locally only)' | tee -a checklog.log
-	printf >&2 "\n\n"
-fi
 
 #Check if HTTPs Port is open
 if ( nc -zv $wanip 443 2>&1 >/dev/null ); then

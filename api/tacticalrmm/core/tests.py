@@ -4,13 +4,14 @@ import requests
 from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.conf import settings
+from django.core.management import call_command
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 
 from agents.models import Agent
 from core.utils import get_core_settings
 from logs.models import PendingAction
-from tacticalrmm.constants import PAAction, PAStatus
+from tacticalrmm.constants import CONFIG_MGMT_CMDS, CustomFieldModel, PAAction, PAStatus
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
@@ -39,6 +40,12 @@ class TestCodeSign(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("patch", self.url)
+
+    def test_delete_codesign(self):
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("delete", self.url)
 
 
 class TestConsumers(TacticalTestCase):
@@ -172,7 +179,9 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/customfields/"
 
         # setup
-        custom_fields = baker.make("core.CustomField", model="agent", _quantity=5)
+        custom_fields = baker.make(
+            "core.CustomField", model=CustomFieldModel.AGENT, _quantity=5
+        )
         baker.make("core.CustomField", model="client", _quantity=5)
 
         # will error if request invalid
@@ -420,6 +429,15 @@ class TestCoreTasks(TacticalTestCase):
 
         self.assertEqual(complete, 20)
         self.assertEqual(old, 20)
+
+
+class TestCoreMgmtCommands(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    def test_get_config(self):
+        for cmd in CONFIG_MGMT_CMDS:
+            call_command("get_config", cmd)
 
 
 class TestCorePermissions(TacticalTestCase):

@@ -1,17 +1,24 @@
 import re
 
+import psutil
+import pytz
+from cryptography import x509
 from django.conf import settings
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone as djangotime
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.utils import get_core_settings
+from core.decorators import monitoring_view
+from core.utils import get_core_settings, sysd_svc_is_running, token_is_valid
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
-from tacticalrmm.helpers import notify_error
+from tacticalrmm.helpers import get_certs, notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
@@ -216,8 +223,8 @@ class CodeSign(APIView):
 
         try:
             r = requests.post(
-                f"{settings.EXE_GEN_URL}/api/v1/checktoken",
-                json={"token": request.data["token"]},
+                settings.CHECK_TOKEN_URL,
+                json={"token": request.data["token"], "api": settings.ALLOWED_HOSTS[0]},
                 headers={"Content-type": "application/json"},
                 timeout=15,
             )
@@ -244,21 +251,21 @@ class CodeSign(APIView):
 
     def post(self, request):
         from agents.models import Agent
-        from agents.tasks import force_code_sign
+        from agents.tasks import send_agent_update_task
 
-        err = "A valid token must be saved first"
-        token = CodeSignToken.objects.first()
-        if not token:
-            raise CodeSignToken.DoesNotExist
-
-        if token.token is None or token.token == "":
-            return notify_error(err)
+        token, is_valid = token_is_valid()
+        if not is_valid:
+            return notify_error("Invalid token")
 
         agent_ids: list[str] = list(
             Agent.objects.only("pk", "agent_id").values_list("agent_id", flat=True)
         )
-        force_code_sign.delay(agent_ids=agent_ids)
+        send_agent_update_task.delay(agent_ids=agent_ids, token=token, force=True)
         return Response("Agents will be code signed shortly")
+
+    def delete(self, request):
+        CodeSignToken.objects.all().delete()
+        return Response("ok")
 
 
 class GetAddKeyStore(APIView):
@@ -394,3 +401,52 @@ class TwilioSMSTest(APIView):
             return notify_error(msg)
 
         return Response(msg)
+
+
+@csrf_exempt
+@monitoring_view
+def status(request):
+
+    from agents.models import Agent
+    from clients.models import Client, Site
+
+    disk_usage: int = round(psutil.disk_usage("/").percent)
+    mem_usage: int = round(psutil.virtual_memory().percent)
+
+    cert_file, _ = get_certs()
+    with open(cert_file, "rb") as f:
+        cert_bytes = f.read()
+
+    cert = x509.load_pem_x509_certificate(cert_bytes)
+    expires = pytz.utc.localize(cert.not_valid_after)
+    now = djangotime.now()
+    delta = expires - now
+
+    ret = {
+        "version": settings.TRMM_VERSION,
+        "agent_count": Agent.objects.count(),
+        "client_count": Client.objects.count(),
+        "site_count": Site.objects.count(),
+        "disk_usage_percent": disk_usage,
+        "mem_usage_percent": mem_usage,
+        "days_until_cert_expires": delta.days,
+        "cert_expired": delta.days < 0,
+    }
+
+    if settings.DOCKER_BUILD:
+        ret["services_running"] = "not available in docker"
+    else:
+        ret["services_running"] = {
+            "django": sysd_svc_is_running("rmm.service"),
+            "mesh": sysd_svc_is_running("meshcentral.service"),
+            "daphne": sysd_svc_is_running("daphne.service"),
+            "celery": sysd_svc_is_running("celery.service"),
+            "celerybeat": sysd_svc_is_running("celerybeat.service"),
+            "redis": sysd_svc_is_running("redis-server.service"),
+            "postgres": sysd_svc_is_running("postgresql.service"),
+            "mongo": sysd_svc_is_running("mongod.service"),
+            "nats": sysd_svc_is_running("nats.service"),
+            "nats-api": sysd_svc_is_running("nats-api.service"),
+            "nginx": sysd_svc_is_running("nginx.service"),
+        }
+    return JsonResponse(ret, json_dumps_params={"indent": 2})

@@ -10,7 +10,7 @@ from alerts.tasks import cache_agents_alert_template
 from autotasks.models import TaskResult
 from core.tasks import cache_db_fields_task, handle_resolved_stuff
 from core.utils import get_core_settings
-from tacticalrmm.constants import CheckStatus
+from tacticalrmm.constants import AgentMonType, AlertSeverity, AlertType, CheckStatus
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Alert, AlertTemplate
@@ -40,14 +40,14 @@ class TestAlertsViews(TacticalTestCase):
             "alerts.Alert",
             agent=agent,
             alert_time=seq(datetime.now(), timedelta(days=15)),
-            severity="warning",
+            severity=AlertSeverity.WARNING,
             _quantity=3,
         )
         baker.make(
             "alerts.Alert",
             assigned_check=check,
             alert_time=seq(datetime.now(), timedelta(days=15)),
-            severity="error",
+            severity=AlertSeverity.ERROR,
             _quantity=7,
         )
         baker.make(
@@ -392,8 +392,10 @@ class TestAlertTasks(TacticalTestCase):
 
         core = get_core_settings()
         # setup data
-        workstation = baker.make_recipe("agents.agent", monitoring_type="workstation")
-        server = baker.make_recipe("agents.agent", monitoring_type="server")
+        workstation = baker.make_recipe(
+            "agents.agent", monitoring_type=AgentMonType.WORKSTATION
+        )
+        server = baker.make_recipe("agents.agent", monitoring_type=AgentMonType.SERVER)
 
         policy = baker.make("automation.Policy", active=True)
 
@@ -754,7 +756,7 @@ class TestAlertTasks(TacticalTestCase):
             "alerts.AlertTemplate",
             is_active=True,
             check_always_email=True,
-            check_email_alert_severity=["warning"],
+            check_email_alert_severity=[AlertSeverity.WARNING],
         )
         agent_template_email.client.alert_template = alert_template_email
         agent_template_email.client.save()
@@ -765,8 +767,12 @@ class TestAlertTasks(TacticalTestCase):
             is_active=True,
             check_always_alert=True,
             check_always_text=True,
-            check_dashboard_alert_severity=["info", "warning", "error"],
-            check_text_alert_severity=["error"],
+            check_dashboard_alert_severity=[
+                AlertSeverity.INFO,
+                AlertSeverity.WARNING,
+                AlertSeverity.ERROR,
+            ],
+            check_text_alert_severity=[AlertSeverity.ERROR],
         )
         agent_template_dashboard_text.client.alert_template = (
             alert_template_dashboard_text
@@ -790,7 +796,7 @@ class TestAlertTasks(TacticalTestCase):
             "checks.CheckResult",
             assigned_check=check_agent,
             agent=agent,
-            alert_severity="warning",
+            alert_severity=AlertSeverity.WARNING,
         )
         check_template_email = baker.make_recipe(
             "checks.cpuload_check", agent=agent_template_email
@@ -841,7 +847,7 @@ class TestAlertTasks(TacticalTestCase):
         )
 
         # test agent with check that has alert settings
-        check_agent_result.alert_severity = "warning"
+        check_agent_result.alert_severity = AlertSeverity.WARNING
         check_agent_result.status = CheckStatus.FAILING
 
         Alert.handle_alert_failure(check_agent_result)
@@ -903,7 +909,7 @@ class TestAlertTasks(TacticalTestCase):
         outage_sms.assert_not_called
 
         # update check alert severity to error
-        check_template_dashboard_text_result.alert_severity = "error"
+        check_template_dashboard_text_result.alert_severity = AlertSeverity.ERROR
         check_template_dashboard_text_result.save()
 
         # now should trigger alert
@@ -1062,7 +1068,7 @@ class TestAlertTasks(TacticalTestCase):
             "alerts.AlertTemplate",
             is_active=True,
             task_always_email=True,
-            task_email_alert_severity=["warning"],
+            task_email_alert_severity=[AlertSeverity.WARNING],
         )
         agent_template_email.client.alert_template = alert_template_email
         agent_template_email.client.save()
@@ -1073,8 +1079,12 @@ class TestAlertTasks(TacticalTestCase):
             is_active=True,
             task_always_alert=True,
             task_always_text=True,
-            task_dashboard_alert_severity=["info", "warning", "error"],
-            task_text_alert_severity=["error"],
+            task_dashboard_alert_severity=[
+                AlertSeverity.INFO,
+                AlertSeverity.WARNING,
+                AlertSeverity.ERROR,
+            ],
+            task_text_alert_severity=[AlertSeverity.ERROR],
         )
         agent_template_dashboard_text.client.alert_template = (
             alert_template_dashboard_text
@@ -1093,7 +1103,7 @@ class TestAlertTasks(TacticalTestCase):
             email_alert=True,
             text_alert=True,
             dashboard_alert=True,
-            alert_severity="warning",
+            alert_severity=AlertSeverity.WARNING,
         )
         task_agent_result = baker.make(
             "autotasks.TaskResult", agent=agent, task=task_agent
@@ -1101,7 +1111,7 @@ class TestAlertTasks(TacticalTestCase):
         task_template_email = baker.make(
             "autotasks.AutomatedTask",
             agent=agent_template_email,
-            alert_severity="warning",
+            alert_severity=AlertSeverity.WARNING,
         )
         task_template_email_result = baker.make(
             "autotasks.TaskResult", agent=agent_template_email, task=task_template_email
@@ -1109,7 +1119,7 @@ class TestAlertTasks(TacticalTestCase):
         task_template_dashboard_text = baker.make(
             "autotasks.AutomatedTask",
             agent=agent_template_dashboard_text,
-            alert_severity="info",
+            alert_severity=AlertSeverity.INFO,
         )
         task_template_dashboard_text_result = baker.make(
             "autotasks.TaskResult",
@@ -1119,13 +1129,15 @@ class TestAlertTasks(TacticalTestCase):
         task_template_blank = baker.make(
             "autotasks.AutomatedTask",
             agent=agent_template_blank,
-            alert_severity="error",
+            alert_severity=AlertSeverity.ERROR,
         )
         task_template_blank_result = baker.make(
             "autotasks.TaskResult", agent=agent_template_blank, task=task_template_blank
         )
         task_no_settings = baker.make(
-            "autotasks.AutomatedTask", agent=agent_no_settings, alert_severity="warning"
+            "autotasks.AutomatedTask",
+            agent=agent_no_settings,
+            alert_severity=AlertSeverity.WARNING,
         )
         task_no_settings_result = baker.make(
             "autotasks.TaskResult", agent=agent_no_settings, task=task_no_settings
@@ -1203,7 +1215,7 @@ class TestAlertTasks(TacticalTestCase):
         outage_sms.assert_not_called
 
         # update task alert seveity to error
-        task_template_dashboard_text.alert_severity = "error"
+        task_template_dashboard_text.alert_severity = AlertSeverity.ERROR
         task_template_dashboard_text.save()
 
         # now should trigger alert
@@ -1510,22 +1522,25 @@ class TestAlertPermissions(TacticalTestCase):
         tasks = baker.make("autotasks.AutomatedTask", agent=cycle(agents), _quantity=3)
         baker.make(
             "alerts.Alert",
-            alert_type="task",
+            alert_type=AlertType.TASK,
             agent=cycle(agents),
             assigned_task=cycle(tasks),
             _quantity=3,
         )
         baker.make(
             "alerts.Alert",
-            alert_type="check",
+            alert_type=AlertType.CHECK,
             agent=cycle(agents),
             assigned_check=cycle(checks),
             _quantity=3,
         )
         baker.make(
-            "alerts.Alert", alert_type="availability", agent=cycle(agents), _quantity=3
+            "alerts.Alert",
+            alert_type=AlertType.AVAILABILITY,
+            agent=cycle(agents),
+            _quantity=3,
         )
-        baker.make("alerts.Alert", alert_type="custom", _quantity=4)
+        baker.make("alerts.Alert", alert_type=AlertType.CUSTOM, _quantity=4)
 
         # test super user access
         r = self.check_authorized_superuser("patch", f"{base_url}/")
@@ -1569,22 +1584,27 @@ class TestAlertPermissions(TacticalTestCase):
         tasks = baker.make("autotasks.AutomatedTask", agent=cycle(agents), _quantity=3)
         alert_tasks = baker.make(
             "alerts.Alert",
-            alert_type="task",
+            alert_type=AlertType.TASK,
             agent=cycle(agents),
             assigned_task=cycle(tasks),
             _quantity=3,
         )
         alert_checks = baker.make(
             "alerts.Alert",
-            alert_type="check",
+            alert_type=AlertType.CHECK,
             agent=cycle(agents),
             assigned_check=cycle(checks),
             _quantity=3,
         )
         alert_agents = baker.make(
-            "alerts.Alert", alert_type="availability", agent=cycle(agents), _quantity=3
+            "alerts.Alert",
+            alert_type=AlertType.AVAILABILITY,
+            agent=cycle(agents),
+            _quantity=3,
         )
-        alert_custom = baker.make("alerts.Alert", alert_type="custom", _quantity=4)
+        alert_custom = baker.make(
+            "alerts.Alert", alert_type=AlertType.CUSTOM, _quantity=4
+        )
 
         # alert task url
         task_url = f"{base_url}/{alert_tasks[0].id}/"  # for agent
@@ -1661,7 +1681,7 @@ class TestAlertPermissions(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         alerts = baker.make(
             "alerts.Alert",
-            alert_type="availability",
+            alert_type=AlertType.AVAILABILITY,
             agent=agent,
             resolved=False,
             _quantity=3,
@@ -1675,7 +1695,7 @@ class TestAlertPermissions(TacticalTestCase):
         # make sure only 1 alert is not resolved
         self.assertEqual(
             Alert.objects.filter(
-                alert_type="availability", agent=agent, resolved=False
+                alert_type=AlertType.AVAILABILITY, agent=agent, resolved=False
             ).count(),
             1,
         )
@@ -1685,7 +1705,7 @@ class TestAlertPermissions(TacticalTestCase):
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
         alerts = baker.make(
             "alerts.Alert",
-            alert_type="check",
+            alert_type=AlertType.CHECK,
             assigned_check=check,
             agent=agent,
             resolved=False,
@@ -1700,7 +1720,7 @@ class TestAlertPermissions(TacticalTestCase):
         # make sure only 1 alert is not resolved
         self.assertEqual(
             Alert.objects.filter(
-                alert_type="check", agent=agent, resolved=False
+                alert_type=AlertType.CHECK, agent=agent, resolved=False
             ).count(),
             1,
         )
@@ -1710,7 +1730,7 @@ class TestAlertPermissions(TacticalTestCase):
         task = baker.make("autotasks.AutomatedTask", agent=agent)
         alerts = baker.make(
             "alerts.Alert",
-            alert_type="task",
+            alert_type=AlertType.TASK,
             assigned_task=task,
             agent=agent,
             resolved=False,
@@ -1725,7 +1745,7 @@ class TestAlertPermissions(TacticalTestCase):
         # make sure only 1 alert is not resolved
         self.assertEqual(
             Alert.objects.filter(
-                alert_type="task", agent=agent, resolved=False
+                alert_type=AlertType.TASK, agent=agent, resolved=False
             ).count(),
             1,
         )

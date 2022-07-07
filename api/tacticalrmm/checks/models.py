@@ -7,12 +7,12 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone as djangotime
 
-from alerts.models import SEVERITY_CHOICES
 from core.utils import get_core_settings
 from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
     CHECKS_NON_EDITABLE_FIELDS,
     POLICY_CHECK_FIELDS_TO_COPY,
+    AlertSeverity,
     CheckStatus,
     CheckType,
     EvtLogFailWhen,
@@ -61,8 +61,8 @@ class Check(BaseAuditModel):
     # for eventlog, script, ip, and service alert severity
     alert_severity = models.CharField(
         max_length=15,
-        choices=SEVERITY_CHOICES,
-        default="warning",
+        choices=AlertSeverity.choices,
+        default=AlertSeverity.WARNING,
         null=True,
         blank=True,
     )
@@ -311,7 +311,7 @@ class CheckResult(models.Model):
     # for memory, diskspace, script, and cpu checks where severity changes
     alert_severity = models.CharField(
         max_length=15,
-        choices=SEVERITY_CHOICES,
+        choices=AlertSeverity.choices,
         null=True,
         blank=True,
     )
@@ -322,7 +322,7 @@ class CheckResult(models.Model):
     extra_details = models.JSONField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)
-    retcode = models.IntegerField(null=True, blank=True)
+    retcode = models.BigIntegerField(null=True, blank=True)
     execution_time = models.CharField(max_length=100, null=True, blank=True)
     # cpu and mem check history
     history = ArrayField(
@@ -341,7 +341,7 @@ class CheckResult(models.Model):
             CheckType.DISK_SPACE,
             CheckType.SCRIPT,
         ]:
-            self.alert_severity = "warning"
+            self.alert_severity = AlertSeverity.WARNING
 
         super(CheckResult, self).save(
             *args,
@@ -383,10 +383,10 @@ class CheckResult(models.Model):
 
             if check.error_threshold and avg > check.error_threshold:
                 self.status = CheckStatus.FAILING
-                self.alert_severity = "error"
+                self.alert_severity = AlertSeverity.ERROR
             elif check.warning_threshold and avg > check.warning_threshold:
                 self.status = CheckStatus.FAILING
-                self.alert_severity = "warning"
+                self.alert_severity = AlertSeverity.WARNING
             else:
                 self.status = CheckStatus.PASSING
 
@@ -402,13 +402,13 @@ class CheckResult(models.Model):
                     and (100 - percent_used) < check.error_threshold
                 ):
                     self.status = CheckStatus.FAILING
-                    self.alert_severity = "error"
+                    self.alert_severity = AlertSeverity.ERROR
                 elif (
                     check.warning_threshold
                     and (100 - percent_used) < check.warning_threshold
                 ):
                     self.status = CheckStatus.FAILING
-                    self.alert_severity = "warning"
+                    self.alert_severity = AlertSeverity.WARNING
 
                 else:
                     self.status = CheckStatus.PASSING
@@ -419,7 +419,7 @@ class CheckResult(models.Model):
                 check.add_check_history(100 - percent_used, agent.agent_id)
             else:
                 self.status = CheckStatus.FAILING
-                self.alert_severity = "error"
+                self.alert_severity = AlertSeverity.ERROR
                 self.more_info = f"Disk {check.disk} does not exist"
 
             update_fields.extend(["more_info"])
@@ -432,14 +432,14 @@ class CheckResult(models.Model):
             self.execution_time = "{:.4f}".format(data["runtime"])
 
             if data["retcode"] in check.info_return_codes:
-                self.alert_severity = "info"
+                self.alert_severity = AlertSeverity.INFO
                 self.status = CheckStatus.FAILING
             elif data["retcode"] in check.warning_return_codes:
-                self.alert_severity = "warning"
+                self.alert_severity = AlertSeverity.WARNING
                 self.status = CheckStatus.FAILING
             elif data["retcode"] != 0:
                 self.status = CheckStatus.FAILING
-                self.alert_severity = "error"
+                self.alert_severity = AlertSeverity.ERROR
             else:
                 self.status = CheckStatus.PASSING
 

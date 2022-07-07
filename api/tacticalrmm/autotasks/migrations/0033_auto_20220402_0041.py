@@ -3,6 +3,8 @@
 from django.db import migrations
 from django.utils.timezone import make_aware
 
+from tacticalrmm.constants import TaskType
+
 
 def migrate_script_data(apps, schema_editor):
     AutomatedTask = apps.get_model("autotasks", "AutomatedTask")
@@ -12,8 +14,8 @@ def migrate_script_data(apps, schema_editor):
             edited = False
 
             # convert scheduled task_type
-            if task.task_type == "scheduled":
-                task.task_type = "daily"
+            if task.task_type == TaskType.SCHEDULED:
+                task.task_type = TaskType.DAILY
                 task.run_time_date = make_aware(task.run_time_minute.strptime("%H:%M"))
                 task.daily_interval = 1
                 edited = True

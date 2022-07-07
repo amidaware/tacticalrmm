@@ -1,4 +1,4 @@
-FROM nats:2.8.2-alpine
+FROM nats:2.8.4-alpine
 
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
@@ -26,4 +26,4 @@ ENTRYPOINT [ "/entrypoint.sh" ]
 
 USER 1000
 
-EXPOSE 4222
+EXPOSE 4222 9235

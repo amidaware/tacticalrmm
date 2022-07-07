@@ -16,7 +16,17 @@ from core.utils import get_core_settings
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
 from tacticalrmm.celery import app
-from tacticalrmm.constants import AGENT_DEFER, PAAction, PAStatus
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    AGENT_STATUS_ONLINE,
+    AGENT_STATUS_OVERDUE,
+    AlertSeverity,
+    AlertType,
+    PAAction,
+    PAStatus,
+    TaskStatus,
+    TaskSyncStatus,
+)
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -65,7 +75,7 @@ def handle_resolved_stuff() -> None:
         action.id
         for action in actions
         if pyver.parse(action.agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
-        and action.agent.status == "online"
+        and action.agent.status == AGENT_STATUS_ONLINE
     ]
 
     PendingAction.objects.filter(pk__in=to_update).update(status=PAStatus.COMPLETED)
@@ -100,22 +110,25 @@ def handle_resolved_stuff() -> None:
     for agent in agent_queryset:
         if (
             pyver.parse(agent.version) >= pyver.parse("1.6.0")
-            and agent.status == "online"
+            and agent.status == AGENT_STATUS_ONLINE
         ):
             # sync scheduled tasks
             for task in agent.get_tasks_with_policies():
-                if not task.task_result or task.task_result.sync_status == "initial":
+                if (
+                    not task.task_result
+                    or task.task_result.sync_status == TaskSyncStatus.INITIAL
+                ):
                     task.create_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == "pendingdeletion":
+                elif task.task_result.sync_status == TaskSyncStatus.PENDING_DELETION:
                     task.delete_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == "notsynced":
+                elif task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED:
                     task.modify_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == "synced":
+                elif task.task_result.sync_status == TaskSyncStatus.SYNCED:
                     continue
 
             # handles any alerting actions
             if Alert.objects.filter(
-                alert_type="availability", agent=agent, resolved=False
+                alert_type=AlertType.AVAILABILITY, agent=agent, resolved=False
             ).exists():
                 Alert.handle_alert_resolve(agent)
 
@@ -131,7 +144,7 @@ def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
             or agent.overdue_text_alert
             or agent.overdue_dashboard_alert
         ):
-            if agent.status == "overdue":
+            if agent.status == AGENT_STATUS_OVERDUE:
                 data["error"] = True
                 break
 
@@ -152,14 +165,14 @@ def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
                     continue
                 elif (
                     not data["error"]
-                    and task.task_result.status == "failing"
-                    and task.alert_severity == "error"
+                    and task.task_result.status == TaskStatus.FAILING
+                    and task.alert_severity == AlertSeverity.ERROR
                 ):
                     data["error"] = True
                 elif (
                     not data["warning"]
-                    and task.task_result.status == "failing"
-                    and task.alert_severity == "warning"
+                    and task.task_result.status == TaskStatus.FAILING
+                    and task.alert_severity == AlertSeverity.WARNING
                 ):
                     data["warning"]
 

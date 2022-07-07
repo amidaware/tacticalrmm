@@ -7,7 +7,7 @@ from django.db import models
 
 from agents.models import Agent
 from logs.models import BaseAuditModel
-from tacticalrmm.constants import AGENT_DEFER
+from tacticalrmm.constants import AGENT_DEFER, AgentMonType, CustomFieldType, GoArch
 from tacticalrmm.models import PermissionQuerySet
 
 
@@ -169,17 +169,6 @@ class Site(BaseAuditModel):
         return SiteAuditSerializer(site).data
 
 
-MON_TYPE_CHOICES = [
-    ("server", "Server"),
-    ("workstation", "Workstation"),
-]
-
-ARCH_CHOICES = [
-    ("64", "64 bit"),
-    ("32", "32 bit"),
-]
-
-
 class Deployment(models.Model):
     objects = PermissionQuerySet.as_manager()
 
@@ -188,9 +177,11 @@ class Deployment(models.Model):
         "clients.Site", related_name="deploysites", on_delete=models.CASCADE
     )
     mon_type = models.CharField(
-        max_length=255, choices=MON_TYPE_CHOICES, default="server"
+        max_length=255, choices=AgentMonType.choices, default=AgentMonType.SERVER
     )
-    arch = models.CharField(max_length=255, choices=ARCH_CHOICES, default="64")
+    goarch = models.CharField(
+        max_length=255, choices=GoArch.choices, default=GoArch.AMD64
+    )
     expiry = models.DateTimeField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     auth_token = models.ForeignKey(
@@ -234,26 +225,26 @@ class ClientCustomField(models.Model):
 
     @property
     def value(self):
-        if self.field.type == "multiple":
+        if self.field.type == CustomFieldType.MULTIPLE:
             return self.multiple_value
-        elif self.field.type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             return self.bool_value
         else:
             return self.string_value
 
     def save_to_field(self, value):
         if self.field.type in [
-            "text",
-            "number",
-            "single",
-            "datetime",
+            CustomFieldType.TEXT,
+            CustomFieldType.NUMBER,
+            CustomFieldType.SINGLE,
+            CustomFieldType.DATETIME,
         ]:
             self.string_value = value
             self.save()
-        elif type == "multiple":
+        elif self.field.type == CustomFieldType.MULTIPLE:
             self.multiple_value = value.split(",")
             self.save()
-        elif type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             self.bool_value = bool(value)
             self.save()
 
@@ -285,25 +276,25 @@ class SiteCustomField(models.Model):
 
     @property
     def value(self):
-        if self.field.type == "multiple":
+        if self.field.type == CustomFieldType.MULTIPLE:
             return self.multiple_value
-        elif self.field.type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             return self.bool_value
         else:
             return self.string_value
 
     def save_to_field(self, value):
         if self.field.type in [
-            "text",
-            "number",
-            "single",
-            "datetime",
+            CustomFieldType.TEXT,
+            CustomFieldType.NUMBER,
+            CustomFieldType.SINGLE,
+            CustomFieldType.DATETIME,
         ]:
             self.string_value = value
             self.save()
-        elif type == "multiple":
+        elif self.field.type == CustomFieldType.MULTIPLE:
             self.multiple_value = value.split(",")
             self.save()
-        elif type == "checkbox":
+        elif self.field.type == CustomFieldType.CHECKBOX:
             self.bool_value = bool(value)
             self.save()

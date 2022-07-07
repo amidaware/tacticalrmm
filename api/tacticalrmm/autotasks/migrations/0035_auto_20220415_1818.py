@@ -4,6 +4,7 @@ from django.db import migrations
 from django.db.models import Count
 
 from autotasks.models import generate_task_name
+from tacticalrmm.constants import TaskSyncStatus
 
 
 def check_for_win_task_name_duplicates(apps, schema_editor):
@@ -22,7 +23,9 @@ def check_for_win_task_name_duplicates(apps, schema_editor):
             dups[x].win_task_name = generate_task_name()
             dups[x].save(update_fields=["win_task_name"])
             # update task_result sync status
-            TaskResult.objects.filter(task=dups[x]).update(sync_status="notsynced")
+            TaskResult.objects.filter(task=dups[x]).update(
+                sync_status=TaskSyncStatus.NOT_SYNCED
+            )
 
 
 class Migration(migrations.Migration):

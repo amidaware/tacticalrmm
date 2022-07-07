@@ -16,28 +16,30 @@ from knox.auth import TokenAuthentication
 from rest_framework.response import Response
 
 from agents.models import Agent
-from core.models import CodeSignToken
-from core.utils import get_core_settings
+from core.utils import get_core_settings, token_is_valid
 from logs.models import DebugLog
 from tacticalrmm.constants import (
     MONTH_DAYS,
     MONTHS,
     WEEK_DAYS,
     WEEKS,
+    AgentPlat,
+    CustomFieldType,
     DebugLogType,
     ScriptShell,
 )
-from tacticalrmm.helpers import get_certs, notify_error
+from tacticalrmm.helpers import get_certs, notify_error, get_nats_ports
 
 
 def generate_winagent_exe(
+    *,
     client: int,
     site: int,
     agent_type: str,
     rdp: int,
     ping: int,
     power: int,
-    arch: str,
+    goarch: str,
     token: str,
     api: str,
     file_name: str,
@@ -46,17 +48,12 @@ def generate_winagent_exe(
     from agents.utils import get_agent_url
 
     inno = (
-        f"winagent-v{settings.LATEST_AGENT_VER}.exe"
-        if arch == "64"
-        else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
+        f"tacticalagent-v{settings.LATEST_AGENT_VER}-{AgentPlat.WINDOWS}-{goarch}.exe"
     )
 
-    dl_url = get_agent_url(arch, "windows")
+    codetoken, _ = token_is_valid()
 
-    try:
-        codetoken = CodeSignToken.objects.first().token  # type:ignore
-    except:
-        codetoken = ""
+    dl_url = get_agent_url(goarch=goarch, plat=AgentPlat.WINDOWS, token=codetoken)
 
     data = {
         "client": client,
@@ -65,7 +62,7 @@ def generate_winagent_exe(
         "rdp": str(rdp),
         "ping": str(ping),
         "power": str(power),
-        "goarch": "amd64" if arch == "64" else "386",
+        "goarch": goarch,
         "token": token,
         "inno": inno,
         "url": dl_url,
@@ -78,7 +75,7 @@ def generate_winagent_exe(
 
         try:
             r = requests.post(
-                f"{settings.EXE_GEN_URL}/api/v1/exe",
+                settings.EXE_GEN_URL,
                 json=data,
                 headers=headers,
                 stream=True,
@@ -196,6 +193,8 @@ def reload_nats() -> None:
             )
 
     cert_file, key_file = get_certs()
+    nats_std_port, nats_ws_port = get_nats_ports()
+
     config = {
         "tls": {
             "cert_file": cert_file,
@@ -203,6 +202,11 @@ def reload_nats() -> None:
         },
         "authorization": {"users": users},
         "max_payload": 67108864,
+        "port": nats_std_port,  # internal only
+        "websocket": {
+            "port": nats_ws_port,
+            "no_tls": True,  # TLS is handled by nginx, so not needed here
+        },
     }
 
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
@@ -283,7 +287,7 @@ def replace_db_values(
         else:
             DebugLog.error(
                 log_type=DebugLogType.SCRIPTING,
-                message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
+                message=f"Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
             )
             return ""
 
@@ -334,9 +338,12 @@ def replace_db_values(
         model_fields = getattr(field, f"{model}_fields")
         value = None
         if model_fields.filter(**{model: obj}).exists():
-            if field.type != "checkbox" and model_fields.get(**{model: obj}).value:
+            if (
+                field.type != CustomFieldType.CHECKBOX
+                and model_fields.get(**{model: obj}).value
+            ):
                 value = model_fields.get(**{model: obj}).value
-            elif field.type == "checkbox":
+            elif field.type == CustomFieldType.CHECKBOX:
                 value = model_fields.get(**{model: obj}).value
 
         # need explicit None check since a false boolean value will pass default value
@@ -344,13 +351,13 @@ def replace_db_values(
             value = field.default_value
 
         # check if value exists and if not use default
-        if value and field.type == "multiple":
+        if value and field.type == CustomFieldType.MULTIPLE:
             value = (
                 f"'{format_shell_array(value)}'"
                 if quotes
                 else format_shell_array(value)
             )
-        elif value != None and field.type == "checkbox":
+        elif value != None and field.type == CustomFieldType.CHECKBOX:
             value = format_shell_bool(value, shell)
         else:
             value = f"'{value}'" if quotes else value

@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-SCRIPT_VERSION="37"
+SCRIPT_VERSION="38"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -12,8 +12,9 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-SCRIPTS_DIR="/opt/trmm-community-scripts"
-PYTHON_VER="3.10.4"
+SCRIPTS_DIR='/opt/trmm-community-scripts'
+PYTHON_VER='3.10.4'
+SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmrestore_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -224,7 +225,7 @@ git checkout main
 
 print_green 'Restoring NATS'
 
-NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
+NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
 wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
 tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
@@ -235,7 +236,7 @@ rm -rf ${nats_tmp}
 
 print_green 'Restoring MeshCentral'
 
-MESH_VER=$(grep "^MESH_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
+MESH_VER=$(grep "^MESH_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 sudo tar -xzf $tmp_dir/meshcentral/mesh.tar.gz -C /
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
@@ -244,23 +245,12 @@ npm install meshcentral@${MESH_VER}
 
 print_green 'Restoring the backend'
 
-echo 'Optimize for number of processors'
-numprocs=$(nproc)
-uwsgiprocs=4
-if [[ "$numprocs" == "1" ]]; then
-  uwsgiprocs=2
-else
-  uwsgiprocs=$numprocs
-fi
-
 uwsgini="$(cat << EOF
 [uwsgi]
 chdir = /rmm/api/tacticalrmm
 module = tacticalrmm.wsgi
 home = /rmm/api/env
 master = true
-processes = ${uwsgiprocs}
-threads = ${uwsgiprocs}
 enable-threads = true
 socket = /rmm/api/tacticalrmm/tacticalrmm.sock
 harakiri = 300
@@ -270,6 +260,16 @@ vacuum = true
 die-on-term = true
 max-requests = 500
 disable-logging = true
+cheaper-algo = busyness
+cheaper = 4
+cheaper-initial = 4
+workers = 20
+cheaper-step = 2
+cheaper-overload = 3
+cheaper-busyness-min = 5
+cheaper-busyness-max = 10
+# stats = /tmp/stats.socket # uncomment when debugging
+# cheaper-busyness-verbose = true # uncomment when debugging
 EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
@@ -299,8 +299,8 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgus
 gzip -d $tmp_dir/postgres/*.psql.gz
 PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql
 
-SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
-WHEEL_VER=$(grep "^WHEEL_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
+SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 cd /rmm/api
 python3.10 -m venv env
@@ -314,6 +314,8 @@ python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
 python manage.py reload_nats
 python manage.py post_update_tasks
+API=$(python manage.py get_config api)
+WEB_VERSION=$(python manage.py get_config webversion)
 deactivate
 
 sudo systemctl enable nats.service
@@ -321,14 +323,13 @@ sudo systemctl start nats.service
 
 print_green 'Restoring the frontend'
 
-sudo chown -R $USER:$GROUP /home/${USER}/.npm
-sudo chown -R $USER:$GROUP /home/${USER}/.config
-cd /rmm/web
-npm install
-npm run build
+webtar="trmm-web-v${WEB_VERSION}.tar.gz"
+wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
 sudo mkdir -p /var/www/rmm
-sudo cp -pvr /rmm/web/dist /var/www/rmm/
+sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
+echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js > /dev/null
 sudo chown www-data:www-data -R /var/www/rmm/dist
+rm -f /tmp/${webtar}
 
 
 # reset perms

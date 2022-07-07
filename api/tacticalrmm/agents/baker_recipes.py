@@ -1,6 +1,6 @@
 import json
 import os
-import random
+import secrets
 import string
 from itertools import cycle
 
@@ -8,10 +8,11 @@ from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery.recipe import Recipe, foreign_key, seq
 
+from tacticalrmm.constants import AgentMonType, AgentPlat
 
-def generate_agent_id(hostname):
-    rand = "".join(random.choice(string.ascii_letters) for _ in range(35))
-    return f"{rand}-{hostname}"
+
+def generate_agent_id() -> str:
+    return "".join(secrets.choice(string.ascii_letters) for i in range(39))
 
 
 site = Recipe("clients.Site")
@@ -24,26 +25,34 @@ def get_wmi_data():
         return json.load(f)
 
 
+def get_win_svcs():
+    svcs = settings.BASE_DIR.joinpath("tacticalrmm/test_data/winsvcs.json")
+    with open(svcs) as f:
+        return json.load(f)
+
+
 agent = Recipe(
     "agents.Agent",
     site=foreign_key(site),
     hostname="DESKTOP-TEST123",
     version="1.3.0",
-    monitoring_type=cycle(["workstation", "server"]),
-    agent_id=seq(generate_agent_id("DESKTOP-TEST123")),
+    monitoring_type=cycle(AgentMonType.values),
+    agent_id=seq(generate_agent_id()),
     last_seen=djangotime.now() - djangotime.timedelta(days=5),
-    plat="windows",
+    plat=AgentPlat.WINDOWS,
 )
 
 server_agent = agent.extend(
-    monitoring_type="server",
+    monitoring_type=AgentMonType.SERVER,
 )
 
 workstation_agent = agent.extend(
-    monitoring_type="workstation",
+    monitoring_type=AgentMonType.WORKSTATION,
 )
 
-online_agent = agent.extend(last_seen=djangotime.now())
+online_agent = agent.extend(
+    last_seen=djangotime.now(), services=get_win_svcs(), wmi_detail=get_wmi_data()
+)
 
 offline_agent = agent.extend(
     last_seen=djangotime.now() - djangotime.timedelta(minutes=7)
@@ -78,4 +87,4 @@ agent_with_services = agent.extend(
     ],
 )
 
-agent_with_wmi = agent.extend(wmi=get_wmi_data())
+agent_with_wmi = agent.extend(wmi_detail=get_wmi_data())

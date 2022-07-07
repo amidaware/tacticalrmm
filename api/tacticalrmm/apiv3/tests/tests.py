@@ -2,6 +2,7 @@ from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from autotasks.models import TaskResult
+from tacticalrmm.constants import CustomFieldModel, CustomFieldType, TaskStatus
 from tacticalrmm.test import TacticalTestCase
 
 
@@ -163,7 +164,9 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "passing")
+        self.assertTrue(
+            TaskResult.objects.get(pk=task_result.pk).status == TaskStatus.PASSING
+        )
 
         # test failing task
         data = {
@@ -175,15 +178,28 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "failing")
+        self.assertTrue(
+            TaskResult.objects.get(pk=task_result.pk).status == TaskStatus.FAILING
+        )
 
         # test collector task
-        text = baker.make("core.CustomField", model="agent", type="text", name="Test")
+        text = baker.make(
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.TEXT,
+            name="Test",
+        )
         boolean = baker.make(
-            "core.CustomField", model="agent", type="checkbox", name="Test1"
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.CHECKBOX,
+            name="Test1",
         )
         multiple = baker.make(
-            "core.CustomField", model="agent", type="multiple", name="Test2"
+            "core.CustomField",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.MULTIPLE,
+            name="Test2",
         )
 
         # test text fields
@@ -200,7 +216,9 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(TaskResult.objects.get(pk=task_result.pk).status == "failing")
+        self.assertTrue(
+            TaskResult.objects.get(pk=task_result.pk).status == TaskStatus.FAILING
+        )
 
         # test saving to text field
         data = {
@@ -212,7 +230,9 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")
+        self.assertEqual(
+            TaskResult.objects.get(pk=task_result.pk).status, TaskStatus.PASSING
+        )
         self.assertEqual(
             AgentCustomField.objects.get(field=text, agent=task.agent).value,
             "the last line",
@@ -231,7 +251,9 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")
+        self.assertEqual(
+            TaskResult.objects.get(pk=task_result.pk).status, TaskStatus.PASSING
+        )
         self.assertTrue(
             AgentCustomField.objects.get(field=boolean, agent=task.agent).value
         )
@@ -249,7 +271,9 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")
+        self.assertEqual(
+            TaskResult.objects.get(pk=task_result.pk).status, TaskStatus.PASSING
+        )
         self.assertEqual(
             AgentCustomField.objects.get(field=multiple, agent=task.agent).value,
             ["this", "is", "an", "array"],
@@ -265,7 +289,9 @@ class TestAPIv3(TacticalTestCase):
 
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(TaskResult.objects.get(pk=task_result.pk).status, "passing")
+        self.assertEqual(
+            TaskResult.objects.get(pk=task_result.pk).status, TaskStatus.PASSING
+        )
         self.assertEqual(
             AgentCustomField.objects.get(field=multiple, agent=task.agent).value,
             ["this"],

@@ -1,27 +1,15 @@
 [run]
-source = .
-[report]
-show_missing = True
 include = *.py
 omit =
+    tacticalrmm/asgi.py
+    tacticalrmm/wsgi.py
+    manage.py
     */__pycache__/*
     */env/*
-    */management/*
-    */migrations/*
-    */static/*
-    manage.py
-    */local_settings.py
-    */apps.py
-    */admin.py
-    */celery.py
-    */wsgi.py
-    */settings.py
     */baker_recipes.py
-    */urls.py
-    */tests.py
-    */test.py
-    */tests/*
-    checks/utils.py
-    */asgi.py
-    */demo_views.py
+    /usr/local/lib/*
+    **/migrations/*
+    **/test*.py
     
+[report]
+show_missing = True

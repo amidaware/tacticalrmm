@@ -6,6 +6,7 @@ from model_bakery import baker
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 
+from tacticalrmm.constants import CustomFieldModel, CustomFieldType
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
@@ -93,7 +94,9 @@ class TestClientViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         # test add with custom fields
-        field = baker.make("core.CustomField", model="client", type="text")
+        field = baker.make(
+            "core.CustomField", model=CustomFieldModel.CLIENT, type=CustomFieldType.TEXT
+        )
         payload = {
             "client": {"name": "Custom Field Client"},
             "site": {"name": "Setup  Site"},
@@ -141,7 +144,11 @@ class TestClientViews(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
 
         # test add with custom fields new value
-        field = baker.make("core.CustomField", model="client", type="checkbox")
+        field = baker.make(
+            "core.CustomField",
+            model=CustomFieldModel.CLIENT,
+            type=CustomFieldType.CHECKBOX,
+        )
         payload = {
             "client": {
                 "id": client.id,
@@ -254,8 +261,8 @@ class TestClientViews(TacticalTestCase):
         # test add with custom fields
         field = baker.make(
             "core.CustomField",
-            model="site",
-            type="single",
+            model=CustomFieldModel.SITE,
+            type=CustomFieldType.SINGLE,
             options=["one", "two", "three"],
         )
         payload = {
@@ -306,8 +313,8 @@ class TestClientViews(TacticalTestCase):
         # test add with custom fields new value
         field = baker.make(
             "core.CustomField",
-            model="site",
-            type="multiple",
+            model=CustomFieldModel.SITE,
+            type=CustomFieldType.MULTIPLE,
             options=["one", "two", "three"],
         )
         payload = {
@@ -398,7 +405,7 @@ class TestClientViews(TacticalTestCase):
             "ping": 0,
             "rdp": 1,
             "agenttype": "server",
-            "arch": "64",
+            "goarch": "amd64",
         }
 
         r = self.client.post(url, payload, format="json")

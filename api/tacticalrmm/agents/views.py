@@ -18,12 +18,27 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import CodeSignToken
-from core.utils import get_core_settings, get_mesh_ws_url, remove_mesh_agent
+from core.utils import (
+    get_core_settings,
+    get_mesh_ws_url,
+    remove_mesh_agent,
+    token_is_valid,
+)
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.constants import AGENT_DEFER, EvtLogNames, PAAction, PAStatus
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    AGENT_STATUS_OFFLINE,
+    AGENT_STATUS_ONLINE,
+    AgentHistoryType,
+    AgentMonType,
+    AgentPlat,
+    CustomFieldModel,
+    EvtLogNames,
+    PAAction,
+    PAStatus,
+)
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
@@ -60,7 +75,11 @@ from .serializers import (
     AgentSerializer,
     AgentTableSerializer,
 )
-from .tasks import run_script_email_results_task, send_agent_update_task
+from .tasks import (
+    bulk_recover_agents_task,
+    run_script_email_results_task,
+    send_agent_update_task,
+)
 
 
 class GetAgents(APIView):
@@ -74,7 +93,7 @@ class GetAgents(APIView):
 
         monitoring_type = request.query_params.get("monitoring_type", None)
         if monitoring_type:
-            if monitoring_type in ["server", "workstation"]:
+            if monitoring_type in AgentMonType.values:
                 monitoring_type_filter = Q(monitoring_type=monitoring_type)
             else:
                 return notify_error("monitoring type does not exist")
@@ -197,7 +216,7 @@ class GetUpdateDeleteAgent(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
         code = "foo"
-        if agent.plat == "linux":
+        if agent.plat == AgentPlat.LINUX:
             with open(settings.LINUX_AGENT_SCRIPT, "r") as f:
                 code = f.read()
 
@@ -319,7 +338,9 @@ def update_agents(request):
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
-    send_agent_update_task.delay(agent_ids=agent_ids)
+
+    token, _ = token_is_valid()
+    send_agent_update_task.delay(agent_ids=agent_ids, token=token, force=False)
     return Response("ok")
 
 
@@ -327,12 +348,12 @@ def update_agents(request):
 @permission_classes([IsAuthenticated, PingAgentPerms])
 def ping(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
-    status = "offline"
+    status = AGENT_STATUS_OFFLINE
     attempts = 0
     while 1:
         r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=2))
         if r == "pong":
-            status = "online"
+            status = AGENT_STATUS_ONLINE
             break
         else:
             attempts += 1
@@ -391,7 +412,7 @@ def send_raw_cmd(request, agent_id):
 
     hist = AgentHistory.objects.create(
         agent=agent,
-        type="cmd_run",
+        type=AgentHistoryType.CMD_RUN,
         command=request.data["cmd"],
         username=request.user.username[:50],
     )
@@ -485,24 +506,21 @@ def install_agent(request):
 
     from accounts.models import User
     from agents.utils import get_agent_url
+    from core.utils import token_is_valid
 
     client_id = request.data["client"]
     site_id = request.data["site"]
     version = settings.LATEST_AGENT_VER
-    arch = request.data["arch"]
+    goarch = request.data["goarch"]
+    plat = request.data["plat"]
 
     if not _has_perm_on_site(request.user, site_id):
         raise PermissionDenied()
 
-    inno = (
-        f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
-    )
-    if request.data["installMethod"] == "linux":
-        plat = "linux"
-    else:
-        plat = "windows"
+    codesign_token, is_valid = token_is_valid()
 
-    download_url = get_agent_url(arch, plat)
+    inno = f"tacticalagent-v{version}-{plat}-{goarch}.exe"
+    download_url = get_agent_url(goarch=goarch, plat=plat, token=codesign_token)
 
     installer_user = User.objects.filter(is_installer_user=True).first()
 
@@ -520,23 +538,21 @@ def install_agent(request):
             rdp=request.data["rdp"],
             ping=request.data["ping"],
             power=request.data["power"],
-            arch=arch,
+            goarch=goarch,
             token=token,
             api=request.data["api"],
             file_name=request.data["fileName"],
         )
 
-    elif request.data["installMethod"] == "linux":
+    elif request.data["installMethod"] == "bash":
         # TODO
         # linux agents are in beta for now, only available for sponsors for testing
         # remove this after it's out of beta
 
-        code_token = CodeSignToken.objects.first()
-        if not code_token:
-            return notify_error("Missing code signing token")
-
-        if not code_token.is_valid:
-            return notify_error("Code signing token is not valid")
+        if not is_valid:
+            return notify_error(
+                "Missing code signing token, or token is no longer valid. Please read the docs for more info."
+            )
 
         from agents.utils import generate_linux_install
 
@@ -544,7 +560,7 @@ def install_agent(request):
             client=str(client_id),
             site=str(site_id),
             agent_type=request.data["agenttype"],
-            arch=arch,
+            arch=goarch,
             token=token,
             api=request.data["api"],
             download_url=download_url,
@@ -676,7 +692,7 @@ def run_script(request, agent_id):
 
     hist = AgentHistory.objects.create(
         agent=agent,
-        type="script_run",
+        type=AgentHistoryType.SCRIPT_RUN,
         script=script,
         username=request.user.username[:50],
     )
@@ -716,11 +732,11 @@ def run_script(request, agent_id):
 
         custom_field = CustomField.objects.get(pk=request.data["custom_field"])
 
-        if custom_field.model == "agent":
+        if custom_field.model == CustomFieldModel.AGENT:
             field = custom_field.get_or_create_field_value(agent)
-        elif custom_field.model == "client":
+        elif custom_field.model == CustomFieldModel.CLIENT:
             field = custom_field.get_or_create_field_value(agent.client)
-        elif custom_field.model == "site":
+        elif custom_field.model == CustomFieldModel.SITE:
             field = custom_field.get_or_create_field_value(agent.site)
         else:
             return notify_error("Custom Field was invalid")
@@ -848,14 +864,14 @@ def bulk(request):
         return notify_error("Something went wrong")
 
     if request.data["monType"] == "servers":
-        q = q.filter(monitoring_type="server")
+        q = q.filter(monitoring_type=AgentMonType.SERVER)
     elif request.data["monType"] == "workstations":
-        q = q.filter(monitoring_type="workstation")
+        q = q.filter(monitoring_type=AgentMonType.WORKSTATION)
 
-    if request.data["osType"] == "windows":
-        q = q.filter(plat="windows")
-    elif request.data["osType"] == "linux":
-        q = q.filter(plat="linux")
+    if request.data["osType"] == AgentPlat.WINDOWS:
+        q = q.filter(plat=AgentPlat.WINDOWS)
+    elif request.data["osType"] == AgentPlat.LINUX:
+        q = q.filter(plat=AgentPlat.LINUX)
 
     agents: list[int] = [agent.pk for agent in q]
 
@@ -944,6 +960,13 @@ def agent_maintenance(request):
         return Response(
             f"No agents have been put in maintenance mode. You might not have permissions to the resources."
         )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, RecoverAgentPerms])
+def bulk_agent_recovery(request):
+    bulk_recover_agents_task.delay()
+    return Response("Agents will now be recovered")
 
 
 class WMI(APIView):

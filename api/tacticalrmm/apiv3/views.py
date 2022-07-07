@@ -29,10 +29,13 @@ from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    AgentMonType,
+    AgentPlat,
     AuditActionType,
     AuditObjType,
     CheckStatus,
     DebugLogType,
+    GoArch,
     MeshAgentIdent,
     PAStatus,
 )
@@ -394,9 +397,9 @@ class MeshExe(APIView):
 
     def post(self, request):
         match request.data:
-            case {"arch": "64", "plat": "windows"}:
+            case {"goarch": GoArch.AMD64, "plat": AgentPlat.WINDOWS}:
                 arch = MeshAgentIdent.WIN64
-            case {"arch": "32", "plat": "windows"}:
+            case {"goarch": GoArch.i386, "plat": AgentPlat.WINDOWS}:
                 arch = MeshAgentIdent.WIN32
             case _:
                 return notify_error("Arch not specified")
@@ -454,7 +457,7 @@ class NewAgent(APIView):
 
         token = Token.objects.create(user=user)
 
-        if agent.monitoring_type == "workstation":
+        if agent.monitoring_type == AgentMonType.WORKSTATION:
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
         else:
             WinUpdatePolicy(agent=agent).save()
@@ -503,7 +506,10 @@ class Installer(APIView):
             return notify_error("Invalid data")
 
         ver = request.data["version"]
-        if pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER):
+        if (
+            pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER)
+            and not "-dev" in settings.LATEST_AGENT_VER
+        ):
             return notify_error(
                 f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
             )

@@ -21,7 +21,7 @@ restorelog="$PWD/trmm-restore_$rundate.log"
 updatelog="$PWD/trmm-update_$rundate.log"
 backuplog="$PWD/trmm-backup_$rundate.log"
 checklog="$PWD/trmm-checklog_$rundate.log"
-preinstalllog="$PWD/trmm-preinstalllog_$rundate.log"
+preinstalllog="$PWD/trmm-preinstall-log_$rundate.log"
 currentlog="$preinstalllog"
 
 # Script Info variables

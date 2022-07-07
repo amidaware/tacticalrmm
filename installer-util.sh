@@ -14,6 +14,16 @@ declare -a updatemenuoptions=('Standard Update' 'Backup and Update' 'Force Updat
 declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Add Fail2ban - Use at your own risk' 'Run Server Troubleshooter' 'Return' 'Exit')
 declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunctions.cfg' 'UserInput.cfg' 'NetworkFunctions.cfg' 'InstallFunctions.cfg' 'DatabaseFunctions.cfg' 'CertificateFunctions.cfg' 'ConfigAndServiceFunctions.cfg' 'UpdateRestoreFunctions.cfg' 'TroubleshootingFunctions.cfg' 'ParentFunctions.cfg')
 
+# Log file variables
+rundate="$(date '+%Y_%m_%d__%H_%M_%S')"
+installlog="$PWD/trmm-install_$rundate.log"
+restorelog="$PWD/trmm-restore_$rundate.log"
+updatelog="$PWD/trmm-update_$rundate.log"
+backuplog="$PWD/trmm-backup_$rundate.log"
+checklog="$PWD/trmm-checklog_$rundate.log"
+preinstalllog="$PWD/trmm-preinstalllog_$rundate.log"
+currentlog="$preinstalllog"
+
 # Script Info variables
 REPO_OWNER="ninjamonkey198206"
 BRANCH="develop-installer-update-ws"
@@ -51,14 +61,14 @@ certtype=""
 
 # Check if directory exists, if not, create
 if [ ! -d $PWD/script-cfg ]; then
-	mkdir $PWD/script-cfg
+	mkdir $PWD/script-cfg | tee -a "${currentlog}"
 fi
 
 # Get cfg files function
 getCfgFiles()
 {
 	if [ ! -f "$PWD/script-cfg/$2" ]; then
-		wget -q "$1/script-cfg/$2" -O "$PWD/script-cfg/$2"
+		wget -q "$1/script-cfg/$2" -O "$PWD/script-cfg/$2" | tee -a "${currentlog}"
 	fi
 }
 
@@ -120,21 +130,21 @@ if [ "$autoinstall" == "1" ]; then
 
 	# Check that update type is valid
 	if ([ "$INSTALL_TYPE" == "update" ] && ([ "$UPDATE_TYPE" != "standard" ] && [ "$UPDATE_TYPE" != "forced" ])); then
-		echo -e "${RED} Error: You've selected update, but not selected an appropriate type.${NC}\n"
+		echo -e "${RED} Error: You've selected update, but not selected an appropriate type.${NC}\n" | tee -a "${currentlog}"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
 		exit 1
 	fi
 
 	# Check that backup file exists
 	if ([ "$INSTALL_TYPE" == "restore" ] && ([ -z "$backupfile" ] || [ ! -f "$backupfile" ])); then
-		echo -e "${RED} Error: You've selected restore, but not provided a valid backup file.${NC}\n"
+		echo -e "${RED} Error: You've selected restore, but not provided a valid backup file.${NC}\n" | tee -a "${currentlog}"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to enter this.${NC}"
 		exit 1
 	fi
 
 	# Check that install type is valid
 	if ([ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ] && [ "$INSTALL_TYPE" != "backup" ]); then
-		echo -e "${RED} Error: You've selected an invalid function type.${NC}\n"
+		echo -e "${RED} Error: You've selected an invalid function type.${NC}\n" | tee -a "${currentlog}"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options.${NC}"
 		exit 1
 	fi
@@ -142,23 +152,23 @@ if [ "$autoinstall" == "1" ]; then
 	# Check all required input is available for install
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
 		if ([ -z "$rmmhost" ] || [ -z "$certtype" ] || [ -z "$rootdomain" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass"] || [ -z "$letsemail" ]); then
-			echo -e "${RED} Error: To perform an automated installation, you must provide all required information.${NC}\n"
-			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, and T-RMM username and password are all required.${NC}\n"
+			echo -e "${RED} Error: To perform an automated installation, you must provide all required information.${NC}\n" | tee -a "${currentlog}"
+			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, and T-RMM username and password are all required.${NC}\n" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for further details.${NC}"
 			exit 1
 		fi
 
 		# Check that certificate install type is valid
 		if ([ "$certtype" != "import" ] && [ "$certtype" != "webroot" ]); then
-			echo -e "${RED} Error: You've selected an invalid certificate installation type.${NC}\n"
+			echo -e "${RED} Error: You've selected an invalid certificate installation type.${NC}\n" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options.${NC}"
 			exit 1
 		fi
 
 		# Check for required input if import certificate
 		if ([ "$certtype" == "import" ] && ([ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$sslkey" ])); then
-			echo -e "${RED} Error: To perform an automated installation using imported certificates, you must provide all required information.${NC}\n"
-			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, CA cert path, Cert path, Private key path, and T-RMM username and password are all required.${NC}\n"
+			echo -e "${RED} Error: To perform an automated installation using imported certificates, you must provide all required information.${NC}\n" | tee -a "${currentlog}"
+			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, CA cert path, Cert path, Private key path, and T-RMM username and password are all required.${NC}\n" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for further details.${NC}"
 			exit 1
 		fi
@@ -167,7 +177,7 @@ if [ "$autoinstall" == "1" ]; then
 	# Check that email address format is valid
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
 		if [[ $letsemail != *[@]*[.]* ]]; then
-			echo -e "${RED} Error: You've entered an invalid email address.${NC}\n"
+			echo -e "${RED} Error: You've entered an invalid email address.${NC}\n" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the correct format.${NC}"
 			exit 1
 		fi
@@ -175,7 +185,7 @@ if [ "$autoinstall" == "1" ]; then
 
 	# Check that repo and branch match install type
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ]) && [ "$BRANCH" == "master" ]; then
-		echo -e "${RED} Error: You've selected a developer installation type, but not changed the repo, branch, or both.${NC}\n"
+		echo -e "${RED} Error: You've selected a developer installation type, but not changed the repo, branch, or both.${NC}\n" | tee -a "${currentlog}"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them.${NC}"
 		exit 1
 	fi
@@ -263,7 +273,7 @@ checkTacticalUser;
 checkLocale;
 
 # Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
-sudo systemctl restart systemd-journald.service
+sudo systemctl restart systemd-journald.service | tee -a "${currentlog}"
 
 ####################
 #  Menu Functions  #

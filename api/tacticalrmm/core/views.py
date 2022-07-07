@@ -6,6 +6,7 @@ from cryptography import x509
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone as djangotime
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
@@ -402,6 +403,7 @@ class TwilioSMSTest(APIView):
         return Response(msg)
 
 
+@csrf_exempt
 @monitoring_view
 def status(request):
 

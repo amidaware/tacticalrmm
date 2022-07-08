@@ -13,7 +13,17 @@
 ## Additional parameters to pass ACME ("--keep-until-expiring")
 : "${ACME_ADDITIONAL_PARAMS:=""}"
 
-readonly SCRIPT_VERSION="63"
+readonly LOGFILE="install-$(date --iso-8601).log"
+## 2022-07-08: Capture script I/O and remove colour codes in the log file.
+## This unfortunately requires bash due to '>(...)'. To be improved upon (mkfifo?).
+exec 4<&1 5<&2 1>&2 >& >(tee -a >(sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' >> "${LOGFILE}"))
+
+readonly SCRIPT_EXEC_TS="$(date --iso-8601=seconds)"
+printf "%0.s*" {1..80}
+printf "\n"
+printf "Installation started at %s\n" "${SCRIPT_EXEC_TS}"
+
+readonly SCRIPT_VERSION="64"
 readonly SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/${TRMM_SCRIPT_BRANCH}/install.sh"
 readonly TRMM_SERVER_REPO='https://github.com/amidaware/tacticalrmm.git'
 readonly TRMM_FRONTEND_REPO='https://github.com/amidaware/tacticalrmm-web'
@@ -103,30 +113,33 @@ random_text() {
 ################################################################################
 
 print_info() {
-  printf >&2 "${GREEN}%s${NC}\n" "${1}"
+  printf "${GREEN}%s${NC}\n" "${1}"
 }
 
 print_warn() {
-  printf >&2 "${YELLOW}%s${NC}\n" "${1}"
+  printf "${YELLOW}%s${NC}\n" "${1}"
 }
 
 print_error() {
-  printf >&2 "${RED}%s${NC}\n" "${1}"
+  printf "${RED}%s${NC}\n" "${1}"
 }
 
 print_debug() {
   ## This is currently redundant, I know. Temp workaround. :)
   if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
     printf "${CYAN}%s${NC}\n" "${1}"
+  ## todo: log to file when debug is off (mkfifo?)
+  # else
+  #   printf >&1 "${CYAN}%s${NC}\n" "${1}"
   fi
 }
 
 print_header() {
-  printf >&2 "${GREEN}%0.s-${NC}" {1..80}
-  printf >&2 "\n"
+  printf "${GREEN}%0.s-${NC}" {1..80}
+  printf "\n"
   print_info "${1}"
-  printf >&2 "${GREEN}%0.s-${NC}" {1..80}
-  printf >&2 "\n"
+  printf "${GREEN}%0.s-${NC}" {1..80}
+  printf "\n"
 }
 
 ################################################################################
@@ -171,7 +184,7 @@ update_script() {
 install_nginx() {
   print_header 'Installing Nginx'
 
-  sudo apt install -y nginx
+  sudo apt-get install -y nginx
   sudo systemctl stop nginx
   sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' "${NGINX_CONF}"
   sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' "${NGINX_CONF}"
@@ -187,9 +200,9 @@ install_nodejs() {
   print_header 'Installing NodeJS'
 
   wget -qO - https://deb.nodesource.com/setup_16.x | sudo -E bash -
-  sudo apt update
-  sudo apt install -y gcc g++ make
-  sudo apt install -y nodejs
+  sudo apt-get update
+  sudo apt-get install -y gcc g++ make
+  sudo apt-get install -y nodejs
   sudo npm install -g npm
 
   ## todo: 2022-06-17: move
@@ -207,8 +220,8 @@ install_mongodb() {
 
   wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
   echo "$MONGODB_REPO" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-  sudo apt update
-  sudo apt install -y mongodb-org
+  sudo apt-get update
+  sudo apt-get install -y mongodb-org
   sudo systemctl enable mongod
   sudo systemctl restart mongod
 
@@ -228,7 +241,7 @@ install_python() {
       local python_distdir="${HOME}/${python_distname}"
       local python_distfile="${python_distname}.tgz"
 
-      sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+      sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 
       if [ ! -d "${python_distdir}" ]; then
         print_debug "Downloading ${python_distfile} to ${HOME}"
@@ -274,8 +287,8 @@ install_postgresql() {
 
   wget -q -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
   echo "$POSTGRESQL_REPO" | sudo tee /etc/apt/sources.list.d/pgdg.list
-  sudo apt update
-  sudo apt install -y postgresql-14
+  sudo apt-get update
+  sudo apt-get install -y postgresql-14
   sleep 2
   sudo systemctl enable postgresql
   sudo systemctl restart postgresql
@@ -321,7 +334,7 @@ install_nats() {
 
   local nats_tmp
   nats_tmp=$(mktemp -d -t "nats-XXXXXXXXXX")
-  wget "https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz" -P "${nats_tmp}"
+  wget -q "https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz" -P "${nats_tmp}"
   tar -xzf "${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz" -C "${nats_tmp}"
   sudo mv "${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server" /usr/local/bin/
   sudo chmod +x /usr/local/bin/nats-server
@@ -347,7 +360,7 @@ OS_UNAME=$(uname)
 
 ## Install dependencies
 ## todo: 2022-06-17: remove lsb-release
-sudo apt install -y wget dirmngr gnupg lsb-release
+sudo apt-get install -y wget dirmngr gnupg lsb-release
 
 if [ "${OS_UNAME}" = "Linux" ]; then
   OS_NAME=$(lsb_release -si) ## "Ubuntu"
@@ -409,7 +422,7 @@ fi
 
 ## Check system locale
 if [[ "$LANG" != *".UTF-8" ]]; then
-  printf >&2 "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
+  printf "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
   print_error "Run the following command and change the default locale to your language of choice\n\n"
   printf "\t"
   print_info "sudo dpkg-reconfigure locales"
@@ -436,12 +449,13 @@ TRMM_DB_USER=${TRMM_DB_USER:=$(lc "$(random_text 8 no)")}
 TRMM_DB_PASS=${TRMM_DB_PASS:=$(random_text 20)}
 
 if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
-  printf "Django Secret: %s\n" "${DJANGO_SEKRET}"
-  printf "Mesh Admin URL: %s\n" "${MESH_ADMIN_URL}"
+  ## 2022-07-08: Redirecting passwords to >&4 (stdout) so they don't appear in the logfile.
+  printf >&4 "Django Secret: %s\n" "${DJANGO_SEKRET}"
+  printf >&4 "Mesh Admin URL: %s\n" "${MESH_ADMIN_URL}"
   printf "Mesh Username: %s\n" "${MESH_USERNAME}"
-  printf "Mesh Password: %s\n" "${MESH_PASSWORD}"
+  printf >&4 "Mesh Password: %s\n" "${MESH_PASSWORD}"
   printf "TRMM DB Username: %s\n" "${TRMM_DB_USER}"
-  printf "TRMM DB Password: %s\n" "${TRMM_DB_PASS}"
+  printf >&4 "TRMM DB Password: %s\n" "${TRMM_DB_PASS}"
   printf "TRMM DB Database: %s\n" "${TRMM_DB_NAME}"
   print_debug "Script branch: ${TRMM_SCRIPT_BRANCH}"
 else
@@ -517,9 +531,9 @@ fi
 
 print_header "Installing Let's Encrypt"
 
-sudo apt install -y software-properties-common
-sudo apt update
-sudo apt install -y certbot openssl
+sudo apt-get install -y software-properties-common
+sudo apt-get update
+sudo apt-get install -y certbot openssl
 
 print_header 'Preparing certificate request'
 
@@ -557,7 +571,7 @@ install_python
 
 print_header 'Installing redis and git'
 
-sudo apt install -y ca-certificates redis git
+sudo apt-get install -y ca-certificates redis git
 
 ################################################################################
 
@@ -701,11 +715,11 @@ python manage.py load_chocos
 python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
 
-printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
-printf >&2 "\n"
-printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
-printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
-printf >&2 "\n"
+printf "${YELLOW}%0.s*${NC}" {1..80}
+printf "\n"
+printf "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
+printf "${YELLOW}%0.s*${NC}" {1..80}
+printf "\n"
 
 echo -ne "Username: "
 read djangousername
@@ -725,8 +739,6 @@ chdir = ${TRMM_ROOT_PATH}/api/tacticalrmm
 module = tacticalrmm.wsgi
 home = ${TRMM_ROOT_PATH}/api/env
 master = true
-processes = ${uwsgiprocs}
-threads = ${uwsgiprocs}
 enable-threads = true
 socket = ${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm.sock
 harakiri = 300
@@ -736,6 +748,16 @@ vacuum = true
 die-on-term = true
 max-requests = 500
 disable-logging = true
+cheaper-algo = busyness
+cheaper = 4
+cheaper-initial = 4
+workers = 20
+cheaper-step = 2
+cheaper-overload = 3
+cheaper-busyness-min = 5
+cheaper-busyness-max = 10
+# stats = /tmp/stats.socket # uncomment when debugging
+# cheaper-busyness-verbose = true # uncomment when debugging
 EOF
 )"
 echo "${uwsgini}" >${TRMM_ROOT_PATH}/api/tacticalrmm/app.ini
@@ -892,6 +914,18 @@ server {
         proxy_set_header   X-Real-IP \$remote_addr;
         proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Host \$server_name;
+    }
+
+    location ~ ^/natsws {
+        proxy_pass http://127.0.0.1:9235;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host \$host;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Forwarded-Host \$host:\$server_port;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
     location / {
@@ -1199,22 +1233,31 @@ for i in rmm.service daphne.service celery.service celerybeat.service; do
   sudo systemctl start ${i}
 done
 
-printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
-printf >&2 "\n\n"
-printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
-printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${USER_FRONTEND_DOMAIN}${NC}\n\n"
-printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${USER_BACKEND_DOMAIN}/${MESH_ADMIN_URL}/${NC}\n\n"
-printf >&2 "${YELLOW}MeshCentral username: ${GREEN}${MESH_USERNAME}${NC}\n"
-printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESH_PASSWORD}${NC}\n\n"
+## 2022-07-08: Redirecting passwords to >&4 so they don't appear in the logfile.
+printf "${YELLOW}%0.s*${NC}" {1..80}
+printf "\n\n"
+printf "${YELLOW}Installation complete!${NC}\n\n"
+printf "${YELLOW}Access your rmm at: ${GREEN}https://${USER_FRONTEND_DOMAIN}${NC}\n\n"
+printf >&4 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${USER_BACKEND_DOMAIN}/${MESH_ADMIN_URL}/${NC}\n\n"
+printf "${YELLOW}MeshCentral username: ${GREEN}${MESH_USERNAME}${NC}\n"
+printf >&4 "${YELLOW}MeshCentral password: ${GREEN}${MESH_PASSWORD}${NC}\n\n"
 
 if [ "$BEHIND_NAT" = true ]; then
   echo -ne "${YELLOW}Read below if your router does NOT support Hairpin NAT${NC}\n\n"
   echo -ne "${GREEN}If you will be accessing the web interface of the RMM from the same LAN as this server,${NC}\n"
   echo -ne "${GREEN}you'll need to make sure your 3 subdomains resolve to ${IPV4}${NC}\n"
   echo -ne "${GREEN}This also applies to any agents that will be on the same local network as the rmm.${NC}\n"
-  echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443 and 4222 tcp.${NC}\n\n"
+  echo -ne "${GREEN}You'll also need to setup port forwarding in your router on port 443.${NC}\n\n"
 fi
 
-printf >&2 "${YELLOW}Please refer to the Github README for next steps${NC}\n\n"
-printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
-printf >&2 "\n"
+printf "${YELLOW}Please refer to the Github README for next steps${NC}\n\n"
+printf "${YELLOW}%0.s*${NC}" {1..80}
+printf "\n"
+
+printf "Installation ended at %s\n" "$(date --iso-8601=seconds)"
+printf "%0.s*" {1..80}
+printf "\n"
+
+## Sleep 1 second to flush, restore & close file descriptors
+sleep 1
+exec 1<&4 4>&- 2<&5 5>&-

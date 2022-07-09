@@ -176,7 +176,7 @@ CHECK_NGINX_NOLIMIT=$(grep "worker_rlimit_nofile 1000000" $nginxdefaultconf)
 if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
 sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
 printf >&2 "${GREEN}Increasing nginx open file limit${NC}\n"
-sudo sed  -i '1s/^/worker_rlimit_nofile 1000000;\
+sudo sed -i '1s/^/worker_rlimit_nofile 1000000;\
 /' $nginxdefaultconf
 fi
 

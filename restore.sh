@@ -132,7 +132,7 @@ CHECK_NGINX_NOLIMIT=$(grep "worker_rlimit_nofile 1000000" $nginxdefaultconf)
 if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
 sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
 printf >&2 "${GREEN}Increasing nginx open file limit${NC}\n"
-sudo sed  -i '1s/^/worker_rlimit_nofile 1000000;\
+sudo sed -i '1s/^/worker_rlimit_nofile 1000000;\
 /' $nginxdefaultconf
 fi
 rmmdomain=$(grep server_name /etc/nginx/sites-available/rmm.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')

@@ -31,9 +31,12 @@ else
   fi
 fi
 
+nginxdefaultconf='/etc/nginx/nginx.conf'
 # increase default nginx worker connections
-/bin/bash -c "sed -i 's/worker_connections.*/worker_connections ${WORKER_CONNECTIONS};/g' /etc/nginx/nginx.conf"
+/bin/bash -c "sed -i 's/worker_connections.*/worker_connections ${WORKER_CONNECTIONS};/g' $nginxdefaultconf"
 
+sudo sed  -i '1s/^/worker_rlimit_nofile 1000000;\
+/' $nginxdefaultconf
 
 if [[ $DEV -eq 1 ]]; then
     API_NGINX="

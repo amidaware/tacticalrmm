@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="64"
+SCRIPT_VERSION="65"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -174,8 +174,12 @@ print_green 'Installing Nginx'
 
 sudo apt install -y nginx
 sudo systemctl stop nginx
-sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
-sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
+nginxdefaultconf='/etc/nginx/nginx.conf'
+sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
+sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' $nginxdefaultconf
+sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' $nginxdefaultconf
+sudo sed  -i '1s/^/worker_rlimit_nofile 1000000;\
+/' $nginxdefaultconf
 
 print_green 'Installing NodeJS'
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="136"
+SCRIPT_VERSION="137"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -165,13 +165,22 @@ EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
 
-CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" /etc/nginx/nginx.conf)
+nginxdefaultconf='/etc/nginx/nginx.conf'
+CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" $nginxdefaultconf)
 if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
   printf >&2 "${GREEN}Changing nginx worker connections to 2048${NC}\n"
-  sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
+  sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' $nginxdefaultconf
 fi
 
-sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
+CHECK_NGINX_NOLIMIT=$(grep "worker_rlimit_nofile 1000000" $nginxdefaultconf)
+if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
+sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
+printf >&2 "${GREEN}Increasing nginx open file limit${NC}\n"
+sudo sed  -i '1s/^/worker_rlimit_nofile 1000000;\
+/' $nginxdefaultconf
+fi
+
+sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' $nginxdefaultconf
 
 HAS_PY310=$(python3.10 --version | grep ${PYTHON_VER})
 if ! [[ $HAS_PY310 ]]; then

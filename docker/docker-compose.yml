@@ -86,7 +86,6 @@ services:
       API_HOST: ${API_HOST}
     ports:
       - "4222:4222"
-      - "9235:9235"
     volumes:
       - tactical_data:/opt/tactical
     networks:

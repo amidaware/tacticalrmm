@@ -17,6 +17,7 @@ from .serializers import (
     ScriptSnippetSerializer,
     ScriptTableSerializer,
 )
+from core.utils import clear_entire_cache
 
 
 class GetAddScripts(APIView):
@@ -58,7 +59,7 @@ class GetUpdateDeleteScript(APIView):
         return Response(ScriptSerializer(script).data)
 
     def put(self, request, pk):
-        script = get_object_or_404(Script, pk=pk)
+        script = get_object_or_404(Script.objects.prefetch_related("script"), pk=pk)
 
         data = request.data
 
@@ -76,7 +77,12 @@ class GetUpdateDeleteScript(APIView):
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
 
-        # obj.hash_script_body()
+        # TODO rename the related field from 'script' to 'scriptchecks' so it's not so confusing
+        if script.script.exists():
+            for script_check in script.script.all():
+                if script_check.policy:
+                    clear_entire_cache()
+                    break
 
         return Response(f"{obj.name} was edited!")
 

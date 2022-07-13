@@ -60,6 +60,9 @@ troubleshoot=""
 certtype=""
 sudopass=""
 
+# Remove script run command from history to prevent sudo password leak
+history -d $(($(history 1 | awk '{print $1}')-1))
+
 # Check if directory exists, if not, create
 if [ ! -d $PWD/script-cfg ]; then
 	mkdir $PWD/script-cfg 2>&1 | tee -a "${currentlog}"

@@ -156,9 +156,9 @@ if [ "$autoinstall" == "1" ]; then
 
 	# Check all required input is available for install
 	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
-		if ([ -z "$rmmhost" ] || [ -z "$sudopass" ] || [ -z "$certtype" ] || [ -z "$rootdomain" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass" ] || [ -z "$letsemail" ]); then
+		if ([ -z "$rmmhost" ] || [ -z "$certtype" ] || [ -z "$rootdomain" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass" ] || [ -z "$letsemail" ]); then
 			echo -e "${RED} Error: To perform an automated installation, you must provide all required information. ${NC}" | tee -a "${currentlog}"
-			echo -e "${RED} sudo password, install type, api host, mesh host, rmm host, root domain, email address, certificate install type, and T-RMM username and password are all required. ${NC}" | tee -a "${currentlog}"
+			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, and T-RMM username and password are all required. ${NC}" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for further details. ${NC}"
 			exit 1
 		fi

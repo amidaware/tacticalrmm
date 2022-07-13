@@ -398,19 +398,29 @@ mainMenu()
 {
 	# Automated install types install, devprep, or devinstall
 	if [ "$autoinstall" == "1" ] && ([ "$INSTALL_TYPE" == "install" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "devprep" ]); then
+		echo 'Defaults        timestamp_timeout=15' | sudo tee /etc/sudoers.d/timeout
 		mainInstall;
+		sudo rm /etc/sudoers.d/timeout
 	# Automated update
 	elif [ "$autoinstall" == "1" ] && [ "$INSTALL_TYPE" == "update" ]; then
+		echo 'Defaults        timestamp_timeout=15' | sudo tee /etc/sudoers.d/timeout
 		updateTRMM;
+		sudo rm /etc/sudoers.d/timeout
 	# Automated restore
 	elif [ "$autoinstall" == "1" ] && [ "$INSTALL_TYPE" == "restore" ]; then
+		echo 'Defaults        timestamp_timeout=15' | sudo tee /etc/sudoers.d/timeout
 		restoreTRMM;
+		sudo rm /etc/sudoers.d/timeout
 	# Automated backup
 	elif [ "$autoinstall" == "1" ] && [ "$INSTALL_TYPE" == "backup" ]; then
+		echo 'Defaults        timestamp_timeout=15' | sudo tee /etc/sudoers.d/timeout
 		backupTRMM;
+		sudo rm /etc/sudoers.d/timeout
 	# Automated troubleshoot
 	elif [ "$autoinstall" != "1" ] && [ "$troubleshoot" == "1" ]; then
+		echo 'Defaults        timestamp_timeout=15' | sudo tee /etc/sudoers.d/timeout
 		troubleShoot;
+		sudo rm /etc/sudoers.d/timeout
 	else
 		until [ "$menuselection" = "0" ]; do
 			dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Main Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections." 0 0 0 \

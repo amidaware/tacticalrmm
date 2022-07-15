@@ -64,8 +64,8 @@ sudopass=""
 #history -d $(($(history 1 | awk '{print $1}')-1))
 
 # Check if directory exists, if not, create
-if [ ! -d $PWD/script-cfg ]; then
-	mkdir $PWD/script-cfg 2>&1 | tee -a "${currentlog}"
+if [ ! -d "$PWD"/script-cfg ]; then
+	mkdir "$PWD"/script-cfg 2>&1 | tee -a "${currentlog}"
 fi
 
 # Get cfg files function
@@ -83,18 +83,18 @@ do
 done
 
 # Import functions
-. $PWD/script-cfg/InputAndError.cfg
-. $PWD/script-cfg/MiscFunctions.cfg
-. $PWD/script-cfg/SystemInfoFunctions.cfg
-. $PWD/script-cfg/UserInput.cfg
-. $PWD/script-cfg/NetworkFunctions.cfg
-. $PWD/script-cfg/InstallFunctions.cfg
-. $PWD/script-cfg/DatabaseFunctions.cfg
-. $PWD/script-cfg/CertificateFunctions.cfg
-. $PWD/script-cfg/ConfigAndServiceFunctions.cfg
-. $PWD/script-cfg/UpdateRestoreFunctions.cfg
-. $PWD/script-cfg/TroubleshootingFunctions.cfg
-. $PWD/script-cfg/ParentFunctions.cfg
+. "$PWD"/script-cfg/InputAndError.cfg
+. "$PWD"/script-cfg/MiscFunctions.cfg
+. "$PWD"/script-cfg/SystemInfoFunctions.cfg
+. "$PWD"/script-cfg/UserInput.cfg
+. "$PWD"/script-cfg/NetworkFunctions.cfg
+. "$PWD"/script-cfg/InstallFunctions.cfg
+. "$PWD"/script-cfg/DatabaseFunctions.cfg
+. "$PWD"/script-cfg/CertificateFunctions.cfg
+. "$PWD"/script-cfg/ConfigAndServiceFunctions.cfg
+. "$PWD"/script-cfg/UpdateRestoreFunctions.cfg
+. "$PWD"/script-cfg/TroubleshootingFunctions.cfg
+. "$PWD"/script-cfg/ParentFunctions.cfg
 
 # Set colors
 # MiscFunctions
@@ -134,29 +134,29 @@ done
 if [ "$autoinstall" == "1" ]; then
 
 	# Check that update type is valid
-	if ([ "$INSTALL_TYPE" == "update" ] && ([ "$UPDATE_TYPE" != "standard" ] && [ "$UPDATE_TYPE" != "forced" ])); then
+	if [ "$INSTALL_TYPE" == "update" ] && ([ "$UPDATE_TYPE" != "standard" ] && [ "$UPDATE_TYPE" != "forced" ]); then
 		echo -e "${RED} Error: You've selected update, but not selected an appropriate type. ${NC}" | tee -a "${currentlog}"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to select them. ${NC}"
 		exit 1
 	fi
 
 	# Check that backup file exists
-	if ([ "$INSTALL_TYPE" == "restore" ] && ([ -z "$backupfile" ] || [ ! -f "$backupfile" ])); then
+	if [ "$INSTALL_TYPE" == "restore" ] && ([ -z "$backupfile" ] || [ ! -f "$backupfile" ]); then
 		echo -e "${RED} Error: You've selected restore, but not provided a valid backup file. ${NC}" | tee -a "${currentlog}"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on how to enter this. ${NC}"
 		exit 1
 	fi
 
 	# Check that install type is valid
-	if ([ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ] && [ "$INSTALL_TYPE" != "backup" ]); then
+	if [ "$INSTALL_TYPE" != "devprep" ] && [ "$INSTALL_TYPE" != "devinstall" ] && [ "$INSTALL_TYPE" != "install" ] && [ "$INSTALL_TYPE" != "update" ] && [ "$INSTALL_TYPE" != "restore" ] && [ "$INSTALL_TYPE" != "backup" ]; then
 		echo -e "${RED} Error: You've selected an invalid function type. ${NC}" | tee -a "${currentlog}"
 		echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options. ${NC}"
 		exit 1
 	fi
 
 	# Check all required input is available for install
-	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
-		if ([ -z "$rmmhost" ] || [ -z "$certtype" ] || [ -z "$rootdomain" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass" ] || [ -z "$letsemail" ]); then
+	if [ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]; then
+		if [ -z "$rmmhost" ] || [ -z "$certtype" ] || [ -z "$rootdomain" ] || [ -z "$meshhost" ] || [ -z "$frontendhost" ] || [ -z "$trmmuser" ] || [ -z "$trmmpass" ] || [ -z "$letsemail" ]; then
 			echo -e "${RED} Error: To perform an automated installation, you must provide all required information. ${NC}" | tee -a "${currentlog}"
 			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, and T-RMM username and password are all required. ${NC}" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for further details. ${NC}"
@@ -164,14 +164,14 @@ if [ "$autoinstall" == "1" ]; then
 		fi
 
 		# Check that certificate install type is valid
-		if ([ "$certtype" != "import" ] && [ "$certtype" != "webroot" ]); then
+		if [ "$certtype" != "import" ] && [ "$certtype" != "webroot" ]; then
 			echo -e "${RED} Error: You've selected an invalid certificate installation type. ${NC}" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the available options. ${NC}"
 			exit 1
 		fi
 
 		# Check for required input if import certificate
-		if ([ "$certtype" == "import" ] && ([ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$sslkey" ])); then
+		if [ "$certtype" == "import" ] && ([ -z "$sslcacert" ] || [ -z "$sslcert" ] || [ -z "$sslkey" ]); then
 			echo -e "${RED} Error: To perform an automated installation using imported certificates, you must provide all required information. ${NC}" | tee -a "${currentlog}"
 			echo -e "${RED} install type, api host, mesh host, rmm host, root domain, email address, certificate install type, CA cert path, Cert path, Private key path, and T-RMM username and password are all required. ${NC}" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for further details. ${NC}"
@@ -180,7 +180,7 @@ if [ "$autoinstall" == "1" ]; then
 	fi
 
 	# Check that email address format is valid
-	if ([ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]); then
+	if [ "$INSTALL_TYPE" == "devprep" ] || [ "$INSTALL_TYPE" == "devinstall" ] || [ "$INSTALL_TYPE" == "install" ]; then
 		if [[ $letsemail != *[@]*[.]* ]]; then
 			echo -e "${RED} Error: You've entered an invalid email address. ${NC}" | tee -a "${currentlog}"
 			echo -e "${RED} Run $THIS_SCRIPT -h help for details on the correct format. ${NC}"
@@ -195,7 +195,7 @@ if [ "$autoinstall" == "1" ]; then
 		exit 1
 	fi
 
-	if ([ ! -z "$rmmhost" ] && [ ! -z "$meshhost" ] && [ ! -z "$frontendhost" ] && [ ! -z "$rootdomain" ]); then
+	if [ -n "$rmmhost" ] && [ -n "$meshhost" ] && [ -n "$frontendhost" ] && [ -n "$rootdomain" ]; then
 		# Check subdomains are valid format
 		# User Input
 		subdomainFormatCheck "$rmmhost" "api";
@@ -216,7 +216,7 @@ if [ "$autoinstall" == "1" ]; then
 		checkDNSEntriesExist "$meshdomain";
 	fi
 
-	if ([ ! -z "$sslcacert" ] && [ ! -z "$sslcert" ] && [ ! -z "$sslkey" ]); then
+	if [ -n "$sslcacert" ] && [ -n "$sslcert" ] && [ -n "$sslkey" ]; then
 		# Check that cert file exists
 		# User Input
 		checkCertExists "$sslcacert" "CA Chain";

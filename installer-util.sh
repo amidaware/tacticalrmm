@@ -12,7 +12,7 @@ declare -a mainmenuoptions=('Installation' 'Update' 'Utilities' 'Exit')
 declare -a installmenuoptions=('Standard Install' 'Dev Test Prereqs' 'Dev Test Install' 'Return' 'Exit')
 declare -a updatemenuoptions=('Standard Update' 'Backup and Update' 'Force Update' 'Return' 'Exit')
 declare -a utilitymenuoptions=('Backup' 'Restore' 'Renew Certs' 'Import Certs' 'Add Fail2ban - Use at your own risk' 'Run Server Troubleshooter' 'Return' 'Exit')
-declare -a cfgfiles=('InputAndError.cfg' 'MiscFunctions.cfg' 'SystemInfoFunctions.cfg' 'UserInput.cfg' 'NetworkFunctions.cfg' 'InstallFunctions.cfg' 'DatabaseFunctions.cfg' 'CertificateFunctions.cfg' 'ConfigAndServiceFunctions.cfg' 'UpdateRestoreFunctions.cfg' 'TroubleshootingFunctions.cfg' 'ParentFunctions.cfg')
+declare -a cfgfiles=('01-InputAndError.cfg' '02-MiscFunctions.cfg' '03-SystemInfoFunctions.cfg' '04-UserInput.cfg' '05-NetworkFunctions.cfg' '06-InstallFunctions.cfg' '07-DatabaseFunctions.cfg' '08-CertificateFunctions.cfg' '09-ConfigAndServiceFunctions.cfg' '10-UpdateRestoreFunctions.cfg' '11-TroubleshootingFunctions.cfg' '12-ParentFunctions.cfg')
 
 # Log file variables
 rundate="$(date '+%Y_%m_%d__%H_%M_%S')"
@@ -83,18 +83,18 @@ do
 done
 
 # Import functions
-. "$PWD"/script-cfg/InputAndError.cfg
-. "$PWD"/script-cfg/MiscFunctions.cfg
-. "$PWD"/script-cfg/SystemInfoFunctions.cfg
-. "$PWD"/script-cfg/UserInput.cfg
-. "$PWD"/script-cfg/NetworkFunctions.cfg
-. "$PWD"/script-cfg/InstallFunctions.cfg
-. "$PWD"/script-cfg/DatabaseFunctions.cfg
-. "$PWD"/script-cfg/CertificateFunctions.cfg
-. "$PWD"/script-cfg/ConfigAndServiceFunctions.cfg
-. "$PWD"/script-cfg/UpdateRestoreFunctions.cfg
-. "$PWD"/script-cfg/TroubleshootingFunctions.cfg
-. "$PWD"/script-cfg/ParentFunctions.cfg
+. "$PWD"/script-cfg/01-InputAndError.cfg
+. "$PWD"/script-cfg/02-MiscFunctions.cfg
+. "$PWD"/script-cfg/03-SystemInfoFunctions.cfg
+. "$PWD"/script-cfg/04-UserInput.cfg
+. "$PWD"/script-cfg/05-NetworkFunctions.cfg
+. "$PWD"/script-cfg/06-InstallFunctions.cfg
+. "$PWD"/script-cfg/07-DatabaseFunctions.cfg
+. "$PWD"/script-cfg/08-CertificateFunctions.cfg
+. "$PWD"/script-cfg/09-ConfigAndServiceFunctions.cfg
+. "$PWD"/script-cfg/10-UpdateRestoreFunctions.cfg
+. "$PWD"/script-cfg/11-TroubleshootingFunctions.cfg
+. "$PWD"/script-cfg/12-ParentFunctions.cfg
 
 # Set colors
 # MiscFunctions
@@ -225,56 +225,56 @@ if [ "$autoinstall" == "1" ]; then
 	fi
 
 	# Verify repo exists
-	# MiscFunctions
+	# 02-MiscFunctions
 	verifyRepoExists "$SCRIPT_URL";
 fi
 
 # Gather OS info
-# SystemInfoFunctions
+# 03-SystemInfoFunctions
 getOSInfo;
 
 # Install script pre-reqs
-# InstallFunctions
+# 06-InstallFunctions
 installPreReqs;
 
 # Check for new functions versions, include url, filename, and script name as variables
 for i in "${cfgfiles[@]}"
 do
-	# MiscFunctions
+	# 02-MiscFunctions
 	checkCfgVer "$CFG_URL" "$i" "$THIS_SCRIPT";
 done
 
 # Check for new script version, pass script version, url, and script name variables in that order
-# MiscFunctions
+# 02-MiscFunctions
 checkScriptVer "$SCRIPT_VERSION" "$SCRIPT_URL" "$THIS_SCRIPT";
 
 # Install additional prereqs
-# InstallFunctions
+# 06-InstallFunctions
 installAdditionalPreReqs;
 
 # Fallback if lsb_release -si returns anything else than Ubuntu, Debian, or Raspbian
-# SystemInfoFunctions
+# 03-SystemInfoFunctions
 wutOSThis;
 
 # Verify compatible OS and version
-# SystemInfoFunctions
+# 03-SystemInfoFunctions
 verifySupportedOS;
 
 # Verify system meets minimum recommended specs
-# SystemInfoFunctions
+# 03-SystemInfoFunctions
 checkTotalSystemMemory;
 checkCPUAndThreadCount;
 
 # Check if root
-# MiscFunctions
+# 02-MiscFunctions
 checkRoot;
 
 # Check if Tactical user exists, if not prompt to create it
-# MiscFunctions
+# 02-MiscFunctions
 checkTacticalUser;
 
 # Check language/locale
-# SystemInfoFunctions
+# 03-SystemInfoFunctions
 checkLocale;
 
 # Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet

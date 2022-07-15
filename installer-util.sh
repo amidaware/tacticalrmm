@@ -104,7 +104,7 @@ setColors;
 while getopts i:a:b:c:e:d:m:f:g:h:k:s:p:r:o:t:u:n:w: option
 do
 	case $option in
-      	i) autoinstall="1"
+		i) autoinstall="1"
 			INSTALL_TYPE="$(translateToLowerCase ${OPTARG})";;
 		a) rmmhost="$(translateToLowerCase ${OPTARG})";;
 		b) BRANCH="$(translateToLowerCase ${OPTARG})";;
@@ -125,7 +125,7 @@ do
 		u) UPDATE_TYPE="$(translateToLowerCase ${OPTARG})";;
 		n) trmmuser="${OPTARG}";;
 		w) certtype="$(translateToLowerCase ${OPTARG})";;
-	    \?) echo -e "Error: Invalid option"
+		\?) echo -e "Error: Invalid option"
 			helpText
 			exit 1;;
 	esac
@@ -287,25 +287,25 @@ sudo systemctl restart systemd-journald.service 2>&1 | tee -a "${currentlog}"
 # Installation menu
 installMenu()
 {
-  	until [ "$menuselection" = "0" ]; do
+	until [ "$menuselection" = "0" ]; do
 		dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Installation Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections.\n\nSelect Return to return to the previous menu." 0 0 0 \
 			1 "${installmenuoptions[0]}" \
-      		2 "${installmenuoptions[1]}" \
-      		3 "${installmenuoptions[2]}" \
-      		4 "${installmenuoptions[3]}" \
+			2 "${installmenuoptions[1]}" \
+			3 "${installmenuoptions[2]}" \
+			4 "${installmenuoptions[3]}" \
 			5 "${installmenuoptions[4]}" 2>"${INPUT}"
 
 		menuselection=$(<"${INPUT}")
 
 		case $menuselection in
 			1 ) INSTALL_TYPE="install"
-        		mainInstall;;
-      		2 ) INSTALL_TYPE="devprep"
-        		mainInstall;;
-      		3 ) INSTALL_TYPE="devinstall"
-			  	decideMainRepos
-        		mainInstall;;
-      		4 ) return;;
+				mainInstall;;
+			2 ) INSTALL_TYPE="devprep"
+				mainInstall;;
+			3 ) INSTALL_TYPE="devinstall"
+				decideMainRepos
+				mainInstall;;
+			4 ) return;;
 			5 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
@@ -319,13 +319,13 @@ installMenu()
 # Utilities menu
 utilityMenu()
 {
-  	until [ "$menuselection" = "0" ]; do
+	until [ "$menuselection" = "0" ]; do
 		dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Utility Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections.\n\nSelect Return to return to the previous menu." 0 0 0 \
 			1 "${utilitymenuoptions[0]}" \
-      		2 "${utilitymenuoptions[1]}" \
-      		3 "${utilitymenuoptions[2]}" \
-      		4 "${utilitymenuoptions[3]}" \
-      		5 "${utilitymenuoptions[4]}" \
+			2 "${utilitymenuoptions[1]}" \
+			3 "${utilitymenuoptions[2]}" \
+			4 "${utilitymenuoptions[3]}" \
+			5 "${utilitymenuoptions[4]}" \
 			6 "${utilitymenuoptions[5]}" \
 			7 "${utilitymenuoptions[6]}" \
 			8 "${utilitymenuoptions[7]}" 2>"${INPUT}"
@@ -334,9 +334,9 @@ utilityMenu()
 
 		case $menuselection in
 			1 ) backupTRMM;;
-      		2 ) INSTALL_TYPE="restore"
+			2 ) INSTALL_TYPE="restore"
 				restoreTRMM;;
-      		3 ) getHostAndDomainInfo
+			3 ) getHostAndDomainInfo
 				renewCerts;;
 			4 ) if [ ! -f /etc/nginx/sites-available/rmm.conf ]; then
 					troubleshoot="1"
@@ -346,8 +346,8 @@ utilityMenu()
 				fi
 				importCerts;;
 			5 ) installFail2ban;;
-      		6 ) troubleShoot;;
-      		7 ) return;;
+			6 ) troubleShoot;;
+			7 ) return;;
 			8 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
@@ -361,11 +361,11 @@ utilityMenu()
 # Update menu
 updateMenu()
 {
-  	until [ "$menuselection" = "0" ]; do
+	until [ "$menuselection" = "0" ]; do
 		dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Update Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections.\n\nSelect Return to return to the previous menu." 0 0 0 \
 			1 "${updatemenuoptions[0]}" \
-      		2 "${updatemenuoptions[1]}" \
-      		3 "${updatemenuoptions[2]}" \
+			2 "${updatemenuoptions[1]}" \
+			3 "${updatemenuoptions[2]}" \
 			4 "${updatemenuoptions[3]}" \
 			5 "${updatemenuoptions[4]}" 2>"${INPUT}"
 
@@ -374,15 +374,15 @@ updateMenu()
 		case $menuselection in
 			1 ) INSTALL_TYPE="update"
 				UPDATE_TYPE="standard"
-        		updateTRMM;;
-      		2 ) INSTALL_TYPE="update"
+				updateTRMM;;
+			2 ) INSTALL_TYPE="update"
 				UPDATE_TYPE="standard"
 				backupTRMM
-        		updateTRMM;;
+				updateTRMM;;
 			3 ) INSTALL_TYPE="update"
 				UPDATE_TYPE="forced"
-        		updateTRMM;;
-      		4 ) return;;
+				updateTRMM;;
+			4 ) return;;
 			5 ) [ -f $INPUT ] && rm $INPUT
 				clear -x
 				exit;;
@@ -425,16 +425,16 @@ mainMenu()
 		until [ "$menuselection" = "0" ]; do
 			dialog --cr-wrap --clear --no-ok --no-cancel --backtitle "Tactical RMM Installation and Maintenance Utility" --title "Main Menu" --menu "Use the 'Up' and 'Down' keys to navigate, and the 'Enter' key to make your selections." 0 0 0 \
 				1 "${mainmenuoptions[0]}" \
-      			2 "${mainmenuoptions[1]}" \
-      			3 "${mainmenuoptions[2]}" \
+				2 "${mainmenuoptions[1]}" \
+				3 "${mainmenuoptions[2]}" \
 				4 "${mainmenuoptions[3]}" 2>"${INPUT}"
 
 			menuselection=$(<"${INPUT}")
 
 			case $menuselection in
 				1 ) installMenu;;
-      			2 ) updateMenu;;
-      			3 )	utilityMenu;;
+				2 ) updateMenu;;
+				3 )	utilityMenu;;
 				4 ) [ -f $INPUT ] && rm $INPUT
 					clear -x
 					exit;;

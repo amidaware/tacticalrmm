@@ -31,7 +31,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
     healthcheck:
-      test: [ "CMD", "pg_isready", "-d", "tacticalrmm" ]
+      test: [ "CMD", "pg_isready", "-U", "tactical", "-d", "tacticalrmm" ]
       interval: 30s
       timeout: 10s
       retries: 5

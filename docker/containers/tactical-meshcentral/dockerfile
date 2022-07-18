@@ -8,6 +8,8 @@ RUN apk add --no-cache bash
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
+RUN apk add --no-cache curl
+
 COPY api/tacticalrmm/tacticalrmm/settings.py /tmp/settings.py
 
 RUN npm install meshcentral@$(grep -o 'MESH_VER.*' /tmp/settings.py | cut -d'"' -f 2)

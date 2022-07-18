@@ -39,7 +39,7 @@ from tacticalrmm.constants import (
     PAAction,
     PAStatus,
 )
-from tacticalrmm.helpers import notify_error
+from tacticalrmm.helpers import date_is_in_past, notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
@@ -455,6 +455,9 @@ class Reboot(APIView):
             obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M:%S")
         except Exception:
             return notify_error("Invalid date")
+
+        if date_is_in_past(datetime_obj=obj, agent_tz=agent.timezone):
+            return notify_error("Date cannot be set in the past")
 
         task_name = "TacticalRMM_SchedReboot_" + "".join(
             random.choice(string.ascii_letters) for _ in range(10)

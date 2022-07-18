@@ -417,16 +417,20 @@ class TestAgentViews(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_reboot_later(self, nats_cmd):
+        nats_cmd.return_value = "ok"
         url = f"{base_url}/{self.agent.agent_id}/reboot/"
 
-        data = {
-            "datetime": "2025-08-29T18:41:02",
-        }
+        # ensure we don't allow dates in past
+        data = {"datetime": "2022-07-11T01:51:11"}
+        r = self.client.patch(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data, "Date cannot be set in the past")
 
-        nats_cmd.return_value = "ok"
+        # test with date in future
+        data["datetime"] = "2027-08-29T18:41:02"
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["time"], "August 29, 2025 at 06:41 PM")
+        self.assertEqual(r.data["time"], "August 29, 2027 at 06:41 PM")
         self.assertEqual(r.data["agent"], self.agent.hostname)
 
         nats_data = {
@@ -439,12 +443,12 @@ class TestAgentViews(TacticalTestCase):
                 "multiple_instances": 2,
                 "trigger": "runonce",
                 "name": r.data["task_name"],
-                "start_year": 2025,
+                "start_year": 2027,
                 "start_month": 8,
                 "start_day": 29,
                 "start_hour": 18,
                 "start_min": 41,
-                "expire_year": 2025,
+                "expire_year": 2027,
                 "expire_month": 8,
                 "expire_day": 29,
                 "expire_hour": 18,

@@ -281,34 +281,34 @@ sudo chown ${USER}:${USER} -R /meshcentral
 meshcfg="$(cat << EOF
 {
   "settings": {
-    "Cert": "${meshdomain}",
-    "MongoDb": "mongodb://127.0.0.1:27017",
-    "MongoDbName": "meshcentral",
+    "cert": "${meshdomain}",
+    "mongoDb": "mongodb://127.0.0.1:27017",
+    "mongoDbName": "meshcentral",
     "WANonly": true,
-    "Minify": 1,
-    "Port": 4430,
-    "AliasPort": 443,
-    "RedirPort": 800,
-    "AllowLoginToken": true,
-    "AllowFraming": true,
-    "_AgentPing": 60,
-    "AgentPong": 300,
-    "AllowHighQualityDesktop": true,
-    "TlsOffload": "127.0.0.1",
+    "minify": 1,
+    "port": 4430,
+    "aliasPort": 443,
+    "redirPort": 800,
+    "allowLoginToken": true,
+    "allowFraming": true,
+    "_agentPing": 60,
+    "agentPong": 300,
+    "allowHighQualityDesktop": true,
+    "tlsOffload": "127.0.0.1",
     "agentCoreDump": false,
-    "Compression": true,
-    "WsCompression": true,
-    "AgentWsCompression": true,
-    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
+    "compression": true,
+    "wsCompression": true,
+    "agentWsCompression": true,
+    "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
   },
   "domains": {
     "": {
-      "Title": "Tactical RMM",
-      "Title2": "Tactical RMM",
-      "NewAccounts": false,
-      "CertUrl": "https://${meshdomain}:443/",
-      "GeoLocation": true,
-      "CookieIpCheck": false,
+      "title": "Tactical RMM",
+      "title2": "Tactical RMM",
+      "newAccounts": false,
+      "certUrl": "https://${meshdomain}:443/",
+      "geoLocation": true,
+      "cookieIpCheck": false,
       "mstsc": true
     }
   }

@@ -200,7 +200,7 @@ def reload_nats() -> None:
             "cert_file": cert_file,
             "key_file": key_file,
         },
-        "http_port": 8222,
+        "http": localhost:8222,
         "authorization": {"users": users},
         "max_payload": 67108864,
         "port": nats_std_port,  # internal only

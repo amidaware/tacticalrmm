@@ -8,6 +8,8 @@ Group=www-data
 WorkingDirectory=/rmm/api/tacticalrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+ExecStartPre=rm -f /rmm/daphne.sock
+ExecStartPre=rm -f /rmm/daphne.sock.lock
 Restart=always
 RestartSec=3s
 

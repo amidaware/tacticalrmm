@@ -1,0 +1,19 @@
+SECRET_KEY = "{{ django_secret }}"
+DEBUG = True
+ALLOWED_HOSTS = ['{{ api }}']
+ADMIN_URL = "admin/"
+CORS_ORIGIN_WHITELIST = [
+    "https://{{ rmm }}"
+]
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'tacticalrmm',
+        'USER': '{{ db_user }}',
+        'PASSWORD': '{{ db_passwd }}',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+REDIS_HOST    = "localhost"
+ADMIN_ENABLED = True

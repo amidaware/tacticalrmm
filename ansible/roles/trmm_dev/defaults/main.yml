@@ -1,0 +1,37 @@
+---
+user: "tactical"
+python_ver: "3.10.4"
+backend_repo: "https://github.com/amidaware/tacticalrmm.git"
+frontend_repo: "https://github.com/amidaware/tacticalrmm-web.git"
+scripts_repo: "https://github.com/amidaware/community-scripts.git"
+backend_dir: "/opt/trmm"
+frontend_dir: "/opt/trmm-web"
+scripts_dir: "/opt/community-scripts"
+trmm_dir: "/opt/trmm/api/tacticalrmm/tacticalrmm"
+settings_file: "{{ trmm_dir }}/settings.py"
+local_settings_file: "{{ trmm_dir }}/local_settings.py"
+
+base_pkgs:
+  - build-essential
+  - curl
+  - wget
+  - dirmngr
+  - gnupg
+  - openssl
+  - gcc
+  - g++
+  - make
+  - ca-certificates
+  - redis
+  - git
+
+python_pkgs:
+  - zlib1g-dev
+  - libncurses5-dev
+  - libgdbm-dev
+  - libnss3-dev
+  - libssl-dev
+  - libreadline-dev
+  - libffi-dev
+  - libsqlite3-dev
+  - libbz2-dev

@@ -1,0 +1,253 @@
+---
+- name: set mouse mode for vim
+  tags: vim
+  become: yes
+  ansible.builtin.copy:
+    src: vimrc.local
+    dest: /etc/vim/vimrc.local
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: install base packages
+  tags: base
+  become: yes
+  ansible.builtin.apt:
+    pkg: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - "{{ base_pkgs }}"
+
+- name: install python prereqs
+  tags: python
+  become: yes
+  ansible.builtin.apt:
+    pkg: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ python_pkgs }}"
+
+- name: get cpu core count
+  tags: python
+  ansible.builtin.command: nproc
+  register: numprocs
+
+- name: Create python tmpdir
+  tags: python
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: python
+  register: python_tmp
+
+- name: download and extract python
+  tags: python
+  ansible.builtin.unarchive:
+    src: "https://www.python.org/ftp/python/{{ python_ver }}/Python-{{ python_ver }}.tgz"
+    dest: "{{ python_tmp.path }}"
+    remote_src: yes
+
+- name: compile python
+  tags: python
+  ansible.builtin.shell:
+    chdir: "{{ python_tmp.path }}/Python-{{ python_ver }}"
+    cmd: |
+      ./configure --enable-optimizations
+      make -j {{ numprocs.stdout }}
+
+- name: alt install python
+  tags: python
+  become: yes
+  ansible.builtin.shell:
+    chdir: "{{ python_tmp.path }}/Python-{{ python_ver }}"
+    cmd: |
+      make altinstall
+
+- name: install nginx
+  tags: nginx
+  become: yes
+  ansible.builtin.apt:
+    pkg: nginx
+    state: present
+
+- name: set nginx default conf
+  tags: nginx
+  become: yes
+  ansible.builtin.copy:
+    src: nginx-default.conf
+    dest: /etc/nginx/nginx.conf
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: ensure nginx enabled and restarted
+  tags: nginx
+  become: yes
+  ansible.builtin.service:
+    name: nginx
+    enabled: yes
+    state: restarted
+
+- name: create postgres repo
+  tags: postgres
+  become: yes
+  ansible.builtin.copy:
+    content: "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main"
+    dest: /etc/apt/sources.list.d/pgdg.list
+    owner: root
+    group: root
+    mode: "0440"
+
+- name: import postgres repo signing key
+  tags: postgres
+  become: yes
+  ansible.builtin.apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: install postgresql
+  tags: postgres
+  become: yes
+  ansible.builtin.apt:
+    pkg: postgresql-14
+    state: present
+    update_cache: yes
+
+- name: ensure postgres enabled and started
+  tags: postgres
+  become: yes
+  ansible.builtin.service:
+    name: postgresql
+    enabled: yes
+    state: started
+
+- name: setup database
+  tags: postgres
+  become: yes
+  become_user: postgres
+  ansible.builtin.shell:
+    cmd: |
+      psql -c "CREATE DATABASE tacticalrmm"
+      psql -c "CREATE USER {{ db_user }} WITH PASSWORD '{{ db_passwd }}'"
+      psql -c "ALTER ROLE {{ db_user }} SET client_encoding TO 'utf8'"
+      psql -c "ALTER ROLE {{ db_user }} SET default_transaction_isolation TO 'read committed'"
+      psql -c "ALTER ROLE {{ db_user }} SET timezone TO 'UTC'"
+      psql -c "ALTER ROLE {{ db_user }} CREATEDB"
+      psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO {{ db_user }}"
+
+- name: create repo dirs
+  become: yes
+  tags: git
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0755"
+  with_items:
+    - "{{ backend_dir }}"
+    - "{{ frontend_dir }}"
+    - "{{ scripts_dir }}"
+
+- name: git clone repos
+  tags: git
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "{{ item.dest }}"
+    version: "{{ item.version }}"
+  with_items:
+    - {
+        repo: "{{ backend_repo }}",
+        dest: "{{ backend_dir }}",
+        version: develop,
+      }
+    - {
+        repo: "{{ frontend_repo }}",
+        dest: "{{ frontend_dir }}",
+        version: develop,
+      }
+    - { repo: "{{ scripts_repo }}", dest: "{{ scripts_dir }}", version: main }
+
+- name: get nats_server_ver
+  tags: nats
+  ansible.builtin.shell: grep "^NATS_SERVER_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
+  register: nats_server_ver
+
+- name: Create nats tmpdir
+  tags: nats
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: nats
+  register: nats_tmp
+
+- name: download and extract nats
+  tags: nats
+  ansible.builtin.unarchive:
+    src: "https://github.com/nats-io/nats-server/releases/download/v{{ nats_server_ver.stdout }}/nats-server-v{{ nats_server_ver.stdout }}-linux-amd64.tar.gz"
+    dest: "{{ nats_tmp.path }}"
+    remote_src: yes
+
+- name: install nats
+  tags: nats
+  become: yes
+  ansible.builtin.copy:
+    remote_src: yes
+    src: "{{ nats_tmp.path }}/nats-server-v{{ nats_server_ver.stdout }}-linux-amd64/nats-server"
+    dest: /usr/local/bin/nats-server
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0755"
+
+- name: Create nodejs tmpdir
+  tags: nodejs
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: nodejs
+  register: nodejs_tmp
+
+- name: download nodejs setup
+  tags: nodejs
+  ansible.builtin.get_url:
+    url: https://deb.nodesource.com/setup_16.x
+    dest: "{{ nodejs_tmp.path }}/setup_node.sh"
+    mode: "0755"
+
+- name: run node setup script
+  tags: nodejs
+  become: yes
+  ansible.builtin.command:
+    cmd: "{{ nodejs_tmp.path }}/setup_node.sh"
+
+- name: install nodejs
+  tags: nodejs
+  become: yes
+  ansible.builtin.apt:
+    pkg: nodejs
+    state: present
+    update_cache: yes
+
+- name: update npm
+  tags: nodejs
+  become: yes
+  ansible.builtin.shell:
+    cmd: npm install -g npm
+
+- name: deploy django local settings
+  tags: django
+  ansible.builtin.template:
+    src: local_settings.j2
+    dest: "{{ local_settings_file }}"
+    mode: "0644"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+
+- name: remove tempdirs
+  tags: cleanup
+  become: yes
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ nats_tmp.path }}"
+    - "{{ python_tmp.path }}"
+    - "{{ nodejs_tmp.path }}"

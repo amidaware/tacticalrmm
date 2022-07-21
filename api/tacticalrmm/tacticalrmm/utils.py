@@ -211,7 +211,7 @@ def reload_nats() -> None:
 
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
     with open(conf, "w") as f:
-        json.dump(config, f)
+        json.dumps(config, f, indent=4)
 
     if not settings.DOCKER_BUILD:
         time.sleep(0.5)

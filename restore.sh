@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="39"
+SCRIPT_VERSION="40"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -121,20 +121,22 @@ sudo npm install -g npm
 
 print_green 'Restoring Nginx'
 
+wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+
+nginxrepo="$(cat << EOF
+deb https://nginx.org/packages/$osname/ $codename nginx
+deb-src https://nginx.org/packages/$osname/ $codename nginx
+EOF
+)"
+echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list > /dev/null
+
+sudo apt update
 sudo apt install -y nginx
 sudo systemctl stop nginx
 sudo rm -rf /etc/nginx
 sudo mkdir /etc/nginx
 sudo tar -xzf $tmp_dir/nginx/etc-nginx.tar.gz -C /etc/nginx
-nginxdefaultconf='/etc/nginx/nginx.conf'
-sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' $nginxdefaultconf
-CHECK_NGINX_NOLIMIT=$(grep "worker_rlimit_nofile 1000000" $nginxdefaultconf)
-if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
-sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
-printf >&2 "${GREEN}Increasing nginx open file limit${NC}\n"
-sudo sed -i '1s/^/worker_rlimit_nofile 1000000;\
-/' $nginxdefaultconf
-fi
+
 rmmdomain=$(grep server_name /etc/nginx/sites-available/rmm.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
 frontenddomain=$(grep server_name /etc/nginx/sites-available/frontend.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
 meshdomain=$(grep server_name /etc/nginx/sites-available/meshcentral.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')

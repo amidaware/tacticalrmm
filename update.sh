@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="137"
+SCRIPT_VERSION="138"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -120,13 +120,6 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
   ' $rmmconf)" | sudo tee $rmmconf > /dev/null
 fi
 
-if ! sudo nginx -t > /dev/null 2>&1; then
-  sudo nginx -t
-  echo -ne "\n"
-  echo -ne "${RED}You have syntax errors in your nginx configs. See errors above. Please fix them and re-run this script.${NC}\n"
-  echo -ne "${RED}Aborting...${NC}\n"
-  exit 1
-fi
 
 for i in nginx nats-api nats rmm daphne celery celerybeat
 do
@@ -165,11 +158,26 @@ EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
 
+
+if [ ! -f /etc/apt/sources.list.d/nginx.list ]; then
+osname=$(lsb_release -si); osname=${osname^}
+osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
+codename=$(lsb_release -sc)
+nginxrepo="$(cat << EOF
+deb https://nginx.org/packages/$osname/ $codename nginx
+deb-src https://nginx.org/packages/$osname/ $codename nginx
+EOF
+)"
+echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list > /dev/null
+sudo apt update
+sudo apt install -y nginx
+fi
+
 nginxdefaultconf='/etc/nginx/nginx.conf'
-CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" $nginxdefaultconf)
+CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 4096" $nginxdefaultconf)
 if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
-  printf >&2 "${GREEN}Changing nginx worker connections to 2048${NC}\n"
-  sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' $nginxdefaultconf
+  printf >&2 "${GREEN}Changing nginx worker connections to 4096${NC}\n"
+  sudo sed -i 's/worker_connections.*/worker_connections 4096;/g' $nginxdefaultconf
 fi
 
 CHECK_NGINX_NOLIMIT=$(grep "worker_rlimit_nofile 1000000" $nginxdefaultconf)
@@ -180,7 +188,22 @@ sudo sed -i '1s/^/worker_rlimit_nofile 1000000;\
 /' $nginxdefaultconf
 fi
 
+backend_conf='/etc/nginx/sites-available/rmm.conf'
+CHECK_NGINX_REUSEPORT=$(grep reuseport $backend_conf)
+if ! [[ $CHECK_NGINX_REUSEPORT ]]; then
+printf >&2 "${GREEN}Setting nginx reuseport${NC}\n"
+sudo sed -i 's/listen 443 ssl;/listen 443 ssl reuseport;/g' $backend_conf
+fi
+
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' $nginxdefaultconf
+
+if ! sudo nginx -t > /dev/null 2>&1; then
+  sudo nginx -t
+  echo -ne "\n"
+  echo -ne "${RED}You have syntax errors in your nginx configs. See errors above. Please fix them and re-run this script.${NC}\n"
+  echo -ne "${RED}Aborting...${NC}\n"
+  exit 1
+fi
 
 HAS_PY310=$(python3.10 --version | grep ${PYTHON_VER})
 if ! [[ $HAS_PY310 ]]; then

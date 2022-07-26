@@ -424,6 +424,7 @@ def status(request):
 
     ret = {
         "version": settings.TRMM_VERSION,
+        "latest_agent_version": settings.LATEST_AGENT_VER,
         "agent_count": Agent.objects.count(),
         "client_count": Client.objects.count(),
         "site_count": Site.objects.count(),

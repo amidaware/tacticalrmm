@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="65"
+SCRIPT_VERSION="66"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -172,14 +172,55 @@ sudo chmod 775 -R /etc/letsencrypt
 
 print_green 'Installing Nginx'
 
+wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+
+nginxrepo="$(cat << EOF
+deb https://nginx.org/packages/$osname/ $codename nginx
+deb-src https://nginx.org/packages/$osname/ $codename nginx
+EOF
+)"
+echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list > /dev/null
+
+sudo apt update
 sudo apt install -y nginx
 sudo systemctl stop nginx
+
 nginxdefaultconf='/etc/nginx/nginx.conf'
-sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
-sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' $nginxdefaultconf
-sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' $nginxdefaultconf
-sudo sed -i '1s/^/worker_rlimit_nofile 1000000;\
-/' $nginxdefaultconf
+
+nginxconf="$(cat << EOF
+worker_rlimit_nofile 1000000;
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+        worker_connections 4096;
+}
+
+http {
+        sendfile on;
+        tcp_nopush on;
+        types_hash_max_size 2048;
+        server_names_hash_bucket_size 64;
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+        gzip on;
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+}
+EOF
+)"
+echo "${nginxconf}" | sudo tee $nginxdefaultconf > /dev/null
+
+for i in sites-available sites-enabled
+do
+sudo mkdir -p /etc/nginx/$i
+done
 
 print_green 'Installing NodeJS'
 
@@ -519,7 +560,7 @@ server {
 }
 
 server {
-    listen 443 ssl;
+    listen 443 ssl reuseport;
     listen [::]:443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;

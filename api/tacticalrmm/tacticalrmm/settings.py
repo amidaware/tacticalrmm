@@ -29,7 +29,7 @@ APP_VER = "0.0.166"
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.1.1"
 
-MESH_VER = "1.0.43"
+MESH_VER = "1.0.60"
 
 NATS_SERVER_VER = "2.8.4"
 

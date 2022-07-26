@@ -194,32 +194,33 @@ install_nginx() {
   sudo systemctl stop nginx
 
   ## todo: 2022-07-26: redo:
-  NGINX_CONF_DATA="$(cat << EOF
-  worker_rlimit_nofile 1000000;
-  user ${WWW_USER};
-  worker_processes auto;
-  pid ${NGINX_PID};
-  include ${NGINX_PATH}/modules-enabled/*.conf;
+  NGINX_CONF_DATA="$(
+  cat << EOF
+worker_rlimit_nofile 1000000;
+user ${WWW_USER};
+worker_processes auto;
+pid ${NGINX_PID};
+include ${NGINX_PATH}/modules-enabled/*.conf;
 
-  events {
-          worker_connections 4096;
-  }
+events {
+    worker_connections 4096;
+}
 
-  http {
-          sendfile on;
-          tcp_nopush on;
-          types_hash_max_size 2048;
-          server_names_hash_bucket_size 64;
-          include ${NGINX_PATH}/mime.types;
-          default_type application/octet-stream;
-          ssl_protocols TLSv1.2 TLSv1.3;
-          ssl_prefer_server_ciphers on;
-          access_log /var/log/nginx/access.log;
-          error_log /var/log/nginx/error.log;
-          gzip on;
-          include ${NGINX_PATH}/conf.d/*.conf;
-          include ${NGINX_PATH}/sites-enabled/*;
-  }
+http {
+    sendfile on;
+    tcp_nopush on;
+    types_hash_max_size 2048;
+    server_names_hash_bucket_size 64;
+    include ${NGINX_PATH}/mime.types;
+    default_type application/octet-stream;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+    gzip on;
+    include ${NGINX_PATH}/conf.d/*.conf;
+    include ${NGINX_PATH}/sites-enabled/*;
+}
 EOF
   )"
   echo "${NGINX_CONF_DATA}" | sudo tee "${NGINX_CONF}" > /dev/null

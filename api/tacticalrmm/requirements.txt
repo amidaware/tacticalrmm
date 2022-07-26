@@ -3,7 +3,7 @@ celery==5.2.7
 certifi==2022.6.15
 cffi==1.15.1
 channels==3.0.5
-channels_redis==3.4.0
+channels_redis==3.4.1
 chardet==4.0.0
 cryptography==37.0.4
 daphne==3.0.2
@@ -28,12 +28,12 @@ hiredis==2.0.0
 requests==2.28.1
 six==1.16.0
 sqlparse==0.4.2
-twilio==7.10.0
-urllib3==1.26.10
+twilio==7.12.0
+urllib3==1.26.11
 uWSGI==2.0.20
 validators==0.20.0
 vine==5.0.0
 websockets==10.3
-zipp==3.8.0
+zipp==3.8.1
 drf_spectacular==0.22.1
 meshctrl==0.1.15

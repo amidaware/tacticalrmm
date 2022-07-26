@@ -23,7 +23,7 @@ printf "%0.s*" {1..80}
 printf "\n"
 printf "Installation started at %s\n" "${SCRIPT_EXEC_TS}"
 
-readonly SCRIPT_VERSION="64"
+readonly SCRIPT_VERSION="66"
 readonly SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/${TRMM_SCRIPT_BRANCH}/install.sh"
 readonly TRMM_SERVER_REPO='https://github.com/amidaware/tacticalrmm.git'
 readonly TRMM_FRONTEND_REPO='https://github.com/amidaware/tacticalrmm-web'
@@ -52,6 +52,7 @@ MESH_ROOT_PATH="/meshcentral"
 MESH_CONF_FILE="${MESH_ROOT_PATH}/meshcentral-data/config.json"
 NGINX_PATH="/etc/nginx"
 NGINX_CONF="${NGINX_PATH}/nginx.conf"
+NGINX_PID="/run/nginx.pid"
 LETS_ENCRYPT_PATH="/etc/letsencrypt"
 ETC_CONFD="/etc/conf.d"
 CELERY_CONF_FILE="${ETC_CONFD}/celery.conf"
@@ -184,10 +185,48 @@ update_script() {
 install_nginx() {
   print_header 'Installing Nginx'
 
+  wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+
+  printf "deb https://nginx.org/packages/$OS_NAME/ $OS_CODENAME nginx\ndeb-src https://nginx.org/packages/$OS_NAME/ $OS_CODENAME nginx\n" | sudo tee /etc/apt/sources.list.d/nginx.list
+
+  sudo apt-get update
   sudo apt-get install -y nginx
   sudo systemctl stop nginx
-  sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' "${NGINX_CONF}"
-  sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' "${NGINX_CONF}"
+
+  ## todo: 2022-07-26: redo:
+  NGINX_CONF_DATA="$(cat << EOF
+  worker_rlimit_nofile 1000000;
+  user ${WWW_USER};
+  worker_processes auto;
+  pid ${NGINX_PID};
+  include ${NGINX_PATH}/modules-enabled/*.conf;
+
+  events {
+          worker_connections 4096;
+  }
+
+  http {
+          sendfile on;
+          tcp_nopush on;
+          types_hash_max_size 2048;
+          server_names_hash_bucket_size 64;
+          include ${NGINX_PATH}/mime.types;
+          default_type application/octet-stream;
+          ssl_protocols TLSv1.2 TLSv1.3;
+          ssl_prefer_server_ciphers on;
+          access_log /var/log/nginx/access.log;
+          error_log /var/log/nginx/error.log;
+          gzip on;
+          include ${NGINX_PATH}/conf.d/*.conf;
+          include ${NGINX_PATH}/sites-enabled/*;
+  }
+EOF
+  )"
+  echo "${NGINX_CONF_DATA}" | sudo tee "${NGINX_CONF}" > /dev/null
+
+  for i in sites-available sites-enabled; do
+    sudo mkdir -p "${NGINX_PATH}/$i"
+  done
 
   return
 }
@@ -875,7 +914,7 @@ server {
 }
 
 server {
-    listen 443 ssl;
+    listen 443 ssl reuseport;
     listen [::]:443 ssl;
     server_name ${USER_BACKEND_DOMAIN};
     client_max_body_size 300M;

@@ -179,6 +179,40 @@ update_script() {
 }
 
 ################################################################################
+## Install Let's Encrypt / ACME
+################################################################################
+
+install_acme() {
+  print_header "Installing Let's Encrypt"
+
+  sudo apt-get install -y software-properties-common
+  sudo apt-get update
+  sudo apt-get install -y certbot openssl
+
+  print_header 'Preparing certificate request'
+
+  if [ "${TRMM_SCRIPT_ACME_SERVER}" = "staging" ]; then
+    ACME_ADDITIONAL_PARAMS="${ACME_ADDITIONAL_PARAMS} --test-cert"
+  fi
+
+  CERTBOT_CMD="sudo certbot certonly --manual -d \"*.${USER_ROOT_DOMAIN}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${USER_EMAIL_ADDRESS}\" --no-eff-email ${ACME_ADDITIONAL_PARAMS}"
+
+  print_debug "Certbot command: ${CERTBOT_CMD}"
+
+  eval "${CERTBOT_CMD}"
+
+  while [[ $? -ne 0 ]]; do
+    eval "${CERTBOT_CMD}"
+  done
+
+  readonly CERT_PRIV_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${USER_ROOT_DOMAIN}/privkey.pem"
+  readonly CERT_PUB_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${USER_ROOT_DOMAIN}/fullchain.pem"
+
+  sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${LETS_ENCRYPT_PATH}"
+  sudo chmod 775 -R "${LETS_ENCRYPT_PATH}"
+}
+
+################################################################################
 ## Install nginx
 ################################################################################
 
@@ -385,6 +419,64 @@ install_nats() {
 }
 
 ################################################################################
+## Install MeshCentral
+################################################################################
+
+install_mesh() {
+  print_header 'Installing MeshCentral'
+
+  MESH_VER=$(grep "^MESH_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
+
+  sudo mkdir -p "${MESH_ROOT_PATH}/meshcentral-data"
+  sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
+  cd "${MESH_ROOT_PATH}"
+  npm install "meshcentral@${MESH_VER}"
+  sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
+
+  ## todo: 2022-06-17: redo:
+  MESH_CONF_DATA="$(
+    cat <<EOF
+{
+  "settings": {
+    "Cert": "${USER_MESH_DOMAIN}",
+    "MongoDb": "mongodb://127.0.0.1:27017",
+    "MongoDbName": "meshcentral",
+    "WANonly": true,
+    "Minify": 1,
+    "Port": 4430,
+    "AliasPort": 443,
+    "RedirPort": 800,
+    "AllowLoginToken": true,
+    "AllowFraming": true,
+    "_AgentPing": 60,
+    "AgentPong": 300,
+    "AllowHighQualityDesktop": true,
+    "TlsOffload": "127.0.0.1",
+    "agentCoreDump": false,
+    "Compression": true,
+    "WsCompression": true,
+    "AgentWsCompression": true,
+    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
+  },
+  "domains": {
+    "": {
+      "Title": "Tactical RMM",
+      "Title2": "Tactical RMM",
+      "NewAccounts": false,
+      "CertUrl": "https://${USER_MESH_DOMAIN}:443/",
+      "GeoLocation": true,
+      "CookieIpCheck": false,
+      "mstsc": true
+    }
+  }
+}
+EOF
+  )"
+
+  echo "${MESH_CONF_DATA}" >"${MESH_CONF_FILE}"
+}
+
+################################################################################
 ## Clear screen (or why not just use 'clear'?)
 ################################################################################
 
@@ -569,35 +661,7 @@ fi
 
 ################################################################################
 
-print_header "Installing Let's Encrypt"
-
-sudo apt-get install -y software-properties-common
-sudo apt-get update
-sudo apt-get install -y certbot openssl
-
-print_header 'Preparing certificate request'
-
-if [ "${TRMM_SCRIPT_ACME_SERVER}" = "staging" ]; then
-  ACME_ADDITIONAL_PARAMS="${ACME_ADDITIONAL_PARAMS} --test-cert"
-fi
-
-CERTBOT_CMD="sudo certbot certonly --manual -d \"*.${USER_ROOT_DOMAIN}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${USER_EMAIL_ADDRESS}\" --no-eff-email ${ACME_ADDITIONAL_PARAMS}"
-
-print_debug "Certbot command: ${CERTBOT_CMD}"
-
-eval "${CERTBOT_CMD}"
-
-while [[ $? -ne 0 ]]; do
-  eval "${CERTBOT_CMD}"
-done
-
-readonly CERT_PRIV_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${USER_ROOT_DOMAIN}/privkey.pem"
-readonly CERT_PUB_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${USER_ROOT_DOMAIN}/fullchain.pem"
-
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${LETS_ENCRYPT_PATH}"
-sudo chmod 775 -R "${LETS_ENCRYPT_PATH}"
-
-################################################################################
+install_acme
 
 install_nginx
 
@@ -644,58 +708,9 @@ git checkout main
 
 install_nats
 
+install_mesh
+
 ################################################################################
-
-print_header 'Installing MeshCentral'
-
-MESH_VER=$(grep "^MESH_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
-
-sudo mkdir -p "${MESH_ROOT_PATH}/meshcentral-data"
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
-cd "${MESH_ROOT_PATH}"
-npm install "meshcentral@${MESH_VER}"
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
-
-## todo: 2022-06-17: redo:
-MESH_CONF_DATA="$(
-  cat <<EOF
-{
-  "settings": {
-    "Cert": "${USER_MESH_DOMAIN}",
-    "MongoDb": "mongodb://127.0.0.1:27017",
-    "MongoDbName": "meshcentral",
-    "WANonly": true,
-    "Minify": 1,
-    "Port": 4430,
-    "AliasPort": 443,
-    "RedirPort": 800,
-    "AllowLoginToken": true,
-    "AllowFraming": true,
-    "_AgentPing": 60,
-    "AgentPong": 300,
-    "AllowHighQualityDesktop": true,
-    "TlsOffload": "127.0.0.1",
-    "agentCoreDump": false,
-    "Compression": true,
-    "WsCompression": true,
-    "AgentWsCompression": true,
-    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
-  },
-  "domains": {
-    "": {
-      "Title": "Tactical RMM",
-      "Title2": "Tactical RMM",
-      "NewAccounts": false,
-      "CertUrl": "https://${USER_MESH_DOMAIN}:443/",
-      "GeoLocation": true,
-      "CookieIpCheck": false,
-      "mstsc": true
-    }
-  }
-}
-EOF
-)"
-echo "${MESH_CONF_DATA}" >"${MESH_CONF_FILE}"
 
 ## todo: 2022-06-17: redo:
 TRMM_LOCAL_CONF_DATA="$(

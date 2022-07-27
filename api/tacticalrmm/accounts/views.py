@@ -93,7 +93,7 @@ class LoginView(KnoxLoginView):
             login(request, user)
 
             # save ip information
-            client_ip, is_routable = get_client_ip(request)
+            client_ip, _ = get_client_ip(request)
             user.last_login_ip = client_ip
             user.save()
 

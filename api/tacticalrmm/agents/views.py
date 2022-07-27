@@ -35,11 +35,12 @@ from tacticalrmm.constants import (
     AgentMonType,
     AgentPlat,
     CustomFieldModel,
+    DebugLogType,
     EvtLogNames,
     PAAction,
     PAStatus,
 )
-from tacticalrmm.helpers import notify_error
+from tacticalrmm.helpers import date_is_in_past, notify_error
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
@@ -225,8 +226,14 @@ class GetUpdateDeleteAgent(APIView):
         mesh_id = agent.mesh_node_id
         agent.delete()
         reload_nats()
-        uri = get_mesh_ws_url()
-        asyncio.run(remove_mesh_agent(uri, mesh_id))
+        try:
+            uri = get_mesh_ws_url()
+            asyncio.run(remove_mesh_agent(uri, mesh_id))
+        except Exception as e:
+            DebugLog.error(
+                message=f"Unable to remove agent {name} from meshcentral database: {str(e)}",
+                log_type=DebugLogType.AGENT_ISSUES,
+            )
         return Response(f"{name} will now be uninstalled.")
 
 
@@ -455,6 +462,9 @@ class Reboot(APIView):
             obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M:%S")
         except Exception:
             return notify_error("Invalid date")
+
+        if date_is_in_past(datetime_obj=obj, agent_tz=agent.timezone):
+            return notify_error("Date cannot be set in the past")
 
         task_name = "TacticalRMM_SchedReboot_" + "".join(
             random.choice(string.ascii_letters) for _ in range(10)

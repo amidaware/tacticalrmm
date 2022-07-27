@@ -169,6 +169,7 @@ deb-src https://nginx.org/packages/$osname/ $codename nginx
 EOF
 )"
 echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list > /dev/null
+wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
 sudo apt update
 sudo apt install -y nginx
 fi

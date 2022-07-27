@@ -2,7 +2,7 @@
 
 set -e
 
-: "${WORKER_CONNECTIONS:=2048}"
+: "${WORKER_CONNECTIONS:=4096}"
 : "${APP_PORT:=8080}"
 : "${API_PORT:=8080}"
 : "${NGINX_RESOLVER:=127.0.0.11}"
@@ -116,7 +116,7 @@ server  {
 
     client_max_body_size 300M;
 
-    listen 4443 ssl;
+    listen 4443 ssl reuseport;
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
 

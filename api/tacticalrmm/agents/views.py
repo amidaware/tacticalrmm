@@ -35,6 +35,7 @@ from tacticalrmm.constants import (
     AgentMonType,
     AgentPlat,
     CustomFieldModel,
+    DebugLogType,
     EvtLogNames,
     PAAction,
     PAStatus,
@@ -225,8 +226,14 @@ class GetUpdateDeleteAgent(APIView):
         mesh_id = agent.mesh_node_id
         agent.delete()
         reload_nats()
-        uri = get_mesh_ws_url()
-        asyncio.run(remove_mesh_agent(uri, mesh_id))
+        try:
+            uri = get_mesh_ws_url()
+            asyncio.run(remove_mesh_agent(uri, mesh_id))
+        except Exception as e:
+            DebugLog.error(
+                message=f"Unable to remove agent {name} from meshcentral database: {str(e)}",
+                log_type=DebugLogType.AGENT_ISSUES,
+            )
         return Response(f"{name} will now be uninstalled.")
 
 

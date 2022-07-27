@@ -17,7 +17,7 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.14.3"
+TRMM_VERSION = "0.14.4-dev"
 
 # https://github.com/amidaware/tacticalrmm-web
 WEB_VERSION = "0.100.6"

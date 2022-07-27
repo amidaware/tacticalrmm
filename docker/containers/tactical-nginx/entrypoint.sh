@@ -2,7 +2,7 @@
 
 set -e
 
-: "${WORKER_CONNECTIONS:=2048}"
+: "${WORKER_CONNECTIONS:=4096}"
 : "${APP_PORT:=8080}"
 : "${API_PORT:=8080}"
 : "${NGINX_RESOLVER:=127.0.0.11}"
@@ -35,8 +35,11 @@ nginxdefaultconf='/etc/nginx/nginx.conf'
 # increase default nginx worker connections
 /bin/bash -c "sed -i 's/worker_connections.*/worker_connections ${WORKER_CONNECTIONS};/g' $nginxdefaultconf"
 
+CHECK_NGINX_NOLIMIT=$(grep "worker_rlimit_nofile" $nginxdefaultconf)
+if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
 sed -i '1s/^/worker_rlimit_nofile 1000000;\
 /' $nginxdefaultconf
+fi
 
 if [[ $DEV -eq 1 ]]; then
     API_NGINX="
@@ -116,7 +119,7 @@ server  {
 
     client_max_body_size 300M;
 
-    listen 4443 ssl;
+    listen 4443 ssl reuseport;
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
 

@@ -425,6 +425,8 @@ install_nats() {
 install_mesh() {
   print_header 'Installing MeshCentral'
 
+  local MESH_VER
+
   MESH_VER=$(grep "^MESH_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
 
   sudo mkdir -p "${MESH_ROOT_PATH}/meshcentral-data"
@@ -433,9 +435,7 @@ install_mesh() {
   npm install "meshcentral@${MESH_VER}"
   sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
 
-  ## todo: 2022-06-17: redo:
-  MESH_CONF_DATA="$(
-    cat <<EOF
+  cat <<EOF >"${MESH_CONF_FILE}"
 {
   "settings": {
     "Cert": "${USER_MESH_DOMAIN}",
@@ -471,9 +471,8 @@ install_mesh() {
   }
 }
 EOF
-  )"
 
-  echo "${MESH_CONF_DATA}" >"${MESH_CONF_FILE}"
+  return
 }
 
 ################################################################################
@@ -484,6 +483,7 @@ install_frontend() {
   print_header 'Installing the frontend'
 
   local webtar="trmm-web-v${WEB_VERSION}.tar.gz"
+
   wget -q "${TRMM_FRONTEND_REPO}/releases/download/v${WEB_VERSION}/${webtar}" -O "/tmp/${webtar}"
   sudo mkdir -p "${TRMM_WEB_PATH}"
   sudo tar -xzf "/tmp/${webtar}" -C "${TRMM_WEB_PATH}"
@@ -545,7 +545,7 @@ EOF
 install_backend() {
   print_header 'Installing the backend'
 
-  local SETUPTOOLS_VER WHEEL_VER
+  local SETUPTOOLS_VER WHEEL_VER RANDBASE
 
   SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
   WHEEL_VER=$(grep "^WHEEL_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
@@ -1249,8 +1249,8 @@ sudo systemctl restart meshcentral
 
 sleep 3
 
-# The first time we start meshcentral, it will need some time to generate certs and install plugins.
-# This will take anywhere from a few seconds to a few minutes depending on the server's hardware
+# The first time we start MeshCentral, it will need some time to generate certs and install plugins.
+# This will take anywhere from a few seconds to a few minutes depending on the server's hardware.
 # We will know it's ready once the last line of the systemd service stdout is 'MeshCentral HTTP server running on port.....'
 while ! [[ $CHECK_MESH_READY ]]; do
   CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
@@ -1303,7 +1303,7 @@ sleep 1
 sudo systemctl enable nats-api.service
 sudo systemctl start nats-api.service
 
-## disable django admin
+## Disable the Django admin panel
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' "${TRMM_SETTINGS_FILE}"
 
 print_header 'Restarting services'
@@ -1313,12 +1313,12 @@ for i in rmm.service daphne.service celery.service celerybeat.service; do
   sudo systemctl start ${i}
 done
 
-## 2022-07-08: Redirecting passwords to >&4 so they don't appear in the logfile.
+## 2022-07-08: Redirecting passwords and sensitive URLs to >&4 so they don't appear in the logfile.
 printf "${YELLOW}%0.s*${NC}" {1..80}
 printf "\n\n"
 printf "${YELLOW}Installation complete!${NC}\n\n"
-printf "${YELLOW}Access your rmm at: ${GREEN}https://${USER_FRONTEND_DOMAIN}${NC}\n\n"
-printf >&4 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${USER_BACKEND_DOMAIN}/${MESH_ADMIN_URL}/${NC}\n\n"
+printf "${YELLOW}Access your TRMM installation at: ${GREEN}https://${USER_FRONTEND_DOMAIN}${NC}\n\n"
+printf >&4 "${YELLOW}Django admin panel URL (disabled by default): ${GREEN}https://${USER_BACKEND_DOMAIN}/${MESH_ADMIN_URL}/${NC}\n\n"
 printf "${YELLOW}MeshCentral username: ${GREEN}${MESH_USERNAME}${NC}\n"
 printf >&4 "${YELLOW}MeshCentral password: ${GREEN}${MESH_PASSWORD}${NC}\n\n"
 

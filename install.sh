@@ -477,6 +477,68 @@ EOF
 }
 
 ################################################################################
+## Install Frontend
+################################################################################
+
+install_frontend() {
+  print_header 'Installing the frontend'
+
+  local webtar="trmm-web-v${WEB_VERSION}.tar.gz"
+  wget -q "${TRMM_FRONTEND_REPO}/releases/download/v${WEB_VERSION}/${webtar}" -O "/tmp/${webtar}"
+  sudo mkdir -p "${TRMM_WEB_PATH}"
+  sudo tar -xzf "/tmp/${webtar}" -C "${TRMM_WEB_PATH}"
+  echo "window._env_ = {PROD_URL: \"https://${USER_BACKEND_DOMAIN}\"}" | sudo tee "${TRMM_WEB_PATH}/dist/env-config.js" >/dev/null
+  sudo chown "${WWW_USER}:${WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
+  rm -f "/tmp/${webtar}"
+
+  NGINX_FRONTEND_CONF_DATA=$(
+    cat <<EOF
+server {
+    server_name ${USER_FRONTEND_DOMAIN};
+    charset utf-8;
+    location / {
+        root "${TRMM_WEB_PATH}/dist";
+        try_files \$uri \$uri/ /index.html;
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+        add_header Pragma "no-cache";
+    }
+    error_log  /var/log/nginx/frontend-error.log;
+    access_log /var/log/nginx/frontend-access.log;
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    ssl_certificate ${CERT_PUB_KEY};
+    ssl_certificate_key ${CERT_PRIV_KEY};
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
+}
+
+server {
+    if (\$host = ${USER_FRONTEND_DOMAIN}) {
+        return 301 https://\$host\$request_uri;
+    }
+
+    listen 80;
+    listen [::]:80;
+    server_name ${USER_FRONTEND_DOMAIN};
+    return 404;
+}
+EOF
+  )
+  echo "${NGINX_FRONTEND_CONF_DATA}" | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
+
+  sudo ln -s "${NGINX_PATH}/sites-available/frontend.conf" "${NGINX_PATH}/sites-enabled/frontend.conf"
+
+  return
+}
+
+################################################################################
 ## Clear screen (or why not just use 'clear'?)
 ################################################################################
 
@@ -747,7 +809,7 @@ EOF
 echo "${TRMM_LOCAL_CONF_DATA}" >"${TRMM_LOCAL_CONF}"
 
 ## todo: 2022-06-17: verify:
-sudo cp "${TRMM_ROOT_PATH}/SYSTEMD_NATS_API_DATA/bin/nats-api" /usr/local/bin
+sudo cp "${TRMM_ROOT_PATH}/natsapi/bin/nats-api" /usr/local/bin
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
@@ -1152,59 +1214,7 @@ fi
 
 ################################################################################
 
-print_header 'Installing the frontend'
-
-webtar="trmm-web-v${WEB_VERSION}.tar.gz"
-wget -q "${TRMM_FRONTEND_REPO}/releases/download/v${WEB_VERSION}/${webtar}" -O "/tmp/${webtar}"
-sudo mkdir -p "${TRMM_WEB_PATH}"
-sudo tar -xzf /tmp/${webtar} -C ${TRMM_WEB_PATH}
-echo "window._env_ = {PROD_URL: \"https://${USER_BACKEND_DOMAIN}\"}" | sudo tee "${TRMM_WEB_PATH}/dist/env-config.js" >/dev/null
-sudo chown "${WWW_USER}:${WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
-rm -f "/tmp/${webtar}"
-
-NGINX_FRONTEND_CONF_DATA="$(
-  cat <<EOF
-server {
-    server_name ${USER_FRONTEND_DOMAIN};
-    charset utf-8;
-    location / {
-        root "${TRMM_WEB_PATH}/dist";
-        try_files \$uri \$uri/ /index.html;
-        add_header Cache-Control "no-store, no-cache, must-revalidate";
-        add_header Pragma "no-cache";
-    }
-    error_log  /var/log/nginx/frontend-error.log;
-    access_log /var/log/nginx/frontend-access.log;
-
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    ssl_certificate ${CERT_PUB_KEY};
-    ssl_certificate_key ${CERT_PRIV_KEY};
-    
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
-    ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    add_header X-Content-Type-Options nosniff;
-}
-
-server {
-    if (\$host = ${USER_FRONTEND_DOMAIN}) {
-        return 301 https://\$host\$request_uri;
-    }
-
-    listen 80;
-    listen [::]:80;
-    server_name ${USER_FRONTEND_DOMAIN};
-    return 404;
-}
-EOF
-)"
-echo "${NGINX_FRONTEND_CONF_DATA}" | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
-
-sudo ln -s "${NGINX_PATH}/sites-available/frontend.conf" "${NGINX_PATH}/sites-enabled/frontend.conf"
+install_frontend
 
 ################################################################################
 

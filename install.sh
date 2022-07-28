@@ -539,6 +539,54 @@ EOF
 }
 
 ################################################################################
+## Install Backend
+################################################################################
+
+install_backend() {
+  print_header 'Installing the backend'
+
+  local SETUPTOOLS_VER WHEEL_VER
+
+  SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
+  WHEEL_VER=$(grep "^WHEEL_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
+
+  cd "${TRMM_ROOT_PATH}/api"
+  ${PYTHON_BIN} -m venv env
+  source "${TRMM_ROOT_PATH}/api/env/bin/activate"
+  cd "${TRMM_ROOT_PATH}/api/tacticalrmm"
+  pip install --no-cache-dir --upgrade pip
+  pip install --no-cache-dir setuptools=="${SETUPTOOLS_VER}" wheel=="${WHEEL_VER}"
+  pip install --no-cache-dir -r "${TRMM_ROOT_PATH}/api/tacticalrmm/requirements.txt"
+  python manage.py migrate
+  python manage.py collectstatic --no-input
+  python manage.py create_natsapi_conf
+  python manage.py load_chocos
+  python manage.py load_community_scripts
+  WEB_VERSION=$(python manage.py get_config webversion)
+
+  printf "${YELLOW}%0.s*${NC}" {1..80}
+  printf "\n"
+  printf "${YELLOW}Please create your login for the RMM website and Django admin panel${NC}\n"
+  printf "${YELLOW}%0.s*${NC}" {1..80}
+  printf "\n"
+
+  echo -ne "Username: "
+  read USER_DJANGO_USERNAME
+  python manage.py createsuperuser --username ${USER_DJANGO_USERNAME} --email ${USER_EMAIL_ADDRESS}
+  python manage.py create_installer_user
+  RANDBASE=$(python manage.py generate_totp)
+
+  cls
+
+  python manage.py generate_barcode ${RANDBASE} ${USER_DJANGO_USERNAME} ${USER_FRONTEND_DOMAIN}
+  deactivate
+
+  read -n 1 -s -r -p "Press any key to continue..."
+
+  return
+}
+
+################################################################################
 ## Clear screen (or why not just use 'clear'?)
 ################################################################################
 
@@ -813,40 +861,7 @@ sudo cp "${TRMM_ROOT_PATH}/natsapi/bin/nats-api" /usr/local/bin
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
-print_header 'Installing the backend'
-
-SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$TRMM_SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-WHEEL_VER=$(grep "^WHEEL_VER" "$TRMM_SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-
-cd "${TRMM_ROOT_PATH}/api"
-${PYTHON_BIN} -m venv env
-source "${TRMM_ROOT_PATH}/api/env/bin/activate"
-cd "${TRMM_ROOT_PATH}/api/tacticalrmm"
-pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools=="${SETUPTOOLS_VER}" wheel=="${WHEEL_VER}"
-pip install --no-cache-dir -r "${TRMM_ROOT_PATH}/api/tacticalrmm/requirements.txt"
-python manage.py migrate
-python manage.py collectstatic --no-input
-python manage.py create_natsapi_conf
-python manage.py load_chocos
-python manage.py load_community_scripts
-WEB_VERSION=$(python manage.py get_config webversion)
-
-printf "${YELLOW}%0.s*${NC}" {1..80}
-printf "\n"
-printf "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
-printf "${YELLOW}%0.s*${NC}" {1..80}
-printf "\n"
-
-echo -ne "Username: "
-read djangousername
-python manage.py createsuperuser --username ${djangousername} --email ${USER_EMAIL_ADDRESS}
-python manage.py create_installer_user
-RANDBASE=$(python manage.py generate_totp)
-cls
-python manage.py generate_barcode ${RANDBASE} ${djangousername} ${USER_FRONTEND_DOMAIN}
-deactivate
-read -n 1 -s -r -p "Press any key to continue..."
+install_backend
 
 ## todo: 2022-06-17: redo:
 UWSGINI_DATA="$(

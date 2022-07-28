@@ -747,7 +747,7 @@ EOF
 echo "${TRMM_LOCAL_CONF_DATA}" >"${TRMM_LOCAL_CONF}"
 
 ## todo: 2022-06-17: verify:
-sudo cp "${TRMM_ROOT_PATH}/natsapi/bin/nats-api" /usr/local/bin
+sudo cp "${TRMM_ROOT_PATH}/SYSTEMD_NATS_API_DATA/bin/nats-api" /usr/local/bin
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
@@ -787,7 +787,7 @@ deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
 ## todo: 2022-06-17: redo:
-uwsgini="$(
+UWSGINI_DATA="$(
   cat <<EOF
 [uwsgi]
 chdir = ${TRMM_ROOT_PATH}/api/tacticalrmm
@@ -815,10 +815,10 @@ cheaper-busyness-max = 10
 # cheaper-busyness-verbose = true # uncomment when debugging
 EOF
 )"
-echo "${uwsgini}" >${TRMM_ROOT_PATH}/api/tacticalrmm/app.ini
+echo "${UWSGINI_DATA}" >${TRMM_ROOT_PATH}/api/tacticalrmm/app.ini
 
 ## todo: 2022-06-17: redo:
-rmmservice="$(
+SYSTEMD_RMM_DATA="$(
   cat <<EOF
 [Unit]
 Description=tacticalrmm uwsgi daemon
@@ -837,10 +837,10 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${rmmservice}" | sudo tee "${SYSTEMD_PATH}/system/rmm.service" >/dev/null
+echo "${SYSTEMD_RMM_DATA}" | sudo tee "${SYSTEMD_PATH}/system/rmm.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
-daphneservice="$(
+SYSTEMD_DAPHNE_DATA="$(
   cat <<EOF
 [Unit]
 Description=django channels daemon
@@ -859,10 +859,10 @@ RestartSec=3s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${daphneservice}" | sudo tee "${SYSTEMD_PATH}/system/daphne.service" >/dev/null
+echo "${SYSTEMD_DAPHNE_DATA}" | sudo tee "${SYSTEMD_PATH}/system/daphne.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
-natsservice="$(
+SYSTEMD_NATS_SYS_DATA="$(
   cat <<EOF
 [Unit]
 Description=NATS Server
@@ -884,10 +884,10 @@ LimitNOFILE=1000000
 WantedBy=multi-user.target
 EOF
 )"
-echo "${natsservice}" | sudo tee "${SYSTEMD_PATH}/system/nats.service" >/dev/null
+echo "${SYSTEMD_NATS_SYS_DATA}" | sudo tee "${SYSTEMD_PATH}/system/nats.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
-natsapi="$(
+SYSTEMD_NATS_API_DATA="$(
   cat <<EOF
 [Unit]
 Description=TacticalRMM Nats Api v1
@@ -905,10 +905,10 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${natsapi}" | sudo tee "${SYSTEMD_PATH}/system/nats-api.service" >/dev/null
+echo "${SYSTEMD_NATS_API_DATA}" | sudo tee "${SYSTEMD_PATH}/system/nats-api.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
-nginxrmm="$(
+NGINX_RMM_CONF_DATA="$(
   cat <<EOF
 server_tokens off;
 
@@ -992,10 +992,10 @@ server {
 }
 EOF
 )"
-echo "${nginxrmm}" | sudo tee "${NGINX_PATH}/sites-available/rmm.conf" >/dev/null
+echo "${NGINX_RMM_CONF_DATA}" | sudo tee "${NGINX_PATH}/sites-available/rmm.conf" >/dev/null
 
 ## todo: 2022-06-17: redo:
-nginxmesh="$(
+NGINX_MESH_CONF_DATA="$(
   cat <<EOF
 server {
   listen 80;
@@ -1037,7 +1037,7 @@ server {
 }
 EOF
 )"
-echo "${nginxmesh}" | sudo tee "${NGINX_PATH}/sites-available/meshcentral.conf" >/dev/null
+echo "${NGINX_MESH_CONF_DATA}" | sudo tee "${NGINX_PATH}/sites-available/meshcentral.conf" >/dev/null
 
 sudo ln -s "${NGINX_PATH}/sites-available/rmm.conf" "${NGINX_PATH}/sites-enabled/rmm.conf"
 sudo ln -s "${NGINX_PATH}/sites-available/meshcentral.conf" "${NGINX_PATH}/sites-enabled/meshcentral.conf"
@@ -1045,7 +1045,7 @@ sudo ln -s "${NGINX_PATH}/sites-available/meshcentral.conf" "${NGINX_PATH}/sites
 sudo mkdir "${ETC_CONFD}"
 
 ## todo: 2022-06-17: redo:
-celeryservice="$(
+SYSTEMD_CELERYD_DATA="$(
   cat <<EOF
 [Unit]
 Description=Celery Service V2
@@ -1067,7 +1067,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${celeryservice}" | sudo tee "${SYSTEMD_PATH}/system/celery.service" >/dev/null
+echo "${SYSTEMD_CELERYD_DATA}" | sudo tee "${SYSTEMD_PATH}/system/celery.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 celeryconf="$(
@@ -1093,7 +1093,7 @@ EOF
 echo "${celeryconf}" | sudo tee ${CELERY_CONF_FILE} >/dev/null
 
 ## todo: 2022-06-17: redo:
-celerybeatservice="$(
+SYSTEMD_CELERYBEAT_DATA="$(
   cat <<EOF
 [Unit]
 Description=Celery Beat Service V2
@@ -1113,12 +1113,12 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${celerybeatservice}" | sudo tee "${SYSTEMD_PATH}/system/celerybeat.service" >/dev/null
+echo "${SYSTEMD_CELERYBEAT_DATA}" | sudo tee "${SYSTEMD_PATH}/system/celerybeat.service" >/dev/null
 
 sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${ETC_CONFD}"
 
 ## todo: 2022-06-17: redo:
-meshservice="$(
+SYSTEMD_MESH_DATA="$(
   cat <<EOF
 [Unit]
 Description=MeshCentral Server
@@ -1138,7 +1138,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${meshservice}" | sudo tee "${SYSTEMD_PATH}/system/meshcentral.service" >/dev/null
+echo "${SYSTEMD_MESH_DATA}" | sudo tee "${SYSTEMD_PATH}/system/meshcentral.service" >/dev/null
 
 sudo systemctl daemon-reload
 
@@ -1162,7 +1162,7 @@ echo "window._env_ = {PROD_URL: \"https://${USER_BACKEND_DOMAIN}\"}" | sudo tee 
 sudo chown "${WWW_USER}:${WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
 rm -f "/tmp/${webtar}"
 
-nginxfrontend="$(
+NGINX_FRONTEND_CONF_DATA="$(
   cat <<EOF
 server {
     server_name ${USER_FRONTEND_DOMAIN};
@@ -1202,7 +1202,7 @@ server {
 }
 EOF
 )"
-echo "${nginxfrontend}" | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
+echo "${NGINX_FRONTEND_CONF_DATA}" | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
 
 sudo ln -s "${NGINX_PATH}/sites-available/frontend.conf" "${NGINX_PATH}/sites-enabled/frontend.conf"
 

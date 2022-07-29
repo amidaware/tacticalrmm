@@ -24,6 +24,13 @@
 : "${MESH_ROOT_PATH:="/meshcentral"}"
 : "${TRMM_COMMSCRIPTS_PATH:="/opt/trmm-community-scripts"}"
 
+## Check if root
+if [ "$(/usr/bin/id -u)" != "0" ]; then
+  printf "Installation requires super user (root) privileges.\n"
+  printf "Re-run the script as root, or use 'sudo ./install.sh'\n"
+  exit 1
+fi
+
 readonly LOGFILE="install-$(date -I).log"
 ## 2022-07-08: Capture script I/O and remove colour codes in the log file.
 ## This unfortunately requires bash due to '>(...)'. To be improved upon (mkfifo?).
@@ -191,9 +198,9 @@ update_script() {
 install_acme() {
   print_header "Installing Let's Encrypt"
 
-  sudo apt-get install -y software-properties-common
-  sudo apt-get update
-  sudo apt-get install -y certbot openssl
+  apt-get install -y software-properties-common
+  apt-get update
+  apt-get install -y certbot openssl
 
   print_header 'Preparing certificate request'
 
@@ -201,7 +208,7 @@ install_acme() {
     TRMM_ACME_EXTRA_PARAMS="${TRMM_ACME_EXTRA_PARAMS} --test-cert"
   fi
 
-  CERTBOT_CMD="sudo certbot certonly --manual -d \"*.${USER_ROOT_DOMAIN}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${USER_EMAIL_ADDRESS}\" --no-eff-email ${TRMM_ACME_EXTRA_PARAMS}"
+  CERTBOT_CMD="certbot certonly --manual -d \"*.${USER_ROOT_DOMAIN}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${USER_EMAIL_ADDRESS}\" --no-eff-email ${TRMM_ACME_EXTRA_PARAMS}"
 
   print_debug "Certbot command: ${CERTBOT_CMD}"
 
@@ -214,8 +221,8 @@ install_acme() {
   readonly CERT_PRIV_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${USER_ROOT_DOMAIN}/privkey.pem"
   readonly CERT_PUB_KEY="${LETS_ENCRYPT_PATH}/${TRMM_SCRIPT_ACME_SERVER}/${USER_ROOT_DOMAIN}/fullchain.pem"
 
-  sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${LETS_ENCRYPT_PATH}"
-  sudo chmod 775 -R "${LETS_ENCRYPT_PATH}"
+  chown "${TRMM_USER}:${TRMM_GROUP}" -R "${LETS_ENCRYPT_PATH}"
+  chmod 775 -R "${LETS_ENCRYPT_PATH}"
 }
 
 ################################################################################
@@ -225,18 +232,18 @@ install_acme() {
 install_nginx() {
   print_header 'Installing Nginx'
 
-  wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+  wget -qO - https://nginx.org/packages/keys/nginx_signing.key | apt-key add -
 
   {
     printf "deb https://nginx.org/packages/%s/ %s nginx\n" "$OS_NAME" "$OS_CODENAME"
     printf "deb-src https://nginx.org/packages/%s/ %s nginx\n" "$OS_NAME" "$OS_CODENAME"
-  } | sudo tee /etc/apt/sources.list.d/nginx.list
+  } | tee /etc/apt/sources.list.d/nginx.list
 
-  sudo apt-get update
-  sudo apt-get install -y nginx
-  sudo systemctl stop nginx
+  apt-get update
+  apt-get install -y nginx
+  systemctl stop nginx
 
-  cat << EOF | sudo tee "${NGINX_CONF}" > /dev/null
+  cat << EOF | tee "${NGINX_CONF}" > /dev/null
 worker_rlimit_nofile 1000000;
 user ${TRMM_WWW_USER};
 worker_processes auto;
@@ -265,7 +272,7 @@ http {
 EOF
 
   for i in sites-available sites-enabled; do
-    sudo mkdir -p "${NGINX_PATH}/$i"
+    mkdir -p "${NGINX_PATH}/$i"
   done
 
   return
@@ -278,11 +285,11 @@ EOF
 install_nodejs() {
   print_header 'Installing NodeJS'
 
-  wget -qO - https://deb.nodesource.com/setup_16.x | sudo -E bash -
-  sudo apt-get update
-  sudo apt-get install -y gcc g++ make
-  sudo apt-get install -y nodejs
-  sudo npm install -g npm
+  wget -qO - https://deb.nodesource.com/setup_16.x | bash -
+  apt-get update
+  apt-get install -y gcc g++ make
+  apt-get install -y nodejs
+  npm install -g npm
 
   ## todo: 2022-06-17: move
   NODE_BIN=$(which node)
@@ -297,12 +304,12 @@ install_nodejs() {
 install_mongodb() {
   print_header 'Installing MongoDB'
 
-  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-  echo "$MONGODB_REPO" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-  sudo apt-get update
-  sudo apt-get install -y mongodb-org
-  sudo systemctl enable mongod
-  sudo systemctl restart mongod
+  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
+  echo "$MONGODB_REPO" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+  apt-get update
+  apt-get install -y mongodb-org
+  systemctl enable mongod
+  systemctl restart mongod
 
   return
 }
@@ -322,7 +329,7 @@ install_python() {
 
     CPU_CORES=$(nproc)
 
-    sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+    apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 
     if [ ! -d "${python_distdir}" ]; then
       print_debug "Downloading ${python_distfile} to ${HOME}"
@@ -331,7 +338,7 @@ install_python() {
       cd "${HOME}" && tar -xf "${python_distfile}"
     else
       print_debug "Existing Python build directory found. Running 'make distclean'."
-      sudo make --quiet -C "${python_distdir}" distclean
+      make --quiet -C "${python_distdir}" distclean
     fi
 
     cd "${python_distdir}" || exit 1
@@ -340,11 +347,11 @@ install_python() {
 
     print_debug "Python build finished. Running 'make altinstall'."
 
-    sudo make altinstall
+    make altinstall
 
-    # if [ "$(sudo make altinstall)" = "0" ]; then
+    # if [ "$(make altinstall)" = "0" ]; then
       print_debug "Python was installed successfully. Deleting build directory and source tarball."
-      sudo rm -rf "${python_distdir}" "${python_distfile}"
+      rm -rf "${python_distdir}" "${python_distfile}"
       PYTHON_BIN=$(which python3.10) ## todo: move this
     # else
     #  print_error "Python installation failure, code $?"
@@ -366,40 +373,49 @@ install_python() {
 install_postgresql() {
   print_header 'Installing PostgreSQL'
 
-  wget -q -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-  echo "$POSTGRESQL_REPO" | sudo tee /etc/apt/sources.list.d/pgdg.list
-  sudo apt-get update
-  sudo apt-get install -y postgresql-14
+  wget -q -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+  echo "$POSTGRESQL_REPO" | tee /etc/apt/sources.list.d/pgdg.list
+  apt-get update
+  apt-get install -y postgresql-14
   sleep 2
-  sudo systemctl enable postgresql
-  sudo systemctl restart postgresql
+  systemctl enable postgresql
+  systemctl restart postgresql
   sleep 5
 
   ################################################################################
 
   ## 2022-07-07: Look for an existing database instance.
-  local existing_db existing_user
-  existing_db=$(sudo -u postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${TRMM_DB_NAME}'" | grep -q 1)
-  existing_user=$(sudo -u postgres psql -U postgres -tc " SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = '${TRMM_DB_USER}'" | grep -q 1)
+  local existing_db existing_user existing_db_sql existing_user_sql grant_role_sql
+  existing_db_sql="SELECT 1 FROM pg_database WHERE datname = '${TRMM_DB_NAME}';"
+  existing_user_sql="SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = '${TRMM_DB_USER}';"
 
-  if [ "${existing_db}" != "0" ]; then
+  print_debug "Existing DB SQL: ${existing_db_sql}"
+  print_debug "Existing User SQL: ${existing_user_sql}"
+  existing_db=$(su - postgres -c "psql -U postgres -d postgres -tc \"${existing_db_sql}\"" | grep -c 1)
+  existing_user=$(su - postgres -c "psql -U postgres -tc \"${existing_user_sql}\"" | grep -c 1)
+
+  if [ "${existing_db}" != "1" ]; then
     print_info 'Creating a new TRMM database instance.'
-    sudo -u postgres psql -c "CREATE DATABASE ${TRMM_DB_NAME}"
+    su - postgres -c "psql -c 'CREATE DATABASE ${TRMM_DB_NAME}'"
   else
     print_debug "Found existing TRMM database instance."
   fi
 
-  if [ "${existing_user}" != "0" ]; then
+  if [ "${existing_user}" != "1" ]; then
     print_info 'Creating a new TRMM database user.'
-    sudo -u postgres psql -c "CREATE USER ${TRMM_DB_USER} WITH PASSWORD '${TRMM_DB_PASS}'"
+    su - postgres -c "psql -c 'CREATE USER ${TRMM_DB_USER} WITH PASSWORD '\''${TRMM_DB_PASS}'\'';'"
   else
     print_debug "Found existing TRMM database user."
   fi
 
-  sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET client_encoding TO 'utf8'"
-  sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET default_transaction_isolation TO 'read committed'"
-  sudo -u postgres psql -c "ALTER ROLE ${TRMM_DB_USER} SET timezone TO 'UTC'"
-  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${TRMM_DB_NAME} TO ${TRMM_DB_USER}"
+  grant_role_sql="ALTER ROLE ${TRMM_DB_USER} SET client_encoding TO 'utf8'; \
+  ALTER ROLE ${TRMM_DB_USER} SET default_transaction_isolation TO 'read committed'; \
+  ALTER ROLE ${TRMM_DB_USER} SET timezone TO 'UTC'; \
+  GRANT ALL PRIVILEGES ON DATABASE ${TRMM_DB_NAME} TO ${TRMM_DB_USER};"
+
+  print_debug "Grant role SQL: ${grant_role_sql}"
+
+  su - postgres -c "psql -c \"${grant_role_sql}\""
 
   return
 }
@@ -417,9 +433,9 @@ install_nats() {
   nats_tmp=$(mktemp -d -t "nats-XXXXXXXXXX")
   wget -q "https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz" -P "${nats_tmp}"
   tar -xzf "${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz" -C "${nats_tmp}"
-  sudo mv "${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server" /usr/local/bin/
-  sudo chmod +x /usr/local/bin/nats-server
-  sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-server
+  mv "${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server" /usr/local/bin/
+  chmod +x /usr/local/bin/nats-server
+  chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-server
   rm -rf "${nats_tmp}"
 
   return
@@ -436,11 +452,11 @@ install_mesh() {
 
   MESH_VER=$(grep "^MESH_VER" "${TRMM_SETTINGS_FILE}" | awk -F'[= "]' '{print $5}')
 
-  sudo mkdir -p "${MESH_ROOT_PATH}/meshcentral-data"
-  sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
+  mkdir -p "${MESH_ROOT_PATH}/meshcentral-data"
+  chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
   cd "${MESH_ROOT_PATH}"
   npm install "meshcentral@${MESH_VER}"
-  sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
+  chown "${TRMM_USER}:${TRMM_GROUP}" -R "${MESH_ROOT_PATH}"
 
   cat <<EOF >"${MESH_CONF_FILE}"
 {
@@ -492,13 +508,13 @@ install_frontend() {
   local webtar="trmm-web-v${WEB_VERSION}.tar.gz"
 
   wget -q "${TRMM_FRONTEND_REPO}/releases/download/v${WEB_VERSION}/${webtar}" -O "/tmp/${webtar}"
-  sudo mkdir -p "${TRMM_WEB_PATH}"
-  sudo tar -xzf "/tmp/${webtar}" -C "${TRMM_WEB_PATH}"
-  echo "window._env_ = {PROD_URL: \"https://${USER_BACKEND_DOMAIN}\"}" | sudo tee "${TRMM_WEB_PATH}/dist/env-config.js" >/dev/null
-  sudo chown "${TRMM_WWW_USER}:${TRMM_WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
+  mkdir -p "${TRMM_WEB_PATH}"
+  tar -xzf "/tmp/${webtar}" -C "${TRMM_WEB_PATH}"
+  echo "window._env_ = {PROD_URL: \"https://${USER_BACKEND_DOMAIN}\"}" | tee "${TRMM_WEB_PATH}/dist/env-config.js" >/dev/null
+  chown "${TRMM_WWW_USER}:${TRMM_WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
   rm -f "/tmp/${webtar}"
 
-    cat <<EOF | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
+    cat <<EOF | tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
 server {
     server_name ${USER_FRONTEND_DOMAIN};
     charset utf-8;
@@ -537,7 +553,7 @@ server {
 }
 EOF
 
-  sudo ln -s "${NGINX_PATH}/sites-available/frontend.conf" "${NGINX_PATH}/sites-enabled/frontend.conf"
+  ln -s "${NGINX_PATH}/sites-available/frontend.conf" "${NGINX_PATH}/sites-enabled/frontend.conf"
 
   return
 }
@@ -606,7 +622,7 @@ update_script
 if [ "${OS_UNAME}" = "Linux" ]; then
   ## todo: 2022-06-17: remove lsb-release
   ## todo: 2022-07-29: move installation of deps further down
-  sudo apt-get install -y wget dirmngr gnupg lsb-release
+  apt-get install -y wget dirmngr gnupg lsb-release
 
   OS_NAME=$(lsb_release -si) ## "Ubuntu", "Debian"
   OS_NAME="${OS_NAME^}" ## Why ^? needed?
@@ -705,26 +721,19 @@ case "${OS_NAME}" in
   ;;
 esac
 
-## Check if root
-## todo: 2022-06-17: instead of this, run the script as root and avoid sudo altogether
-if [ $EUID -eq 0 ]; then
-  print_error "Do NOT run this script as root. Exiting."
-  exit 1
-fi
-
 ## Check system locale
 if [[ "$LANG" != *".UTF-8" ]]; then
   printf "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
   print_error "Run the following command and change the default locale to your language of choice\n\n"
   printf "\t"
-  print_info "sudo dpkg-reconfigure locales"
+  print_info "dpkg-reconfigure locales"
   printf "\n\n"
   print_error "You will need to log out & back in for changes to take effect, then re-run this script."
   exit 1
 fi
 
 # Prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
-sudo systemctl restart systemd-journald.service
+systemctl restart systemd-journald.service
 
 ## 2022-07-07: Retrieve existing PGSQL credentials to resume or upgrade an installation (from restore.sh).
 if [ -e "${TRMM_LOCAL_CONF}" ]; then
@@ -807,9 +816,9 @@ HAS_LOCALHOST=$(grep '127.0.1.1' "$HOSTS_FILE")
 if ! [[ $CHECK_HOSTS ]]; then
   print_header 'Adding subdomains to the hosts file'
   if [[ $HAS_LOCALHOST ]]; then
-    sudo sed -i "/127.0.1.1/s/$/ ${USER_BACKEND_DOMAIN} ${USER_FRONTEND_DOMAIN} ${USER_MESH_DOMAIN}/" "$HOSTS_FILE"
+    sed -i "/127.0.1.1/s/$/ ${USER_BACKEND_DOMAIN} ${USER_FRONTEND_DOMAIN} ${USER_MESH_DOMAIN}/" "$HOSTS_FILE"
   else
-    echo "127.0.1.1 ${USER_BACKEND_DOMAIN} ${USER_FRONTEND_DOMAIN} ${USER_MESH_DOMAIN}" | sudo tee --append "$HOSTS_FILE" >/dev/null
+    echo "127.0.1.1 ${USER_BACKEND_DOMAIN} ${USER_FRONTEND_DOMAIN} ${USER_MESH_DOMAIN}" | tee --append "$HOSTS_FILE" >/dev/null
   fi
 fi
 
@@ -824,7 +833,7 @@ fi
 case "${OS_UNAME}" in
   "Linux")
     print_debug "Creating ${TRMM_USER} service user & group"
-    sudo useradd -m -s /bin/bash "${TRMM_USER}"
+    useradd -m -s /bin/bash "${TRMM_USER}"
     ## 2022-07-29: do not set a password. Use 'su -m tactical' instead
     # passwd "${TRMM_USER}"
   ;;
@@ -852,7 +861,7 @@ install_python
 
 print_header 'Installing redis and git'
 
-sudo apt-get install -y ca-certificates redis git
+apt-get install -y ca-certificates redis git
 
 ################################################################################
 
@@ -862,10 +871,10 @@ install_postgresql
 
 print_header 'Cloning repos'
 
-sudo mkdir "${TRMM_ROOT_PATH}"
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" "${TRMM_ROOT_PATH}"
-sudo mkdir -p "${CELERY_LOG_PATH}"
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" "${CELERY_LOG_PATH}"
+mkdir "${TRMM_ROOT_PATH}"
+chown "${TRMM_USER}:${TRMM_GROUP}" "${TRMM_ROOT_PATH}"
+mkdir -p "${CELERY_LOG_PATH}"
+chown "${TRMM_USER}:${TRMM_GROUP}" "${CELERY_LOG_PATH}"
 
 git clone "${TRMM_SERVER_REPO}" "${TRMM_ROOT_PATH}/"
 cd "${TRMM_ROOT_PATH}"
@@ -873,8 +882,8 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout "${TRMM_SCRIPT_BRANCH}"
 
-sudo mkdir -p "${TRMM_COMMSCRIPTS_PATH}"
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" "${TRMM_COMMSCRIPTS_PATH}"
+mkdir -p "${TRMM_COMMSCRIPTS_PATH}"
+chown "${TRMM_USER}:${TRMM_GROUP}" "${TRMM_COMMSCRIPTS_PATH}"
 git clone "${COMMUNITY_SCRIPTS_REPO}" "${TRMM_COMMSCRIPTS_PATH}/"
 cd "${TRMM_COMMSCRIPTS_PATH}"
 git config user.email "admin@example.com"
@@ -924,9 +933,9 @@ EOF
 echo "${TRMM_LOCAL_CONF_DATA}" >"${TRMM_LOCAL_CONF}"
 
 ## todo: 2022-06-17: verify:
-sudo cp "${TRMM_ROOT_PATH}/natsapi/bin/nats-api" /usr/local/bin
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-api
-sudo chmod +x /usr/local/bin/nats-api
+cp "${TRMM_ROOT_PATH}/natsapi/bin/nats-api" /usr/local/bin
+chown "${TRMM_USER}:${TRMM_GROUP}" /usr/local/bin/nats-api
+chmod +x /usr/local/bin/nats-api
 
 install_backend
 
@@ -981,7 +990,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${SYSTEMD_RMM_DATA}" | sudo tee "${SYSTEMD_PATH}/system/rmm.service" >/dev/null
+echo "${SYSTEMD_RMM_DATA}" | tee "${SYSTEMD_PATH}/system/rmm.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 SYSTEMD_DAPHNE_DATA="$(
@@ -1003,7 +1012,7 @@ RestartSec=3s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${SYSTEMD_DAPHNE_DATA}" | sudo tee "${SYSTEMD_PATH}/system/daphne.service" >/dev/null
+echo "${SYSTEMD_DAPHNE_DATA}" | tee "${SYSTEMD_PATH}/system/daphne.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 SYSTEMD_NATS_SYS_DATA="$(
@@ -1028,7 +1037,7 @@ LimitNOFILE=1000000
 WantedBy=multi-user.target
 EOF
 )"
-echo "${SYSTEMD_NATS_SYS_DATA}" | sudo tee "${SYSTEMD_PATH}/system/nats.service" >/dev/null
+echo "${SYSTEMD_NATS_SYS_DATA}" | tee "${SYSTEMD_PATH}/system/nats.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 SYSTEMD_NATS_API_DATA="$(
@@ -1049,7 +1058,7 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${SYSTEMD_NATS_API_DATA}" | sudo tee "${SYSTEMD_PATH}/system/nats-api.service" >/dev/null
+echo "${SYSTEMD_NATS_API_DATA}" | tee "${SYSTEMD_PATH}/system/nats-api.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 NGINX_RMM_CONF_DATA="$(
@@ -1136,7 +1145,7 @@ server {
 }
 EOF
 )"
-echo "${NGINX_RMM_CONF_DATA}" | sudo tee "${NGINX_PATH}/sites-available/rmm.conf" >/dev/null
+echo "${NGINX_RMM_CONF_DATA}" | tee "${NGINX_PATH}/sites-available/rmm.conf" >/dev/null
 
 ## todo: 2022-06-17: redo:
 NGINX_MESH_CONF_DATA="$(
@@ -1181,12 +1190,12 @@ server {
 }
 EOF
 )"
-echo "${NGINX_MESH_CONF_DATA}" | sudo tee "${NGINX_PATH}/sites-available/meshcentral.conf" >/dev/null
+echo "${NGINX_MESH_CONF_DATA}" | tee "${NGINX_PATH}/sites-available/meshcentral.conf" >/dev/null
 
-sudo ln -s "${NGINX_PATH}/sites-available/rmm.conf" "${NGINX_PATH}/sites-enabled/rmm.conf"
-sudo ln -s "${NGINX_PATH}/sites-available/meshcentral.conf" "${NGINX_PATH}/sites-enabled/meshcentral.conf"
+ln -s "${NGINX_PATH}/sites-available/rmm.conf" "${NGINX_PATH}/sites-enabled/rmm.conf"
+ln -s "${NGINX_PATH}/sites-available/meshcentral.conf" "${NGINX_PATH}/sites-enabled/meshcentral.conf"
 
-sudo mkdir "${ETC_CONFD}"
+mkdir "${ETC_CONFD}"
 
 ## todo: 2022-06-17: redo:
 SYSTEMD_CELERYD_DATA="$(
@@ -1211,7 +1220,7 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${SYSTEMD_CELERYD_DATA}" | sudo tee "${SYSTEMD_PATH}/system/celery.service" >/dev/null
+echo "${SYSTEMD_CELERYD_DATA}" | tee "${SYSTEMD_PATH}/system/celery.service" >/dev/null
 
 ## todo: 2022-06-17: redo:
 celeryconf="$(
@@ -1234,7 +1243,7 @@ CELERYBEAT_PID_FILE="${TRMM_ROOT_PATH}/api/tacticalrmm/beat.pid"
 CELERYBEAT_LOG_FILE="${CELERY_LOG_PATH}/beat.log"
 EOF
 )"
-echo "${celeryconf}" | sudo tee ${CELERY_CONF_FILE} >/dev/null
+echo "${celeryconf}" | tee ${CELERY_CONF_FILE} >/dev/null
 
 ## todo: 2022-06-17: redo:
 SYSTEMD_CELERYBEAT_DATA="$(
@@ -1257,9 +1266,9 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${SYSTEMD_CELERYBEAT_DATA}" | sudo tee "${SYSTEMD_PATH}/system/celerybeat.service" >/dev/null
+echo "${SYSTEMD_CELERYBEAT_DATA}" | tee "${SYSTEMD_PATH}/system/celerybeat.service" >/dev/null
 
-sudo chown "${TRMM_USER}:${TRMM_GROUP}" -R "${ETC_CONFD}"
+chown "${TRMM_USER}:${TRMM_GROUP}" -R "${ETC_CONFD}"
 
 ## todo: 2022-06-17: redo:
 SYSTEMD_MESH_DATA="$(
@@ -1282,16 +1291,16 @@ RestartSec=10s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${SYSTEMD_MESH_DATA}" | sudo tee "${SYSTEMD_PATH}/system/meshcentral.service" >/dev/null
+echo "${SYSTEMD_MESH_DATA}" | tee "${SYSTEMD_PATH}/system/meshcentral.service" >/dev/null
 
-sudo systemctl daemon-reload
+systemctl daemon-reload
 
 if [ -d ~/.npm ]; then
-  sudo chown -R "${TRMM_USER}:${TRMM_GROUP}" ~/.npm
+  chown -R "${TRMM_USER}:${TRMM_GROUP}" ~/.npm
 fi
 
 if [ -d ~/.config ]; then
-  sudo chown -R "${TRMM_USER}:${TRMM_GROUP}" ~/.config
+  chown -R "${TRMM_USER}:${TRMM_GROUP}" ~/.config
 fi
 
 ################################################################################
@@ -1303,16 +1312,16 @@ install_frontend
 print_header 'Enabling Services'
 
 for i in rmm.service daphne.service celery.service celerybeat.service nginx; do
-  sudo systemctl enable ${i}
-  sudo systemctl stop ${i}
-  sudo systemctl start ${i}
+  systemctl enable ${i}
+  systemctl stop ${i}
+  systemctl start ${i}
 done
 sleep 5
-sudo systemctl enable meshcentral
+systemctl enable meshcentral
 
 print_header 'Starting MeshCentral and waiting for it to install plugins'
 
-sudo systemctl restart meshcentral
+systemctl restart meshcentral
 
 sleep 3
 
@@ -1320,7 +1329,7 @@ sleep 3
 # This will take anywhere from a few seconds to a few minutes depending on the server's hardware.
 # We will know it's ready once the last line of the systemd service stdout is 'MeshCentral HTTP server running on port.....'
 while ! [[ $CHECK_MESH_READY ]]; do
-  CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
+  CHECK_MESH_READY=$(journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
   print_warn "MeshCentral is not ready yet..."
   sleep 3
 done
@@ -1338,7 +1347,7 @@ echo "${meshtoken}" | tee --append "${TRMM_LOCAL_CONF}" >/dev/null
 
 print_header 'Creating MeshCentral account and group'
 
-sudo systemctl stop meshcentral
+systemctl stop meshcentral
 sleep 1
 cd "${MESH_ROOT_PATH}"
 
@@ -1346,11 +1355,11 @@ ${NODE_BIN} node_modules/meshcentral --createaccount "${MESH_USERNAME}" --pass "
 sleep 1
 ${NODE_BIN} node_modules/meshcentral --adminaccount "${MESH_USERNAME}"
 
-sudo systemctl start meshcentral
+systemctl start meshcentral
 sleep 5
 
 while ! [[ $CHECK_MESH_READY2 ]]; do
-  CHECK_MESH_READY2=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
+  CHECK_MESH_READY2=$(journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
   print_warn "MeshCentral is not ready yet"
   sleep 3
 done
@@ -1358,17 +1367,17 @@ done
 ${NODE_BIN} node_modules/meshcentral/meshctrl.js --url "wss://${USER_MESH_DOMAIN}:443" --loginuser "${MESH_USERNAME}" --loginpass "${MESH_PASSWORD}" AddDeviceGroup --name TacticalRMM
 sleep 1
 
-sudo systemctl enable nats.service
+systemctl enable nats.service
 cd "${TRMM_ROOT_PATH}/api/tacticalrmm"
 source "${TRMM_ROOT_PATH}/api/env/bin/activate"
 python manage.py initial_db_setup
 python manage.py reload_nats
 deactivate
-sudo systemctl start nats.service
+systemctl start nats.service
 
 sleep 1
-sudo systemctl enable nats-api.service
-sudo systemctl start nats-api.service
+systemctl enable nats-api.service
+systemctl start nats-api.service
 
 ## Disable the Django admin panel
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' "${TRMM_SETTINGS_FILE}"
@@ -1376,8 +1385,8 @@ sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' "${TRMM_SETTINGS_FILE}"
 print_header 'Restarting services'
 
 for i in rmm.service daphne.service celery.service celerybeat.service; do
-  sudo systemctl stop ${i}
-  sudo systemctl start ${i}
+  systemctl stop ${i}
+  systemctl start ${i}
 done
 
 ## 2022-07-08: Redirecting passwords and sensitive URLs to >&4 so they don't appear in the logfile.

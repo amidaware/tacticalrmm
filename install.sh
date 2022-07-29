@@ -12,16 +12,28 @@
 : "${TRMM_SCRIPT_ACME_SERVER:="live"}"
 ## Additional parameters to pass ACME ("--keep-until-expiring")
 : "${ACME_ADDITIONAL_PARAMS:=""}"
+## Allow sysadmin to overwrite service users & groups
+: "${TRMM_USER:="tactical"}"
+: "${TRMM_GROUP:="tactical"}"
+: "${TRMM_WWW_USER:="www-data"}"
+: "${TRMM_WWW_GROUP:="www-data"}"
+## Base directories where services & scripts will be installed
+## todo: 2022-07-29: avoid installing to / since we can't assume it's actually available or writeable
+: "${TRMM_ROOT_PATH:="/rmm"}"
+: "${TRMM_WEB_PATH:="/var/www/rmm"}"
+: "${MESH_ROOT_PATH:="/meshcentral"}"
+: "${TRMM_COMMSCRIPTS_PATH:="/opt/trmm-community-scripts"}"
 
-readonly LOGFILE="install-$(date --iso-8601).log"
+readonly LOGFILE="install-$(date -I).log"
 ## 2022-07-08: Capture script I/O and remove colour codes in the log file.
 ## This unfortunately requires bash due to '>(...)'. To be improved upon (mkfifo?).
 exec 4<&1 5<&2 1>&2 >& >(tee -a >(sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' >> "${LOGFILE}"))
 
-readonly SCRIPT_EXEC_TS="$(date --iso-8601=seconds)"
+readonly OS_UNAME=$(uname)
+
+readonly SCRIPT_EXEC_TS="$(date -Iseconds)"
 printf "%0.s*" {1..80}
-printf "\n"
-printf "Installation started at %s\n" "${SCRIPT_EXEC_TS}"
+printf "\nInstallation started at %s\n" "${SCRIPT_EXEC_TS}"
 
 readonly SCRIPT_VERSION="66"
 readonly SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/${TRMM_SCRIPT_BRANCH}/install.sh"
@@ -29,11 +41,7 @@ readonly TRMM_SERVER_REPO='https://github.com/amidaware/tacticalrmm.git'
 readonly TRMM_FRONTEND_REPO='https://github.com/amidaware/tacticalrmm-web'
 readonly COMMUNITY_SCRIPTS_REPO='https://github.com/amidaware/community-scripts.git'
 
-readonly TRMM_USER="${USER}"
-readonly TRMM_GROUP="${USER}"
 readonly TRMM_DB_NAME='tacticalrmm'
-readonly WWW_USER="www-data"
-readonly WWW_GROUP="www-data"
 
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
@@ -43,12 +51,8 @@ readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 
 REQ_PYTHON_VER='3.10.4'
-TRMM_COMMSCRIPTS_PATH='/opt/trmm-community-scripts'
-TRMM_ROOT_PATH='/rmm'
 TRMM_SETTINGS_FILE="${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/settings.py"
 TRMM_LOCAL_CONF="${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/local_settings.py"
-TRMM_WEB_PATH="/var/www/rmm"
-MESH_ROOT_PATH="/meshcentral"
 MESH_CONF_FILE="${MESH_ROOT_PATH}/meshcentral-data/config.json"
 NGINX_PATH="/etc/nginx"
 NGINX_CONF="${NGINX_PATH}/nginx.conf"
@@ -61,9 +65,11 @@ HOSTS_FILE="/etc/hosts"
 SYSTEMD_PATH="/etc/systemd"
 
 ## Runtime discovery
-CPU_CORES=$(nproc)
 NODE_BIN=$(which node)
 PYTHON_BIN=$(which python3.10)
+
+OS_DETECTED="NO"
+OS_SUPPORTED="NO"
 
 ################################################################################
 ## Convert string to lowercase
@@ -99,14 +105,14 @@ uc() {
 ################################################################################
 
 random_text() {
-    local min_length="$1"
-    local alphanumeric="${2:-"YES"}"
-    local transmod='a-zA-Z0-9'
-    if [ "$(uc "${alphanumeric}")" = "NO" ]; then
-      transmod='a-zA-Z'
-    fi
-    cat /dev/urandom | tr -dc $transmod | fold -w "${min_length}" | head -n 1
-    return
+  local min_length="$1"
+  local alphanumeric="${2:-"YES"}"
+  local transmod='a-zA-Z0-9'
+  if [ "$(uc "${alphanumeric}")" = "NO" ]; then
+    transmod='a-zA-Z'
+  fi
+  cat /dev/urandom | tr -dc $transmod | fold -w "${min_length}" | head -n 1
+  return
 }
 
 ################################################################################
@@ -232,7 +238,7 @@ install_nginx() {
 
   cat << EOF | sudo tee "${NGINX_CONF}" > /dev/null
 worker_rlimit_nofile 1000000;
-user ${WWW_USER};
+user ${TRMM_WWW_USER};
 worker_processes auto;
 pid ${NGINX_PID};
 include ${NGINX_PATH}/modules-enabled/*.conf;
@@ -308,40 +314,42 @@ install_mongodb() {
 install_python() {
   ## todo: 2022-06-17: there must be a better way to do this (use 'packaging.version.parse'?)
   if [ ! -x "${PYTHON_BIN}" ] || [ "$(${PYTHON_BIN} --version | cut -d' ' -f2)" != "${REQ_PYTHON_VER}" ]; then
-      print_header "Installing Python ${REQ_PYTHON_VER}"
+    print_header "Installing Python ${REQ_PYTHON_VER}"
 
-      local python_distname="Python-${REQ_PYTHON_VER}"
-      local python_distdir="${HOME}/${python_distname}"
-      local python_distfile="${python_distname}.tgz"
+    local python_distname="Python-${REQ_PYTHON_VER}"
+    local python_distdir="${HOME}/${python_distname}"
+    local python_distfile="${python_distname}.tgz"
 
-      sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+    CPU_CORES=$(nproc)
 
-      if [ ! -d "${python_distdir}" ]; then
-        print_debug "Downloading ${python_distfile} to ${HOME}"
-        wget -q "https://www.python.org/ftp/python/${REQ_PYTHON_VER}/Python-${REQ_PYTHON_VER}.tgz" -O ~/"${python_distfile}"
-        print_debug "Extracting ${python_distfile}"
-        cd "${HOME}" && tar -xf "${python_distfile}"
-      else
-        print_debug "Existing Python build directory found. Running 'make distclean'."
-        sudo make --quiet -C "${python_distdir}" distclean
-      fi
+    sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 
-      cd "${python_distdir}" || exit 1
-      ./configure --quiet --enable-optimizations
-      make --quiet -j "$CPU_CORES"
+    if [ ! -d "${python_distdir}" ]; then
+      print_debug "Downloading ${python_distfile} to ${HOME}"
+      wget -q "https://www.python.org/ftp/python/${REQ_PYTHON_VER}/Python-${REQ_PYTHON_VER}.tgz" -O ~/"${python_distfile}"
+      print_debug "Extracting ${python_distfile}"
+      cd "${HOME}" && tar -xf "${python_distfile}"
+    else
+      print_debug "Existing Python build directory found. Running 'make distclean'."
+      sudo make --quiet -C "${python_distdir}" distclean
+    fi
 
-      print_debug "Python build finished. Running 'make altinstall'."
+    cd "${python_distdir}" || exit 1
+    ./configure --quiet --enable-optimizations
+    make --quiet -j "$CPU_CORES"
 
-      sudo make altinstall
+    print_debug "Python build finished. Running 'make altinstall'."
 
-      # if [ "$(sudo make altinstall)" = "0" ]; then
-        print_debug "Python was installed successfully. Deleting build directory and source tarball."
-        sudo rm -rf "${python_distdir}" "${python_distfile}"
-        PYTHON_BIN=$(which python3.10) ## todo: move this
-      # else
-      #  print_error "Python installation failure, code $?"
-      #  exit 1
-      # fi
+    sudo make altinstall
+
+    # if [ "$(sudo make altinstall)" = "0" ]; then
+      print_debug "Python was installed successfully. Deleting build directory and source tarball."
+      sudo rm -rf "${python_distdir}" "${python_distfile}"
+      PYTHON_BIN=$(which python3.10) ## todo: move this
+    # else
+    #  print_error "Python installation failure, code $?"
+    #  exit 1
+    # fi
   elif [ "$(${PYTHON_BIN} --version | cut -d' ' -f2)" = "${REQ_PYTHON_VER}" ]; then
     print_info "Python ${REQ_PYTHON_VER} was found, skipping installation."
   else
@@ -487,7 +495,7 @@ install_frontend() {
   sudo mkdir -p "${TRMM_WEB_PATH}"
   sudo tar -xzf "/tmp/${webtar}" -C "${TRMM_WEB_PATH}"
   echo "window._env_ = {PROD_URL: \"https://${USER_BACKEND_DOMAIN}\"}" | sudo tee "${TRMM_WEB_PATH}/dist/env-config.js" >/dev/null
-  sudo chown "${WWW_USER}:${WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
+  sudo chown "${TRMM_WWW_USER}:${TRMM_WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
   rm -f "/tmp/${webtar}"
 
     cat <<EOF | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
@@ -594,20 +602,37 @@ cls() {
 
 update_script
 
-OS_UNAME=$(uname)
-
 ## Install dependencies
-## todo: 2022-06-17: remove lsb-release
-sudo apt-get install -y wget dirmngr gnupg lsb-release
-
 if [ "${OS_UNAME}" = "Linux" ]; then
-  OS_NAME=$(lsb_release -si) ## "Ubuntu"
+  ## todo: 2022-06-17: remove lsb-release
+  ## todo: 2022-07-29: move installation of deps further down
+  sudo apt-get install -y wget dirmngr gnupg lsb-release
+
+  OS_NAME=$(lsb_release -si) ## "Ubuntu", "Debian"
   OS_NAME="${OS_NAME^}" ## Why ^? needed?
-  OS_NAME=$(lc "$OS_NAME")
+  OS_NAME=$(lc "$OS_NAME") ## "ubuntu", "debian"
   OS_FULL_REL=$(lsb_release -sd) ## "Ubuntu 20.04.2 LTS"
   OS_CODENAME=$(lsb_release -sc) ## "focal"
   OS_VERSION=$(lsb_release -sr) ## "20.04"
   OS_MAJOR=$(echo "$OS_VERSION" | cut -d. -f1 -) ## "20"
+
+  OS_DETECTED="YES"
+  OS_SUPPORTED="YES"
+elif [ "${OS_UNAME}" = "FreeBSD" ]; then
+  OS_NAME="freebsd" ## "freebsd"
+  OS_FULL_REL=$(uname -v) ## "FreeBSD 12.3-RELEASE-p5 GENERIC"
+  OS_CODENAME="" ## n/a
+  OS_VERSION=$(uname -r | cut -d- -f1) # 11.0, 12.3, 13.0, 13.1
+  OS_MAJOR=$(uname -r | cut -d. -f1) ## 11, 12, 13
+
+  ## Note: might have to bootstrap if not already done by the sysadmin.
+  pkg install -y wget gnupg
+
+  OS_DETECTED="YES"
+  OS_SUPPORTED="NO"
+else
+  OS_DETECTED="NO"
+  OS_SUPPORTED="NO"
 fi
 
 if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
@@ -616,10 +641,25 @@ if [ "$TRMM_SCRIPT_DEBUG" = "YES" ]; then
   printf "OS Version: %s (Major: %s)\n" "${OS_VERSION}" "${OS_MAJOR}"
 fi
 
-# Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
-if [ "${OS_NAME}" != "ubuntu" ] && [ "${OS_NAME}" != "debian" ]; then
-  OS_NAME=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
-  OS_NAME=${OS_NAME^} ## needed? ^?
+# Fallback if lsb_release -si returns anything else than Ubuntu, Debian, Raspbian or a known OS
+# if [ "${OS_NAME}" != "ubuntu" ] && [ "${OS_NAME}" != "debian" ]; then
+if [ "${OS_DETECTED}" = "NO" ]; then
+  if [ -f /etc/os-release ]; then
+    OS_NAME=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+    OS_NAME=${OS_NAME^} ## needed? ^?
+  else
+    print_error "Unable to determine your operating system."
+    exit 1
+  fi
+fi
+
+if [ "${OS_SUPPORTED}" = "NO" ]; then
+  print_warn "This operating system is currently NOT officially supported by the project developers."
+  print_warn "TacticalRMM has been tested to work with Ubuntu 20 and Debian 10/11 only."
+  print_warn "Technical support will NOT be provided for unsupported configurations."
+  print_warn "You can press CTRL+C within 5 seconds to quit the installation script now,"
+  print_warn "or proceed at your own risk."
+  sleep 5
 fi
 
 MONGODB_REPO="deb [arch=amd64] https://repo.mongodb.org/apt/$OS_NAME $OS_CODENAME/mongodb-org/4.4 main"
@@ -644,8 +684,22 @@ case "${OS_NAME}" in
     fi
   ;;
 
+  "freebsd")
+    echo "$OS_FULL_REL"
+    ## hier(7)
+    TRMM_ROOT_PATH="/usr/local/rmm"
+    TRMM_WEB_PATH="/usr/local/www/rmm"
+    MESH_ROOT_PATH="/usr/local/meshcentral"
+    ## todo: 2022-07-29: also update 'SCRIPTS_DIR' in 'local_settings.py'
+    TRMM_COMMSCRIPTS_PATH="/usr/local/trmm-community-scripts"
+    TRMM_WWW_USER="www" # or 'nobody'
+    TRMM_WWW_GROUP="www"
+    NGINX_PATH="/usr/local/etc/nginx"
+  ;;
+
   *)
     echo "$OS_FULL_REL"
+    ## todo: 2022-07-29: remove/replace this:
     print_error "This operating system is unsupported. Please use Ubuntu 20.04 or Debian 10/11"
     exit 1
   ;;
@@ -764,6 +818,23 @@ IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | hea
 if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
   BEHIND_NAT=true
 fi
+
+## 2022-07-29: Create TRMM service user & group
+## todo: 2022-07-29: set shells to '/sbin/nologin'? skip home directory creation? (replace '-m' with '-M')
+case "${OS_UNAME}" in
+  "Linux")
+    print_debug "Creating ${TRMM_USER} service user & group"
+    sudo useradd -m -s /bin/bash "${TRMM_USER}"
+    ## 2022-07-29: do not set a password. Use 'su -m tactical' instead
+    # passwd "${TRMM_USER}"
+  ;;
+
+  "FreeBSD")
+    print_debug "FreeBSD: Creating ${TRMM_USER} service user & group"
+    pw groupadd "${TRMM_GROUP}"
+    pw useradd -g "${TRMM_GROUP}" -n "${TRMM_USER}" -d "${TRMM_ROOT_PATH}" -s /usr/local/bin/bash 2>&1
+  ;;
+esac
 
 ################################################################################
 
@@ -899,7 +970,7 @@ After=network.target postgresql.service
 
 [Service]
 User=${TRMM_USER}
-Group=${WWW_GROUP}
+Group=${TRMM_WWW_GROUP}
 WorkingDirectory=${TRMM_ROOT_PATH}/api/tacticalrmm
 Environment="PATH=${TRMM_ROOT_PATH}/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=${TRMM_ROOT_PATH}/api/env/bin/uwsgi --ini app.ini
@@ -921,7 +992,7 @@ After=network.target
 
 [Service]
 User=${TRMM_USER}
-Group=${WWW_GROUP}
+Group=${TRMM_WWW_GROUP}
 WorkingDirectory=${TRMM_ROOT_PATH}/api/tacticalrmm
 Environment="PATH=${TRMM_ROOT_PATH}/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=${TRMM_ROOT_PATH}/api/env/bin/daphne -u ${TRMM_ROOT_PATH}/daphne.sock tacticalrmm.asgi:application
@@ -948,7 +1019,7 @@ ExecStart=/usr/local/bin/nats-server -c ${TRMM_ROOT_PATH}/api/tacticalrmm/nats-r
 ExecReload=/usr/bin/kill -s HUP \$MAINPID
 ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
 User=${TRMM_USER}
-Group=${WWW_GROUP}
+Group=${TRMM_WWW_GROUP}
 Restart=always
 RestartSec=5s
 LimitNOFILE=1000000

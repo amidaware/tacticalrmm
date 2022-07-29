@@ -10,8 +10,8 @@
 : "${TRMM_SCRIPT_BRANCH:="master"}"
 ## Switch between 'live' and 'staging' ACME servers
 : "${TRMM_SCRIPT_ACME_SERVER:="live"}"
-## Additional parameters to pass ACME ("--keep-until-expiring")
-: "${ACME_ADDITIONAL_PARAMS:=""}"
+## Extra parameters to pass ACME ("--keep-until-expiring")
+: "${TRMM_ACME_EXTRA_PARAMS:=""}"
 ## Allow sysadmin to overwrite service users & groups
 : "${TRMM_USER:="tactical"}"
 : "${TRMM_GROUP:="tactical"}"
@@ -198,10 +198,10 @@ install_acme() {
   print_header 'Preparing certificate request'
 
   if [ "${TRMM_SCRIPT_ACME_SERVER}" = "staging" ]; then
-    ACME_ADDITIONAL_PARAMS="${ACME_ADDITIONAL_PARAMS} --test-cert"
+    TRMM_ACME_EXTRA_PARAMS="${TRMM_ACME_EXTRA_PARAMS} --test-cert"
   fi
 
-  CERTBOT_CMD="sudo certbot certonly --manual -d \"*.${USER_ROOT_DOMAIN}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${USER_EMAIL_ADDRESS}\" --no-eff-email ${ACME_ADDITIONAL_PARAMS}"
+  CERTBOT_CMD="sudo certbot certonly --manual -d \"*.${USER_ROOT_DOMAIN}\" --agree-tos --no-bootstrap --preferred-challenges dns -m \"${USER_EMAIL_ADDRESS}\" --no-eff-email ${TRMM_ACME_EXTRA_PARAMS}"
 
   print_debug "Certbot command: ${CERTBOT_CMD}"
 

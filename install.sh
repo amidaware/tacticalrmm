@@ -221,15 +221,16 @@ install_nginx() {
 
   wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
 
-  printf "deb https://nginx.org/packages/$OS_NAME/ $OS_CODENAME nginx\ndeb-src https://nginx.org/packages/$OS_NAME/ $OS_CODENAME nginx\n" | sudo tee /etc/apt/sources.list.d/nginx.list
+  {
+    printf "deb https://nginx.org/packages/%s/ %s nginx\n" "$OS_NAME" "$OS_CODENAME"
+    printf "deb-src https://nginx.org/packages/%s/ %s nginx\n" "$OS_NAME" "$OS_CODENAME"
+  } | sudo tee /etc/apt/sources.list.d/nginx.list
 
   sudo apt-get update
   sudo apt-get install -y nginx
   sudo systemctl stop nginx
 
-  ## todo: 2022-07-26: redo:
-  NGINX_CONF_DATA="$(
-  cat << EOF
+  cat << EOF | sudo tee "${NGINX_CONF}" > /dev/null
 worker_rlimit_nofile 1000000;
 user ${WWW_USER};
 worker_processes auto;
@@ -256,8 +257,6 @@ http {
     include ${NGINX_PATH}/sites-enabled/*;
 }
 EOF
-  )"
-  echo "${NGINX_CONF_DATA}" | sudo tee "${NGINX_CONF}" > /dev/null
 
   for i in sites-available sites-enabled; do
     sudo mkdir -p "${NGINX_PATH}/$i"
@@ -491,8 +490,7 @@ install_frontend() {
   sudo chown "${WWW_USER}:${WWW_GROUP}" -R "${TRMM_WEB_PATH}/dist"
   rm -f "/tmp/${webtar}"
 
-  NGINX_FRONTEND_CONF_DATA=$(
-    cat <<EOF
+    cat <<EOF | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
 server {
     server_name ${USER_FRONTEND_DOMAIN};
     charset utf-8;
@@ -530,8 +528,6 @@ server {
     return 404;
 }
 EOF
-  )
-  echo "${NGINX_FRONTEND_CONF_DATA}" | sudo tee "${NGINX_PATH}/sites-available/frontend.conf" >/dev/null
 
   sudo ln -s "${NGINX_PATH}/sites-available/frontend.conf" "${NGINX_PATH}/sites-enabled/frontend.conf"
 

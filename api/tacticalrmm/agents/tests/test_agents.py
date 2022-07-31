@@ -403,6 +403,7 @@ class TestAgentViews(TacticalTestCase):
             "cmd": "ipconfig",
             "shell": "cmd",
             "timeout": 30,
+            "run_as_user": False,
         }
         mock_ret.return_value = "nt authority\\system"
         r = self.client.post(url, data, format="json")
@@ -538,6 +539,7 @@ class TestAgentViews(TacticalTestCase):
             "output": "wait",
             "args": [],
             "timeout": 15,
+            "run_as_user": False,
         }
 
         r = self.client.post(url, data, format="json")
@@ -547,7 +549,12 @@ class TestAgentViews(TacticalTestCase):
             raise AgentHistory.DoesNotExist
 
         run_script.assert_called_with(
-            scriptpk=script.pk, args=[], timeout=18, wait=True, history_pk=hist.pk
+            scriptpk=script.pk,
+            args=[],
+            timeout=18,
+            wait=True,
+            history_pk=hist.pk,
+            run_as_user=False,
         )
         run_script.reset_mock()
 
@@ -559,6 +566,7 @@ class TestAgentViews(TacticalTestCase):
             "timeout": 15,
             "emailMode": "default",
             "emails": ["admin@example.com", "bob@example.com"],
+            "run_as_user": False,
         }
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
@@ -568,6 +576,7 @@ class TestAgentViews(TacticalTestCase):
             nats_timeout=18,
             emails=[],
             args=["abc", "123"],
+            run_as_user=False,
         )
         email_task.reset_mock()
 
@@ -581,6 +590,7 @@ class TestAgentViews(TacticalTestCase):
             nats_timeout=18,
             emails=["admin@example.com", "bob@example.com"],
             args=["abc", "123"],
+            run_as_user=False,
         )
 
         # test fire and forget
@@ -589,6 +599,7 @@ class TestAgentViews(TacticalTestCase):
             "output": "forget",
             "args": ["hello", "world"],
             "timeout": 22,
+            "run_as_user": True,
         }
 
         r = self.client.post(url, data, format="json")
@@ -598,7 +609,11 @@ class TestAgentViews(TacticalTestCase):
             raise AgentHistory.DoesNotExist
 
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25, history_pk=hist.pk
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            history_pk=hist.pk,
+            run_as_user=True,
         )
         run_script.reset_mock()
 
@@ -613,6 +628,7 @@ class TestAgentViews(TacticalTestCase):
             "timeout": 22,
             "custom_field": custom_field.pk,
             "save_all_output": True,
+            "run_as_user": False,
         }
 
         r = self.client.post(url, data, format="json")
@@ -627,6 +643,7 @@ class TestAgentViews(TacticalTestCase):
             timeout=25,
             wait=True,
             history_pk=hist.pk,
+            run_as_user=False,
         )
         run_script.reset_mock()
 
@@ -644,6 +661,7 @@ class TestAgentViews(TacticalTestCase):
             "timeout": 22,
             "custom_field": custom_field.pk,
             "save_all_output": False,
+            "run_as_user": False,
         }
 
         r = self.client.post(url, data, format="json")
@@ -658,6 +676,7 @@ class TestAgentViews(TacticalTestCase):
             timeout=25,
             wait=True,
             history_pk=hist.pk,
+            run_as_user=False,
         )
         run_script.reset_mock()
 
@@ -677,6 +696,7 @@ class TestAgentViews(TacticalTestCase):
             "timeout": 22,
             "custom_field": custom_field.pk,
             "save_all_output": False,
+            "run_as_user": False,
         }
 
         r = self.client.post(url, data, format="json")
@@ -691,6 +711,7 @@ class TestAgentViews(TacticalTestCase):
             timeout=25,
             wait=True,
             history_pk=hist.pk,
+            run_as_user=False,
         )
         run_script.reset_mock()
 
@@ -707,6 +728,7 @@ class TestAgentViews(TacticalTestCase):
             "output": "note",
             "args": ["hello", "world"],
             "timeout": 22,
+            "run_as_user": False,
         }
 
         r = self.client.post(url, data, format="json")
@@ -721,6 +743,7 @@ class TestAgentViews(TacticalTestCase):
             timeout=25,
             wait=True,
             history_pk=hist.pk,
+            run_as_user=False,
         )
         run_script.reset_mock()
 

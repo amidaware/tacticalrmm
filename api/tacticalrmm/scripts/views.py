@@ -160,6 +160,7 @@ class TestScript(APIView):
                 "code": Script.replace_with_snippets(request.data["code"]),
                 "shell": request.data["shell"],
             },
+            "run_as_user": request.data["run_as_user"],
         }
 
         r = asyncio.run(

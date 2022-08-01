@@ -241,6 +241,7 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
                         ),
                         "shell": script.shell,
                         "timeout": action["timeout"],
+                        "run_as_user": script.run_as_user,
                     }
                 )
         if actions_to_remove:

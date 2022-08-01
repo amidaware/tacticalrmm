@@ -469,6 +469,7 @@ class Alert(models.Model):
                 wait=True,
                 full=True,
                 run_on_any=True,
+                run_as_user=False,
             )
 
             # command was successful
@@ -591,6 +592,7 @@ class Alert(models.Model):
                 wait=True,
                 full=True,
                 run_on_any=True,
+                run_as_user=False,
             )
 
             # command was successful

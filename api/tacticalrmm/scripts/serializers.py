@@ -20,6 +20,7 @@ class ScriptTableSerializer(ModelSerializer):
             "filename",
             "hidden",
             "supported_platforms",
+            "run_as_user",
         ]
 
 
@@ -43,16 +44,17 @@ class ScriptSerializer(ModelSerializer):
             "filename",
             "hidden",
             "supported_platforms",
+            "run_as_user",
         ]
 
 
 class ScriptCheckSerializer(ModelSerializer):
     code = ReadOnlyField()
-    script_hash = ReadOnlyField
+    script_hash = ReadOnlyField()
 
     class Meta:
         model = Script
-        fields = ["code", "shell", "script_hash"]
+        fields = ["code", "shell", "run_as_user", "script_hash"]
 
 
 class ScriptSnippetSerializer(ModelSerializer):

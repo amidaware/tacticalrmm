@@ -174,7 +174,7 @@ def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
                     and task.task_result.status == TaskStatus.FAILING
                     and task.alert_severity == AlertSeverity.WARNING
                 ):
-                    data["warning"]
+                    data["warning"] = True
 
     return data
 

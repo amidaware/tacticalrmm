@@ -145,6 +145,7 @@ class TestScriptViews(TacticalTestCase):
             "timeout": 90,
             "args": [],
             "shell": ScriptShell.POWERSHELL,
+            "run_as_user": False,
         }
 
         resp = self.client.post(url, data, format="json")

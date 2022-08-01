@@ -9,7 +9,12 @@ from tacticalrmm.constants import AgentHistoryType
 
 @app.task
 def handle_bulk_command_task(
-    agentpks, cmd, shell, timeout, username, run_on_offline=False
+    agentpks: list[int],
+    cmd: str,
+    shell: str,
+    timeout,
+    username,
+    run_as_user: bool = False,
 ) -> None:
     nats_data = {
         "func": "rawcmd",
@@ -18,7 +23,9 @@ def handle_bulk_command_task(
             "command": cmd,
             "shell": shell,
         },
+        "run_as_user": run_as_user,
     }
+    agent: "Agent"
     for agent in Agent.objects.filter(pk__in=agentpks):
         hist = AgentHistory.objects.create(
             agent=agent,
@@ -33,9 +40,15 @@ def handle_bulk_command_task(
 
 @app.task
 def handle_bulk_script_task(
-    scriptpk: int, agentpks: List[int], args: List[str], timeout: int, username: str
+    scriptpk: int,
+    agentpks: List[int],
+    args: List[str],
+    timeout: int,
+    username: str,
+    run_as_user: bool = False,
 ) -> None:
     script = Script.objects.get(pk=scriptpk)
+    agent: "Agent"
     for agent in Agent.objects.filter(pk__in=agentpks):
         hist = AgentHistory.objects.create(
             agent=agent,
@@ -44,5 +57,9 @@ def handle_bulk_script_task(
             username=username,
         )
         agent.run_script(
-            scriptpk=script.pk, args=args, timeout=timeout, history_pk=hist.pk
+            scriptpk=script.pk,
+            args=args,
+            timeout=timeout,
+            history_pk=hist.pk,
+            run_as_user=run_as_user,
         )

@@ -532,11 +532,16 @@ class Agent(BaseAuditModel):
         wait: bool = False,
         run_on_any: bool = False,
         history_pk: int = 0,
+        run_as_user: bool = False,
     ) -> Any:
 
         from scripts.models import Script
 
         script = Script.objects.get(pk=scriptpk)
+
+        # always override if set on script model
+        if script.run_as_user:
+            run_as_user = True
 
         parsed_args = script.parse_script_args(self, script.shell, args)
 
@@ -548,6 +553,7 @@ class Agent(BaseAuditModel):
                 "code": script.code,
                 "shell": script.shell,
             },
+            "run_as_user": run_as_user,
         }
 
         if history_pk != 0:

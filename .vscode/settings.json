@@ -27,6 +27,10 @@
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": true,
   "editor.formatOnSave": true,
+  "files.associations": {
+    "**/ansible/**/*.yml": "ansible",
+    "**/docker/**/docker-compose*.yml": "dockercompose"
+  },
   "files.watcherExclude": {
     "files.watcherExclude": {
       "**/.git/objects/**": true,

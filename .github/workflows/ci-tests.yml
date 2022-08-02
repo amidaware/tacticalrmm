@@ -14,18 +14,18 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        python-version: ['3.10.4']
+        python-version: ["3.10.4"]
 
     steps:
       - uses: actions/checkout@v3
 
       - uses: harmon758/postgresql-action@v1
         with:
-          postgresql version: '14'
-          postgresql db: 'pipeline'
-          postgresql user: 'pipeline'
-          postgresql password: 'pipeline123456'
-      
+          postgresql version: "14"
+          postgresql db: "pipeline"
+          postgresql user: "pipeline"
+          postgresql password: "pipeline123456"
+
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
@@ -49,13 +49,13 @@ jobs:
           pip install -r requirements.txt -r requirements-test.txt
 
       - name: Codestyle black
-        working-directory: api/tacticalrmm
+        working-directory: api
         run: |
           black --exclude migrations/ --check tacticalrmm
           if [ $? -ne 0 ]; then
               exit 1
           fi
-      
+
       - name: Run django tests
         env:
           GHACTIONS: "yes"

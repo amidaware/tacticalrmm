@@ -415,6 +415,7 @@ def send_raw_cmd(request, agent_id):
             "command": request.data["cmd"],
             "shell": shell,
         },
+        "run_as_user": request.data["run_as_user"],
     }
 
     hist = AgentHistory.objects.create(
@@ -691,6 +692,7 @@ def run_script(request, agent_id):
     script = get_object_or_404(Script, pk=request.data["script"])
     output = request.data["output"]
     args = request.data["args"]
+    run_as_user: bool = request.data["run_as_user"]
     req_timeout = int(request.data["timeout"]) + 3
 
     AuditLog.audit_script_run(
@@ -715,6 +717,7 @@ def run_script(request, agent_id):
             timeout=req_timeout,
             wait=True,
             history_pk=history_pk,
+            run_as_user=run_as_user,
         )
         return Response(r)
 
@@ -728,6 +731,7 @@ def run_script(request, agent_id):
             nats_timeout=req_timeout,
             emails=emails,
             args=args,
+            run_as_user=run_as_user,
         )
     elif output == "collector":
         from core.models import CustomField
@@ -738,6 +742,7 @@ def run_script(request, agent_id):
             timeout=req_timeout,
             wait=True,
             history_pk=history_pk,
+            run_as_user=run_as_user,
         )
 
         custom_field = CustomField.objects.get(pk=request.data["custom_field"])
@@ -766,13 +771,18 @@ def run_script(request, agent_id):
             timeout=req_timeout,
             wait=True,
             history_pk=history_pk,
+            run_as_user=run_as_user,
         )
 
         Note.objects.create(agent=agent, user=request.user, note=r)
         return Response(r)
     else:
         agent.run_script(
-            scriptpk=script.pk, args=args, timeout=req_timeout, history_pk=history_pk
+            scriptpk=script.pk,
+            args=args,
+            timeout=req_timeout,
+            history_pk=history_pk,
+            run_as_user=run_as_user,
         )
 
     return Response(f"{script.name} will now be run on {agent.hostname}")
@@ -907,7 +917,7 @@ def bulk(request):
             shell,
             request.data["timeout"],
             request.user.username[:50],
-            run_on_offline=request.data["offlineAgents"],
+            request.data["run_as_user"],
         )
         return Response(f"Command will now be run on {len(agents)} agents")
 
@@ -919,6 +929,7 @@ def bulk(request):
             request.data["args"],
             request.data["timeout"],
             request.user.username[:50],
+            request.data["run_as_user"],
         )
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 

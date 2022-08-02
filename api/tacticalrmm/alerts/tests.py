@@ -1424,6 +1424,7 @@ class TestAlertTasks(TacticalTestCase):
             "timeout": 30,
             "script_args": [],
             "payload": {"code": failure_action.code, "shell": failure_action.shell},
+            "run_as_user": False,
         }
 
         nats_cmd.assert_called_with(data, timeout=30, wait=True)
@@ -1452,6 +1453,7 @@ class TestAlertTasks(TacticalTestCase):
             "timeout": 35,
             "script_args": ["nice_arg"],
             "payload": {"code": resolved_action.code, "shell": resolved_action.shell},
+            "run_as_user": False,
         }
 
         nats_cmd.assert_called_with(data, timeout=35, wait=True)

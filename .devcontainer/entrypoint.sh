@@ -15,10 +15,7 @@ set -e
 : "${MESH_PASS:=meshcentralpass}"
 : "${MESH_HOST:=tactical-meshcentral}"
 : "${API_HOST:=tactical-backend}"
-: "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
-: "${HTTP_PROTOCOL:=http}"
-: "${APP_PORT:=8080}"
 : "${API_PORT:=8000}"
 
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
@@ -141,16 +138,6 @@ if [ "$1" = 'tactical-init-dev' ]; then
   "${VIRTUAL_ENV}"/bin/pip install --no-cache-dir -r /requirements.txt
 
   django_setup
-
-  # create .env file for frontend
-  webenv="$(cat << EOF
-PROD_URL = "${HTTP_PROTOCOL}://${API_HOST}"
-DEV_URL = "${HTTP_PROTOCOL}://${API_HOST}"
-DEV_PORT = ${APP_PORT}
-DOCKER_BUILD = 1
-EOF
-)"
-  echo "${webenv}" | tee "${WORKSPACE_DIR}"/web/.env > /dev/null
 
   # chown everything to tactical user
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${WORKSPACE_DIR}"

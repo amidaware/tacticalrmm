@@ -22,22 +22,6 @@ services:
         aliases:
           - tactical-backend
 
-  app-dev:
-    container_name: trmm-app-dev
-    image: node:16-alpine
-    restart: always
-    command: /bin/sh -c "npm install --cache ~/.npm && npm run serve"
-    user: 1000:1000
-    working_dir: /workspace/web
-    volumes:
-      - ..:/workspace:cached
-    ports:
-      - "8080:${APP_PORT}"
-    networks:
-      dev:
-        aliases:
-          - tactical-frontend
-
   # nats
   nats-dev:
     container_name: trmm-nats-dev

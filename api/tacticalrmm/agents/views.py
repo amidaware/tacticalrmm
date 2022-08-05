@@ -460,7 +460,7 @@ class Reboot(APIView):
             return notify_error(f"Not currently implemented for {agent.plat}")
 
         try:
-            obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M:%S")
+            obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%dT%H:%M")
         except Exception:
             return notify_error("Invalid date")
 

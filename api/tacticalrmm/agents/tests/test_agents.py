@@ -428,7 +428,7 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.data, "Date cannot be set in the past")
 
         # test with date in future
-        data["datetime"] = "2027-08-29T18:41:02"
+        data["datetime"] = "2027-08-29T18:41"
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["time"], "August 29, 2027 at 06:41 PM")

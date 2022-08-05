@@ -7,7 +7,7 @@ channels_redis==3.4.1
 chardet==4.0.0
 cryptography==37.0.4
 daphne==3.0.2
-Django==4.0.6
+Django==4.1
 django-cors-headers==3.13.0
 django-ipware==4.0.2
 django-rest-knox==4.2.0

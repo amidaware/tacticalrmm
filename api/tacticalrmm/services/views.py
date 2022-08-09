@@ -26,7 +26,7 @@ def process_nats_response(data: Union[str, Dict]) -> Tuple[bool, bool, str]:
         else "timeout"
     )
 
-    return (success, natserror, errormsg)
+    return success, natserror, errormsg
 
 
 class GetServices(APIView):

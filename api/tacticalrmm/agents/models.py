@@ -845,22 +845,22 @@ class Agent(BaseAuditModel):
             asyncio.run(
                 send_command_with_mesh(cmd, mesh_uri, self.mesh_node_id, shell, 0)
             )
-            return ("ok", False)
+            return "ok", False
 
         elif mode == "mesh":
             data = {"func": "recover", "payload": {"mode": mode}}
             if wait:
                 r = asyncio.run(self.nats_cmd(data, timeout=20))
                 if r == "ok":
-                    return ("ok", False)
+                    return "ok", False
                 else:
-                    return (str(r), True)
+                    return str(r), True
             else:
                 asyncio.run(self.nats_cmd(data, timeout=20, wait=False))
 
-            return ("ok", False)
+            return "ok", False
 
-        return ("invalid", True)
+        return "invalid", True
 
     @staticmethod
     def serialize(agent: "Agent") -> Dict[str, Any]:

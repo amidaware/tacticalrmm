@@ -145,12 +145,6 @@ class AgentTableSerializer(serializers.ModelSerializer):
         depth = 2
 
 
-class WinAgentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Agent
-        fields = "__all__"
-
-
 class AgentHostnameSerializer(serializers.ModelSerializer):
     client = serializers.ReadOnlyField(source="client.name")
     site = serializers.ReadOnlyField(source="site.name")

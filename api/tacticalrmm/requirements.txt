@@ -35,5 +35,5 @@ validators==0.20.0
 vine==5.0.0
 websockets==10.3
 zipp==3.8.1
-drf_spectacular==0.22.1
+drf-spectacular==0.23.1
 meshctrl==0.1.15

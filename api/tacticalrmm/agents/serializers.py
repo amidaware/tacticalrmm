@@ -90,6 +90,11 @@ class AgentTableSerializer(serializers.ModelSerializer):
     last_seen = serializers.ReadOnlyField()
     pending_actions_count = serializers.ReadOnlyField()
     has_patches_pending = serializers.ReadOnlyField()
+    cpu_model = serializers.ReadOnlyField()
+    graphics = serializers.ReadOnlyField()
+    local_ips = serializers.ReadOnlyField()
+    make_model = serializers.ReadOnlyField()
+    physical_disks = serializers.ReadOnlyField()
 
     def get_alert_template(self, obj):
 
@@ -141,14 +146,16 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "plat",
             "goarch",
             "has_patches_pending",
+            "version",
+            "operating_system",
+            "public_ip",
+            "cpu_model",
+            "graphics",
+            "local_ips",
+            "make_model",
+            "physical_disks",
         ]
         depth = 2
-
-
-class WinAgentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Agent
-        fields = "__all__"
 
 
 class AgentHostnameSerializer(serializers.ModelSerializer):

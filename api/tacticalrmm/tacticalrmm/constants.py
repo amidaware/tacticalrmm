@@ -240,6 +240,14 @@ AGENT_DEFER = (
     "modified_time",
 )
 
+AGENT_TABLE_DEFER = (
+    "services",
+    "created_by",
+    "created_time",
+    "modified_by",
+    "modified_time",
+)
+
 ONLINE_AGENTS = (
     "pk",
     "agent_id",

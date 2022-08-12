@@ -30,6 +30,7 @@ from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    AGENT_TABLE_DEFER,
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
     AgentHistoryType,
@@ -115,7 +116,7 @@ class GetAgents(APIView):
                 Agent.objects.filter_by_role(request.user)  # type: ignore
                 .filter(monitoring_type_filter)
                 .filter(client_site_filter)
-                .defer(*AGENT_DEFER)
+                .defer(*AGENT_TABLE_DEFER)
                 .select_related(
                     "site__server_policy",
                     "site__workstation_policy",

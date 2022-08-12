@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from meshctrl.utils import get_login_token
 from packaging import version as pyver
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -29,6 +30,7 @@ from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    AGENT_TABLE_DEFER,
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
     AgentHistoryType,
@@ -114,7 +116,7 @@ class GetAgents(APIView):
                 Agent.objects.filter_by_role(request.user)  # type: ignore
                 .filter(monitoring_type_filter)
                 .filter(client_site_filter)
-                .defer(*AGENT_DEFER)
+                .defer(*AGENT_TABLE_DEFER)
                 .select_related(
                     "site__server_policy",
                     "site__workstation_policy",
@@ -166,6 +168,22 @@ class GetAgents(APIView):
 class GetUpdateDeleteAgent(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
+    class InputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Agent
+            fields = [
+                "monitoring_type",
+                "description",
+                "overdue_email_alert",
+                "overdue_text_alert",
+                "overdue_dashboard_alert",
+                "offline_time",
+                "overdue_time",
+                "check_interval",
+                "time_zone",
+                "site",
+            ]
+
     # get agent details
     def get(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
@@ -175,9 +193,9 @@ class GetUpdateDeleteAgent(APIView):
     def put(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
-        a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
-        a_serializer.is_valid(raise_exception=True)
-        a_serializer.save()
+        s = self.InputSerializer(instance=agent, data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        s.save()
 
         if "winupdatepolicy" in request.data.keys():
             policy = agent.winupdatepolicy.get()  # type: ignore

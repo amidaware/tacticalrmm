@@ -1,0 +1,2 @@
+deb https://nginx.org/packages/debian/ bullseye nginx
+deb-src https://nginx.org/packages/debian/ bullseye nginx

@@ -1,6 +1,0 @@
----
-- hosts: "{{ target }}"
-  vars:
-    ansible_user: tactical
-  roles:
-    - trmm_dev

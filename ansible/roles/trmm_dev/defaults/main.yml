@@ -8,8 +8,11 @@ backend_dir: "/opt/trmm"
 frontend_dir: "/opt/trmm-web"
 scripts_dir: "/opt/community-scripts"
 trmm_dir: "/opt/trmm/api/tacticalrmm/tacticalrmm"
+mesh_dir: "/opt/meshcentral"
 settings_file: "{{ trmm_dir }}/settings.py"
 local_settings_file: "{{ trmm_dir }}/local_settings.py"
+fullchain_dest: /etc/ssl/certs/fullchain.pem
+privkey_dest: /etc/ssl/certs/privkey.pem
 
 base_pkgs:
   - build-essential

@@ -63,31 +63,6 @@
     cmd: |
       make altinstall
 
-- name: install nginx
-  tags: nginx
-  become: yes
-  ansible.builtin.apt:
-    pkg: nginx
-    state: present
-
-- name: set nginx default conf
-  tags: nginx
-  become: yes
-  ansible.builtin.copy:
-    src: nginx-default.conf
-    dest: /etc/nginx/nginx.conf
-    owner: "root"
-    group: "root"
-    mode: "0644"
-
-- name: ensure nginx enabled and restarted
-  tags: nginx
-  become: yes
-  ansible.builtin.service:
-    name: nginx
-    enabled: yes
-    state: restarted
-
 - name: create postgres repo
   tags: postgres
   become: yes
@@ -244,6 +219,7 @@
 - name: remove tempdirs
   tags: cleanup
   become: yes
+  ignore_errors: yes
   ansible.builtin.file:
     path: "{{ item }}"
     state: absent
@@ -251,3 +227,110 @@
     - "{{ nats_tmp.path }}"
     - "{{ python_tmp.path }}"
     - "{{ nodejs_tmp.path }}"
+
+- name: deploy fullchain
+  tags: certs
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ fullchain_src }}"
+    dest: "{{ fullchain_dest }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0440"
+
+- name: deploy privkey
+  tags: certs
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ privkey_src }}"
+    dest: "{{ privkey_dest }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0440"
+
+- name: import nginx signing key
+  tags: nginx
+  become: yes
+  ansible.builtin.apt_key:
+    url: https://nginx.org/packages/keys/nginx_signing.key
+    state: present
+
+- name: add nginx repo
+  tags: nginx
+  become: yes
+  ansible.builtin.copy:
+    src: nginx.repo
+    dest: /etc/apt/sources.list.d/nginx.list
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: install nginx
+  tags: nginx
+  become: yes
+  ansible.builtin.apt:
+    pkg: nginx
+    state: present
+    update_cache: yes
+
+- name: set nginx default conf
+  tags: nginx
+  become: yes
+  ansible.builtin.copy:
+    src: nginx-default.conf
+    dest: /etc/nginx/nginx.conf
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: create nginx dirs
+  become: yes
+  tags: nginx
+  ansible.builtin.file:
+    state: directory
+    path: "{{ item }}"
+    mode: "0755"
+  with_items:
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+
+- name: deploy nginx sites
+  become: yes
+  tags: nginx
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    owner: root
+    group: root
+  with_items:
+    - { src: backend.nginx.j2, dest: /etc/nginx/sites-available/backend.conf }
+    - { src: mesh.nginx.j2, dest: /etc/nginx/sites-available/mesh.conf }
+
+- name: enable nginx sites
+  become: yes
+  tags: nginx
+  ansible.builtin.file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    owner: root
+    group: root
+    state: link
+  with_items:
+    - {
+        src: /etc/nginx/sites-available/backend.conf,
+        dest: /etc/nginx/sites-enabled/backend.conf,
+      }
+    - {
+        src: /etc/nginx/sites-available/mesh.conf,
+        dest: /etc/nginx/sites-enabled/mesh.conf,
+      }
+
+- name: ensure nginx enabled and restarted
+  tags: nginx
+  become: yes
+  ansible.builtin.service:
+    name: nginx
+    enabled: yes
+    state: restarted

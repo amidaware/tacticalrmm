@@ -1,11 +1,11 @@
 # pulls community scripts from git repo
-FROM python:3.10-slim AS GET_SCRIPTS_STAGE
+FROM python:3.10.6-slim AS GET_SCRIPTS_STAGE
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
     git clone https://github.com/amidaware/community-scripts.git /community-scripts
 
-FROM python:3.10-slim
+FROM python:3.10.6-slim
 
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready

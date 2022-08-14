@@ -42,7 +42,7 @@ readonly SCRIPT_EXEC_TS="$(date -Iseconds)"
 printf "%0.s*" {1..80}
 printf "\nInstallation started at %s\n" "${SCRIPT_EXEC_TS}"
 
-readonly SCRIPT_VERSION="66"
+readonly SCRIPT_VERSION="67"
 readonly SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/${TRMM_SCRIPT_BRANCH}/install.sh"
 readonly TRMM_SERVER_REPO='https://github.com/amidaware/tacticalrmm.git'
 readonly TRMM_FRONTEND_REPO='https://github.com/amidaware/tacticalrmm-web'
@@ -57,7 +57,7 @@ readonly CYAN="\033[0;36m"
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 
-REQ_PYTHON_VER='3.10.4'
+REQ_PYTHON_VER='3.10.6'
 TRMM_SETTINGS_FILE="${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/settings.py"
 TRMM_LOCAL_CONF="${TRMM_ROOT_PATH}/api/tacticalrmm/tacticalrmm/local_settings.py"
 MESH_CONF_FILE="${MESH_ROOT_PATH}/meshcentral-data/config.json"

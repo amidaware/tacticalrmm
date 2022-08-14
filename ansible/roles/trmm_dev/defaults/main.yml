@@ -1,6 +1,7 @@
 ---
 user: "tactical"
-python_ver: "3.10.4"
+python_ver: "3.10.6"
+go_ver: "1.18.5"
 backend_repo: "https://github.com/amidaware/tacticalrmm.git"
 frontend_repo: "https://github.com/amidaware/tacticalrmm-web.git"
 scripts_repo: "https://github.com/amidaware/community-scripts.git"
@@ -25,7 +26,6 @@ base_pkgs:
   - g++
   - make
   - ca-certificates
-  - redis
   - git
 
 python_pkgs:

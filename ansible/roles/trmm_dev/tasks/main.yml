@@ -9,6 +9,19 @@
     group: "root"
     mode: "0644"
 
+- name: set max_user_watches
+  tags: sysctl
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    line: fs.inotify.max_user_watches=524288
+
+- name: reload sysctl
+  tags: sysctl
+  become: yes
+  ansible.builtin.command:
+    cmd: sysctl -p
+
 - name: install base packages
   tags: base
   become: yes
@@ -18,6 +31,21 @@
     update_cache: yes
   with_items:
     - "{{ base_pkgs }}"
+
+- name: download and install golang
+  tags: golang
+  become: yes
+  ansible.builtin.unarchive:
+    src: "https://go.dev/dl/go{{ go_ver }}.linux-amd64.tar.gz"
+    dest: /usr/local
+    remote_src: yes
+
+- name: add golang to path
+  become: yes
+  tags: golang
+  ansible.builtin.copy:
+    dest: /etc/profile.d/golang.sh
+    content: "PATH=$PATH:/usr/local/go/bin"
 
 - name: install python prereqs
   tags: python
@@ -62,6 +90,13 @@
     chdir: "{{ python_tmp.path }}/Python-{{ python_ver }}"
     cmd: |
       make altinstall
+
+- name: install redis
+  tags: redis
+  become: yes
+  ansible.builtin.apt:
+    pkg: redis
+    state: present
 
 - name: create postgres repo
   tags: postgres
@@ -218,6 +253,15 @@
   ansible.builtin.shell:
     chdir: "{{ frontend_dir }}"
     cmd: npm install
+
+- name: add quasar env
+  tags: quasar
+  ansible.builtin.template:
+    src: quasar.env.j2
+    dest: "{{ frontend_dir }}/.env"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0644"
 
 - name: remove tempdirs
   tags: cleanup

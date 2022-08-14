@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="40"
+SCRIPT_VERSION="41"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -13,7 +13,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.4'
+PYTHON_VER='3.10.6'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmrestore_XXXXXXXXXX")
@@ -175,7 +175,7 @@ print_green 'Restoring systemd services'
 sudo cp $tmp_dir/systemd/* /etc/systemd/system/
 sudo systemctl daemon-reload
 
-print_green 'Installing Python 3.10.4'
+print_green "Installing Python ${PYTHON_VER}"
 
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)

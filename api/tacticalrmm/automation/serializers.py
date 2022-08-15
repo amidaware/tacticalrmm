@@ -7,8 +7,11 @@ from rest_framework.serializers import (
 from agents.serializers import AgentHostnameSerializer
 from autotasks.models import TaskResult
 from checks.models import CheckResult
-from clients.models import Client
-from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
+from clients.models import Client, Site
+from clients.serializers import (
+    ClientMinimumSerializer,
+    SiteMinimumSerializer,
+)
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Policy
@@ -85,11 +88,29 @@ class PolicyRelatedSerializer(ModelSerializer):
         )
 
 
+class PolicyOverviewSiteSerializer(ModelSerializer):
+    workstation_policy = PolicySerializer(read_only=True)
+    server_policy = PolicySerializer(read_only=True)
+
+    class Meta:
+        model = Site
+        fields = ("pk", "name", "workstation_policy", "server_policy")
+
+
 class PolicyOverviewSerializer(ModelSerializer):
+    sites = SerializerMethodField()
+    workstation_policy = PolicySerializer(read_only=True)
+    server_policy = PolicySerializer(read_only=True)
+
+    def get_sites(self, obj):
+        return PolicyOverviewSiteSerializer(
+            obj.filtered_sites,
+            many=True,
+        ).data
+
     class Meta:
         model = Client
         fields = ("pk", "name", "sites", "workstation_policy", "server_policy")
-        depth = 2
 
 
 class PolicyCheckStatusSerializer(ModelSerializer):

@@ -29,14 +29,14 @@ APP_VER = "0.0.169"
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.3.0"
 
-MESH_VER = "1.0.60"
+MESH_VER = "1.0.70"
 
 NATS_SERVER_VER = "2.8.4"
 
 # for the update script, bump when need to recreate venv
 PIP_VER = "32"
 
-SETUPTOOLS_VER = "64.0.3"
+SETUPTOOLS_VER = "65.1.0"
 WHEEL_VER = "0.37.1"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"

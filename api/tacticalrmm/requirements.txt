@@ -14,14 +14,14 @@ django-rest-knox==4.2.0
 djangorestframework==3.13.1
 future==0.18.2
 msgpack==1.0.4
-nats-py==2.1.4
+nats-py==2.1.7
 psutil==5.9.1
 psycopg2-binary==2.9.3
 pycparser==2.21
 pycryptodome==3.15.0
 pyotp==2.6.0
 pyparsing==3.0.9
-pytz==2022.2
+pytz==2022.2.1
 qrcode==7.3.1
 redis==4.3.4
 hiredis==2.0.0

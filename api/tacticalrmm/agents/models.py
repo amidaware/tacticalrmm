@@ -748,10 +748,10 @@ class Agent(BaseAuditModel):
             cache_key = f"agent_{self.agent_id}_checks"
 
         elif self.policy:
-            cache_key = f"site_{self.monitoring_type}_{self.site_id}_policy_{self.policy_id}_checks"
+            cache_key = f"site_{self.monitoring_type}_{self.plat}_{self.site_id}_policy_{self.policy_id}_checks"
 
         else:
-            cache_key = f"site_{self.monitoring_type}_{self.site_id}_checks"
+            cache_key = f"site_{self.monitoring_type}_{self.plat}_{self.site_id}_checks"
 
         cached_checks = cache.get(cache_key)
         if isinstance(cached_checks, list):
@@ -773,10 +773,10 @@ class Agent(BaseAuditModel):
             cache_key = f"agent_{self.agent_id}_tasks"
 
         elif self.policy:
-            cache_key = f"site_{self.monitoring_type}_{self.site_id}_policy_{self.policy_id}_tasks"
+            cache_key = f"site_{self.monitoring_type}_{self.plat}_{self.site_id}_policy_{self.policy_id}_tasks"
 
         else:
-            cache_key = f"site_{self.monitoring_type}_{self.site_id}_tasks"
+            cache_key = f"site_{self.monitoring_type}_{self.plat}_{self.site_id}_tasks"
 
         cached_tasks = cache.get(cache_key)
         if isinstance(cached_tasks, list):
@@ -784,7 +784,7 @@ class Agent(BaseAuditModel):
         else:
             # get agent tasks based on policies
             tasks = Policy.get_policy_tasks(self)
-            cache.set(f"site_{self.site_id}_tasks", tasks, 600)
+            cache.set(cache_key, tasks, 600)
             return tasks
 
     def _do_nats_debug(self, agent: "Agent", message: str) -> None:

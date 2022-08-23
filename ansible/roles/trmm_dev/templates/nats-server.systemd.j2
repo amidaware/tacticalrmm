@@ -1,0 +1,18 @@
+[Unit]
+Description=NATS Server
+After=network.target
+
+[Service]
+PrivateTmp=true
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c {{ backend_dir }}/api/tacticalrmm/nats-rmm.conf
+ExecReload=/usr/bin/kill -s HUP $MAINPID
+ExecStop=/usr/bin/kill -s SIGINT $MAINPID
+User={{ user }}
+Group={{ user }}
+Restart=always
+RestartSec=5s
+LimitNOFILE=1000000
+
+[Install]
+WantedBy=multi-user.target

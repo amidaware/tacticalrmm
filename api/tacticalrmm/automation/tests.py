@@ -2,8 +2,9 @@ from itertools import cycle
 from unittest.mock import patch
 
 from model_bakery import baker, seq
-
+from django.db.models import Prefetch
 from agents.models import Agent
+from clients.models import Site
 from core.utils import get_core_settings
 from tacticalrmm.constants import AgentMonType, TaskSyncStatus
 from tacticalrmm.test import TacticalTestCase
@@ -186,7 +187,17 @@ class TestPolicyViews(TacticalTestCase):
 
         baker.make("clients.Site", client=cycle(clients), _quantity=3)
         resp = self.client.get(url, format="json")
-        clients = Client.objects.all()
+        clients = Client.objects.select_related(
+            "workstation_policy", "server_policy"
+        ).prefetch_related(
+            Prefetch(
+                "sites",
+                queryset=Site.objects.select_related(
+                    "workstation_policy", "server_policy"
+                ),
+                to_attr="filtered_sites",
+            )
+        )
         serializer = PolicyOverviewSerializer(clients, many=True)
 
         self.assertEqual(resp.status_code, 200)

@@ -17,26 +17,26 @@ LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.14.6"
+TRMM_VERSION = "0.14.7"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.100.8"
+WEB_VERSION = "0.100.9"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.169"
+APP_VER = "0.0.170"
 
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.3.0"
 
-MESH_VER = "1.0.60"
+MESH_VER = "1.0.72"
 
 NATS_SERVER_VER = "2.8.4"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "31"
+PIP_VER = "32"
 
-SETUPTOOLS_VER = "62.6.0"
+SETUPTOOLS_VER = "65.2.0"
 WHEEL_VER = "0.37.1"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"

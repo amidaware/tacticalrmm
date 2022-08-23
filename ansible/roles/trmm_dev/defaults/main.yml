@@ -1,15 +1,19 @@
 ---
 user: "tactical"
-python_ver: "3.10.4"
+python_ver: "3.10.6"
+go_ver: "1.18.5"
 backend_repo: "https://github.com/amidaware/tacticalrmm.git"
 frontend_repo: "https://github.com/amidaware/tacticalrmm-web.git"
 scripts_repo: "https://github.com/amidaware/community-scripts.git"
 backend_dir: "/opt/trmm"
 frontend_dir: "/opt/trmm-web"
-scripts_dir: "/opt/community-scripts"
-trmm_dir: "/opt/trmm/api/tacticalrmm/tacticalrmm"
+scripts_dir: "/opt/trmm-community-scripts"
+trmm_dir: "{{ backend_dir }}/api/tacticalrmm/tacticalrmm"
+mesh_dir: "/opt/meshcentral"
 settings_file: "{{ trmm_dir }}/settings.py"
 local_settings_file: "{{ trmm_dir }}/local_settings.py"
+fullchain_dest: /etc/ssl/certs/fullchain.pem
+privkey_dest: /etc/ssl/certs/privkey.pem
 
 base_pkgs:
   - build-essential
@@ -22,7 +26,6 @@ base_pkgs:
   - g++
   - make
   - ca-certificates
-  - redis
   - git
 
 python_pkgs:

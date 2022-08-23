@@ -22,18 +22,7 @@ from .serializers import (
     UserSerializer,
     UserUISerializer,
 )
-
-
-def _is_root_user(request, user) -> bool:
-    root = (
-        hasattr(settings, "ROOT_USER")
-        and request.user != user
-        and user.username == settings.ROOT_USER
-    )
-    demo = (
-        getattr(settings, "DEMO", False) and request.user.username == settings.ROOT_USER
-    )
-    return root or demo
+from accounts.utils import is_root_user
 
 
 class CheckCreds(KnoxLoginView):
@@ -159,7 +148,7 @@ class GetUpdateDeleteUser(APIView):
     def put(self, request, pk):
         user = get_object_or_404(User, pk=pk)
 
-        if _is_root_user(request, user):
+        if is_root_user(request=request, user=user):
             return notify_error("The root user cannot be modified from the UI")
 
         serializer = UserSerializer(instance=user, data=request.data, partial=True)
@@ -170,7 +159,7 @@ class GetUpdateDeleteUser(APIView):
 
     def delete(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        if _is_root_user(request, user):
+        if is_root_user(request=request, user=user):
             return notify_error("The root user cannot be deleted from the UI")
 
         user.delete()
@@ -183,7 +172,7 @@ class UserActions(APIView):
     # reset password
     def post(self, request):
         user = get_object_or_404(User, pk=request.data["id"])
-        if _is_root_user(request, user):
+        if is_root_user(request=request, user=user):
             return notify_error("The root user cannot be modified from the UI")
 
         user.set_password(request.data["password"])
@@ -194,7 +183,7 @@ class UserActions(APIView):
     # reset two factor token
     def put(self, request):
         user = get_object_or_404(User, pk=request.data["id"])
-        if _is_root_user(request, user):
+        if is_root_user(request=request, user=user):
             return notify_error("The root user cannot be modified from the UI")
 
         user.totp_key = ""

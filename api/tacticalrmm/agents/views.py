@@ -577,6 +577,19 @@ def install_agent(request):
             download_url=download_url,
         )
 
+    elif request.data["installMethod"] == "mac":
+        from agents.utils import generate_mac_install
+
+        return generate_mac_install(
+            client=str(client_id),
+            site=str(site_id),
+            agent_type=request.data["agenttype"],
+            arch=goarch,
+            token=token,
+            api=request.data["api"],
+            download_url=download_url,
+        )
+
     elif request.data["installMethod"] == "manual":
         cmd = [
             inno,

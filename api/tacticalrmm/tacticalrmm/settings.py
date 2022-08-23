@@ -14,6 +14,8 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 
 LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 
+MAC_AGENT_SCRIPT = BASE_DIR / "core" / "agent_mac.sh"
+
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release

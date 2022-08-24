@@ -23,8 +23,6 @@ agentSvcName='com.tactical.plist'
 agentSysD="/Library/LaunchDaemons/com.tactical.plist"
 meshDir='/usr/local/mesh_services'
 meshSystemBin="/usr/local/mesh_services/meshagent/meshagent_osx64"
-meshSvcName='meshagent.service'
-meshSysD="/lib/systemd/system/${meshSvcName}"
 
 RemoveOldAgent() {
     echo "Uninstalling Tactical agent..."
@@ -33,7 +31,6 @@ RemoveOldAgent() {
     rm ${agentSysD}
     rm "${agentBinPath}/${binName}"
     rm /etc/tacticalagent
-    ${meshSystemBin} -uninstall
 }
 
 InstallMesh() {
@@ -46,18 +43,22 @@ InstallMesh() {
 }
 
 RemoveMesh() {
-    if [ -f "${meshSystemBin}" ]; then
-        ${meshSystemBin} -uninstall
-        sleep 1
+    if [ -f "/usr/local/mesh_services/meshagent/meshagent_osx64" ]; then
+        echo "Stopping Mesh Agent…"
+        sudo /bin/launchctl unload /Library/LaunchDaemons/meshagent_osx64_LaunchDaemon.plist
+        sudo /bin/launchctl unload /Library/LaunchDaemons/meshagentDiagnostic_periodicStart.plist &> /dev/null
+        sudo /bin/launchctl unload /Library/LaunchDaemons/meshagentDiagnostic.plist &> /dev/null
+        sudo rm /Library/LaunchDaemons/meshagentDiagnostic_periodicStart.plist &> /dev/null
+        sudo rm /Library/LaunchDaemons/meshagentDiagnostic.plist &> /dev/null
+        sudo rm /usr/local/mesh_services/meshagent/meshagent_osx64
+        sudo rm /usr/local/mesh_services/meshagentDiagnostic/meshagentDiagnostic &> /dev/null
+        sudo rm /Library/LaunchDaemons/meshagent_osx64_LaunchDaemon.plist
+        sudo rm /Library/LaunchAgents/meshagent_osx64_LaunchAgent.plist
+        sudo rm -R /usr/local/mesh_services/meshagent
+        echo "Mesh Agent was uninstalled."
+    else
+        echo "Mesh install not detected"
     fi
-
-    if [ -f "${meshSysD}" ]; then
-        systemctl disable --now ${meshSvcName} > /dev/null 2>&1
-        rm -f ${meshSysD}
-    fi
-
-    rm -rf ${meshDir}
-    systemctl daemon-reload
 }
 
 Uninstall() {
@@ -82,14 +83,18 @@ MESH_NODE_ID=""
 if [ $# -ne 0 ] && [ $1 == '--nomesh' ]; then
     echo "Skipping mesh install"
 else
-    if [ -f "${meshSystemBin}" ]; then
-        RemoveMesh
+    if [[ $(sysctl machdep.cpu.brand_string) != *"Intel"* ]]; then
+        echo "Skipping mesh, did not detect a supported mesh platform."
+    else
+        if [ -f "${meshSystemBin}" ]; then
+            RemoveMesh
+        fi
+        echo "Downloading and installing mesh agent..."
+        InstallMesh
+        sleep 2
+        echo "Getting mesh node id..."
+        MESH_NODE_ID=$(${agentBin} -m nixmeshnodeid)
     fi
-    echo "Downloading and installing mesh agent..."
-    InstallMesh
-    sleep 2
-    echo "Getting mesh node id..."
-    MESH_NODE_ID=$(${agentBin} -m nixmeshnodeid)
 fi
 
 if [ ! -d "${agentBinPath}" ]; then

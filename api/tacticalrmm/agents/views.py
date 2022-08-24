@@ -172,6 +172,8 @@ class GetUpdateDeleteAgent(APIView):
         class Meta:
             model = Agent
             fields = [
+                "maintenance_mode",  # TODO separate this
+                "policy",  # TODO separate this
                 "monitoring_type",
                 "description",
                 "overdue_email_alert",

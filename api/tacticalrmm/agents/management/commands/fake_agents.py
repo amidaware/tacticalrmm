@@ -568,6 +568,12 @@ class Command(BaseCommand):
                     check5_history.y = 1
                 else:
                     check5_history.y = 0
+                check5_history.results = {
+                    "retcode": 0,
+                    "stdout": None,
+                    "stderr": None,
+                    "execution_time": "4.0000",
+                }
                 check5_history.save()
 
             check6 = Check()
@@ -595,6 +601,12 @@ class Command(BaseCommand):
                 check6_history.agent_id = agent.agent_id
                 check6_history.x = django_now - djangotime.timedelta(minutes=i * 2)
                 check6_history.y = 0
+                check6_history.results = {
+                    "retcode": 0,
+                    "stdout": None,
+                    "stderr": None,
+                    "execution_time": "4.0000",
+                }
                 check6_history.save()
 
             nla_task = AutomatedTask()
@@ -712,6 +724,12 @@ class Command(BaseCommand):
                 check7_history.agent_id = agent.agent_id
                 check7_history.x = django_now - djangotime.timedelta(minutes=i * 2)
                 check7_history.y = 0
+                check7_history.results = {
+                    "retcode": 0,
+                    "stdout": spooler_stdout,
+                    "stderr": None,
+                    "execution_time": "3.1337",
+                }
                 check7_history.save()
 
             if agent.plat == AgentPlat.WINDOWS:

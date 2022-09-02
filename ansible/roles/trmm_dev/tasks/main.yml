@@ -9,6 +9,19 @@
     group: "root"
     mode: "0644"
 
+- name: set max_user_watches
+  tags: sysctl
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    line: fs.inotify.max_user_watches=524288
+
+- name: reload sysctl
+  tags: sysctl
+  become: yes
+  ansible.builtin.command:
+    cmd: sysctl -p
+
 - name: install base packages
   tags: base
   become: yes
@@ -18,6 +31,21 @@
     update_cache: yes
   with_items:
     - "{{ base_pkgs }}"
+
+- name: download and install golang
+  tags: golang
+  become: yes
+  ansible.builtin.unarchive:
+    src: "https://go.dev/dl/go{{ go_ver }}.linux-amd64.tar.gz"
+    dest: /usr/local
+    remote_src: yes
+
+- name: add golang to path
+  become: yes
+  tags: golang
+  ansible.builtin.copy:
+    dest: /etc/profile.d/golang.sh
+    content: "PATH=$PATH:/usr/local/go/bin"
 
 - name: install python prereqs
   tags: python
@@ -63,30 +91,12 @@
     cmd: |
       make altinstall
 
-- name: install nginx
-  tags: nginx
+- name: install redis
+  tags: redis
   become: yes
   ansible.builtin.apt:
-    pkg: nginx
+    pkg: redis
     state: present
-
-- name: set nginx default conf
-  tags: nginx
-  become: yes
-  ansible.builtin.copy:
-    src: nginx-default.conf
-    dest: /etc/nginx/nginx.conf
-    owner: "root"
-    group: "root"
-    mode: "0644"
-
-- name: ensure nginx enabled and restarted
-  tags: nginx
-  become: yes
-  ansible.builtin.service:
-    name: nginx
-    enabled: yes
-    state: restarted
 
 - name: create postgres repo
   tags: postgres
@@ -96,7 +106,7 @@
     dest: /etc/apt/sources.list.d/pgdg.list
     owner: root
     group: root
-    mode: "0440"
+    mode: "0644"
 
 - name: import postgres repo signing key
   tags: postgres
@@ -232,6 +242,200 @@
   ansible.builtin.shell:
     cmd: npm install -g npm
 
+- name: install quasar cli
+  tags: quasar
+  become: yes
+  ansible.builtin.shell:
+    cmd: npm install -g @quasar/cli
+
+- name: install frontend
+  tags: quasar
+  ansible.builtin.shell:
+    chdir: "{{ frontend_dir }}"
+    cmd: npm install
+
+- name: add quasar env
+  tags: quasar
+  ansible.builtin.template:
+    src: quasar.env.j2
+    dest: "{{ frontend_dir }}/.env"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0644"
+
+- name: remove tempdirs
+  tags: cleanup
+  become: yes
+  ignore_errors: yes
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ nats_tmp.path }}"
+    - "{{ python_tmp.path }}"
+    - "{{ nodejs_tmp.path }}"
+
+- name: deploy fullchain
+  tags: certs
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ fullchain_src }}"
+    dest: "{{ fullchain_dest }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0440"
+
+- name: deploy privkey
+  tags: certs
+  become: yes
+  ansible.builtin.copy:
+    src: "{{ privkey_src }}"
+    dest: "{{ privkey_dest }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0440"
+
+- name: import nginx signing key
+  tags: nginx
+  become: yes
+  ansible.builtin.apt_key:
+    url: https://nginx.org/packages/keys/nginx_signing.key
+    state: present
+
+- name: add nginx repo
+  tags: nginx
+  become: yes
+  ansible.builtin.copy:
+    src: nginx.repo
+    dest: /etc/apt/sources.list.d/nginx.list
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: install nginx
+  tags: nginx
+  become: yes
+  ansible.builtin.apt:
+    pkg: nginx
+    state: present
+    update_cache: yes
+
+- name: set nginx default conf
+  tags: nginx
+  become: yes
+  ansible.builtin.copy:
+    src: nginx-default.conf
+    dest: /etc/nginx/nginx.conf
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: create nginx dirs
+  become: yes
+  tags: nginx
+  ansible.builtin.file:
+    state: directory
+    path: "{{ item }}"
+    mode: "0755"
+  with_items:
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+
+- name: deploy nginx sites
+  become: yes
+  tags: nginx
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    owner: root
+    group: root
+  with_items:
+    - { src: backend.nginx.j2, dest: /etc/nginx/sites-available/backend.conf }
+    - { src: mesh.nginx.j2, dest: /etc/nginx/sites-available/mesh.conf }
+
+- name: enable nginx sites
+  become: yes
+  tags: nginx
+  ansible.builtin.file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    owner: root
+    group: root
+    state: link
+  with_items:
+    - {
+        src: /etc/nginx/sites-available/backend.conf,
+        dest: /etc/nginx/sites-enabled/backend.conf,
+      }
+    - {
+        src: /etc/nginx/sites-available/mesh.conf,
+        dest: /etc/nginx/sites-enabled/mesh.conf,
+      }
+
+- name: ensure nginx enabled and restarted
+  tags: nginx
+  become: yes
+  ansible.builtin.service:
+    name: nginx
+    enabled: yes
+    state: restarted
+
+- name: copy nats-api bin
+  tags: nats-api
+  become: yes
+  ansible.builtin.copy:
+    remote_src: yes
+    src: "{{ backend_dir }}/natsapi/bin/nats-api"
+    dest: /usr/local/bin/nats-api
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0755"
+
+- name: get setuptools_ver
+  tags: pip
+  ansible.builtin.shell: grep "^SETUPTOOLS_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
+  register: setuptools_ver
+
+- name: get wheel_ver
+  tags: pip
+  ansible.builtin.shell: grep "^WHEEL_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
+  register: wheel_ver
+
+- name: setup virtual env
+  tags: pip
+  ansible.builtin.shell:
+    chdir: "{{ backend_dir }}/api"
+    cmd: python3.10 -m venv env
+
+- name: update pip to latest
+  tags: pip
+  ansible.builtin.pip:
+    virtualenv: "{{ backend_dir }}/api/env"
+    name: pip
+    state: latest
+
+- name: install setuptools and wheel
+  tags: pip
+  ansible.builtin.pip:
+    virtualenv: "{{ backend_dir }}/api/env"
+    name: "{{ item }}"
+  with_items:
+    - "setuptools=={{ setuptools_ver.stdout }}"
+    - "wheel=={{ wheel_ver.stdout }}"
+
+- name: install python packages
+  tags: pip
+  ansible.builtin.pip:
+    virtualenv: "{{ backend_dir }}/api/env"
+    chdir: "{{ backend_dir }}/api/tacticalrmm"
+    requirements: "{{ item }}"
+  with_items:
+    - requirements.txt
+    - requirements-dev.txt
+    - requirements-test.txt
+
 - name: deploy django local settings
   tags: django
   ansible.builtin.template:
@@ -241,13 +445,189 @@
     owner: "{{ user }}"
     group: "{{ user }}"
 
-- name: remove tempdirs
-  tags: cleanup
+- name: setup django
+  tags: django
+  ansible.builtin.shell:
+    chdir: "{{ backend_dir }}/api/tacticalrmm"
+    cmd: |
+      . ../env/bin/activate
+      python manage.py migrate --no-input
+      python manage.py collectstatic --no-input
+      python manage.py create_natsapi_conf
+      python manage.py load_chocos
+      python manage.py load_community_scripts
+      echo "from accounts.models import User; User.objects.create_superuser('{{ django_user }}', '{{ github_email }}', '{{ django_password }}') if not User.objects.filter(username='{{ django_user }}').exists() else 0;" | python manage.py shell
+      python manage.py create_installer_user
+
+- name: deploy services
+  tags: services
+  become: yes
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  with_items:
+    - { src: nats-api.systemd.j2, dest: /etc/systemd/system/nats-api.service }
+    - { src: nats-server.systemd.j2, dest: /etc/systemd/system/nats.service }
+    - { src: mesh.systemd.j2, dest: /etc/systemd/system/meshcentral.service }
+
+- name: import mongodb repo signing key
+  tags: mongo
+  become: yes
+  ansible.builtin.apt_key:
+    url: https://www.mongodb.org/static/pgp/server-4.4.asc
+    state: present
+
+- name: setup mongodb repo
+  tags: mongo
+  become: yes
+  ansible.builtin.copy:
+    content: "deb https://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main"
+    dest: /etc/apt/sources.list.d/mongodb-org-4.4.list
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: install mongodb
+  tags: mongo
+  become: yes
+  ansible.builtin.apt:
+    pkg: mongodb-org
+    state: present
+    update_cache: yes
+
+- name: ensure mongodb enabled and started
+  tags: mongo
+  become: yes
+  ansible.builtin.service:
+    name: mongod
+    enabled: yes
+    state: started
+
+- name: get mesh_ver
+  tags: mesh
+  ansible.builtin.shell: grep "^MESH_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
+  register: mesh_ver
+
+- name: create meshcentral data directory
+  tags: mesh
   become: yes
   ansible.builtin.file:
-    path: "{{ item }}"
-    state: absent
+    path: "{{ mesh_dir }}/meshcentral-data"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0755"
+
+- name: install meshcentral
+  tags: mesh
+  ansible.builtin.command:
+    chdir: "{{ mesh_dir }}"
+    cmd: "npm install meshcentral@{{ mesh_ver.stdout }}"
+
+- name: deploy mesh config
+  tags: mesh
+  ansible.builtin.template:
+    src: mesh.cfg.j2
+    dest: "{{ mesh_dir }}/meshcentral-data/config.json"
+    mode: "0644"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+
+- name: start meshcentral
+  tags: mesh
+  become: yes
+  ansible.builtin.systemd:
+    name: meshcentral.service
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: wait for meshcentral to be ready
+  tags: mesh
+  uri:
+    url: "https://{{ mesh }}"
+    return_content: yes
+    validate_certs: yes
+    status_code: 200
+  register: mesh_status
+  until: mesh_status.status == 200
+  retries: 20
+  delay: 3
+
+- name: get meshcentral login token key
+  tags: mesh_key
+  ansible.builtin.command:
+    chdir: "{{ mesh_dir }}"
+    cmd: node node_modules/meshcentral --logintokenkey
+  register: mesh_token_key
+
+- name: add mesh key to django settings file
+  tags: mesh_key
+  ansible.builtin.lineinfile:
+    path: "{{ local_settings_file }}"
+    line: 'MESH_TOKEN_KEY = "{{ mesh_token_key.stdout }}"'
+
+- name: stop meshcentral service
+  tags: mesh_user
+  become: yes
+  ansible.builtin.service:
+    name: meshcentral.service
+    state: stopped
+
+- name: create mesh user
+  tags: mesh_user
+  ansible.builtin.shell:
+    chdir: "{{ mesh_dir }}"
+    cmd: |
+      node node_modules/meshcentral --createaccount {{ mesh_user }} --pass {{ mesh_password }} --email {{ github_email }}
+      node node_modules/meshcentral --adminaccount {{ mesh_user }}
+
+- name: start meshcentral service
+  tags: mesh_user
+  become: yes
+  ansible.builtin.service:
+    name: meshcentral.service
+    state: started
+
+- name: wait for meshcentral to be ready
+  tags: mesh_user
+  uri:
+    url: "https://{{ mesh }}"
+    return_content: yes
+    validate_certs: yes
+    status_code: 200
+  register: mesh_status
+  until: mesh_status.status == 200
+  retries: 20
+  delay: 3
+
+- name: create mesh device group
+  tags: mesh_user
+  ansible.builtin.shell:
+    chdir: "{{ mesh_dir }}"
+    cmd: |
+      node node_modules/meshcentral/meshctrl.js --url wss://{{ mesh }}:443 --loginuser {{ mesh_user }} --loginpass {{ mesh_password }} AddDeviceGroup --name TacticalRMM
+
+- name: finish up django
+  tags: mesh_user
+  ansible.builtin.shell:
+    chdir: "{{ backend_dir }}/api/tacticalrmm"
+    cmd: |
+      . ../env/bin/activate
+      python manage.py initial_db_setup
+      python manage.py reload_nats
+
+- name: restart services
+  tags: services
+  become: yes
+  ansible.builtin.systemd:
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+    name: "{{ item }}.service"
   with_items:
-    - "{{ nats_tmp.path }}"
-    - "{{ python_tmp.path }}"
-    - "{{ nodejs_tmp.path }}"
+    - nats
+    - nats-api

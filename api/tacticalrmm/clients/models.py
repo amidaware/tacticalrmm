@@ -70,11 +70,11 @@ class Client(BaseAuditModel):
             sites = self.sites.all()
             if old_client.workstation_policy != self.workstation_policy:
                 for site in sites:
-                    cache.delete_many_pattern(f"site_workstation_{site.pk}_*")
+                    cache.delete_many_pattern(f"site_workstation_*{site.pk}_*")
 
             if old_client.server_policy != self.server_policy:
                 for site in sites:
-                    cache.delete_many_pattern(f"site_server_{site.pk}_*")
+                    cache.delete_many_pattern(f"site_server_*{site.pk}_*")
 
     class Meta:
         ordering = ("name",)
@@ -145,10 +145,10 @@ class Site(BaseAuditModel):
                 cache_agents_alert_template.delay()
 
             if old_site.workstation_policy != self.workstation_policy:
-                cache.delete_many_pattern(f"site_workstation_{self.pk}_*")
+                cache.delete_many_pattern(f"site_workstation_*{self.pk}_*")
 
             if old_site.server_policy != self.server_policy:
-                cache.delete_many_pattern(f"site_server_{self.pk}_*")
+                cache.delete_many_pattern(f"site_server_*{self.pk}_*")
 
     class Meta:
         ordering = ("name",)

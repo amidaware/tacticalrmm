@@ -2,9 +2,7 @@ SECRET_KEY = "{{ django_secret }}"
 DEBUG = True
 ALLOWED_HOSTS = ['{{ api }}']
 ADMIN_URL = "admin/"
-CORS_ORIGIN_WHITELIST = [
-    "https://{{ rmm }}"
-]
+CORS_ORIGIN_ALLOW_ALL = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -17,3 +15,7 @@ DATABASES = {
 }
 REDIS_HOST    = "localhost"
 ADMIN_ENABLED = True
+CERT_FILE = "{{ fullchain_src }}"
+KEY_FILE = "{{ privkey_src }}"
+MESH_USERNAME = "{{ mesh_user }}"
+MESH_SITE = "{{ mesh }}"

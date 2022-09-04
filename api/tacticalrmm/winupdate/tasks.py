@@ -72,7 +72,7 @@ def check_agent_update_schedule_task() -> None:
                 if last_installed.strftime("%d/%m/%Y") == agent_localtime_now.strftime(
                     "%d/%m/%Y"
                 ):
-                    return
+                    continue
 
             # check if schedule is set to daily/weekly and if now is the time to run
             if (

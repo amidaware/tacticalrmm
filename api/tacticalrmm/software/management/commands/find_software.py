@@ -27,7 +27,7 @@ class Command(BaseCommand):
                 if search in i["name"].lower():
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f"Found {i['name']} installed on {agent.hostname}"
+                            f"Found {i['name']} installed on: {agent.client.name}\\{agent.site.name}\\{agent.hostname}"
                         )
                     )
                     break

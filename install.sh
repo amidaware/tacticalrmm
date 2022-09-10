@@ -268,7 +268,7 @@ sleep 2
 sudo systemctl enable postgresql
 sudo systemctl restart postgresql
 while ! [[ $CHECK_POSTGRES_SERVICE ]]; do
-  CHECK_POSTGRES_SERVICE=$(sudo systemctl status postgresql.service | grep "Active: active")
+  CHECK_POSTGRES_SERVICE=$(sudo systemctl status postgresql.service | grep "Active: active (exited)")
   echo -ne "PostgreSQL is not ready yet...${NC}\n"
   sleep 3
 done

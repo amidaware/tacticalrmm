@@ -267,8 +267,11 @@ sudo apt install -y postgresql-14
 sleep 2
 sudo systemctl enable postgresql
 sudo systemctl restart postgresql
-sleep 5
-
+while ! [[ $CHECK_POSTGRES_SERVICE ]]; do
+  CHECK_POSTGRES_SERVICE=$(sudo systemctl status postgresql.service | grep "Active: active")
+  echo -ne "PostgreSQL is not ready yet...${NC}\n"
+  sleep 3
+done
 print_green 'Creating database for the rmm'
 
 sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="41"
+SCRIPT_VERSION="42"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -200,8 +200,12 @@ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-
 sudo apt update
 sudo apt install -y postgresql-14
 sleep 2
-sudo systemctl enable postgresql
-sudo systemctl restart postgresql
+sudo systemctl enable --now postgresql
+
+until pg_isready > /dev/null; do
+  echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
+  sleep 3
+ done
 
 print_green 'Restoring MongoDB'
 

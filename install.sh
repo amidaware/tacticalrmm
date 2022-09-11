@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="67"
+SCRIPT_VERSION="68"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -265,9 +265,12 @@ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-
 sudo apt update
 sudo apt install -y postgresql-14
 sleep 2
-sudo systemctl enable postgresql
-sudo systemctl restart postgresql
-sleep 5
+sudo systemctl enable --now postgresql
+
+until pg_isready > /dev/null; do
+  echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
+  sleep 3
+ done
 
 print_green 'Creating database for the rmm'
 

@@ -50,7 +50,7 @@ class TestAgentUtils(TacticalTestCase):
 
         self.assertIn(r"agentDL='asdasd3423'", ret)
         self.assertIn(
-            r"meshDL='meshsite/meshagents?id=meshid&installflags=0&meshinstall=6'", ret
+            r"meshDL='meshsite/meshagents?id=meshid&installflags=2&meshinstall=6'", ret
         )
         self.assertIn(r"apiURL='api.example.com'", ret)
         self.assertIn(r"agentDL='asdasd3423'", ret)

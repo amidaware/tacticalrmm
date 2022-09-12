@@ -2,10 +2,7 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.14.1   | :white_check_mark: |
-| < 0.14.1 | :x:                |
+[Latest](https://github.com/amidaware/tacticalrmm/releases/latest) release
 
 ## Reporting a Vulnerability
 

@@ -51,7 +51,7 @@ def generate_linux_install(
     uri = get_mesh_ws_url()
     mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
     mesh_dl = (
-        f"{core.mesh_site}/meshagents?id={mesh_id}&installflags=0&meshinstall={arch_id}"
+        f"{core.mesh_site}/meshagents?id={mesh_id}&installflags=2&meshinstall={arch_id}"
     )
 
     sh = settings.LINUX_AGENT_SCRIPT

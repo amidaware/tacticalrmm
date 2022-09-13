@@ -174,6 +174,7 @@ class GetUpdateDeleteAgent(APIView):
             fields = [
                 "maintenance_mode",  # TODO separate this
                 "policy",  # TODO separate this
+                "block_policy_inheritance",  # TODO separate this
                 "monitoring_type",
                 "description",
                 "overdue_email_alert",

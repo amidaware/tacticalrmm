@@ -14,6 +14,8 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 
 LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 
+MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
+
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
@@ -27,7 +29,7 @@ WEB_VERSION = "0.100.9"
 APP_VER = "0.0.170"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.3.1"
+LATEST_AGENT_VER = "2.4.0-dev"
 
 MESH_VER = "1.0.85"
 

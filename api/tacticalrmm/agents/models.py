@@ -835,8 +835,11 @@ class Agent(BaseAuditModel):
         Return type: tuple(message: str, error: bool)
         """
         if mode == "tacagent":
-            if self.is_posix:
+            if self.plat == AgentPlat.LINUX:
                 cmd = "systemctl restart tacticalagent.service"
+                shell = 3
+            elif self.plat == AgentPlat.DARWIN:
+                cmd = "launchctl kickstart -k system/tacticalagent"
                 shell = 3
             else:
                 cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"

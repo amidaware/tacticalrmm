@@ -617,6 +617,7 @@ def install_agent(request):
         )
 
     elif request.data["installMethod"] in {"manual", "mac"}:
+        resp = {}
         if request.data["installMethod"] == "manual":
             cmd = [
                 inno,
@@ -637,14 +638,17 @@ def install_agent(request):
                 cmd.append("--ping")
             if int(request.data["power"]):
                 cmd.append("--power")
-        else:
-            install_flags.insert(0, f"./{inno}")
-            cmd = install_flags.copy()
 
-        resp = {
-            "cmd": " ".join(str(i) for i in cmd),
-            "url": download_url,
-        }
+            resp["cmd"] = " ".join(str(i) for i in cmd)
+        else:
+            install_flags.insert(0, f"sudo ./{inno}")
+            cmd = install_flags.copy()
+            dl = f"curl -L -o {inno} '{download_url}'"
+            resp["cmd"] = (
+                dl + f" && chmod +x {inno} && " + " ".join(str(i) for i in cmd)
+            )
+
+        resp["url"] = download_url
 
         return Response(resp)
 

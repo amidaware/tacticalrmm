@@ -33,7 +33,7 @@ LATEST_AGENT_VER = "2.4.0-dev"
 
 MESH_VER = "1.0.85"
 
-NATS_SERVER_VER = "2.9.0"
+NATS_SERVER_VER = "2.9.1"
 
 # for the update script, bump when need to recreate venv
 PIP_VER = "32"

@@ -24,6 +24,7 @@ from core.utils import (
     get_core_settings,
     get_mesh_device_id,
     get_mesh_ws_url,
+    get_meshagent_url,
 )
 from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
@@ -398,26 +399,33 @@ class MeshExe(APIView):
     def post(self, request):
         match request.data:
             case {"goarch": GoArch.AMD64, "plat": AgentPlat.WINDOWS}:
-                arch = MeshAgentIdent.WIN64
+                ident = MeshAgentIdent.WIN64
             case {"goarch": GoArch.i386, "plat": AgentPlat.WINDOWS}:
-                arch = MeshAgentIdent.WIN32
+                ident = MeshAgentIdent.WIN32
+            case {"goarch": GoArch.AMD64, "plat": AgentPlat.DARWIN} | {
+                "goarch": GoArch.ARM64,
+                "plat": AgentPlat.DARWIN,
+            }:
+                ident = MeshAgentIdent.DARWIN_UNIVERSAL
             case _:
-                return notify_error("Arch not specified")
+                return notify_error("Arch not supported")
 
         core = get_core_settings()
 
         try:
             uri = get_mesh_ws_url()
-            mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
+            mesh_device_id: str = asyncio.run(
+                get_mesh_device_id(uri, core.mesh_device_group)
+            )
         except:
             return notify_error("Unable to connect to mesh to get group id information")
 
-        if settings.DOCKER_BUILD:
-            dl_url = f"{settings.MESH_WS_URL.replace('ws://', 'http://')}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
-        else:
-            dl_url = (
-                f"{core.mesh_site}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
-            )
+        dl_url = get_meshagent_url(
+            ident=ident,
+            plat=request.data["plat"],
+            mesh_site=core.mesh_site,
+            mesh_device_id=mesh_device_id,
+        )
 
         try:
             return download_mesh_agent(dl_url)

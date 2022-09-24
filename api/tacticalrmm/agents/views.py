@@ -30,9 +30,9 @@ from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.constants import (
     AGENT_DEFER,
-    AGENT_TABLE_DEFER,
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
+    AGENT_TABLE_DEFER,
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
@@ -174,6 +174,7 @@ class GetUpdateDeleteAgent(APIView):
             fields = [
                 "maintenance_mode",  # TODO separate this
                 "policy",  # TODO separate this
+                "block_policy_inheritance",  # TODO separate this
                 "monitoring_type",
                 "description",
                 "overdue_email_alert",
@@ -236,9 +237,12 @@ class GetUpdateDeleteAgent(APIView):
     def delete(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
-        code = "foo"
+        code = "foo"  # stub for windows
         if agent.plat == AgentPlat.LINUX:
             with open(settings.LINUX_AGENT_SCRIPT, "r") as f:
+                code = f.read()
+        elif agent.plat == AgentPlat.DARWIN:
+            with open(settings.MAC_UNINSTALL, "r") as f:
                 code = f.read()
 
         asyncio.run(agent.nats_cmd({"func": "uninstall", "code": code}, wait=False))
@@ -550,7 +554,15 @@ def install_agent(request):
 
     codesign_token, is_valid = token_is_valid()
 
-    inno = f"tacticalagent-v{version}-{plat}-{goarch}.exe"
+    if request.data["installMethod"] in {"bash", "mac"} and not is_valid:
+        return notify_error(
+            "Missing code signing token, or token is no longer valid. Please read the docs for more info."
+        )
+
+    inno = f"tacticalagent-v{version}-{plat}-{goarch}"
+    if plat == AgentPlat.WINDOWS:
+        inno += ".exe"
+
     download_url = get_agent_url(goarch=goarch, plat=plat, token=codesign_token)
 
     installer_user = User.objects.filter(is_installer_user=True).first()
@@ -558,6 +570,21 @@ def install_agent(request):
     _, token = AuthToken.objects.create(
         user=installer_user, expiry=dt.timedelta(hours=request.data["expires"])
     )
+
+    install_flags = [
+        "-m",
+        "install",
+        "--api",
+        request.data["api"],
+        "--client-id",
+        client_id,
+        "--site-id",
+        site_id,
+        "--agent-type",
+        request.data["agenttype"],
+        "--auth",
+        token,
+    ]
 
     if request.data["installMethod"] == "exe":
         from tacticalrmm.utils import generate_winagent_exe
@@ -576,14 +603,6 @@ def install_agent(request):
         )
 
     elif request.data["installMethod"] == "bash":
-        # TODO
-        # linux agents are in beta for now, only available for sponsors for testing
-        # remove this after it's out of beta
-
-        if not is_valid:
-            return notify_error(
-                "Missing code signing token, or token is no longer valid. Please read the docs for more info."
-            )
 
         from agents.utils import generate_linux_install
 
@@ -597,43 +616,39 @@ def install_agent(request):
             download_url=download_url,
         )
 
-    elif request.data["installMethod"] == "manual":
-        cmd = [
-            inno,
-            "/VERYSILENT",
-            "/SUPPRESSMSGBOXES",
-            "&&",
-            "ping",
-            "127.0.0.1",
-            "-n",
-            "5",
-            "&&",
-            r'"C:\Program Files\TacticalAgent\tacticalrmm.exe"',
-            "-m",
-            "install",
-            "--api",
-            request.data["api"],
-            "--client-id",
-            client_id,
-            "--site-id",
-            site_id,
-            "--agent-type",
-            request.data["agenttype"],
-            "--auth",
-            token,
-        ]
+    elif request.data["installMethod"] in {"manual", "mac"}:
+        resp = {}
+        if request.data["installMethod"] == "manual":
+            cmd = [
+                inno,
+                "/VERYSILENT",
+                "/SUPPRESSMSGBOXES",
+                "&&",
+                "ping",
+                "127.0.0.1",
+                "-n",
+                "5",
+                "&&",
+                r'"C:\Program Files\TacticalAgent\tacticalrmm.exe"',
+            ] + install_flags
 
-        if int(request.data["rdp"]):
-            cmd.append("--rdp")
-        if int(request.data["ping"]):
-            cmd.append("--ping")
-        if int(request.data["power"]):
-            cmd.append("--power")
+            if int(request.data["rdp"]):
+                cmd.append("--rdp")
+            if int(request.data["ping"]):
+                cmd.append("--ping")
+            if int(request.data["power"]):
+                cmd.append("--power")
 
-        resp = {
-            "cmd": " ".join(str(i) for i in cmd),
-            "url": download_url,
-        }
+            resp["cmd"] = " ".join(str(i) for i in cmd)
+        else:
+            install_flags.insert(0, f"sudo ./{inno}")
+            cmd = install_flags.copy()
+            dl = f"curl -L -o {inno} '{download_url}'"
+            resp["cmd"] = (
+                dl + f" && chmod +x {inno} && " + " ".join(str(i) for i in cmd)
+            )
+
+        resp["url"] = download_url
 
         return Response(resp)
 
@@ -912,6 +927,8 @@ def bulk(request):
         q = q.filter(plat=AgentPlat.WINDOWS)
     elif request.data["osType"] == AgentPlat.LINUX:
         q = q.filter(plat=AgentPlat.LINUX)
+    elif request.data["osType"] == AgentPlat.DARWIN:
+        q = q.filter(plat=AgentPlat.DARWIN)
 
     agents: list[int] = [agent.pk for agent in q]
 

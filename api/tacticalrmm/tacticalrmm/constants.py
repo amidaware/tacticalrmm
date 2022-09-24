@@ -10,6 +10,7 @@ class MeshAgentIdent(Enum):
     LINUX64 = 6
     LINUX_ARM_64 = 26
     LINUX_ARM_HF = 25
+    DARWIN_UNIVERSAL = 10005
 
     def __str__(self):
         return str(self.value)

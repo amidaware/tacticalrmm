@@ -5,13 +5,20 @@ from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.conf import settings
 from django.core.management import call_command
+from django.test import override_settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 
 from agents.models import Agent
-from core.utils import get_core_settings
+from core.utils import get_core_settings, get_meshagent_url
 from logs.models import PendingAction
-from tacticalrmm.constants import CONFIG_MGMT_CMDS, CustomFieldModel, PAAction, PAStatus
+from tacticalrmm.constants import (
+    CONFIG_MGMT_CMDS,
+    CustomFieldModel,
+    MeshAgentIdent,
+    PAAction,
+    PAStatus,
+)
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
@@ -444,3 +451,58 @@ class TestCorePermissions(TacticalTestCase):
     def setUp(self):
         self.setup_client()
         self.setup_coresettings()
+
+
+class TestCoreUtils(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    def test_get_meshagent_url_standard(self):
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "https://mesh.example.com/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "https://mesh.example.com/meshagents?id=4&meshid=abc123&installflags=0",
+        )
+
+    @override_settings(DOCKER_BUILD=True)
+    @override_settings(MESH_WS_URL="ws://tactical-meshcentral:4443")
+    def test_get_meshagent_url_docker(self):
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://tactical-meshcentral:4443/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://tactical-meshcentral:4443/meshagents?id=4&meshid=abc123&installflags=0",
+        )

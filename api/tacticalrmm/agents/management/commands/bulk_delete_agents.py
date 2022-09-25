@@ -48,7 +48,9 @@ class Command(BaseCommand):
 
         if not days and not agentver and not site and not client:
             self.stdout.write(
-                self.style.ERROR("Must have at least one parameter: days, agentver, site, or client")
+                self.style.ERROR(
+                    "Must have at least one parameter: days, agentver, site, or client"
+                )
             )
             return
 

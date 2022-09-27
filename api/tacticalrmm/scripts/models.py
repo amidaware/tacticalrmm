@@ -66,8 +66,9 @@ class Script(BaseAuditModel):
                 else:
                     value = ""
 
-                replaced_code = re.sub(snippet.group(), value, replaced_code)
-
+                replaced_code = re.sub(
+                    snippet.group(), value.replace("\\", "\\\\"), replaced_code
+                )
             return replaced_code
         else:
             return code

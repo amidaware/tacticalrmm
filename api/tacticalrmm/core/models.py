@@ -1,4 +1,5 @@
 import smtplib
+from contextlib import suppress
 from email.message import EmailMessage
 from typing import TYPE_CHECKING, List, Optional, cast
 
@@ -108,12 +109,10 @@ class CoreSettings(BaseAuditModel):
 
         # for install script
         if not self.pk:
-            try:
+            with suppress(Exception):
                 self.mesh_site = settings.MESH_SITE
                 self.mesh_username = settings.MESH_USERNAME.lower()
                 self.mesh_token = settings.MESH_TOKEN_KEY
-            except:
-                pass
 
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
         super(BaseAuditModel, self).save(*args, **kwargs)
@@ -315,8 +314,8 @@ class CustomField(BaseAuditModel):
             return self.default_values_multiple
         elif self.type == CustomFieldType.CHECKBOX:
             return self.default_value_bool
-        else:
-            return self.default_value_string
+
+        return self.default_value_string
 
     def get_or_create_field_value(self, instance):
         from agents.models import Agent, AgentCustomField

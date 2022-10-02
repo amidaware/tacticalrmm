@@ -41,13 +41,13 @@ class GetAddAlerts(APIView):
 
         elif any(
             key
-            in [
+            in (
                 "timeFilter",
                 "clientFilter",
                 "severityFilter",
                 "resolvedFilter",
                 "snoozedFilter",
-            ]
+            )
             for key in request.data.keys()
         ):
             clientFilter = Q()

@@ -1,6 +1,7 @@
 import asyncio
 import datetime as dt
 import time
+from contextlib import suppress
 
 import pytz
 from django.utils import timezone as djangotime
@@ -123,10 +124,10 @@ def bulk_install_updates_task(pks: list[int]) -> None:
     for chunk in chunks:
         for agent in chunk:
             agent.delete_superseded_updates()
-            try:
+
+            with suppress(Exception):
                 agent.approve_updates()
-            except:
-                pass
+
             nats_data = {
                 "func": "installwinupdates",
                 "guids": agent.get_approved_update_guids(),

@@ -1,4 +1,5 @@
 import os
+from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
 
@@ -73,10 +74,8 @@ HOSTED = False
 SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 
-try:
+with suppress(ImportError):
     from .local_settings import *
-except ImportError:
-    pass
 
 if "GHACTIONS" in os.environ:
     DEBUG = False

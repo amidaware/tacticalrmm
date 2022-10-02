@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 import psutil
 import pytz
@@ -6,8 +7,8 @@ from cryptography import x509
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone as djangotime
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -175,8 +176,8 @@ class GetAddCustomFields(APIView):
         if "model" in request.data.keys():
             fields = CustomField.objects.filter(model=request.data["model"])
             return Response(CustomFieldSerializer(fields, many=True).data)
-        else:
-            return notify_error("The request was invalid")
+
+        return notify_error("The request was invalid")
 
     def post(self, request):
         serializer = CustomFieldSerializer(data=request.data, partial=True)
@@ -231,7 +232,7 @@ class CodeSign(APIView):
         except Exception as e:
             return notify_error(str(e))
 
-        if r.status_code == 400 or r.status_code == 401:
+        if r.status_code in (400, 401):
             return notify_error(r.json()["ret"])
         elif r.status_code == 200:
             t = CodeSignToken.objects.first()
@@ -414,8 +415,7 @@ def status(request):
     mem_usage: int = round(psutil.virtual_memory().percent)
 
     cert_file, _ = get_certs()
-    with open(cert_file, "rb") as f:
-        cert_bytes = f.read()
+    cert_bytes = Path(cert_file).read_bytes()
 
     cert = x509.load_pem_x509_certificate(cert_bytes)
     expires = pytz.utc.localize(cert.not_valid_after)

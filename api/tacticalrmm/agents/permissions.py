@@ -122,5 +122,5 @@ class AgentHistoryPerms(permissions.BasePermission):
             return _has_perm(r, "can_list_agent_history") and _has_perm_on_agent(
                 r.user, view.kwargs["agent_id"]
             )
-        else:
-            return _has_perm(r, "can_list_agent_history")
+
+        return _has_perm(r, "can_list_agent_history")

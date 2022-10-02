@@ -28,7 +28,7 @@ from tacticalrmm.constants import (
     DebugLogType,
     ScriptShell,
 )
-from tacticalrmm.helpers import get_certs, notify_error, get_nats_ports
+from tacticalrmm.helpers import get_certs, get_nats_ports, notify_error
 
 
 def generate_winagent_exe(
@@ -112,7 +112,7 @@ def bitdays_to_string(day: int) -> str:
         return "Every day"
 
     for key, value in WEEK_DAYS.items():
-        if day & int(value):
+        if day & value:
             ret.append(key)
     return ", ".join(ret)
 
@@ -123,7 +123,7 @@ def bitmonths_to_string(month: int) -> str:
         return "Every month"
 
     for key, value in MONTHS.items():
-        if month & int(value):
+        if month & value:
             ret.append(key)
     return ", ".join(ret)
 
@@ -134,7 +134,7 @@ def bitweeks_to_string(week: int) -> str:
         return "Every week"
 
     for key, value in WEEKS.items():
-        if week & int(value):
+        if week & value:
             ret.append(key)
     return ", ".join(ret)
 
@@ -144,11 +144,11 @@ def bitmonthdays_to_string(day: int) -> str:
 
     if day == MONTH_DAYS["Last Day"]:
         return "Last day"
-    elif day == 2147483647 or day == 4294967295:
+    elif day in (2147483647, 4294967295):
         return "Every day"
 
     for key, value in MONTH_DAYS.items():
-        if day & int(value):
+        if day & value:
             ret.append(key)
     return ", ".join(ret)
 
@@ -157,8 +157,8 @@ def convert_to_iso_duration(string: str) -> str:
     tmp = string.upper()
     if "D" in tmp:
         return f"P{tmp.replace('D', 'DT')}"
-    else:
-        return f"PT{tmp}"
+
+    return f"PT{tmp}"
 
 
 def reload_nats() -> None:
@@ -391,5 +391,5 @@ def format_shell_array(value: list[str]) -> str:
 def format_shell_bool(value: bool, shell: Optional[str]) -> str:
     if shell == ScriptShell.POWERSHELL:
         return "$True" if value else "$False"
-    else:
-        return "1" if value else "0"
+
+    return "1" if value else "0"

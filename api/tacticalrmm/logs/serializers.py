@@ -16,8 +16,8 @@ class AuditLogSerializer(serializers.ModelSerializer):
             return SiteMinimumSerializer(
                 Agent.objects.get(agent_id=obj.agent_id).site
             ).data
-        else:
-            return None
+
+        return None
 
     class Meta:
         model = AuditLog

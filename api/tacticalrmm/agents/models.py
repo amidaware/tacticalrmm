@@ -623,11 +623,7 @@ class Agent(BaseAuditModel):
         policies = self.get_agent_policies()
 
         for _, policy in policies.items():
-            if (
-                policy
-                and policy.active
-                and policy.winupdatepolicy.exists()
-            ):
+            if policy and policy.active and policy.winupdatepolicy.exists():
                 patch_policy = policy.winupdatepolicy.first()
                 break
 

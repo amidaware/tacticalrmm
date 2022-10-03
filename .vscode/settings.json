@@ -74,5 +74,8 @@
     "usePlaceholders": true,
     "completeUnimported": true,
     "staticcheck": true
+  },
+  "files.associations": {
+    "*.cfg": "shellscript"
   }
 }

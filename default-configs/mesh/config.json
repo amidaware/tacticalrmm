@@ -1,0 +1,34 @@
+{
+  "settings": {
+    "cert": "mesh.example.com",
+    "mongoDb": "mongodb://127.0.0.1:27017",
+    "mongoDbName": "meshcentral",
+    "WANonly": true,
+    "minify": 1,
+    "port": 4443,
+    "agentAliasPort": 443,
+    "aliasPort": 443,
+    "allowLoginToken": true,
+    "allowFraming": true,
+    "_agentPing": 60,
+    "agentPong": 300,
+    "allowHighQualityDesktop": true,
+    "tlsOffload": "127.0.0.1",
+    "agentCoreDump": false,
+    "compression": true,
+    "wsCompression": true,
+    "agentWsCompression": true,
+    "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
+  },
+  "domains": {
+    "": {
+      "title": "Tactical RMM",
+      "title2": "Tactical RMM",
+      "newAccounts": false,
+      "certUrl": "https://mesh.example.com:443/",
+      "geoLocation": true,
+      "cookieIpCheck": false,
+      "mstsc": true
+    }
+  }
+}

@@ -618,17 +618,14 @@ class Agent(BaseAuditModel):
         if not agent_policy:
             agent_policy = WinUpdatePolicy.objects.create(agent=self)
 
+        # Get the list of policies applied to the agent and select the
+        # highest priority one.
         policies = self.get_agent_policies()
 
-        processed_policies: List[int] = []
         for _, policy in policies.items():
-            if (
-                policy
-                and policy.active
-                and policy.pk not in processed_policies
-                and policy.winupdatepolicy.exists()
-            ):
+            if policy and policy.active and policy.winupdatepolicy.exists():
                 patch_policy = policy.winupdatepolicy.first()
+                break
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:

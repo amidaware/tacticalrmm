@@ -218,12 +218,12 @@ class Policy(BaseAuditModel):
     def get_policy_tasks(agent: "Agent") -> "List[AutomatedTask]":
 
         # List of all tasks to be applied
-        tasks = list()
+        tasks = []
 
         # Get policies applied to agent and agent site and client
         policies = agent.get_agent_policies()
 
-        processed_policies = list()
+        processed_policies = []
 
         for _, policy in policies.items():
             if policy and policy.active and policy.pk not in processed_policies:
@@ -244,10 +244,10 @@ class Policy(BaseAuditModel):
 
         # Used to hold the policies that will be applied and the order in which they are applied
         # Enforced policies are applied first
-        enforced_checks = list()
-        policy_checks = list()
+        enforced_checks = []
+        policy_checks = []
 
-        processed_policies = list()
+        processed_policies = []
 
         for _, policy in policies.items():
             if policy and policy.active and policy.pk not in processed_policies:
@@ -263,24 +263,24 @@ class Policy(BaseAuditModel):
             return []
 
         # Sorted Checks already added
-        added_diskspace_checks: List[str] = list()
-        added_ping_checks: List[str] = list()
-        added_winsvc_checks: List[str] = list()
-        added_script_checks: List[int] = list()
-        added_eventlog_checks: List[List[str]] = list()
-        added_cpuload_checks: List[int] = list()
-        added_memory_checks: List[int] = list()
+        added_diskspace_checks: List[str] = []
+        added_ping_checks: List[str] = []
+        added_winsvc_checks: List[str] = []
+        added_script_checks: List[int] = []
+        added_eventlog_checks: List[List[str]] = []
+        added_cpuload_checks: List[int] = []
+        added_memory_checks: List[int] = []
 
         # Lists all agent and policy checks that will be returned
-        diskspace_checks: "List[Check]" = list()
-        ping_checks: "List[Check]" = list()
-        winsvc_checks: "List[Check]" = list()
-        script_checks: "List[Check]" = list()
-        eventlog_checks: "List[Check]" = list()
-        cpuload_checks: "List[Check]" = list()
-        memory_checks: "List[Check]" = list()
+        diskspace_checks: "List[Check]" = []
+        ping_checks: "List[Check]" = []
+        winsvc_checks: "List[Check]" = []
+        script_checks: "List[Check]" = []
+        eventlog_checks: "List[Check]" = []
+        cpuload_checks: "List[Check]" = []
+        memory_checks: "List[Check]" = []
 
-        overridden_checks: List[int] = list()
+        overridden_checks: List[int] = []
 
         # Loop over checks in with enforced policies first, then non-enforced policies
         for check in enforced_checks + agent_checks + policy_checks:

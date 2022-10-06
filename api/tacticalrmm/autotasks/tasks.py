@@ -1,6 +1,7 @@
 import asyncio
 import datetime as dt
 import random
+from contextlib import suppress
 from time import sleep
 from typing import Optional, Union
 
@@ -16,60 +17,64 @@ from tacticalrmm.constants import DebugLogType
 
 @app.task
 def create_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
-    try:
+    with suppress(
+        AutomatedTask.DoesNotExist,
+        Agent.DoesNotExist,
+    ):
         task = AutomatedTask.objects.get(pk=pk)
 
         if agent_id:
             task.create_task_on_agent(Agent.objects.get(agent_id=agent_id))
         else:
             task.create_task_on_agent()
-    except (AutomatedTask.DoesNotExist, Agent.DoesNotExist):
-        pass
 
     return "ok"
 
 
 @app.task
 def modify_win_task(pk: int, agent_id: Optional[str] = None) -> str:
-    try:
+    with suppress(
+        AutomatedTask.DoesNotExist,
+        Agent.DoesNotExist,
+    ):
         task = AutomatedTask.objects.get(pk=pk)
 
         if agent_id:
             task.modify_task_on_agent(Agent.objects.get(agent_id=agent_id))
         else:
             task.modify_task_on_agent()
-    except (AutomatedTask.DoesNotExist, Agent.DoesNotExist):
-        pass
 
     return "ok"
 
 
 @app.task
 def delete_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
-    try:
+    with suppress(
+        AutomatedTask.DoesNotExist,
+        Agent.DoesNotExist,
+    ):
         task = AutomatedTask.objects.get(pk=pk)
 
         if agent_id:
             task.delete_task_on_agent(Agent.objects.get(agent_id=agent_id))
         else:
             task.delete_task_on_agent()
-    except (AutomatedTask.DoesNotExist, Agent.DoesNotExist):
-        pass
 
     return "ok"
 
 
 @app.task
 def run_win_task(pk: int, agent_id: Optional[str] = None) -> str:
-    try:
+    with suppress(
+        AutomatedTask.DoesNotExist,
+        Agent.DoesNotExist,
+    ):
         task = AutomatedTask.objects.get(pk=pk)
 
         if agent_id:
             task.run_win_task(Agent.objects.get(agent_id=agent_id))
         else:
             task.run_win_task()
-    except (AutomatedTask.DoesNotExist, Agent.DoesNotExist):
-        pass
 
     return "ok"
 

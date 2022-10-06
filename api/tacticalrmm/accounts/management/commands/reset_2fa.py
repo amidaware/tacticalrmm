@@ -1,5 +1,6 @@
 import os
 import subprocess
+from contextlib import suppress
 
 import pyotp
 from django.core.management.base import BaseCommand
@@ -25,7 +26,7 @@ class Command(BaseCommand):
         nginx = "/etc/nginx/sites-available/frontend.conf"
         found = None
         if os.path.exists(nginx):
-            try:
+            with suppress(Exception):
                 with open(nginx, "r") as f:
                     for line in f:
                         if "server_name" in line:
@@ -35,8 +36,6 @@ class Command(BaseCommand):
                 if found:
                     rep = found.replace("server_name", "").replace(";", "")
                     domain = "".join(rep.split())
-            except:
-                pass
 
         code = pyotp.random_base32()
         user.totp_key = code

@@ -1,6 +1,7 @@
 import asyncio
 import random
 import string
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import pytz
@@ -262,13 +263,13 @@ class AutomatedTask(BaseAuditModel):
             else True,
         }
 
-        if self.task_type in [
+        if self.task_type in (
             TaskType.RUN_ONCE,
             TaskType.DAILY,
             TaskType.WEEKLY,
             TaskType.MONTHLY,
             TaskType.MONTHLY_DOW,
-        ]:
+        ):
             # set runonce task in future if creating and run_asap_after_missed is set
             if (
                 not editing
@@ -432,10 +433,8 @@ class AutomatedTask(BaseAuditModel):
         if r != "ok" and "The system cannot find the file specified" not in r:
             task_result.sync_status = TaskSyncStatus.PENDING_DELETION
 
-            try:
+            with suppress(DatabaseError):
                 task_result.save(update_fields=["sync_status"])
-            except DatabaseError:
-                pass
 
             DebugLog.warning(
                 agent=agent,

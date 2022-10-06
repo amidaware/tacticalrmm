@@ -149,8 +149,8 @@ class Check(BaseAuditModel):
     def __str__(self):
         if self.agent:
             return f"{self.agent.hostname} - {self.readable_desc}"
-        else:
-            return f"{self.policy.name} - {self.readable_desc}"
+
+        return f"{self.policy.name} - {self.readable_desc}"
 
     def save(self, *args, **kwargs):
 
@@ -198,10 +198,7 @@ class Check(BaseAuditModel):
             return f"{display}: Drive {self.disk} - {text}"
         elif self.check_type == CheckType.PING:
             return f"{display}: {self.name}"
-        elif (
-            self.check_type == CheckType.CPU_LOAD or self.check_type == CheckType.MEMORY
-        ):
-
+        elif self.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
             text = ""
             if self.warning_threshold:
                 text += f" Warning Threshold: {self.warning_threshold}%"
@@ -215,8 +212,8 @@ class Check(BaseAuditModel):
             return f"{display}: {self.name}"
         elif self.check_type == CheckType.SCRIPT:
             return f"{display}: {self.script.name}"
-        else:
-            return "n/a"
+
+        return "n/a"
 
     @staticmethod
     def non_editable_fields() -> list[str]:
@@ -335,12 +332,12 @@ class CheckResult(models.Model):
     def save(self, *args, **kwargs):
 
         # if check is a policy check clear cache on everything
-        if not self.alert_severity and self.assigned_check.check_type in [
+        if not self.alert_severity and self.assigned_check.check_type in (
             CheckType.MEMORY,
             CheckType.CPU_LOAD,
             CheckType.DISK_SPACE,
             CheckType.SCRIPT,
-        ]:
+        ):
             self.alert_severity = AlertSeverity.WARNING
 
         super(CheckResult, self).save(

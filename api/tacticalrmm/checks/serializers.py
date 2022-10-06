@@ -43,13 +43,13 @@ class CheckSerializer(serializers.ModelSerializer):
 
         if not alert_template:
             return None
-        else:
-            return {
-                "name": alert_template.name,
-                "always_email": alert_template.check_always_email,
-                "always_text": alert_template.check_always_text,
-                "always_alert": alert_template.check_always_alert,
-            }
+
+        return {
+            "name": alert_template.name,
+            "always_email": alert_template.check_always_email,
+            "always_text": alert_template.check_always_text,
+            "always_alert": alert_template.check_always_alert,
+        }
 
     class Meta:
         model = Check

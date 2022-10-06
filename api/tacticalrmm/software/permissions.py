@@ -13,7 +13,6 @@ class SoftwarePerms(permissions.BasePermission):
 
             return _has_perm(r, "can_list_software")
 
-        else:
-            return _has_perm(r, "can_manage_software") and _has_perm_on_agent(
-                r.user, view.kwargs["agent_id"]
-            )
+        return _has_perm(r, "can_manage_software") and _has_perm_on_agent(
+            r.user, view.kwargs["agent_id"]
+        )

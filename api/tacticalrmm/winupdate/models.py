@@ -143,8 +143,8 @@ class WinUpdatePolicy(BaseAuditModel):
     def __str__(self):
         if self.agent:
             return self.agent.hostname
-        else:
-            return self.policy.name
+
+        return self.policy.name
 
     @staticmethod
     def serialize(policy):

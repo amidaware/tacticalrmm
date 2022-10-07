@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="139"
+SCRIPT_VERSION="140"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -126,6 +126,35 @@ do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
+
+CHECK_DAPHNE=$(grep v2 /etc/systemd/system/daphne.service)
+if ! [[ $CHECK_DAPHNE ]]; then
+
+sudo rm -f /etc/systemd/system/daphne.service
+
+daphneservice="$(cat << EOF
+[Unit]
+Description=django channels daemon v2
+After=network.target
+
+[Service]
+User=${USER}
+Group=www-data
+WorkingDirectory=/rmm/api/tacticalrmm
+Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+ExecStartPre=rm -f /rmm/daphne.sock
+ExecStartPre=rm -f /rmm/daphne.sock.lock
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
+sudo systemctl daemon-reload
+fi
 
 rm -f /rmm/api/tacticalrmm/app.ini
 

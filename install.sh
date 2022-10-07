@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="68"
+SCRIPT_VERSION="69"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -482,7 +482,7 @@ echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service > /dev/null
 
 daphneservice="$(cat << EOF
 [Unit]
-Description=django channels daemon
+Description=django channels daemon v2
 After=network.target
 
 [Service]
@@ -491,6 +491,8 @@ Group=www-data
 WorkingDirectory=/rmm/api/tacticalrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+ExecStartPre=rm -f /rmm/daphne.sock
+ExecStartPre=rm -f /rmm/daphne.sock.lock
 Restart=always
 RestartSec=3s
 

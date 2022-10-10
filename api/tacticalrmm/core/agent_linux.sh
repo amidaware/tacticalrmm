@@ -33,7 +33,7 @@ meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
 meshSysD="/lib/systemd/system/${meshSvcName}"
 
-deb=(ubuntu debian raspbian kali linuxmint)
+deb=(ubuntu debian raspbian kali linuxmint zorin)
 rhe=(fedora rocky centos rhel amzn arch opensuse)
 
 set_locale_deb() {

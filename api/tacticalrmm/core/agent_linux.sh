@@ -33,7 +33,7 @@ meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
 meshSysD="/lib/systemd/system/${meshSvcName}"
 
-deb=(ubuntu debian raspbian kali linuxmint zorin)
+deb=(ubuntu debian raspbian kali linuxmint)
 rhe=(fedora rocky centos rhel amzn arch opensuse)
 
 set_locale_deb() {
@@ -67,7 +67,10 @@ RemoveOldAgent() {
 InstallMesh() {
     if [ -f /etc/os-release ]; then
         distroID=$(. /etc/os-release; echo $ID)
+        distroIDLIKE=$(. /etc/os-release; echo $ID_LIKE)
         if [[ " ${deb[*]} " =~ " ${distroID} " ]]; then
+            set_locale_deb
+        elif [[ " ${deb[*]} " =~ " ${distroIDLIKE} " ]]; then
             set_locale_deb
         elif [[ " ${rhe[*]} " =~ " ${distroID} " ]]; then
             set_locale_rhel

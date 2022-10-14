@@ -122,6 +122,10 @@ RemoveOldAgent
 
 echo "Downloading tactical agent..."
 wget -q -O ${agentBin} "${agentDL}"
+if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to download tactical agent"
+    exit 1
+fi
 chmod +x ${agentBin}
 
 MESH_NODE_ID=""

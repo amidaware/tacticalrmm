@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="42"
+SCRIPT_VERSION="43"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -162,7 +162,6 @@ sudo rm -rf /etc/letsencrypt
 sudo mkdir /etc/letsencrypt
 sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
-sudo chmod 775 -R /etc/letsencrypt
 
 print_green 'Restoring celery configs'
 

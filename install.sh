@@ -168,7 +168,6 @@ CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
 CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
-sudo chmod 775 -R /etc/letsencrypt
 
 print_green 'Installing Nginx'
 

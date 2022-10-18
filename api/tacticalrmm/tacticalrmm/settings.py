@@ -37,7 +37,7 @@ MESH_VER = "1.0.85"
 NATS_SERVER_VER = "2.9.3"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "32"
+PIP_VER = "33"
 
 SETUPTOOLS_VER = "65.5.0"
 WHEEL_VER = "0.37.1"

@@ -10,7 +10,7 @@ NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.6'
+PYTHON_VER='3.10.8'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")

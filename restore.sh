@@ -258,35 +258,6 @@ npm install meshcentral@${MESH_VER}
 
 print_green 'Restoring the backend'
 
-uwsgini="$(cat << EOF
-[uwsgi]
-chdir = /rmm/api/tacticalrmm
-module = tacticalrmm.wsgi
-home = /rmm/api/env
-master = true
-enable-threads = true
-socket = /rmm/api/tacticalrmm/tacticalrmm.sock
-harakiri = 300
-chmod-socket = 660
-buffer-size = 65535
-vacuum = true
-die-on-term = true
-max-requests = 500
-disable-logging = true
-cheaper-algo = busyness
-cheaper = 4
-cheaper-initial = 4
-workers = 20
-cheaper-step = 2
-cheaper-overload = 3
-cheaper-busyness-min = 5
-cheaper-busyness-max = 10
-# stats = /tmp/stats.socket # uncomment when debugging
-# cheaper-busyness-verbose = true # uncomment when debugging
-EOF
-)"
-echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
-
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
 cp $tmp_dir/rmm/env /rmm/web/.env
 gzip -d $tmp_dir/rmm/debug.log.gz
@@ -325,6 +296,7 @@ pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
+python manage.py create_uwsgi_conf
 python manage.py reload_nats
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)

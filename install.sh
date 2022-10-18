@@ -411,6 +411,7 @@ pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
+python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
@@ -428,36 +429,6 @@ cls
 python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
-
-uwsgini="$(cat << EOF
-[uwsgi]
-chdir = /rmm/api/tacticalrmm
-module = tacticalrmm.wsgi
-home = /rmm/api/env
-master = true
-enable-threads = true
-socket = /rmm/api/tacticalrmm/tacticalrmm.sock
-harakiri = 300
-chmod-socket = 660
-buffer-size = 65535
-vacuum = true
-die-on-term = true
-max-requests = 500
-disable-logging = true
-cheaper-algo = busyness
-cheaper = 4
-cheaper-initial = 4
-workers = 20
-cheaper-step = 2
-cheaper-overload = 3
-cheaper-busyness-min = 5
-cheaper-busyness-max = 10
-# stats = /tmp/stats.socket # uncomment when debugging
-# cheaper-busyness-verbose = true # uncomment when debugging
-EOF
-)"
-echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
-
 
 rmmservice="$(cat << EOF
 [Unit]

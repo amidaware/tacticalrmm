@@ -209,6 +209,11 @@ def reload_nats() -> None:
         },
     }
 
+    if "NATS_HTTP_PORT" in os.environ:
+        config["http_port"] = int(os.getenv("NATS_HTTP_PORT"))  # type: ignore
+    elif hasattr(settings, "NATS_HTTP_PORT"):
+        config["http_port"] = settings.NATS_HTTP_PORT  # type: ignore
+
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
     with open(conf, "w") as f:
         json.dump(config, f)

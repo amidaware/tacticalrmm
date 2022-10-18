@@ -105,6 +105,7 @@ if not DEBUG:
     )
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",

@@ -1,4 +1,5 @@
 import threading
+from contextlib import suppress
 from typing import Any, Dict, Optional
 
 from django.conf import settings
@@ -62,7 +63,7 @@ class AuditMiddleware:
                 request = APIView().initialize_request(request)
 
             # check if user is authenticated
-            try:
+            with suppress(AuthenticationFailed):
                 if hasattr(request, "user") and request.user.is_authenticated:
 
                     try:
@@ -83,8 +84,6 @@ class AuditMiddleware:
 
                     # get authenticated user after request
                     request_local.username = request.user.username
-            except AuthenticationFailed:
-                pass
 
     def process_exception(self, request, exception):
         request_local.debug_info = None

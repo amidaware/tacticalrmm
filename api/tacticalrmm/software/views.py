@@ -22,8 +22,8 @@ def chocos(request):
     chocos = ChocoSoftware.objects.last()
     if not chocos:
         return Response({})
-    else:
-        return Response(chocos.chocos)
+
+    return Response(chocos.chocos)
 
 
 class GetSoftware(APIView):
@@ -79,7 +79,7 @@ class GetSoftware(APIView):
             return notify_error(f"Not available for {agent.plat}")
 
         r: Any = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=15))
-        if r == "timeout" or r == "natsdown":
+        if r in ("timeout", "natsdown"):
             return notify_error("Unable to contact the agent")
 
         if not InstalledSoftware.objects.filter(agent=agent).exists():

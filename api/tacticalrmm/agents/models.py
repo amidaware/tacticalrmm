@@ -1,6 +1,7 @@
 import asyncio
 import re
 from collections import Counter
+from contextlib import suppress
 from distutils.version import LooseVersion
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union, cast
 
@@ -130,8 +131,8 @@ class Agent(BaseAuditModel):
         # return the default timezone unless the timezone is explicity set per agent
         if self.time_zone:
             return self.time_zone
-        else:
-            return get_core_settings().default_time_zone
+
+        return get_core_settings().default_time_zone
 
     @property
     def is_posix(self) -> bool:
@@ -232,12 +233,12 @@ class Agent(BaseAuditModel):
                 alert_severity = (
                     check.check_result.alert_severity
                     if check.check_type
-                    in [
+                    in (
                         CheckType.MEMORY,
                         CheckType.CPU_LOAD,
                         CheckType.DISK_SPACE,
                         CheckType.SCRIPT,
-                    ]
+                    )
                     else check.alert_severity
                 )
                 if alert_severity == AlertSeverity.ERROR:
@@ -333,8 +334,8 @@ class Agent(BaseAuditModel):
 
         if len(ret) == 1:
             return cast(str, ret[0])
-        else:
-            return ", ".join(ret) if ret else "error getting local ips"
+
+        return ", ".join(ret) if ret else "error getting local ips"
 
     @property
     def make_model(self) -> str:
@@ -344,7 +345,7 @@ class Agent(BaseAuditModel):
             except:
                 return "error getting make/model"
 
-        try:
+        with suppress(Exception):
             comp_sys = self.wmi_detail["comp_sys"][0]
             comp_sys_prod = self.wmi_detail["comp_sys_prod"][0]
             make = [x["Vendor"] for x in comp_sys_prod if "Vendor" in x][0]
@@ -361,14 +362,10 @@ class Agent(BaseAuditModel):
                     model = sysfam
 
             return f"{make} {model}"
-        except:
-            pass
 
-        try:
+        with suppress(Exception):
             comp_sys_prod = self.wmi_detail["comp_sys_prod"][0]
             return cast(str, [x["Version"] for x in comp_sys_prod if "Version" in x][0])
-        except:
-            pass
 
         return "unknown make/model"
 
@@ -479,7 +476,7 @@ class Agent(BaseAuditModel):
         models.prefetch_related_objects(
             [
                 policy
-                for policy in [self.policy, site_policy, client_policy, default_policy]
+                for policy in (self.policy, site_policy, client_policy, default_policy)
                 if policy
             ],
             "excluded_agents",
@@ -589,7 +586,7 @@ class Agent(BaseAuditModel):
     def approve_updates(self) -> None:
         patch_policy = self.get_patch_policy()
 
-        severity_list = list()
+        severity_list = []
         if patch_policy.critical == "approve":
             severity_list.append("Critical")
 
@@ -621,17 +618,14 @@ class Agent(BaseAuditModel):
         if not agent_policy:
             agent_policy = WinUpdatePolicy.objects.create(agent=self)
 
+        # Get the list of policies applied to the agent and select the
+        # highest priority one.
         policies = self.get_agent_policies()
 
-        processed_policies: List[int] = list()
         for _, policy in policies.items():
-            if (
-                policy
-                and policy.active
-                and policy.pk not in processed_policies
-                and policy.winupdatepolicy.exists()
-            ):
+            if policy and policy.active and policy.winupdatepolicy.exists():
                 patch_policy = policy.winupdatepolicy.first()
+                break
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:
@@ -683,7 +677,7 @@ class Agent(BaseAuditModel):
         policies = self.get_agent_policies()
 
         # loop through all policies applied to agent and return an alert_template if found
-        processed_policies: List[int] = list()
+        processed_policies: List[int] = []
         for key, policy in policies.items():
             # default alert_template will override a default policy with alert template applied
             if (
@@ -873,7 +867,7 @@ class Agent(BaseAuditModel):
         return AgentAuditSerializer(agent).data
 
     def delete_superseded_updates(self) -> None:
-        try:
+        with suppress(Exception):
             pks = []  # list of pks to delete
             kbs = list(self.winupdates.values_list("kb", flat=True))
             d = Counter(kbs)
@@ -898,8 +892,6 @@ class Agent(BaseAuditModel):
 
             pks = list(set(pks))
             self.winupdates.filter(pk__in=pks).delete()
-        except:
-            pass
 
     def should_create_alert(
         self, alert_template: "Optional[AlertTemplate]" = None
@@ -1018,16 +1010,16 @@ class AgentCustomField(models.Model):
             return cast(List[str], self.multiple_value)
         elif self.field.type == CustomFieldType.CHECKBOX:
             return self.bool_value
-        else:
-            return cast(str, self.string_value)
+
+        return cast(str, self.string_value)
 
     def save_to_field(self, value: Union[List[Any], bool, str]) -> None:
-        if self.field.type in [
+        if self.field.type in (
             CustomFieldType.TEXT,
             CustomFieldType.NUMBER,
             CustomFieldType.SINGLE,
             CustomFieldType.DATETIME,
-        ]:
+        ):
             self.string_value = cast(str, value)
             self.save()
         elif self.field.type == CustomFieldType.MULTIPLE:

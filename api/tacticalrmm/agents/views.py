@@ -4,6 +4,7 @@ import os
 import random
 import string
 import time
+from pathlib import Path
 
 from django.conf import settings
 from django.db.models import Count, Exists, OuterRef, Prefetch, Q
@@ -239,11 +240,9 @@ class GetUpdateDeleteAgent(APIView):
 
         code = "foo"  # stub for windows
         if agent.plat == AgentPlat.LINUX:
-            with open(settings.LINUX_AGENT_SCRIPT, "r") as f:
-                code = f.read()
+            code = Path(settings.LINUX_AGENT_SCRIPT).read_text()
         elif agent.plat == AgentPlat.DARWIN:
-            with open(settings.MAC_UNINSTALL, "r") as f:
-                code = f.read()
+            code = Path(settings.MAC_UNINSTALL).read_text()
 
         asyncio.run(agent.nats_cmd({"func": "uninstall", "code": code}, wait=False))
         name = agent.hostname
@@ -255,7 +254,7 @@ class GetUpdateDeleteAgent(APIView):
             asyncio.run(remove_mesh_agent(uri, mesh_id))
         except Exception as e:
             DebugLog.error(
-                message=f"Unable to remove agent {name} from meshcentral database: {str(e)}",
+                message=f"Unable to remove agent {name} from meshcentral database: {e}",
                 log_type=DebugLogType.AGENT_ISSUES,
             )
         return Response(f"{name} will now be uninstalled.")
@@ -273,7 +272,7 @@ class AgentProcesses(APIView):
 
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
-        if r == "timeout" or r == "natsdown":
+        if r in ("timeout", "natsdown"):
             return notify_error("Unable to contact the agent")
         return Response(r)
 
@@ -284,7 +283,7 @@ class AgentProcesses(APIView):
             agent.nats_cmd({"func": "killproc", "procpid": int(pid)}, timeout=15)
         )
 
-        if r == "timeout" or r == "natsdown":
+        if r in ("timeout", "natsdown"):
             return notify_error("Unable to contact the agent")
         elif r != "ok":
             return notify_error(r)
@@ -416,7 +415,7 @@ def get_event_log(request, agent_id, logtype, days):
         },
     }
     r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
-    if r == "timeout" or r == "natsdown":
+    if r in ("timeout", "natsdown"):
         return notify_error("Unable to contact the agent")
 
     return Response(r)
@@ -654,10 +653,7 @@ def install_agent(request):
 
     elif request.data["installMethod"] == "powershell":
 
-        ps = os.path.join(settings.BASE_DIR, "core/installer.ps1")
-
-        with open(ps, "r") as f:
-            text = f.read()
+        text = Path(settings.BASE_DIR / "core" / "installer.ps1").read_text()
 
         replace_dict = {
             "innosetupchange": inno,
@@ -684,8 +680,7 @@ def install_agent(request):
             except Exception as e:
                 DebugLog.error(message=str(e))
 
-        with open(ps1, "w") as f:
-            f.write(text)
+        Path(ps1).write_text(text)
 
         if settings.DEBUG:
             with open(ps1, "r") as f:
@@ -1014,10 +1009,10 @@ def agent_maintenance(request):
     if count:
         action = "disabled" if not request.data["action"] else "enabled"
         return Response(f"Maintenance mode has been {action} on {count} agents")
-    else:
-        return Response(
-            f"No agents have been put in maintenance mode. You might not have permissions to the resources."
-        )
+
+    return Response(
+        f"No agents have been put in maintenance mode. You might not have permissions to the resources."
+    )
 
 
 @api_view(["GET"])

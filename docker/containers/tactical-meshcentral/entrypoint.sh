@@ -27,24 +27,24 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
 {
   "settings": {
     "mongodb": "${encoded_uri}",
-    "Cert": "${MESH_HOST}",
-    "TLSOffload": "${NGINX_HOST_IP}",
-    "RedirPort": 8080,
+    "cert": "${MESH_HOST}",
+    "tlsOffload": "${NGINX_HOST_IP}",
+    "redirPort": 8080,
     "WANonly": true,
-    "Minify": 1,
-    "Port": 4443,
-    "AgentAliasPort": 443,
+    "minify": 1,
+    "port": 4443,
+    "agentAliasPort": 443,
     "aliasPort": 443,
-    "AllowLoginToken": true,
-    "AllowFraming": true,
-    "_AgentPing": 60,
-    "AgentPong": 300,
-    "AllowHighQualityDesktop": true,
+    "allowLoginToken": true,
+    "allowFraming": true,
+    "_agentPing": 60,
+    "agentPong": 300,
+    "allowHighQualityDesktop": true,
     "agentCoreDump": false,
-    "Compression": true,
-    "WsCompression": true,
-    "AgentWsCompression": true,
-    "MaxInvalidLogin": {
+    "compression": true,
+    "wsCompression": true,
+    "agentWsCompression": true,
+    "maxInvalidLogin": {
       "time": 5,
       "count": 5,
       "coolofftime": 30
@@ -52,12 +52,12 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
   },
   "domains": {
     "": {
-      "Title": "Tactical RMM",
-      "Title2": "TacticalRMM",
-      "NewAccounts": false,
+      "title": "Tactical RMM",
+      "title2": "TacticalRMM",
+      "newAccounts": false,
       "mstsc": true,
-      "GeoLocation": true,
-      "CertUrl": "https://${NGINX_HOST_IP}:${NGINX_HOST_PORT}",
+      "geoLocation": true,
+      "certUrl": "https://${NGINX_HOST_IP}:${NGINX_HOST_PORT}",
       "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]
     }
   },

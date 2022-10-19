@@ -53,6 +53,16 @@ def token_is_valid() -> tuple[str, bool]:
     return "", False
 
 
+def token_is_expired() -> bool:
+    from core.models import CodeSignToken
+
+    t: "CodeSignToken" = CodeSignToken.objects.first()
+    if not t or not t.token:
+        return False
+
+    return t.is_expired
+
+
 def get_core_settings() -> "CoreSettings":
     from core.models import CORESETTINGS_CACHE_KEY, CoreSettings
 

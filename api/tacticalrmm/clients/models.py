@@ -229,16 +229,16 @@ class ClientCustomField(models.Model):
             return self.multiple_value
         elif self.field.type == CustomFieldType.CHECKBOX:
             return self.bool_value
-        else:
-            return self.string_value
+
+        return self.string_value
 
     def save_to_field(self, value):
-        if self.field.type in [
+        if self.field.type in (
             CustomFieldType.TEXT,
             CustomFieldType.NUMBER,
             CustomFieldType.SINGLE,
             CustomFieldType.DATETIME,
-        ]:
+        ):
             self.string_value = value
             self.save()
         elif self.field.type == CustomFieldType.MULTIPLE:
@@ -280,16 +280,16 @@ class SiteCustomField(models.Model):
             return self.multiple_value
         elif self.field.type == CustomFieldType.CHECKBOX:
             return self.bool_value
-        else:
-            return self.string_value
+
+        return self.string_value
 
     def save_to_field(self, value):
-        if self.field.type in [
+        if self.field.type in (
             CustomFieldType.TEXT,
             CustomFieldType.NUMBER,
             CustomFieldType.SINGLE,
             CustomFieldType.DATETIME,
-        ]:
+        ):
             self.string_value = value
             self.save()
         elif self.field.type == CustomFieldType.MULTIPLE:

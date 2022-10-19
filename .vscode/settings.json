@@ -1,7 +1,10 @@
 {
-  "python.defaultInterpreterPath": "api/tacticalrmm/env/bin/python",
+  "python.defaultInterpreterPath": "api/env/bin/python",
   "python.languageServer": "Pylance",
-  "python.analysis.extraPaths": ["api/tacticalrmm", "api/env"],
+  "python.analysis.extraPaths": [
+    "api/tacticalrmm",
+    "api/env"
+  ],
   "python.analysis.diagnosticSeverityOverrides": {
     "reportUnusedImport": "error",
     "reportDuplicateImport": "error",
@@ -22,7 +25,9 @@
     "**env/**"
   ],
   "python.formatting.provider": "black",
-  "mypy.targets": ["api/tacticalrmm"],
+  "mypy.targets": [
+    "api/tacticalrmm"
+  ],
   "mypy.runUsingActiveInterpreter": true,
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": true,

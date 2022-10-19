@@ -5,7 +5,7 @@ from tacticalrmm.permissions import _has_perm, _has_perm_on_agent
 
 class ChecksPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
-        if r.method == "GET" or r.method == "PATCH":
+        if r.method in ("GET", "PATCH"):
             if "agent_id" in view.kwargs.keys():
                 return _has_perm(r, "can_list_checks") and _has_perm_on_agent(
                     r.user, view.kwargs["agent_id"]

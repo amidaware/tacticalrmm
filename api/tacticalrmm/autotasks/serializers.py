@@ -100,13 +100,13 @@ class TaskSerializer(serializers.ModelSerializer):
         # run_time_date required
         if (
             data["task_type"]
-            in [
+            in (
                 TaskType.RUN_ONCE,
                 TaskType.DAILY,
                 TaskType.WEEKLY,
                 TaskType.MONTHLY,
                 TaskType.MONTHLY_DOW,
-            ]
+            )
             and not data["run_time_date"]
         ):
             raise serializers.ValidationError(
@@ -188,13 +188,12 @@ class TaskSerializer(serializers.ModelSerializer):
 
         if not alert_template:
             return None
-        else:
-            return {
-                "name": alert_template.name,
-                "always_email": alert_template.task_always_email,
-                "always_text": alert_template.task_always_text,
-                "always_alert": alert_template.task_always_alert,
-            }
+        return {
+            "name": alert_template.name,
+            "always_email": alert_template.task_always_email,
+            "always_text": alert_template.task_always_text,
+            "always_alert": alert_template.task_always_alert,
+        }
 
     class Meta:
         model = AutomatedTask

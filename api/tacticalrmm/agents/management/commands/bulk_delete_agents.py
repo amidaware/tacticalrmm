@@ -64,7 +64,7 @@ class Command(BaseCommand):
                 try:
                     agent.delete()
                 except Exception as e:
-                    err = f"Failed to delete agent {agent.hostname}: {str(e)}"
+                    err = f"Failed to delete agent {agent.hostname}: {e}"
                     self.stdout.write(self.style.ERROR(err))
                 else:
                     deleted_count += 1

@@ -74,6 +74,7 @@ def clear_cache(request):
 
 @api_view()
 def dashboard_info(request):
+    from core.utils import token_is_expired
     from tacticalrmm.utils import get_latest_trmm_ver
 
     return Response(
@@ -94,6 +95,7 @@ def dashboard_info(request):
             "hosted": getattr(settings, "HOSTED", False),
             "date_format": request.user.date_format,
             "default_date_format": get_core_settings().date_format,
+            "token_is_expired": token_is_expired(),
         }
     )
 

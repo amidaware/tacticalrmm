@@ -364,6 +364,23 @@ class CodeSignToken(models.Model):
 
         return r.status_code == 200
 
+    @property
+    def is_expired(self) -> bool:
+        if not self.token:
+            return False
+
+        try:
+            r = requests.post(
+                settings.CHECK_TOKEN_URL,
+                json={"token": self.token, "api": settings.ALLOWED_HOSTS[0]},
+                headers={"Content-type": "application/json"},
+                timeout=15,
+            )
+        except:
+            return False
+
+        return r.status_code == 401
+
     def __str__(self):
         return "Code signing token"
 

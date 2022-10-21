@@ -53,7 +53,7 @@ from tacticalrmm.demo_data import (
 )
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
-AGENTS_TO_GENERATE = 100
+AGENTS_TO_GENERATE = 250
 
 SVCS = settings.BASE_DIR.joinpath("tacticalrmm/test_data/winsvcs.json")
 WMI_1 = settings.BASE_DIR.joinpath("tacticalrmm/test_data/wmi1.json")
@@ -172,7 +172,7 @@ class Command(BaseCommand):
         for site in sites6:
             Site(client=client6, name=site).save()
 
-        win_hostnames = (
+        hostnames = (
             "DC-1",
             "DC-2",
             "FSV-1",
@@ -180,6 +180,8 @@ class Command(BaseCommand):
             "WSUS",
             "DESKTOP-12345",
             "LAPTOP-55443",
+            "db-aws-01",
+            "Karens-MacBook-Air.local",
         )
         descriptions = ("Bob's computer", "Primary DC", "File Server", "Karen's Laptop")
         modes = AgentMonType.values
@@ -315,7 +317,6 @@ class Command(BaseCommand):
             if plat_pick in (7, 11):
                 agent.plat = AgentPlat.LINUX
                 mode = AgentMonType.SERVER
-                agent.hostname = "db-aws-01"
                 # pi arm
                 if plat_pick == 7:
                     agent.goarch = GoArch.ARM32
@@ -329,7 +330,6 @@ class Command(BaseCommand):
                     agent.operating_system = linux_deb_os
             elif plat_pick in (4, 14):
                 agent.plat = AgentPlat.DARWIN
-                agent.hostname = "Karens-MacBook-Air.local"
                 mode = random.choice([AgentMonType.SERVER, AgentMonType.WORKSTATION])
                 agent.goarch = GoArch.ARM64
                 agent.wmi_detail = wmi_mac
@@ -337,7 +337,6 @@ class Command(BaseCommand):
                 agent.operating_system = mac_os
             else:
                 agent.plat = AgentPlat.WINDOWS
-                agent.hostname = random.choice(win_hostnames)
                 agent.goarch = GoArch.AMD64
                 mode = random.choice(modes)
                 agent.wmi_detail = random.choice(wmi_details)
@@ -349,6 +348,7 @@ class Command(BaseCommand):
                     agent.operating_system = random.choice(op_systems_workstations)
 
             agent.version = settings.LATEST_AGENT_VER
+            agent.hostname = random.choice(hostnames)
             agent.site = Site.objects.get(name=site)
             agent.agent_id = self.rand_string(40)
             agent.description = random.choice(descriptions)

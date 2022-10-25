@@ -1,6 +1,13 @@
 #!/bin/bash
 
-/usr/local/mesh_services/meshagent/meshagent -fulluninstall
+if [ -f /usr/local/mesh_services/meshagent/meshagent ]; then
+  /usr/local/mesh_services/meshagent/meshagent -fulluninstall
+fi
+
+if [ -f /opt/tacticalmesh/meshagent ]; then
+  /opt/tacticalmesh/meshagent -fulluninstall
+fi
+
 launchctl bootout system /Library/LaunchDaemons/tacticalagent.plist
 rm -rf /usr/local/mesh_services
 rm -rf /opt/tacticalmesh

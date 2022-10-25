@@ -27,6 +27,7 @@ from tacticalrmm.constants import (
     EvtLogFailWhen,
     EvtLogNames,
     EvtLogTypes,
+    GoArch,
     PAAction,
     ScriptShell,
     TaskSyncStatus,
@@ -47,10 +48,12 @@ from tacticalrmm.demo_data import (
     temp_dir_stdout,
     wmi_deb,
     wmi_pi,
+    wmi_mac,
+    disks_mac,
 )
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
-AGENTS_TO_GENERATE = 20
+AGENTS_TO_GENERATE = 250
 
 SVCS = settings.BASE_DIR.joinpath("tacticalrmm/test_data/winsvcs.json")
 WMI_1 = settings.BASE_DIR.joinpath("tacticalrmm/test_data/wmi1.json")
@@ -177,6 +180,8 @@ class Command(BaseCommand):
             "WSUS",
             "DESKTOP-12345",
             "LAPTOP-55443",
+            "db-aws-01",
+            "Karens-MacBook-Air.local",
         )
         descriptions = ("Bob's computer", "Primary DC", "File Server", "Karen's Laptop")
         modes = AgentMonType.values
@@ -194,6 +199,7 @@ class Command(BaseCommand):
 
         linux_deb_os = "Debian 11.2 x86_64 5.10.0-11-amd64"
         linux_pi_os = "Raspbian 11.2 armv7l 5.10.92-v7+"
+        mac_os = "Darwin 12.5.1 arm64 21.6.0"
 
         public_ips = ("65.234.22.4", "74.123.43.5", "44.21.134.45")
 
@@ -313,18 +319,25 @@ class Command(BaseCommand):
                 mode = AgentMonType.SERVER
                 # pi arm
                 if plat_pick == 7:
-                    agent.goarch = "arm"
+                    agent.goarch = GoArch.ARM32
                     agent.wmi_detail = wmi_pi
                     agent.disks = disks_linux_pi
                     agent.operating_system = linux_pi_os
                 else:
-                    agent.goarch = "amd64"
+                    agent.goarch = GoArch.AMD64
                     agent.wmi_detail = wmi_deb
                     agent.disks = disks_linux_deb
                     agent.operating_system = linux_deb_os
+            elif plat_pick in (4, 14):
+                agent.plat = AgentPlat.DARWIN
+                mode = random.choice([AgentMonType.SERVER, AgentMonType.WORKSTATION])
+                agent.goarch = GoArch.ARM64
+                agent.wmi_detail = wmi_mac
+                agent.disks = disks_mac
+                agent.operating_system = mac_os
             else:
                 agent.plat = AgentPlat.WINDOWS
-                agent.goarch = "amd64"
+                agent.goarch = GoArch.AMD64
                 mode = random.choice(modes)
                 agent.wmi_detail = random.choice(wmi_details)
                 agent.services = services
@@ -334,8 +347,8 @@ class Command(BaseCommand):
                 else:
                     agent.operating_system = random.choice(op_systems_workstations)
 
-            agent.hostname = random.choice(hostnames)
             agent.version = settings.LATEST_AGENT_VER
+            agent.hostname = random.choice(hostnames)
             agent.site = Site.objects.get(name=site)
             agent.agent_id = self.rand_string(40)
             agent.description = random.choice(descriptions)

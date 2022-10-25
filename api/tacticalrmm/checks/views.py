@@ -169,6 +169,6 @@ def run_checks(request, agent_id):
     if r == "busy":
         return notify_error(f"Checks are already running on {agent.hostname}")
     elif r == "ok":
-        return Response(f"Checks will now be re-run on {agent.hostname}")
+        return Response(f"Checks will now be run on {agent.hostname}")
 
     return notify_error("Unable to contact the agent")

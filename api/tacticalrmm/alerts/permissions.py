@@ -32,7 +32,7 @@ def _has_perm_on_alert(user: "User", id: int) -> bool:
 
 class AlertPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
-        if r.method == "GET" or r.method == "PATCH":
+        if r.method in ("GET", "PATCH"):
             if "pk" in view.kwargs.keys():
                 return _has_perm(r, "can_list_alerts") and _has_perm_on_alert(
                     r.user, view.kwargs["pk"]
@@ -52,5 +52,5 @@ class AlertTemplatePerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             return _has_perm(r, "can_list_alerttemplates")
-        else:
-            return _has_perm(r, "can_manage_alerttemplates")
+
+        return _has_perm(r, "can_manage_alerttemplates")

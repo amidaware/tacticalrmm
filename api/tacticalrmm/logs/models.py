@@ -282,7 +282,7 @@ class DebugLog(models.Model):
         agent: "Optional[Agent]" = None,
         log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in [DebugLogLevel.INFO]:
+        if get_debug_level() == DebugLogLevel.INFO:
             cls.objects.create(
                 log_level=DebugLogLevel.INFO,
                 agent=agent,
@@ -297,7 +297,7 @@ class DebugLog(models.Model):
         agent: "Optional[Agent]" = None,
         log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in [DebugLogLevel.INFO, DebugLogLevel.WARN]:
+        if get_debug_level() in (DebugLogLevel.INFO, DebugLogLevel.WARN):
             cls.objects.create(
                 log_level=DebugLogLevel.INFO,
                 agent=agent,
@@ -312,11 +312,11 @@ class DebugLog(models.Model):
         agent: "Optional[Agent]" = None,
         log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in [
+        if get_debug_level() in (
             DebugLogLevel.INFO,
             DebugLogLevel.WARN,
             DebugLogLevel.ERROR,
-        ]:
+        ):
             cls.objects.create(
                 log_level=DebugLogLevel.ERROR,
                 agent=agent,
@@ -331,12 +331,12 @@ class DebugLog(models.Model):
         agent: "Optional[Agent]" = None,
         log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in [
+        if get_debug_level() in (
             DebugLogLevel.INFO,
             DebugLogLevel.WARN,
             DebugLogLevel.ERROR,
             DebugLogLevel.CRITICAL,
-        ]:
+        ):
             cls.objects.create(
                 log_level=DebugLogLevel.CRITICAL,
                 agent=agent,
@@ -376,8 +376,8 @@ class PendingAction(models.Model):
             return "Next update cycle"
         elif self.action_type == PAAction.CHOCO_INSTALL:
             return "ASAP"
-        else:
-            return "On next checkin"
+
+        return "On next checkin"
 
     @property
     def description(self) -> Optional[str]:
@@ -390,15 +390,15 @@ class PendingAction(models.Model):
         elif self.action_type == PAAction.CHOCO_INSTALL:
             return f"{self.details['name']} software install"
 
-        elif self.action_type in [
+        elif self.action_type in (
             PAAction.RUN_CMD,
             PAAction.RUN_SCRIPT,
             PAAction.RUN_PATCH_SCAN,
             PAAction.RUN_PATCH_INSTALL,
-        ]:
+        ):
             return f"{self.action_type}"
-        else:
-            return None
+
+        return None
 
 
 class BaseAuditModel(models.Model):

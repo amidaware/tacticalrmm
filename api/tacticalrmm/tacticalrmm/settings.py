@@ -1,4 +1,5 @@
 import os
+from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
 
@@ -19,26 +20,26 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.15.0"
+TRMM_VERSION = "0.15.2"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.0"
+WEB_VERSION = "0.101.5"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.171"
+APP_VER = "0.0.173"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.4.0"
+LATEST_AGENT_VER = "2.4.1"
 
-MESH_VER = "1.0.85"
+MESH_VER = "1.0.90"
 
-NATS_SERVER_VER = "2.9.1"
+NATS_SERVER_VER = "2.9.3"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "32"
+PIP_VER = "33"
 
-SETUPTOOLS_VER = "65.2.0"
+SETUPTOOLS_VER = "65.5.0"
 WHEEL_VER = "0.37.1"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
@@ -73,10 +74,8 @@ HOSTED = False
 SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 
-try:
+with suppress(ImportError):
     from .local_settings import *
-except ImportError:
-    pass
 
 if "GHACTIONS" in os.environ:
     DEBUG = False
@@ -106,6 +105,7 @@ if not DEBUG:
     )
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",

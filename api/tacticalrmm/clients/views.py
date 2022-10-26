@@ -1,6 +1,7 @@
 import datetime as dt
 import re
 import uuid
+from contextlib import suppress
 
 from django.db.models import Count, Exists, OuterRef, Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404
@@ -338,10 +339,8 @@ class AgentDeployment(APIView):
         if not _has_perm_on_site(request.user, d.site.pk):
             raise PermissionDenied()
 
-        try:
+        with suppress(Exception):
             d.auth_token.delete()
-        except:
-            pass
 
         d.delete()
         return Response("The deployment was deleted")

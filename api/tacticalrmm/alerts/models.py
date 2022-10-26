@@ -617,7 +617,7 @@ class Alert(models.Model):
         if not args:
             return []
 
-        temp_args = list()
+        temp_args = []
         # pattern to match for injection
         pattern = re.compile(".*\\{\\{alert\\.(.*)\\}\\}.*")
 

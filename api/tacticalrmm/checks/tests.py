@@ -239,7 +239,6 @@ class TestCheckViews(TacticalTestCase):
         r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
-        self.assertEqual(r.json(), f"Checks will now be re-run on {agent.hostname}")
 
         nats_cmd.reset_mock()
         nats_cmd.return_value = "timeout"

@@ -7,6 +7,6 @@ class Command(BaseCommand):
     help = "Collection of tasks to run after updating the rmm, before migrations"
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.WARNING("Clearning the cache"))
+        self.stdout.write(self.style.WARNING("Cleaning the cache"))
         clear_entire_cache()
         self.stdout.write(self.style.SUCCESS("Cache was cleared!"))

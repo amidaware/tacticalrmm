@@ -67,7 +67,10 @@ RemoveOldAgent() {
 InstallMesh() {
     if [ -f /etc/os-release ]; then
         distroID=$(. /etc/os-release; echo $ID)
+        distroIDLIKE=$(. /etc/os-release; echo $ID_LIKE)
         if [[ " ${deb[*]} " =~ " ${distroID} " ]]; then
+            set_locale_deb
+        elif [[ " ${deb[*]} " =~ " ${distroIDLIKE} " ]]; then
             set_locale_deb
         elif [[ " ${rhe[*]} " =~ " ${distroID} " ]]; then
             set_locale_rhel
@@ -78,7 +81,7 @@ InstallMesh() {
 
     meshTmpDir=$(mktemp -d -t "mesh-XXXXXXXXX")
     if [ $? -ne 0 ]; then
-        meshTmpDir='meshtemp'
+        meshTmpDir='/root/meshtemp'
         mkdir -p ${meshTmpDir}
     fi
     meshTmpBin="${meshTmpDir}/meshagent"
@@ -119,6 +122,10 @@ RemoveOldAgent
 
 echo "Downloading tactical agent..."
 wget -q -O ${agentBin} "${agentDL}"
+if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to download tactical agent"
+    exit 1
+fi
 chmod +x ${agentBin}
 
 MESH_NODE_ID=""

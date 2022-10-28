@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from django.conf import settings
-from django.db.models import Count, Exists, Prefetch, Q
+from django.db.models import Count, Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -142,7 +142,9 @@ class GetAgents(APIView):
                         filter=Q(pendingactions__status=PAStatus.PENDING),
                     ),
                     has_patches_pending=Exists(
-                        WinUpdate.objects.filter(action="approve", installed=False)
+                        WinUpdate.objects.filter(
+                            agent_id=OuterRef("pk"), action="approve", installed=False
+                        )
                     ),
                 )
             )

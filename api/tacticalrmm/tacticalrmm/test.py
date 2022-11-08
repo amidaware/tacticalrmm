@@ -112,7 +112,7 @@ class TacticalTestCase(TestCase):
             parent_obj["policy"] = parent
         else:
             parent_obj["agent"] = parent
-        checks = list()
+        checks = []
         for recipe in check_recipes:
             if not script:
                 checks.append(baker.make_recipe(recipe, **parent_obj))

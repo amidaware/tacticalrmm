@@ -40,7 +40,7 @@ NATS_SERVER_VER = "2.9.6"
 PIP_VER = "34"
 
 SETUPTOOLS_VER = "65.5.1"
-WHEEL_VER = "0.38.2"
+WHEEL_VER = "0.38.3"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"

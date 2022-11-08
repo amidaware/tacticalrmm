@@ -18,7 +18,6 @@ class MeshAgentIdent(Enum):
 
 CORESETTINGS_CACHE_KEY = "core_settings"
 ROLE_CACHE_PREFIX = "role_"
-AGENT_TBL_CHECKS_CACHE_PREFIX = "agent_tbl_checks_"
 AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX = "agent_tbl_pendingactions_"
 
 AGENT_STATUS_ONLINE = "online"

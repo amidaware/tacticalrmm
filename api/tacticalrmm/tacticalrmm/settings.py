@@ -20,27 +20,27 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.15.2"
+TRMM_VERSION = "0.15.3-dev"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.5"
+WEB_VERSION = "0.101.6-dev"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.173"
+APP_VER = "0.0.174"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.4.1"
+LATEST_AGENT_VER = "2.4.2-dev"
 
-MESH_VER = "1.0.90"
+MESH_VER = "1.0.97"
 
-NATS_SERVER_VER = "2.9.3"
+NATS_SERVER_VER = "2.9.6"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "33"
+PIP_VER = "34"
 
-SETUPTOOLS_VER = "65.5.0"
-WHEEL_VER = "0.37.1"
+SETUPTOOLS_VER = "65.5.1"
+WHEEL_VER = "0.38.2"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"

@@ -29,7 +29,7 @@ hiredis==2.0.0
 requests==2.28.1
 six==1.16.0
 sqlparse==0.4.3
-twilio==7.15.1
+twilio==7.15.2
 urllib3==1.26.12
 uWSGI==2.0.21
 validators==0.20.0

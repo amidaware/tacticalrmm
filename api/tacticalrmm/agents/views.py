@@ -549,7 +549,7 @@ def install_agent(request):
 
     codesign_token, is_valid = token_is_valid()
 
-    if request.data["installMethod"] in {"bash", "mac"} and is_valid:
+    if request.data["installMethod"] in {"bash", "mac"} and not is_valid:
         return notify_error(
             "Missing code signing token, or token is no longer valid. Please read the docs for more info."
         )

@@ -11,12 +11,14 @@ from django.db.models import Count, Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from django.urls import reverse
+from agents.utils import generate_linux_install, generate_linux_install_command
 from meshctrl.utils import get_login_token
 from packaging import version as pyver
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -547,7 +549,7 @@ def install_agent(request):
 
     codesign_token, is_valid = token_is_valid()
 
-    if request.data["installMethod"] in {"bash", "mac"} and not is_valid:
+    if request.data["installMethod"] in {"bash", "mac"} and is_valid:
         return notify_error(
             "Missing code signing token, or token is no longer valid. Please read the docs for more info."
         )
@@ -609,7 +611,7 @@ def install_agent(request):
             download_url=download_url,
         )
 
-    elif request.data["installMethod"] in {"manual", "mac"}:
+    elif request.data["installMethod"] in {"manual", "mac", "bash-manual"}:
         resp = {}
         if request.data["installMethod"] == "manual":
             cmd = [
@@ -633,6 +635,12 @@ def install_agent(request):
                 cmd.append("--power")
 
             resp["cmd"] = " ".join(str(i) for i in cmd)
+        elif request.data["installMethod"] == "bash-manual":
+            curl_url = request.build_absolute_uri(reverse(install_agent_linux))
+            cmd = install_flags.copy()
+            cmd.remove('-m')
+            cmd.remove('install')
+            resp["cmd"] = generate_linux_install_command(cmd, goarch, curl_url, download_url)
         else:
             install_flags.insert(0, f"sudo ./{inno}")
             cmd = install_flags.copy()
@@ -687,6 +695,19 @@ def install_agent(request):
             response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
             return response
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def install_agent_linux(request):
+    return generate_linux_install(
+        download_only=True,
+        client="",
+        site="",
+        agent_type="",
+        arch="",
+        token="",
+        api="",
+        download_url="",
+    )
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RecoverAgentPerms])

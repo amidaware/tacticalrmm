@@ -33,6 +33,22 @@ meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
 meshSysD="/lib/systemd/system/${meshSvcName}"
 
+# Simple Bash Argument Handler
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -t|--token|--auth) token="$2"; shift ;;
+        -c|--client-id) clientID="$2"; shift ;;
+        -s|--site-id) siteID="$2"; shift ;;
+        -a|--agent-type) agentType="$2"; shift;;
+        --proxy) proxy="$2"; shift;;
+        --api) apiURL="$2"; shift;;
+        --agentdl) agentDL="$2"; shift;;
+        --meshdl) meshDL="$2"; shift;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
+
 deb=(ubuntu debian raspbian kali linuxmint)
 rhe=(fedora rocky centos rhel amzn arch opensuse)
 

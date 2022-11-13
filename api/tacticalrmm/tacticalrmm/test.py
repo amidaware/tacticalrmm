@@ -13,8 +13,6 @@ from core.models import CoreSettings
 from tacticalrmm.constants import CustomFieldModel, CustomFieldType
 
 if TYPE_CHECKING:
-    from agents.models import Agent
-    from automation.models import Policy
     from checks.models import Check
     from clients.models import Client, Site
     from core.models import CustomField

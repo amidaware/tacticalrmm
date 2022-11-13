@@ -1,7 +1,6 @@
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch
 
 from django.conf import settings
-from rest_framework.response import Response
 
 from agents.utils import generate_linux_install, get_agent_url
 from tacticalrmm.test import TacticalTestCase

@@ -169,6 +169,7 @@ class GetUpdateDeleteUser(APIView):
 
 class UserActions(APIView):
     permission_classes = [IsAuthenticated, AccountsPerms]
+
     # reset password
     def post(self, request):
         user = get_object_or_404(User, pk=request.data["id"])
@@ -267,7 +268,7 @@ class GetAddAPIKeys(APIView):
         request.data["key"] = get_random_string(length=32).upper()
         serializer = APIKeySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        obj = serializer.save()
+        serializer.save()
         return Response("The API Key was added")
 
 

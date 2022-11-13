@@ -226,15 +226,13 @@ class AutomatedTask(BaseAuditModel):
     def create_policy_task(
         self, policy: "Policy", assigned_check: "Optional[Check]" = None
     ) -> None:
-        ### Copies certain properties on this task (self) to a new task and sets it to the supplied Policy
-        fields_to_copy = POLICY_TASK_FIELDS_TO_COPY
-
+        # Copies certain properties on this task (self) to a new task and sets it to the supplied Policy
         task = AutomatedTask.objects.create(
             policy=policy,
             assigned_check=assigned_check,
         )
 
-        for field in fields_to_copy:
+        for field in POLICY_TASK_FIELDS_TO_COPY:
             setattr(task, field, getattr(self, field))
 
         task.save()

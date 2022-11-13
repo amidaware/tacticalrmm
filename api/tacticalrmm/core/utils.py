@@ -21,7 +21,7 @@ from tacticalrmm.constants import (
 )
 
 if TYPE_CHECKING:
-    from core.models import CodeSignToken, CoreSettings
+    from core.models import CoreSettings
 
 
 class CoreSettingsNotFound(Exception):

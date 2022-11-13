@@ -75,7 +75,7 @@ SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 
 with suppress(ImportError):
-    from .local_settings import *
+    from .local_settings import *  # noqa
 
 if "GHACTIONS" in os.environ:
     DEBUG = False
@@ -141,9 +141,9 @@ CHANNEL_LAYERS = {
 }
 
 # silence cache key length warnings
-import warnings
+import warnings  # noqa
 
-from django.core.cache import CacheKeyWarning
+from django.core.cache import CacheKeyWarning  # noqa
 
 warnings.simplefilter("ignore", CacheKeyWarning)
 
@@ -161,7 +161,7 @@ CACHES = {
 
 MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  ##
+    "corsheaders.middleware.CorsMiddleware",
     "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

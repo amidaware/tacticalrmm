@@ -1,0 +1,12 @@
+[flake8]
+ignore = E501,W503,E722,E203
+exclude =
+    .mypy*
+    .pytest*
+    .git
+    demo_data.py
+    manage.py
+    */__pycache__/*
+    */env/*
+    /usr/local/lib/*
+    **/migrations/*

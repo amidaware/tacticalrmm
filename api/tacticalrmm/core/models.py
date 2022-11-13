@@ -126,10 +126,10 @@ class CoreSettings(BaseAuditModel):
                 cache_agents_alert_template.delay()
 
             if old_settings.workstation_policy != self.workstation_policy:
-                cache.delete_many_pattern(f"site_workstation_*")
+                cache.delete_many_pattern("site_workstation_*")
 
             if old_settings.server_policy != self.server_policy:
-                cache.delete_many_pattern(f"site_server_*")
+                cache.delete_many_pattern("site_server_*")
 
             if (
                 old_settings.server_policy != self.server_policy

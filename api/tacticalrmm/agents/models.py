@@ -18,6 +18,7 @@ from nats.errors import TimeoutError
 from packaging import version as pyver
 
 from agents.utils import get_agent_url
+from checks.models import CheckResult
 from core.models import TZ_CHOICES
 from core.utils import get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog, PendingAction
@@ -25,6 +26,7 @@ from tacticalrmm.constants import (
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
+    AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
     ONLINE_AGENTS,
     AgentHistoryType,
     AgentMonType,
@@ -214,8 +216,6 @@ class Agent(BaseAuditModel):
 
     @property
     def checks(self) -> Dict[str, Any]:
-        from checks.models import CheckResult
-
         total, passing, failing, warning, info = 0, 0, 0, 0, 0
 
         for check in self.get_checks_with_policies(exclude_overridden=True):
@@ -256,6 +256,15 @@ class Agent(BaseAuditModel):
             "info": info,
             "has_failing_checks": failing > 0 or warning > 0,
         }
+        return ret
+
+    @property
+    def pending_actions_count(self) -> int:
+        ret = cache.get(f"{AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX}{self.pk}")
+        if ret is None:
+            ret = self.pendingactions.filter(status=PAStatus.PENDING).count()
+            cache.set(f"{AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX}{self.pk}", ret, 600)
+
         return ret
 
     @property

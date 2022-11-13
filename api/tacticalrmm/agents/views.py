@@ -137,17 +137,11 @@ class GetAgents(APIView):
                     ),
                 )
                 .annotate(
-                    pending_actions_count=Count(
-                        "pendingactions",
-                        filter=Q(pendingactions__status=PAStatus.PENDING),
-                    )
-                )
-                .annotate(
                     has_patches_pending=Exists(
                         WinUpdate.objects.filter(
                             agent_id=OuterRef("pk"), action="approve", installed=False
                         )
-                    )
+                    ),
                 )
             )
             serializer = AgentTableSerializer(agents, many=True)

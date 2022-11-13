@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="43"
+SCRIPT_VERSION="44"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -28,6 +28,12 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+arch=$(uname -m)
+if [ "$arch" != "x86_64" ]; then
+  echo -ne "${RED}ERROR: Only x86_64 arch is supported, not ${arch}${NC}\n"
+  exit 1
+fi
 
 osname=$(lsb_release -si); osname=${osname^}
 osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')

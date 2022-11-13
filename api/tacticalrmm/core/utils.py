@@ -13,6 +13,7 @@ from django.http import FileResponse
 from meshctrl.utils import get_auth_token
 
 from tacticalrmm.constants import (
+    AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
     CORESETTINGS_CACHE_KEY,
     ROLE_CACHE_PREFIX,
     AgentPlat,
@@ -29,6 +30,7 @@ class CoreSettingsNotFound(Exception):
 
 def clear_entire_cache() -> None:
     cache.delete_many_pattern(f"{ROLE_CACHE_PREFIX}*")
+    cache.delete_many_pattern(f"{AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX}*")
     cache.delete(CORESETTINGS_CACHE_KEY)
     cache.delete_many_pattern("site_*")
     cache.delete_many_pattern("agent_*")

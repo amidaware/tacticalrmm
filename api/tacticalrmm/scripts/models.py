@@ -207,7 +207,7 @@ class Script(BaseAuditModel):
                     string=string,
                     instance=agent,
                     shell=shell,
-                    quotes=True if shell != ScriptShell.CMD else False,
+                    quotes=shell != ScriptShell.CMD,
                 )
 
                 if value:

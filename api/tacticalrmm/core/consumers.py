@@ -31,7 +31,7 @@ class DashInfo(AsyncJsonWebsocketConsumer):
         self.connected = False
         await self.close()
 
-    async def receive(self, json_data=None):
+    async def receive_json(self, payload, **kwargs):
         pass
 
     @database_sync_to_async

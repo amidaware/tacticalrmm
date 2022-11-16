@@ -638,9 +638,11 @@ def install_agent(request):
         elif request.data["installMethod"] == "bash-manual":
             curl_url = request.build_absolute_uri(reverse(install_agent_linux))
             cmd = install_flags.copy()
-            cmd.remove('-m')
-            cmd.remove('install')
-            resp["cmd"] = generate_linux_install_command(cmd, goarch, curl_url, download_url)
+            cmd.remove("-m")
+            cmd.remove("install")
+            resp["cmd"] = generate_linux_install_command(
+                cmd, goarch, curl_url, download_url
+            )
         else:
             install_flags.insert(0, f"sudo ./{inno}")
             cmd = install_flags.copy()
@@ -695,6 +697,7 @@ def install_agent(request):
             response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
             return response
 
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def install_agent_linux(request):
@@ -708,6 +711,7 @@ def install_agent_linux(request):
         api="",
         download_url="",
     )
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RecoverAgentPerms])

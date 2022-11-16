@@ -33,7 +33,7 @@ def generate_linux_install(
     token: str,
     api: str,
     download_url: str,
-    download_only: bool=False,
+    download_only: bool = False,
 ) -> FileResponse:
 
     text = Path(settings.LINUX_AGENT_SCRIPT).read_text()
@@ -56,9 +56,7 @@ def generate_linux_install(
 
         uri = get_mesh_ws_url()
         mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
-        mesh_dl = (
-            f"{core.mesh_site}/meshagents?id={mesh_id}&installflags=2&meshinstall={arch_id}"
-        )
+        mesh_dl = f"{core.mesh_site}/meshagents?id={mesh_id}&installflags=2&meshinstall={arch_id}"
 
         replace = {
             "agentDLChange": download_url,
@@ -110,6 +108,6 @@ def generate_linux_install_command(
     )
 
     install_flags.extend(["--meshdl", f"'{mesh_dl}'", "--agentdl", f"'{download_url}'"])
-    return (
-        f"curl -FL '{curl_url}' | sudo bash -s -- " + " ".join(str(i) for i in install_flags)
+    return f"curl -FL '{curl_url}' | sudo bash -s -- " + " ".join(
+        str(i) for i in install_flags
     )

@@ -516,7 +516,7 @@ class Installer(APIView):
         ver = request.data["version"]
         if (
             pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER)
-            and not "-dev" in settings.LATEST_AGENT_VER
+            and "-dev" not in settings.LATEST_AGENT_VER
         ):
             return notify_error(
                 f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"

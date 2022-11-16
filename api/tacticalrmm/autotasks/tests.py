@@ -51,7 +51,7 @@ class TestAutotaskViews(TacticalTestCase):
         # setup data
         script = baker.make_recipe("scripts.script")
         agent = baker.make_recipe("agents.agent")
-        policy = baker.make("automation.Policy")
+        policy = baker.make("automation.Policy")  # noqa
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
         custom_field = baker.make("core.CustomField")
 
@@ -258,7 +258,9 @@ class TestAutotaskViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         agent_task = baker.make("autotasks.AutomatedTask", agent=agent)
         policy = baker.make("automation.Policy")
-        policy_task = baker.make("autotasks.AutomatedTask", enabled=True, policy=policy)
+        policy_task = baker.make(  # noqa
+            "autotasks.AutomatedTask", enabled=True, policy=policy
+        )
         custom_field = baker.make("core.CustomField")
         script = baker.make("scripts.Script")
 
@@ -766,12 +768,14 @@ class TestTaskPermissions(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         policy = baker.make("automation.Policy")
         unauthorized_agent = baker.make_recipe("agents.agent")
-        task = baker.make("autotasks.AutomatedTask", agent=agent, _quantity=5)
-        unauthorized_task = baker.make(
+        task = baker.make("autotasks.AutomatedTask", agent=agent, _quantity=5)  # noqa
+        unauthorized_task = baker.make(  # noqa
             "autotasks.AutomatedTask", agent=unauthorized_agent, _quantity=7
         )
 
-        policy_tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=2)
+        policy_tasks = baker.make(  # noqa
+            "autotasks.AutomatedTask", policy=policy, _quantity=2
+        )
 
         # test super user access
         self.check_authorized_superuser("get", f"{base_url}/")

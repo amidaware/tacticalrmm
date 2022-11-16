@@ -250,7 +250,7 @@ class TestAuditViews(TacticalTestCase):
             _quantity=4,
         )
 
-        logs = baker.make(
+        logs = baker.make(  # noqa
             "logs.DebugLog",
             log_type=DebugLogType.SYSTEM_ISSUES,
             log_level=cycle([i.value for i in DebugLogLevel]),
@@ -391,8 +391,8 @@ class TestAuditViews(TacticalTestCase):
     def test_get_pendingaction_permissions(self):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
-        actions = baker.make("logs.PendingAction", agent=agent, _quantity=5)
-        unauthorized_actions = baker.make(
+        actions = baker.make("logs.PendingAction", agent=agent, _quantity=5)  # noqa
+        unauthorized_actions = baker.make(  # noqa
             "logs.PendingAction", agent=unauthorized_agent, _quantity=7
         )
 

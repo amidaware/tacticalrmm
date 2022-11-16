@@ -56,6 +56,14 @@ jobs:
           if [ $? -ne 0 ]; then
               exit 1
           fi
+      
+      - name: Lint with flake8
+        working-directory: api/tacticalrmm
+        run: |
+          flake8 --config .flake8 .
+          if [ $? -ne 0 ]; then
+              exit 1
+          fi
 
       - name: Run django tests
         env:

@@ -4,7 +4,7 @@ django-extensions
 isort
 types-pytz
 django-silk
-mypy
+mypy==0.982
 django-stubs
 djangorestframework-stubs
 django-types

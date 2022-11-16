@@ -197,7 +197,7 @@ class GetUpdateDeleteUser(TacticalTestCase):
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
 
-        url = f"/accounts/893452/users/"
+        url = "/accounts/893452/users/"
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 404)
 

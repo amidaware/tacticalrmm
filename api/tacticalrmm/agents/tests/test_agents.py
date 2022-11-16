@@ -1272,9 +1272,9 @@ class TestAgentPermissions(TacticalTestCase):
 
         sites = baker.make("clients.Site", _quantity=2)
         agent = baker.make_recipe("agents.agent", site=sites[0])
-        history = baker.make("agents.AgentHistory", agent=agent, _quantity=5)
+        history = baker.make("agents.AgentHistory", agent=agent, _quantity=5)  # noqa
         unauthorized_agent = baker.make_recipe("agents.agent", site=sites[1])
-        unauthorized_history = baker.make(
+        unauthorized_history = baker.make(  # noqa
             "agents.AgentHistory", agent=unauthorized_agent, _quantity=6
         )
 

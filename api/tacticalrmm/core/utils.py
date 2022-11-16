@@ -13,7 +13,6 @@ from django.http import FileResponse
 from meshctrl.utils import get_auth_token
 
 from tacticalrmm.constants import (
-    AGENT_TBL_CHECKS_CACHE_PREFIX,
     AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
     CORESETTINGS_CACHE_KEY,
     ROLE_CACHE_PREFIX,
@@ -22,7 +21,7 @@ from tacticalrmm.constants import (
 )
 
 if TYPE_CHECKING:
-    from core.models import CodeSignToken, CoreSettings
+    from core.models import CoreSettings
 
 
 class CoreSettingsNotFound(Exception):
@@ -31,7 +30,6 @@ class CoreSettingsNotFound(Exception):
 
 def clear_entire_cache() -> None:
     cache.delete_many_pattern(f"{ROLE_CACHE_PREFIX}*")
-    cache.delete_many_pattern(f"{AGENT_TBL_CHECKS_CACHE_PREFIX}*")
     cache.delete_many_pattern(f"{AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX}*")
     cache.delete(CORESETTINGS_CACHE_KEY)
     cache.delete_many_pattern("site_*")

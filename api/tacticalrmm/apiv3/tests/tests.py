@@ -77,9 +77,7 @@ class TestAPIv3(TacticalTestCase):
         )
 
         # add check to agent with check interval set
-        check = baker.make_recipe(
-            "checks.ping_check", agent=self.agent, run_interval=30
-        )
+        baker.make_recipe("checks.ping_check", agent=self.agent, run_interval=30)
 
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)
@@ -89,7 +87,7 @@ class TestAPIv3(TacticalTestCase):
         )
 
         # minimum check run interval is 15 seconds
-        check = baker.make_recipe("checks.ping_check", agent=self.agent, run_interval=5)
+        baker.make_recipe("checks.ping_check", agent=self.agent, run_interval=5)
 
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)

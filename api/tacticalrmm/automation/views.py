@@ -146,6 +146,7 @@ class GetRelated(APIView):
 
 class UpdatePatchPolicy(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
+
     # create new patch policy
     def post(self, request):
         policy = get_object_or_404(Policy, pk=request.data["policy"])

@@ -13,8 +13,6 @@ from core.models import CoreSettings
 from tacticalrmm.constants import CustomFieldModel, CustomFieldType
 
 if TYPE_CHECKING:
-    from agents.models import Agent
-    from automation.models import Policy
     from checks.models import Check
     from clients.models import Client, Site
     from core.models import CustomField
@@ -112,7 +110,7 @@ class TacticalTestCase(TestCase):
             parent_obj["policy"] = parent
         else:
             parent_obj["agent"] = parent
-        checks = list()
+        checks = []
         for recipe in check_recipes:
             if not script:
                 checks.append(baker.make_recipe(recipe, **parent_obj))

@@ -111,7 +111,7 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/settings/"
 
         # setup
-        policies = baker.make("automation.Policy", _quantity=2)
+        baker.make("automation.Policy", _quantity=2)
         # test normal request
         data = {
             "smtp_from_email": "newexample@example.com",
@@ -129,7 +129,7 @@ class TestCoreTasks(TacticalTestCase):
     def test_ui_maintenance_actions(self, remove_orphaned_win_tasks, reload_nats):
         url = "/core/servermaintenance/"
 
-        agents = baker.make_recipe("agents.online_agent", _quantity=3)
+        baker.make_recipe("agents.online_agent", _quantity=3)
 
         # test with empty data
         r = self.client.post(url, {})
@@ -186,9 +186,7 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/customfields/"
 
         # setup
-        custom_fields = baker.make(
-            "core.CustomField", model=CustomFieldModel.AGENT, _quantity=5
-        )
+        baker.make("core.CustomField", model=CustomFieldModel.AGENT, _quantity=5)
         baker.make("core.CustomField", model="client", _quantity=5)
 
         # will error if request invalid
@@ -197,7 +195,6 @@ class TestCoreTasks(TacticalTestCase):
 
         data = {"model": "agent"}
         r = self.client.patch(url, data)
-        serializer = CustomFieldSerializer(custom_fields, many=True)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 5)
 

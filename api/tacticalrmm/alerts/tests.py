@@ -677,8 +677,6 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_email = Agent.objects.get(pk=agent_template_email.pk)
 
         # have the two agents checkin
-        url = "/api/v3/checkin/"
-
         agent_template_text.version = settings.LATEST_AGENT_VER
         agent_template_text.last_seen = djangotime.now()
         agent_template_text.save()

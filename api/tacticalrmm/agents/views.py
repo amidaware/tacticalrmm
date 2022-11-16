@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from django.conf import settings
-from django.db.models import Count, Exists, OuterRef, Prefetch, Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -43,7 +43,6 @@ from tacticalrmm.constants import (
     DebugLogType,
     EvtLogNames,
     PAAction,
-    PAStatus,
 )
 from tacticalrmm.helpers import date_is_in_past, notify_error
 from tacticalrmm.permissions import (
@@ -463,6 +462,7 @@ def send_raw_cmd(request, agent_id):
 
 class Reboot(APIView):
     permission_classes = [IsAuthenticated, RebootAgentPerms]
+
     # reboot now
     def post(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
@@ -1030,7 +1030,7 @@ def agent_maintenance(request):
         return Response(f"Maintenance mode has been {action} on {count} agents")
 
     return Response(
-        f"No agents have been put in maintenance mode. You might not have permissions to the resources."
+        "No agents have been put in maintenance mode. You might not have permissions to the resources."
     )
 
 

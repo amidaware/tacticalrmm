@@ -82,7 +82,7 @@ class CheckSerializer(serializers.ModelSerializer):
 
             if not val["warning_threshold"] and not val["error_threshold"]:
                 raise serializers.ValidationError(
-                    f"Warning threshold or Error Threshold must be set"
+                    "Warning threshold or Error Threshold must be set"
                 )
 
             if (
@@ -91,7 +91,7 @@ class CheckSerializer(serializers.ModelSerializer):
                 and val["error_threshold"] > 0
             ):
                 raise serializers.ValidationError(
-                    f"Warning threshold must be greater than Error Threshold"
+                    "Warning threshold must be greater than Error Threshold"
                 )
 
         # ping checks
@@ -113,7 +113,7 @@ class CheckSerializer(serializers.ModelSerializer):
 
             if not val["warning_threshold"] and not val["error_threshold"]:
                 raise serializers.ValidationError(
-                    f"Warning threshold or Error Threshold must be set"
+                    "Warning threshold or Error Threshold must be set"
                 )
 
             if (
@@ -122,7 +122,7 @@ class CheckSerializer(serializers.ModelSerializer):
                 and val["error_threshold"] > 0
             ):
                 raise serializers.ValidationError(
-                    f"Warning threshold must be less than Error Threshold"
+                    "Warning threshold must be less than Error Threshold"
                 )
 
         if check_type == CheckType.MEMORY and not self.instance:
@@ -133,7 +133,7 @@ class CheckSerializer(serializers.ModelSerializer):
 
             if not val["warning_threshold"] and not val["error_threshold"]:
                 raise serializers.ValidationError(
-                    f"Warning threshold or Error Threshold must be set"
+                    "Warning threshold or Error Threshold must be set"
                 )
 
             if (
@@ -142,7 +142,7 @@ class CheckSerializer(serializers.ModelSerializer):
                 and val["error_threshold"] > 0
             ):
                 raise serializers.ValidationError(
-                    f"Warning threshold must be less than Error Threshold"
+                    "Warning threshold must be less than Error Threshold"
                 )
 
         return val

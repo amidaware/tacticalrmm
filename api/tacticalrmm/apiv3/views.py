@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
+from apiv3.utils import get_agent_config
 from autotasks.models import AutomatedTask, TaskResult
 from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
 from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
@@ -569,3 +570,13 @@ class AgentHistoryResult(APIView):
         s.is_valid(raise_exception=True)
         s.save()
         return Response("ok")
+
+
+class AgentConfig(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        get_object_or_404(Agent.objects.only("pk", "agent_id"), agent_id=agentid)
+        ret = get_agent_config()
+        return Response(ret._to_dict())

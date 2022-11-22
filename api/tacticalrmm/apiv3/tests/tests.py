@@ -294,3 +294,9 @@ class TestAPIv3(TacticalTestCase):
             AgentCustomField.objects.get(field=multiple, agent=task.agent).value,
             ["this"],
         )
+
+    def test_get_agent_config(self):
+        agent = baker.make_recipe("agents.online_agent")
+        url = f"/api/v3/{agent.agent_id}/config/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)

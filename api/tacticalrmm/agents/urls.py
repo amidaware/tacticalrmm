@@ -42,4 +42,5 @@ urlpatterns = [
     path("update/", views.update_agents),
     path("installer/", views.install_agent),
     path("bulkrecovery/", views.bulk_agent_recovery),
+    path("installer/linux", views.install_agent_linux),
 ]

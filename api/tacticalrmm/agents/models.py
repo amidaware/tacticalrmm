@@ -201,8 +201,9 @@ class Agent(BaseAuditModel):
 
     @property
     def status(self) -> str:
-        offline = djangotime.now() - djangotime.timedelta(minutes=self.offline_time)
-        overdue = djangotime.now() - djangotime.timedelta(minutes=self.overdue_time)
+        now = djangotime.now()
+        offline = now - djangotime.timedelta(minutes=self.offline_time)
+        overdue = now - djangotime.timedelta(minutes=self.overdue_time)
 
         if self.last_seen is not None:
             if (self.last_seen < offline) and (self.last_seen > overdue):

@@ -1,9 +1,9 @@
 import asyncio
 import datetime as dt
-import os
 import random
 import string
 import time
+from io import StringIO
 from pathlib import Path
 
 from django.conf import settings
@@ -665,26 +665,9 @@ def install_agent(request):
         for i, j in replace_dict.items():
             text = text.replace(i, j)
 
-        file_name = "rmm-installer.ps1"
-        ps1 = os.path.join(settings.EXE_DIR, file_name)
-
-        if os.path.exists(ps1):
-            try:
-                os.remove(ps1)
-            except Exception as e:
-                DebugLog.error(message=str(e))
-
-        Path(ps1).write_text(text)
-
-        if settings.DEBUG:
-            with open(ps1, "r") as f:
-                response = HttpResponse(f.read(), content_type="text/plain")
-                response["Content-Disposition"] = f"inline; filename={file_name}"
-                return response
-        else:
-            response = HttpResponse()
-            response["Content-Disposition"] = f"attachment; filename={file_name}"
-            response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
+        with StringIO(text) as fp:
+            response = HttpResponse(fp.read(), content_type="text/plain")
+            response["Content-Disposition"] = "attachment; filename=rmm-installer.ps1"
             return response
 
 

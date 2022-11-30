@@ -214,6 +214,9 @@ def reload_nats() -> None:
     elif hasattr(settings, "NATS_HTTP_PORT"):
         config["http_port"] = settings.NATS_HTTP_PORT  # type: ignore
 
+    if "NATS_WS_COMPRESSION" in os.environ or hasattr(settings, "NATS_WS_COMPRESSION"):
+        config["websocket"]["compression"] = True
+
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
     with open(conf, "w") as f:
         json.dump(config, f)

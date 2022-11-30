@@ -700,6 +700,7 @@ def run_script(request, agent_id):
     output = request.data["output"]
     args = request.data["args"]
     run_as_user: bool = request.data["run_as_user"]
+    env_vars: list[str] = request.data["env_vars"]
     req_timeout = int(request.data["timeout"]) + 3
 
     AuditLog.audit_script_run(
@@ -725,6 +726,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
         return Response(r)
 
@@ -739,6 +741,7 @@ def run_script(request, agent_id):
             emails=emails,
             args=args,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
     elif output == "collector":
         from core.models import CustomField
@@ -750,6 +753,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
         custom_field = CustomField.objects.get(pk=request.data["custom_field"])
@@ -779,6 +783,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
         Note.objects.create(agent=agent, user=request.user, note=r)
@@ -790,6 +795,7 @@ def run_script(request, agent_id):
             timeout=req_timeout,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
     return Response(f"{script.name} will now be run on {agent.hostname}")
@@ -939,6 +945,7 @@ def bulk(request):
             request.data["timeout"],
             request.user.username[:50],
             request.data["run_as_user"],
+            request.data["env_vars"],
         )
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 

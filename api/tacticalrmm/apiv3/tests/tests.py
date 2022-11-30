@@ -127,8 +127,15 @@ class TestAPIv3(TacticalTestCase):
                 "script": script.id,
                 "script_args": ["test"],
                 "timeout": 30,
+                "env_vars": ["hello=world", "foo=bar"],
             },
-            {"type": "script", "script": 3, "script_args": [], "timeout": 30},
+            {
+                "type": "script",
+                "script": 3,
+                "script_args": [],
+                "timeout": 30,
+                "env_vars": ["hello=world", "foo=bar"],
+            },
         ]
 
         agent = baker.make_recipe("agents.agent")

@@ -470,6 +470,7 @@ class Alert(models.Model):
                 full=True,
                 run_on_any=True,
                 run_as_user=False,
+                env_vars=alert_template.action_env_vars,
             )
 
             # command was successful
@@ -593,6 +594,7 @@ class Alert(models.Model):
                 full=True,
                 run_on_any=True,
                 run_as_user=False,
+                env_vars=alert_template.resolved_action_env_vars,
             )
 
             # command was successful
@@ -661,6 +663,12 @@ class AlertTemplate(BaseAuditModel):
         blank=True,
         default=list,
     )
+    action_env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     action_timeout = models.PositiveIntegerField(default=15)
     resolved_action = models.ForeignKey(
         "scripts.Script",
@@ -671,6 +679,12 @@ class AlertTemplate(BaseAuditModel):
     )
     resolved_action_args = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    resolved_action_env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
         null=True,
         blank=True,
         default=list,

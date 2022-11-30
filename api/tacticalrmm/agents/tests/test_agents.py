@@ -540,6 +540,7 @@ class TestAgentViews(TacticalTestCase):
             "args": [],
             "timeout": 15,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -555,6 +556,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -567,6 +569,7 @@ class TestAgentViews(TacticalTestCase):
             "emailMode": "default",
             "emails": ["admin@example.com", "bob@example.com"],
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
@@ -577,6 +580,7 @@ class TestAgentViews(TacticalTestCase):
             emails=[],
             args=["abc", "123"],
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         email_task.reset_mock()
 
@@ -591,6 +595,7 @@ class TestAgentViews(TacticalTestCase):
             emails=["admin@example.com", "bob@example.com"],
             args=["abc", "123"],
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
 
         # test fire and forget
@@ -600,6 +605,7 @@ class TestAgentViews(TacticalTestCase):
             "args": ["hello", "world"],
             "timeout": 22,
             "run_as_user": True,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -614,6 +620,7 @@ class TestAgentViews(TacticalTestCase):
             timeout=25,
             history_pk=hist.pk,
             run_as_user=True,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -629,6 +636,7 @@ class TestAgentViews(TacticalTestCase):
             "custom_field": custom_field.pk,
             "save_all_output": True,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -644,6 +652,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -662,6 +671,7 @@ class TestAgentViews(TacticalTestCase):
             "custom_field": custom_field.pk,
             "save_all_output": False,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -677,6 +687,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -697,6 +708,7 @@ class TestAgentViews(TacticalTestCase):
             "custom_field": custom_field.pk,
             "save_all_output": False,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -712,6 +724,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -729,6 +742,7 @@ class TestAgentViews(TacticalTestCase):
             "args": ["hello", "world"],
             "timeout": 22,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -744,6 +758,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 

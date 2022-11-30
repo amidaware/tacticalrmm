@@ -1397,9 +1397,12 @@ class TestAlertTasks(TacticalTestCase):
             agent_script_actions=False,
             action=failure_action,
             action_timeout=30,
+            action_args=["hello", "world"],
+            action_env_vars=["hello=world", "foo=bar"],
             resolved_action=resolved_action,
             resolved_action_timeout=35,
             resolved_action_args=["nice_arg"],
+            resolved_action_env_vars=["resolved=action", "env=vars"],
         )
         agent.client.alert_template = alert_template
         agent.client.save()
@@ -1420,9 +1423,10 @@ class TestAlertTasks(TacticalTestCase):
         data = {
             "func": "runscriptfull",
             "timeout": 30,
-            "script_args": [],
+            "script_args": ["hello", "world"],
             "payload": {"code": failure_action.code, "shell": failure_action.shell},
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         nats_cmd.assert_called_with(data, timeout=30, wait=True)
@@ -1452,6 +1456,7 @@ class TestAlertTasks(TacticalTestCase):
             "script_args": ["nice_arg"],
             "payload": {"code": resolved_action.code, "shell": resolved_action.shell},
             "run_as_user": False,
+            "env_vars": ["resolved=action", "env=vars"],
         }
 
         nats_cmd.assert_called_with(data, timeout=35, wait=True)

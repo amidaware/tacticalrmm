@@ -540,6 +540,7 @@ class Agent(BaseAuditModel):
         run_on_any: bool = False,
         history_pk: int = 0,
         run_as_user: bool = False,
+        env_vars: list[str] = [],
     ) -> Any:
 
         from scripts.models import Script
@@ -561,6 +562,7 @@ class Agent(BaseAuditModel):
                 "shell": script.shell,
             },
             "run_as_user": run_as_user,
+            "env_vars": env_vars,
         }
 
         if history_pk != 0:

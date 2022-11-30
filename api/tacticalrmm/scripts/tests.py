@@ -146,6 +146,7 @@ class TestScriptViews(TacticalTestCase):
             "args": [],
             "shell": ScriptShell.POWERSHELL,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         resp = self.client.post(url, data, format="json")

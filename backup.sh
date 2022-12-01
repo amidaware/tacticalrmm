@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="20"
+SCRIPT_VERSION="21"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -27,10 +27,6 @@ if [ $EUID -eq 0 ]; then
   exit 1
 fi
 
-POSTGRES_USER=$(grep -w USER /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
-POSTGRES_PW=$(grep -w PASSWORD /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
-
-
 if [ ! -d /rmmbackups ]; then
     sudo mkdir /rmmbackups
     sudo chown ${USER}:${USER} /rmmbackups
@@ -56,6 +52,8 @@ mkdir ${tmp_dir}/systemd
 mkdir ${tmp_dir}/rmm
 mkdir ${tmp_dir}/confd
 
+POSTGRES_USER=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config dbuser)
+POSTGRES_PW=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config dbpw)
 
 pg_dump --dbname=postgresql://"${POSTGRES_USER}":"${POSTGRES_PW}"@127.0.0.1:5432/tacticalrmm | gzip -9 > ${tmp_dir}/postgres/db-${dt_now}.psql.gz
 
@@ -64,14 +62,13 @@ mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
 
 sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
 
-sudo tar -czvf ${tmp_dir}/nginx/etc-nginx.tar.gz -C /etc/nginx .
+for i in rmm frontend meshcentral; do
+    sudo cp /etc/nginx/sites-available/${i}.conf ${tmp_dir}/nginx/
+done
 
 sudo tar -czvf ${tmp_dir}/confd/etc-confd.tar.gz -C /etc/conf.d .
 
-sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/meshcentral.service ${sysd}/nats.service ${sysd}/daphne.service ${tmp_dir}/systemd/
-if [ -f "${sysd}/nats-api.service" ]; then
-    sudo cp ${sysd}/nats-api.service ${tmp_dir}/systemd/
-fi
+sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/meshcentral.service ${sysd}/nats.service ${sysd}/daphne.service ${sysd}/nats-api.service ${tmp_dir}/systemd/
 
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/

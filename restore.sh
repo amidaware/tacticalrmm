@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="44"
+SCRIPT_VERSION="45"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -139,13 +139,51 @@ echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list > /dev/null
 sudo apt update
 sudo apt install -y nginx
 sudo systemctl stop nginx
-sudo rm -rf /etc/nginx
-sudo mkdir /etc/nginx
-sudo tar -xzf $tmp_dir/nginx/etc-nginx.tar.gz -C /etc/nginx
 
-rmmdomain=$(grep server_name /etc/nginx/sites-available/rmm.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
-frontenddomain=$(grep server_name /etc/nginx/sites-available/frontend.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
-meshdomain=$(grep server_name /etc/nginx/sites-available/meshcentral.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
+nginxdefaultconf='/etc/nginx/nginx.conf'
+
+nginxconf="$(cat << EOF
+worker_rlimit_nofile 1000000;
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+        worker_connections 4096;
+}
+
+http {
+        sendfile on;
+        tcp_nopush on;
+        types_hash_max_size 2048;
+        server_names_hash_bucket_size 64;
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+        gzip on;
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+}
+EOF
+)"
+echo "${nginxconf}" | sudo tee $nginxdefaultconf > /dev/null
+
+for i in sites-available sites-enabled; do
+  sudo mkdir -p /etc/nginx/$i
+done
+
+for i in rmm frontend meshcentral; do
+    sudo cp ${tmp_dir}/nginx/${i}.conf /etc/nginx/sites-available/
+    sudo ln -s /etc/nginx/sites-available/${i}.conf /etc/nginx/sites-enabled/${i}.conf
+done
+
+rmmdomain=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config api)
+frontenddomain=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config webdomain)
+meshdomain=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config meshdomain)
 
 
 print_green 'Restoring hosts file'
@@ -218,8 +256,7 @@ wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add 
 echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 sudo apt update
 sudo apt install -y mongodb-org
-sudo systemctl enable mongod
-sudo systemctl restart mongod
+sudo systemctl enable --now mongod
 sleep 5
 mongorestore --gzip $tmp_dir/meshcentral/mongo
 

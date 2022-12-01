@@ -9,10 +9,6 @@ from django.conf import settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
 
 app = Celery("tacticalrmm", backend="redis://" + settings.REDIS_HOST, broker="redis://" + settings.REDIS_HOST)  # type: ignore
-
-# app.config_from_object('django.conf:settings', namespace='CELERY')
-# app.broker_url = "redis://" + settings.REDIS_HOST + ":6379"
-# app.result_backend = "redis://" + settings.REDIS_HOST + ":6379"
 app.accept_content = ["application/json"]
 app.result_serializer = "json"
 app.task_serializer = "json"
@@ -38,27 +34,29 @@ app.conf.beat_schedule = {
         "task": "autotasks.tasks.remove_orphaned_win_tasks",
         "schedule": crontab(minute=50, hour="12"),
     },
+    "agent-outages-task": {
+        "task": "agents.tasks.agent_outages_task",
+        "schedule": crontab(minute="*/2"),
+    },
+    "unsnooze-alerts": {
+        "task": "alerts.tasks.unsnooze_alerts",
+        "schedule": crontab(minute=10, hour="*"),
+    },
+    "core-maintenance-tasks": {
+        "task": "core.tasks.core_maintenance_tasks",
+        "schedule": crontab(minute=15, hour="*"),
+    },
+    "cache-db-fields-task": {
+        "task": "core.tasks.cache_db_fields_task",
+        "schedule": crontab(minute="*/3", hour="*"),
+    },
+    "handle-resolved-stuff": {
+        "task": "core.tasks.handle_resolved_stuff",
+        "schedule": crontab(minute="*/2", hour="*"),
+    },
 }
 
 
 @app.task(bind=True)
 def debug_task(self):
     print("Request: {0!r}".format(self.request))
-
-
-@app.on_after_finalize.connect
-def setup_periodic_tasks(sender, **kwargs):
-
-    from agents.tasks import agent_outages_task
-    from alerts.tasks import unsnooze_alerts
-    from core.tasks import (
-        cache_db_fields_task,
-        core_maintenance_tasks,
-        handle_resolved_stuff,
-    )
-
-    sender.add_periodic_task(60.0, agent_outages_task.s())
-    sender.add_periodic_task(60.0 * 30, core_maintenance_tasks.s())
-    sender.add_periodic_task(60.0 * 60, unsnooze_alerts.s())
-    sender.add_periodic_task(95.0, cache_db_fields_task.s())
-    sender.add_periodic_task(70.0, handle_resolved_stuff.s())

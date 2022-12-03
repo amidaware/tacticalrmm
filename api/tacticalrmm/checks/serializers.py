@@ -158,6 +158,7 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
     # only send data needed for agent to run a check
     script = ScriptCheckSerializer(read_only=True)
     script_args = serializers.SerializerMethodField()
+    env_vars = serializers.SerializerMethodField()
 
     def get_script_args(self, obj):
         if obj.check_type != CheckType.SCRIPT:
@@ -167,6 +168,13 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
         return Script.parse_script_args(
             agent=agent, shell=obj.script.shell, args=obj.script_args
         )
+
+    def get_env_vars(self, obj):
+        if obj.check_type != CheckType.SCRIPT:
+            return []
+
+        # check's env_vars override the script's env vars
+        return obj.env_vars or obj.script.env_vars
 
     class Meta:
         model = Check

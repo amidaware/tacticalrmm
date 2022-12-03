@@ -98,6 +98,12 @@ class Check(BaseAuditModel):
         blank=True,
         default=list,
     )
+    env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     info_return_codes = ArrayField(
         models.PositiveIntegerField(),
         null=True,

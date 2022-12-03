@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="70"
+SCRIPT_VERSION="71"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -33,6 +33,12 @@ arch=$(uname -m)
 if [ "$arch" != "x86_64" ]; then
   echo -ne "${RED}ERROR: Only x86_64 arch is supported, not ${arch}${NC}\n"
   exit 1
+fi
+
+memTotal=$(grep -i memtotal /proc/meminfo | awk '{print $2}')
+if [[ $memTotal -lt 3627528 ]]; then
+        echo -ne "${RED}ERROR: A minimum of 4GB of RAM is required.${NC}\n"
+        exit 1
 fi
 
 osname=$(lsb_release -si); osname=${osname^}

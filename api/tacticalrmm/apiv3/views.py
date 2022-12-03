@@ -577,6 +577,5 @@ class AgentConfig(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, agentid):
-        get_object_or_404(Agent.objects.only("pk", "agent_id"), agent_id=agentid)
         ret = get_agent_config()
         return Response(ret._to_dict())

@@ -1373,6 +1373,7 @@ class TestAlertTasks(TacticalTestCase):
     ):
 
         from agents.tasks import agent_outages_task
+        from agents.models import AgentHistory
 
         # Setup cmd mock
         success = {
@@ -1427,6 +1428,7 @@ class TestAlertTasks(TacticalTestCase):
             "payload": {"code": failure_action.code, "shell": failure_action.shell},
             "run_as_user": False,
             "env_vars": ["hello=world", "foo=bar"],
+            "id": AgentHistory.objects.last().pk,  # type: ignore
         }
 
         nats_cmd.assert_called_with(data, timeout=30, wait=True)
@@ -1457,6 +1459,7 @@ class TestAlertTasks(TacticalTestCase):
             "payload": {"code": resolved_action.code, "shell": resolved_action.shell},
             "run_as_user": False,
             "env_vars": ["resolved=action", "env=vars"],
+            "id": AgentHistory.objects.last().pk,  # type: ignore
         }
 
         nats_cmd.assert_called_with(data, timeout=35, wait=True)

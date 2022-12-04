@@ -1,13 +1,13 @@
 import asyncio
 import datetime as dt
-import os
 import random
 import string
 import time
+from io import StringIO
 from pathlib import Path
 
 from django.conf import settings
-from django.db.models import Count, Exists, OuterRef, Prefetch, Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -41,7 +41,6 @@ from tacticalrmm.constants import (
     DebugLogType,
     EvtLogNames,
     PAAction,
-    PAStatus,
 )
 from tacticalrmm.helpers import date_is_in_past, notify_error
 from tacticalrmm.permissions import (
@@ -461,6 +460,7 @@ def send_raw_cmd(request, agent_id):
 
 class Reboot(APIView):
     permission_classes = [IsAuthenticated, RebootAgentPerms]
+
     # reboot now
     def post(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
@@ -665,26 +665,9 @@ def install_agent(request):
         for i, j in replace_dict.items():
             text = text.replace(i, j)
 
-        file_name = "rmm-installer.ps1"
-        ps1 = os.path.join(settings.EXE_DIR, file_name)
-
-        if os.path.exists(ps1):
-            try:
-                os.remove(ps1)
-            except Exception as e:
-                DebugLog.error(message=str(e))
-
-        Path(ps1).write_text(text)
-
-        if settings.DEBUG:
-            with open(ps1, "r") as f:
-                response = HttpResponse(f.read(), content_type="text/plain")
-                response["Content-Disposition"] = f"inline; filename={file_name}"
-                return response
-        else:
-            response = HttpResponse()
-            response["Content-Disposition"] = f"attachment; filename={file_name}"
-            response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
+        with StringIO(text) as fp:
+            response = HttpResponse(fp.read(), content_type="text/plain")
+            response["Content-Disposition"] = "attachment; filename=rmm-installer.ps1"
             return response
 
 
@@ -717,6 +700,7 @@ def run_script(request, agent_id):
     output = request.data["output"]
     args = request.data["args"]
     run_as_user: bool = request.data["run_as_user"]
+    env_vars: list[str] = request.data["env_vars"]
     req_timeout = int(request.data["timeout"]) + 3
 
     AuditLog.audit_script_run(
@@ -742,6 +726,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
         return Response(r)
 
@@ -756,6 +741,7 @@ def run_script(request, agent_id):
             emails=emails,
             args=args,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
     elif output == "collector":
         from core.models import CustomField
@@ -767,6 +753,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
         custom_field = CustomField.objects.get(pk=request.data["custom_field"])
@@ -796,6 +783,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
         Note.objects.create(agent=agent, user=request.user, note=r)
@@ -807,6 +795,7 @@ def run_script(request, agent_id):
             timeout=req_timeout,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
     return Response(f"{script.name} will now be run on {agent.hostname}")
@@ -956,6 +945,7 @@ def bulk(request):
             request.data["timeout"],
             request.user.username[:50],
             request.data["run_as_user"],
+            request.data["env_vars"],
         )
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 
@@ -1005,7 +995,7 @@ def agent_maintenance(request):
         return Response(f"Maintenance mode has been {action} on {count} agents")
 
     return Response(
-        f"No agents have been put in maintenance mode. You might not have permissions to the resources."
+        "No agents have been put in maintenance mode. You might not have permissions to the resources."
     )
 
 

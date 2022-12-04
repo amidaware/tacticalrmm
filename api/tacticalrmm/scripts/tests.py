@@ -37,7 +37,7 @@ class TestScriptViews(TacticalTestCase):
 
     @override_settings(SECRET_KEY="Test Secret Key")
     def test_add_script(self):
-        url = f"/scripts/"
+        url = "/scripts/"
 
         data = {
             "name": "Name",
@@ -146,6 +146,7 @@ class TestScriptViews(TacticalTestCase):
             "args": [],
             "shell": ScriptShell.POWERSHELL,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         resp = self.client.post(url, data, format="json")
@@ -453,7 +454,7 @@ class TestScriptSnippetViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_add_script_snippet(self):
-        url = f"/scripts/snippets/"
+        url = "/scripts/snippets/"
 
         data = {
             "name": "Name",

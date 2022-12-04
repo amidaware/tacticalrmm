@@ -41,7 +41,7 @@ class TestCheckViews(TacticalTestCase):
         self.assertEqual(len(resp.data), 4)
 
         # test agent doesn't exist
-        url = f"/agents/jh3498uf8fkh4ro8hfd8df98/checks/"
+        url = "/agents/jh3498uf8fkh4ro8hfd8df98/checks/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 404)
 
@@ -884,12 +884,12 @@ class TestCheckPermissions(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         policy = baker.make("automation.Policy")
         unauthorized_agent = baker.make_recipe("agents.agent")
-        check = baker.make("checks.Check", agent=agent, _quantity=5)
-        unauthorized_check = baker.make(
+        check = baker.make("checks.Check", agent=agent, _quantity=5)  # noqa
+        unauthorized_check = baker.make(  # noqa
             "checks.Check", agent=unauthorized_agent, _quantity=7
         )
 
-        policy_checks = baker.make("checks.Check", policy=policy, _quantity=2)
+        policy_checks = baker.make("checks.Check", policy=policy, _quantity=2)  # noqa
 
         # test super user access
         self.check_authorized_superuser("get", f"{base_url}/")

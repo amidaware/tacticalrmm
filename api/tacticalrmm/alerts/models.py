@@ -10,6 +10,7 @@ from django.utils import timezone as djangotime
 
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
+    AgentHistoryType,
     AgentMonType,
     AlertSeverity,
     AlertType,
@@ -268,7 +269,7 @@ class Alert(models.Model):
     def handle_alert_failure(
         cls, instance: Union[Agent, TaskResult, CheckResult]
     ) -> None:
-        from agents.models import Agent
+        from agents.models import Agent, AgentHistory
         from autotasks.models import TaskResult
         from checks.models import CheckResult
 
@@ -462,14 +463,22 @@ class Alert(models.Model):
             and run_script_action
             and not alert.action_run
         ):
+            hist = AgentHistory.objects.create(
+                agent=agent,
+                type=AgentHistoryType.SCRIPT_RUN,
+                script=alert_template.action,
+                username="alert-action-failure",
+            )
             r = agent.run_script(
                 scriptpk=alert_template.action.pk,
                 args=alert.parse_script_args(alert_template.action_args),
                 timeout=alert_template.action_timeout,
                 wait=True,
+                history_pk=hist.pk,
                 full=True,
                 run_on_any=True,
                 run_as_user=False,
+                env_vars=alert_template.action_env_vars,
             )
 
             # command was successful
@@ -491,7 +500,7 @@ class Alert(models.Model):
     def handle_alert_resolve(
         cls, instance: Union[Agent, TaskResult, CheckResult]
     ) -> None:
-        from agents.models import Agent
+        from agents.models import Agent, AgentHistory
         from autotasks.models import TaskResult
         from checks.models import CheckResult
 
@@ -585,14 +594,22 @@ class Alert(models.Model):
             and run_script_action
             and not alert.resolved_action_run
         ):
+            hist = AgentHistory.objects.create(
+                agent=agent,
+                type=AgentHistoryType.SCRIPT_RUN,
+                script=alert_template.action,
+                username="alert-action-resolved",
+            )
             r = agent.run_script(
                 scriptpk=alert_template.resolved_action.pk,
                 args=alert.parse_script_args(alert_template.resolved_action_args),
                 timeout=alert_template.resolved_action_timeout,
                 wait=True,
+                history_pk=hist.pk,
                 full=True,
                 run_on_any=True,
                 run_as_user=False,
+                env_vars=alert_template.resolved_action_env_vars,
             )
 
             # command was successful
@@ -661,6 +678,12 @@ class AlertTemplate(BaseAuditModel):
         blank=True,
         default=list,
     )
+    action_env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     action_timeout = models.PositiveIntegerField(default=15)
     resolved_action = models.ForeignKey(
         "scripts.Script",
@@ -671,6 +694,12 @@ class AlertTemplate(BaseAuditModel):
     )
     resolved_action_args = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    resolved_action_env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
         null=True,
         blank=True,
         default=list,

@@ -29,6 +29,12 @@ class Script(BaseAuditModel):
         blank=True,
         default=list,
     )
+    env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     syntax = TextField(null=True, blank=True)
     favorite = models.BooleanField(default=False)
     category = models.CharField(max_length=100, null=True, blank=True)

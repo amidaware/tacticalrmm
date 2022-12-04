@@ -30,6 +30,7 @@ class GetWindowsUpdates(APIView):
 
 class ScanWindowsUpdates(APIView):
     permission_classes = [IsAuthenticated, AgentWinUpdatePerms]
+
     # scan for windows updates on agent
     def post(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)

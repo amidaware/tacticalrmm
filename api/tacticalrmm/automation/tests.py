@@ -87,7 +87,7 @@ class TestPolicyViews(TacticalTestCase):
             "copyId": policy.pk,
         }
 
-        resp = self.client.post(f"/automation/policies/", data, format="json")
+        resp = self.client.post("/automation/policies/", data, format="json")
         self.assertEqual(resp.status_code, 200)
 
         copied_policy = Policy.objects.get(name=data["name"])

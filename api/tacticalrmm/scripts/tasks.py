@@ -46,6 +46,7 @@ def handle_bulk_script_task(
     timeout: int,
     username: str,
     run_as_user: bool = False,
+    env_vars: list[str] = [],
 ) -> None:
     script = Script.objects.get(pk=scriptpk)
     agent: "Agent"
@@ -62,4 +63,5 @@ def handle_bulk_script_task(
             timeout=timeout,
             history_pk=hist.pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )

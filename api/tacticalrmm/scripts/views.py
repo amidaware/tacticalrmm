@@ -161,6 +161,7 @@ class TestScript(APIView):
                 "shell": request.data["shell"],
             },
             "run_as_user": request.data["run_as_user"],
+            "env_vars": request.data["env_vars"],
         }
 
         r = asyncio.run(

@@ -426,6 +426,7 @@ CONFIG_MGMT_CMDS = (
     "meshver",
     "natsver",
     "frontend",
+    "webdomain",
     "djangoadmin",
     "setuptoolsver",
     "wheelver",
@@ -437,4 +438,5 @@ CONFIG_MGMT_CMDS = (
     "meshsite",
     "meshuser",
     "meshtoken",
+    "meshdomain",
 )

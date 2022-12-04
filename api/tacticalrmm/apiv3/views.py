@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
+from apiv3.utils import get_agent_config
 from autotasks.models import AutomatedTask, TaskResult
 from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
 from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
@@ -516,7 +517,7 @@ class Installer(APIView):
         ver = request.data["version"]
         if (
             pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER)
-            and not "-dev" in settings.LATEST_AGENT_VER
+            and "-dev" not in settings.LATEST_AGENT_VER
         ):
             return notify_error(
                 f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
@@ -569,3 +570,12 @@ class AgentHistoryResult(APIView):
         s.is_valid(raise_exception=True)
         s.save()
         return Response("ok")
+
+
+class AgentConfig(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        ret = get_agent_config()
+        return Response(ret._to_dict())

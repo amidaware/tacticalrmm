@@ -1,6 +1,6 @@
 import asyncio
-import tempfile
 import urllib.parse
+from io import StringIO
 from pathlib import Path
 
 from django.conf import settings
@@ -70,11 +70,8 @@ def generate_linux_install(
     for i, j in replace.items():
         text = text.replace(i, j)
 
-    with tempfile.NamedTemporaryFile() as fp:
-        with open(fp.name, "w") as f:
-            f.write(text)
-            f.write("\n")
-
+    text += "\n"
+    with StringIO(text) as fp:
         return FileResponse(
-            open(fp.name, "rb"), as_attachment=True, filename="linux_agent_install.sh"
+            fp.read(), as_attachment=True, filename="linux_agent_install.sh"
         )

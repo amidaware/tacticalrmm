@@ -154,6 +154,7 @@ def run_script_email_results_task(
     args: list[str] = [],
     history_pk: int = 0,
     run_as_user: bool = False,
+    env_vars: list[str] = [],
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)
@@ -165,6 +166,7 @@ def run_script_email_results_task(
         wait=True,
         history_pk=history_pk,
         run_as_user=run_as_user,
+        env_vars=env_vars,
     )
     if r == "timeout":
         DebugLog.error(

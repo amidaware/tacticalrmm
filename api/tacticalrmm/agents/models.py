@@ -201,8 +201,9 @@ class Agent(BaseAuditModel):
 
     @property
     def status(self) -> str:
-        offline = djangotime.now() - djangotime.timedelta(minutes=self.offline_time)
-        overdue = djangotime.now() - djangotime.timedelta(minutes=self.overdue_time)
+        now = djangotime.now()
+        offline = now - djangotime.timedelta(minutes=self.offline_time)
+        overdue = now - djangotime.timedelta(minutes=self.overdue_time)
 
         if self.last_seen is not None:
             if (self.last_seen < offline) and (self.last_seen > overdue):
@@ -539,6 +540,7 @@ class Agent(BaseAuditModel):
         run_on_any: bool = False,
         history_pk: int = 0,
         run_as_user: bool = False,
+        env_vars: list[str] = [],
     ) -> Any:
 
         from scripts.models import Script
@@ -560,6 +562,7 @@ class Agent(BaseAuditModel):
                 "shell": script.shell,
             },
             "run_as_user": run_as_user,
+            "env_vars": env_vars,
         }
 
         if history_pk != 0:
@@ -800,6 +803,7 @@ class Agent(BaseAuditModel):
         options = {
             "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
             "user": "tacticalrmm",
+            "name": "trmm-django",
             "password": settings.SECRET_KEY,
             "connect_timeout": 3,
             "max_reconnect_attempts": 2,

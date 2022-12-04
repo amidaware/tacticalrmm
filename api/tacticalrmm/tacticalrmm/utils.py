@@ -214,6 +214,9 @@ def reload_nats() -> None:
     elif hasattr(settings, "NATS_HTTP_PORT"):
         config["http_port"] = settings.NATS_HTTP_PORT  # type: ignore
 
+    if "NATS_WS_COMPRESSION" in os.environ or hasattr(settings, "NATS_WS_COMPRESSION"):
+        config["websocket"]["compression"] = True
+
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
     with open(conf, "w") as f:
         json.dump(config, f)
@@ -247,7 +250,7 @@ class KnoxAuthMiddlewareInstance:
         return await self.app(scope, receive, send)
 
 
-KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(
+KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(  # noqa
     AuthMiddlewareStack(inner)
 )
 
@@ -352,7 +355,7 @@ def replace_db_values(
                 value = model_fields.get(**{model: obj}).value
 
         # need explicit None check since a false boolean value will pass default value
-        if value == None and field.default_value != None:
+        if value is None and field.default_value is not None:
             value = field.default_value
 
         # check if value exists and if not use default
@@ -362,7 +365,7 @@ def replace_db_values(
                 if quotes
                 else format_shell_array(value)
             )
-        elif value != None and field.type == CustomFieldType.CHECKBOX:
+        elif value is not None and field.type == CustomFieldType.CHECKBOX:
             value = format_shell_bool(value, shell)
         else:
             value = f"'{value}'" if quotes else value
@@ -376,7 +379,7 @@ def replace_db_values(
         return ""
 
     # log any unhashable type errors
-    if value != None:
+    if value is not None:
         return value
     else:
         DebugLog.error(

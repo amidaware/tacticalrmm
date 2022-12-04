@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -22,6 +24,8 @@ class Command(BaseCommand):
                 self.stdout.write(settings.NATS_SERVER_VER)
             case "frontend":
                 self.stdout.write(settings.CORS_ORIGIN_WHITELIST[0])
+            case "webdomain":
+                self.stdout.write(urlparse(settings.CORS_ORIGIN_WHITELIST[0]).netloc)
             case "djangoadmin":
                 url = f"https://{settings.ALLOWED_HOSTS[0]}/{settings.ADMIN_URL}"
                 self.stdout.write(url)
@@ -39,7 +43,7 @@ class Command(BaseCommand):
                 self.stdout.write(settings.DATABASES["default"]["HOST"])
             case "dbport":
                 self.stdout.write(settings.DATABASES["default"]["PORT"])
-            case "meshsite" | "meshuser" | "meshtoken":
+            case "meshsite" | "meshuser" | "meshtoken" | "meshdomain":
                 from core.models import CoreSettings
 
                 core: "CoreSettings" = CoreSettings.objects.first()
@@ -47,6 +51,8 @@ class Command(BaseCommand):
                     obj = core.mesh_site
                 elif kwargs["name"] == "meshuser":
                     obj = core.mesh_username
+                elif kwargs["name"] == "meshdomain":
+                    obj = urlparse(core.mesh_site).netloc
                 else:
                     obj = core.mesh_token
 

@@ -145,7 +145,7 @@ class TestSoftwarePermissions(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
         software = baker.make("software.InstalledSoftware", software={}, agent=agent)
-        unauthorized_software = baker.make(
+        unauthorized_software = baker.make(  # noqa
             "software.InstalledSoftware", software={}, agent=unauthorized_agent
         )
 
@@ -180,8 +180,10 @@ class TestSoftwarePermissions(TacticalTestCase):
     def test_install_refresh_software_permissions(self, nats_cmd):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
-        software = baker.make("software.InstalledSoftware", software={}, agent=agent)
-        unauthorized_software = baker.make(
+        software = baker.make(  # noqa
+            "software.InstalledSoftware", software={}, agent=agent
+        )
+        unauthorized_software = baker.make(  # noqa
             "software.InstalledSoftware", software={}, agent=unauthorized_agent
         )
 

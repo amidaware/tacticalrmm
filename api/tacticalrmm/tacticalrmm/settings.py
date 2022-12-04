@@ -20,21 +20,21 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.15.3"
+TRMM_VERSION = "0.15.4"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.7"
+WEB_VERSION = "0.101.9"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.174"
+APP_VER = "0.0.175"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.4.2"
+LATEST_AGENT_VER = "2.4.3"
 
-MESH_VER = "1.0.97"
+MESH_VER = "1.1.0"
 
-NATS_SERVER_VER = "2.9.6"
+NATS_SERVER_VER = "2.9.8"
 
 # for the update script, bump when need to recreate venv
 PIP_VER = "34"
@@ -75,7 +75,7 @@ SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 
 with suppress(ImportError):
-    from .local_settings import *
+    from .local_settings import *  # noqa
 
 if "GHACTIONS" in os.environ:
     DEBUG = False
@@ -141,9 +141,9 @@ CHANNEL_LAYERS = {
 }
 
 # silence cache key length warnings
-import warnings
+import warnings  # noqa
 
-from django.core.cache import CacheKeyWarning
+from django.core.cache import CacheKeyWarning  # noqa
 
 warnings.simplefilter("ignore", CacheKeyWarning)
 
@@ -161,7 +161,7 @@ CACHES = {
 
 MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  ##
+    "corsheaders.middleware.CorsMiddleware",
     "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

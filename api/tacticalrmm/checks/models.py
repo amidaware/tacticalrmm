@@ -98,6 +98,12 @@ class Check(BaseAuditModel):
         blank=True,
         default=list,
     )
+    env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     info_return_codes = ArrayField(
         models.PositiveIntegerField(),
         null=True,
@@ -221,8 +227,6 @@ class Check(BaseAuditModel):
 
     def create_policy_check(self, policy: "Policy") -> None:
 
-        fields_to_copy = POLICY_CHECK_FIELDS_TO_COPY
-
         check = Check.objects.create(
             policy=policy,
         )
@@ -230,7 +234,7 @@ class Check(BaseAuditModel):
         for task in self.assignedtasks.all():  # type: ignore
             task.create_policy_task(policy=policy, assigned_check=check)
 
-        for field in fields_to_copy:
+        for field in POLICY_CHECK_FIELDS_TO_COPY:
             setattr(check, field, getattr(self, field))
 
         check.save()

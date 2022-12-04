@@ -5,4 +5,4 @@ class LogsConfig(AppConfig):
     name = "logs"
 
     def ready(self):
-        from . import signals
+        from . import signals  # noqa

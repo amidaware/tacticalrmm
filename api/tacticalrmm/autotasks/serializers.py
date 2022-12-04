@@ -33,40 +33,40 @@ class TaskSerializer(serializers.ModelSerializer):
 
         if not value:
             raise serializers.ValidationError(
-                f"There must be at least one action configured"
+                "There must be at least one action configured"
             )
 
         for action in value:
             if "type" not in action:
                 raise serializers.ValidationError(
-                    f"Each action must have a type field of either 'script' or 'cmd'"
+                    "Each action must have a type field of either 'script' or 'cmd'"
                 )
 
             if action["type"] == "script":
                 if "script" not in action:
                     raise serializers.ValidationError(
-                        f"A script action type must have a 'script' field with primary key of script"
+                        "A script action type must have a 'script' field with primary key of script"
                     )
 
                 if "script_args" not in action:
                     raise serializers.ValidationError(
-                        f"A script action type must have a 'script_args' field with an array of arguments"
+                        "A script action type must have a 'script_args' field with an array of arguments"
                     )
 
                 if "timeout" not in action:
                     raise serializers.ValidationError(
-                        f"A script action type must have a 'timeout' field"
+                        "A script action type must have a 'timeout' field"
                     )
 
             if action["type"] == "cmd":
                 if "command" not in action:
                     raise serializers.ValidationError(
-                        f"A command action type must have a 'command' field"
+                        "A command action type must have a 'command' field"
                     )
 
                 if "timeout" not in action:
                     raise serializers.ValidationError(
-                        f"A command action type must have a 'timeout' field"
+                        "A command action type must have a 'timeout' field"
                     )
 
         return value
@@ -241,6 +241,7 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
                         "shell": script.shell,
                         "timeout": action["timeout"],
                         "run_as_user": script.run_as_user,
+                        "env_vars": action["env_vars"],
                     }
                 )
         if actions_to_remove:

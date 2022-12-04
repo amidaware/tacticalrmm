@@ -187,20 +187,6 @@ for i in rmm frontend meshcentral; do
     sudo ln -s /etc/nginx/sites-available/${i}.conf /etc/nginx/sites-enabled/${i}.conf
 done
 
-rmmdomain=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config api)
-frontenddomain=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config webdomain)
-meshdomain=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config meshdomain)
-
-
-print_green 'Restoring hosts file'
-
-HAS_11=$(grep 127.0.1.1 /etc/hosts)
-if [[ $HAS_11 ]]; then
-  sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} ${frontenddomain} ${meshdomain}/" /etc/hosts
-else
-  echo "127.0.1.1 ${rmmdomain} ${frontenddomain} ${meshdomain}" | sudo tee --append /etc/hosts > /dev/null
-fi
-
 print_green 'Restoring certbot'
 
 sudo apt install -y software-properties-common
@@ -350,7 +336,18 @@ python manage.py reload_nats
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)
+webdomain=$(python manage.py get_config webdomain)
+meshdomain=$(python manage.py get_config meshdomain)
 deactivate
+
+print_green 'Restoring hosts file'
+
+HAS_11=$(grep 127.0.1.1 /etc/hosts)
+if [[ $HAS_11 ]]; then
+  sudo sed -i "/127.0.1.1/s/$/ ${API} ${webdomain} ${meshdomain}/" /etc/hosts
+else
+  echo "127.0.1.1 ${API} ${webdomain} ${meshdomain}" | sudo tee --append /etc/hosts > /dev/null
+fi
 
 sudo systemctl enable nats.service
 sudo systemctl start nats.service

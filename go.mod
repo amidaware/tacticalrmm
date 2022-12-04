@@ -6,8 +6,8 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.7
-	github.com/nats-io/nats-server/v2 v2.9.6 // indirect
-	github.com/nats-io/nats.go v1.19.1
+	github.com/nats-io/nats-server/v2 v2.9.8 // indirect
+	github.com/nats-io/nats.go v1.20.0
 	github.com/ugorji/go/codec v1.2.7
 	github.com/wh1te909/trmm-shared v0.0.0-20220227075846-f9f757361139
 	google.golang.org/protobuf v1.28.0 // indirect

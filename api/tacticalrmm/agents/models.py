@@ -803,6 +803,7 @@ class Agent(BaseAuditModel):
         options = {
             "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
             "user": "tacticalrmm",
+            "name": "trmm-django",
             "password": settings.SECRET_KEY,
             "connect_timeout": 3,
             "max_reconnect_attempts": 2,

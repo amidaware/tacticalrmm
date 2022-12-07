@@ -228,6 +228,10 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
                     # script doesn't exist so remove it
                     actions_to_remove.append(action["script"])
                     continue
+                try:
+                    env_vars = action["env_vars"]
+                except KeyError:
+                    env_vars = []
                 tmp.append(
                     {
                         "type": "script",
@@ -241,7 +245,7 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
                         "shell": script.shell,
                         "timeout": action["timeout"],
                         "run_as_user": script.run_as_user,
-                        "env_vars": action["env_vars"],
+                        "env_vars": env_vars,
                     }
                 )
         if actions_to_remove:

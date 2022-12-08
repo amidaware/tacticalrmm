@@ -3,7 +3,7 @@ from django.db import migrations
 
 def migrate_env_vars(apps, schema_editor):
     AutomatedTask = apps.get_model("autotasks", "AutomatedTask")
-    for task in AutomatedTask.objects.all():
+    for task in AutomatedTask.objects.iterator(chunk_size=30):
         try:
             tmp = []
             if isinstance(task.actions, list) and task.actions:

@@ -13,4 +13,6 @@ urlpatterns = [
     path("roles/<int:pk>/", views.GetUpdateDeleteRole.as_view()),
     path("apikeys/", views.GetAddAPIKeys.as_view()),
     path("apikeys/<int:pk>/", views.GetUpdateDeleteAPIKey.as_view()),
+    path("resetpw/", views.ResetPass.as_view()),
+    path("reset2fa/", views.Reset2FA.as_view()),
 ]

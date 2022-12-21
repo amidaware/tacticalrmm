@@ -14,7 +14,7 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        python-version: ["3.10.8", "3.11.0"]
+        python-version: ["3.10.8", "3.11.1"]
 
     steps:
       - uses: actions/checkout@v3
@@ -56,7 +56,7 @@ jobs:
           if [ $? -ne 0 ]; then
               exit 1
           fi
-      
+
       - name: Lint with flake8
         working-directory: api/tacticalrmm
         run: |

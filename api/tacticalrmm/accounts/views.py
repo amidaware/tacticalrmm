@@ -291,3 +291,23 @@ class GetUpdateDeleteAPIKey(APIView):
         apikey = get_object_or_404(APIKey, pk=pk)
         apikey.delete()
         return Response("The API Key was deleted")
+
+
+class ResetPass(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        user = request.user
+        user.set_password(request.data["password"])
+        user.save()
+        return Response("Password was reset.")
+
+
+class Reset2FA(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        user = request.user
+        user.totp_key = ""
+        user.save()
+        return Response("2FA was reset. Log out and back in to setup.")

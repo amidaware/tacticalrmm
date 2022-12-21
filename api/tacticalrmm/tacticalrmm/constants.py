@@ -417,6 +417,8 @@ DEMO_NOT_ALLOWED = [
     {"name": "InstallWindowsUpdates", "methods": ["POST"]},
     {"name": "PendingActions", "methods": ["DELETE"]},
     {"name": "clear_cache", "methods": ["GET"]},
+    {"name": "ResetPass", "methods": ["PUT"]},
+    {"name": "Reset2FA", "methods": ["PUT"]},
 ]
 
 CONFIG_MGMT_CMDS = (

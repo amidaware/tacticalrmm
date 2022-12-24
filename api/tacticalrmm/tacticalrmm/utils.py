@@ -338,7 +338,11 @@ def replace_db_values(
 
     # check if attr exists and isn't a function
     if hasattr(obj, temp[1]) and not callable(getattr(obj, temp[1])):
-        value = f'"{getattr(obj, temp[1])}"' if quotes else getattr(obj, temp[1])
+        temp1 = getattr(obj, temp[1])
+        if "'" in temp1:
+            temp1 = temp1.replace("'", "''")
+
+        value = f"'{temp1}'" if quotes else temp1
 
     elif CustomField.objects.filter(model=model, name=temp[1]).exists():
 

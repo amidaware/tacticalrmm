@@ -236,9 +236,9 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(
             [
                 "-Parameter",
-                "-Another '12.12.12.12'",
-                f"-Client '{agent.client.name}'",
-                f"-Site '{agent.site.name}'",
+                '-Another "12.12.12.12"',
+                f'-Client "{agent.client.name}"',
+                f'-Site "{agent.site.name}"',
             ],
             Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )

@@ -339,7 +339,7 @@ def replace_db_values(
     # check if attr exists and isn't a function
     if hasattr(obj, temp[1]) and not callable(getattr(obj, temp[1])):
         temp1 = getattr(obj, temp[1])
-        if "'" in temp1:
+        if isinstance(temp1, str) and "'" in temp1:
             temp1 = temp1.replace("'", "''")
 
         value = f"'{temp1}'" if quotes else temp1
@@ -372,6 +372,9 @@ def replace_db_values(
         elif value is not None and field.type == CustomFieldType.CHECKBOX:
             value = format_shell_bool(value, shell)
         else:
+            if isinstance(value, str) and "'" in value:
+                value = value.replace("'", "''")
+
             value = f"'{value}'" if quotes else value
 
     else:

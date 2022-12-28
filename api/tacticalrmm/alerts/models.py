@@ -172,12 +172,12 @@ class Alert(models.Model):
                     alert_type=AlertType.CHECK,
                     severity=check.alert_severity
                     if check.check_type
-                    not in [
+                    not in {
                         CheckType.MEMORY,
                         CheckType.CPU_LOAD,
                         CheckType.DISK_SPACE,
                         CheckType.SCRIPT,
-                    ]
+                    }
                     else alert_severity,
                     message=f"{agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                     hidden=True,
@@ -328,12 +328,12 @@ class Alert(models.Model):
             alert_severity = (
                 instance.assigned_check.alert_severity
                 if instance.assigned_check.check_type
-                not in [
+                not in {
                     CheckType.MEMORY,
                     CheckType.CPU_LOAD,
                     CheckType.DISK_SPACE,
                     CheckType.SCRIPT,
-                ]
+                }
                 else instance.alert_severity
             )
             agent = instance.agent
@@ -342,23 +342,20 @@ class Alert(models.Model):
             if alert_template:
                 dashboard_severities = (
                     alert_template.check_dashboard_alert_severity
-                    if alert_template.check_dashboard_alert_severity
-                    else [
+                    or [
                         AlertSeverity.ERROR,
                         AlertSeverity.WARNING,
                         AlertSeverity.INFO,
                     ]
                 )
-                email_severities = (
-                    alert_template.check_email_alert_severity
-                    if alert_template.check_email_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
-                text_severities = (
-                    alert_template.check_text_alert_severity
-                    if alert_template.check_text_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
+                email_severities = alert_template.check_email_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                text_severities = alert_template.check_text_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
                 always_dashboard = alert_template.check_always_alert
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
@@ -381,21 +378,18 @@ class Alert(models.Model):
 
             # set alert_template settings
             if alert_template:
-                dashboard_severities = (
-                    alert_template.task_dashboard_alert_severity
-                    if alert_template.task_dashboard_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
-                email_severities = (
-                    alert_template.task_email_alert_severity
-                    if alert_template.task_email_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
-                text_severities = (
-                    alert_template.task_text_alert_severity
-                    if alert_template.task_text_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
+                dashboard_severities = alert_template.task_dashboard_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                email_severities = alert_template.task_email_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                text_severities = alert_template.task_text_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
                 always_dashboard = alert_template.task_always_alert
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text

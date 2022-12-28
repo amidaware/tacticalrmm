@@ -255,9 +255,7 @@ class CheckRunner(APIView):
                 check.check_result.last_run
                 < djangotime.now()
                 - djangotime.timedelta(
-                    seconds=check.run_interval
-                    if check.run_interval
-                    else agent.check_interval
+                    seconds=check.run_interval or agent.check_interval
                 )
             )
         ]

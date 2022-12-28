@@ -1633,7 +1633,7 @@ class TestAlertPermissions(TacticalTestCase):
             unauthorized_task_url,
         ]
 
-        for method in ["get", "put", "delete"]:
+        for method in ("get", "put", "delete"):
 
             # test superuser access
             for url in authorized_urls:

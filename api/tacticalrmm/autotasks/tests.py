@@ -868,7 +868,7 @@ class TestTaskPermissions(TacticalTestCase):
 
         url = f"{base_url}/"
 
-        for data in [policy_data, agent_data]:
+        for data in (policy_data, agent_data):
             # test superuser access
             self.check_authorized_superuser("post", url, data)
 
@@ -904,7 +904,7 @@ class TestTaskPermissions(TacticalTestCase):
         )
         policy_task = baker.make("autotasks.AutomatedTask", policy=policy)
 
-        for method in ["get", "put", "delete"]:
+        for method in ("get", "put", "delete"):
 
             url = f"{base_url}/{task.id}/"
             unauthorized_url = f"{base_url}/{unauthorized_task.id}/"

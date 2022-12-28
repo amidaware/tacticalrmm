@@ -27,7 +27,7 @@ pyotp==2.8.0
 pyparsing==3.0.9
 pytz==2022.5
 qrcode==7.3.1
-redis==4.4.0
+redis==4.3.5
 requests==2.28.1
 six==1.16.0
 sqlparse==0.4.3

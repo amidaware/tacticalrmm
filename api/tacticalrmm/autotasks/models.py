@@ -71,7 +71,7 @@ class AutomatedTask(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
-    # format -> [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]
+    # format -> [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": [], "env_vars": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]
     actions = JSONField(default=list)
     assigned_check = models.ForeignKey(
         "checks.Check",

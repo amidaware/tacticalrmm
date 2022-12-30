@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="140"
+SCRIPT_VERSION="141"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -121,7 +121,7 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
 fi
 
 
-for i in nginx nats-api nats rmm daphne celery celerybeat
+for i in celerybeat celery nginx nats-api nats rmm daphne
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}

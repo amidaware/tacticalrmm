@@ -32,6 +32,7 @@ from tacticalrmm.constants import (
     TaskStatus,
     TaskSyncStatus,
 )
+from tacticalrmm.helpers import rand_range
 from tacticalrmm.utils import redis_lock
 
 if TYPE_CHECKING:
@@ -152,20 +153,28 @@ def sync_scheduled_tasks(self) -> str:
             ):
                 # create a list of tasks to be synced so we can run them in parallel later with thread pool executor
                 for task in agent.get_tasks_with_policies():
-                    if isinstance(task.task_result, TaskResult):
-                        agent_obj = agent if task.policy else None
-                        if task.task_result.sync_status == TaskSyncStatus.INITIAL:
-                            task_actions.append(("create", task.id, agent_obj))
-                        elif (
-                            task.task_result.sync_status
-                            == TaskSyncStatus.PENDING_DELETION
-                        ):
-                            task_actions.append(("delete", task.id, agent_obj))
-                        elif task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED:
-                            task_actions.append(("modify", task.id, agent_obj))
+                    agent_obj = agent if task.policy else None
+
+                    # policy tasks will be an empty dict on initial
+                    if (not task.task_result) or (
+                        isinstance(task.task_result, TaskResult)
+                        and task.task_result.sync_status == TaskSyncStatus.INITIAL
+                    ):
+                        task_actions.append(("create", task.id, agent_obj))
+                    elif (
+                        isinstance(task.task_result, TaskResult)
+                        and task.task_result.sync_status
+                        == TaskSyncStatus.PENDING_DELETION
+                    ):
+                        task_actions.append(("delete", task.id, agent_obj))
+                    elif (
+                        isinstance(task.task_result, TaskResult)
+                        and task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED
+                    ):
+                        task_actions.append(("modify", task.id, agent_obj))
 
         def _handle_task(actions: tuple[str, int, Any]) -> None:
-            time.sleep(round(random.uniform(50, 600) / 1000, 3))
+            time.sleep(rand_range(50, 600))
             task: "AutomatedTask" = AutomatedTask.objects.get(id=actions[1])
             if actions[0] == "create":
                 task.create_task_on_agent(agent=actions[2])

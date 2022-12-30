@@ -1,6 +1,5 @@
 import asyncio
 import datetime as dt
-import random
 from contextlib import suppress
 from time import sleep
 from typing import Optional, Union

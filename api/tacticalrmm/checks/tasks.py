@@ -1,5 +1,4 @@
 import datetime as dt
-import random
 from time import sleep
 from typing import Optional
 

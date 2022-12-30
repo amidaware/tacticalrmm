@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 import pytz
+import random
 from django.conf import settings
 from django.utils import timezone as djangotime
 from rest_framework import status
@@ -51,3 +52,11 @@ def date_is_in_past(*, datetime_obj: "datetime", agent_tz: str) -> bool:
 
 def get_webdomain() -> str:
     return urlparse(settings.CORS_ORIGIN_WHITELIST[0]).netloc
+
+
+def rand_range(min: int, max: int) -> float:
+    """
+    Input is milliseconds.
+    Returns float truncated to 2 decimals.
+    """
+    return round(random.uniform(min, max) / 1000, 2)

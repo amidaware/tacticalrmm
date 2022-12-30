@@ -8,6 +8,7 @@ from django.utils import timezone as djangotime
 from alerts.models import Alert
 from checks.models import CheckResult
 from tacticalrmm.celery import app
+from tacticalrmm.helpers import rand_range
 
 
 @app.task
@@ -24,7 +25,7 @@ def handle_check_email_alert_task(
         check_result = CheckResult.objects.get(
             assigned_check=alert.assigned_check, agent=alert.agent
         )
-        sleep(random.randint(1, 5))
+        sleep(rand_range(100, 1500))
         check_result.send_email()
         alert.email_sent = djangotime.now()
         alert.save(update_fields=["email_sent"])
@@ -36,7 +37,7 @@ def handle_check_email_alert_task(
                 check_result = CheckResult.objects.get(
                     assigned_check=alert.assigned_check, agent=alert.agent
                 )
-                sleep(random.randint(1, 5))
+                sleep(rand_range(100, 1500))
                 check_result.send_email()
                 alert.email_sent = djangotime.now()
                 alert.save(update_fields=["email_sent"])
@@ -57,7 +58,7 @@ def handle_check_sms_alert_task(pk: int, alert_interval: Optional[float] = None)
         check_result = CheckResult.objects.get(
             assigned_check=alert.assigned_check, agent=alert.agent
         )
-        sleep(random.randint(1, 3))
+        sleep(rand_range(100, 1500))
         check_result.send_sms()
         alert.sms_sent = djangotime.now()
         alert.save(update_fields=["sms_sent"])
@@ -69,7 +70,7 @@ def handle_check_sms_alert_task(pk: int, alert_interval: Optional[float] = None)
                 check_result = CheckResult.objects.get(
                     assigned_check=alert.assigned_check, agent=alert.agent
                 )
-                sleep(random.randint(1, 3))
+                sleep(rand_range(100, 1500))
                 check_result.send_sms()
                 alert.sms_sent = djangotime.now()
                 alert.save(update_fields=["sms_sent"])
@@ -90,7 +91,7 @@ def handle_resolved_check_sms_alert_task(pk: int) -> str:
         check_result = CheckResult.objects.get(
             assigned_check=alert.assigned_check, agent=alert.agent
         )
-        sleep(random.randint(1, 3))
+        sleep(rand_range(100, 1500))
         check_result.send_resolved_sms()
         alert.resolved_sms_sent = djangotime.now()
         alert.save(update_fields=["resolved_sms_sent"])
@@ -111,7 +112,7 @@ def handle_resolved_check_email_alert_task(pk: int) -> str:
         check_result = CheckResult.objects.get(
             assigned_check=alert.assigned_check, agent=alert.agent
         )
-        sleep(random.randint(1, 5))
+        sleep(rand_range(100, 1500))
         check_result.send_resolved_email()
         alert.resolved_email_sent = djangotime.now()
         alert.save(update_fields=["resolved_email_sent"])

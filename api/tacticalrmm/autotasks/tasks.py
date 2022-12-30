@@ -13,6 +13,7 @@ from autotasks.models import AutomatedTask, TaskResult
 from logs.models import DebugLog
 from tacticalrmm.celery import app
 from tacticalrmm.constants import DebugLogType
+from tacticalrmm.helpers import rand_range
 
 
 @app.task
@@ -144,7 +145,7 @@ def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) 
         task_result = TaskResult.objects.get(
             task=alert.assigned_task, agent=alert.agent
         )
-        sleep(random.randint(1, 5))
+        sleep(rand_range(100, 1500))
         task_result.send_email()
         alert.email_sent = djangotime.now()
         alert.save(update_fields=["email_sent"])
@@ -156,7 +157,7 @@ def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) 
                 task_result = TaskResult.objects.get(
                     task=alert.assigned_task, agent=alert.agent
                 )
-                sleep(random.randint(1, 5))
+                sleep(rand_range(100, 1500))
                 task_result.send_email()
                 alert.email_sent = djangotime.now()
                 alert.save(update_fields=["email_sent"])
@@ -177,7 +178,7 @@ def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) ->
         task_result = TaskResult.objects.get(
             task=alert.assigned_task, agent=alert.agent
         )
-        sleep(random.randint(1, 3))
+        sleep(rand_range(100, 1500))
         task_result.send_sms()
         alert.sms_sent = djangotime.now()
         alert.save(update_fields=["sms_sent"])
@@ -189,7 +190,7 @@ def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) ->
                 task_result = TaskResult.objects.get(
                     task=alert.assigned_task, agent=alert.agent
                 )
-                sleep(random.randint(1, 3))
+                sleep(rand_range(100, 1500))
                 task_result.send_sms()
                 alert.sms_sent = djangotime.now()
                 alert.save(update_fields=["sms_sent"])
@@ -210,7 +211,7 @@ def handle_resolved_task_sms_alert(pk: int) -> str:
         task_result = TaskResult.objects.get(
             task=alert.assigned_task, agent=alert.agent
         )
-        sleep(random.randint(1, 3))
+        sleep(rand_range(100, 1500))
         task_result.send_resolved_sms()
         alert.resolved_sms_sent = djangotime.now()
         alert.save(update_fields=["resolved_sms_sent"])
@@ -231,7 +232,7 @@ def handle_resolved_task_email_alert(pk: int) -> str:
         task_result = TaskResult.objects.get(
             task=alert.assigned_task, agent=alert.agent
         )
-        sleep(random.randint(1, 5))
+        sleep(rand_range(100, 1500))
         task_result.send_resolved_email()
         alert.resolved_email_sent = djangotime.now()
         alert.save(update_fields=["resolved_email_sent"])

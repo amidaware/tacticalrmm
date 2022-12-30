@@ -1,4 +1,7 @@
-from typing import TYPE_CHECKING
+import concurrent.futures
+import random
+import time
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.db.models import Prefetch
@@ -8,7 +11,7 @@ from agents.models import Agent
 from agents.tasks import clear_faults_task, prune_agent_history
 from alerts.models import Alert
 from alerts.tasks import prune_resolved_alerts
-from autotasks.models import TaskResult
+from autotasks.models import AutomatedTask, TaskResult
 from checks.models import Check, CheckResult
 from checks.tasks import prune_check_history
 from clients.models import Client, Site
@@ -120,19 +123,19 @@ def resolve_alerts_task(self) -> str:
         if not acquired:
             return f"{self.app.oid} still running"
 
-    # TODO rework this to not use an agent queryset, use Alerts
-    for agent in _get_agent_qs():
-        if (
-            pyver.parse(agent.version) >= pyver.parse("1.6.0")
-            and agent.status == AGENT_STATUS_ONLINE
-        ):
-            # handles any alerting actions
-            if Alert.objects.filter(
-                alert_type=AlertType.AVAILABILITY, agent=agent, resolved=False
-            ).exists():
-                Alert.handle_alert_resolve(agent)
+        # TODO rework this to not use an agent queryset, use Alerts
+        for agent in _get_agent_qs():
+            if (
+                pyver.parse(agent.version) >= pyver.parse("1.6.0")
+                and agent.status == AGENT_STATUS_ONLINE
+            ):
+                # handles any alerting actions
+                if Alert.objects.filter(
+                    alert_type=AlertType.AVAILABILITY, agent=agent, resolved=False
+                ).exists():
+                    Alert.handle_alert_resolve(agent)
 
-    return "completed"
+        return "completed"
 
 
 @app.task(bind=True)
@@ -141,24 +144,40 @@ def sync_scheduled_tasks(self) -> str:
         if not acquired:
             return f"{self.app.oid} still running"
 
-    for agent in _get_agent_qs():
-        if (
-            pyver.parse(agent.version) >= pyver.parse("1.6.0")
-            and agent.status == AGENT_STATUS_ONLINE
-        ):
-            # sync scheduled tasks
-            for task in agent.get_tasks_with_policies():
-                if isinstance(task.task_result, TaskResult):
-                    if task.task_result.sync_status == TaskSyncStatus.INITIAL:
-                        task.create_task_on_agent(agent=agent if task.policy else None)
-                    elif (
-                        task.task_result.sync_status == TaskSyncStatus.PENDING_DELETION
-                    ):
-                        task.delete_task_on_agent(agent=agent if task.policy else None)
-                    elif task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED:
-                        task.modify_task_on_agent(agent=agent if task.policy else None)
+        task_actions = []  # list of tuples
+        for agent in _get_agent_qs():
+            if (
+                pyver.parse(agent.version) >= pyver.parse("1.6.0")
+                and agent.status == AGENT_STATUS_ONLINE
+            ):
+                # create a list of tasks to be synced so we can run them in parallel later with thread pool executor
+                for task in agent.get_tasks_with_policies():
+                    if isinstance(task.task_result, TaskResult):
+                        agent_obj = agent if task.policy else None
+                        if task.task_result.sync_status == TaskSyncStatus.INITIAL:
+                            task_actions.append(("create", task.id, agent_obj))
+                        elif (
+                            task.task_result.sync_status
+                            == TaskSyncStatus.PENDING_DELETION
+                        ):
+                            task_actions.append(("delete", task.id, agent_obj))
+                        elif task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED:
+                            task_actions.append(("modify", task.id, agent_obj))
 
-    return "completed"
+        def _handle_task(actions: tuple[str, int, Any]) -> None:
+            time.sleep(round(random.uniform(50, 600) / 1000, 3))
+            task: "AutomatedTask" = AutomatedTask.objects.get(id=actions[1])
+            if actions[0] == "create":
+                task.create_task_on_agent(agent=actions[2])
+            elif actions[0] == "modify":
+                task.modify_task_on_agent(agent=actions[2])
+            elif actions[0] == "delete":
+                task.delete_task_on_agent(agent=actions[2])
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+            executor.map(_handle_task, task_actions)
+
+        return "completed"
 
 
 def _get_failing_data(agents: "QuerySet[Agent]") -> dict[str, bool]:

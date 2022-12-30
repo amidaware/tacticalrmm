@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import pytz
 from django.conf import settings
@@ -46,3 +47,7 @@ def date_is_in_past(*, datetime_obj: "datetime", agent_tz: str) -> bool:
     localized = agent_pytz.localize(datetime_obj)
     utc_time = localized.astimezone(pytz.utc)
     return now > utc_time
+
+
+def get_webdomain() -> str:
+    return urlparse(settings.CORS_ORIGIN_WHITELIST[0]).netloc

@@ -3,6 +3,8 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from tacticalrmm.helpers import get_webdomain
+
 
 class Command(BaseCommand):
     help = "Get config vars to be used in shell scripts"
@@ -25,7 +27,7 @@ class Command(BaseCommand):
             case "frontend":
                 self.stdout.write(settings.CORS_ORIGIN_WHITELIST[0])
             case "webdomain":
-                self.stdout.write(urlparse(settings.CORS_ORIGIN_WHITELIST[0]).netloc)
+                self.stdout.write(get_webdomain())
             case "djangoadmin":
                 url = f"https://{settings.ALLOWED_HOSTS[0]}/{settings.ADMIN_URL}"
                 self.stdout.write(url)

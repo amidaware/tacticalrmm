@@ -149,7 +149,7 @@ fi
 
 if [ "$1" = 'tactical-celery' ]; then
   check_tactical_ready
-  celery -A tacticalrmm worker -l info
+  celery -A tacticalrmm worker --autoscale=30,5 -l info
 fi
 
 if [ "$1" = 'tactical-celerybeat' ]; then

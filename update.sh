@@ -346,6 +346,7 @@ python manage.py load_chocos
 python manage.py create_installer_user
 python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
+python manage.py clear_redis_celery_locks
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)

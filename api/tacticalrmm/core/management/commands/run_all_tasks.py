@@ -6,7 +6,9 @@ from autotasks.tasks import remove_orphaned_win_tasks
 from core.tasks import (
     cache_db_fields_task,
     core_maintenance_tasks,
-    handle_resolved_stuff,
+    resolve_alerts_task,
+    resolve_pending_actions,
+    sync_scheduled_tasks,
 )
 from winupdate.tasks import auto_approve_updates_task, check_agent_update_schedule_task
 
@@ -20,7 +22,9 @@ class Command(BaseCommand):
         unsnooze_alerts.delay()
         cache_db_fields_task.delay()
         core_maintenance_tasks.delay()
-        handle_resolved_stuff.delay()
+        resolve_pending_actions.delay()
+        resolve_alerts_task.delay()
+        sync_scheduled_tasks.delay()
         remove_orphaned_win_tasks.delay()
         auto_approve_updates_task.delay()
         check_agent_update_schedule_task.delay()

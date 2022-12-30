@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.db.models import Prefetch
@@ -20,6 +20,8 @@ from tacticalrmm.constants import (
     AGENT_DEFER,
     AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
+    RESOLVE_ALERTS_LOCK,
+    SYNC_SCHED_TASK_LOCK,
     AlertSeverity,
     AlertType,
     PAAction,
@@ -27,6 +29,7 @@ from tacticalrmm.constants import (
     TaskStatus,
     TaskSyncStatus,
 )
+from tacticalrmm.utils import redis_lock
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -62,16 +65,15 @@ def core_maintenance_tasks() -> None:
 
 
 @app.task
-def handle_resolved_stuff() -> None:
-
+def resolve_pending_actions() -> None:
     # change agent update pending status to completed if agent has just updated
-    actions = (
+    actions: "QuerySet[PendingAction]" = (
         PendingAction.objects.select_related("agent")
         .defer("agent__services", "agent__wmi_detail")
         .filter(action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING)
     )
 
-    to_update = [
+    to_update: list[int] = [
         action.id
         for action in actions
         if pyver.parse(action.agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
@@ -80,7 +82,9 @@ def handle_resolved_stuff() -> None:
 
     PendingAction.objects.filter(pk__in=to_update).update(status=PAStatus.COMPLETED)
 
-    agent_queryset = (
+
+def _get_agent_qs() -> "QuerySet[Agent]":
+    qs: "QuerySet[Agent]" = (
         Agent.objects.defer(*AGENT_DEFER)
         .select_related(
             "site__server_policy",
@@ -88,6 +92,7 @@ def handle_resolved_stuff() -> None:
             "site__client__server_policy",
             "site__client__workstation_policy",
             "policy",
+            "policy__alert_template",
             "alert_template",
         )
         .prefetch_related(
@@ -106,34 +111,57 @@ def handle_resolved_stuff() -> None:
             "autotasks",
         )
     )
+    return qs
 
-    for agent in agent_queryset:
+
+@app.task(bind=True)
+def resolve_alerts_task(self) -> str:
+    with redis_lock(RESOLVE_ALERTS_LOCK, self.app.oid) as acquired:
+        if not acquired:
+            return f"{self.app.oid} still running"
+
+    # TODO rework this to not use an agent queryset, use Alerts
+    for agent in _get_agent_qs():
         if (
             pyver.parse(agent.version) >= pyver.parse("1.6.0")
             and agent.status == AGENT_STATUS_ONLINE
         ):
-            # sync scheduled tasks
-            for task in agent.get_tasks_with_policies():
-                if (
-                    not task.task_result
-                    or task.task_result.sync_status == TaskSyncStatus.INITIAL
-                ):
-                    task.create_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == TaskSyncStatus.PENDING_DELETION:
-                    task.delete_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED:
-                    task.modify_task_on_agent(agent=agent if task.policy else None)
-                elif task.task_result.sync_status == TaskSyncStatus.SYNCED:
-                    continue
-
             # handles any alerting actions
             if Alert.objects.filter(
                 alert_type=AlertType.AVAILABILITY, agent=agent, resolved=False
             ).exists():
                 Alert.handle_alert_resolve(agent)
 
+    return "completed"
 
-def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
+
+@app.task(bind=True)
+def sync_scheduled_tasks(self) -> str:
+    with redis_lock(SYNC_SCHED_TASK_LOCK, self.app.oid) as acquired:
+        if not acquired:
+            return f"{self.app.oid} still running"
+
+    for agent in _get_agent_qs():
+        if (
+            pyver.parse(agent.version) >= pyver.parse("1.6.0")
+            and agent.status == AGENT_STATUS_ONLINE
+        ):
+            # sync scheduled tasks
+            for task in agent.get_tasks_with_policies():
+                if isinstance(task.task_result, TaskResult):
+                    if task.task_result.sync_status == TaskSyncStatus.INITIAL:
+                        task.create_task_on_agent(agent=agent if task.policy else None)
+                    elif (
+                        task.task_result.sync_status == TaskSyncStatus.PENDING_DELETION
+                    ):
+                        task.delete_task_on_agent(agent=agent if task.policy else None)
+                    elif task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED:
+                        task.modify_task_on_agent(agent=agent if task.policy else None)
+
+    return "completed"
+
+
+def _get_failing_data(agents: "QuerySet[Agent]") -> dict[str, bool]:
     data = {"error": False, "warning": False}
     for agent in agents:
         if agent.maintenance_mode:
@@ -181,32 +209,7 @@ def _get_failing_data(agents: "QuerySet[Any]") -> Dict[str, bool]:
 
 @app.task
 def cache_db_fields_task() -> None:
-    qs = (
-        Agent.objects.defer(*AGENT_DEFER)
-        .select_related(
-            "site__server_policy",
-            "site__workstation_policy",
-            "site__client__server_policy",
-            "site__client__workstation_policy",
-            "policy__alert_template",
-            "alert_template",
-        )
-        .prefetch_related(
-            Prefetch(
-                "agentchecks",
-                queryset=Check.objects.select_related("script"),
-            ),
-            Prefetch(
-                "checkresults",
-                queryset=CheckResult.objects.select_related("assigned_check"),
-            ),
-            Prefetch(
-                "taskresults",
-                queryset=TaskResult.objects.select_related("task"),
-            ),
-            "autotasks",
-        )
-    )
+    qs = _get_agent_qs()
     # update client/site failing check fields and agent counts
     for site in Site.objects.all():
         agents = qs.filter(site=site)

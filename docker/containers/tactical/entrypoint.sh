@@ -123,6 +123,7 @@ EOF
   python manage.py create_natsapi_conf
   python manage.py create_uwsgi_conf
   python manage.py create_installer_user
+  python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks
 
   # create super user 

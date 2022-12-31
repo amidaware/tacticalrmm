@@ -31,6 +31,8 @@ rm -f $TMP_FILE
 
 if [[ $* == *--schedule* ]]; then
 (crontab -l 2>/dev/null; echo "0 0 * * * /rmm/backup.sh") | crontab -
+printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
+exit
 fi
 
 if [ $EUID -eq 0 ]; then

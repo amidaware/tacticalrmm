@@ -30,7 +30,7 @@ fi
 rm -f $TMP_FILE
 
 if [[ $* == *--schedule* ]]; then
-(crontab -l 2>/dev/null; echo "0 0 * * * /rmm/backup.sh") | crontab -
+(crontab -l 2>/dev/null; echo "0 0 * * * /rmm/backup.sh --auto") | crontab -
 printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
 exit
 fi
@@ -43,21 +43,6 @@ fi
 if [ ! -d /rmmbackups ]; then
     sudo mkdir /rmmbackups
     sudo chown ${USER}:${USER} /rmmbackups
-fi
-
-if [ ! -d /rmmbackups/daily ]; then
-    sudo mkdir /rmmbackups/daily
-    sudo chown ${USER}:${USER} /rmmbackups/daily
-fi
-
-if [ ! -d /rmmbackups/weekly ]; then
-    sudo mkdir /rmmbackups/weekly
-    sudo chown ${USER}:${USER} /rmmbackups/weekly
-fi
-
-if [ ! -d /rmmbackups/monthly ]; then
-    sudo mkdir /rmmbackups/monthly
-    sudo chown ${USER}:${USER} /rmmbackups/monthly
 fi
 
 if [ -d /meshcentral/meshcentral-backup ]; then
@@ -101,6 +86,23 @@ sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
 
+if [[ $* == *--auto* ]]; then
+
+if [ ! -d /rmmbackups/daily ]; then
+    sudo mkdir /rmmbackups/daily
+    sudo chown ${USER}:${USER} /rmmbackups/daily
+fi
+
+if [ ! -d /rmmbackups/weekly ]; then
+    sudo mkdir /rmmbackups/weekly
+    sudo chown ${USER}:${USER} /rmmbackups/weekly
+fi
+
+if [ ! -d /rmmbackups/monthly ]; then
+    sudo mkdir /rmmbackups/monthly
+    sudo chown ${USER}:${USER} /rmmbackups/monthly
+fi
+
 month_day=`date +"%d"`
 week_day=`date +"%u"`
 
@@ -119,5 +121,11 @@ rm -rf ${tmp_dir}
 find /rmmbackups/daily/ -maxdepth 1 -mtime +14 -type d -exec rm -rv {} \;
 find /rmmbackups/weekly/ -maxdepth 1 -mtime +60 -type d -exec rm -rv {} \;
 find /rmmbackups/monthly/ -maxdepth 1 -mtime +380 -type d -exec rm -rv {} \;
+echo -ne "${GREEN}Backup Completed${NC}\n"
+exit
+
+else
+    tar -cf /rmmbackups/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
 
 echo -ne "${GREEN}Backup saved to /rmmbackups/rmm-backup-${dt_now}.tar${NC}\n"
+fi

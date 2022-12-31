@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="21"
+SCRIPT_VERSION="22"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -16,11 +16,22 @@ NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
     printf >&2 "${YELLOW}Old backup script detected, downloading and replacing with the latest version...${NC}\n"
-    wget -q "${SCRIPT_URL}" -O backup.sh
+    wget -q "${SCRIPT_URL}" -O /tmp/backup.sh
+    if grep -q SCRIPT_VERSION "/tmp/backup.sh"; then
+     mv /tmp/backup.sh $THIS_SCRIPT
+    else
+         printf >&2 "${RED} File Seems to be Corrupt, Please Run this script again.${NC}\n"
+         rm /tmp/backup.sh
+         exit
+    fi
     exec ${THIS_SCRIPT}
 fi
 
 rm -f $TMP_FILE
+
+if [[ $* == *--schedule* ]]; then
+(crontab -l 2>/dev/null; echo "0 0 * * * /rmm/backup.sh") | crontab -
+fi
 
 if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
@@ -30,6 +41,21 @@ fi
 if [ ! -d /rmmbackups ]; then
     sudo mkdir /rmmbackups
     sudo chown ${USER}:${USER} /rmmbackups
+fi
+
+if [ ! -d /rmmbackups/daily ]; then
+    sudo mkdir /rmmbackups/daily
+    sudo chown ${USER}:${USER} /rmmbackups/daily
+fi
+
+if [ ! -d /rmmbackups/weekly ]; then
+    sudo mkdir /rmmbackups/weekly
+    sudo chown ${USER}:${USER} /rmmbackups/weekly
+fi
+
+if [ ! -d /rmmbackups/monthly ]; then
+    sudo mkdir /rmmbackups/monthly
+    sudo chown ${USER}:${USER} /rmmbackups/monthly
 fi
 
 if [ -d /meshcentral/meshcentral-backup ]; then
@@ -73,8 +99,23 @@ sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
 
-tar -cf /rmmbackups/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+month_day=`date +"%d"`
+week_day=`date +"%u"`
+
+if [ "$month_day" -eq 10 ] ; then
+    tar -cf /rmmbackups/monthly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+	else
+  if [ "$week_day" -eq 5 ] ; then
+    tar -cf /rmmbackups/weekly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+  else
+    tar -cf /rmmbackups/daily/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+  fi
+fi
 
 rm -rf ${tmp_dir}
+
+find /rmmbackups/daily/ -maxdepth 1 -mtime +14 -type d -exec rm -rv {} \;
+find /rmmbackups/weekly/ -maxdepth 1 -mtime +60 -type d -exec rm -rv {} \;
+find /rmmbackups/monthly/ -maxdepth 1 -mtime +380 -type d -exec rm -rv {} \;
 
 echo -ne "${GREEN}Backup saved to /rmmbackups/rmm-backup-${dt_now}.tar${NC}\n"

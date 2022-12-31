@@ -12,11 +12,13 @@ from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    AGENT_OUTAGES_LOCK,
     AGENT_STATUS_OVERDUE,
     CheckStatus,
     DebugLogType,
 )
 from tacticalrmm.helpers import rand_range
+from tacticalrmm.utils import redis_lock
 
 if TYPE_CHECKING:
     from django.db.models.query import QuerySet
@@ -125,24 +127,20 @@ def agent_recovery_sms_task(pk: int) -> str:
     return "ok"
 
 
-@app.task
-def agent_outages_task() -> None:
-    from alerts.models import Alert
+@app.task(bind=True)
+def agent_outages_task(self) -> str:
+    with redis_lock(AGENT_OUTAGES_LOCK, self.app.oid) as acquired:
+        if not acquired:
+            return f"{self.app.oid} still running"
 
-    agents = Agent.objects.only(
-        "pk",
-        "agent_id",
-        "last_seen",
-        "offline_time",
-        "overdue_time",
-        "overdue_email_alert",
-        "overdue_text_alert",
-        "overdue_dashboard_alert",
-    )
+        from alerts.models import Alert
+        from core.tasks import _get_agent_qs
 
-    for agent in agents:
-        if agent.status == AGENT_STATUS_OVERDUE:
-            Alert.handle_alert_failure(agent)
+        for agent in _get_agent_qs():
+            if agent.status == AGENT_STATUS_OVERDUE:
+                Alert.handle_alert_failure(agent)
+
+        return "completed"
 
 
 @app.task

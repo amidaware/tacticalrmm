@@ -27,6 +27,7 @@ AGENT_STATUS_OVERDUE = "overdue"
 REDIS_LOCK_EXPIRE = 60 * 60 * 2  # Lock expires in 2 hours
 RESOLVE_ALERTS_LOCK = "resolve-alerts-lock-key"
 SYNC_SCHED_TASK_LOCK = "sync-sched-tasks-lock-key"
+AGENT_OUTAGES_LOCK = "agent-outages-task-lock-key"
 
 
 class GoArch(models.TextChoices):

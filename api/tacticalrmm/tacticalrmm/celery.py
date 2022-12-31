@@ -37,7 +37,7 @@ app.conf.beat_schedule = {
     },
     "agent-outages-task": {
         "task": "agents.tasks.agent_outages_task",
-        "schedule": crontab(minute="*/2"),
+        "schedule": timedelta(seconds=150.0),
     },
     "unsnooze-alerts": {
         "task": "alerts.tasks.unsnooze_alerts",

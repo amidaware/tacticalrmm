@@ -71,7 +71,18 @@ POSTGRES_PW=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config 
 pg_dump --dbname=postgresql://"${POSTGRES_USER}":"${POSTGRES_PW}"@127.0.0.1:5432/tacticalrmm | gzip -9 > ${tmp_dir}/postgres/db-${dt_now}.psql.gz
 
 tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules /meshcentral
+
+if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
+if ! which jq >/dev/null
+then
+sudo apt-get install -y jq > null
+fi
+MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
+MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
+pg_dump --dbname=postgresql://"${MESH_POSTGRES_USER}":"${MESH_POSTGRES_PW}"@127.0.0.1:5432/meshcentral | gzip -9 > ${tmp_dir}/postgres/mesh-db-${dt_now}.psql.gz
+else
 mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
+fi
 
 sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
 

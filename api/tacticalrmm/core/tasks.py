@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.db.models import Prefetch
+from django.utils import timezone as djangotime
 from packaging import version as pyver
 
 from agents.models import Agent
@@ -40,6 +41,10 @@ if TYPE_CHECKING:
 
 @app.task
 def core_maintenance_tasks() -> None:
+    AutomatedTask.objects.filter(
+        remove_if_not_scheduled=True, expire_date__lt=djangotime.now()
+    ).delete()
+
     core = get_core_settings()
 
     # remove old CheckHistory data

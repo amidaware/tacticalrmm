@@ -1,4 +1,3 @@
-import concurrent.futures
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -33,7 +32,7 @@ from tacticalrmm.constants import (
     TaskSyncStatus,
 )
 from tacticalrmm.helpers import rand_range
-from tacticalrmm.utils import redis_lock
+from tacticalrmm.utils import DjangoConnectionThreadPoolExecutor, redis_lock
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -187,7 +186,7 @@ def sync_scheduled_tasks(self) -> str:
             elif actions[0] == "delete":
                 task.delete_task_on_agent(agent=actions[2])
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+        with DjangoConnectionThreadPoolExecutor(max_workers=50) as executor:
             executor.map(_handle_task, task_actions)
 
         return "completed"

@@ -40,7 +40,7 @@ from tacticalrmm.constants import (
     PAAction,
     PAStatus,
 )
-from tacticalrmm.helpers import get_nats_ports
+from tacticalrmm.helpers import setup_nats_options
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -799,18 +799,10 @@ class Agent(BaseAuditModel):
     async def nats_cmd(
         self, data: Dict[Any, Any], timeout: int = 30, wait: bool = True
     ) -> Any:
-        nats_std_port, _ = get_nats_ports()
-        options = {
-            "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
-            "user": "tacticalrmm",
-            "name": "trmm-django",
-            "password": settings.SECRET_KEY,
-            "connect_timeout": 3,
-            "max_reconnect_attempts": 2,
-        }
 
+        opts = setup_nats_options()
         try:
-            nc = await nats.connect(**options)
+            nc = await nats.connect(**opts)
         except:
             return "natsdown"
 

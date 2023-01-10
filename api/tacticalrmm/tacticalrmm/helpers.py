@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import pytz
@@ -60,3 +60,16 @@ def rand_range(min: int, max: int) -> float:
     Returns float truncated to 2 decimals.
     """
     return round(random.uniform(min, max) / 1000, 2)
+
+
+def setup_nats_options() -> dict[str, Any]:
+    nats_std_port, _ = get_nats_ports()
+    opts = {
+        "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
+        "user": "tacticalrmm",
+        "name": "trmm-django",
+        "password": settings.SECRET_KEY,
+        "connect_timeout": 3,
+        "max_reconnect_attempts": 2,
+    }
+    return opts

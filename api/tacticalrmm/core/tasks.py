@@ -186,6 +186,8 @@ def sync_scheduled_tasks(self) -> str:
             elif actions[0] == "delete":
                 task.delete_task_on_agent(agent=actions[2])
 
+        # TODO this is a janky hack
+        # Rework this with asyncio. Need to rewrite all sync db operations with django's new async api
         with DjangoConnectionThreadPoolExecutor(max_workers=50) as executor:
             executor.map(_handle_task, task_actions)
 

@@ -1028,3 +1028,49 @@ class AgentHistoryView(APIView):
             history = AgentHistory.objects.filter_by_role(request.user)  # type: ignore
         ctx = {"default_tz": get_default_timezone()}
         return Response(AgentHistorySerializer(history, many=True, context=ctx).data)
+
+
+class ScriptRunHistory(APIView):
+    permission_classes = [IsAuthenticated, AgentHistoryPerms]
+
+    class OutputSerializer(serializers.ModelSerializer):
+        script_name = serializers.ReadOnlyField(source="script.name")
+
+        class Meta:
+            model = AgentHistory
+            fields = (
+                "id",
+                "time",
+                "username",
+                "script",
+                "script_results",
+                "agent",
+                "script_name",
+            )
+            read_only_fields = fields
+
+    def get(self, request):
+
+        date_range_filter = Q()
+
+        start = request.query_params.get("start", None)
+        end = request.query_params.get("end", None)
+        limit = request.query_params.get("limit", None)
+        if start and end:
+            date_range_filter = Q(time__range=[start, end])
+
+        hists = (
+            AgentHistory.objects.filter(type=AgentHistoryType.SCRIPT_RUN)
+            .select_related("script")
+            .filter(date_range_filter)
+            .order_by("-time")
+        )
+        if limit:
+            try:
+                lim = int(limit)
+            except KeyError:
+                return notify_error("Invalid limit")
+            hists = hists[:lim]
+
+        ret = self.OutputSerializer(hists, many=True).data
+        return Response(ret)

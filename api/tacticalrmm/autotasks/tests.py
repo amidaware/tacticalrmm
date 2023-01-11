@@ -1,4 +1,4 @@
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 from django.utils import timezone as djangotime
 from model_bakery import baker
@@ -8,7 +8,7 @@ from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask, TaskResult, TaskSyncStatus
 from .serializers import TaskSerializer
-from .tasks import create_win_task_schedule, remove_orphaned_win_tasks, run_win_task
+from .tasks import create_win_task_schedule, run_win_task
 
 base_url = "/tasks"
 
@@ -382,60 +382,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
-
-    @patch("agents.models.Agent.nats_cmd")
-    def test_remove_orphaned_win_task(self, nats_cmd):
-        agent = baker.make_recipe("agents.online_agent")
-        baker.make_recipe("agents.offline_agent")
-        task1 = AutomatedTask.objects.create(
-            agent=agent,
-            name="test task 1",
-        )
-
-        # test removing an orphaned task
-        win_tasks = [
-            "Adobe Acrobat Update Task",
-            "AdobeGCInvoker-1.0",
-            "GoogleUpdateTaskMachineCore",
-            "GoogleUpdateTaskMachineUA",
-            "OneDrive Standalone Update Task-S-1-5-21-717461175-241712648-1206041384-1001",
-            task1.win_task_name,
-            "TacticalRMM_fixmesh",
-            "TacticalRMM_SchedReboot_jk324kajd",
-            "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb",  # orphaned task
-        ]
-
-        calls = [
-            call({"func": "listschedtasks"}, timeout=10),
-            call(
-                {
-                    "func": "delschedtask",
-                    "schedtaskpayload": {
-                        "name": "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb"
-                    },
-                },
-                timeout=10,
-            ),
-        ]
-
-        nats_cmd.side_effect = [win_tasks, "ok"]
-        remove_orphaned_win_tasks()
-        self.assertEqual(nats_cmd.call_count, 2)
-        nats_cmd.assert_has_calls(calls)
-
-        # test nats delete task fail
-        nats_cmd.reset_mock()
-        nats_cmd.side_effect = [win_tasks, "error deleting task"]
-        remove_orphaned_win_tasks()
-        nats_cmd.assert_has_calls(calls)
-        self.assertEqual(nats_cmd.call_count, 2)
-
-        # no orphaned tasks
-        nats_cmd.reset_mock()
-        win_tasks.remove("TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb")
-        nats_cmd.side_effect = [win_tasks, "ok"]
-        remove_orphaned_win_tasks()
-        self.assertEqual(nats_cmd.call_count, 1)
 
     @patch("agents.models.Agent.nats_cmd")
     def test_run_win_task(self, nats_cmd):

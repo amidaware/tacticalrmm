@@ -1,18 +1,24 @@
 import asyncio
 import datetime as dt
+from collections import namedtuple
 from contextlib import suppress
 from time import sleep
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
+import msgpack
+import nats
 from django.utils import timezone as djangotime
 
 from agents.models import Agent
 from alerts.models import Alert
 from autotasks.models import AutomatedTask, TaskResult
-from logs.models import DebugLog
 from tacticalrmm.celery import app
-from tacticalrmm.constants import DebugLogType
-from tacticalrmm.helpers import rand_range
+from tacticalrmm.constants import AGENT_STATUS_ONLINE, ORPHANED_WIN_TASK_LOCK
+from tacticalrmm.helpers import rand_range, setup_nats_options
+from tacticalrmm.utils import redis_lock
+
+if TYPE_CHECKING:
+    from nats.aio.client import Client as NATSClient
 
 
 @app.task
@@ -79,56 +85,62 @@ def run_win_task(pk: int, agent_id: Optional[str] = None) -> str:
     return "ok"
 
 
-@app.task
-def remove_orphaned_win_tasks() -> None:
-    from agents.models import Agent
+@app.task(bind=True)
+def remove_orphaned_win_tasks(self) -> str:
+    with redis_lock(ORPHANED_WIN_TASK_LOCK, self.app.oid) as acquired:
+        if not acquired:
+            return f"{self.app.oid} still running"
 
-    for agent in Agent.online_agents():
-        r = asyncio.run(agent.nats_cmd({"func": "listschedtasks"}, timeout=10))
+        from core.tasks import _get_agent_qs
 
-        if not isinstance(r, list):  # empty list
-            DebugLog.error(
-                agent=agent,
-                log_type=DebugLogType.AGENT_ISSUES,
-                message=f"Unable to pull list of scheduled tasks on {agent.hostname}: {r}",
-            )
-            continue
+        AgentTup = namedtuple("AgentTup", ["agent_id", "task_names"])
+        items: "list[AgentTup]" = []
+        exclude_tasks = ("TacticalRMM_SchedReboot",)
 
-        agent_task_names = [
-            task.win_task_name for task in agent.get_tasks_with_policies()
-        ]
+        for agent in _get_agent_qs():
+            if agent.status == AGENT_STATUS_ONLINE:
 
-        exclude_tasks = (
-            "TacticalRMM_fixmesh",
-            "TacticalRMM_SchedReboot",
-            "TacticalRMM_sync",
-            "TacticalRMM_agentupdate",
-        )
+                names = [task.win_task_name for task in agent.get_tasks_with_policies()]
+                items.append(AgentTup._make([agent.agent_id, names]))
 
-        for task in r:
-            if task.startswith(exclude_tasks):
-                # skip system tasks or any pending reboots
-                continue
+        async def _handle_task(nc: "NATSClient", sub, data, names) -> None:
+            msg = await nc.request(subject=sub, payload=msgpack.dumps(data), timeout=5)
+            r = msgpack.loads(msg.data)
+            if not isinstance(r, list):
+                return
 
-            if task.startswith("TacticalRMM_") and task not in agent_task_names:
-                # delete task since it doesn't exist in UI
-                nats_data = {
-                    "func": "delschedtask",
-                    "schedtaskpayload": {"name": task},
-                }
-                ret = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
-                if ret != "ok":
-                    DebugLog.error(
-                        agent=agent,
-                        log_type=DebugLogType.AGENT_ISSUES,
-                        message=f"Unable to clean up orphaned task {task} on {agent.hostname}: {ret}",
-                    )
-                else:
-                    DebugLog.info(
-                        agent=agent,
-                        log_type=DebugLogType.AGENT_ISSUES,
-                        message=f"Removed orphaned task {task} from {agent.hostname}",
-                    )
+            for name in r:
+                if name.startswith(exclude_tasks):
+                    # skip system tasks or any pending reboots
+                    continue
+
+                if name.startswith("TacticalRMM_") and name not in names:
+                    nats_data = {
+                        "func": "delschedtask",
+                        "schedtaskpayload": {"name": name},
+                    }
+                    print(f"Deleting orphaned task: {name} on agent {sub}")
+                    await nc.publish(subject=sub, payload=msgpack.dumps(nats_data))
+
+        async def _run() -> None:
+            opts = setup_nats_options()
+            try:
+                nc = await nats.connect(**opts)
+            except Exception as e:
+                return str(e)
+
+            payload = {"func": "listschedtasks"}
+            tasks = [
+                _handle_task(
+                    nc=nc, sub=item.agent_id, data=payload, names=item.task_names
+                )
+                for item in items
+            ]
+            await asyncio.gather(*tasks)
+            await nc.close()
+
+        asyncio.run(_run())
+        return "completed"
 
 
 @app.task

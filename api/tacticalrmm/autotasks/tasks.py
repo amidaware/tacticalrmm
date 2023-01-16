@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import msgpack
 import nats
 from django.utils import timezone as djangotime
+from nats.errors import TimeoutError
 
 from agents.models import Agent
 from alerts.models import Alert
@@ -103,11 +104,21 @@ def remove_orphaned_win_tasks(self) -> str:
                 names = [task.win_task_name for task in agent.get_tasks_with_policies()]
                 items.append(AgentTup._make([agent.agent_id, names]))
 
-        async def _handle_task(nc: "NATSClient", sub, data, names) -> None:
-            msg = await nc.request(subject=sub, payload=msgpack.dumps(data), timeout=5)
-            r = msgpack.loads(msg.data)
+        async def _handle_task(nc: "NATSClient", sub, data, names) -> str:
+            try:
+                msg = await nc.request(
+                    subject=sub, payload=msgpack.dumps(data), timeout=5
+                )
+            except TimeoutError:
+                return "timeout"
+
+            try:
+                r = msgpack.loads(msg.data)
+            except Exception as e:
+                return str(e)
+
             if not isinstance(r, list):
-                return
+                return "notlist"
 
             for name in r:
                 if name.startswith(exclude_tasks):
@@ -121,6 +132,8 @@ def remove_orphaned_win_tasks(self) -> str:
                     }
                     print(f"Deleting orphaned task: {name} on agent {sub}")
                     await nc.publish(subject=sub, payload=msgpack.dumps(nats_data))
+
+            return "ok"
 
         async def _run() -> None:
             opts = setup_nats_options()

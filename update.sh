@@ -121,7 +121,13 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
 fi
 
 
-for i in celerybeat celery nginx nats-api nats rmm daphne
+printf >&2 "${GREEN}Stopping celery and celerybeat services (this might take a while)...${NC}\n"
+for i in celerybeat celery
+do
+sudo systemctl stop ${i}
+done
+
+for i in nginx nats-api nats rmm daphne
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}

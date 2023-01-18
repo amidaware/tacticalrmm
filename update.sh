@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="140"
+SCRIPT_VERSION="141"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -121,7 +121,13 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
 fi
 
 
-for i in nginx nats-api nats rmm daphne celery celerybeat
+printf >&2 "${GREEN}Stopping celery and celerybeat services (this might take a while)...${NC}\n"
+for i in celerybeat celery
+do
+sudo systemctl stop ${i}
+done
+
+for i in nginx nats-api nats rmm daphne
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
@@ -346,6 +352,7 @@ python manage.py load_chocos
 python manage.py create_installer_user
 python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
+python manage.py clear_redis_celery_locks
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)

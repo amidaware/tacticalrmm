@@ -123,6 +123,7 @@ EOF
   python manage.py create_natsapi_conf
   python manage.py create_uwsgi_conf
   python manage.py create_installer_user
+  python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks
 
   # create super user 
@@ -148,7 +149,7 @@ fi
 
 if [ "$1" = 'tactical-celery' ]; then
   check_tactical_ready
-  celery -A tacticalrmm worker -l info
+  celery -A tacticalrmm worker --autoscale=30,5 -l info
 fi
 
 if [ "$1" = 'tactical-celerybeat' ]; then

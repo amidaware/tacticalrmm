@@ -101,7 +101,7 @@ class TestCheckViews(TacticalTestCase):
             "fails_b4_alert": 3,
         }
 
-        for payload in [agent_payload, policy_payload]:
+        for payload in (agent_payload, policy_payload):
 
             # add valid check
             resp = self.client.post(url, payload, format="json")
@@ -148,7 +148,7 @@ class TestCheckViews(TacticalTestCase):
             "fails_b4_alert": 9,
         }
 
-        for payload in [agent_payload, policy_payload]:
+        for payload in (agent_payload, policy_payload):
 
             # add cpu check
             resp = self.client.post(url, payload, format="json")
@@ -195,7 +195,7 @@ class TestCheckViews(TacticalTestCase):
             "fails_b4_alert": 1,
         }
 
-        for payload in [agent_payload, policy_payload]:
+        for payload in (agent_payload, policy_payload):
 
             # add memory check
             resp = self.client.post(url, payload, format="json")
@@ -972,7 +972,7 @@ class TestCheckPermissions(TacticalTestCase):
 
         url = f"{base_url}/"
 
-        for data in [policy_data, agent_data]:
+        for data in (policy_data, agent_data):
             # test superuser access
             self.check_authorized_superuser("post", url, data)
 
@@ -1006,7 +1006,7 @@ class TestCheckPermissions(TacticalTestCase):
         unauthorized_check = baker.make("checks.Check", agent=unauthorized_agent)
         policy_check = baker.make("checks.Check", policy=policy)
 
-        for method in ["get", "put", "delete"]:
+        for method in ("get", "put", "delete"):
 
             url = f"{base_url}/{check.id}/"
             unauthorized_url = f"{base_url}/{unauthorized_check.id}/"
@@ -1060,7 +1060,7 @@ class TestCheckPermissions(TacticalTestCase):
             assigned_check=unauthorized_check,
         )
 
-        for action in ["reset", "run"]:
+        for action in ("reset", "run"):
             if action == "reset":
                 url = f"{base_url}/{check_result.id}/{action}/"
                 unauthorized_url = (

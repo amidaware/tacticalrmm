@@ -6,11 +6,19 @@ import time
 from io import StringIO
 from pathlib import Path
 
+from core.utils import (
+    get_core_settings,
+    get_mesh_ws_url,
+    remove_mesh_agent,
+    token_is_valid,
+)
 from django.conf import settings
 from django.db.models import Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from django.utils.dateparse import parse_datetime
+from logs.models import AuditLog, DebugLog, PendingAction
 from meshctrl.utils import get_login_token
 from packaging import version as pyver
 from rest_framework import serializers
@@ -19,14 +27,6 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from core.utils import (
-    get_core_settings,
-    get_mesh_ws_url,
-    remove_mesh_agent,
-    token_is_valid,
-)
-from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.constants import (
@@ -530,11 +530,10 @@ class Reboot(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
-    from knox.models import AuthToken
-
     from accounts.models import User
     from agents.utils import get_agent_url
     from core.utils import token_is_valid
+    from knox.models import AuthToken
 
     client_id = request.data["client"]
     site_id = request.data["site"]
@@ -1028,3 +1027,99 @@ class AgentHistoryView(APIView):
             history = AgentHistory.objects.filter_by_role(request.user)  # type: ignore
         ctx = {"default_tz": get_default_timezone()}
         return Response(AgentHistorySerializer(history, many=True, context=ctx).data)
+
+
+class ScriptRunHistory(APIView):
+    permission_classes = [IsAuthenticated, AgentHistoryPerms]
+
+    class OutputSerializer(serializers.ModelSerializer):
+        script_name = serializers.ReadOnlyField(source="script.name")
+        agent_id = serializers.ReadOnlyField(source="agent.agent_id")
+
+        class Meta:
+            model = AgentHistory
+            fields = (
+                "id",
+                "time",
+                "username",
+                "script",
+                "script_results",
+                "agent",
+                "script_name",
+                "agent_id",
+            )
+            read_only_fields = fields
+
+    def get(self, request):
+
+        date_range_filter = Q()
+        script_name_filter = Q()
+
+        start = request.query_params.get("start", None)
+        end = request.query_params.get("end", None)
+        limit = request.query_params.get("limit", None)
+        script_name = request.query_params.get("scriptname", None)
+        if start and end:
+            start_dt = parse_datetime(start)
+            end_dt = parse_datetime(end) + djangotime.timedelta(days=1)
+            date_range_filter = Q(time__range=[start_dt, end_dt])
+
+        if script_name:
+            script_name_filter = Q(script__name=script_name)
+
+        AGENT_R_DEFER = (
+            "agent__wmi_detail",
+            "agent__services",
+            "agent__created_by",
+            "agent__created_time",
+            "agent__modified_by",
+            "agent__modified_time",
+            "agent__disks",
+            "agent__operating_system",
+            "agent__mesh_node_id",
+            "agent__description",
+            "agent__patches_last_installed",
+            "agent__time_zone",
+            "agent__alert_template_id",
+            "agent__policy_id",
+            "agent__site_id",
+            "agent__version",
+            "agent__plat",
+            "agent__goarch",
+            "agent__hostname",
+            "agent__last_seen",
+            "agent__public_ip",
+            "agent__total_ram",
+            "agent__boot_time",
+            "agent__logged_in_username",
+            "agent__last_logged_in_user",
+            "agent__monitoring_type",
+            "agent__overdue_email_alert",
+            "agent__overdue_text_alert",
+            "agent__overdue_dashboard_alert",
+            "agent__offline_time",
+            "agent__overdue_time",
+            "agent__check_interval",
+            "agent__needs_reboot",
+            "agent__choco_installed",
+            "agent__maintenance_mode",
+            "agent__block_policy_inheritance",
+        )
+        hists = (
+            AgentHistory.objects.filter(type=AgentHistoryType.SCRIPT_RUN)
+            .select_related("agent")
+            .select_related("script")
+            .defer(*AGENT_R_DEFER)
+            .filter(date_range_filter)
+            .filter(script_name_filter)
+            .order_by("-time")
+        )
+        if limit:
+            try:
+                lim = int(limit)
+            except KeyError:
+                return notify_error("Invalid limit")
+            hists = hists[:lim]
+
+        ret = self.OutputSerializer(hists, many=True).data
+        return Response(ret)

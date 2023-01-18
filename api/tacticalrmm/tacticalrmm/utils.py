@@ -3,6 +3,9 @@ import os
 import subprocess
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from functools import wraps
 from typing import List, Optional, Union
 
 import pytz
@@ -11,6 +14,8 @@ from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
+from django.db import connection
 from django.http import FileResponse
 from knox.auth import TokenAuthentication
 from rest_framework.response import Response
@@ -21,6 +26,7 @@ from logs.models import DebugLog
 from tacticalrmm.constants import (
     MONTH_DAYS,
     MONTHS,
+    REDIS_LOCK_EXPIRE,
     WEEK_DAYS,
     WEEKS,
     AgentPlat,
@@ -338,7 +344,11 @@ def replace_db_values(
 
     # check if attr exists and isn't a function
     if hasattr(obj, temp[1]) and not callable(getattr(obj, temp[1])):
-        value = f"'{getattr(obj, temp[1])}'" if quotes else getattr(obj, temp[1])
+        temp1 = getattr(obj, temp[1])
+        if shell == ScriptShell.POWERSHELL and isinstance(temp1, str) and "'" in temp1:
+            temp1 = temp1.replace("'", "''")
+
+        value = f"'{temp1}'" if quotes else temp1
 
     elif CustomField.objects.filter(model=model, name=temp[1]).exists():
 
@@ -368,6 +378,13 @@ def replace_db_values(
         elif value is not None and field.type == CustomFieldType.CHECKBOX:
             value = format_shell_bool(value, shell)
         else:
+            if (
+                shell == ScriptShell.POWERSHELL
+                and isinstance(value, str)
+                and "'" in value
+            ):
+                value = value.replace("'", "''")
+
             value = f"'{value}'" if quotes else value
 
     else:
@@ -401,3 +418,54 @@ def format_shell_bool(value: bool, shell: Optional[str]) -> str:
         return "$True" if value else "$False"
 
     return "1" if value else "0"
+
+
+# https://docs.celeryq.dev/en/latest/tutorials/task-cookbook.html#cookbook-task-serial
+@contextmanager
+def redis_lock(lock_id, oid):
+    timeout_at = time.monotonic() + REDIS_LOCK_EXPIRE - 3
+    status = cache.add(lock_id, oid, REDIS_LOCK_EXPIRE)
+    try:
+        yield status
+    finally:
+        if time.monotonic() < timeout_at and status:
+            cache.delete(lock_id)
+
+
+# https://stackoverflow.com/a/57794016
+class DjangoConnectionThreadPoolExecutor(ThreadPoolExecutor):
+    """
+    When a function is passed into the ThreadPoolExecutor via either submit() or map(),
+    this will wrap the function, and make sure that close_django_db_connection() is called
+    inside the thread when it's finished so Django doesn't leak DB connections.
+
+    Since map() calls submit(), only submit() needs to be overwritten.
+    """
+
+    def close_django_db_connection(self):
+        connection.close()
+
+    def generate_thread_closing_wrapper(self, fn):
+        @wraps(fn)
+        def new_func(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            finally:
+                self.close_django_db_connection()
+
+        return new_func
+
+    def submit(*args, **kwargs):
+        if len(args) >= 2:
+            self, fn, *args = args
+            fn = self.generate_thread_closing_wrapper(fn=fn)
+        elif not args:
+            raise TypeError(
+                "descriptor 'submit' of 'ThreadPoolExecutor' object "
+                "needs an argument"
+            )
+        elif "fn" in kwargs:
+            fn = self.generate_thread_closing_wrapper(fn=kwargs.pop("fn"))
+            self, *args = args
+
+        return super(self.__class__, self).submit(fn, *args, **kwargs)

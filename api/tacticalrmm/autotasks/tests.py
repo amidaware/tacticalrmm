@@ -1,4 +1,4 @@
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 from django.utils import timezone as djangotime
 from model_bakery import baker
@@ -8,7 +8,7 @@ from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask, TaskResult, TaskSyncStatus
 from .serializers import TaskSerializer
-from .tasks import create_win_task_schedule, remove_orphaned_win_tasks, run_win_task
+from .tasks import create_win_task_schedule, run_win_task
 
 base_url = "/tasks"
 
@@ -137,7 +137,7 @@ class TestAutotaskViews(TacticalTestCase):
             "weekly_interval": 2,
             "run_time_bit_weekdays": 26,
             "run_time_date": djangotime.now(),
-            "expire_date": djangotime.now(),
+            "expire_date": djangotime.now() + djangotime.timedelta(weeks=5),
             "repetition_interval": "30S",
             "repetition_duration": "1H",
             "random_task_delay": "5M",
@@ -160,7 +160,7 @@ class TestAutotaskViews(TacticalTestCase):
             "monthly_months_of_year": 56,
             "monthly_days_of_month": 350,
             "run_time_date": djangotime.now(),
-            "expire_date": djangotime.now(),
+            "expire_date": djangotime.now() + djangotime.timedelta(weeks=5),
             "repetition_interval": "30S",
             "repetition_duration": "1H",
             "random_task_delay": "5M",
@@ -183,7 +183,7 @@ class TestAutotaskViews(TacticalTestCase):
             "monthly_weeks_of_month": 4,
             "run_time_bit_weekdays": 15,
             "run_time_date": djangotime.now(),
-            "expire_date": djangotime.now(),
+            "expire_date": djangotime.now() + djangotime.timedelta(weeks=5),
             "repetition_interval": "30S",
             "repetition_duration": "1H",
             "random_task_delay": "5M",
@@ -206,7 +206,7 @@ class TestAutotaskViews(TacticalTestCase):
             "monthly_weeks_of_month": 4,
             "run_time_bit_weekdays": 15,
             "run_time_date": djangotime.now(),
-            "expire_date": djangotime.now(),
+            "expire_date": djangotime.now() + djangotime.timedelta(weeks=5),
             "repetition_interval": "30S",
             "repetition_duration": "1H",
             "random_task_delay": "5M",
@@ -296,7 +296,7 @@ class TestAutotaskViews(TacticalTestCase):
             "monthly_weeks_of_month": 4,
             "run_time_bit_weekdays": 15,
             "run_time_date": djangotime.now(),
-            "expire_date": djangotime.now(),
+            "expire_date": djangotime.now() + djangotime.timedelta(weeks=5),
             "repetition_interval": "30S",
             "repetition_duration": "1H",
             "random_task_delay": "5M",
@@ -316,7 +316,7 @@ class TestAutotaskViews(TacticalTestCase):
             "monthly_weeks_of_month": 4,
             "run_time_bit_weekdays": 15,
             "run_time_date": djangotime.now(),
-            "expire_date": djangotime.now(),
+            "expire_date": djangotime.now() + djangotime.timedelta(weeks=5),
             "repetition_interval": "30S",
             "repetition_duration": "1H",
             "random_task_delay": "5M",
@@ -382,60 +382,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
-
-    @patch("agents.models.Agent.nats_cmd")
-    def test_remove_orphaned_win_task(self, nats_cmd):
-        agent = baker.make_recipe("agents.online_agent")
-        baker.make_recipe("agents.offline_agent")
-        task1 = AutomatedTask.objects.create(
-            agent=agent,
-            name="test task 1",
-        )
-
-        # test removing an orphaned task
-        win_tasks = [
-            "Adobe Acrobat Update Task",
-            "AdobeGCInvoker-1.0",
-            "GoogleUpdateTaskMachineCore",
-            "GoogleUpdateTaskMachineUA",
-            "OneDrive Standalone Update Task-S-1-5-21-717461175-241712648-1206041384-1001",
-            task1.win_task_name,
-            "TacticalRMM_fixmesh",
-            "TacticalRMM_SchedReboot_jk324kajd",
-            "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb",  # orphaned task
-        ]
-
-        calls = [
-            call({"func": "listschedtasks"}, timeout=10),
-            call(
-                {
-                    "func": "delschedtask",
-                    "schedtaskpayload": {
-                        "name": "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb"
-                    },
-                },
-                timeout=10,
-            ),
-        ]
-
-        nats_cmd.side_effect = [win_tasks, "ok"]
-        remove_orphaned_win_tasks()
-        self.assertEqual(nats_cmd.call_count, 2)
-        nats_cmd.assert_has_calls(calls)
-
-        # test nats delete task fail
-        nats_cmd.reset_mock()
-        nats_cmd.side_effect = [win_tasks, "error deleting task"]
-        remove_orphaned_win_tasks()
-        nats_cmd.assert_has_calls(calls)
-        self.assertEqual(nats_cmd.call_count, 2)
-
-        # no orphaned tasks
-        nats_cmd.reset_mock()
-        win_tasks.remove("TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb")
-        nats_cmd.side_effect = [win_tasks, "ok"]
-        remove_orphaned_win_tasks()
-        self.assertEqual(nats_cmd.call_count, 1)
 
     @patch("agents.models.Agent.nats_cmd")
     def test_run_win_task(self, nats_cmd):
@@ -868,7 +814,7 @@ class TestTaskPermissions(TacticalTestCase):
 
         url = f"{base_url}/"
 
-        for data in [policy_data, agent_data]:
+        for data in (policy_data, agent_data):
             # test superuser access
             self.check_authorized_superuser("post", url, data)
 
@@ -904,7 +850,7 @@ class TestTaskPermissions(TacticalTestCase):
         )
         policy_task = baker.make("autotasks.AutomatedTask", policy=policy)
 
-        for method in ["get", "put", "delete"]:
+        for method in ("get", "put", "delete"):
 
             url = f"{base_url}/{task.id}/"
             unauthorized_url = f"{base_url}/{unauthorized_task.id}/"

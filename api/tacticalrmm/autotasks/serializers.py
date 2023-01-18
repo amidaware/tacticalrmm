@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from django.utils import timezone as djangotime
 from rest_framework import serializers
 
 from scripts.models import Script
@@ -96,6 +99,13 @@ class TaskSerializer(serializers.ModelSerializer):
             if "assigned_check" in data:
                 del data["assigned_check"]
             return data
+
+        if (
+            "expire_date" in data
+            and isinstance(data["expire_date"], datetime)
+            and djangotime.now() > data["expire_date"]
+        ):
+            raise serializers.ValidationError("Expires date/time is in the past")
 
         # run_time_date required
         if (

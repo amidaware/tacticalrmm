@@ -130,9 +130,7 @@ def server_maintenance(request):
         from autotasks.tasks import remove_orphaned_win_tasks
 
         remove_orphaned_win_tasks.delay()
-        return Response(
-            "The task has been initiated. Check the Debug Log in the UI for progress."
-        )
+        return Response("The task has been initiated.")
 
     if request.data["action"] == "prune_db":
         from logs.models import AuditLog, PendingAction

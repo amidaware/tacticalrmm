@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="45"
+SCRIPT_VERSION="46"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -294,7 +294,6 @@ npm install meshcentral@${MESH_VER}
 print_green 'Restoring the backend'
 
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
-cp $tmp_dir/rmm/env /rmm/web/.env
 gzip -d $tmp_dir/rmm/debug.log.gz
 cp $tmp_dir/rmm/django_debug.log /rmm/api/tacticalrmm/tacticalrmm/private/log/
 

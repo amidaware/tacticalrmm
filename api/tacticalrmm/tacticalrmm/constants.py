@@ -24,6 +24,12 @@ AGENT_STATUS_ONLINE = "online"
 AGENT_STATUS_OFFLINE = "offline"
 AGENT_STATUS_OVERDUE = "overdue"
 
+REDIS_LOCK_EXPIRE = 60 * 60 * 2  # Lock expires in 2 hours
+RESOLVE_ALERTS_LOCK = "resolve-alerts-lock-key"
+SYNC_SCHED_TASK_LOCK = "sync-sched-tasks-lock-key"
+AGENT_OUTAGES_LOCK = "agent-outages-task-lock-key"
+ORPHANED_WIN_TASK_LOCK = "orphaned-win-task-lock-key"
+
 
 class GoArch(models.TextChoices):
     AMD64 = "amd64", "amd64"

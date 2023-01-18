@@ -8,7 +8,7 @@ from model_bakery import baker, seq
 
 from alerts.tasks import cache_agents_alert_template
 from autotasks.models import TaskResult
-from core.tasks import cache_db_fields_task, handle_resolved_stuff
+from core.tasks import cache_db_fields_task, resolve_alerts_task
 from core.utils import get_core_settings
 from tacticalrmm.constants import AgentMonType, AlertSeverity, AlertType, CheckStatus
 from tacticalrmm.test import TacticalTestCase
@@ -686,7 +686,7 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_email.save()
 
         cache_db_fields_task()
-        handle_resolved_stuff()
+        resolve_alerts_task()
 
         recovery_sms.assert_called_with(
             pk=Alert.objects.get(agent=agent_template_text).pk
@@ -1372,8 +1372,8 @@ class TestAlertTasks(TacticalTestCase):
         self, recovery_sms, recovery_email, outage_email, outage_sms, nats_cmd
     ):
 
-        from agents.tasks import agent_outages_task
         from agents.models import AgentHistory
+        from agents.tasks import agent_outages_task
 
         # Setup cmd mock
         success = {
@@ -1449,7 +1449,7 @@ class TestAlertTasks(TacticalTestCase):
         agent.save()
 
         cache_db_fields_task()
-        handle_resolved_stuff()
+        resolve_alerts_task()
 
         # this is what data should be
         data = {
@@ -1633,7 +1633,7 @@ class TestAlertPermissions(TacticalTestCase):
             unauthorized_task_url,
         ]
 
-        for method in ["get", "put", "delete"]:
+        for method in ("get", "put", "delete"):
 
             # test superuser access
             for url in authorized_urls:

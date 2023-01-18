@@ -10,7 +10,9 @@ set -e
 : "${MONGODB_PORT:=27017}"
 : "${NGINX_HOST_IP:=172.20.0.20}"
 : "${NGINX_HOST_PORT:=4443}"
+: "${MESH_COMPRESSION_ENABLED:=true}"
 : "${MESH_PERSISTENT_CONFIG:=0}"
+: "${MESH_WEBRTC_ENABLED:=false}"
 : "${WS_MASK_OVERRIDE:=0}"
 : "${SMTP_HOST:=smtp.example.com}"
 : "${SMTP_PORT:=587}"
@@ -41,9 +43,10 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "agentPong": 300,
     "allowHighQualityDesktop": true,
     "agentCoreDump": false,
-    "compression": true,
-    "wsCompression": true,
-    "agentWsCompression": true,
+    "compression": ${MESH_COMPRESSION_ENABLED},
+    "wsCompression": ${MESH_COMPRESSION_ENABLED},
+    "agentWsCompression": ${MESH_COMPRESSION_ENABLED},
+    "webRTC": ${MESH_WEBRTC_ENABLED},
     "maxInvalidLogin": {
       "time": 5,
       "count": 5,

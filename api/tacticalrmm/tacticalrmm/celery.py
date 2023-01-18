@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import os
+from datetime import timedelta
 
 from celery import Celery
 from celery.schedules import crontab
@@ -36,7 +37,7 @@ app.conf.beat_schedule = {
     },
     "agent-outages-task": {
         "task": "agents.tasks.agent_outages_task",
-        "schedule": crontab(minute="*/2"),
+        "schedule": timedelta(seconds=150.0),
     },
     "unsnooze-alerts": {
         "task": "alerts.tasks.unsnooze_alerts",
@@ -50,9 +51,17 @@ app.conf.beat_schedule = {
         "task": "core.tasks.cache_db_fields_task",
         "schedule": crontab(minute="*/3", hour="*"),
     },
-    "handle-resolved-stuff": {
-        "task": "core.tasks.handle_resolved_stuff",
+    "sync-scheduled-tasks": {
+        "task": "core.tasks.sync_scheduled_tasks",
         "schedule": crontab(minute="*/2", hour="*"),
+    },
+    "resolve-pending-actions": {
+        "task": "core.tasks.resolve_pending_actions",
+        "schedule": timedelta(seconds=100.0),
+    },
+    "resolve-alerts-task": {
+        "task": "core.tasks.resolve_alerts_task",
+        "schedule": timedelta(seconds=80.0),
     },
 }
 

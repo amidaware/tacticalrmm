@@ -225,7 +225,7 @@ class Policy(BaseAuditModel):
 
         processed_policies = []
 
-        for _, policy in policies.items():
+        for policy in policies.values():
             if policy and policy.active and policy.pk not in processed_policies:
                 processed_policies.append(policy.pk)
                 for task in policy.autotasks.all():
@@ -249,7 +249,7 @@ class Policy(BaseAuditModel):
 
         processed_policies = []
 
-        for _, policy in policies.items():
+        for policy in policies.values():
             if policy and policy.active and policy.pk not in processed_policies:
                 processed_policies.append(policy.pk)
                 if policy.enforced:

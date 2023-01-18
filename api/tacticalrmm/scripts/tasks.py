@@ -1,10 +1,17 @@
 import asyncio
-from typing import List
+from typing import TYPE_CHECKING, List
+
+import msgpack
+import nats
 
 from agents.models import Agent, AgentHistory
 from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.constants import AgentHistoryType
+from tacticalrmm.helpers import setup_nats_options
+
+if TYPE_CHECKING:
+    from nats.aio.client import Client as NATSClient
 
 
 @app.task
@@ -16,6 +23,8 @@ def handle_bulk_command_task(
     username,
     run_as_user: bool = False,
 ) -> None:
+
+    items = []
     nats_data = {
         "func": "rawcmd",
         "timeout": timeout,
@@ -33,9 +42,26 @@ def handle_bulk_command_task(
             command=cmd,
             username=username,
         )
-        nats_data["id"] = hist.pk
+        tmp = {**nats_data}
+        tmp["id"] = hist.pk
+        items.append((agent.agent_id, tmp))
 
-        asyncio.run(agent.nats_cmd(nats_data, wait=False))
+    async def _run_cmd(nc: "NATSClient", sub, data) -> None:
+        await nc.publish(subject=sub, payload=msgpack.dumps(data))
+
+    async def _run() -> None:
+        opts = setup_nats_options()
+        try:
+            nc = await nats.connect(**opts)
+        except Exception as e:
+            print(e)
+            return
+
+        tasks = [_run_cmd(nc=nc, sub=item[0], data=item[1]) for item in items]
+        await asyncio.gather(*tasks)
+        await nc.close()
+
+    asyncio.run(_run())
 
 
 @app.task

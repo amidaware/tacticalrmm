@@ -24,7 +24,7 @@ from tacticalrmm.test import TacticalTestCase
 from .consumers import DashInfo
 from .models import CustomField, GlobalKVStore, URLAction
 from .serializers import CustomFieldSerializer, KeyStoreSerializer, URLActionSerializer
-from .tasks import core_maintenance_tasks, handle_resolved_stuff
+from .tasks import core_maintenance_tasks, resolve_pending_actions
 
 
 class TestCodeSign(TacticalTestCase):
@@ -422,7 +422,7 @@ class TestCoreTasks(TacticalTestCase):
 
         Agent.objects.update(version=settings.LATEST_AGENT_VER)
 
-        handle_resolved_stuff()
+        resolve_pending_actions()
 
         complete = PendingAction.objects.filter(
             action_type=PAAction.AGENT_UPDATE, status=PAStatus.COMPLETED

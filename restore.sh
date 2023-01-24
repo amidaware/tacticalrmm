@@ -242,17 +242,6 @@ until pg_isready > /dev/null; do
   sleep 3
  done
 
-print_green 'Restoring MongoDB'
-
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-sudo apt update
-sudo apt install -y mongodb-org
-sudo systemctl enable --now mongod
-sleep 5
-mongorestore --gzip $tmp_dir/meshcentral/mongo
-
-
 sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
@@ -290,6 +279,34 @@ sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
 npm install meshcentral@${MESH_VER}
 
+print_green 'Restoring MeshCentral DB'
+
+if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
+if ! which jq > /dev/null
+then
+sudo apt-get install -y jq > null
+fi
+MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
+MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS meshcentral"
+sudo -u postgres psql -c "CREATE DATABASE meshcentral"
+sudo -u postgres psql -c "CREATE USER ${MESH_POSTGRES_USER} WITH PASSWORD '${MESH_POSTGRES_PW}'"
+sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET client_encoding TO 'utf8'"
+sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET default_transaction_isolation TO 'read committed'"
+sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET timezone TO 'UTC'"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESH_POSTGRES_USER}"
+gzip -d $tmp_dir/postgres/mesh-db*.psql.gz
+PGPASSWORD=${MESH_POSTGRES_PW} psql -h localhost -U ${MESH_POSTGRES_USER} -d meshcentral -f $tmp_dir/postgres/mesh-db*.psql
+else
+print_green 'Installing MongoDB'
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+sudo apt update
+sudo apt install -y mongodb-org
+sudo systemctl enable --now mongod
+sleep 5
+mongorestore --gzip $tmp_dir/meshcentral/mongo
+fi
 
 print_green 'Restoring the backend'
 
@@ -314,7 +331,7 @@ sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isola
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
 
-gzip -d $tmp_dir/postgres/*.psql.gz
+gzip -d $tmp_dir/postgres/db*.psql.gz
 PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql
 
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')

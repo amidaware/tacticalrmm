@@ -10,7 +10,6 @@ class Command(BaseCommand):
     help = "Generate conf for uwsgi"
 
     def handle(self, *args, **kwargs):
-
         self.stdout.write("Creating uwsgi conf...")
 
         config = configparser.ConfigParser()

@@ -57,7 +57,6 @@ def check_agent_update_schedule_task() -> None:
             or patch_policy.low == "approve"
             or patch_policy.other == "approve"
         ):
-
             # get current time in agent local time
             timezone = pytz.timezone(agent.timezone)
             agent_localtime_now = dt.datetime.now(timezone)
@@ -84,7 +83,6 @@ def check_agent_update_schedule_task() -> None:
                 install = True
 
             elif patch_policy.run_time_frequency == "monthly":
-
                 if patch_policy.run_time_day > 28:
                     months_with_30_days = [3, 6, 9, 11]
                     current_month = agent_localtime_now.month

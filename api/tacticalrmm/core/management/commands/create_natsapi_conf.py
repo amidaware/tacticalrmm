@@ -11,7 +11,6 @@ class Command(BaseCommand):
     help = "Generate conf for nats-api"
 
     def handle(self, *args, **kwargs):
-
         self.stdout.write("Creating configuration for nats-api...")
         db = settings.DATABASES["default"]
         if hasattr(settings, "DB_SSL"):

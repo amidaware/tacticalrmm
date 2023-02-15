@@ -47,7 +47,6 @@ from winupdate.models import WinUpdate, WinUpdatePolicy
 
 
 class CheckIn(APIView):
-
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -365,7 +364,6 @@ class TaskRunner(APIView):
         # check if task is a collector and update the custom field
         if task.custom_field:
             if not task_result.stderr:
-
                 task_result.save_collector_results()
 
                 status = CheckStatus.PASSING

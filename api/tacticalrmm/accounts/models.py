@@ -185,7 +185,6 @@ class Role(BaseAuditModel):
         return self.name
 
     def save(self, *args, **kwargs) -> None:
-
         # delete cache on save
         cache.delete(f"{ROLE_CACHE_PREFIX}{self.name}")
         super(BaseAuditModel, self).save(*args, **kwargs)

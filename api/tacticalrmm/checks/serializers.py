@@ -22,7 +22,6 @@ class CheckResultSerializer(serializers.ModelSerializer):
 
 
 class CheckSerializer(serializers.ModelSerializer):
-
     readable_desc = serializers.ReadOnlyField()
     assignedtasks = AssignedTaskField(many=True, read_only=True)
     alert_template = serializers.SerializerMethodField()

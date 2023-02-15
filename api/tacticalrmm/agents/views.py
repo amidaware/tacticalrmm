@@ -203,9 +203,7 @@ class GetUpdateDeleteAgent(APIView):
             p_serializer.save()
 
         if "custom_fields" in request.data.keys():
-
             for field in request.data["custom_fields"]:
-
                 custom_field = field
                 custom_field["agent"] = agent.pk
 
@@ -595,7 +593,6 @@ def install_agent(request):
         )
 
     elif request.data["installMethod"] == "bash":
-
         from agents.utils import generate_linux_install
 
         return generate_linux_install(
@@ -645,7 +642,6 @@ def install_agent(request):
         return Response(resp)
 
     elif request.data["installMethod"] == "powershell":
-
         text = Path(settings.BASE_DIR / "core" / "installer.ps1").read_text()
 
         replace_dict = {
@@ -949,7 +945,6 @@ def bulk(request):
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "patch":
-
         if request.data["patchMode"] == "install":
             bulk_install_updates_task.delay(agents)
             return Response(
@@ -965,7 +960,6 @@ def bulk(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, AgentPerms])
 def agent_maintenance(request):
-
     if request.data["type"] == "Client":
         if not _has_perm_on_client(request.user, request.data["id"]):
             raise PermissionDenied()
@@ -1051,7 +1045,6 @@ class ScriptRunHistory(APIView):
             read_only_fields = fields
 
     def get(self, request):
-
         date_range_filter = Q()
         script_name_filter = Q()
 

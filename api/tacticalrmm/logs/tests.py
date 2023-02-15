@@ -16,7 +16,6 @@ class TestAuditViews(TacticalTestCase):
         self.setup_coresettings()
 
     def create_audit_records(self):
-
         # create clients for client filter
         site = baker.make("clients.Site")
         agent1 = baker.make_recipe("agents.agent", site=site, hostname="AgentHostname1")
@@ -322,7 +321,6 @@ class TestAuditViews(TacticalTestCase):
         self.assertEqual(len(response.data["audit_logs"]), 63)
 
     def test_debuglog_permissions(self):
-
         # create data
         agent = baker.make_recipe("agents.agent")
         agent2 = baker.make_recipe("agents.agent")

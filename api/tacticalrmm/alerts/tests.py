@@ -389,7 +389,6 @@ class TestAlertTasks(TacticalTestCase):
         )
 
     def test_agent_gets_correct_alert_template(self):
-
         core = get_core_settings()
         # setup data
         workstation = baker.make_recipe(
@@ -1371,7 +1370,6 @@ class TestAlertTasks(TacticalTestCase):
     def test_alert_actions(
         self, recovery_sms, recovery_email, outage_email, outage_sms, nats_cmd
     ):
-
         from agents.models import AgentHistory
         from agents.tasks import agent_outages_task
 
@@ -1634,7 +1632,6 @@ class TestAlertPermissions(TacticalTestCase):
         ]
 
         for method in ("get", "put", "delete"):
-
             # test superuser access
             for url in authorized_urls:
                 self.check_authorized_superuser(method, url)

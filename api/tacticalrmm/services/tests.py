@@ -63,7 +63,6 @@ class TestServiceViews(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_service_action(self, nats_cmd):
-
         data = {"sv_action": "restart"}
         # test a call where agent doesn't exist
         resp = self.client.post(

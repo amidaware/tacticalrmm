@@ -210,7 +210,6 @@ def _get_failing_data(agents: "QuerySet[Agent]") -> dict[str, bool]:
                 break
 
         if agent.checks["has_failing_checks"]:
-
             if agent.checks["warning"]:
                 data["warning"] = True
 

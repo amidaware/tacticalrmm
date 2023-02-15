@@ -17,7 +17,6 @@ class TaskResultSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializer(serializers.ModelSerializer):
-
     check_name = serializers.ReadOnlyField(source="assigned_check.readable_desc")
     schedule = serializers.ReadOnlyField()
     alert_template = serializers.SerializerMethodField()
@@ -33,7 +32,6 @@ class TaskSerializer(serializers.ModelSerializer):
         )
 
     def validate_actions(self, value):
-
         if not value:
             raise serializers.ValidationError(
                 "There must be at least one action configured"
@@ -75,10 +73,8 @@ class TaskSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-
         # allow editing with task_type not specified
         if self.instance and "task_type" not in data:
-
             # remove schedule related fields from data
             if "run_time_date" in data:
                 del data["run_time_date"]
@@ -190,7 +186,6 @@ class TaskSerializer(serializers.ModelSerializer):
         return data
 
     def get_alert_template(self, obj):
-
         if obj.agent:
             alert_template = obj.agent.alert_template
         else:

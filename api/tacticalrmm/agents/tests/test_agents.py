@@ -851,7 +851,6 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("delete", url)
 
     def test_get_agent_history(self):
-
         # setup data
         agent = baker.make_recipe("agents.agent")
         history = baker.make("agents.AgentHistory", agent=agent, _quantity=30)
@@ -1007,7 +1006,6 @@ class TestAgentPermissions(TacticalTestCase):
     @patch("time.sleep")
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     def test_agent_actions_permissions(self, nats_cmd, sleep):
-
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
 
@@ -1135,7 +1133,6 @@ class TestAgentPermissions(TacticalTestCase):
         self.assertEqual(len(response.data["agents"]), 7)
 
     def test_generating_agent_installer_permissions(self):
-
         client = baker.make("clients.Client")
         client_site = baker.make("clients.Site", client=client)
         site = baker.make("clients.Site")
@@ -1198,7 +1195,6 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_not_authorized("post", url, data)
 
     def test_agent_notes_permissions(self):
-
         agent = baker.make_recipe("agents.agent")
         notes = baker.make("agents.Note", agent=agent, _quantity=5)
 

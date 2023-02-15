@@ -37,7 +37,6 @@ class GetAddChecks(APIView):
         return Response(CheckSerializer(checks, many=True).data)
 
     def post(self, request):
-
         data = request.data.copy()
         # Determine if adding check to Agent and replace agent_id with pk
         if "agent" in data.keys():

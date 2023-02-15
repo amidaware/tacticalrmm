@@ -9,7 +9,6 @@ from tacticalrmm.permissions import _has_perm_on_agent
 
 class SendCMD(AsyncJsonWebsocketConsumer):
     async def connect(self):
-
         self.user = self.scope["user"]
 
         if isinstance(self.user, AnonymousUser):

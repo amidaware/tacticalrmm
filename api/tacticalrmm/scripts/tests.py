@@ -224,7 +224,6 @@ class TestScriptViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_script_arg_variable_replacement(self):
-
         agent = baker.make_recipe("agents.agent", public_ip="12.12.12.12")
         args = [
             "-Parameter",
@@ -517,7 +516,6 @@ class TestScriptSnippetViews(TacticalTestCase):
         self.check_not_authenticated("delete", url)
 
     def test_snippet_replacement(self):
-
         snippet1 = baker.make(
             "scripts.ScriptSnippet", name="snippet1", code="Snippet 1 Code"
         )

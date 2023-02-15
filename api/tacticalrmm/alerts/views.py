@@ -23,7 +23,6 @@ class GetAddAlerts(APIView):
     permission_classes = [IsAuthenticated, AlertPerms]
 
     def patch(self, request):
-
         # top 10 alerts for dashboard icon
         if "top" in request.data.keys():
             alerts = Alert.objects.filter(

@@ -24,7 +24,6 @@ class GetAddScripts(APIView):
     permission_classes = [IsAuthenticated, ScriptsPerms]
 
     def get(self, request):
-
         showCommunityScripts = request.GET.get("showCommunityScripts", True)
         showHiddenScripts = request.GET.get("showHiddenScripts", False)
 
@@ -41,7 +40,6 @@ class GetAddScripts(APIView):
         )
 
     def post(self, request):
-
         serializer = ScriptSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
@@ -105,7 +103,6 @@ class GetAddScriptSnippets(APIView):
         return Response(ScriptSnippetSerializer(snippets, many=True).data)
 
     def post(self, request):
-
         serializer = ScriptSnippetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()

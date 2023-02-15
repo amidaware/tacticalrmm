@@ -142,7 +142,6 @@ class AutomatedTask(BaseAuditModel):
         return self.name
 
     def save(self, *args, **kwargs) -> None:
-
         # if task is a policy task clear cache on everything
         if self.policy:
             cache.delete_many_pattern("site_*_tasks")
@@ -168,7 +167,6 @@ class AutomatedTask(BaseAuditModel):
                         )
 
     def delete(self, *args, **kwargs):
-
         # if task is a policy task clear cache on everything
         if self.policy:
             cache.delete_many_pattern("site_*_tasks")
@@ -312,7 +310,6 @@ class AutomatedTask(BaseAuditModel):
                 task["days_of_week"] = self.run_time_bit_weekdays
 
             elif self.task_type == TaskType.MONTHLY:
-
                 # check if "last day is configured"
                 if self.monthly_days_of_month >= 0x80000000:
                     task["days_of_month"] = self.monthly_days_of_month - 0x80000000
@@ -527,7 +524,6 @@ class TaskResult(models.Model):
         )
 
     def save_collector_results(self) -> None:
-
         agent_field = self.task.custom_field.get_or_create_field_value(self.agent)
 
         value = (

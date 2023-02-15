@@ -34,7 +34,6 @@ def generate_linux_install(
     api: str,
     download_url: str,
 ) -> FileResponse:
-
     match arch:
         case "amd64":
             arch_id = MeshAgentIdent.LINUX64

@@ -40,7 +40,6 @@ class AuditMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-
         response = self.get_response(request)
         return response
 
@@ -65,7 +64,6 @@ class AuditMiddleware:
             # check if user is authenticated
             with suppress(AuthenticationFailed):
                 if hasattr(request, "user") and request.user.is_authenticated:
-
                     try:
                         view_Name = view_func.__dict__["view_class"].__name__
                     except:

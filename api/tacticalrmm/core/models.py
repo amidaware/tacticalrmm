@@ -272,7 +272,6 @@ class CoreSettings(BaseAuditModel):
 
 
 class CustomField(BaseAuditModel):
-
     order = models.PositiveIntegerField(default=0)
     model = models.CharField(max_length=25, choices=CustomFieldModel.choices)
     type = models.CharField(

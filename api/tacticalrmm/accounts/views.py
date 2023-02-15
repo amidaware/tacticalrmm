@@ -26,11 +26,9 @@ from accounts.utils import is_root_user
 
 
 class CheckCreds(KnoxLoginView):
-
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
-
         # check credentials
         serializer = AuthTokenSerializer(data=request.data)
         if not serializer.is_valid():
@@ -55,7 +53,6 @@ class CheckCreds(KnoxLoginView):
 
 
 class LoginView(KnoxLoginView):
-
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
@@ -196,10 +193,8 @@ class UserActions(APIView):
 
 
 class TOTPSetup(APIView):
-
     # totp setup
     def post(self, request):
-
         user = request.user
         if not user.totp_key:
             code = pyotp.random_base32()

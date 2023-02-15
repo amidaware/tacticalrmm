@@ -93,7 +93,6 @@ class TacticalTestCase(TestCase):
     def create_checks(
         self, parent: "Union[Policy, Agent]", script: "Optional[Script]" = None
     ) -> "List[Check]":
-
         # will create 1 of every check and associate it with the policy object passed
         check_recipes = [
             "checks.diskspace_check",
@@ -140,7 +139,6 @@ class TacticalTestCase(TestCase):
     def check_authorized_superuser(
         self, method: str, url: str, data: Optional[Dict[Any, Any]] = {}
     ) -> Any:
-
         try:
             # create django superuser and test authorized
             user = baker.make("accounts.User", is_active=True, is_superuser=True)

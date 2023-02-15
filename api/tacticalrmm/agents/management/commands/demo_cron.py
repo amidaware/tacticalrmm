@@ -12,7 +12,6 @@ class Command(BaseCommand):
     help = "stuff for demo site in cron"
 
     def handle(self, *args, **kwargs):
-
         random_dates = []
         now = djangotime.now()
 

@@ -97,7 +97,6 @@ class AgentTableSerializer(serializers.ModelSerializer):
     physical_disks = serializers.ReadOnlyField()
 
     def get_alert_template(self, obj):
-
         if not obj.alert_template:
             return None
 

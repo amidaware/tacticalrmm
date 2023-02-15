@@ -238,7 +238,6 @@ class TestAutotaskViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
     def test_get_autotask(self):
-
         # setup data
         agent = baker.make_recipe("agents.agent")
         task = baker.make("autotasks.AutomatedTask", agent=agent)
@@ -851,7 +850,6 @@ class TestTaskPermissions(TacticalTestCase):
         policy_task = baker.make("autotasks.AutomatedTask", policy=policy)
 
         for method in ("get", "put", "delete"):
-
             url = f"{base_url}/{task.id}/"
             unauthorized_url = f"{base_url}/{unauthorized_task.id}/"
             policy_url = f"{base_url}/{policy_task.id}/"
@@ -889,7 +887,6 @@ class TestTaskPermissions(TacticalTestCase):
             self.check_authorized(method, policy_url)
 
     def test_task_action_permissions(self):
-
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
         task = baker.make("autotasks.AutomatedTask", agent=agent)

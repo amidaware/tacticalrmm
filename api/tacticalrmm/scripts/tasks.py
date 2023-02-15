@@ -23,7 +23,6 @@ def handle_bulk_command_task(
     username,
     run_as_user: bool = False,
 ) -> None:
-
     items = []
     nats_data = {
         "func": "rawcmd",

@@ -102,7 +102,6 @@ class TestCheckViews(TacticalTestCase):
         }
 
         for payload in (agent_payload, policy_payload):
-
             # add valid check
             resp = self.client.post(url, payload, format="json")
             self.assertEqual(resp.status_code, 200)
@@ -149,7 +148,6 @@ class TestCheckViews(TacticalTestCase):
         }
 
         for payload in (agent_payload, policy_payload):
-
             # add cpu check
             resp = self.client.post(url, payload, format="json")
             self.assertEqual(resp.status_code, 200)
@@ -196,7 +194,6 @@ class TestCheckViews(TacticalTestCase):
         }
 
         for payload in (agent_payload, policy_payload):
-
             # add memory check
             resp = self.client.post(url, payload, format="json")
             self.assertEqual(resp.status_code, 200)
@@ -1007,7 +1004,6 @@ class TestCheckPermissions(TacticalTestCase):
         policy_check = baker.make("checks.Check", policy=policy)
 
         for method in ("get", "put", "delete"):
-
             url = f"{base_url}/{check.id}/"
             unauthorized_url = f"{base_url}/{unauthorized_check.id}/"
             policy_url = f"{base_url}/{policy_check.id}/"
@@ -1046,7 +1042,6 @@ class TestCheckPermissions(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_check_action_permissions(self, nats_cmd):
-
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
         check = baker.make("checks.Check", agent=agent)

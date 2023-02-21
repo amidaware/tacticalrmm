@@ -34,6 +34,7 @@ Demo database resets every hour. A lot of features are disabled for obvious reas
 
 ## Linux agent versions supported
 - Any distro with systemd which includes but is not limited to: Debian (10, 11), Ubuntu x86_64 (18.04, 20.04, 22.04), Synology 7, centos, freepbx and more!
+- Not freeware! Linux agents do require a donation of at least 50$ ! 
 
 ## Mac agent versions supported
 - 64 bit Intel and Apple Silicon (M1, M2)

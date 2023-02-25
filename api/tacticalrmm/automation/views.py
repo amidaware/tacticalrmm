@@ -84,7 +84,6 @@ class GetUpdateDeletePolicy(APIView):
 
 
 class PolicyAutoTask(APIView):
-
     # get status of all tasks
     def get(self, request, task):
         tasks = TaskResult.objects.filter(task=task)
@@ -108,7 +107,6 @@ class PolicyCheck(APIView):
 
 class OverviewPolicy(APIView):
     def get(self, request):
-
         clients = (
             Client.objects.filter_by_role(request.user)
             .select_related("workstation_policy", "server_policy")
@@ -127,7 +125,6 @@ class OverviewPolicy(APIView):
 
 class GetRelated(APIView):
     def get(self, request, pk):
-
         policy = (
             Policy.objects.filter(pk=pk)
             .prefetch_related(
@@ -146,6 +143,7 @@ class GetRelated(APIView):
 
 class UpdatePatchPolicy(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
+
     # create new patch policy
     def post(self, request):
         policy = get_object_or_404(Policy, pk=request.data["policy"])
@@ -179,7 +177,6 @@ class UpdatePatchPolicy(APIView):
 class ResetPatchPolicy(APIView):
     # bulk reset agent patch policy
     def post(self, request):
-
         if "client" in request.data:
             if not _has_perm_on_client(request.user, request.data["client"]):
                 raise PermissionDenied()

@@ -111,37 +111,6 @@ EOF
 
   echo "${localvars}" > ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
 
-uwsgiconf="$(cat << EOF
-[uwsgi]
-chdir = /opt/tactical/api
-module = tacticalrmm.wsgi
-home = /opt/venv
-master = true
-enable-threads = true
-socket = 0.0.0.0:8080
-harakiri = 300
-chmod-socket = 660
-buffer-size = 65535
-vacuum = true
-die-on-term = true
-max-requests = 500
-disable-logging = true
-cheaper-algo = busyness
-cheaper = 4
-cheaper-initial = 4
-workers = 20
-cheaper-step = 2
-cheaper-overload = 3
-cheaper-busyness-min = 5
-cheaper-busyness-max = 10
-# stats = /tmp/stats.socket # uncomment when debugging
-# cheaper-busyness-verbose = true # uncomment when debugging
-EOF
-)"
-
-  echo "${uwsgiconf}" > ${TACTICAL_DIR}/api/uwsgi.ini
-
-
   # run migrations and init scripts
   python manage.py pre_update_tasks
   python manage.py migrate --no-input
@@ -152,7 +121,9 @@ EOF
   python manage.py load_community_scripts
   python manage.py reload_nats
   python manage.py create_natsapi_conf
+  python manage.py create_uwsgi_conf
   python manage.py create_installer_user
+  python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks
 
   # create super user 
@@ -173,12 +144,12 @@ fi
 if [ "$1" = 'tactical-backend' ]; then
   check_tactical_ready
 
-  uwsgi ${TACTICAL_DIR}/api/uwsgi.ini
+  uwsgi ${TACTICAL_DIR}/api/app.ini
 fi
 
 if [ "$1" = 'tactical-celery' ]; then
   check_tactical_ready
-  celery -A tacticalrmm worker -l info
+  celery -A tacticalrmm worker --autoscale=30,5 -l info
 fi
 
 if [ "$1" = 'tactical-celerybeat' ]; then

@@ -8,7 +8,7 @@ from model_bakery import baker, seq
 
 from alerts.tasks import cache_agents_alert_template
 from autotasks.models import TaskResult
-from core.tasks import cache_db_fields_task, handle_resolved_stuff
+from core.tasks import cache_db_fields_task, resolve_alerts_task
 from core.utils import get_core_settings
 from tacticalrmm.constants import AgentMonType, AlertSeverity, AlertType, CheckStatus
 from tacticalrmm.test import TacticalTestCase
@@ -389,7 +389,6 @@ class TestAlertTasks(TacticalTestCase):
         )
 
     def test_agent_gets_correct_alert_template(self):
-
         core = get_core_settings()
         # setup data
         workstation = baker.make_recipe(
@@ -677,8 +676,6 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_email = Agent.objects.get(pk=agent_template_email.pk)
 
         # have the two agents checkin
-        url = "/api/v3/checkin/"
-
         agent_template_text.version = settings.LATEST_AGENT_VER
         agent_template_text.last_seen = djangotime.now()
         agent_template_text.save()
@@ -688,7 +685,7 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_email.save()
 
         cache_db_fields_task()
-        handle_resolved_stuff()
+        resolve_alerts_task()
 
         recovery_sms.assert_called_with(
             pk=Alert.objects.get(agent=agent_template_text).pk
@@ -1373,7 +1370,7 @@ class TestAlertTasks(TacticalTestCase):
     def test_alert_actions(
         self, recovery_sms, recovery_email, outage_email, outage_sms, nats_cmd
     ):
-
+        from agents.models import AgentHistory
         from agents.tasks import agent_outages_task
 
         # Setup cmd mock
@@ -1399,9 +1396,12 @@ class TestAlertTasks(TacticalTestCase):
             agent_script_actions=False,
             action=failure_action,
             action_timeout=30,
+            action_args=["hello", "world"],
+            action_env_vars=["hello=world", "foo=bar"],
             resolved_action=resolved_action,
             resolved_action_timeout=35,
             resolved_action_args=["nice_arg"],
+            resolved_action_env_vars=["resolved=action", "env=vars"],
         )
         agent.client.alert_template = alert_template
         agent.client.save()
@@ -1422,9 +1422,11 @@ class TestAlertTasks(TacticalTestCase):
         data = {
             "func": "runscriptfull",
             "timeout": 30,
-            "script_args": [],
+            "script_args": ["hello", "world"],
             "payload": {"code": failure_action.code, "shell": failure_action.shell},
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
+            "id": AgentHistory.objects.last().pk,  # type: ignore
         }
 
         nats_cmd.assert_called_with(data, timeout=30, wait=True)
@@ -1445,7 +1447,7 @@ class TestAlertTasks(TacticalTestCase):
         agent.save()
 
         cache_db_fields_task()
-        handle_resolved_stuff()
+        resolve_alerts_task()
 
         # this is what data should be
         data = {
@@ -1454,6 +1456,8 @@ class TestAlertTasks(TacticalTestCase):
             "script_args": ["nice_arg"],
             "payload": {"code": resolved_action.code, "shell": resolved_action.shell},
             "run_as_user": False,
+            "env_vars": ["resolved=action", "env=vars"],
+            "id": AgentHistory.objects.last().pk,  # type: ignore
         }
 
         nats_cmd.assert_called_with(data, timeout=35, wait=True)
@@ -1627,8 +1631,7 @@ class TestAlertPermissions(TacticalTestCase):
             unauthorized_task_url,
         ]
 
-        for method in ["get", "put", "delete"]:
-
+        for method in ("get", "put", "delete"):
             # test superuser access
             for url in authorized_urls:
                 self.check_authorized_superuser(method, url)

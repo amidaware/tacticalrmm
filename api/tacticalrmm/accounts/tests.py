@@ -197,7 +197,7 @@ class GetUpdateDeleteUser(TacticalTestCase):
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
 
-        url = f"/accounts/893452/users/"
+        url = "/accounts/893452/users/"
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 404)
 
@@ -295,6 +295,27 @@ class TestUserAction(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("patch", url)
+
+
+class TestUserReset(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
+    def test_reset_pw(self):
+        url = "/accounts/resetpw/"
+        data = {"password": "superSekret123456"}
+        r = self.client.put(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("put", url)
+
+    def test_reset_2fa(self):
+        url = "/accounts/reset2fa/"
+        r = self.client.put(url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("put", url)
 
 
 class TestAPIKeyViews(TacticalTestCase):

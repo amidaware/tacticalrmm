@@ -1,15 +1,24 @@
 import asyncio
 import datetime as dt
-import os
 import random
 import string
 import time
+from io import StringIO
+from pathlib import Path
 
+from core.utils import (
+    get_core_settings,
+    get_mesh_ws_url,
+    remove_mesh_agent,
+    token_is_valid,
+)
 from django.conf import settings
-from django.db.models import Count, Exists, OuterRef, Prefetch, Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from django.utils.dateparse import parse_datetime
+from logs.models import AuditLog, DebugLog, PendingAction
 from meshctrl.utils import get_login_token
 from packaging import version as pyver
 from rest_framework import serializers
@@ -18,21 +27,13 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from core.utils import (
-    get_core_settings,
-    get_mesh_ws_url,
-    remove_mesh_agent,
-    token_is_valid,
-)
-from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.constants import (
     AGENT_DEFER,
-    AGENT_TABLE_DEFER,
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
+    AGENT_TABLE_DEFER,
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
@@ -40,7 +41,6 @@ from tacticalrmm.constants import (
     DebugLogType,
     EvtLogNames,
     PAAction,
-    PAStatus,
 )
 from tacticalrmm.helpers import date_is_in_past, notify_error
 from tacticalrmm.permissions import (
@@ -136,17 +136,11 @@ class GetAgents(APIView):
                     ),
                 )
                 .annotate(
-                    pending_actions_count=Count(
-                        "pendingactions",
-                        filter=Q(pendingactions__status=PAStatus.PENDING),
-                    )
-                )
-                .annotate(
                     has_patches_pending=Exists(
                         WinUpdate.objects.filter(
                             agent_id=OuterRef("pk"), action="approve", installed=False
                         )
-                    )
+                    ),
                 )
             )
             serializer = AgentTableSerializer(agents, many=True)
@@ -172,6 +166,9 @@ class GetUpdateDeleteAgent(APIView):
         class Meta:
             model = Agent
             fields = [
+                "maintenance_mode",  # TODO separate this
+                "policy",  # TODO separate this
+                "block_policy_inheritance",  # TODO separate this
                 "monitoring_type",
                 "description",
                 "overdue_email_alert",
@@ -206,9 +203,7 @@ class GetUpdateDeleteAgent(APIView):
             p_serializer.save()
 
         if "custom_fields" in request.data.keys():
-
             for field in request.data["custom_fields"]:
-
                 custom_field = field
                 custom_field["agent"] = agent.pk
 
@@ -234,10 +229,11 @@ class GetUpdateDeleteAgent(APIView):
     def delete(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
-        code = "foo"
+        code = "foo"  # stub for windows
         if agent.plat == AgentPlat.LINUX:
-            with open(settings.LINUX_AGENT_SCRIPT, "r") as f:
-                code = f.read()
+            code = Path(settings.LINUX_AGENT_SCRIPT).read_text()
+        elif agent.plat == AgentPlat.DARWIN:
+            code = Path(settings.MAC_UNINSTALL).read_text()
 
         asyncio.run(agent.nats_cmd({"func": "uninstall", "code": code}, wait=False))
         name = agent.hostname
@@ -249,7 +245,7 @@ class GetUpdateDeleteAgent(APIView):
             asyncio.run(remove_mesh_agent(uri, mesh_id))
         except Exception as e:
             DebugLog.error(
-                message=f"Unable to remove agent {name} from meshcentral database: {str(e)}",
+                message=f"Unable to remove agent {name} from meshcentral database: {e}",
                 log_type=DebugLogType.AGENT_ISSUES,
             )
         return Response(f"{name} will now be uninstalled.")
@@ -267,7 +263,7 @@ class AgentProcesses(APIView):
 
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
-        if r == "timeout" or r == "natsdown":
+        if r in ("timeout", "natsdown"):
             return notify_error("Unable to contact the agent")
         return Response(r)
 
@@ -278,7 +274,7 @@ class AgentProcesses(APIView):
             agent.nats_cmd({"func": "killproc", "procpid": int(pid)}, timeout=15)
         )
 
-        if r == "timeout" or r == "natsdown":
+        if r in ("timeout", "natsdown"):
             return notify_error("Unable to contact the agent")
         elif r != "ok":
             return notify_error(r)
@@ -410,7 +406,7 @@ def get_event_log(request, agent_id, logtype, days):
         },
     }
     r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
-    if r == "timeout" or r == "natsdown":
+    if r in ("timeout", "natsdown"):
         return notify_error("Unable to contact the agent")
 
     return Response(r)
@@ -462,6 +458,7 @@ def send_raw_cmd(request, agent_id):
 
 class Reboot(APIView):
     permission_classes = [IsAuthenticated, RebootAgentPerms]
+
     # reboot now
     def post(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
@@ -531,11 +528,10 @@ class Reboot(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
-    from knox.models import AuthToken
-
     from accounts.models import User
     from agents.utils import get_agent_url
     from core.utils import token_is_valid
+    from knox.models import AuthToken
 
     client_id = request.data["client"]
     site_id = request.data["site"]
@@ -548,7 +544,15 @@ def install_agent(request):
 
     codesign_token, is_valid = token_is_valid()
 
-    inno = f"tacticalagent-v{version}-{plat}-{goarch}.exe"
+    if request.data["installMethod"] in {"bash", "mac"} and not is_valid:
+        return notify_error(
+            "Missing code signing token, or token is no longer valid. Please read the docs for more info."
+        )
+
+    inno = f"tacticalagent-v{version}-{plat}-{goarch}"
+    if plat == AgentPlat.WINDOWS:
+        inno += ".exe"
+
     download_url = get_agent_url(goarch=goarch, plat=plat, token=codesign_token)
 
     installer_user = User.objects.filter(is_installer_user=True).first()
@@ -556,6 +560,21 @@ def install_agent(request):
     _, token = AuthToken.objects.create(
         user=installer_user, expiry=dt.timedelta(hours=request.data["expires"])
     )
+
+    install_flags = [
+        "-m",
+        "install",
+        "--api",
+        request.data["api"],
+        "--client-id",
+        client_id,
+        "--site-id",
+        site_id,
+        "--agent-type",
+        request.data["agenttype"],
+        "--auth",
+        token,
+    ]
 
     if request.data["installMethod"] == "exe":
         from tacticalrmm.utils import generate_winagent_exe
@@ -574,15 +593,6 @@ def install_agent(request):
         )
 
     elif request.data["installMethod"] == "bash":
-        # TODO
-        # linux agents are in beta for now, only available for sponsors for testing
-        # remove this after it's out of beta
-
-        if not is_valid:
-            return notify_error(
-                "Missing code signing token, or token is no longer valid. Please read the docs for more info."
-            )
-
         from agents.utils import generate_linux_install
 
         return generate_linux_install(
@@ -595,52 +605,44 @@ def install_agent(request):
             download_url=download_url,
         )
 
-    elif request.data["installMethod"] == "manual":
-        cmd = [
-            inno,
-            "/VERYSILENT",
-            "/SUPPRESSMSGBOXES",
-            "&&",
-            "ping",
-            "127.0.0.1",
-            "-n",
-            "5",
-            "&&",
-            r'"C:\Program Files\TacticalAgent\tacticalrmm.exe"',
-            "-m",
-            "install",
-            "--api",
-            request.data["api"],
-            "--client-id",
-            client_id,
-            "--site-id",
-            site_id,
-            "--agent-type",
-            request.data["agenttype"],
-            "--auth",
-            token,
-        ]
+    elif request.data["installMethod"] in {"manual", "mac"}:
+        resp = {}
+        if request.data["installMethod"] == "manual":
+            cmd = [
+                inno,
+                "/VERYSILENT",
+                "/SUPPRESSMSGBOXES",
+                "&&",
+                "ping",
+                "127.0.0.1",
+                "-n",
+                "5",
+                "&&",
+                r'"C:\Program Files\TacticalAgent\tacticalrmm.exe"',
+            ] + install_flags
 
-        if int(request.data["rdp"]):
-            cmd.append("--rdp")
-        if int(request.data["ping"]):
-            cmd.append("--ping")
-        if int(request.data["power"]):
-            cmd.append("--power")
+            if int(request.data["rdp"]):
+                cmd.append("--rdp")
+            if int(request.data["ping"]):
+                cmd.append("--ping")
+            if int(request.data["power"]):
+                cmd.append("--power")
 
-        resp = {
-            "cmd": " ".join(str(i) for i in cmd),
-            "url": download_url,
-        }
+            resp["cmd"] = " ".join(str(i) for i in cmd)
+        else:
+            install_flags.insert(0, f"sudo ./{inno}")
+            cmd = install_flags.copy()
+            dl = f"curl -L -o {inno} '{download_url}'"
+            resp["cmd"] = (
+                dl + f" && chmod +x {inno} && " + " ".join(str(i) for i in cmd)
+            )
+
+        resp["url"] = download_url
 
         return Response(resp)
 
     elif request.data["installMethod"] == "powershell":
-
-        ps = os.path.join(settings.BASE_DIR, "core/installer.ps1")
-
-        with open(ps, "r") as f:
-            text = f.read()
+        text = Path(settings.BASE_DIR / "core" / "installer.ps1").read_text()
 
         replace_dict = {
             "innosetupchange": inno,
@@ -658,27 +660,9 @@ def install_agent(request):
         for i, j in replace_dict.items():
             text = text.replace(i, j)
 
-        file_name = "rmm-installer.ps1"
-        ps1 = os.path.join(settings.EXE_DIR, file_name)
-
-        if os.path.exists(ps1):
-            try:
-                os.remove(ps1)
-            except Exception as e:
-                DebugLog.error(message=str(e))
-
-        with open(ps1, "w") as f:
-            f.write(text)
-
-        if settings.DEBUG:
-            with open(ps1, "r") as f:
-                response = HttpResponse(f.read(), content_type="text/plain")
-                response["Content-Disposition"] = f"inline; filename={file_name}"
-                return response
-        else:
-            response = HttpResponse()
-            response["Content-Disposition"] = f"attachment; filename={file_name}"
-            response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
+        with StringIO(text) as fp:
+            response = HttpResponse(fp.read(), content_type="text/plain")
+            response["Content-Disposition"] = "attachment; filename=rmm-installer.ps1"
             return response
 
 
@@ -711,6 +695,7 @@ def run_script(request, agent_id):
     output = request.data["output"]
     args = request.data["args"]
     run_as_user: bool = request.data["run_as_user"]
+    env_vars: list[str] = request.data["env_vars"]
     req_timeout = int(request.data["timeout"]) + 3
 
     AuditLog.audit_script_run(
@@ -736,6 +721,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
         return Response(r)
 
@@ -750,6 +736,7 @@ def run_script(request, agent_id):
             emails=emails,
             args=args,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
     elif output == "collector":
         from core.models import CustomField
@@ -761,6 +748,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
         custom_field = CustomField.objects.get(pk=request.data["custom_field"])
@@ -790,6 +778,7 @@ def run_script(request, agent_id):
             wait=True,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
         Note.objects.create(agent=agent, user=request.user, note=r)
@@ -801,6 +790,7 @@ def run_script(request, agent_id):
             timeout=req_timeout,
             history_pk=history_pk,
             run_as_user=run_as_user,
+            env_vars=env_vars,
         )
 
     return Response(f"{script.name} will now be run on {agent.hostname}")
@@ -910,6 +900,8 @@ def bulk(request):
         q = q.filter(plat=AgentPlat.WINDOWS)
     elif request.data["osType"] == AgentPlat.LINUX:
         q = q.filter(plat=AgentPlat.LINUX)
+    elif request.data["osType"] == AgentPlat.DARWIN:
+        q = q.filter(plat=AgentPlat.DARWIN)
 
     agents: list[int] = [agent.pk for agent in q]
 
@@ -948,11 +940,11 @@ def bulk(request):
             request.data["timeout"],
             request.user.username[:50],
             request.data["run_as_user"],
+            request.data["env_vars"],
         )
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "patch":
-
         if request.data["patchMode"] == "install":
             bulk_install_updates_task.delay(agents)
             return Response(
@@ -968,7 +960,6 @@ def bulk(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, AgentPerms])
 def agent_maintenance(request):
-
     if request.data["type"] == "Client":
         if not _has_perm_on_client(request.user, request.data["id"]):
             raise PermissionDenied()
@@ -995,10 +986,10 @@ def agent_maintenance(request):
     if count:
         action = "disabled" if not request.data["action"] else "enabled"
         return Response(f"Maintenance mode has been {action} on {count} agents")
-    else:
-        return Response(
-            f"No agents have been put in maintenance mode. You might not have permissions to the resources."
-        )
+
+    return Response(
+        "No agents have been put in maintenance mode. You might not have permissions to the resources."
+    )
 
 
 @api_view(["GET"])
@@ -1030,3 +1021,98 @@ class AgentHistoryView(APIView):
             history = AgentHistory.objects.filter_by_role(request.user)  # type: ignore
         ctx = {"default_tz": get_default_timezone()}
         return Response(AgentHistorySerializer(history, many=True, context=ctx).data)
+
+
+class ScriptRunHistory(APIView):
+    permission_classes = [IsAuthenticated, AgentHistoryPerms]
+
+    class OutputSerializer(serializers.ModelSerializer):
+        script_name = serializers.ReadOnlyField(source="script.name")
+        agent_id = serializers.ReadOnlyField(source="agent.agent_id")
+
+        class Meta:
+            model = AgentHistory
+            fields = (
+                "id",
+                "time",
+                "username",
+                "script",
+                "script_results",
+                "agent",
+                "script_name",
+                "agent_id",
+            )
+            read_only_fields = fields
+
+    def get(self, request):
+        date_range_filter = Q()
+        script_name_filter = Q()
+
+        start = request.query_params.get("start", None)
+        end = request.query_params.get("end", None)
+        limit = request.query_params.get("limit", None)
+        script_name = request.query_params.get("scriptname", None)
+        if start and end:
+            start_dt = parse_datetime(start)
+            end_dt = parse_datetime(end) + djangotime.timedelta(days=1)
+            date_range_filter = Q(time__range=[start_dt, end_dt])
+
+        if script_name:
+            script_name_filter = Q(script__name=script_name)
+
+        AGENT_R_DEFER = (
+            "agent__wmi_detail",
+            "agent__services",
+            "agent__created_by",
+            "agent__created_time",
+            "agent__modified_by",
+            "agent__modified_time",
+            "agent__disks",
+            "agent__operating_system",
+            "agent__mesh_node_id",
+            "agent__description",
+            "agent__patches_last_installed",
+            "agent__time_zone",
+            "agent__alert_template_id",
+            "agent__policy_id",
+            "agent__site_id",
+            "agent__version",
+            "agent__plat",
+            "agent__goarch",
+            "agent__hostname",
+            "agent__last_seen",
+            "agent__public_ip",
+            "agent__total_ram",
+            "agent__boot_time",
+            "agent__logged_in_username",
+            "agent__last_logged_in_user",
+            "agent__monitoring_type",
+            "agent__overdue_email_alert",
+            "agent__overdue_text_alert",
+            "agent__overdue_dashboard_alert",
+            "agent__offline_time",
+            "agent__overdue_time",
+            "agent__check_interval",
+            "agent__needs_reboot",
+            "agent__choco_installed",
+            "agent__maintenance_mode",
+            "agent__block_policy_inheritance",
+        )
+        hists = (
+            AgentHistory.objects.filter(type=AgentHistoryType.SCRIPT_RUN)
+            .select_related("agent")
+            .select_related("script")
+            .defer(*AGENT_R_DEFER)
+            .filter(date_range_filter)
+            .filter(script_name_filter)
+            .order_by("-time")
+        )
+        if limit:
+            try:
+                lim = int(limit)
+            except KeyError:
+                return notify_error("Invalid limit")
+            hists = hists[:lim]
+
+        ret = self.OutputSerializer(hists, many=True).data
+        return Response(ret)

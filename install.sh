@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="67"
+SCRIPT_VERSION="71"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.6'
+PYTHON_VER='3.10.8'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -28,6 +28,18 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+arch=$(uname -m)
+if [ "$arch" != "x86_64" ]; then
+  echo -ne "${RED}ERROR: Only x86_64 arch is supported, not ${arch}${NC}\n"
+  exit 1
+fi
+
+memTotal=$(grep -i memtotal /proc/meminfo | awk '{print $2}')
+if [[ $memTotal -lt 3627528 ]]; then
+        echo -ne "${RED}ERROR: A minimum of 4GB of RAM is required.${NC}\n"
+        exit 1
+fi
 
 osname=$(lsb_release -si); osname=${osname^}
 osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
@@ -168,7 +180,6 @@ CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
 CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
-sudo chmod 775 -R /etc/letsencrypt
 
 print_green 'Installing Nginx'
 
@@ -265,9 +276,12 @@ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-
 sudo apt update
 sudo apt install -y postgresql-14
 sleep 2
-sudo systemctl enable postgresql
-sudo systemctl restart postgresql
-sleep 5
+sudo systemctl enable --now postgresql
+
+until pg_isready > /dev/null; do
+  echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
+  sleep 3
+ done
 
 print_green 'Creating database for the rmm'
 
@@ -322,34 +336,34 @@ sudo chown ${USER}:${USER} -R /meshcentral
 meshcfg="$(cat << EOF
 {
   "settings": {
-    "Cert": "${meshdomain}",
-    "MongoDb": "mongodb://127.0.0.1:27017",
-    "MongoDbName": "meshcentral",
+    "cert": "${meshdomain}",
+    "mongoDb": "mongodb://127.0.0.1:27017",
+    "mongoDbName": "meshcentral",
     "WANonly": true,
-    "Minify": 1,
-    "Port": 4430,
-    "AliasPort": 443,
-    "RedirPort": 800,
-    "AllowLoginToken": true,
-    "AllowFraming": true,
-    "_AgentPing": 60,
-    "AgentPong": 300,
-    "AllowHighQualityDesktop": true,
-    "TlsOffload": "127.0.0.1",
+    "minify": 1,
+    "port": 4430,
+    "aliasPort": 443,
+    "redirPort": 800,
+    "allowLoginToken": true,
+    "allowFraming": true,
+    "_agentPing": 60,
+    "agentPong": 300,
+    "allowHighQualityDesktop": true,
+    "tlsOffload": "127.0.0.1",
     "agentCoreDump": false,
-    "Compression": true,
-    "WsCompression": true,
-    "AgentWsCompression": true,
-    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
+    "compression": true,
+    "wsCompression": true,
+    "agentWsCompression": true,
+    "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
   },
   "domains": {
     "": {
-      "Title": "Tactical RMM",
-      "Title2": "Tactical RMM",
-      "NewAccounts": false,
-      "CertUrl": "https://${meshdomain}:443/",
-      "GeoLocation": true,
-      "CookieIpCheck": false,
+      "title": "Tactical RMM",
+      "title2": "Tactical RMM",
+      "newAccounts": false,
+      "certUrl": "https://${meshdomain}:443/",
+      "geoLocation": true,
+      "cookieIpCheck": false,
       "mstsc": true
     }
   }
@@ -409,6 +423,7 @@ pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
+python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
@@ -426,36 +441,6 @@ cls
 python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
-
-uwsgini="$(cat << EOF
-[uwsgi]
-chdir = /rmm/api/tacticalrmm
-module = tacticalrmm.wsgi
-home = /rmm/api/env
-master = true
-enable-threads = true
-socket = /rmm/api/tacticalrmm/tacticalrmm.sock
-harakiri = 300
-chmod-socket = 660
-buffer-size = 65535
-vacuum = true
-die-on-term = true
-max-requests = 500
-disable-logging = true
-cheaper-algo = busyness
-cheaper = 4
-cheaper-initial = 4
-workers = 20
-cheaper-step = 2
-cheaper-overload = 3
-cheaper-busyness-min = 5
-cheaper-busyness-max = 10
-# stats = /tmp/stats.socket # uncomment when debugging
-# cheaper-busyness-verbose = true # uncomment when debugging
-EOF
-)"
-echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
-
 
 rmmservice="$(cat << EOF
 [Unit]
@@ -479,7 +464,7 @@ echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service > /dev/null
 
 daphneservice="$(cat << EOF
 [Unit]
-Description=django channels daemon
+Description=django channels daemon v2
 After=network.target
 
 [Service]
@@ -488,6 +473,8 @@ Group=www-data
 WorkingDirectory=/rmm/api/tacticalrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+ExecStartPre=rm -f /rmm/daphne.sock
+ExecStartPre=rm -f /rmm/daphne.sock.lock
 Restart=always
 RestartSec=3s
 

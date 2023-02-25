@@ -6,3 +6,5 @@ pytest-django
 pytest-xdist
 pytest-cov
 codecov
+refurb
+flake8

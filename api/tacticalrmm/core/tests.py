@@ -5,19 +5,26 @@ from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.conf import settings
 from django.core.management import call_command
+from django.test import override_settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
 
 from agents.models import Agent
-from core.utils import get_core_settings
+from core.utils import get_core_settings, get_meshagent_url
 from logs.models import PendingAction
-from tacticalrmm.constants import CONFIG_MGMT_CMDS, CustomFieldModel, PAAction, PAStatus
+from tacticalrmm.constants import (
+    CONFIG_MGMT_CMDS,
+    CustomFieldModel,
+    MeshAgentIdent,
+    PAAction,
+    PAStatus,
+)
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
 from .models import CustomField, GlobalKVStore, URLAction
 from .serializers import CustomFieldSerializer, KeyStoreSerializer, URLActionSerializer
-from .tasks import core_maintenance_tasks, handle_resolved_stuff
+from .tasks import core_maintenance_tasks, resolve_pending_actions
 
 
 class TestCodeSign(TacticalTestCase):
@@ -55,7 +62,6 @@ class TestConsumers(TacticalTestCase):
 
     @database_sync_to_async
     def get_token(self):
-
         token = Token.objects.create(user=self.john)
         return token.key
 
@@ -104,7 +110,7 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/settings/"
 
         # setup
-        policies = baker.make("automation.Policy", _quantity=2)
+        baker.make("automation.Policy", _quantity=2)
         # test normal request
         data = {
             "smtp_from_email": "newexample@example.com",
@@ -122,7 +128,7 @@ class TestCoreTasks(TacticalTestCase):
     def test_ui_maintenance_actions(self, remove_orphaned_win_tasks, reload_nats):
         url = "/core/servermaintenance/"
 
-        agents = baker.make_recipe("agents.online_agent", _quantity=3)
+        baker.make_recipe("agents.online_agent", _quantity=3)
 
         # test with empty data
         r = self.client.post(url, {})
@@ -179,9 +185,7 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/customfields/"
 
         # setup
-        custom_fields = baker.make(
-            "core.CustomField", model=CustomFieldModel.AGENT, _quantity=5
-        )
+        baker.make("core.CustomField", model=CustomFieldModel.AGENT, _quantity=5)
         baker.make("core.CustomField", model="client", _quantity=5)
 
         # will error if request invalid
@@ -190,7 +194,6 @@ class TestCoreTasks(TacticalTestCase):
 
         data = {"model": "agent"}
         r = self.client.patch(url, data)
-        serializer = CustomFieldSerializer(custom_fields, many=True)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 5)
 
@@ -418,7 +421,7 @@ class TestCoreTasks(TacticalTestCase):
 
         Agent.objects.update(version=settings.LATEST_AGENT_VER)
 
-        handle_resolved_stuff()
+        resolve_pending_actions()
 
         complete = PendingAction.objects.filter(
             action_type=PAAction.AGENT_UPDATE, status=PAStatus.COMPLETED
@@ -444,3 +447,56 @@ class TestCorePermissions(TacticalTestCase):
     def setUp(self):
         self.setup_client()
         self.setup_coresettings()
+
+
+class TestCoreUtils(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    def test_get_meshagent_url_standard(self):
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "https://mesh.example.com/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "https://mesh.example.com/meshagents?id=4&meshid=abc123&installflags=0",
+        )
+
+    @override_settings(DOCKER_BUILD=True)
+    @override_settings(MESH_WS_URL="ws://tactical-meshcentral:4443")
+    def test_get_meshagent_url_docker(self):
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://tactical-meshcentral:4443/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://tactical-meshcentral:4443/meshagents?id=4&meshid=abc123&installflags=0",
+        )

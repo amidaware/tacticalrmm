@@ -41,7 +41,7 @@ class GetServices(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd(data={"func": "winservices"}, timeout=10))
 
-        if r == "timeout" or r == "natsdown":
+        if r in ("timeout", "natsdown"):
             return notify_error("Unable to contact the agent")
 
         agent.services = r

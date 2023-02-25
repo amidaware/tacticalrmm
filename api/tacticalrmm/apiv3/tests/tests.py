@@ -77,9 +77,7 @@ class TestAPIv3(TacticalTestCase):
         )
 
         # add check to agent with check interval set
-        check = baker.make_recipe(
-            "checks.ping_check", agent=self.agent, run_interval=30
-        )
+        baker.make_recipe("checks.ping_check", agent=self.agent, run_interval=30)
 
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)
@@ -89,7 +87,7 @@ class TestAPIv3(TacticalTestCase):
         )
 
         # minimum check run interval is 15 seconds
-        check = baker.make_recipe("checks.ping_check", agent=self.agent, run_interval=5)
+        baker.make_recipe("checks.ping_check", agent=self.agent, run_interval=5)
 
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)
@@ -129,8 +127,15 @@ class TestAPIv3(TacticalTestCase):
                 "script": script.id,
                 "script_args": ["test"],
                 "timeout": 30,
+                "env_vars": ["hello=world", "foo=bar"],
             },
-            {"type": "script", "script": 3, "script_args": [], "timeout": 30},
+            {
+                "type": "script",
+                "script": 3,
+                "script_args": [],
+                "timeout": 30,
+                "env_vars": ["hello=world", "foo=bar"],
+            },
         ]
 
         agent = baker.make_recipe("agents.agent")
@@ -296,3 +301,9 @@ class TestAPIv3(TacticalTestCase):
             AgentCustomField.objects.get(field=multiple, agent=task.agent).value,
             ["this"],
         )
+
+    def test_get_agent_config(self):
+        agent = baker.make_recipe("agents.online_agent")
+        url = f"/api/v3/{agent.agent_id}/config/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)

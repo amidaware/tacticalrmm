@@ -1,4 +1,5 @@
 import smtplib
+from contextlib import suppress
 from email.message import EmailMessage
 from typing import TYPE_CHECKING, List, Optional, cast
 
@@ -108,12 +109,10 @@ class CoreSettings(BaseAuditModel):
 
         # for install script
         if not self.pk:
-            try:
+            with suppress(Exception):
                 self.mesh_site = settings.MESH_SITE
                 self.mesh_username = settings.MESH_USERNAME.lower()
                 self.mesh_token = settings.MESH_TOKEN_KEY
-            except:
-                pass
 
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
         super(BaseAuditModel, self).save(*args, **kwargs)
@@ -127,10 +126,10 @@ class CoreSettings(BaseAuditModel):
                 cache_agents_alert_template.delay()
 
             if old_settings.workstation_policy != self.workstation_policy:
-                cache.delete_many_pattern(f"site_workstation_*")
+                cache.delete_many_pattern("site_workstation_*")
 
             if old_settings.server_policy != self.server_policy:
-                cache.delete_many_pattern(f"site_server_*")
+                cache.delete_many_pattern("site_server_*")
 
             if (
                 old_settings.server_policy != self.server_policy
@@ -273,7 +272,6 @@ class CoreSettings(BaseAuditModel):
 
 
 class CustomField(BaseAuditModel):
-
     order = models.PositiveIntegerField(default=0)
     model = models.CharField(max_length=25, choices=CustomFieldModel.choices)
     type = models.CharField(
@@ -315,8 +313,8 @@ class CustomField(BaseAuditModel):
             return self.default_values_multiple
         elif self.type == CustomFieldType.CHECKBOX:
             return self.default_value_bool
-        else:
-            return self.default_value_string
+
+        return self.default_value_string
 
     def get_or_create_field_value(self, instance):
         from agents.models import Agent, AgentCustomField
@@ -364,6 +362,23 @@ class CodeSignToken(models.Model):
             return False
 
         return r.status_code == 200
+
+    @property
+    def is_expired(self) -> bool:
+        if not self.token:
+            return False
+
+        try:
+            r = requests.post(
+                settings.CHECK_TOKEN_URL,
+                json={"token": self.token, "api": settings.ALLOWED_HOSTS[0]},
+                headers={"Content-type": "application/json"},
+                timeout=15,
+            )
+        except:
+            return False
+
+        return r.status_code == 401
 
     def __str__(self):
         return "Code signing token"

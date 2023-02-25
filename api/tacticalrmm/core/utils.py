@@ -1,6 +1,7 @@
 import json
 import subprocess
 import tempfile
+import urllib.parse
 from base64 import b64encode
 from typing import TYPE_CHECKING, Optional, cast
 
@@ -11,10 +12,16 @@ from django.core.cache import cache
 from django.http import FileResponse
 from meshctrl.utils import get_auth_token
 
-from tacticalrmm.constants import CORESETTINGS_CACHE_KEY, ROLE_CACHE_PREFIX
+from tacticalrmm.constants import (
+    AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
+    CORESETTINGS_CACHE_KEY,
+    ROLE_CACHE_PREFIX,
+    AgentPlat,
+    MeshAgentIdent,
+)
 
 if TYPE_CHECKING:
-    from core.models import CodeSignToken, CoreSettings
+    from core.models import CoreSettings
 
 
 class CoreSettingsNotFound(Exception):
@@ -23,6 +30,7 @@ class CoreSettingsNotFound(Exception):
 
 def clear_entire_cache() -> None:
     cache.delete_many_pattern(f"{ROLE_CACHE_PREFIX}*")
+    cache.delete_many_pattern(f"{AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX}*")
     cache.delete(CORESETTINGS_CACHE_KEY)
     cache.delete_many_pattern("site_*")
     cache.delete_many_pattern("agent_*")
@@ -45,6 +53,16 @@ def token_is_valid() -> tuple[str, bool]:
         return t.token, True
 
     return "", False
+
+
+def token_is_expired() -> bool:
+    from core.models import CodeSignToken
+
+    t: "CodeSignToken" = CodeSignToken.objects.first()
+    if not t or not t.token:
+        return False
+
+    return t.is_expired
 
 
 def get_core_settings() -> "CoreSettings":
@@ -142,3 +160,27 @@ def sysd_svc_is_running(svc: str) -> bool:
     cmd = ["systemctl", "is-active", "--quiet", svc]
     r = subprocess.run(cmd, capture_output=True)
     return not r.returncode
+
+
+def get_meshagent_url(
+    *, ident: "MeshAgentIdent", plat: str, mesh_site: str, mesh_device_id: str
+) -> str:
+    if settings.DOCKER_BUILD:
+        base = settings.MESH_WS_URL.replace("ws://", "http://")
+    else:
+        base = mesh_site
+
+    if plat == AgentPlat.WINDOWS:
+        params = {
+            "id": ident,
+            "meshid": mesh_device_id,
+            "installflags": 0,
+        }
+    else:
+        params = {
+            "id": mesh_device_id,
+            "installflags": 2,
+            "meshinstall": ident,
+        }
+
+    return base + "/meshagents?" + urllib.parse.urlencode(params)

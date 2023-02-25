@@ -1,5 +1,4 @@
 import datetime as dt
-import random
 from time import sleep
 from typing import TYPE_CHECKING, Optional
 
@@ -13,10 +12,13 @@ from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    AGENT_OUTAGES_LOCK,
     AGENT_STATUS_OVERDUE,
     CheckStatus,
     DebugLogType,
 )
+from tacticalrmm.helpers import rand_range
+from tacticalrmm.utils import redis_lock
 
 if TYPE_CHECKING:
     from django.db.models.query import QuerySet
@@ -46,7 +48,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
         return "alert not found"
 
     if not alert.email_sent:
-        sleep(random.randint(1, 5))
+        sleep(rand_range(100, 1500))
         alert.agent.send_outage_email()
         alert.email_sent = djangotime.now()
         alert.save(update_fields=["email_sent"])
@@ -55,7 +57,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
             # send an email only if the last email sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.email_sent < delta:
-                sleep(random.randint(1, 5))
+                sleep(rand_range(100, 1500))
                 alert.agent.send_outage_email()
                 alert.email_sent = djangotime.now()
                 alert.save(update_fields=["email_sent"])
@@ -67,7 +69,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
 def agent_recovery_email_task(pk: int) -> str:
     from alerts.models import Alert
 
-    sleep(random.randint(1, 5))
+    sleep(rand_range(100, 1500))
 
     try:
         alert = Alert.objects.get(pk=pk)
@@ -91,7 +93,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> st
         return "alert not found"
 
     if not alert.sms_sent:
-        sleep(random.randint(1, 3))
+        sleep(rand_range(100, 1500))
         alert.agent.send_outage_sms()
         alert.sms_sent = djangotime.now()
         alert.save(update_fields=["sms_sent"])
@@ -100,7 +102,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> st
             # send an sms only if the last sms sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.sms_sent < delta:
-                sleep(random.randint(1, 3))
+                sleep(rand_range(100, 1500))
                 alert.agent.send_outage_sms()
                 alert.sms_sent = djangotime.now()
                 alert.save(update_fields=["sms_sent"])
@@ -112,7 +114,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> st
 def agent_recovery_sms_task(pk: int) -> str:
     from alerts.models import Alert
 
-    sleep(random.randint(1, 3))
+    sleep(rand_range(100, 1500))
     try:
         alert = Alert.objects.get(pk=pk)
     except Alert.DoesNotExist:
@@ -125,24 +127,20 @@ def agent_recovery_sms_task(pk: int) -> str:
     return "ok"
 
 
-@app.task
-def agent_outages_task() -> None:
-    from alerts.models import Alert
+@app.task(bind=True)
+def agent_outages_task(self) -> str:
+    with redis_lock(AGENT_OUTAGES_LOCK, self.app.oid) as acquired:
+        if not acquired:
+            return f"{self.app.oid} still running"
 
-    agents = Agent.objects.only(
-        "pk",
-        "agent_id",
-        "last_seen",
-        "offline_time",
-        "overdue_time",
-        "overdue_email_alert",
-        "overdue_text_alert",
-        "overdue_dashboard_alert",
-    )
+        from alerts.models import Alert
+        from core.tasks import _get_agent_qs
 
-    for agent in agents:
-        if agent.status == AGENT_STATUS_OVERDUE:
-            Alert.handle_alert_failure(agent)
+        for agent in _get_agent_qs():
+            if agent.status == AGENT_STATUS_OVERDUE:
+                Alert.handle_alert_failure(agent)
+
+        return "completed"
 
 
 @app.task
@@ -154,6 +152,7 @@ def run_script_email_results_task(
     args: list[str] = [],
     history_pk: int = 0,
     run_as_user: bool = False,
+    env_vars: list[str] = [],
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)
@@ -165,6 +164,7 @@ def run_script_email_results_task(
         wait=True,
         history_pk=history_pk,
         run_as_user=run_as_user,
+        env_vars=env_vars,
     )
     if r == "timeout":
         DebugLog.error(

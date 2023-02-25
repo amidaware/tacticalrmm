@@ -41,7 +41,6 @@ class AuditLog(models.Model):
         return f"{self.username} {self.action} {self.object_type}"
 
     def save(self, *args: Any, **kwargs: Any) -> None:
-
         if not self.pk and self.message:
             # truncate message field if longer than 255 characters
             self.message = (
@@ -282,7 +281,7 @@ class DebugLog(models.Model):
         agent: "Optional[Agent]" = None,
         log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in [DebugLogLevel.INFO]:
+        if get_debug_level() == DebugLogLevel.INFO:
             cls.objects.create(
                 log_level=DebugLogLevel.INFO,
                 agent=agent,
@@ -297,7 +296,7 @@ class DebugLog(models.Model):
         agent: "Optional[Agent]" = None,
         log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in [DebugLogLevel.INFO, DebugLogLevel.WARN]:
+        if get_debug_level() in (DebugLogLevel.INFO, DebugLogLevel.WARN):
             cls.objects.create(
                 log_level=DebugLogLevel.INFO,
                 agent=agent,
@@ -312,11 +311,11 @@ class DebugLog(models.Model):
         agent: "Optional[Agent]" = None,
         log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in [
+        if get_debug_level() in (
             DebugLogLevel.INFO,
             DebugLogLevel.WARN,
             DebugLogLevel.ERROR,
-        ]:
+        ):
             cls.objects.create(
                 log_level=DebugLogLevel.ERROR,
                 agent=agent,
@@ -331,12 +330,12 @@ class DebugLog(models.Model):
         agent: "Optional[Agent]" = None,
         log_type: str = DebugLogType.SYSTEM_ISSUES,
     ) -> None:
-        if get_debug_level() in [
+        if get_debug_level() in (
             DebugLogLevel.INFO,
             DebugLogLevel.WARN,
             DebugLogLevel.ERROR,
             DebugLogLevel.CRITICAL,
-        ]:
+        ):
             cls.objects.create(
                 log_level=DebugLogLevel.CRITICAL,
                 agent=agent,
@@ -346,7 +345,6 @@ class DebugLog(models.Model):
 
 
 class PendingAction(models.Model):
-
     objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(
@@ -376,8 +374,8 @@ class PendingAction(models.Model):
             return "Next update cycle"
         elif self.action_type == PAAction.CHOCO_INSTALL:
             return "ASAP"
-        else:
-            return "On next checkin"
+
+        return "On next checkin"
 
     @property
     def description(self) -> Optional[str]:
@@ -390,15 +388,15 @@ class PendingAction(models.Model):
         elif self.action_type == PAAction.CHOCO_INSTALL:
             return f"{self.details['name']} software install"
 
-        elif self.action_type in [
+        elif self.action_type in (
             PAAction.RUN_CMD,
             PAAction.RUN_SCRIPT,
             PAAction.RUN_PATCH_SCAN,
             PAAction.RUN_PATCH_INSTALL,
-        ]:
+        ):
             return f"{self.action_type}"
-        else:
-            return None
+
+        return None
 
 
 class BaseAuditModel(models.Model):
@@ -417,10 +415,8 @@ class BaseAuditModel(models.Model):
         pass
 
     def save(self, old_model: Optional[models.Model] = None, *args, **kwargs) -> None:
-
         username = get_username()
         if username:
-
             object_class = type(self)
             object_name = object_class.__name__.lower()
             after_value = object_class.serialize(self)
@@ -441,7 +437,6 @@ class BaseAuditModel(models.Model):
                     debug_info=get_debug_info(),
                 )
             else:
-
                 if old_model:
                     before_value = object_class.serialize(old_model)
                 else:
@@ -450,7 +445,6 @@ class BaseAuditModel(models.Model):
                     )
                 # only create an audit entry if the values have changed
                 if before_value != after_value and username:
-
                     AuditLog.audit_object_changed(
                         username,
                         object_class.__name__.lower(),

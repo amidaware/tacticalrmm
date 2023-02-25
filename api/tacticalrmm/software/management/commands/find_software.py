@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from agents.models import Agent
+from software.models import InstalledSoftware
 
 
 class Command(BaseCommand):
@@ -12,22 +12,15 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         search = kwargs["name"].lower()
 
-        agents = Agent.objects.all()
-        for agent in agents:
-            try:
-                sw = agent.installedsoftware_set.first().software
-            except:
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"Agent {agent.hostname} missing software list. Try manually refreshing it from the web UI from the software tab."
-                    )
-                )
-                continue
-            for i in sw:
-                if search in i["name"].lower():
+        all_sw = InstalledSoftware.objects.select_related(
+            "agent", "agent__site", "agent__site__client"
+        )
+        for instance in all_sw.iterator(chunk_size=20):
+            for sw in instance.software:
+                if search in sw["name"].lower():
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f"Found {i['name']} installed on {agent.hostname}"
+                            f"Found {sw['name']} installed on: {instance.agent.client.name}\\{instance.agent.site.name}\\{instance.agent.hostname}"
                         )
                     )
                     break

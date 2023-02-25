@@ -540,6 +540,7 @@ class TestAgentViews(TacticalTestCase):
             "args": [],
             "timeout": 15,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -555,6 +556,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -567,6 +569,7 @@ class TestAgentViews(TacticalTestCase):
             "emailMode": "default",
             "emails": ["admin@example.com", "bob@example.com"],
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
@@ -577,6 +580,7 @@ class TestAgentViews(TacticalTestCase):
             emails=[],
             args=["abc", "123"],
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         email_task.reset_mock()
 
@@ -591,6 +595,7 @@ class TestAgentViews(TacticalTestCase):
             emails=["admin@example.com", "bob@example.com"],
             args=["abc", "123"],
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
 
         # test fire and forget
@@ -600,6 +605,7 @@ class TestAgentViews(TacticalTestCase):
             "args": ["hello", "world"],
             "timeout": 22,
             "run_as_user": True,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -614,6 +620,7 @@ class TestAgentViews(TacticalTestCase):
             timeout=25,
             history_pk=hist.pk,
             run_as_user=True,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -629,6 +636,7 @@ class TestAgentViews(TacticalTestCase):
             "custom_field": custom_field.pk,
             "save_all_output": True,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -644,6 +652,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -662,6 +671,7 @@ class TestAgentViews(TacticalTestCase):
             "custom_field": custom_field.pk,
             "save_all_output": False,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -677,6 +687,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -697,6 +708,7 @@ class TestAgentViews(TacticalTestCase):
             "custom_field": custom_field.pk,
             "save_all_output": False,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -712,6 +724,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -729,6 +742,7 @@ class TestAgentViews(TacticalTestCase):
             "args": ["hello", "world"],
             "timeout": 22,
             "run_as_user": False,
+            "env_vars": ["hello=world", "foo=bar"],
         }
 
         r = self.client.post(url, data, format="json")
@@ -744,6 +758,7 @@ class TestAgentViews(TacticalTestCase):
             wait=True,
             history_pk=hist.pk,
             run_as_user=False,
+            env_vars=["hello=world", "foo=bar"],
         )
         run_script.reset_mock()
 
@@ -836,7 +851,6 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("delete", url)
 
     def test_get_agent_history(self):
-
         # setup data
         agent = baker.make_recipe("agents.agent")
         history = baker.make("agents.AgentHistory", agent=agent, _quantity=30)
@@ -992,7 +1006,6 @@ class TestAgentPermissions(TacticalTestCase):
     @patch("time.sleep")
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     def test_agent_actions_permissions(self, nats_cmd, sleep):
-
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
 
@@ -1120,7 +1133,6 @@ class TestAgentPermissions(TacticalTestCase):
         self.assertEqual(len(response.data["agents"]), 7)
 
     def test_generating_agent_installer_permissions(self):
-
         client = baker.make("clients.Client")
         client_site = baker.make("clients.Site", client=client)
         site = baker.make("clients.Site")
@@ -1183,7 +1195,6 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_not_authorized("post", url, data)
 
     def test_agent_notes_permissions(self):
-
         agent = baker.make_recipe("agents.agent")
         notes = baker.make("agents.Note", agent=agent, _quantity=5)
 
@@ -1272,9 +1283,9 @@ class TestAgentPermissions(TacticalTestCase):
 
         sites = baker.make("clients.Site", _quantity=2)
         agent = baker.make_recipe("agents.agent", site=sites[0])
-        history = baker.make("agents.AgentHistory", agent=agent, _quantity=5)
+        history = baker.make("agents.AgentHistory", agent=agent, _quantity=5)  # noqa
         unauthorized_agent = baker.make_recipe("agents.agent", site=sites[1])
-        unauthorized_history = baker.make(
+        unauthorized_history = baker.make(  # noqa
             "agents.AgentHistory", agent=unauthorized_agent, _quantity=6
         )
 

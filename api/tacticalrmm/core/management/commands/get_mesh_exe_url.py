@@ -11,9 +11,7 @@ class Command(BaseCommand):
     help = "Sets up initial mesh central configuration"
 
     async def websocket_call(self, uri):
-
         async with websockets.connect(uri) as websocket:
-
             # Get Invitation Link
             await websocket.send(
                 json.dumps(

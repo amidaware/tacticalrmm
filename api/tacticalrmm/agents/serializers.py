@@ -97,24 +97,23 @@ class AgentTableSerializer(serializers.ModelSerializer):
     physical_disks = serializers.ReadOnlyField()
 
     def get_alert_template(self, obj):
-
         if not obj.alert_template:
             return None
-        else:
-            return {
-                "name": obj.alert_template.name,
-                "always_email": obj.alert_template.agent_always_email,
-                "always_text": obj.alert_template.agent_always_text,
-                "always_alert": obj.alert_template.agent_always_alert,
-            }
+
+        return {
+            "name": obj.alert_template.name,
+            "always_email": obj.alert_template.agent_always_email,
+            "always_text": obj.alert_template.agent_always_text,
+            "always_alert": obj.alert_template.agent_always_alert,
+        }
 
     def get_logged_username(self, obj) -> str:
         if obj.logged_in_username == "None" and obj.status == AGENT_STATUS_ONLINE:
             return obj.last_logged_in_user
         elif obj.logged_in_username != "None":
             return obj.logged_in_username
-        else:
-            return "-"
+
+        return "-"
 
     def get_italic(self, obj) -> bool:
         return obj.logged_in_username == "None" and obj.status == AGENT_STATUS_ONLINE

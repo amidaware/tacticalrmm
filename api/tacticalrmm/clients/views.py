@@ -1,6 +1,7 @@
 import datetime as dt
 import re
 import uuid
+from contextlib import suppress
 
 from django.db.models import Count, Exists, OuterRef, Prefetch, prefetch_related_objects
 from django.shortcuts import get_object_or_404
@@ -95,7 +96,6 @@ class GetAddClients(APIView):
         # save custom fields
         if "custom_fields" in request.data.keys():
             for field in request.data["custom_fields"]:
-
                 custom_field = field
                 custom_field["client"] = client.id
 
@@ -147,7 +147,6 @@ class GetUpdateDeleteClient(APIView):
         # update custom fields
         if "custom_fields" in request.data.keys():
             for field in request.data["custom_fields"]:
-
                 custom_field = field
                 custom_field["client"] = pk
 
@@ -194,7 +193,6 @@ class GetAddSites(APIView):
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
-
         if not _has_perm_on_client(request.user, request.data["site"]["client"]):
             raise PermissionDenied()
 
@@ -204,9 +202,7 @@ class GetAddSites(APIView):
 
         # save custom fields
         if "custom_fields" in request.data.keys():
-
             for field in request.data["custom_fields"]:
-
                 custom_field = field
                 custom_field["site"] = site.id
 
@@ -245,9 +241,7 @@ class GetUpdateDeleteSite(APIView):
 
         # update custom field
         if "custom_fields" in request.data.keys():
-
             for field in request.data["custom_fields"]:
-
                 custom_field = field
                 custom_field["site"] = pk
 
@@ -338,17 +332,14 @@ class AgentDeployment(APIView):
         if not _has_perm_on_site(request.user, d.site.pk):
             raise PermissionDenied()
 
-        try:
+        with suppress(Exception):
             d.auth_token.delete()
-        except:
-            pass
 
         d.delete()
         return Response("The deployment was deleted")
 
 
 class GenerateAgent(APIView):
-
     permission_classes = (AllowAny,)
 
     def get(self, request, uid):

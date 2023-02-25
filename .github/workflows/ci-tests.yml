@@ -14,7 +14,7 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        python-version: ["3.10.6"]
+        python-version: ["3.10.8", "3.11.1"]
 
     steps:
       - uses: actions/checkout@v3
@@ -27,9 +27,10 @@ jobs:
           postgresql password: "pipeline123456"
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          check-latest: true
 
       - name: Install redis
         run: |
@@ -52,6 +53,14 @@ jobs:
         working-directory: api
         run: |
           black --exclude migrations/ --check tacticalrmm
+          if [ $? -ne 0 ]; then
+              exit 1
+          fi
+
+      - name: Lint with flake8
+        working-directory: api/tacticalrmm
+        run: |
+          flake8 --config .flake8 .
           if [ $? -ne 0 ]; then
               exit 1
           fi

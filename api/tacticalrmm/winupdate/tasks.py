@@ -1,6 +1,7 @@
 import asyncio
 import datetime as dt
 import time
+from contextlib import suppress
 
 import pytz
 from django.utils import timezone as djangotime
@@ -56,7 +57,6 @@ def check_agent_update_schedule_task() -> None:
             or patch_policy.low == "approve"
             or patch_policy.other == "approve"
         ):
-
             # get current time in agent local time
             timezone = pytz.timezone(agent.timezone)
             agent_localtime_now = dt.datetime.now(timezone)
@@ -72,7 +72,7 @@ def check_agent_update_schedule_task() -> None:
                 if last_installed.strftime("%d/%m/%Y") == agent_localtime_now.strftime(
                     "%d/%m/%Y"
                 ):
-                    return
+                    continue
 
             # check if schedule is set to daily/weekly and if now is the time to run
             if (
@@ -83,7 +83,6 @@ def check_agent_update_schedule_task() -> None:
                 install = True
 
             elif patch_policy.run_time_frequency == "monthly":
-
                 if patch_policy.run_time_day > 28:
                     months_with_30_days = [3, 6, 9, 11]
                     current_month = agent_localtime_now.month
@@ -123,10 +122,10 @@ def bulk_install_updates_task(pks: list[int]) -> None:
     for chunk in chunks:
         for agent in chunk:
             agent.delete_superseded_updates()
-            try:
+
+            with suppress(Exception):
                 agent.approve_updates()
-            except:
-                pass
+
             nats_data = {
                 "func": "installwinupdates",
                 "guids": agent.get_approved_update_guids(),

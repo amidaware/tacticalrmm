@@ -21,6 +21,7 @@ class ScriptTableSerializer(ModelSerializer):
             "hidden",
             "supported_platforms",
             "run_as_user",
+            "env_vars",
         ]
 
 
@@ -45,6 +46,7 @@ class ScriptSerializer(ModelSerializer):
             "hidden",
             "supported_platforms",
             "run_as_user",
+            "env_vars",
         ]
 
 
@@ -54,7 +56,7 @@ class ScriptCheckSerializer(ModelSerializer):
 
     class Meta:
         model = Script
-        fields = ["code", "shell", "run_as_user", "script_hash"]
+        fields = ["code", "shell", "run_as_user", "env_vars", "script_hash"]
 
 
 class ScriptSnippetSerializer(ModelSerializer):

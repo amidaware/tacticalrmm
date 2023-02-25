@@ -6,14 +6,14 @@ from django.core.cache.backends.redis import RedisCache
 
 class TacticalRedisCache(RedisCache):
     def delete_many_pattern(self, pattern: str, version: Optional[int] = None) -> None:
-        keys = self._cache.get_client().keys(f":{version if version else 1}:{pattern}")
+        keys = self._cache.get_client().keys(f":{version or 1}:{pattern}")
 
         if keys:
             self._cache.delete_many(keys)
 
     # just for debugging
     def show_everything(self, version: Optional[int] = None) -> list[bytes]:
-        return self._cache.get_client().keys(f":{version if version else 1}:*")
+        return self._cache.get_client().keys(f":{version or 1}:*")
 
 
 class TacticalDummyCache(DummyCache):

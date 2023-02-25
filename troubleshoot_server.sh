@@ -309,9 +309,9 @@ fi
 	printf >&2 "\n\n"
 
 #SSL Certificate check
-cert=$(openssl verify -CAfile /etc/letsencrypt/live/$domain/chain.pem /etc/letsencrypt/live/$domain/cert.pem)
+cert=$(sudo certbot certificates)
 
-if [[ "$cert" == *"OK"* ]]; then
+if [[ "$cert" != *"INVALID"* ]]; then
     echo -ne ${GREEN} SSL Certificate for $domain is fine  | tee -a checklog.log
 	printf >&2 "\n\n"
 
@@ -319,6 +319,10 @@ else
     echo -ne ${RED} SSL Certificate has expired or doesnt exist for $domain  | tee -a checklog.log
 	printf >&2 "\n\n"
 fi
+
+# Get List of Certbot Certificates
+sudo certbot certificates | tee -a checklog.log
+
 	echo -ne ${YELLOW} Getting summary output of logs | tee -a checklog.log  
 
 tail /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log  | tee -a checklog.log

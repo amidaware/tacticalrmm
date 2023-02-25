@@ -59,6 +59,6 @@ class APIAuthentication(BaseAuthentication):
 
         # check if token is expired
         if apikey.expiration and apikey.expiration < djangotime.now():
-            raise exceptions.AuthenticationFailed(_("The token as expired."))
+            raise exceptions.AuthenticationFailed(_("The token has expired."))
 
         return apikey.user, apikey.key

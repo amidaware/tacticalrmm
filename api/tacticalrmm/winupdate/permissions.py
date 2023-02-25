@@ -9,5 +9,5 @@ class AgentWinUpdatePerms(permissions.BasePermission):
             return _has_perm(r, "can_manage_winupdates") and _has_perm_on_agent(
                 r.user, view.kwargs["agent_id"]
             )
-        else:
-            return _has_perm(r, "can_manage_winupdates")
+
+        return _has_perm(r, "can_manage_winupdates")

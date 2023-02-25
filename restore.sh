@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="41"
+SCRIPT_VERSION="46"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -13,7 +13,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.6'
+PYTHON_VER='3.10.8'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmrestore_XXXXXXXXXX")
@@ -28,6 +28,18 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+arch=$(uname -m)
+if [ "$arch" != "x86_64" ]; then
+  echo -ne "${RED}ERROR: Only x86_64 arch is supported, not ${arch}${NC}\n"
+  exit 1
+fi
+
+memTotal=$(grep -i memtotal /proc/meminfo | awk '{print $2}')
+if [[ $memTotal -lt 3627528 ]]; then
+        echo -ne "${RED}ERROR: A minimum of 4GB of RAM is required.${NC}\n"
+        exit 1
+fi
 
 osname=$(lsb_release -si); osname=${osname^}
 osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
@@ -133,23 +145,47 @@ echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list > /dev/null
 sudo apt update
 sudo apt install -y nginx
 sudo systemctl stop nginx
-sudo rm -rf /etc/nginx
-sudo mkdir /etc/nginx
-sudo tar -xzf $tmp_dir/nginx/etc-nginx.tar.gz -C /etc/nginx
 
-rmmdomain=$(grep server_name /etc/nginx/sites-available/rmm.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
-frontenddomain=$(grep server_name /etc/nginx/sites-available/frontend.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
-meshdomain=$(grep server_name /etc/nginx/sites-available/meshcentral.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
+nginxdefaultconf='/etc/nginx/nginx.conf'
 
+nginxconf="$(cat << EOF
+worker_rlimit_nofile 1000000;
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
 
-print_green 'Restoring hosts file'
+events {
+        worker_connections 4096;
+}
 
-HAS_11=$(grep 127.0.1.1 /etc/hosts)
-if [[ $HAS_11 ]]; then
-  sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} ${frontenddomain} ${meshdomain}/" /etc/hosts
-else
-  echo "127.0.1.1 ${rmmdomain} ${frontenddomain} ${meshdomain}" | sudo tee --append /etc/hosts > /dev/null
-fi
+http {
+        sendfile on;
+        tcp_nopush on;
+        types_hash_max_size 2048;
+        server_names_hash_bucket_size 64;
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+        gzip on;
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+}
+EOF
+)"
+echo "${nginxconf}" | sudo tee $nginxdefaultconf > /dev/null
+
+for i in sites-available sites-enabled; do
+  sudo mkdir -p /etc/nginx/$i
+done
+
+for i in rmm frontend meshcentral; do
+    sudo cp ${tmp_dir}/nginx/${i}.conf /etc/nginx/sites-available/
+    sudo ln -s /etc/nginx/sites-available/${i}.conf /etc/nginx/sites-enabled/${i}.conf
+done
 
 print_green 'Restoring certbot'
 
@@ -162,7 +198,6 @@ sudo rm -rf /etc/letsencrypt
 sudo mkdir /etc/letsencrypt
 sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
-sudo chmod 775 -R /etc/letsencrypt
 
 print_green 'Restoring celery configs'
 
@@ -200,8 +235,12 @@ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-
 sudo apt update
 sudo apt install -y postgresql-14
 sleep 2
-sudo systemctl enable postgresql
-sudo systemctl restart postgresql
+sudo systemctl enable --now postgresql
+
+until pg_isready > /dev/null; do
+  echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
+  sleep 3
+ done
 
 print_green 'Restoring MongoDB'
 
@@ -209,8 +248,7 @@ wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add 
 echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 sudo apt update
 sudo apt install -y mongodb-org
-sudo systemctl enable mongod
-sudo systemctl restart mongod
+sudo systemctl enable --now mongod
 sleep 5
 mongorestore --gzip $tmp_dir/meshcentral/mongo
 
@@ -255,37 +293,7 @@ npm install meshcentral@${MESH_VER}
 
 print_green 'Restoring the backend'
 
-uwsgini="$(cat << EOF
-[uwsgi]
-chdir = /rmm/api/tacticalrmm
-module = tacticalrmm.wsgi
-home = /rmm/api/env
-master = true
-enable-threads = true
-socket = /rmm/api/tacticalrmm/tacticalrmm.sock
-harakiri = 300
-chmod-socket = 660
-buffer-size = 65535
-vacuum = true
-die-on-term = true
-max-requests = 500
-disable-logging = true
-cheaper-algo = busyness
-cheaper = 4
-cheaper-initial = 4
-workers = 20
-cheaper-step = 2
-cheaper-overload = 3
-cheaper-busyness-min = 5
-cheaper-busyness-max = 10
-# stats = /tmp/stats.socket # uncomment when debugging
-# cheaper-busyness-verbose = true # uncomment when debugging
-EOF
-)"
-echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
-
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
-cp $tmp_dir/rmm/env /rmm/web/.env
 gzip -d $tmp_dir/rmm/debug.log.gz
 cp $tmp_dir/rmm/django_debug.log /rmm/api/tacticalrmm/tacticalrmm/private/log/
 
@@ -322,11 +330,23 @@ pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
+python manage.py create_uwsgi_conf
 python manage.py reload_nats
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)
+webdomain=$(python manage.py get_config webdomain)
+meshdomain=$(python manage.py get_config meshdomain)
 deactivate
+
+print_green 'Restoring hosts file'
+
+HAS_11=$(grep 127.0.1.1 /etc/hosts)
+if [[ $HAS_11 ]]; then
+  sudo sed -i "/127.0.1.1/s/$/ ${API} ${webdomain} ${meshdomain}/" /etc/hosts
+else
+  echo "127.0.1.1 ${API} ${webdomain} ${meshdomain}" | sudo tee --append /etc/hosts > /dev/null
+fi
 
 sudo systemctl enable nats.service
 sudo systemctl start nats.service

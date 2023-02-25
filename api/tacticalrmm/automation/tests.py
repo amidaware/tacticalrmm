@@ -87,7 +87,7 @@ class TestPolicyViews(TacticalTestCase):
             "copyId": policy.pk,
         }
 
-        resp = self.client.post(f"/automation/policies/", data, format="json")
+        resp = self.client.post("/automation/policies/", data, format="json")
         self.assertEqual(resp.status_code, 200)
 
         copied_policy = Policy.objects.get(name=data["name"])
@@ -221,7 +221,6 @@ class TestPolicyViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_get_policy_task_status(self):
-
         # policy with a task
         policy = baker.make("automation.Policy")
         agent = baker.make_recipe("agents.agent", policy=policy)
@@ -240,7 +239,6 @@ class TestPolicyViews(TacticalTestCase):
 
     @patch("automation.tasks.run_win_policy_autotasks_task.delay")
     def test_run_win_task(self, mock_task):
-
         policy = baker.make("automation.Policy")
         # create managed policy tasks
         task = baker.make_recipe("autotasks.task", policy=policy)
@@ -283,7 +281,6 @@ class TestPolicyViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
     def test_update_patch_policy(self):
-
         # test policy doesn't exist
         resp = self.client.put("/automation/patchpolicy/500/", format="json")
         self.assertEqual(resp.status_code, 404)
@@ -396,7 +393,6 @@ class TestPolicyTasks(TacticalTestCase):
         self.setup_coresettings()
 
     def test_policy_related(self):
-
         # Get Site and Client from an agent in list
         clients = baker.make("clients.Client", _quantity=5)
         sites = baker.make("clients.Site", client=cycle(clients), _quantity=25)
@@ -447,7 +443,6 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEqual(len(resp.data["agents"]), 2)
 
     def test_getting_agent_policy_checks(self):
-
         # setup data
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(parent=policy)
@@ -536,7 +531,6 @@ class TestPolicyTasks(TacticalTestCase):
         )
 
     def test_policy_exclusions(self):
-
         # setup data
         policy = baker.make("automation.Policy", active=True)
         baker.make_recipe("checks.memory_check", policy=policy)

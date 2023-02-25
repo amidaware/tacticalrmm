@@ -67,7 +67,10 @@ RemoveOldAgent() {
 InstallMesh() {
     if [ -f /etc/os-release ]; then
         distroID=$(. /etc/os-release; echo $ID)
+        distroIDLIKE=$(. /etc/os-release; echo $ID_LIKE)
         if [[ " ${deb[*]} " =~ " ${distroID} " ]]; then
+            set_locale_deb
+        elif [[ " ${deb[*]} " =~ " ${distroIDLIKE} " ]]; then
             set_locale_deb
         elif [[ " ${rhe[*]} " =~ " ${distroID} " ]]; then
             set_locale_rhel
@@ -78,21 +81,21 @@ InstallMesh() {
 
     meshTmpDir=$(mktemp -d -t "mesh-XXXXXXXXX")
     if [ $? -ne 0 ]; then
-        meshTmpDir='meshtemp'
+        meshTmpDir='/root/meshtemp'
         mkdir -p ${meshTmpDir}
     fi
     meshTmpBin="${meshTmpDir}/meshagent"
     wget --no-check-certificate -q -O ${meshTmpBin} ${meshDL}
     chmod +x ${meshTmpBin}
     mkdir -p ${meshDir}
-    env LC_ALL=en_US.UTF-8 LANGUAGE=en_US ${meshTmpBin} -install --installPath=${meshDir}
+    env LC_ALL=en_US.UTF-8 LANGUAGE=en_US XAUTHORITY=foo DISPLAY=bar ${meshTmpBin} -install --installPath=${meshDir}
     sleep 1
     rm -rf ${meshTmpDir}
 }
 
 RemoveMesh() {
     if [ -f "${meshSystemBin}" ]; then
-        ${meshSystemBin} -uninstall
+        env XAUTHORITY=foo DISPLAY=bar ${meshSystemBin} -uninstall
         sleep 1
     fi
 
@@ -119,6 +122,10 @@ RemoveOldAgent
 
 echo "Downloading tactical agent..."
 wget -q -O ${agentBin} "${agentDL}"
+if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to download tactical agent"
+    exit 1
+fi
 chmod +x ${agentBin}
 
 MESH_NODE_ID=""
@@ -133,7 +140,7 @@ else
     InstallMesh
     sleep 2
     echo "Getting mesh node id..."
-    MESH_NODE_ID=$(${agentBin} -m nixmeshnodeid)
+    MESH_NODE_ID=$(env XAUTHORITY=foo DISPLAY=bar ${agentBin} -m nixmeshnodeid)
 fi
 
 if [ ! -d "${agentBinPath}" ]; then

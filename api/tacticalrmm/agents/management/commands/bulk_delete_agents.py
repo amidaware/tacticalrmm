@@ -10,7 +10,7 @@ from tacticalrmm.utils import reload_nats
 
 
 class Command(BaseCommand):
-    help = "Delete old agents"
+    help = "Delete multiple agents based on criteria"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -24,6 +24,16 @@ class Command(BaseCommand):
             help="Delete agents that equal to or less than this version",
         )
         parser.add_argument(
+            "--site",
+            type=str,
+            help="Delete agents that belong to the specified site",
+        )
+        parser.add_argument(
+            "--client",
+            type=str,
+            help="Delete agents that belong to the specified client",
+        )
+        parser.add_argument(
             "--delete",
             action="store_true",
             help="This will delete agents",
@@ -32,11 +42,15 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         days = kwargs["days"]
         agentver = kwargs["agentver"]
+        site = kwargs["site"]
+        client = kwargs["client"]
         delete = kwargs["delete"]
 
-        if not days and not agentver:
+        if not days and not agentver and not site and not client:
             self.stdout.write(
-                self.style.ERROR("Must have at least one parameter: days or agentver")
+                self.style.ERROR(
+                    "Must have at least one parameter: days, agentver, site, or client"
+                )
             )
             return
 
@@ -49,6 +63,12 @@ class Command(BaseCommand):
 
         if agentver:
             agents = [i for i in q if pyver.parse(i.version) <= pyver.parse(agentver)]
+
+        if site:
+            agents = [i for i in q if i.site.name == site]
+
+        if client:
+            agents = [i for i in q if i.client.name == client]
 
         if not agents:
             self.stdout.write(self.style.ERROR("No agents matched"))
@@ -64,7 +84,7 @@ class Command(BaseCommand):
                 try:
                     agent.delete()
                 except Exception as e:
-                    err = f"Failed to delete agent {agent.hostname}: {str(e)}"
+                    err = f"Failed to delete agent {agent.hostname}: {e}"
                     self.stdout.write(self.style.ERROR(err))
                 else:
                     deleted_count += 1

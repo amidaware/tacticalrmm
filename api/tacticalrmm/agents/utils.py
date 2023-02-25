@@ -1,6 +1,7 @@
 import asyncio
-import tempfile
 import urllib.parse
+from io import StringIO
+from pathlib import Path
 
 from django.conf import settings
 from django.http import FileResponse
@@ -33,7 +34,6 @@ def generate_linux_install(
     api: str,
     download_url: str,
 ) -> FileResponse:
-
     match arch:
         case "amd64":
             arch_id = MeshAgentIdent.LINUX64
@@ -51,12 +51,10 @@ def generate_linux_install(
     uri = get_mesh_ws_url()
     mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
     mesh_dl = (
-        f"{core.mesh_site}/meshagents?id={mesh_id}&installflags=0&meshinstall={arch_id}"
+        f"{core.mesh_site}/meshagents?id={mesh_id}&installflags=2&meshinstall={arch_id}"
     )
 
-    sh = settings.LINUX_AGENT_SCRIPT
-    with open(sh, "r") as f:
-        text = f.read()
+    text = Path(settings.LINUX_AGENT_SCRIPT).read_text()
 
     replace = {
         "agentDLChange": download_url,
@@ -71,11 +69,8 @@ def generate_linux_install(
     for i, j in replace.items():
         text = text.replace(i, j)
 
-    with tempfile.NamedTemporaryFile() as fp:
-        with open(fp.name, "w") as f:
-            f.write(text)
-            f.write("\n")
-
+    text += "\n"
+    with StringIO(text) as fp:
         return FileResponse(
-            open(fp.name, "rb"), as_attachment=True, filename="linux_agent_install.sh"
+            fp.read(), as_attachment=True, filename="linux_agent_install.sh"
         )

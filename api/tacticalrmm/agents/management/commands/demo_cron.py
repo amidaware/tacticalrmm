@@ -5,14 +5,13 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone as djangotime
 
 from agents.models import Agent
-from core.tasks import cache_db_fields_task, handle_resolved_stuff
+from core.tasks import cache_db_fields_task
 
 
 class Command(BaseCommand):
     help = "stuff for demo site in cron"
 
     def handle(self, *args, **kwargs):
-
         random_dates = []
         now = djangotime.now()
 
@@ -30,4 +29,3 @@ class Command(BaseCommand):
             agent.save(update_fields=["last_seen"])
 
         cache_db_fields_task()
-        handle_resolved_stuff()

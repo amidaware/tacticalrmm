@@ -29,6 +29,12 @@ class Script(BaseAuditModel):
         blank=True,
         default=list,
     )
+    env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     syntax = TextField(null=True, blank=True)
     favorite = models.BooleanField(default=False)
     category = models.CharField(max_length=100, null=True, blank=True)
@@ -47,7 +53,7 @@ class Script(BaseAuditModel):
 
     @property
     def code_no_snippets(self):
-        return self.script_body if self.script_body else ""
+        return self.script_body or ""
 
     @property
     def code(self):
@@ -66,11 +72,12 @@ class Script(BaseAuditModel):
                 else:
                     value = ""
 
-                replaced_code = re.sub(snippet.group(), value, replaced_code)
-
+                replaced_code = re.sub(
+                    snippet.group(), value.replace("\\", "\\\\"), replaced_code
+                )
             return replaced_code
-        else:
-            return code
+
+        return code
 
     def hash_script_body(self):
         from django.conf import settings
@@ -112,14 +119,14 @@ class Script(BaseAuditModel):
                     else 90
                 )
 
-                args = script["args"] if "args" in script.keys() else list()
+                args = script["args"] if "args" in script.keys() else []
 
                 syntax = script["syntax"] if "syntax" in script.keys() else ""
 
                 supported_platforms = (
                     script["supported_platforms"]
                     if "supported_platforms" in script.keys()
-                    else list()
+                    else []
                 )
 
                 # if community script exists update it
@@ -187,12 +194,11 @@ class Script(BaseAuditModel):
         return ScriptSerializer(script).data
 
     @classmethod
-    def parse_script_args(cls, agent, shell: str, args: List[str] = list()) -> list:
-
+    def parse_script_args(cls, agent, shell: str, args: List[str] = []) -> list:
         if not args:
             return []
 
-        temp_args = list()
+        temp_args = []
 
         # pattern to match for injection
         pattern = re.compile(".*\\{\\{(.*)\\}\\}.*")
@@ -206,7 +212,7 @@ class Script(BaseAuditModel):
                     string=string,
                     instance=agent,
                     shell=shell,
-                    quotes=True if shell != ScriptShell.CMD else False,
+                    quotes=shell != ScriptShell.CMD,
                 )
 
                 if value:

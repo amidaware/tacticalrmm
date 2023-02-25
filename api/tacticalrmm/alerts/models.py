@@ -10,6 +10,7 @@ from django.utils import timezone as djangotime
 
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
+    AgentHistoryType,
     AgentMonType,
     AlertSeverity,
     AlertType,
@@ -153,7 +154,6 @@ class Alert(models.Model):
         alert_severity: Optional[str] = None,
         skip_create: bool = False,
     ) -> "Optional[Alert]":
-
         # need to pass agent if the check is a policy
         if not cls.objects.filter(
             assigned_check=check,
@@ -171,12 +171,12 @@ class Alert(models.Model):
                     alert_type=AlertType.CHECK,
                     severity=check.alert_severity
                     if check.check_type
-                    not in [
+                    not in {
                         CheckType.MEMORY,
                         CheckType.CPU_LOAD,
                         CheckType.DISK_SPACE,
                         CheckType.SCRIPT,
-                    ]
+                    }
                     else alert_severity,
                     message=f"{agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                     hidden=True,
@@ -216,7 +216,6 @@ class Alert(models.Model):
         agent: "Agent",
         skip_create: bool = False,
     ) -> "Optional[Alert]":
-
         if not cls.objects.filter(
             assigned_task=task,
             agent=agent,
@@ -268,7 +267,7 @@ class Alert(models.Model):
     def handle_alert_failure(
         cls, instance: Union[Agent, TaskResult, CheckResult]
     ) -> None:
-        from agents.models import Agent
+        from agents.models import Agent, AgentHistory
         from autotasks.models import TaskResult
         from checks.models import CheckResult
 
@@ -327,12 +326,12 @@ class Alert(models.Model):
             alert_severity = (
                 instance.assigned_check.alert_severity
                 if instance.assigned_check.check_type
-                not in [
+                not in {
                     CheckType.MEMORY,
                     CheckType.CPU_LOAD,
                     CheckType.DISK_SPACE,
                     CheckType.SCRIPT,
-                ]
+                }
                 else instance.alert_severity
             )
             agent = instance.agent
@@ -341,23 +340,20 @@ class Alert(models.Model):
             if alert_template:
                 dashboard_severities = (
                     alert_template.check_dashboard_alert_severity
-                    if alert_template.check_dashboard_alert_severity
-                    else [
+                    or [
                         AlertSeverity.ERROR,
                         AlertSeverity.WARNING,
                         AlertSeverity.INFO,
                     ]
                 )
-                email_severities = (
-                    alert_template.check_email_alert_severity
-                    if alert_template.check_email_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
-                text_severities = (
-                    alert_template.check_text_alert_severity
-                    if alert_template.check_text_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
+                email_severities = alert_template.check_email_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                text_severities = alert_template.check_text_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
                 always_dashboard = alert_template.check_always_alert
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
@@ -380,21 +376,18 @@ class Alert(models.Model):
 
             # set alert_template settings
             if alert_template:
-                dashboard_severities = (
-                    alert_template.task_dashboard_alert_severity
-                    if alert_template.task_dashboard_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
-                email_severities = (
-                    alert_template.task_email_alert_severity
-                    if alert_template.task_email_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
-                text_severities = (
-                    alert_template.task_text_alert_severity
-                    if alert_template.task_text_alert_severity
-                    else [AlertSeverity.ERROR, AlertSeverity.WARNING]
-                )
+                dashboard_severities = alert_template.task_dashboard_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                email_severities = alert_template.task_email_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                text_severities = alert_template.task_text_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
                 always_dashboard = alert_template.task_always_alert
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text
@@ -417,7 +410,6 @@ class Alert(models.Model):
 
         # create alert in dashboard if enabled
         if dashboard_alert or always_dashboard:
-
             # check if alert template is set and specific severities are configured
             if (
                 not alert_template
@@ -430,7 +422,6 @@ class Alert(models.Model):
 
         # send email if enabled
         if email_alert or always_email:
-
             # check if alert template is set and specific severities are configured
             if (
                 not alert_template
@@ -445,7 +436,6 @@ class Alert(models.Model):
 
         # send text if enabled
         if text_alert or always_text:
-
             # check if alert template is set and specific severities are configured
             if (
                 not alert_template
@@ -462,14 +452,22 @@ class Alert(models.Model):
             and run_script_action
             and not alert.action_run
         ):
+            hist = AgentHistory.objects.create(
+                agent=agent,
+                type=AgentHistoryType.SCRIPT_RUN,
+                script=alert_template.action,
+                username="alert-action-failure",
+            )
             r = agent.run_script(
                 scriptpk=alert_template.action.pk,
                 args=alert.parse_script_args(alert_template.action_args),
                 timeout=alert_template.action_timeout,
                 wait=True,
+                history_pk=hist.pk,
                 full=True,
                 run_on_any=True,
                 run_as_user=False,
+                env_vars=alert_template.action_env_vars,
             )
 
             # command was successful
@@ -491,7 +489,7 @@ class Alert(models.Model):
     def handle_alert_resolve(
         cls, instance: Union[Agent, TaskResult, CheckResult]
     ) -> None:
-        from agents.models import Agent
+        from agents.models import Agent, AgentHistory
         from autotasks.models import TaskResult
         from checks.models import CheckResult
 
@@ -585,14 +583,22 @@ class Alert(models.Model):
             and run_script_action
             and not alert.resolved_action_run
         ):
+            hist = AgentHistory.objects.create(
+                agent=agent,
+                type=AgentHistoryType.SCRIPT_RUN,
+                script=alert_template.action,
+                username="alert-action-resolved",
+            )
             r = agent.run_script(
                 scriptpk=alert_template.resolved_action.pk,
                 args=alert.parse_script_args(alert_template.resolved_action_args),
                 timeout=alert_template.resolved_action_timeout,
                 wait=True,
+                history_pk=hist.pk,
                 full=True,
                 run_on_any=True,
                 run_as_user=False,
+                env_vars=alert_template.resolved_action_env_vars,
             )
 
             # command was successful
@@ -613,11 +619,10 @@ class Alert(models.Model):
                 )
 
     def parse_script_args(self, args: List[str]) -> List[str]:
-
         if not args:
             return []
 
-        temp_args = list()
+        temp_args = []
         # pattern to match for injection
         pattern = re.compile(".*\\{\\{alert\\.(.*)\\}\\}.*")
 
@@ -661,6 +666,12 @@ class AlertTemplate(BaseAuditModel):
         blank=True,
         default=list,
     )
+    action_env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     action_timeout = models.PositiveIntegerField(default=15)
     resolved_action = models.ForeignKey(
         "scripts.Script",
@@ -671,6 +682,12 @@ class AlertTemplate(BaseAuditModel):
     )
     resolved_action_args = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    resolved_action_env_vars = ArrayField(
+        models.TextField(null=True, blank=True),
         null=True,
         blank=True,
         default=list,

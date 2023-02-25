@@ -16,7 +16,6 @@ class TestAuditViews(TacticalTestCase):
         self.setup_coresettings()
 
     def create_audit_records(self):
-
         # create clients for client filter
         site = baker.make("clients.Site")
         agent1 = baker.make_recipe("agents.agent", site=site, hostname="AgentHostname1")
@@ -250,7 +249,7 @@ class TestAuditViews(TacticalTestCase):
             _quantity=4,
         )
 
-        logs = baker.make(
+        logs = baker.make(  # noqa
             "logs.DebugLog",
             log_type=DebugLogType.SYSTEM_ISSUES,
             log_level=cycle([i.value for i in DebugLogLevel]),
@@ -322,7 +321,6 @@ class TestAuditViews(TacticalTestCase):
         self.assertEqual(len(response.data["audit_logs"]), 63)
 
     def test_debuglog_permissions(self):
-
         # create data
         agent = baker.make_recipe("agents.agent")
         agent2 = baker.make_recipe("agents.agent")
@@ -391,8 +389,8 @@ class TestAuditViews(TacticalTestCase):
     def test_get_pendingaction_permissions(self):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
-        actions = baker.make("logs.PendingAction", agent=agent, _quantity=5)
-        unauthorized_actions = baker.make(
+        actions = baker.make("logs.PendingAction", agent=agent, _quantity=5)  # noqa
+        unauthorized_actions = baker.make(  # noqa
             "logs.PendingAction", agent=unauthorized_agent, _quantity=7
         )
 

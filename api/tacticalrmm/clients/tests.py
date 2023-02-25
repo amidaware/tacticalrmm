@@ -23,7 +23,7 @@ class TestClientViews(TacticalTestCase):
     def test_get_clients(self):
         # setup data
         baker.make("clients.Client", _quantity=5)
-        clients = Client.objects.all()
+        clients = Client.objects.all()  # noqa
 
         url = f"{base_url}/"
         r = self.client.get(url, format="json")
@@ -520,7 +520,6 @@ class TestClientPermissions(TacticalTestCase):
     @patch("clients.models.Client.save")
     @patch("clients.models.Client.delete")
     def test_add_clients_permissions(self, save, delete):
-
         data = {"client": {"name": "Client Name"}, "site": {"name": "Site Name"}}
 
         url = f"{base_url}/"
@@ -710,8 +709,8 @@ class TestClientPermissions(TacticalTestCase):
 
         site = baker.make("clients.Site")
         other_site = baker.make("clients.Site")
-        deployments = baker.make("clients.Deployment", site=site, _quantity=5)
-        other_deployments = baker.make(
+        deployments = baker.make("clients.Deployment", site=site, _quantity=5)  # noqa
+        other_deployments = baker.make(  # noqa
             "clients.Deployment", site=other_site, _quantity=7
         )
 

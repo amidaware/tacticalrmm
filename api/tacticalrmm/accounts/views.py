@@ -22,26 +22,13 @@ from .serializers import (
     UserSerializer,
     UserUISerializer,
 )
-
-
-def _is_root_user(request, user) -> bool:
-    root = (
-        hasattr(settings, "ROOT_USER")
-        and request.user != user
-        and user.username == settings.ROOT_USER
-    )
-    demo = (
-        getattr(settings, "DEMO", False) and request.user.username == settings.ROOT_USER
-    )
-    return root or demo
+from accounts.utils import is_root_user
 
 
 class CheckCreds(KnoxLoginView):
-
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
-
         # check credentials
         serializer = AuthTokenSerializer(data=request.data)
         if not serializer.is_valid():
@@ -66,7 +53,6 @@ class CheckCreds(KnoxLoginView):
 
 
 class LoginView(KnoxLoginView):
-
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
@@ -159,7 +145,7 @@ class GetUpdateDeleteUser(APIView):
     def put(self, request, pk):
         user = get_object_or_404(User, pk=pk)
 
-        if _is_root_user(request, user):
+        if is_root_user(request=request, user=user):
             return notify_error("The root user cannot be modified from the UI")
 
         serializer = UserSerializer(instance=user, data=request.data, partial=True)
@@ -170,7 +156,7 @@ class GetUpdateDeleteUser(APIView):
 
     def delete(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        if _is_root_user(request, user):
+        if is_root_user(request=request, user=user):
             return notify_error("The root user cannot be deleted from the UI")
 
         user.delete()
@@ -180,10 +166,11 @@ class GetUpdateDeleteUser(APIView):
 
 class UserActions(APIView):
     permission_classes = [IsAuthenticated, AccountsPerms]
+
     # reset password
     def post(self, request):
         user = get_object_or_404(User, pk=request.data["id"])
-        if _is_root_user(request, user):
+        if is_root_user(request=request, user=user):
             return notify_error("The root user cannot be modified from the UI")
 
         user.set_password(request.data["password"])
@@ -194,7 +181,7 @@ class UserActions(APIView):
     # reset two factor token
     def put(self, request):
         user = get_object_or_404(User, pk=request.data["id"])
-        if _is_root_user(request, user):
+        if is_root_user(request=request, user=user):
             return notify_error("The root user cannot be modified from the UI")
 
         user.totp_key = ""
@@ -206,10 +193,8 @@ class UserActions(APIView):
 
 
 class TOTPSetup(APIView):
-
     # totp setup
     def post(self, request):
-
         user = request.user
         if not user.totp_key:
             code = pyotp.random_base32()
@@ -278,7 +263,7 @@ class GetAddAPIKeys(APIView):
         request.data["key"] = get_random_string(length=32).upper()
         serializer = APIKeySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        obj = serializer.save()
+        serializer.save()
         return Response("The API Key was added")
 
 
@@ -301,3 +286,23 @@ class GetUpdateDeleteAPIKey(APIView):
         apikey = get_object_or_404(APIKey, pk=pk)
         apikey.delete()
         return Response("The API Key was deleted")
+
+
+class ResetPass(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        user = request.user
+        user.set_password(request.data["password"])
+        user.save()
+        return Response("Password was reset.")
+
+
+class Reset2FA(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        user = request.user
+        user.totp_key = ""
+        user.save()
+        return Response("2FA was reset. Log out and back in to setup.")

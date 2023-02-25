@@ -56,3 +56,4 @@ daphne.sock.lock
 .pytest_cache
 coverage.xml
 setup_dev.yml
+11env/

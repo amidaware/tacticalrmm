@@ -264,7 +264,7 @@ class TestAgentUpdate(TacticalTestCase):
         agents = baker.make_recipe("agents.agent", _quantity=5)
         other_agents = baker.make_recipe("agents.agent", _quantity=7)
 
-        url = f"/agents/update/"
+        url = "/agents/update/"
 
         data = {
             "agent_ids": [agent.agent_id for agent in agents]

@@ -45,7 +45,6 @@ class UserSerializer(ModelSerializer):
 
 
 class TOTPSetupSerializer(ModelSerializer):
-
     qr_url = SerializerMethodField()
 
     class Meta:
@@ -80,7 +79,6 @@ class RoleAuditSerializer(ModelSerializer):
 
 
 class APIKeySerializer(ModelSerializer):
-
     username = ReadOnlyField(source="user.username")
 
     class Meta:

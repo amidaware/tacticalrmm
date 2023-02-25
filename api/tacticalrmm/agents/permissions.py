@@ -96,10 +96,8 @@ class RunScriptPerms(permissions.BasePermission):
 
 class AgentNotesPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
-
         # permissions for GET /agents/notes/ endpoint
         if r.method == "GET":
-
             # permissions for /agents/<agent_id>/notes endpoint
             if "agent_id" in view.kwargs.keys():
                 return _has_perm(r, "can_list_notes") and _has_perm_on_agent(
@@ -122,5 +120,5 @@ class AgentHistoryPerms(permissions.BasePermission):
             return _has_perm(r, "can_list_agent_history") and _has_perm_on_agent(
                 r.user, view.kwargs["agent_id"]
             )
-        else:
-            return _has_perm(r, "can_list_agent_history")
+
+        return _has_perm(r, "can_list_agent_history")

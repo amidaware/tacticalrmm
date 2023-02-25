@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="139"
+SCRIPT_VERSION="141"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -10,7 +10,7 @@ NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.6'
+PYTHON_VER='3.10.8'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
@@ -121,43 +121,46 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
 fi
 
 
-for i in nginx nats-api nats rmm daphne celery celerybeat
+printf >&2 "${GREEN}Stopping celery and celerybeat services (this might take a while)...${NC}\n"
+for i in celerybeat celery
+do
+sudo systemctl stop ${i}
+done
+
+for i in nginx nats-api nats rmm daphne
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
 
-rm -f /rmm/api/tacticalrmm/app.ini
+CHECK_DAPHNE=$(grep v2 /etc/systemd/system/daphne.service)
+if ! [[ $CHECK_DAPHNE ]]; then
 
-uwsgini="$(cat << EOF
-[uwsgi]
-chdir = /rmm/api/tacticalrmm
-module = tacticalrmm.wsgi
-home = /rmm/api/env
-master = true
-enable-threads = true
-socket = /rmm/api/tacticalrmm/tacticalrmm.sock
-harakiri = 300
-chmod-socket = 660
-buffer-size = 65535
-vacuum = true
-die-on-term = true
-max-requests = 500
-disable-logging = true
-cheaper-algo = busyness
-cheaper = 4
-cheaper-initial = 4
-workers = 20
-cheaper-step = 2
-cheaper-overload = 3
-cheaper-busyness-min = 5
-cheaper-busyness-max = 10
-# stats = /tmp/stats.socket # uncomment when debugging
-# cheaper-busyness-verbose = true # uncomment when debugging
+sudo rm -f /etc/systemd/system/daphne.service
+
+daphneservice="$(cat << EOF
+[Unit]
+Description=django channels daemon v2
+After=network.target
+
+[Service]
+User=${USER}
+Group=www-data
+WorkingDirectory=/rmm/api/tacticalrmm
+Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+ExecStartPre=rm -f /rmm/daphne.sock
+ExecStartPre=rm -f /rmm/daphne.sock.lock
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
 EOF
 )"
-echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
-
+echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
+sudo systemctl daemon-reload
+fi
 
 if [ ! -f /etc/apt/sources.list.d/nginx.list ]; then
 osname=$(lsb_release -si); osname=${osname^}
@@ -305,7 +308,6 @@ sudo chown ${USER}:${USER} -R ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
-sudo chmod 775 -R /etc/letsencrypt
 
 CHECK_CELERY_CONFIG=$(grep "autoscale=20,2" /etc/conf.d/celery.conf)
 if ! [[ $CHECK_CELERY_CONFIG ]]; then
@@ -349,16 +351,12 @@ python manage.py reload_nats
 python manage.py load_chocos
 python manage.py create_installer_user
 python manage.py create_natsapi_conf
+python manage.py create_uwsgi_conf
+python manage.py clear_redis_celery_locks
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)
 deactivate
-
-printf >&2 "${GREEN}Turning off redis aof${NC}\n"
-sudo redis-cli config set appendonly no
-sudo redis-cli config rewrite
-sudo rm -f /var/lib/redis/appendonly.aof
-
 
 if [ -d /rmm/web ]; then
   rm -rf /rmm/web

@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
+from apiv3.utils import get_agent_config
 from autotasks.models import AutomatedTask, TaskResult
 from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
 from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
@@ -24,6 +25,7 @@ from core.utils import (
     get_core_settings,
     get_mesh_device_id,
     get_mesh_ws_url,
+    get_meshagent_url,
 )
 from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
@@ -45,7 +47,6 @@ from winupdate.models import WinUpdate, WinUpdatePolicy
 
 
 class CheckIn(APIView):
-
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -253,9 +254,7 @@ class CheckRunner(APIView):
                 check.check_result.last_run
                 < djangotime.now()
                 - djangotime.timedelta(
-                    seconds=check.run_interval
-                    if check.run_interval
-                    else agent.check_interval
+                    seconds=check.run_interval or agent.check_interval
                 )
             )
         ]
@@ -365,7 +364,6 @@ class TaskRunner(APIView):
         # check if task is a collector and update the custom field
         if task.custom_field:
             if not task_result.stderr:
-
                 task_result.save_collector_results()
 
                 status = CheckStatus.PASSING
@@ -398,26 +396,33 @@ class MeshExe(APIView):
     def post(self, request):
         match request.data:
             case {"goarch": GoArch.AMD64, "plat": AgentPlat.WINDOWS}:
-                arch = MeshAgentIdent.WIN64
+                ident = MeshAgentIdent.WIN64
             case {"goarch": GoArch.i386, "plat": AgentPlat.WINDOWS}:
-                arch = MeshAgentIdent.WIN32
+                ident = MeshAgentIdent.WIN32
+            case {"goarch": GoArch.AMD64, "plat": AgentPlat.DARWIN} | {
+                "goarch": GoArch.ARM64,
+                "plat": AgentPlat.DARWIN,
+            }:
+                ident = MeshAgentIdent.DARWIN_UNIVERSAL
             case _:
-                return notify_error("Arch not specified")
+                return notify_error("Arch not supported")
 
         core = get_core_settings()
 
         try:
             uri = get_mesh_ws_url()
-            mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
+            mesh_device_id: str = asyncio.run(
+                get_mesh_device_id(uri, core.mesh_device_group)
+            )
         except:
             return notify_error("Unable to connect to mesh to get group id information")
 
-        if settings.DOCKER_BUILD:
-            dl_url = f"{settings.MESH_WS_URL.replace('ws://', 'http://')}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
-        else:
-            dl_url = (
-                f"{core.mesh_site}/meshagents?id={arch}&meshid={mesh_id}&installflags=0"
-            )
+        dl_url = get_meshagent_url(
+            ident=ident,
+            plat=request.data["plat"],
+            mesh_site=core.mesh_site,
+            mesh_device_id=mesh_device_id,
+        )
 
         try:
             return download_mesh_agent(dl_url)
@@ -508,7 +513,7 @@ class Installer(APIView):
         ver = request.data["version"]
         if (
             pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER)
-            and not "-dev" in settings.LATEST_AGENT_VER
+            and "-dev" not in settings.LATEST_AGENT_VER
         ):
             return notify_error(
                 f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
@@ -561,3 +566,12 @@ class AgentHistoryResult(APIView):
         s.is_valid(raise_exception=True)
         s.save()
         return Response("ok")
+
+
+class AgentConfig(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        ret = get_agent_config()
+        return Response(ret._to_dict())

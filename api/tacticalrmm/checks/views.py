@@ -37,7 +37,6 @@ class GetAddChecks(APIView):
         return Response(CheckSerializer(checks, many=True).data)
 
     def post(self, request):
-
         data = request.data.copy()
         # Determine if adding check to Agent and replace agent_id with pk
         if "agent" in data.keys():
@@ -169,6 +168,6 @@ def run_checks(request, agent_id):
     if r == "busy":
         return notify_error(f"Checks are already running on {agent.hostname}")
     elif r == "ok":
-        return Response(f"Checks will now be re-run on {agent.hostname}")
-    else:
-        return notify_error("Unable to contact the agent")
+        return Response(f"Checks will now be run on {agent.hostname}")
+
+    return notify_error("Unable to contact the agent")

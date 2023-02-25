@@ -3,6 +3,9 @@ import os
 import subprocess
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from functools import wraps
 from typing import List, Optional, Union
 
 import pytz
@@ -11,6 +14,8 @@ from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
+from django.db import connection
 from django.http import FileResponse
 from knox.auth import TokenAuthentication
 from rest_framework.response import Response
@@ -21,6 +26,7 @@ from logs.models import DebugLog
 from tacticalrmm.constants import (
     MONTH_DAYS,
     MONTHS,
+    REDIS_LOCK_EXPIRE,
     WEEK_DAYS,
     WEEKS,
     AgentPlat,
@@ -28,7 +34,7 @@ from tacticalrmm.constants import (
     DebugLogType,
     ScriptShell,
 )
-from tacticalrmm.helpers import get_certs, notify_error, get_nats_ports
+from tacticalrmm.helpers import get_certs, get_nats_ports, notify_error
 
 
 def generate_winagent_exe(
@@ -44,7 +50,6 @@ def generate_winagent_exe(
     api: str,
     file_name: str,
 ) -> Union[Response, FileResponse]:
-
     from agents.utils import get_agent_url
 
     inno = (
@@ -72,7 +77,6 @@ def generate_winagent_exe(
     headers = {"Content-type": "application/json"}
 
     with tempfile.NamedTemporaryFile() as fp:
-
         try:
             r = requests.post(
                 settings.EXE_GEN_URL,
@@ -112,7 +116,7 @@ def bitdays_to_string(day: int) -> str:
         return "Every day"
 
     for key, value in WEEK_DAYS.items():
-        if day & int(value):
+        if day & value:
             ret.append(key)
     return ", ".join(ret)
 
@@ -123,7 +127,7 @@ def bitmonths_to_string(month: int) -> str:
         return "Every month"
 
     for key, value in MONTHS.items():
-        if month & int(value):
+        if month & value:
             ret.append(key)
     return ", ".join(ret)
 
@@ -134,7 +138,7 @@ def bitweeks_to_string(week: int) -> str:
         return "Every week"
 
     for key, value in WEEKS.items():
-        if week & int(value):
+        if week & value:
             ret.append(key)
     return ", ".join(ret)
 
@@ -144,11 +148,11 @@ def bitmonthdays_to_string(day: int) -> str:
 
     if day == MONTH_DAYS["Last Day"]:
         return "Last day"
-    elif day == 2147483647 or day == 4294967295:
+    elif day in (2147483647, 4294967295):
         return "Every day"
 
     for key, value in MONTH_DAYS.items():
-        if day & int(value):
+        if day & value:
             ret.append(key)
     return ", ".join(ret)
 
@@ -157,8 +161,8 @@ def convert_to_iso_duration(string: str) -> str:
     tmp = string.upper()
     if "D" in tmp:
         return f"P{tmp.replace('D', 'DT')}"
-    else:
-        return f"PT{tmp}"
+
+    return f"PT{tmp}"
 
 
 def reload_nats() -> None:
@@ -210,6 +214,14 @@ def reload_nats() -> None:
         },
     }
 
+    if "NATS_HTTP_PORT" in os.environ:
+        config["http_port"] = int(os.getenv("NATS_HTTP_PORT"))  # type: ignore
+    elif hasattr(settings, "NATS_HTTP_PORT"):
+        config["http_port"] = settings.NATS_HTTP_PORT  # type: ignore
+
+    if "NATS_WS_COMPRESSION" in os.environ or hasattr(settings, "NATS_WS_COMPRESSION"):
+        config["websocket"]["compression"] = True
+
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
     with open(conf, "w") as f:
         json.dump(config, f)
@@ -243,7 +255,7 @@ class KnoxAuthMiddlewareInstance:
         return await self.app(scope, receive, send)
 
 
-KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(
+KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(  # noqa
     AuthMiddlewareStack(inner)
 )
 
@@ -331,10 +343,13 @@ def replace_db_values(
 
     # check if attr exists and isn't a function
     if hasattr(obj, temp[1]) and not callable(getattr(obj, temp[1])):
-        value = f"'{getattr(obj, temp[1])}'" if quotes else getattr(obj, temp[1])
+        temp1 = getattr(obj, temp[1])
+        if shell == ScriptShell.POWERSHELL and isinstance(temp1, str) and "'" in temp1:
+            temp1 = temp1.replace("'", "''")
+
+        value = f"'{temp1}'" if quotes else temp1
 
     elif CustomField.objects.filter(model=model, name=temp[1]).exists():
-
         field = CustomField.objects.get(model=model, name=temp[1])
         model_fields = getattr(field, f"{model}_fields")
         value = None
@@ -348,7 +363,7 @@ def replace_db_values(
                 value = model_fields.get(**{model: obj}).value
 
         # need explicit None check since a false boolean value will pass default value
-        if value == None and field.default_value != None:
+        if value is None and field.default_value is not None:
             value = field.default_value
 
         # check if value exists and if not use default
@@ -358,9 +373,16 @@ def replace_db_values(
                 if quotes
                 else format_shell_array(value)
             )
-        elif value != None and field.type == CustomFieldType.CHECKBOX:
+        elif value is not None and field.type == CustomFieldType.CHECKBOX:
             value = format_shell_bool(value, shell)
         else:
+            if (
+                shell == ScriptShell.POWERSHELL
+                and isinstance(value, str)
+                and "'" in value
+            ):
+                value = value.replace("'", "''")
+
             value = f"'{value}'" if quotes else value
 
     else:
@@ -372,7 +394,7 @@ def replace_db_values(
         return ""
 
     # log any unhashable type errors
-    if value != None:
+    if value is not None:
         return value
     else:
         DebugLog.error(
@@ -392,5 +414,56 @@ def format_shell_array(value: list[str]) -> str:
 def format_shell_bool(value: bool, shell: Optional[str]) -> str:
     if shell == ScriptShell.POWERSHELL:
         return "$True" if value else "$False"
-    else:
-        return "1" if value else "0"
+
+    return "1" if value else "0"
+
+
+# https://docs.celeryq.dev/en/latest/tutorials/task-cookbook.html#cookbook-task-serial
+@contextmanager
+def redis_lock(lock_id, oid):
+    timeout_at = time.monotonic() + REDIS_LOCK_EXPIRE - 3
+    status = cache.add(lock_id, oid, REDIS_LOCK_EXPIRE)
+    try:
+        yield status
+    finally:
+        if time.monotonic() < timeout_at and status:
+            cache.delete(lock_id)
+
+
+# https://stackoverflow.com/a/57794016
+class DjangoConnectionThreadPoolExecutor(ThreadPoolExecutor):
+    """
+    When a function is passed into the ThreadPoolExecutor via either submit() or map(),
+    this will wrap the function, and make sure that close_django_db_connection() is called
+    inside the thread when it's finished so Django doesn't leak DB connections.
+
+    Since map() calls submit(), only submit() needs to be overwritten.
+    """
+
+    def close_django_db_connection(self):
+        connection.close()
+
+    def generate_thread_closing_wrapper(self, fn):
+        @wraps(fn)
+        def new_func(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            finally:
+                self.close_django_db_connection()
+
+        return new_func
+
+    def submit(*args, **kwargs):
+        if len(args) >= 2:
+            self, fn, *args = args
+            fn = self.generate_thread_closing_wrapper(fn=fn)
+        elif not args:
+            raise TypeError(
+                "descriptor 'submit' of 'ThreadPoolExecutor' object "
+                "needs an argument"
+            )
+        elif "fn" in kwargs:
+            fn = self.generate_thread_closing_wrapper(fn=kwargs.pop("fn"))
+            self, *args = args
+
+        return super(self.__class__, self).submit(fn, *args, **kwargs)

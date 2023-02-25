@@ -95,6 +95,41 @@ disks_linux_deb = [
     },
 ]
 
+disks_mac = [
+    {
+        "free": "94.2 GB",
+        "used": "134.1 GB",
+        "total": "228.3 GB",
+        "device": "/dev/disk3s1s1",
+        "fstype": "apfs",
+        "percent": 58,
+    },
+    {
+        "free": "481.6 MB",
+        "used": "18.4 MB",
+        "total": "500.0 MB",
+        "device": "/dev/disk1s3",
+        "fstype": "apfs",
+        "percent": 3,
+    },
+    {
+        "free": "3.4 GB",
+        "used": "1.6 GB",
+        "total": "5.0 GB",
+        "device": "/dev/disk2s1",
+        "fstype": "apfs",
+        "percent": 32,
+    },
+    {
+        "free": "94.2 GB",
+        "used": "134.1 GB",
+        "total": "228.3 GB",
+        "device": "/dev/disk3s1",
+        "fstype": "apfs",
+        "percent": 58,
+    },
+]
+
 wmi_deb = {
     "cpus": ["AMD Ryzen 9 3900X 12-Core Processor"],
     "gpus": ["Cirrus Logic GD 5446"],
@@ -109,6 +144,22 @@ wmi_pi = {
     "disks": ["MMC SSD mmcblk0 119.4 GB"],
     "local_ips": ["192.168.33.10/24", "fe10::3332:4hgr:9634:1097/64"],
     "make_model": "Raspberry Pi 2 Model B Rev 1.1",
+}
+
+wmi_mac = {
+    "cpus": ["Apple M1"],
+    "gpus": [],
+    "disks": [
+        "Apple APPLE SSD AP0256Q SCSI SSD disk0 233.8 GB",
+        "Apple APPLE SSD AP0256Q SCSI SSD disk1 500.0 MB",
+        "Apple APPLE SSD AP0256Q SCSI SSD disk2 5.0 GB",
+        "Apple APPLE SSD AP0256Q SCSI SSD disk3 228.3 GB",
+    ],
+    "local_ips": [
+        "192.168.45.113/24",
+        "fe80::476:c390:c8dc:11af/64",
+    ],
+    "make_model": "MacBookAir10,1",
 }
 
 check_network_loc_aware_ps1 = r"""

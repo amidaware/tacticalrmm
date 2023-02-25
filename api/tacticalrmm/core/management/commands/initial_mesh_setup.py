@@ -12,16 +12,13 @@ class Command(BaseCommand):
     help = "Sets up initial mesh central configuration"
 
     async def websocket_call(self, uri):
-
         async with websockets.connect(uri) as websocket:
-
             # Get Device groups to see if it exists
             await websocket.send(json.dumps({"action": "meshes"}))
 
             async for message in websocket:
                 response = json.loads(message)
                 if response["action"] == "meshes":
-
                     # If no meshes are present
                     if not response["meshes"]:
                         await websocket.send(

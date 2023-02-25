@@ -30,6 +30,7 @@ class GetWindowsUpdates(APIView):
 
 class ScanWindowsUpdates(APIView):
     permission_classes = [IsAuthenticated, AgentWinUpdatePerms]
+
     # scan for windows updates on agent
     def post(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
@@ -38,7 +39,7 @@ class ScanWindowsUpdates(APIView):
 
         agent.delete_superseded_updates()
         asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
-        return Response(f"A Windows update scan will performed on {agent.hostname}")
+        return Response(f"A Windows update scan will be performed on {agent.hostname}")
 
 
 class InstallWindowsUpdates(APIView):

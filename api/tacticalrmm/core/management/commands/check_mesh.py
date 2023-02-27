@@ -50,7 +50,7 @@ class Command(BaseCommand):
             mesh_id = asyncio.run(get_mesh_device_id(uri, core.mesh_device_group))
         except IndexError:
             self._error(
-                "Error: you are using a custom mesh device group and need to add its name in Global Settings > MeshCentral"
+                "Error: you are using a custom mesh device group name. The name in TRMMs Global Settings > MeshCentral must match a MeshCentral group exactly."
             )
             return
         except Exception as e:

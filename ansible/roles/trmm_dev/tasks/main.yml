@@ -407,7 +407,7 @@
   tags: pip
   ansible.builtin.shell:
     chdir: "{{ backend_dir }}/api"
-    cmd: python3.10 -m venv env
+    cmd: python3.11 -m venv env
 
 - name: update pip to latest
   tags: pip

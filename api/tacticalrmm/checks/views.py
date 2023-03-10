@@ -1,6 +1,9 @@
 import asyncio
 from datetime import datetime as dt
+from typing import TYPE_CHECKING
 
+import msgpack
+import nats
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -14,12 +17,15 @@ from agents.models import Agent
 from alerts.models import Alert
 from automation.models import Policy
 from tacticalrmm.constants import CheckStatus, CheckType
-from tacticalrmm.helpers import notify_error
+from tacticalrmm.helpers import notify_error, setup_nats_options
 from tacticalrmm.permissions import _has_perm_on_agent
 
 from .models import Check, CheckHistory, CheckResult
-from .permissions import ChecksPerms, RunChecksPerms
+from .permissions import BulkRunChecksPerms, ChecksPerms, RunChecksPerms
 from .serializers import CheckHistorySerializer, CheckSerializer
+
+if TYPE_CHECKING:
+    from nats.aio.client import Client as NATSClient
 
 
 class GetAddChecks(APIView):
@@ -171,3 +177,41 @@ def run_checks(request, agent_id):
         return Response(f"Checks will now be run on {agent.hostname}")
 
     return notify_error("Unable to contact the agent")
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, BulkRunChecksPerms])
+def bulk_run_checks(request, target, pk):
+    q = Q()
+    match target:
+        case "client":
+            q = Q(site__client__id=pk)
+        case "site":
+            q = Q(site__id=pk)
+
+    agents = list(
+        Agent.objects.only("agent_id", "site")
+        .filter(q)
+        .values_list("agent_id", flat=True)
+    )
+
+    if not agents:
+        return notify_error("No agents matched query")
+
+    async def _run_check(nc: "NATSClient", sub) -> None:
+        await nc.publish(subject=sub, payload=msgpack.dumps({"func": "runchecks"}))
+
+    async def _run() -> None:
+        opts = setup_nats_options()
+        try:
+            nc = await nats.connect(**opts)
+        except Exception as e:
+            return notify_error(str(e))
+
+        tasks = [_run_check(nc=nc, sub=agent) for agent in agents]
+        await asyncio.gather(*tasks)
+        await nc.close()
+
+    asyncio.run(_run())
+    ret = f"Checks will now be run on {len(agents)} agents"
+    return Response(ret)

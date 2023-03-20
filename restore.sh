@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="46"
+SCRIPT_VERSION="47"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -13,7 +13,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.8'
+PYTHON_VER='3.11.2'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmrestore_XXXXXXXXXX")
@@ -338,7 +338,7 @@ SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 cd /rmm/api
-python3.10 -m venv env
+python3.11 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip

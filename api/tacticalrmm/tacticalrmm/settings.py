@@ -23,14 +23,14 @@ AUTH_USER_MODEL = "accounts.User"
 TRMM_VERSION = "0.15.8-dev"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.13"
+WEB_VERSION = "0.101.14-dev"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.177"
+APP_VER = "0.0.178"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.4.4"
+LATEST_AGENT_VER = "2.4.5-dev"
 
 MESH_VER = "1.1.4"
 
@@ -40,7 +40,7 @@ NATS_SERVER_VER = "2.9.15"
 PIP_VER = "35"
 
 SETUPTOOLS_VER = "67.6.0"
-WHEEL_VER = "0.38.4"
+WHEEL_VER = "0.40.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="141"
+SCRIPT_VERSION="142"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -10,7 +10,7 @@ NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.8'
+PYTHON_VER='3.11.2'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
@@ -209,8 +209,8 @@ if ! sudo nginx -t > /dev/null 2>&1; then
   exit 1
 fi
 
-HAS_PY310=$(python3.10 --version | grep ${PYTHON_VER})
-if ! [[ $HAS_PY310 ]]; then
+HAS_PY311=$(python3.11 --version | grep ${PYTHON_VER})
+if ! [[ $HAS_PY311 ]]; then
   printf >&2 "${GREEN}Updating to ${PYTHON_VER}${NC}\n"
   sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
   numprocs=$(nproc)
@@ -330,7 +330,7 @@ sudo chmod +x /usr/local/bin/nats-api
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/api/env
   cd /rmm/api
-  python3.10 -m venv env
+  python3.11 -m venv env
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip

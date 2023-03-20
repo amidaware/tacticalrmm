@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="71"
+SCRIPT_VERSION="72"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.8'
+PYTHON_VER='3.11.2'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -414,7 +414,7 @@ SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 cd /rmm/api
-python3.10 -m venv env
+python3.11 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip

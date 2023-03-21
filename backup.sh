@@ -1,33 +1,12 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="22"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
-THIS_SCRIPT=$(readlink -f "$0")
-
-TMP_FILE=$(mktemp -p "" "rmmbackup_XXXXXXXXXX")
-curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
-NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
-
-if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}Old backup script detected, downloading and replacing with the latest version...${NC}\n"
-    wget -q "${SCRIPT_URL}" -O /tmp/backup.sh
-    if grep -q SCRIPT_VERSION "/tmp/backup.sh"; then
-        mv /tmp/backup.sh $THIS_SCRIPT
-    else
-        printf >&2 "${RED} File Seems to be Corrupt, Please Run this script again.${NC}\n"
-        rm /tmp/backup.sh
-        exit
-    fi
-    exec ${THIS_SCRIPT}
-fi
-
-rm -f $TMP_FILE
 
 if [[ $* == *--schedule* ]]; then
     (
@@ -35,7 +14,7 @@ if [[ $* == *--schedule* ]]; then
         echo "0 0 * * * /rmm/backup.sh --auto"
     ) | crontab -
     printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
-    exit
+    exit 0
 fi
 
 if [ $EUID -eq 0 ]; then

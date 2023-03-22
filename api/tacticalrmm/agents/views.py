@@ -546,7 +546,7 @@ def install_agent(request):
 
     if request.data["installMethod"] in {"bash", "mac"} and not is_valid:
         return notify_error(
-            "Missing code signing token, or token is no longer valid. Please read the docs for more info."
+            "Linux/Mac agents require code signing. Please see https://docs.tacticalrmm.com/code_signing/ for more info."
         )
 
     inno = f"tacticalagent-v{version}-{plat}-{goarch}"

@@ -50,7 +50,8 @@ localectl set-locale LANG=en_US.UTF-8
 
 RemoveOldAgent() {
     if [ -f "${agentSysD}" ]; then
-        systemctl disable --now ${agentSvcName}
+        systemctl disable ${agentSvcName}
+        systemctl stop ${agentSvcName}
         rm -f ${agentSysD}
         systemctl daemon-reload
     fi
@@ -100,7 +101,8 @@ RemoveMesh() {
     fi
 
     if [ -f "${meshSysD}" ]; then
-        systemctl disable --now ${meshSvcName} > /dev/null 2>&1
+        systemctl stop ${meshSvcName} > /dev/null 2>&1
+        systemctl disable ${meshSvcName} > /dev/null 2>&1
         rm -f ${meshSysD}
     fi
 
@@ -185,4 +187,5 @@ EOF
 echo "${tacticalsvc}" | tee ${agentSysD} > /dev/null
 
 systemctl daemon-reload
-systemctl enable --now ${agentSvcName}
+systemctl enable ${agentSvcName}
+systemctl start ${agentSvcName}

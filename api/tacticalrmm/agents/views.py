@@ -533,6 +533,13 @@ def install_agent(request):
     from core.utils import token_is_valid
     from knox.models import AuthToken
 
+    # TODO rework this ghetto validation hack
+    # https://github.com/amidaware/tacticalrmm/issues/1461
+    try:
+        int(request.data["expires"])
+    except ValueError:
+        return notify_error("Please enter a valid number of hours")
+
     client_id = request.data["client"]
     site_id = request.data["site"]
     version = settings.LATEST_AGENT_VER
@@ -558,7 +565,7 @@ def install_agent(request):
     installer_user = User.objects.filter(is_installer_user=True).first()
 
     _, token = AuthToken.objects.create(
-        user=installer_user, expiry=dt.timedelta(hours=request.data["expires"])
+        user=installer_user, expiry=dt.timedelta(hours=int(request.data["expires"]))
     )
 
     install_flags = [

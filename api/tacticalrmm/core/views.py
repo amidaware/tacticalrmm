@@ -390,7 +390,6 @@ class TwilioSMSTest(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
 
     def post(self, request):
-
         core = get_core_settings()
         if not core.sms_is_configured:
             return notify_error(
@@ -407,7 +406,6 @@ class TwilioSMSTest(APIView):
 @csrf_exempt
 @monitoring_view
 def status(request):
-
     from agents.models import Agent
     from clients.models import Client, Site
 

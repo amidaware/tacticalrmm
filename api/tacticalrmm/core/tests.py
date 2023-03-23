@@ -62,7 +62,6 @@ class TestConsumers(TacticalTestCase):
 
     @database_sync_to_async
     def get_token(self):
-
         token = Token.objects.create(user=self.john)
         return token.key
 
@@ -455,7 +454,6 @@ class TestCoreUtils(TacticalTestCase):
         self.setup_coresettings()
 
     def test_get_meshagent_url_standard(self):
-
         r = get_meshagent_url(
             ident=MeshAgentIdent.DARWIN_UNIVERSAL,
             plat="darwin",
@@ -481,7 +479,6 @@ class TestCoreUtils(TacticalTestCase):
     @override_settings(DOCKER_BUILD=True)
     @override_settings(MESH_WS_URL="ws://tactical-meshcentral:4443")
     def test_get_meshagent_url_docker(self):
-
         r = get_meshagent_url(
             ident=MeshAgentIdent.DARWIN_UNIVERSAL,
             plat="darwin",

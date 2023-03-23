@@ -18,7 +18,6 @@ class GetAddAutoTasks(APIView):
     permission_classes = [IsAuthenticated, AutoTaskPerms]
 
     def get(self, request, agent_id=None, policy=None):
-
         if agent_id:
             agent = get_object_or_404(Agent, agent_id=agent_id)
             tasks = agent.get_tasks_with_policies()
@@ -59,7 +58,6 @@ class GetEditDeleteAutoTask(APIView):
     permission_classes = [IsAuthenticated, AutoTaskPerms]
 
     def get(self, request, pk):
-
         task = get_object_or_404(AutomatedTask, pk=pk)
 
         if task.agent and not _has_perm_on_agent(request.user, task.agent.agent_id):
@@ -68,7 +66,6 @@ class GetEditDeleteAutoTask(APIView):
         return Response(TaskSerializer(task).data)
 
     def put(self, request, pk):
-
         task = get_object_or_404(AutomatedTask, pk=pk)
 
         if task.agent and not _has_perm_on_agent(request.user, task.agent.agent_id):

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="46"
+SCRIPT_VERSION="47"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -13,18 +13,18 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.8'
+PYTHON_VER='3.11.2'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmrestore_XXXXXXXXXX")
-curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
+curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}A newer version of this restore script is available.${NC}\n"
-    printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
-    rm -f $TMP_FILE
-    exit 1
+  printf >&2 "${YELLOW}A newer version of this restore script is available.${NC}\n"
+  printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
+  rm -f $TMP_FILE
+  exit 1
 fi
 
 rm -f $TMP_FILE
@@ -37,12 +37,13 @@ fi
 
 memTotal=$(grep -i memtotal /proc/meminfo | awk '{print $2}')
 if [[ $memTotal -lt 3627528 ]]; then
-        echo -ne "${RED}ERROR: A minimum of 4GB of RAM is required.${NC}\n"
-        exit 1
+  echo -ne "${RED}ERROR: A minimum of 4GB of RAM is required.${NC}\n"
+  exit 1
 fi
 
-osname=$(lsb_release -si); osname=${osname^}
-osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
+osname=$(lsb_release -si)
+osname=${osname^}
+osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
 fullrel=$(lsb_release -sd)
 codename=$(lsb_release -sc)
 relno=$(lsb_release -sr | cut -d. -f1)
@@ -58,10 +59,10 @@ fi
 if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
   echo $fullrel
 else
- echo $fullrel
- echo -ne "${RED}Supported versions: Ubuntu 20.04, Debian 10 and 11\n"
- echo -ne "Your system does not appear to be supported${NC}\n"
- exit 1
+  echo $fullrel
+  echo -ne "${RED}Supported versions: Ubuntu 20.04, Debian 10 and 11\n"
+  echo -ne "Your system does not appear to be supported${NC}\n"
+  exit 1
 fi
 
 if ([ "$osname" = "ubuntu" ]); then
@@ -93,7 +94,6 @@ if [ ! -f "${1}" ]; then
   exit 1
 fi
 
-
 print_green() {
   printf >&2 "${GREEN}%0.s-${NC}" {1..80}
   printf >&2 "\n"
@@ -102,7 +102,6 @@ print_green() {
   printf >&2 "\n"
 }
 
-
 print_green 'Unpacking backup'
 tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
 
@@ -110,7 +109,6 @@ tar -xf ${1} -C $tmp_dir
 
 strip="User="
 ORIGUSER=$(grep ${strip} $tmp_dir/systemd/rmm.service | sed -e "s/^${strip}//")
-
 
 if [ "$ORIGUSER" != "$USER" ]; then
   printf >&2 "${RED}ERROR: You must run this restore script from the same user account used on your old server: ${GREEN}${ORIGUSER}${NC}\n"
@@ -135,12 +133,13 @@ print_green 'Restoring Nginx'
 
 wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
 
-nginxrepo="$(cat << EOF
+nginxrepo="$(
+  cat <<EOF
 deb https://nginx.org/packages/$osname/ $codename nginx
 deb-src https://nginx.org/packages/$osname/ $codename nginx
 EOF
 )"
-echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list > /dev/null
+echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
 
 sudo apt update
 sudo apt install -y nginx
@@ -148,7 +147,8 @@ sudo systemctl stop nginx
 
 nginxdefaultconf='/etc/nginx/nginx.conf'
 
-nginxconf="$(cat << EOF
+nginxconf="$(
+  cat <<EOF
 worker_rlimit_nofile 1000000;
 user www-data;
 worker_processes auto;
@@ -176,15 +176,15 @@ http {
 }
 EOF
 )"
-echo "${nginxconf}" | sudo tee $nginxdefaultconf > /dev/null
+echo "${nginxconf}" | sudo tee $nginxdefaultconf >/dev/null
 
 for i in sites-available sites-enabled; do
   sudo mkdir -p /etc/nginx/$i
 done
 
 for i in rmm frontend meshcentral; do
-    sudo cp ${tmp_dir}/nginx/${i}.conf /etc/nginx/sites-available/
-    sudo ln -s /etc/nginx/sites-available/${i}.conf /etc/nginx/sites-enabled/${i}.conf
+  sudo cp ${tmp_dir}/nginx/${i}.conf /etc/nginx/sites-available/
+  sudo ln -s /etc/nginx/sites-available/${i}.conf /etc/nginx/sites-enabled/${i}.conf
 done
 
 print_green 'Restoring certbot'
@@ -224,7 +224,6 @@ sudo make altinstall
 cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
-
 print_green 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
 
@@ -237,21 +236,10 @@ sudo apt install -y postgresql-14
 sleep 2
 sudo systemctl enable --now postgresql
 
-until pg_isready > /dev/null; do
+until pg_isready >/dev/null; do
   echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
   sleep 3
- done
-
-print_green 'Restoring MongoDB'
-
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-sudo apt update
-sudo apt install -y mongodb-org
-sudo systemctl enable --now mongod
-sleep 5
-mongorestore --gzip $tmp_dir/meshcentral/mongo
-
+done
 
 sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
@@ -290,6 +278,33 @@ sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
 npm install meshcentral@${MESH_VER}
 
+print_green 'Restoring MeshCentral DB'
+
+if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
+  if ! which jq >/dev/null; then
+    sudo apt-get install -y jq >null
+  fi
+  MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
+  MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
+  sudo -u postgres psql -c "DROP DATABASE IF EXISTS meshcentral"
+  sudo -u postgres psql -c "CREATE DATABASE meshcentral"
+  sudo -u postgres psql -c "CREATE USER ${MESH_POSTGRES_USER} WITH PASSWORD '${MESH_POSTGRES_PW}'"
+  sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET client_encoding TO 'utf8'"
+  sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET default_transaction_isolation TO 'read committed'"
+  sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET timezone TO 'UTC'"
+  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESH_POSTGRES_USER}"
+  gzip -d $tmp_dir/postgres/mesh-db*.psql.gz
+  PGPASSWORD=${MESH_POSTGRES_PW} psql -h localhost -U ${MESH_POSTGRES_USER} -d meshcentral -f $tmp_dir/postgres/mesh-db*.psql
+else
+  print_green 'Installing MongoDB'
+  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+  echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+  sudo apt update
+  sudo apt install -y mongodb-org
+  sudo systemctl enable --now mongod
+  sleep 5
+  mongorestore --gzip $tmp_dir/meshcentral/mongo
+fi
 
 print_green 'Restoring the backend'
 
@@ -314,14 +329,14 @@ sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isola
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
 
-gzip -d $tmp_dir/postgres/*.psql.gz
+gzip -d $tmp_dir/postgres/db*.psql.gz
 PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql
 
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 cd /rmm/api
-python3.10 -m venv env
+python3.11 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
@@ -345,7 +360,7 @@ HAS_11=$(grep 127.0.1.1 /etc/hosts)
 if [[ $HAS_11 ]]; then
   sudo sed -i "/127.0.1.1/s/$/ ${API} ${webdomain} ${meshdomain}/" /etc/hosts
 else
-  echo "127.0.1.1 ${API} ${webdomain} ${meshdomain}" | sudo tee --append /etc/hosts > /dev/null
+  echo "127.0.1.1 ${API} ${webdomain} ${meshdomain}" | sudo tee --append /etc/hosts >/dev/null
 fi
 
 sudo systemctl enable nats.service
@@ -357,10 +372,9 @@ webtar="trmm-web-v${WEB_VERSION}.tar.gz"
 wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
 sudo mkdir -p /var/www/rmm
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
-echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js > /dev/null
+echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null
 sudo chown www-data:www-data -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
-
 
 # reset perms
 sudo chown ${USER}:${USER} -R /rmm
@@ -373,8 +387,7 @@ sudo chown -R $USER:$GROUP /home/${USER}/.cache
 print_green 'Enabling Services'
 sudo systemctl daemon-reload
 
-for i in celery.service celerybeat.service rmm.service daphne.service nats-api.service nginx
-do
+for i in celery.service celerybeat.service rmm.service daphne.service nats-api.service nginx; do
   sudo systemctl enable ${i}
   sudo systemctl stop ${i}
   sudo systemctl start ${i}

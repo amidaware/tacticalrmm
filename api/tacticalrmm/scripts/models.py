@@ -195,7 +195,6 @@ class Script(BaseAuditModel):
 
     @classmethod
     def parse_script_args(cls, agent, shell: str, args: List[str] = []) -> list:
-
         if not args:
             return []
 

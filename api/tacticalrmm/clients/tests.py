@@ -520,7 +520,6 @@ class TestClientPermissions(TacticalTestCase):
     @patch("clients.models.Client.save")
     @patch("clients.models.Client.delete")
     def test_add_clients_permissions(self, save, delete):
-
         data = {"client": {"name": "Client Name"}, "site": {"name": "Site Name"}}
 
         url = f"{base_url}/"

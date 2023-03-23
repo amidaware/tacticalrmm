@@ -165,7 +165,6 @@ def sysd_svc_is_running(svc: str) -> bool:
 def get_meshagent_url(
     *, ident: "MeshAgentIdent", plat: str, mesh_site: str, mesh_device_id: str
 ) -> str:
-
     if settings.DOCKER_BUILD:
         base = settings.MESH_WS_URL.replace("ws://", "http://")
     else:

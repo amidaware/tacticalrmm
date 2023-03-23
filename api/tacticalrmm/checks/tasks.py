@@ -46,7 +46,6 @@ def handle_check_email_alert_task(
 
 @app.task
 def handle_check_sms_alert_task(pk: int, alert_interval: Optional[float] = None) -> str:
-
     try:
         alert = Alert.objects.get(pk=pk)
     except Alert.DoesNotExist:
@@ -79,7 +78,6 @@ def handle_check_sms_alert_task(pk: int, alert_interval: Optional[float] = None)
 
 @app.task
 def handle_resolved_check_sms_alert_task(pk: int) -> str:
-
     try:
         alert = Alert.objects.get(pk=pk)
     except Alert.DoesNotExist:
@@ -100,7 +98,6 @@ def handle_resolved_check_sms_alert_task(pk: int) -> str:
 
 @app.task
 def handle_resolved_check_email_alert_task(pk: int) -> str:
-
     try:
         alert = Alert.objects.get(pk=pk)
     except Alert.DoesNotExist:

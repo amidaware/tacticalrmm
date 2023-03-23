@@ -216,7 +216,6 @@ class Policy(BaseAuditModel):
 
     @staticmethod
     def get_policy_tasks(agent: "Agent") -> "List[AutomatedTask]":
-
         # List of all tasks to be applied
         tasks = []
 
@@ -235,7 +234,6 @@ class Policy(BaseAuditModel):
 
     @staticmethod
     def get_policy_checks(agent: "Agent") -> "List[Check]":
-
         # Get checks added to agent directly
         agent_checks = list(agent.agentchecks.all())
 

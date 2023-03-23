@@ -13,7 +13,6 @@ from tacticalrmm.constants import AgentMonType
 
 class DashInfo(AsyncJsonWebsocketConsumer):
     async def connect(self):
-
         self.user = self.scope["user"]
 
         if isinstance(self.user, AnonymousUser):
@@ -24,7 +23,6 @@ class DashInfo(AsyncJsonWebsocketConsumer):
         self.dash_info = asyncio.create_task(self.send_dash_info())
 
     async def disconnect(self, close_code):
-
         with suppress(Exception):
             self.dash_info.cancel()
 

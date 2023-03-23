@@ -100,7 +100,6 @@ def remove_orphaned_win_tasks(self) -> str:
 
         for agent in _get_agent_qs():
             if agent.status == AGENT_STATUS_ONLINE:
-
                 names = [task.win_task_name for task in agent.get_tasks_with_policies()]
                 items.append(AgentTup._make([agent.agent_id, names]))
 
@@ -158,7 +157,6 @@ def remove_orphaned_win_tasks(self) -> str:
 
 @app.task
 def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) -> str:
-
     try:
         alert = Alert.objects.get(pk=pk)
     except Alert.DoesNotExist:
@@ -191,7 +189,6 @@ def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) 
 
 @app.task
 def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) -> str:
-
     try:
         alert = Alert.objects.get(pk=pk)
     except Alert.DoesNotExist:
@@ -224,7 +221,6 @@ def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) ->
 
 @app.task
 def handle_resolved_task_sms_alert(pk: int) -> str:
-
     try:
         alert = Alert.objects.get(pk=pk)
     except Alert.DoesNotExist:
@@ -245,7 +241,6 @@ def handle_resolved_task_sms_alert(pk: int) -> str:
 
 @app.task
 def handle_resolved_task_email_alert(pk: int) -> str:
-
     try:
         alert = Alert.objects.get(pk=pk)
     except Alert.DoesNotExist:

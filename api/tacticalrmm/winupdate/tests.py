@@ -79,7 +79,6 @@ class TestWinUpdatePermissions(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     def test_get_scan_install_permissions(self, nats_cmd):
-
         agent = baker.make_recipe("agents.agent")
         baker.make("winupdate.WinUpdatePolicy", agent=agent)
         unauthorized_agent = baker.make_recipe("agents.agent")

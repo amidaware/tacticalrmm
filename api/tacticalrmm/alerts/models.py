@@ -154,7 +154,6 @@ class Alert(models.Model):
         alert_severity: Optional[str] = None,
         skip_create: bool = False,
     ) -> "Optional[Alert]":
-
         # need to pass agent if the check is a policy
         if not cls.objects.filter(
             assigned_check=check,
@@ -217,7 +216,6 @@ class Alert(models.Model):
         agent: "Agent",
         skip_create: bool = False,
     ) -> "Optional[Alert]":
-
         if not cls.objects.filter(
             assigned_task=task,
             agent=agent,
@@ -412,7 +410,6 @@ class Alert(models.Model):
 
         # create alert in dashboard if enabled
         if dashboard_alert or always_dashboard:
-
             # check if alert template is set and specific severities are configured
             if (
                 not alert_template
@@ -425,7 +422,6 @@ class Alert(models.Model):
 
         # send email if enabled
         if email_alert or always_email:
-
             # check if alert template is set and specific severities are configured
             if (
                 not alert_template
@@ -440,7 +436,6 @@ class Alert(models.Model):
 
         # send text if enabled
         if text_alert or always_text:
-
             # check if alert template is set and specific severities are configured
             if (
                 not alert_template
@@ -624,7 +619,6 @@ class Alert(models.Model):
                 )
 
     def parse_script_args(self, args: List[str]) -> List[str]:
-
         if not args:
             return []
 

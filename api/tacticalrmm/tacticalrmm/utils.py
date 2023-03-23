@@ -50,7 +50,6 @@ def generate_winagent_exe(
     api: str,
     file_name: str,
 ) -> Union[Response, FileResponse]:
-
     from agents.utils import get_agent_url
 
     inno = (
@@ -78,7 +77,6 @@ def generate_winagent_exe(
     headers = {"Content-type": "application/json"}
 
     with tempfile.NamedTemporaryFile() as fp:
-
         try:
             r = requests.post(
                 settings.EXE_GEN_URL,
@@ -351,7 +349,6 @@ def replace_db_values(
         value = f"'{temp1}'" if quotes else temp1
 
     elif CustomField.objects.filter(model=model, name=temp[1]).exists():
-
         field = CustomField.objects.get(model=model, name=temp[1])
         model_fields = getattr(field, f"{model}_fields")
         value = None

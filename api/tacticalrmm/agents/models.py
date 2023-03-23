@@ -430,7 +430,6 @@ class Agent(BaseAuditModel):
     def get_checks_with_policies(
         self, exclude_overridden: bool = False
     ) -> "List[Check]":
-
         if exclude_overridden:
             checks = (
                 list(
@@ -445,12 +444,10 @@ class Agent(BaseAuditModel):
         return self.add_check_results(checks)
 
     def get_tasks_with_policies(self) -> "List[AutomatedTask]":
-
         tasks = list(self.autotasks.all()) + self.get_tasks_from_policies()
         return self.add_task_results(tasks)
 
     def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":
-
         results = self.taskresults.all()  # type: ignore
 
         for task in tasks:
@@ -462,7 +459,6 @@ class Agent(BaseAuditModel):
         return tasks
 
     def add_check_results(self, checks: "List[Check]") -> "List[Check]":
-
         results = self.checkresults.all()  # type: ignore
 
         for check in checks:
@@ -524,7 +520,6 @@ class Agent(BaseAuditModel):
         # determine if any agent checks have a custom interval and set the lowest interval
         for check in self.get_checks_with_policies():
             if check.run_interval and check.run_interval < interval:
-
                 # don't allow check runs less than 15s
                 interval = 15 if check.run_interval < 15 else check.run_interval
 
@@ -542,7 +537,6 @@ class Agent(BaseAuditModel):
         run_as_user: bool = False,
         env_vars: list[str] = [],
     ) -> Any:
-
         from scripts.models import Script
 
         script = Script.objects.get(pk=scriptpk)
@@ -799,7 +793,6 @@ class Agent(BaseAuditModel):
     async def nats_cmd(
         self, data: Dict[Any, Any], timeout: int = 30, wait: bool = True
     ) -> Any:
-
         opts = setup_nats_options()
         try:
             nc = await nats.connect(**opts)

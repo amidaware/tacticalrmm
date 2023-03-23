@@ -7,10 +7,8 @@ if TYPE_CHECKING:
 
 
 class PermissionQuerySet(models.QuerySet):
-
     # filters queryset based on permissions. Works different for Agent, Client, and Site
     def filter_by_role(self, user: "User") -> "models.QuerySet":
-
         role = user.role
 
         # returns normal queryset if user is superuser
@@ -60,7 +58,6 @@ class PermissionQuerySet(models.QuerySet):
             return self.filter(clients_queryset | sites_queryset)
 
         elif model_name == "Alert":
-
             custom_alert_queryset = models.Q()
             if can_view_clients:
                 clients_queryset = models.Q(agent__site__client__in=can_view_clients)

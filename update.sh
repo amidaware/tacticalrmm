@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="141"
+SCRIPT_VERSION="142"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -10,24 +10,24 @@ NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.10.8'
+PYTHON_VER='3.11.2'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
-curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
+curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}Old update script detected, downloading and replacing with the latest version...${NC}\n"
-    wget -q "${SCRIPT_URL}" -O update.sh
-    exec ${THIS_SCRIPT}
+  printf >&2 "${YELLOW}Old update script detected, downloading and replacing with the latest version...${NC}\n"
+  wget -q "${SCRIPT_URL}" -O update.sh
+  exec ${THIS_SCRIPT}
 fi
 
 rm -f $TMP_FILE
 
 force=false
 if [[ $* == *--force* ]]; then
-    force=true
+  force=true
 fi
 
 if [ $EUID -eq 0 ]; then
@@ -46,7 +46,7 @@ if [ "$ORIGUSER" != "$USER" ]; then
 fi
 
 TMP_SETTINGS=$(mktemp -p "" "rmmsettings_XXXXXXXXXX")
-curl -s -L "${LATEST_SETTINGS_URL}" > ${TMP_SETTINGS}
+curl -s -L "${LATEST_SETTINGS_URL}" >${TMP_SETTINGS}
 
 LATEST_TRMM_VER=$(grep "^TRMM_VERSION" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 CURRENT_TRMM_VER=$(grep "^TRMM_VERSION" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
@@ -67,13 +67,13 @@ cls() {
   printf "\033c"
 }
 
-
 CHECK_NATS_LIMITNOFILE=$(grep LimitNOFILE /etc/systemd/system/nats.service)
 if ! [[ $CHECK_NATS_LIMITNOFILE ]]; then
 
-sudo rm -f /etc/systemd/system/nats.service
+  sudo rm -f /etc/systemd/system/nats.service
 
-natsservice="$(cat << EOF
+  natsservice="$(
+    cat <<EOF
 [Unit]
 Description=NATS Server
 After=network.target
@@ -93,9 +93,9 @@ LimitNOFILE=1000000
 [Install]
 WantedBy=multi-user.target
 EOF
-)"
-echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
-sudo systemctl daemon-reload
+  )"
+  echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service >/dev/null
+  sudo systemctl daemon-reload
 fi
 
 rmmconf='/etc/nginx/sites-available/rmm.conf'
@@ -117,28 +117,26 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
       print "\n"
   }
   { print }
-  ' $rmmconf)" | sudo tee $rmmconf > /dev/null
+  ' $rmmconf)" | sudo tee $rmmconf >/dev/null
 fi
 
-
 printf >&2 "${GREEN}Stopping celery and celerybeat services (this might take a while)...${NC}\n"
-for i in celerybeat celery
-do
-sudo systemctl stop ${i}
+for i in celerybeat celery; do
+  sudo systemctl stop ${i}
 done
 
-for i in nginx nats-api nats rmm daphne
-do
-printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
-sudo systemctl stop ${i}
+for i in nginx nats-api nats rmm daphne; do
+  printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
+  sudo systemctl stop ${i}
 done
 
 CHECK_DAPHNE=$(grep v2 /etc/systemd/system/daphne.service)
 if ! [[ $CHECK_DAPHNE ]]; then
 
-sudo rm -f /etc/systemd/system/daphne.service
+  sudo rm -f /etc/systemd/system/daphne.service
 
-daphneservice="$(cat << EOF
+  daphneservice="$(
+    cat <<EOF
 [Unit]
 Description=django channels daemon v2
 After=network.target
@@ -157,24 +155,26 @@ RestartSec=3s
 [Install]
 WantedBy=multi-user.target
 EOF
-)"
-echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
-sudo systemctl daemon-reload
+  )"
+  echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
+  sudo systemctl daemon-reload
 fi
 
 if [ ! -f /etc/apt/sources.list.d/nginx.list ]; then
-osname=$(lsb_release -si); osname=${osname^}
-osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
-codename=$(lsb_release -sc)
-nginxrepo="$(cat << EOF
+  osname=$(lsb_release -si)
+  osname=${osname^}
+  osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
+  codename=$(lsb_release -sc)
+  nginxrepo="$(
+    cat <<EOF
 deb https://nginx.org/packages/$osname/ $codename nginx
 deb-src https://nginx.org/packages/$osname/ $codename nginx
 EOF
-)"
-echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list > /dev/null
-wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
-sudo apt update
-sudo apt install -y nginx
+  )"
+  echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
+  wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+  sudo apt update
+  sudo apt install -y nginx
 fi
 
 nginxdefaultconf='/etc/nginx/nginx.conf'
@@ -186,22 +186,22 @@ fi
 
 CHECK_NGINX_NOLIMIT=$(grep "worker_rlimit_nofile 1000000" $nginxdefaultconf)
 if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
-sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
-printf >&2 "${GREEN}Increasing nginx open file limit${NC}\n"
-sudo sed -i '1s/^/worker_rlimit_nofile 1000000;\
+  sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
+  printf >&2 "${GREEN}Increasing nginx open file limit${NC}\n"
+  sudo sed -i '1s/^/worker_rlimit_nofile 1000000;\
 /' $nginxdefaultconf
 fi
 
 backend_conf='/etc/nginx/sites-available/rmm.conf'
 CHECK_NGINX_REUSEPORT=$(grep reuseport $backend_conf)
 if ! [[ $CHECK_NGINX_REUSEPORT ]]; then
-printf >&2 "${GREEN}Setting nginx reuseport${NC}\n"
-sudo sed -i 's/listen 443 ssl;/listen 443 ssl reuseport;/g' $backend_conf
+  printf >&2 "${GREEN}Setting nginx reuseport${NC}\n"
+  sudo sed -i 's/listen 443 ssl;/listen 443 ssl reuseport;/g' $backend_conf
 fi
 
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' $nginxdefaultconf
 
-if ! sudo nginx -t > /dev/null 2>&1; then
+if ! sudo nginx -t >/dev/null 2>&1; then
   sudo nginx -t
   echo -ne "\n"
   echo -ne "${RED}You have syntax errors in your nginx configs. See errors above. Please fix them and re-run this script.${NC}\n"
@@ -209,8 +209,8 @@ if ! sudo nginx -t > /dev/null 2>&1; then
   exit 1
 fi
 
-HAS_PY310=$(python3.10 --version | grep ${PYTHON_VER})
-if ! [[ $HAS_PY310 ]]; then
+HAS_PY311=$(python3.11 --version | grep ${PYTHON_VER})
+if ! [[ $HAS_PY311 ]]; then
   printf >&2 "${GREEN}Updating to ${PYTHON_VER}${NC}\n"
   sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
   numprocs=$(nproc)
@@ -302,7 +302,6 @@ fi
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-
 sudo chown ${USER}:${USER} -R /rmm
 sudo chown ${USER}:${USER} -R ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} /var/log/celery
@@ -316,11 +315,12 @@ fi
 
 CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
 if ! [[ $CHECK_ADMIN_ENABLED ]]; then
-adminenabled="$(cat << EOF
+  adminenabled="$(
+    cat <<EOF
 ADMIN_ENABLED = False
 EOF
-)"
-echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
+  )"
+  echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
 fi
 
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
@@ -330,7 +330,7 @@ sudo chmod +x /usr/local/bin/nats-api
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/api/env
   cd /rmm/api
-  python3.10 -m venv env
+  python3.11 -m venv env
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip
@@ -370,14 +370,13 @@ webtar="trmm-web-v${WEB_VERSION}.tar.gz"
 wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
 sudo rm -rf /var/www/rmm/dist
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
-echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js > /dev/null
+echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null
 sudo chown www-data:www-data -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
 
-for i in nats nats-api rmm daphne celery celerybeat nginx
-do
-printf >&2 "${GREEN}Starting ${i} service${NC}\n"
-sudo systemctl start ${i}
+for i in nats nats-api rmm daphne celery celerybeat nginx; do
+  printf >&2 "${GREEN}Starting ${i} service${NC}\n"
+  sudo systemctl start ${i}
 done
 
 sleep 1

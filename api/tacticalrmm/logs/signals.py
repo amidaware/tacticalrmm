@@ -17,7 +17,6 @@ def handle_status(sender, instance: PendingAction, **kwargs):
             instance.action_type == PAAction.SCHED_REBOOT
             and instance.status == PAStatus.PENDING
         ):
-
             reboot_time = dt.datetime.strptime(
                 instance.details["time"], "%Y-%m-%d %H:%M:%S"
             )

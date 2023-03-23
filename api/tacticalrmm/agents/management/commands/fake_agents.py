@@ -75,7 +75,6 @@ class Command(BaseCommand):
         return "".join(random.choice(chars) for _ in range(length))
 
     def handle(self, *args, **kwargs) -> None:
-
         user = User.objects.first()
         if user:
             user.totp_key = "ABSA234234"
@@ -295,7 +294,6 @@ class Command(BaseCommand):
         show_tmp_dir_script.save()
 
         for count_agents in range(AGENTS_TO_GENERATE):
-
             client = random.choice(clients)
 
             if client == clients[0]:
@@ -823,7 +821,6 @@ class Command(BaseCommand):
                 pick = random.randint(1, 10)
 
                 if pick == 5 or pick == 3:
-
                     reboot_time = django_now + djangotime.timedelta(
                         minutes=random.randint(1000, 500000)
                     )

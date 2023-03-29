@@ -5,7 +5,7 @@ import psutil
 import pytz
 from cryptography import x509
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.views.decorators.csrf import csrf_exempt
@@ -409,43 +409,153 @@ def status(request):
     from agents.models import Agent
     from clients.models import Client, Site
 
-    disk_usage: int = round(psutil.disk_usage("/").percent)
-    mem_usage: int = round(psutil.virtual_memory().percent)
-
+    # common metrics bits
     cert_file, _ = get_certs()
     cert_bytes = Path(cert_file).read_bytes()
-
     cert = x509.load_pem_x509_certificate(cert_bytes)
-    expires = pytz.utc.localize(cert.not_valid_after)
-    now = djangotime.now()
-    delta = expires - now
 
-    ret = {
-        "version": settings.TRMM_VERSION,
-        "latest_agent_version": settings.LATEST_AGENT_VER,
-        "agent_count": Agent.objects.count(),
-        "client_count": Client.objects.count(),
-        "site_count": Site.objects.count(),
-        "disk_usage_percent": disk_usage,
-        "mem_usage_percent": mem_usage,
-        "days_until_cert_expires": delta.days,
-        "cert_expired": delta.days < 0,
+    # common services
+    services = {
+        "django": "rmm.service",
+        "mesh": "meshcentral.service",
+        "daphne": "daphne.service",
+        "celery": "celery.service",
+        "celerybeat": "celerybeat.service",
+        "redis": "redis-server.service",
+        "postgres": "postgresql.service",
+        "mongo": "mongod.service",
+        "nats": "nats.service",
+        "nats-api": "nats-api.service",
+        "nginx": "nginx.service",
     }
 
-    if settings.DOCKER_BUILD:
-        ret["services_running"] = "not available in docker"
-    else:
-        ret["services_running"] = {
-            "django": sysd_svc_is_running("rmm.service"),
-            "mesh": sysd_svc_is_running("meshcentral.service"),
-            "daphne": sysd_svc_is_running("daphne.service"),
-            "celery": sysd_svc_is_running("celery.service"),
-            "celerybeat": sysd_svc_is_running("celerybeat.service"),
-            "redis": sysd_svc_is_running("redis-server.service"),
-            "postgres": sysd_svc_is_running("postgresql.service"),
-            "mongo": sysd_svc_is_running("mongod.service"),
-            "nats": sysd_svc_is_running("nats.service"),
-            "nats-api": sysd_svc_is_running("nats-api.service"),
-            "nginx": sysd_svc_is_running("nginx.service"),
+    # TRMM json monitoring
+    if request.method == "POST":
+        disk_usage: int = round(psutil.disk_usage("/").percent)
+        mem_usage: int = round(psutil.virtual_memory().percent)
+
+        cert_expires = pytz.utc.localize(cert.not_valid_after)
+        now = djangotime.now()
+        delta = cert_expires - now
+
+        ret = {
+            "version": settings.TRMM_VERSION,
+            "latest_agent_version": settings.LATEST_AGENT_VER,
+            "agent_count": Agent.objects.count(),
+            "client_count": Client.objects.count(),
+            "site_count": Site.objects.count(),
+            "disk_usage_percent": disk_usage,
+            "mem_usage_percent": mem_usage,
+            "days_until_cert_expires": delta.days,
+            "cert_expired": delta.days < 0,
         }
-    return JsonResponse(ret, json_dumps_params={"indent": 2})
+
+        if settings.DOCKER_BUILD:
+            ret["services_running"] = "not available in docker"
+        else:
+            ret["services_running"] = {}
+            for k, v in services.items():
+                ret["services_running"][k] = sysd_svc_is_running(v)
+        return JsonResponse(ret, json_dumps_params={"indent": 2})
+
+    # TRMM Prometheus monitoring
+    elif request.method == "GET":
+        # get agent counts
+        from clients.serializers import ClientSerializer
+        from django.db.models import Count, Prefetch
+
+        agent_counts = ClientSerializer(
+            Client.objects.order_by("name").prefetch_related(
+                Prefetch(
+                    "sites",
+                    queryset=Site.objects.order_by("name")
+                    .select_related("client")
+                    .annotate(agent_count=Count("agents")),
+                    to_attr="filtered_sites",
+                )
+            ),
+            many=True,
+        ).data
+
+        # generate agent count metrics
+        agent_count_metrics = []
+        for client in agent_counts:
+            for site in client["sites"]:
+                agent_count_metrics.append(
+                    (
+                        {"client": client["name"], "site": site["name"]},
+                        site["agent_count"],
+                    )
+                )
+
+        # create base prometheus metric dataset
+        metrics = {
+            "trmm_buildinfo": {
+                "type": "gauge",
+                "help": "trmm version",
+                "entries": [({"version": settings.TRMM_VERSION}, 1)],
+            },
+            "trmm_meshinfo": {
+                "type": "gauge",
+                "help": "meshcentral version",
+                "entries": [({"version": settings.MESH_VER}, 1)],
+            },
+            "trmm_natsinfo": {
+                "type": "gauge",
+                "help": "nats version",
+                "entries": [({"version": settings.NATS_SERVER_VER}, 1)],
+            },
+            "trmm_appinfo": {
+                "type": "gauge",
+                "help": "vue version",
+                "entries": [({"version": settings.APP_VER}, 1)],
+            },
+            "trmm_agentinfo": {
+                "type": "gauge",
+                "help": "latest version of trmm agent",
+                "entries": [({"version": settings.LATEST_AGENT_VER}, 1)],
+            },
+            "trmm_agents": {
+                "type": "gauge",
+                "help": "number of registered agents in trmm",
+                "entries": agent_count_metrics,
+            },
+            "trmm_cert_expiry": {
+                "type": "gauge",
+                "help": "unix timestamp of certificate expiration",
+                "entries": [({}, cert.not_valid_after.timestamp())],
+            },
+        }
+
+        # add service metrics if this is not a docker build
+        if not settings.DOCKER_BUILD:
+            e = []
+            for k, v in services.items():
+                e.append(({"name": v, "service": k}, int(sysd_svc_is_running(v))))
+
+            metrics["trmm_systemd_unit_state"] = {
+                "type": "gauge",
+                "help": "trmm service status for non docker builds",
+                "entries": e,
+            }
+
+        # render prometheus metrics
+        payload = ""
+        for metric, data in metrics.items():
+            # create help and type hints
+            if "help" in data:
+                payload += "# HELP {} {}\n".format(metric, data["help"])
+            payload += "# TYPE {} {}\n".format(metric, data["type"])
+            # populate the metrics
+            for labels, value in data["entries"]:
+                label_string = ",".join(
+                    ['{}="{}"'.format(i[0], i[1]) for i in labels.items()]
+                )
+                if label_string != "":
+                    label_string = "{{{}}}".format(label_string)
+                payload += "{}{} {}\n".format(metric, label_string, value)
+        return HttpResponse(payload, content_type="text/plain")
+
+    # The monitoring_view decorator should prevent this state from ever occuring.
+    else:
+        return HttpResponse("It should not be possible to be here.\n", status=500)

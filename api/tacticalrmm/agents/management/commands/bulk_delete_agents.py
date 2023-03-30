@@ -34,6 +34,11 @@ class Command(BaseCommand):
             help="Delete agents that belong to the specified client",
         )
         parser.add_argument(
+            "--hostname",
+            type=str,
+            help="Delete agents with hostname starting with argument",
+        )
+        parser.add_argument(
             "--delete",
             action="store_true",
             help="This will delete agents",
@@ -44,12 +49,13 @@ class Command(BaseCommand):
         agentver = kwargs["agentver"]
         site = kwargs["site"]
         client = kwargs["client"]
+        hostname = kwargs["hostname"]
         delete = kwargs["delete"]
 
-        if not days and not agentver and not site and not client:
+        if not days and not agentver and not site and not client and not hostname:
             self.stdout.write(
                 self.style.ERROR(
-                    "Must have at least one parameter: days, agentver, site, or client"
+                    "Must have at least one parameter: days, agentver, site, client or hostname"
                 )
             )
             return
@@ -69,6 +75,9 @@ class Command(BaseCommand):
 
         if client:
             agents = [i for i in q if i.client.name == client]
+
+        if hostname:
+            agents = [i for i in q if i.hostname.startswith(hostname)]
 
         if not agents:
             self.stdout.write(self.style.ERROR("No agents matched"))

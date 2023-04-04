@@ -134,6 +134,10 @@ class GetAgents(APIView):
                         "checkresults",
                         queryset=CheckResult.objects.select_related("assigned_check"),
                     ),
+                    Prefetch(
+                        "custom_fields",
+                        queryset=AgentCustomField.objects.select_related("field"),
+                    ),
                 )
                 .annotate(
                     has_patches_pending=Exists(

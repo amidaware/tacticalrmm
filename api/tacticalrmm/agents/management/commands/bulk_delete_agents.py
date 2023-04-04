@@ -60,26 +60,27 @@ class Command(BaseCommand):
             )
             return
 
-        q = Agent.objects.defer(*AGENT_DEFER)
+        agents = Agent.objects.defer(*AGENT_DEFER)
 
-        agents = []
         if days:
             overdue = djangotime.now() - djangotime.timedelta(days=days)
-            agents = [i for i in q if i.last_seen < overdue]
-
-        if agentver:
-            agents = [i for i in q if pyver.parse(i.version) <= pyver.parse(agentver)]
+            agents = agents.filter(last_seen__lt=overdue)
 
         if site:
-            agents = [i for i in q if i.site.name == site]
+            agents = agents.filter(site__name=site)
 
         if client:
-            agents = [i for i in q if i.client.name == client]
+            agents = agents.filter(site__client__name=client)
 
         if hostname:
-            agents = [i for i in q if i.hostname.startswith(hostname)]
+            agents = agents.filter(hostname__istartswith=hostname)
 
-        if not agents:
+        if agentver:
+            agents = [
+                i for i in agents if pyver.parse(i.version) <= pyver.parse(agentver)
+            ]
+
+        if len(agents) == 0:
             self.stdout.write(self.style.ERROR("No agents matched"))
             return
 

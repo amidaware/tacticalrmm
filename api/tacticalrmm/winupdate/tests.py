@@ -1,4 +1,4 @@
-from itertools import cycle
+# from itertools import cycle
 from unittest.mock import patch
 
 from model_bakery import baker

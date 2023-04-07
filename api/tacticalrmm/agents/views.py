@@ -49,7 +49,7 @@ from tacticalrmm.permissions import (
     _has_perm_on_site,
 )
 from tacticalrmm.utils import get_default_timezone, reload_nats
-from winupdate.models import WinUpdate
+from winupdate.models import WinUpdate, WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
@@ -189,7 +189,6 @@ class GetUpdateDeleteAgent(APIView):
     def get(self, request, agent_id):
         from checks.models import Check, CheckResult
 
-        # agent = get_object_or_404(Agent, agent_id=agent_id)
         agent = get_object_or_404(
             Agent.objects.select_related(
                 "site__server_policy",
@@ -210,6 +209,10 @@ class GetUpdateDeleteAgent(APIView):
                 Prefetch(
                     "custom_fields",
                     queryset=AgentCustomField.objects.select_related("field"),
+                ),
+                Prefetch(
+                    "winupdatepolicy",
+                    queryset=WinUpdatePolicy.objects.select_related("agent", "policy"),
                 ),
             ),
             agent_id=agent_id,

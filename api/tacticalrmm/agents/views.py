@@ -187,7 +187,33 @@ class GetUpdateDeleteAgent(APIView):
 
     # get agent details
     def get(self, request, agent_id):
-        agent = get_object_or_404(Agent, agent_id=agent_id)
+        from checks.models import Check, CheckResult
+
+        # agent = get_object_or_404(Agent, agent_id=agent_id)
+        agent = get_object_or_404(
+            Agent.objects.select_related(
+                "site__server_policy",
+                "site__workstation_policy",
+                "site__client__server_policy",
+                "site__client__workstation_policy",
+                "policy",
+                "alert_template",
+            ).prefetch_related(
+                Prefetch(
+                    "agentchecks",
+                    queryset=Check.objects.select_related("script"),
+                ),
+                Prefetch(
+                    "checkresults",
+                    queryset=CheckResult.objects.select_related("assigned_check"),
+                ),
+                Prefetch(
+                    "custom_fields",
+                    queryset=AgentCustomField.objects.select_related("field"),
+                ),
+            ),
+            agent_id=agent_id,
+        )
         return Response(AgentSerializer(agent).data)
 
     # edit agent

@@ -60,7 +60,7 @@ class Command(BaseCommand):
             )
             return
 
-        agents = Agent.objects.defer(*AGENT_DEFER)
+        agents = Agent.objects.select_related("site__client").defer(*AGENT_DEFER)
 
         if days:
             overdue = djangotime.now() - djangotime.timedelta(days=days)

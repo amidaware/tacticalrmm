@@ -772,6 +772,7 @@ def run_script(request, agent_id):
             nats_timeout=req_timeout,
             emails=emails,
             args=args,
+            history_pk=history_pk,
             run_as_user=run_as_user,
             env_vars=env_vars,
         )

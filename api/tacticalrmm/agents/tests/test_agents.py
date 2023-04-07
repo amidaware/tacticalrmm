@@ -573,12 +573,14 @@ class TestAgentViews(TacticalTestCase):
         }
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         email_task.assert_called_with(
             agentpk=self.agent.pk,
             scriptpk=script.pk,
             nats_timeout=18,
             emails=[],
             args=["abc", "123"],
+            history_pk=hist.pk,
             run_as_user=False,
             env_vars=["hello=world", "foo=bar"],
         )
@@ -588,12 +590,14 @@ class TestAgentViews(TacticalTestCase):
         data["emailMode"] = "custom"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         email_task.assert_called_with(
             agentpk=self.agent.pk,
             scriptpk=script.pk,
             nats_timeout=18,
             emails=["admin@example.com", "bob@example.com"],
             args=["abc", "123"],
+            history_pk=hist.pk,
             run_as_user=False,
             env_vars=["hello=world", "foo=bar"],
         )

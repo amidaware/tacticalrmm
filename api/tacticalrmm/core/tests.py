@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import tempfile
 import requests
 from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
@@ -500,3 +501,141 @@ class TestCoreUtils(TacticalTestCase):
             r,
             "http://tactical-meshcentral:4443/meshagents?id=4&meshid=abc123&installflags=0",
         )
+
+
+class TestMonitoring(TacticalTestCase):
+    url = "/core/status/"
+
+    def setUp(self):
+        self.setup_client()
+        self.setup_coresettings()
+
+        # sample data for generated metrics
+        client1 = baker.make("clients.Client")
+        client1_site1 = baker.make("clients.Site", client=client1)
+        client1_site2 = baker.make("clients.Site", client=client1)
+        baker.make("agents.agent", _quantity=10, site=client1_site1)
+        baker.make("agents.agent", _quantity=13, site=client1_site2)
+        client2 = baker.make("clients.Client")
+        client2_site1 = baker.make("clients.Site", client=client2)
+        baker.make("agents.agent", _quantity=13, site=client2_site1)
+
+        # Generate snakeoil cert with `make-ssl-cert generate-default-snakeoil` on ubuntu
+        # Cert will be in '/etc/ssl/certs/ssl-cert-snakeoil.pem'.
+        # Cert is used only for expiration date, so it can be selfsigned, expired and no key is needed.
+        self.snakeoil_certificate = tempfile.NamedTemporaryFile(delete=False)
+        self.snakeoil_certificate.write(
+            """-----BEGIN CERTIFICATE-----
+MIIC4jCCAcqgAwIBAgIUCFgTym78sGgRHwEmLyGgmr1JjSUwDQYJKoZIhvcNAQEL
+BQAwFzEVMBMGA1UEAwwMZjNjMTQzOWM0NzZjMB4XDTIzMDMzMTA1MTgzOFoXDTMz
+MDMyODA1MTgzOFowFzEVMBMGA1UEAwwMZjNjMTQzOWM0NzZjMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzFWItB4aM/aUWIhk0SS1XKHLHao9/OwbGHet
+lnrlZD2YM/DdUzqdYeYdujyLvWUj1xU+YcFv+vo3Mmu8HQVOKNcEZ5ZilHW/87X8
+6ZjtUzPYmCapxXNTX8yh2EES582uq64j0t3OwfaCJmpJLwjvCnrizfUFe76iy5Ge
+wVviYtkaIfHEwNoJLmFb07rYhNuV4tiwHUhmZqqm5nxpjKbTsI4YHnpSxNktU32C
+vNVnIRIAHDZ8n8wCaKTPZMui9X/IJx1pA3EkbD2givbH/0nYRcd5ZUDxLsTJThob
+8k5kPd1zVXqaH/ufqkekqoiY+kIWsgVd0iWx3qihhydAhRY5SQIDAQABoyYwJDAJ
+BgNVHRMEAjAAMBcGA1UdEQQQMA6CDGYzYzE0MzljNDc2YzANBgkqhkiG9w0BAQsF
+AAOCAQEAH91bAuK3tKf1v4D+t48SWSE2uFjCe6o2CzMwAdM3rVa47X2cw5nKOH5L
+8nQJhJjq/t93DJi4WOpN579NWtTkwXyCl7srSvj8aK4FDKxKcWQNT1PUAa+gh8IB
+WJdEK4lMSatCtA/wsq6jmkTwINZ/ELZp4BRU2gUp8mFU9fVQDMlY+2qwUzzIp97A
+WISWVxML58FDFnQLsaP1SfapVWTTXTh4xnhr7VxklUadcGRnx9+Ig4Ieq27eSCiV
+DC/aSRIyi9HaVZPTMbqLC50auHr/dQIL4pGyxFTD8OJoeRkQgAb1wWuAPhab20Xu
+XyFzZMiRlyNNSPoYVExb65s1bawqew==
+-----END CERTIFICATE-----""".encode(
+                encoding="utf-8"
+            )
+        )
+        self.snakeoil_certificate.close()
+
+    def tearDown(self):
+        from os import unlink
+
+        unlink(self.snakeoil_certificate.name)
+
+    # prometheus tests
+    def test_prometheus_missing_auth_header_request(self):
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 400)
+
+    def test_prometheus_missing_token_config(self):
+        r = self.client.get(self.url, HTTP_Authorization="Bearer MySuperTestSecret")
+        self.assertEqual(r.status_code, 401)
+
+    @override_settings(MON_TOKEN="MySuperTestSecret")
+    def test_prometheus_incorrect_token_request(self):
+        r = self.client.get(self.url, HTTP_Authorization="Bearer NotMySuperTestSecret")
+        self.assertEqual(r.status_code, 401)
+
+    @override_settings(DOCKER_BUILD=True, MON_TOKEN="MySuperTestSecret")
+    def test_prometheus_correct_docker_build_request(self):
+        with self.settings(
+            CERT_FILE=self.snakeoil_certificate.name, KEY_FILE="/do/not/need/a/key/here"
+        ):
+            r = self.client.get(self.url, HTTP_Authorization="Bearer MySuperTestSecret")
+            self.assertEqual(r.status_code, 200)
+
+    @override_settings(MON_TOKEN="MySuperTestSecret")
+    def test_prometheus_correct_request(self):
+        with self.settings(
+            CERT_FILE=self.snakeoil_certificate.name, KEY_FILE="/do/not/need/a/key/here"
+        ):
+            r = self.client.get(self.url, HTTP_Authorization="Bearer MySuperTestSecret")
+            self.assertEqual(r.status_code, 200)
+
+    # invalid tests
+    def test_invalid_request(self):
+        r = self.client.put(self.url)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(
+            r.content,
+            b"Invalid request type\n",
+        )
+
+    # json tests
+    def test_json_invalid_json_request(self):
+        r = self.client.post(
+            self.url,
+            data="I am not json!",
+            content_type="application/json",
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_json_invalid_payload_request(self):
+        r = self.client.post(
+            self.url, data={"notauth": "NotMySuperTestSecret"}, format="json"
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_json_missing_token_request(self):
+        r = self.client.post(
+            self.url, data={"auth": "MySuperTestSecret"}, format="json"
+        )
+        self.assertEqual(r.status_code, 401)
+
+    @override_settings(MON_TOKEN="MySuperTestSecret")
+    def test_json_incorrect_token_request(self):
+        r = self.client.post(
+            self.url, data={"auth": "NotMySuperTestSecret"}, format="json"
+        )
+        self.assertEqual(r.status_code, 401)
+
+    @override_settings(MON_TOKEN="MySuperTestSecret")
+    def test_json_correct_request(self):
+        with self.settings(
+            CERT_FILE=self.snakeoil_certificate.name, KEY_FILE="/do/not/need/a/key/here"
+        ):
+            r = self.client.post(
+                self.url, data={"auth": "MySuperTestSecret"}, format="json"
+            )
+            self.assertEqual(r.status_code, 200)
+
+    @override_settings(DOCKER_BUILD=True, MON_TOKEN="MySuperTestSecret")
+    def test_json_correct_docker_build_request(self):
+        with self.settings(
+            CERT_FILE=self.snakeoil_certificate.name, KEY_FILE="/do/not/need/a/key/here"
+        ):
+            r = self.client.post(
+                self.url, data={"auth": "MySuperTestSecret"}, format="json"
+            )
+            self.assertEqual(r.status_code, 200)

@@ -49,7 +49,7 @@ from tacticalrmm.permissions import (
     _has_perm_on_site,
 )
 from tacticalrmm.utils import get_default_timezone, reload_nats
-from winupdate.models import WinUpdate
+from winupdate.models import WinUpdate, WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
@@ -134,6 +134,10 @@ class GetAgents(APIView):
                         "checkresults",
                         queryset=CheckResult.objects.select_related("assigned_check"),
                     ),
+                    Prefetch(
+                        "custom_fields",
+                        queryset=AgentCustomField.objects.select_related("field"),
+                    ),
                 )
                 .annotate(
                     has_patches_pending=Exists(
@@ -183,7 +187,36 @@ class GetUpdateDeleteAgent(APIView):
 
     # get agent details
     def get(self, request, agent_id):
-        agent = get_object_or_404(Agent, agent_id=agent_id)
+        from checks.models import Check, CheckResult
+
+        agent = get_object_or_404(
+            Agent.objects.select_related(
+                "site__server_policy",
+                "site__workstation_policy",
+                "site__client__server_policy",
+                "site__client__workstation_policy",
+                "policy",
+                "alert_template",
+            ).prefetch_related(
+                Prefetch(
+                    "agentchecks",
+                    queryset=Check.objects.select_related("script"),
+                ),
+                Prefetch(
+                    "checkresults",
+                    queryset=CheckResult.objects.select_related("assigned_check"),
+                ),
+                Prefetch(
+                    "custom_fields",
+                    queryset=AgentCustomField.objects.select_related("field"),
+                ),
+                Prefetch(
+                    "winupdatepolicy",
+                    queryset=WinUpdatePolicy.objects.select_related("agent", "policy"),
+                ),
+            ),
+            agent_id=agent_id,
+        )
         return Response(AgentSerializer(agent).data)
 
     # edit agent
@@ -742,6 +775,7 @@ def run_script(request, agent_id):
             nats_timeout=req_timeout,
             emails=emails,
             args=args,
+            history_pk=history_pk,
             run_as_user=run_as_user,
             env_vars=env_vars,
         )

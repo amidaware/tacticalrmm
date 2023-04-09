@@ -185,7 +185,11 @@ def reload_nats() -> None:
                     "permissions": {
                         "publish": {"allow": agent.agent_id},
                         "subscribe": {"allow": agent.agent_id},
-                        "allow_responses": True,
+                        "allow_responses": {
+                            "expires": getattr(
+                                settings, "NATS_ALLOW_RESPONSE_EXPIRATION", "1435m"
+                            )
+                        },
                     },
                 }
             )

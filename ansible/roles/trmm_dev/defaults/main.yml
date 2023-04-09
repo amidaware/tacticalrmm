@@ -1,7 +1,7 @@
 ---
 user: "tactical"
-python_ver: "3.11.2"
-go_ver: "1.19.7"
+python_ver: "3.11.3"
+go_ver: "1.20.3"
 backend_repo: "https://github.com/amidaware/tacticalrmm.git"
 frontend_repo: "https://github.com/amidaware/tacticalrmm-web.git"
 scripts_repo: "https://github.com/amidaware/community-scripts.git"

@@ -34,6 +34,11 @@ class Command(BaseCommand):
             help="Delete agents that belong to the specified client",
         )
         parser.add_argument(
+            "--hostname",
+            type=str,
+            help="Delete agents with hostname starting with argument",
+        )
+        parser.add_argument(
             "--delete",
             action="store_true",
             help="This will delete agents",
@@ -44,33 +49,38 @@ class Command(BaseCommand):
         agentver = kwargs["agentver"]
         site = kwargs["site"]
         client = kwargs["client"]
+        hostname = kwargs["hostname"]
         delete = kwargs["delete"]
 
-        if not days and not agentver and not site and not client:
+        if not days and not agentver and not site and not client and not hostname:
             self.stdout.write(
                 self.style.ERROR(
-                    "Must have at least one parameter: days, agentver, site, or client"
+                    "Must have at least one parameter: days, agentver, site, client or hostname"
                 )
             )
             return
 
-        q = Agent.objects.defer(*AGENT_DEFER)
+        agents = Agent.objects.select_related("site__client").defer(*AGENT_DEFER)
 
-        agents = []
         if days:
             overdue = djangotime.now() - djangotime.timedelta(days=days)
-            agents = [i for i in q if i.last_seen < overdue]
-
-        if agentver:
-            agents = [i for i in q if pyver.parse(i.version) <= pyver.parse(agentver)]
+            agents = agents.filter(last_seen__lt=overdue)
 
         if site:
-            agents = [i for i in q if i.site.name == site]
+            agents = agents.filter(site__name=site)
 
         if client:
-            agents = [i for i in q if i.client.name == client]
+            agents = agents.filter(site__client__name=client)
 
-        if not agents:
+        if hostname:
+            agents = agents.filter(hostname__istartswith=hostname)
+
+        if agentver:
+            agents = [
+                i for i in agents if pyver.parse(i.version) <= pyver.parse(agentver)
+            ]
+
+        if len(agents) == 0:
             self.stdout.write(self.style.ERROR("No agents matched"))
             return
 

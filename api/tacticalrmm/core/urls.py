@@ -19,4 +19,5 @@ urlpatterns = [
     path("smstest/", views.TwilioSMSTest.as_view()),
     path("clearcache/", views.clear_cache),
     path("status/", views.status),
+    path("openai/generate/", views.OpenAICodeCompletion.as_view()),
 ]

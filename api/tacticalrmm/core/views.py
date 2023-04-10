@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
 
+import requests
+import json
 import psutil
 import pytz
 from cryptography import x509
@@ -13,6 +15,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework.views import APIView
 
 from core.decorators import monitoring_view
@@ -77,6 +80,7 @@ def dashboard_info(request):
     from core.utils import token_is_expired
     from tacticalrmm.utils import get_latest_trmm_ver
 
+    core_settings = get_core_settings()
     return Response(
         {
             "trmm_version": settings.TRMM_VERSION,
@@ -96,6 +100,9 @@ def dashboard_info(request):
             "date_format": request.user.date_format,
             "default_date_format": get_core_settings().date_format,
             "token_is_expired": token_is_expired(),
+            "open_ai_integration_enabled": True
+            if core_settings.open_ai_token
+            else False,
         }
     )
 
@@ -449,3 +456,47 @@ def status(request):
             "nginx": sysd_svc_is_running("nginx.service"),
         }
     return JsonResponse(ret, json_dumps_params={"indent": 2})
+
+
+class OpenAICodeCompletion(APIView):
+    permission_classes = [IsAuthenticated, URLActionPerms]
+
+    def post(self, request: Request) -> Response:
+        settings = get_core_settings()
+
+        if not settings.open_ai_token:
+            return notify_error(
+                "Open AI API Key not found. Open the Core Settings > Integrations."
+            )
+
+        if not request.data["prompt"]:
+            return notify_error("Not prompt field found")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {settings.open_ai_token}",
+        }
+
+        data = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": request.data["prompt"],
+                },
+            ],
+            "model": settings.open_ai_model,
+            "temperature": 0.5,
+            "max_tokens": 1000,
+            "n": 1,
+            "stop": None,
+        }
+
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(data),
+        )
+        response_data = json.loads(response.text)
+
+        print(response_data["choices"][0]["message"]["content"])
+        return Response(response_data["choices"][0]["message"]["content"])

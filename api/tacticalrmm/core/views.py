@@ -459,14 +459,14 @@ def status(request):
 
 
 class OpenAICodeCompletion(APIView):
-    permission_classes = [IsAuthenticated, URLActionPerms]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request: Request) -> Response:
         settings = get_core_settings()
 
         if not settings.open_ai_token:
             return notify_error(
-                "Open AI API Key not found. Open the Core Settings > Integrations."
+                "Open AI API Key not found. Open the Global Settings > Integrations."
             )
 
         if not request.data["prompt"]:
@@ -496,7 +496,12 @@ class OpenAICodeCompletion(APIView):
             headers=headers,
             data=json.dumps(data),
         )
+
         response_data = json.loads(response.text)
 
-        print(response_data["choices"][0]["message"]["content"])
-        return Response(response_data["choices"][0]["message"]["content"])
+        if "error" in response_data:
+            return notify_error(
+                f"The Open AI API returned an error: {response_data['error']['message']}"
+            )
+        else:
+            return Response(response_data["choices"][0]["message"]["content"])

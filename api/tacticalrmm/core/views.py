@@ -1,10 +1,10 @@
+import json
 import re
 from pathlib import Path
 
-import requests
-import json
 import psutil
 import pytz
+import requests
 from cryptography import x509
 from django.conf import settings
 from django.http import JsonResponse
@@ -14,8 +14,8 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.decorators import monitoring_view
@@ -98,11 +98,9 @@ def dashboard_info(request):
             "clear_search_when_switching": request.user.clear_search_when_switching,
             "hosted": getattr(settings, "HOSTED", False),
             "date_format": request.user.date_format,
-            "default_date_format": get_core_settings().date_format,
+            "default_date_format": core_settings.date_format,
             "token_is_expired": token_is_expired(),
-            "open_ai_integration_enabled": True
-            if core_settings.open_ai_token
-            else False,
+            "open_ai_integration_enabled": bool(core_settings.open_ai_token),
         }
     )
 
@@ -466,7 +464,7 @@ class OpenAICodeCompletion(APIView):
 
         if not settings.open_ai_token:
             return notify_error(
-                "Open AI API Key not found. Open the Global Settings > Integrations."
+                "Open AI API Key not found. Open Global Settings > Open AI."
             )
 
         if not request.data["prompt"]:
@@ -491,11 +489,14 @@ class OpenAICodeCompletion(APIView):
             "stop": None,
         }
 
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers=headers,
-            data=json.dumps(data),
-        )
+        try:
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                data=json.dumps(data),
+            )
+        except Exception as e:
+            return notify_error(str(e))
 
         response_data = json.loads(response.text)
 
@@ -503,5 +504,5 @@ class OpenAICodeCompletion(APIView):
             return notify_error(
                 f"The Open AI API returned an error: {response_data['error']['message']}"
             )
-        else:
-            return Response(response_data["choices"][0]["message"]["content"])
+
+        return Response(response_data["choices"][0]["message"]["content"])

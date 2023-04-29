@@ -38,3 +38,11 @@ validators==0.20.0
 vine==5.0.0
 websockets==11.0.3
 zipp==3.17.0
+meshctrl==0.1.15
+pandas==1.4.0
+jinja2==3.0.3
+markdown==3.3.6
+markdown-full-yaml-metadata==2.1.0
+tabulate==0.8.9
+weasyprint==54.3
+ocxsect==0.1.5

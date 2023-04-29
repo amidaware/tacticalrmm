@@ -130,6 +130,7 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
+    "ee.reporting",
 ]
 
 CHANNEL_LAYERS = {

@@ -38,6 +38,7 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
+    path("reporting/", include("ee.reporting.urls")),
 ]
 
 if getattr(settings, "BETA_API_ENABLED", False):

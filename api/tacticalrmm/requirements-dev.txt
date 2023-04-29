@@ -6,6 +6,7 @@ types-pytz
 django-silk
 mypy
 django-stubs
+pandas-stubs
 djangorestframework-stubs
 django-types
 djangorestframework-types

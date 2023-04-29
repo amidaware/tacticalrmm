@@ -78,6 +78,17 @@ DATABASES = {
         'PASSWORD': '${POSTGRES_PASS}',
         'HOST': '${POSTGRES_HOST}',
         'PORT': '${POSTGRES_PORT}',
+    },
+    'reporting': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': '${POSTGRES_DB}',
+        'USER': 'reporting_user',
+        'PASSWORD': 'read_password',
+        'HOST': '${POSTGRES_HOST}',
+        'PORT': '${POSTGRES_PORT}',
+        'OPTIONS': {
+            'options': '-c default_transaction_read_only=on'
+        }
     }
 }
 

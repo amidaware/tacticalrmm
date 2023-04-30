@@ -4,7 +4,7 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-from reporting.storage import ReportAssetStorage
+from ..storage import ReportAssetStorage
 from django.core.exceptions import SuspiciousFileOperation
 from pathlib import Path
 

@@ -97,6 +97,8 @@ ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+pgreportingusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+pgreportingpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 MESHPGUSER=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 MESHPGPWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
@@ -276,7 +278,7 @@ cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_green 'Installing redis and git'
-sudo apt install -y redis git
+sudo apt install -y ca-certificates redis git weasyprint
 
 print_green 'Installing postgresql'
 
@@ -443,6 +445,17 @@ DATABASES = {
         'PASSWORD': '${pgpw}',
         'HOST': 'localhost',
         'PORT': '5432',
+    },
+    'reporting': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'tacticalrmm',
+        'USER': '${pgreportingusername}',
+        'PASSWORD': '${pgreportingpw}',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'OPTIONS': {
+          'options': '-c default_transaction_read_only=on'
+        }    
     }
 }
 
@@ -473,6 +486,10 @@ print_green 'Installing the backend'
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
+sudo mkdir -p /opt/tactical/reporting
+sudo mkdir -p /opt/tactical/reporting/assets
+sudo mkdir -p /opt/tactical/reporting/schemas
+
 cd /rmm/api
 python3.11 -m venv env
 source /rmm/api/env/bin/activate
@@ -486,6 +503,8 @@ python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
+python manage.py generate_json_schemas
+python manage.py setup_reporting_user
 WEB_VERSION=$(python manage.py get_config webversion)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

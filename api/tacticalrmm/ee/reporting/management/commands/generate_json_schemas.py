@@ -3,20 +3,19 @@ Copyright (c) 2023-present Amidaware Inc.
 This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
+import json
 
 from django.apps import apps
 from django.core.management.base import BaseCommand
-from reporting.settings import settings
-
-import json
-
-from reporting.constants import REPORTING_MODELS
+from django.conf import settings as djangosettings
+from ...settings import settings
+from ...constants import REPORTING_MODELS
 
 
 class Command(BaseCommand):
     help = "Generate JSON Schemas"
 
-    def handle(self, *args, **kwargs):
+    def handle(self) -> None:
         generate_schema()
 
 
@@ -120,7 +119,7 @@ def generate_schema() -> None:
         )
 
     schema = {
-        "$id": "https://example.com/schemas/reporting_query.json",
+        "$id": f"https://{djangosettings.ALLOWED_HOSTS[0]}/schemas/reporting_query.json",
         "type": "object",
         "properties": {
             "model": {

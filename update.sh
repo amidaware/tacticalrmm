@@ -124,6 +124,21 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
   ' $rmmconf)" | sudo tee $rmmconf >/dev/null
 fi
 
+CHECK_ASSETS_NGINX=$(grep assets $rmmconf)
+if ! [[ $CHECK_ASSETS_NGINX ]]; then
+  echo "Adding assets to nginx config"
+  echo "$(awk '
+  /location \/ {/ {
+      print "    location /assets/ {"
+      print "        internal;"
+      print "        alias /opt/tactical/reporting/;"
+      print "    }"
+      print "\n"
+  }
+  { print }
+  ' $rmmconf)" | sudo tee $rmmconf >/dev/null
+fi
+
 printf >&2 "${GREEN}Stopping celery and celerybeat services (this might take a while)...${NC}\n"
 for i in celerybeat celery; do
   sudo systemctl stop ${i}
@@ -330,6 +345,27 @@ nats_api='/usr/local/bin/nats-api'
 sudo cp /rmm/natsapi/bin/${natsapi} $nats_api
 sudo chown ${USER}:${USER} $nats_api
 sudo chmod +x $nats_api
+CHECK_REPORTING_DB_CONNECTION=$(grep 'reporting': /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
+if ! [[ $CHECK_REPORTING_DB_CONNECTION ]]; then
+  pgreportingusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+  pgreportingpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+  reportingconnection="$(
+    cat <<EOF
+    DATABASES['reporting'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'tacticalrmm',
+        'USER': '${pgreportingusername}',
+        'PASSWORD': '${pgreportingpw}',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'OPTIONS': {
+            'options': '-c default_transaction_read_only=on'
+        }
+    }
+EOF
+  )"
+  echo "${reportingconnection}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
+fi
 
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/api/env
@@ -346,6 +382,14 @@ else
   pip install -r requirements.txt
 fi
 
+if [ ! -d /opt/tactical/reporting ]; then
+  sudo mkdir -p /opt/tactical/reporting
+fi
+
+if [ ! -d /opt/tactical/reporting/assets ]; then
+  sudo mkdir -p /opt/tactical/reporting/assets
+fi
+
 python manage.py pre_update_tasks
 celery -A tacticalrmm purge -f
 python manage.py migrate
@@ -357,6 +401,8 @@ python manage.py create_installer_user
 python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py clear_redis_celery_locks
+python manage.py generate_json_schemas
+python manage.py setup_reporting_user
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)

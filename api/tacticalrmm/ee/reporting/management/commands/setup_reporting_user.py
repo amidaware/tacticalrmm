@@ -6,23 +6,23 @@ For details, see: https://license.tacticalrmm.com/ee
 
 from django.core.management.base import BaseCommand
 from django.conf import settings as djangosettings
-from psycopg2 import connect, extensions, sql
-from reporting.settings import settings as reportingsettings
-from reporting.constants import REPORTING_MODELS
+from psycopg2 import connect
+from ...settings import settings as reportingsettings
+from ...constants import REPORTING_MODELS
 
 
 class Command(BaseCommand):
     help = "Setup reporting databases and users"
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self) -> None:
         try:
             self.trmm_db_conn = djangosettings.DATABASES["default"]
             self.conn = connect(
-                dbname=self.trmm_db_conn["NAME"],
-                user=self.trmm_db_conn["USER"],
-                host=self.trmm_db_conn["HOST"],
-                password=self.trmm_db_conn["PASSWORD"],
-                port=self.trmm_db_conn["PORT"],
+                dbname=self.trmm_db_conn["NAME"], # type: ignore
+                user=self.trmm_db_conn["USER"], # type: ignore
+                host=self.trmm_db_conn["HOST"], # type: ignore
+                password=self.trmm_db_conn["PASSWORD"], # type: ignore
+                port=self.trmm_db_conn["PORT"], # type: ignore
             )
             self.cursor = self.conn.cursor()
             self.create_reporting_db_user()
@@ -34,7 +34,7 @@ class Command(BaseCommand):
 
     def create_reporting_db_user(self) -> None:
         role_name = "role_reporting"
-        trmm_database_name = self.trmm_db_conn["NAME"]
+        trmm_database_name = self.trmm_db_conn["NAME"] # type: ignore
         reporting_user = reportingsettings.REPORTING_DB_USER
         reporting_password = reportingsettings.REPORTING_DB_PASSWORD
 
@@ -54,3 +54,4 @@ class Command(BaseCommand):
         )
 
         self.cursor.execute(sql_commands)
+        self.cursor.execute("COMMIT")

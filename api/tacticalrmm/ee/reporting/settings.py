@@ -41,7 +41,7 @@ class Settings:
         return getattr(
             self.settings,
             "REPORTING_ASSETS_BASE_PATH",
-            "/opt/tacticalrmm/reporting",
+            "/opt/tactical/reporting",
         )
 
     @property

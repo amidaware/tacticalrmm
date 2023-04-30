@@ -497,7 +497,7 @@ class GetEditDeleteReportDataQuery(APIView):
         return Response()
 
 
-def redirect_assets_to_nginx_if_authenticated(request, path):
+def redirect_assets_to_nginx_if_authenticated(request: Request, path: str) -> HttpResponse:
     if request.user.is_authenticated:
         response = HttpResponse()
         response["X-Accel-Redirect"] = "/assets/" + path

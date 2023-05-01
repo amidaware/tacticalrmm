@@ -15,7 +15,7 @@ from ...constants import REPORTING_MODELS
 class Command(BaseCommand):
     help = "Generate JSON Schemas"
 
-    def handle(self) -> None:
+    def handle(self, *args, **kwargs) -> None:
         generate_schema()
 
 

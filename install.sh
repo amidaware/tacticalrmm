@@ -1,7 +1,24 @@
 #!/usr/bin/env bash
 
+REPO=amidaware
+BRANCH=master
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -r|--repo)
+      REPO="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -b|--branch)
+      BRANCH="$2"
+      shift # past argument
+      shift # past value
+      ;;
+  esac
+done
+
 SCRIPT_VERSION="78"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
+SCRIPT_URL="https://raw.githubusercontent.com/${REPO}/tacticalrmm/${BRANCH}/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
 
@@ -317,13 +334,18 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESH
 sudo -u postgres psql -c "ALTER DATABASE meshcentral OWNER TO ${MESHPGUSER}"
 sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESHPGUSER}"
 
+print_green 'Creating reporting user'
+sudo -u postgres psql -c "CREATE USER ${pgreportingusername} WITH PASSWORD '${pgreportingpw}'"
+sudo -u postgres psql -c "GRANT CONNECT ON DATABASE tacticalrmm TO ${pgreportingusername}"
+sudo -u postgres psql -c "GRANT USAGE ON SCHEMA public TO ${pgreportingusername}"
+
 print_green 'Cloning repos'
 
 sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+git clone https://github.com/${REPO}/tacticalrmm.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -489,6 +511,7 @@ WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 sudo mkdir -p /opt/tactical/reporting
 sudo mkdir -p /opt/tactical/reporting/assets
 sudo mkdir -p /opt/tactical/reporting/schemas
+sudo chown ${USER}:${USER} /opt/tactical
 
 cd /rmm/api
 python3.11 -m venv env
@@ -504,7 +527,7 @@ python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 python manage.py generate_json_schemas
-python manage.py setup_reporting_user
+python manage.py setup_reporting_permissions
 WEB_VERSION=$(python manage.py get_config webversion)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

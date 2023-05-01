@@ -345,10 +345,18 @@ nats_api='/usr/local/bin/nats-api'
 sudo cp /rmm/natsapi/bin/${natsapi} $nats_api
 sudo chown ${USER}:${USER} $nats_api
 sudo chmod +x $nats_api
+echo 'Checking for reporting connection'
 CHECK_REPORTING_DB_CONNECTION=$(grep 'reporting': /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
 if ! [[ $CHECK_REPORTING_DB_CONNECTION ]]; then
   pgreportingusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
   pgreportingpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+
+  echo 'Creating reporting user'
+  sudo -u postgres psql -c "CREATE USER ${pgreportingusername} WITH PASSWORD '${pgreportingpw}'"
+  sudo -u postgres psql -c "GRANT CONNECT ON DATABASE tacticalrmm TO ${pgreportingusername}"
+  sudo -u postgres psql -c "GRANT USAGE ON SCHEMA public TO ${pgreportingusername}"
+
+  echo 'Creating reporting connection'
   reportingconnection="$(
     cat <<EOF
     DATABASES['reporting'] = {
@@ -390,6 +398,12 @@ if [ ! -d /opt/tactical/reporting/assets ]; then
   sudo mkdir -p /opt/tactical/reporting/assets
 fi
 
+if [ ! -d /opt/tactical/reporting/assets ]; then
+  sudo mkdir -p /opt/tactical/reporting/schemas
+fi
+
+sudo chgrp -R ${USER}:${USER} /opt/tactical
+
 python manage.py pre_update_tasks
 celery -A tacticalrmm purge -f
 python manage.py migrate
@@ -402,7 +416,7 @@ python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py clear_redis_celery_locks
 python manage.py generate_json_schemas
-python manage.py setup_reporting_user
+python manage.py setup_reporting_permissions
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)

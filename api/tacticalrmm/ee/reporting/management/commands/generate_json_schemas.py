@@ -118,7 +118,7 @@ def generate_schema() -> None:
         )
 
     schema = {
-        "$id": f"https://{djangosettings.ALLOWED_HOSTS[0]}/schemas/reporting_query.json",
+        "$id": f"https://{djangosettings.ALLOWED_HOSTS[0]}static/reporting/schemas/query_schema.json",
         "type": "object",
         "properties": {
             "model": {

@@ -511,7 +511,7 @@ WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 sudo mkdir -p /opt/tactical/reporting
 sudo mkdir -p /opt/tactical/reporting/assets
 sudo mkdir -p /opt/tactical/reporting/schemas
-sudo chown ${USER}:${USER} /opt/tactical
+sudo chown -R ${USER}:${USER} /opt/tactical
 
 cd /rmm/api
 python3.11 -m venv env

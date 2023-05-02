@@ -8,7 +8,6 @@ import json
 from django.apps import apps
 from django.core.management.base import BaseCommand
 from django.conf import settings as djangosettings
-from ...settings import settings
 from ...constants import REPORTING_MODELS
 
 
@@ -133,6 +132,6 @@ def generate_schema() -> None:
     }
 
     with open(
-        f"{settings.REPORTING_ASSETS_BASE_PATH}/schemas/query_schema.json", "w"
+        f"{djangosettings.STATICFILES_DIRS[0]}reporting/schemas/query_schema.json", "w"
     ) as outfile:
         outfile.write(json.dumps(schema, indent=4))

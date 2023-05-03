@@ -40,6 +40,8 @@ if [ "$1" = 'tactical-init' ]; then
   mkdir -p /meshcentral-data
   mkdir -p ${TACTICAL_DIR}/tmp
   mkdir -p ${TACTICAL_DIR}/certs
+  mkdir -p ${TACTICAL_DIR}/reporting
+  mkdir -p ${TACTICAL_DIR}/reporting/assets
   mkdir -p /mongo/data/db
   mkdir -p /redis/data
   touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
@@ -47,6 +49,7 @@ if [ "$1" = 'tactical-init' ]; then
   touch ${TACTICAL_DIR}/certs/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}/certs
   touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
   touch /redis/data/.initialized && chown -R 1000:1000 /redis/data
+  touch ${TACTICAL_DIR}/reporting && chown -R 1000:1000 ${TACTICAL_DIR}/reporting
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
   touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
@@ -114,6 +117,7 @@ EOF
   # run migrations and init scripts
   python manage.py pre_update_tasks
   python manage.py migrate --no-input
+  python manage.py generate_json_schemas
   python manage.py collectstatic --no-input
   python manage.py initial_db_setup
   python manage.py initial_mesh_setup
@@ -123,6 +127,7 @@ EOF
   python manage.py create_natsapi_conf
   python manage.py create_uwsgi_conf
   python manage.py create_installer_user
+  python manage.py setup_reporting_permissions
   python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks
 

@@ -521,12 +521,12 @@ pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
+python manage.py generate_json_schemas
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
-python manage.py generate_json_schemas
 python manage.py setup_reporting_permissions
 WEB_VERSION=$(python manage.py get_config webversion)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}

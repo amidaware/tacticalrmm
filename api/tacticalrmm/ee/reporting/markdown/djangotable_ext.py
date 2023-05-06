@@ -11,7 +11,6 @@ from markdown.preprocessors import Preprocessor
 
 from django.apps import apps
 from ..constants import REPORTING_MODELS
-from ..settings import settings
 
 import pandas as pd
 
@@ -69,7 +68,7 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
     columns = local_data_source["only"] if "only" in local_data_source.keys() else None
 
     # create a base reporting queryset
-    queryset = Model.objects.using(settings.REPORTING_TRMM_CONNECTION_NAME)
+    queryset = Model.objects.using("reporting")
 
     for operation, values in local_data_source.items():
         if operation not in ALLOWED_OPERATIONS:

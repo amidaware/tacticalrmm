@@ -1,9 +1,9 @@
 import json
 import re
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import psutil
-import pytz
 import requests
 from cryptography import x509
 from django.conf import settings
@@ -421,7 +421,7 @@ def status(request):
     cert_bytes = Path(cert_file).read_bytes()
 
     cert = x509.load_pem_x509_certificate(cert_bytes)
-    expires = pytz.utc.localize(cert.not_valid_after)
+    expires = cert.not_valid_after.replace(tzinfo=ZoneInfo("UTC"))
     now = djangotime.now()
     delta = expires - now
 

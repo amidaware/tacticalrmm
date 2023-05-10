@@ -30,7 +30,8 @@ class ReportTemplate(models.Model):
         choices=ReportFormatType.choices,
         default=ReportFormatType.MARKDOWN,
     )
-
+    template_variables = models.TextField(null=True, blank=True)
+    
     def __str__(self) -> str:
         return self.name
 

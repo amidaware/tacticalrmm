@@ -29,8 +29,8 @@ import shutil
 
 from .storage import report_assets_fs
 from .models import ReportTemplate, ReportAsset, ReportHTMLTemplate, ReportDataQuery
-from .utils import generate_html, generate_pdf, notify_error
-
+from .utils import generate_html, generate_pdf
+from tacticalrmm.utils import notify_error
 
 def path_exists(value: str) -> None:
     if not report_assets_fs.exists(value):
@@ -117,28 +117,17 @@ class GenerateReportPreview(APIView):
             if "template_html" in request.data.keys()
             else None
         )
+        
+        html_report = generate_html(
+            template=request.data["template_md"] if template_type == "markdown" else request.data["template_html"],
+            template_type=request.data["type"],
+            css=template_css,
+            html_template=template_html,
+            variables=request.data["template_variables"],
+        )
 
         response_format = request.data["format"]
-
-        # lookup html template
-        if template_html:
-            try:
-                template_html = ReportHTMLTemplate.objects.get(pk=template_html).html
-                html_report = generate_html(
-                    template=template_md,
-                    template_type=template_type,
-                    css=template_css,
-                    html_template=template_html,
-                )
-            except ReportHTMLTemplate.DoesNotExist:
-                html_report = generate_html(
-                    template=template_md, template_type=template_type, css=template_css
-                )
-        else:
-            html_report = generate_html(
-                template=template_md, template_type=template_type, css=template_css
-            )
-
+        
         if response_format == "html":
             return Response(html_report)
         else:

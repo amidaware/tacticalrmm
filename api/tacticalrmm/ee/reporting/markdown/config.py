@@ -8,8 +8,9 @@ from typing import Optional, Sequence, Union
 import markdown
 import yaml
 
-from .djangotable_ext import DjangoTableExtension
+# from .djangotable_ext import DjangoTableExtension
 from .reportasset_ext import ReportAssetExtension
+from .ignorejinja_ext import IgnoreJinjaExtension
 
 markdown_ext: "Optional[Sequence[Union[str, markdown.Extension]]]" = [
     "ocxsect",
@@ -21,7 +22,8 @@ markdown_ext: "Optional[Sequence[Union[str, markdown.Extension]]]" = [
     "full_yaml_metadata",
     "attr_list",
     ReportAssetExtension(),
-    DjangoTableExtension(),
+    IgnoreJinjaExtension(),
+    # DjangoTableExtension(),
 ]
 
 extension_config = {

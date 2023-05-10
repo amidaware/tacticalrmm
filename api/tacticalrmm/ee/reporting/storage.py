@@ -65,5 +65,5 @@ class ReportAssetStorage(FileSystemStorage):
 
 report_assets_fs = ReportAssetStorage(
     location=settings.REPORTING_ASSETS_BASE_PATH,
-    base_url=f"{settings.REPORTING_BASE_URL}/reporting/assets/files",
+    base_url=f"{settings.REPORTING_BASE_URL}/reporting/assets/",
 )

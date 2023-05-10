@@ -5,97 +5,13 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 import re
-from typing import Dict, List, Any
+from typing import List, Any
 from markdown import Extension, Markdown
 from markdown.preprocessors import Preprocessor
 
 from django.apps import apps
-from ..constants import REPORTING_MODELS
-
+from ..utils import resolve_model, build_queryset
 import pandas as pd
-
-
-class ResolveModelException(Exception):
-    pass
-
-
-def resolve_model(*, data_source: Dict[str, Any]) -> Dict[str, Any]:
-    tmp_data_source = data_source
-
-    # check that model property is present and correct
-    if "model" in data_source.keys():
-        for model, app in REPORTING_MODELS:
-            if data_source["model"].capitalize() == model:
-                try:
-                    # overwrite model with the model type
-                    tmp_data_source["model"] = apps.get_model(app, model)
-                    return tmp_data_source
-                except LookupError:
-                    raise ResolveModelException(
-                        f"Model: {model} does not exist in app: {app}"
-                    )
-        raise ResolveModelException(f"Model lookup failed for {data_source['model']}")
-    else:
-        raise ResolveModelException("Model key must be present on data_source")
-
-
-ALLOWED_OPERATIONS = (
-    # filtering
-    "only",
-    "defer",
-    "filter",
-    "exclude",
-    "limit",
-    # relations
-    "select_related",
-    "prefetch_related",
-    # operations
-    "aggregate",
-    "annotate",
-    # ordering
-    "order_by",
-)
-
-
-class InvalidDBOperationException(Exception):
-    pass
-
-
-def build_queryset(*, data_source: Dict[str, Any]) -> Any:
-    local_data_source = data_source
-    Model = local_data_source.pop("model")
-    limit = None
-    columns = local_data_source["only"] if "only" in local_data_source.keys() else None
-
-    # create a base reporting queryset
-    queryset = Model.objects.using("reporting")
-
-    for operation, values in local_data_source.items():
-        if operation not in ALLOWED_OPERATIONS:
-            raise InvalidDBOperationException(
-                f"DB operation: {operation} not allowed. Supported operations: only, defer, filter, exclude, limit, select_related, prefetch_related, annotate, aggregate, order_by"
-            )
-
-        if operation == "meta":
-            continue
-        elif operation == "limit":
-            limit = values
-        elif isinstance(values, list):
-            queryset = getattr(queryset, operation)(*values)
-        elif isinstance(values, dict):
-            queryset = getattr(queryset, operation)(**values)
-        else:
-            queryset = getattr(queryset, operation)(values)
-
-    if limit:
-        queryset = queryset[:limit]
-
-    if columns:
-        queryset = queryset.values(*columns)
-    else:
-        queryset = queryset.values()
-
-    return queryset
 
 
 RE = re.compile(r"\\table\((.*)\)")

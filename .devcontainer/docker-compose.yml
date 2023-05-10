@@ -216,6 +216,7 @@ services:
       - "443:4443"
     volumes:
       - tactical-data-dev:/opt/tactical
+      - ..:/workspace:cached
 
 volumes:
   tactical-data-dev: null

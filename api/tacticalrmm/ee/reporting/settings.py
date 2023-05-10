@@ -24,7 +24,7 @@ class Settings:
         return getattr(
             self.settings,
             "REPORTING_BASE_URL",
-            f"https://{djangosettings.ALLOWED_HOSTS[0]}/assets",
+            f"https://{djangosettings.ALLOWED_HOSTS[0]}",
         )
 
 

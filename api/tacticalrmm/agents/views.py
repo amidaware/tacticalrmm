@@ -6,19 +6,12 @@ import time
 from io import StringIO
 from pathlib import Path
 
-from core.utils import (
-    get_core_settings,
-    get_mesh_ws_url,
-    remove_mesh_agent,
-    token_is_valid,
-)
 from django.conf import settings
 from django.db.models import Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.utils.dateparse import parse_datetime
-from logs.models import AuditLog, DebugLog, PendingAction
 from meshctrl.utils import get_login_token
 from packaging import version as pyver
 from rest_framework import serializers
@@ -27,8 +20,16 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from core.utils import (
+    get_core_settings,
+    get_mesh_ws_url,
+    remove_mesh_agent,
+    token_is_valid,
+)
+from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
-from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
+from scripts.tasks import bulk_command_task, bulk_script_task
 from tacticalrmm.constants import (
     AGENT_DEFER,
     AGENT_STATUS_OFFLINE,
@@ -561,10 +562,11 @@ class Reboot(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
+    from knox.models import AuthToken
+
     from accounts.models import User
     from agents.utils import get_agent_url
     from core.utils import token_is_valid
-    from knox.models import AuthToken
 
     # TODO rework this ghetto validation hack
     # https://github.com/amidaware/tacticalrmm/issues/1461
@@ -947,7 +949,7 @@ def bulk(request):
     agents: list[int] = [agent.pk for agent in q]
 
     if not agents:
-        return notify_error("No agents where found meeting the selected criteria")
+        return notify_error("No agents were found meeting the selected criteria")
 
     AuditLog.audit_bulk_action(
         request.user,
@@ -962,27 +964,29 @@ def bulk(request):
         else:
             shell = request.data["shell"]
 
-        handle_bulk_command_task.delay(
-            agents,
-            request.data["cmd"],
-            shell,
-            request.data["timeout"],
-            request.user.username[:50],
-            request.data["run_as_user"],
+        bulk_command_task.delay(
+            agent_pks=agents,
+            cmd=request.data["cmd"],
+            shell=shell,
+            timeout=request.data["timeout"],
+            username=request.user.username[:50],
+            run_as_user=request.data["run_as_user"],
         )
         return Response(f"Command will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "script":
         script = get_object_or_404(Script, pk=request.data["script"])
-        handle_bulk_script_task.delay(
-            script.pk,
-            agents,
-            request.data["args"],
-            request.data["timeout"],
-            request.user.username[:50],
-            request.data["run_as_user"],
-            request.data["env_vars"],
+
+        bulk_script_task.delay(
+            script_pk=script.pk,
+            agent_pks=agents,
+            args=request.data["args"],
+            timeout=request.data["timeout"],
+            username=request.user.username[:50],
+            run_as_user=request.data["run_as_user"],
+            env_vars=request.data["env_vars"],
         )
+
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "patch":

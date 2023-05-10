@@ -149,6 +149,7 @@ def remove_orphaned_win_tasks(self) -> str:
                 for item in items
             ]
             await asyncio.gather(*tasks)
+            await nc.flush()
             await nc.close()
 
         asyncio.run(_run())

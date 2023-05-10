@@ -2,8 +2,8 @@ import asyncio
 import datetime as dt
 import time
 from contextlib import suppress
+from zoneinfo import ZoneInfo
 
-import pytz
 from django.utils import timezone as djangotime
 from packaging import version as pyver
 
@@ -58,7 +58,7 @@ def check_agent_update_schedule_task() -> None:
             or patch_policy.other == "approve"
         ):
             # get current time in agent local time
-            timezone = pytz.timezone(agent.timezone)
+            timezone = ZoneInfo(agent.timezone)
             agent_localtime_now = dt.datetime.now(timezone)
             weekday = agent_localtime_now.weekday()
             hour = agent_localtime_now.hour

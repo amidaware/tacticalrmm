@@ -3,8 +3,8 @@ import os
 from itertools import cycle
 from typing import TYPE_CHECKING
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
-import pytz
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
@@ -866,7 +866,7 @@ class TestAgentViews(TacticalTestCase):
 
         # test pulling data
         r = self.client.get(url, format="json")
-        ctx = {"default_tz": pytz.timezone("America/Los_Angeles")}
+        ctx = {"default_tz": ZoneInfo("America/Los_Angeles")}
         data = AgentHistorySerializer(history, many=True, context=ctx).data
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data, data)  # type:ignore

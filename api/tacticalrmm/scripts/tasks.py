@@ -1,26 +1,20 @@
 import asyncio
-from typing import TYPE_CHECKING, List
-
-import msgpack
-import nats
 
 from agents.models import Agent, AgentHistory
 from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.constants import AgentHistoryType
-from tacticalrmm.helpers import setup_nats_options
-
-if TYPE_CHECKING:
-    from nats.aio.client import Client as NATSClient
+from tacticalrmm.nats_utils import abulk_nats_command
 
 
 @app.task
-def handle_bulk_command_task(
-    agentpks: list[int],
+def bulk_command_task(
+    *,
+    agent_pks: list[int],
     cmd: str,
     shell: str,
-    timeout,
-    username,
+    timeout: int,
+    username: str,
     run_as_user: bool = False,
 ) -> None:
     items = []
@@ -34,7 +28,7 @@ def handle_bulk_command_task(
         "run_as_user": run_as_user,
     }
     agent: "Agent"
-    for agent in Agent.objects.filter(pk__in=agentpks):
+    for agent in Agent.objects.filter(pk__in=agent_pks):
         hist = AgentHistory.objects.create(
             agent=agent,
             type=AgentHistoryType.CMD_RUN,
@@ -45,48 +39,47 @@ def handle_bulk_command_task(
         tmp["id"] = hist.pk
         items.append((agent.agent_id, tmp))
 
-    async def _run_cmd(nc: "NATSClient", sub, data) -> None:
-        await nc.publish(subject=sub, payload=msgpack.dumps(data))
-
-    async def _run() -> None:
-        opts = setup_nats_options()
-        try:
-            nc = await nats.connect(**opts)
-        except Exception as e:
-            print(e)
-            return
-
-        tasks = [_run_cmd(nc=nc, sub=item[0], data=item[1]) for item in items]
-        await asyncio.gather(*tasks)
-        await nc.close()
-
-    asyncio.run(_run())
+    asyncio.run(abulk_nats_command(items=items))
 
 
 @app.task
-def handle_bulk_script_task(
-    scriptpk: int,
-    agentpks: List[int],
-    args: List[str],
+def bulk_script_task(
+    *,
+    script_pk: int,
+    agent_pks: list[int],
+    args: list[str] = [],
     timeout: int,
     username: str,
     run_as_user: bool = False,
     env_vars: list[str] = [],
 ) -> None:
-    script = Script.objects.get(pk=scriptpk)
+    script = Script.objects.get(pk=script_pk)
+    # always override if set on script model
+    if script.run_as_user:
+        run_as_user = True
+
+    items = []
     agent: "Agent"
-    for agent in Agent.objects.filter(pk__in=agentpks):
+    for agent in Agent.objects.filter(pk__in=agent_pks):
         hist = AgentHistory.objects.create(
             agent=agent,
             type=AgentHistoryType.SCRIPT_RUN,
             script=script,
             username=username,
         )
-        agent.run_script(
-            scriptpk=script.pk,
-            args=args,
-            timeout=timeout,
-            history_pk=hist.pk,
-            run_as_user=run_as_user,
-            env_vars=env_vars,
-        )
+        data = {
+            "func": "runscriptfull",
+            "id": hist.pk,
+            "timeout": timeout,
+            "script_args": script.parse_script_args(agent, script.shell, args),
+            "payload": {
+                "code": script.code,
+                "shell": script.shell,
+            },
+            "run_as_user": run_as_user,
+            "env_vars": env_vars,
+        }
+        tup = (agent.agent_id, data)
+        items.append(tup)
+
+    asyncio.run(abulk_nats_command(items=items))

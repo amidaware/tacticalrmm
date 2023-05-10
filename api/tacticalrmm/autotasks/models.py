@@ -3,8 +3,8 @@ import random
 import string
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from zoneinfo import ZoneInfo
 
-import pytz
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -270,12 +270,12 @@ class AutomatedTask(BaseAuditModel):
                 and self.task_type == TaskType.RUN_ONCE
                 and self.run_asap_after_missed
                 and agent
-                and self.run_time_date
-                < djangotime.now().astimezone(pytz.timezone(agent.timezone))
+                and self.run_time_date.replace(tzinfo=ZoneInfo(agent.timezone))
+                < djangotime.now().astimezone(ZoneInfo(agent.timezone))
             ):
                 self.run_time_date = (
                     djangotime.now() + djangotime.timedelta(minutes=5)
-                ).astimezone(pytz.timezone(agent.timezone))
+                ).astimezone(ZoneInfo(agent.timezone))
 
             task["start_year"] = int(self.run_time_date.strftime("%Y"))
             task["start_month"] = int(self.run_time_date.strftime("%-m"))

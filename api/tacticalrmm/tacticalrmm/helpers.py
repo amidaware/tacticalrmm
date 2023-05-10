@@ -1,8 +1,8 @@
+import random
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
-import pytz
-import random
 from django.conf import settings
 from django.utils import timezone as djangotime
 from rest_framework import status
@@ -42,12 +42,10 @@ def date_is_in_past(*, datetime_obj: "datetime", agent_tz: str) -> bool:
     """
     datetime_obj must be a naive datetime
     """
-    now = djangotime.now()
     # convert agent tz to UTC to compare
-    agent_pytz = pytz.timezone(agent_tz)
-    localized = agent_pytz.localize(datetime_obj)
-    utc_time = localized.astimezone(pytz.utc)
-    return now > utc_time
+    localized = datetime_obj.replace(tzinfo=ZoneInfo(agent_tz))
+    utc_time = localized.astimezone(ZoneInfo("UTC"))
+    return djangotime.now() > utc_time
 
 
 def get_webdomain() -> str:

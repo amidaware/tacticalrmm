@@ -7,8 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import wraps
 from typing import List, Optional, Union
+from zoneinfo import ZoneInfo
 
-import pytz
 import requests
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
@@ -100,7 +100,7 @@ def generate_winagent_exe(
 
 
 def get_default_timezone():
-    return pytz.timezone(get_core_settings().default_time_zone)
+    return ZoneInfo(get_core_settings().default_time_zone)
 
 
 def get_bit_days(days: list[str]) -> int:

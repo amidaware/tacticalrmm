@@ -2,7 +2,6 @@ import asyncio
 import re
 from collections import Counter
 from contextlib import suppress
-from distutils.version import LooseVersion
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union, cast
 
 import msgpack
@@ -16,6 +15,7 @@ from django.db import models
 from django.utils import timezone as djangotime
 from nats.errors import TimeoutError
 from packaging import version as pyver
+from packaging.version import Version as LooseVersion
 
 from agents.utils import get_agent_url
 from checks.models import CheckResult
@@ -876,8 +876,10 @@ class Agent(BaseAuditModel):
                 # extract the version from the title and sort from oldest to newest
                 # skip if no version info is available therefore nothing to parse
                 try:
+                    matches = r"(Version|Versão)"
+                    pattern = r"\(" + matches + r"(.*?)\)"
                     vers = [
-                        re.search(r"\(Version(.*?)\)", i).group(1).strip()
+                        re.search(pattern, i, flags=re.IGNORECASE).group(2).strip()
                         for i in titles
                     ]
                     sorted_vers = sorted(vers, key=LooseVersion)

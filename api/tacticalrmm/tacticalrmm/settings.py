@@ -20,17 +20,17 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.15.10-dev"
+TRMM_VERSION = "0.15.10"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.19-dev"
+WEB_VERSION = "0.101.20"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
 APP_VER = "0.0.180"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.4.6"
+LATEST_AGENT_VER = "2.4.7"
 
 MESH_VER = "1.1.4"
 

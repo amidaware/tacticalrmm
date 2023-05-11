@@ -114,7 +114,8 @@ server  {
 
     location /assets/ {
         internal;
-        alias /opt/tactical/reporting/;
+        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
+        alias /opt/tactical/reporting/assets/;
     }
 
     location ~ ^/natsws {

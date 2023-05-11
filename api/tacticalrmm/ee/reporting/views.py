@@ -14,6 +14,7 @@ from rest_framework.serializers import (
     ListField,
     ValidationError,
 )
+from rest_framework.permissions import AllowAny
 from typing import Union, List
 from django.core.exceptions import (
     SuspiciousFileOperation,
@@ -119,8 +120,8 @@ class GenerateReportPreview(APIView):
         )
         
         html_report = generate_html(
-            template=request.data["template_md"] if template_type == "markdown" else request.data["template_html"],
-            template_type=request.data["type"],
+            template=template_md,
+            template_type=template_type,
             css=template_css,
             html_template=template_html,
             variables=request.data["template_variables"],
@@ -181,39 +182,53 @@ class GetAllAssets(APIView):
         only_folders = request.query_params.get("OnlyFolders", None)
         only_folders = True if only_folders and only_folders == "true" else False
 
-        response = {}
+        # pull report assets from the database so we can pair with the file system assets
+        assets = ReportAsset.objects.all()
 
-        # recursively loop over report assets and add them to response
-        try:
-            os.chdir(report_assets_fs.base_location)
-        except FileNotFoundError:
-            return notify_error("Unable to process request")
-
-        for current_dir, subdirs, files in os.walk("."):
-            nodes = list()
-
-            for dirname in subdirs:
-                nodes.append(
-                    {
-                        "type": "folder",
-                        "name": dirname,
-                        "path": f"{current_dir}/{dirname}",
-                    }
-                )
-
-            if not only_folders:
-                for filename in files:
-                    nodes.append(
-                        {
-                            "type": "file",
-                            "name": filename,
-                            "path": f"{current_dir}/{filename}",
-                        }
+        def walk_folder_and_return_node(path: str):
+            for current_dir, subdirs, files in os.walk(path):
+                current_dir = "Report Assets" if current_dir == "." else current_dir
+                node = {
+                    "type": "folder",
+                    "name": current_dir.replace("./", ""),
+                    "path": path.replace("./", ""),
+                    "children": [],
+                    "selectable": False,
+                    "icon": "folder",
+                    "iconColor": "yellow-9"
+                }
+                for dirname in subdirs:
+                    dirpath = f"{path}/{dirname}"
+                    node["children"].append(
+                        walk_folder_and_return_node(dirpath) # recursively call
                     )
 
-            response[current_dir] = nodes
+                if not only_folders:
+                    for filename in files:
+                        path = f"{current_dir.replace('./', '')}/{filename}"
+                        try:
+                            # need to remove the relative path
+                            id = assets.get(file=path).id
+                            node["children"].append(
+                                {
+                                    "id": id,
+                                    "type": "file",
+                                    "name": filename,
+                                    "path": path,
+                                    "icon": "description"
+                                }
+                            )
+                        except ReportAsset.DoesNotExist:
+                            pass
+                
+                return node
 
-        return Response(response)
+        try:
+            os.chdir(report_assets_fs.base_location)
+            response = [walk_folder_and_return_node(".")]
+            return Response(response)
+        except FileNotFoundError:
+            return notify_error("Unable to process request")     
 
 
 class RenameReportAsset(APIView):
@@ -485,11 +500,17 @@ class GetEditDeleteReportDataQuery(APIView):
 
         return Response()
 
+class NginxRedirect(APIView):
+    permission_classes = (AllowAny,)
 
-def redirect_assets_to_nginx_if_authenticated(request: Request, path: str) -> HttpResponse:
-    if request.user.is_authenticated:
-        response = HttpResponse()
-        response["X-Accel-Redirect"] = "/assets/" + path
-        return response
-    else:
-        raise PermissionDenied()
+    def get(self, request: Request, path: str) -> HttpResponse:
+
+        id = request.query_params.get("id", "")
+        asset = ReportAsset.objects.get(id=id)
+        new_path = path.split("?")[0]
+        if asset.file.name == new_path:
+            response = HttpResponse(status=200)
+            response["X-Accel-Redirect"] = "/assets/" + new_path
+            return response
+        else:
+            raise PermissionDenied()

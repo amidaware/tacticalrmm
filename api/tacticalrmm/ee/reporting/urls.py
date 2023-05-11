@@ -15,6 +15,7 @@ urlpatterns = [
     path("templates/preview/", views.GenerateReportPreview.as_view()),
     # report assets
     path("assets/", views.GetReportAssets.as_view()),
+    path("assets/all/", views.GetAllAssets.as_view()),
     path("assets/rename/", views.RenameReportAsset.as_view()),
     path("assets/newfolder/", views.CreateAssetFolder.as_view()),
     path("assets/delete/", views.DeleteAssets.as_view()),
@@ -27,5 +28,5 @@ urlpatterns = [
     path("dataqueries/", views.GetAddReportDataQuery.as_view()),
     path("dataqueries/<int:pk>/", views.GetEditDeleteReportDataQuery.as_view()),
     # serving assets
-    path("assets/<path:path>", views.redirect_assets_to_nginx_if_authenticated),
+    path("assets/<path:path>", views.NginxRedirect.as_view()),
 ]

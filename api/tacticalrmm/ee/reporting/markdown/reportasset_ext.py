@@ -45,7 +45,7 @@ class ReportAssetPreprocessor(Preprocessor):
 
                 asset: "ReportAssetType" = ReportAsset.objects.get(id=asset_id)
 
-                new_line = line.replace(f"asset://{asset_id}", asset.file.url)
+                new_line = line.replace(f"asset://{asset_id}", f"{asset.file.url}?id={asset_id}")
 
                 new_lines.append(new_line)
             else:

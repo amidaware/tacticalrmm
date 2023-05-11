@@ -131,7 +131,8 @@ if ! [[ $CHECK_ASSETS_NGINX ]]; then
   /location \/ {/ {
       print "    location /assets/ {"
       print "        internal;"
-      print "        alias /opt/tactical/reporting/;"
+      print "        add_header 'Access-Control-Allow-Origin' 'https://${APP_HOST}';"
+      print "        alias /opt/tactical/reporting/assets/;"
       print "    }"
       print "\n"
   }

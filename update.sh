@@ -307,6 +307,8 @@ sudo chown ${USER}:${USER} -R ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
+sudo chown ${USER}:${USER} -R /rmmbackups
+
 
 CHECK_CELERY_CONFIG=$(grep "autoscale=20,2" /etc/conf.d/celery.conf)
 if ! [[ $CHECK_CELERY_CONFIG ]]; then

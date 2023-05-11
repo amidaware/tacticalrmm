@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="22"
+SCRIPT_VERSION="23"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
+
+if [ $EUID -eq 0 ]; then
+    echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
+    exit 1
+fi
 
 if [[ $* == *--schedule* ]]; then
     (
@@ -15,11 +20,6 @@ if [[ $* == *--schedule* ]]; then
     ) | crontab -
     printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
     exit 0
-fi
-
-if [ $EUID -eq 0 ]; then
-    echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
-    exit 1
 fi
 
 if [ ! -d /rmmbackups ]; then
@@ -82,18 +82,18 @@ if [[ $* == *--auto* ]]; then
 
     if [ ! -d /rmmbackups/daily ]; then
         sudo mkdir /rmmbackups/daily
-        sudo chown ${USER}:${USER} /rmmbackups/daily
     fi
 
     if [ ! -d /rmmbackups/weekly ]; then
         sudo mkdir /rmmbackups/weekly
-        sudo chown ${USER}:${USER} /rmmbackups/weekly
     fi
 
     if [ ! -d /rmmbackups/monthly ]; then
         sudo mkdir /rmmbackups/monthly
-        sudo chown ${USER}:${USER} /rmmbackups/monthly
     fi
+    
+    sudo chown -R ${USER}:${USER} /rmmbackups
+
 
     month_day=$(date +"%d")
     week_day=$(date +"%u")

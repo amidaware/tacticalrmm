@@ -19,7 +19,11 @@ if [[ $* == *--schedule* ]]; then
         echo "0 0 * * * /rmm/backup.sh --auto"
     ) | crontab -
     
-        if [ ! -d /rmmbackups/daily ]; then
+     if [ ! -d /rmmbackups ]; then
+        sudo mkdir /rmmbackups
+    fi
+    
+    if [ ! -d /rmmbackups/daily ]; then
         sudo mkdir /rmmbackups/daily
     fi
 

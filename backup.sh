@@ -18,6 +18,20 @@ if [[ $* == *--schedule* ]]; then
         crontab -l 2>/dev/null
         echo "0 0 * * * /rmm/backup.sh --auto"
     ) | crontab -
+    
+        if [ ! -d /rmmbackups/daily ]; then
+        sudo mkdir /rmmbackups/daily
+    fi
+
+    if [ ! -d /rmmbackups/weekly ]; then
+        sudo mkdir /rmmbackups/weekly
+    fi
+
+    if [ ! -d /rmmbackups/monthly ]; then
+        sudo mkdir /rmmbackups/monthly
+    fi
+    sudo chown -R ${USER}:${USER} /rmmbackups
+    
     printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
     exit 0
 fi
@@ -79,21 +93,6 @@ cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 >${t
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
 
 if [[ $* == *--auto* ]]; then
-
-    if [ ! -d /rmmbackups/daily ]; then
-        sudo mkdir /rmmbackups/daily
-    fi
-
-    if [ ! -d /rmmbackups/weekly ]; then
-        sudo mkdir /rmmbackups/weekly
-    fi
-
-    if [ ! -d /rmmbackups/monthly ]; then
-        sudo mkdir /rmmbackups/monthly
-    fi
-    
-    sudo chown -R ${USER}:${USER} /rmmbackups
-
 
     month_day=$(date +"%d")
     week_day=$(date +"%u")

@@ -20,7 +20,7 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.15.11-dev"
+TRMM_VERSION = "0.15.11"
 
 # https://github.com/amidaware/tacticalrmm-web
 WEB_VERSION = "0.101.20"
@@ -30,7 +30,7 @@ WEB_VERSION = "0.101.20"
 APP_VER = "0.0.180"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.4.7"
+LATEST_AGENT_VER = "2.4.8"
 
 MESH_VER = "1.1.4"
 

@@ -34,7 +34,7 @@ if [[ $* == *--schedule* ]]; then
     if [ ! -d /rmmbackups/monthly ]; then
         sudo mkdir /rmmbackups/monthly
     fi
-    sudo chown -R ${USER}:${USER} /rmmbackups
+    sudo chown ${USER}:${USER} -R /rmmbackups
     
     printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
     exit 0

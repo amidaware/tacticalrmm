@@ -1,4 +1,6 @@
 import random
+import secrets
+import string
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -71,3 +73,8 @@ def setup_nats_options() -> dict[str, Any]:
         "max_reconnect_attempts": 2,
     }
     return opts
+
+
+def make_random_password(*, len: int) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for i in range(len))

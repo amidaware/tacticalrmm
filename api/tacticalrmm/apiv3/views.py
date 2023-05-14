@@ -41,7 +41,7 @@ from tacticalrmm.constants import (
     MeshAgentIdent,
     PAStatus,
 )
-from tacticalrmm.helpers import notify_error
+from tacticalrmm.helpers import make_random_password, notify_error
 from tacticalrmm.utils import reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
@@ -457,7 +457,7 @@ class NewAgent(APIView):
         user = User.objects.create_user(  # type: ignore
             username=request.data["agent_id"],
             agent=agent,
-            password=User.objects.make_random_password(60),  # type: ignore
+            password=make_random_password(len=60),  # type: ignore
         )
 
         token = Token.objects.create(user=user)

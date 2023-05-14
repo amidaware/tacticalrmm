@@ -3,6 +3,7 @@ import uuid
 from django.core.management.base import BaseCommand
 
 from accounts.models import User
+from tacticalrmm.helpers import make_random_password
 
 
 class Command(BaseCommand):
@@ -17,7 +18,7 @@ class Command(BaseCommand):
         User.objects.create_user(
             username=uuid.uuid4().hex,
             is_installer_user=True,
-            password=User.objects.make_random_password(60),
+            password=make_random_password(len=60),
             block_dashboard_login=True,
         )
         self.stdout.write("Installer user has been created")

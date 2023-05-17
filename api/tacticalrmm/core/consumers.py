@@ -27,7 +27,6 @@ class DashInfo(AsyncJsonWebsocketConsumer):
             self.dash_info.cancel()
 
         self.connected = False
-        await self.close()
 
     async def receive_json(self, payload, **kwargs):
         pass

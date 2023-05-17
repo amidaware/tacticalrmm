@@ -47,7 +47,7 @@ class SendCMD(AsyncJsonWebsocketConsumer):
         await self.send_json({"ret": ret})
 
     async def disconnect(self, _):
-        await self.close()
+        pass
 
     def _has_perm(self, perm: str) -> bool:
         if self.user.is_superuser or (

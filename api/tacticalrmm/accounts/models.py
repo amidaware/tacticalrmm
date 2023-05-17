@@ -31,7 +31,7 @@ class User(AbstractUser, BaseAuditModel):
         on_delete=models.SET_NULL,
     )
     default_agent_tbl_tab = models.CharField(
-        max_length=50, choices=AgentTableTabs.choices, default=AgentTableTabs.SERVER
+        max_length=50, choices=AgentTableTabs.choices, default=AgentTableTabs.MIXED
     )
     agents_per_page = models.PositiveIntegerField(default=50)  # not currently used
     client_tree_sort = models.CharField(

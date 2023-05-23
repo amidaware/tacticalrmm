@@ -457,7 +457,7 @@ class NewAgent(APIView):
         user = User.objects.create_user(  # type: ignore
             username=request.data["agent_id"],
             agent=agent,
-            password=make_random_password(len=60),  # type: ignore
+            password=make_random_password(len=60),
         )
 
         token = Token.objects.create(user=user)

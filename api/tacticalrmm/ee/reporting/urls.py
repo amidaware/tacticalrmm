@@ -11,7 +11,7 @@ urlpatterns = [
     # report templates
     path("templates/", views.GetAddReportTemplate.as_view()),
     path("templates/<int:pk>/", views.GetEditDeleteReportTemplate.as_view()),
-    path("templates/<int:pk>/run/", views.GenerateSavedReport.as_view()),
+    path("templates/<int:pk>/run/", views.GenerateReport.as_view()),
     path("templates/preview/", views.GenerateReportPreview.as_view()),
     # report assets
     path("assets/", views.GetReportAssets.as_view()),

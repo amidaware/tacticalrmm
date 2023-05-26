@@ -8,17 +8,22 @@ import yaml
 import re
 
 from django.apps import apps
-from django.db.models import Model
 from weasyprint import HTML, CSS
 from weasyprint.text.fonts import FontConfiguration
 from jinja2 import Environment, FunctionLoader
-from typing import Dict, Any
+from typing import Dict, Any, Literal
 
 from .markdown.config import Markdown
-from .models import ReportHTMLTemplate, ReportTemplate
+from .models import ReportHTMLTemplate, ReportTemplate, ReportAsset
 from .constants import REPORTING_MODELS
 
-from tacticalrmm.utils import replace_db_values
+from tacticalrmm.utils import get_db_value
+
+
+# regex for db data replacement
+# will return 3 groups of matches in a tuple when uses with re.findall
+# {{client.name}}, client.name, client
+RE_DB_VALUE = re.compile(r'(\{\{\s*((client|site|agent|global)\.{1}[\w\s\d]+)\s*\}\})')
 
 
 # this will lookup the Jinja parent template in the DB
@@ -62,31 +67,45 @@ def generate_html(
     template_type: str,
     css: str = "",
     html_template: int = None,
-    variables: Dict[str,Any] = {},
-    instance: Model = None
+    variables: str = "",
+    dependencies: Dict[str, int] = {}
 ) -> str:
     
     # convert template from markdown to html if type is markdown
     template_string = Markdown.convert(template) if template_type == "markdown" else template
 
-    # variables are stored in Markdown.Meta for markdown templates and template_variables field on model for
-    # html templates. 
-    variables = None
-    if template_type == "html" and variables:
-        variables = yaml.safe_load(variables)
-    elif template_type == "markdown":
-        variables = Markdown.Meta
+    print(variables)
+    # load yaml variables if they exist
+    variables = yaml.safe_load(variables) or {}
 
     # check for variables that need to be replaced with the database values ({{client.name}}, {{agent.hostname}}, etc)
-    pattern = re.compile("\\{\\{([\\w\\s]+\\.[\\w\\s]+)\\}\\}")
-
-    if variables and isinstance(variables, dict):
+    if variables:
         for key, variable in variables.items():
             if isinstance(variable, str):
-                for string in re.findall(pattern, variable):
-                    value = replace_db_values(string=string, instance=instance, quotes=False)
+                for string, prop, model in re.findall(RE_DB_VALUE, variable):
+                    value = ""
+                    # will be agent, site, client, or global
+                    if model == "global":
+                        value = get_db_value(string=prop)
+                    elif model in ["client", "site", "agent"]:
+                        if model == "client" and "client" in dependencies.keys():
+                            Model = apps.get_model("clients", "Client")
+                            instance = Model.objects.get(id=dependencies["client"])
+                            del dependencies["client"]
+                        elif model == "site"  and "site" in dependencies.keys():
+                            Model = apps.get_model("clients", "Site")
+                            instance = Model.objects.get(id=dependencies["site"])
+                            del dependencies["site"]
+                        elif model == "agent" and "agent" in dependencies.keys():
+                            Model = apps.get_model("agents", "Agent")
+                            instance = Model.objects.get(agent_id=dependencies["agent"])
+                            del dependencies["agent"]
+                        else:
+                            instance = None
 
-                    variable[key] = re.sub("\\{\\{" + string + "\\}\\}", str(value), variable)
+                        value = get_db_value(string=prop, instance=instance) if instance else None
+                    if value:
+                        variables[key] = variable.replace(string, str(value))
 
     # append extends if html master template is configured
     if html_template:
@@ -124,6 +143,9 @@ def generate_html(
             variables["data_sources"][key] = queryset
 
     tm = env.from_string(template_string)
+    print(dependencies)
+    print(variables)
+    variables = {**variables, **dependencies}
     if variables:
         return tm.render(css=css, **variables)
     else:
@@ -211,3 +233,20 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
         queryset = queryset.values()
 
     return queryset
+
+
+def normalize_asset_url(text: str, type: Literal["pdf", "html"]):
+    RE_ASSET_URL = re.compile(r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))")
+
+    new_text = text
+    for url, id in re.findall(RE_ASSET_URL,text):
+        try:
+            asset = ReportAsset.objects.get(id=id)
+            if type == "html":
+                new_text = new_text.replace(f"asset://{id}", f"{asset.file.url}?id={id}")
+            else:
+                new_text = new_text.replace(f"{url}", f"file://{asset.file.path}")
+        except ReportAsset.DoesNotExist:
+            pass
+
+    return new_text

@@ -5,6 +5,7 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 import uuid
 from .storage import report_assets_fs
 
@@ -30,7 +31,8 @@ class ReportTemplate(models.Model):
         choices=ReportFormatType.choices,
         default=ReportFormatType.MARKDOWN,
     )
-    template_variables = models.TextField(null=True, blank=True)
+    template_variables = models.TextField(blank=True, default="")
+    depends_on = ArrayField(models.CharField(max_length=20, blank=True), blank=True, default=list)
     
     def __str__(self) -> str:
         return self.name

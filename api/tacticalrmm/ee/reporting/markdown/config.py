@@ -8,8 +8,6 @@ from typing import Optional, Sequence, Union
 import markdown
 import yaml
 
-# from .djangotable_ext import DjangoTableExtension
-from .reportasset_ext import ReportAssetExtension
 from .ignorejinja_ext import IgnoreJinjaExtension
 
 markdown_ext: "Optional[Sequence[Union[str, markdown.Extension]]]" = [
@@ -21,9 +19,7 @@ markdown_ext: "Optional[Sequence[Union[str, markdown.Extension]]]" = [
     "fenced_code",
     "full_yaml_metadata",
     "attr_list",
-    ReportAssetExtension(),
     IgnoreJinjaExtension(),
-    # DjangoTableExtension(),
 ]
 
 extension_config = {

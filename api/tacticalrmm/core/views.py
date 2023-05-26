@@ -355,7 +355,7 @@ class RunURLAction(APIView):
 
         from agents.models import Agent
         from clients.models import Client, Site
-        from tacticalrmm.utils import replace_db_values
+        from tacticalrmm.utils import get_db_value
 
         if "agent_id" in request.data.keys():
             if not _has_perm_on_agent(request.user, request.data["agent_id"]):
@@ -382,7 +382,7 @@ class RunURLAction(APIView):
         url_pattern = action.pattern
 
         for string in re.findall(pattern, action.pattern):
-            value = replace_db_values(string=string, instance=instance, quotes=False)
+            value = get_db_value(string=string, instance=instance, quotes=False)
 
             url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
 

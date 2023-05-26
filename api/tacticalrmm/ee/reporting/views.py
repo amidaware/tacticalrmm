@@ -27,10 +27,11 @@ from django.shortcuts import get_object_or_404
 
 import os
 import shutil
-
+import uuid
 from .storage import report_assets_fs
 from .models import ReportTemplate, ReportAsset, ReportHTMLTemplate, ReportDataQuery
-from .utils import generate_html, generate_pdf
+from .utils import generate_html, generate_pdf, normalize_asset_url
+
 from tacticalrmm.utils import notify_error
 
 def path_exists(value: str) -> None:
@@ -49,8 +50,13 @@ class GetAddReportTemplate(APIView):
     serializer_class = ReportTemplateSerializer
 
     def get(self, request: Request) -> Response:
-        reports = ReportTemplate.objects.all()
-        return Response(ReportTemplateSerializer(reports, many=True).data)
+        depends_on = request.query_params.getlist("dependsOn[]", [])
+
+        if depends_on:
+            templates = ReportTemplate.objects.filter(depends_on__overlap=depends_on)
+        else:
+            templates = ReportTemplate.objects.all()
+        return Response(ReportTemplateSerializer(templates, many=True).data)
 
     def post(self, request: Request) -> Response:
         serializer = ReportTemplateSerializer(data=request.data)
@@ -86,49 +92,58 @@ class GetEditDeleteReportTemplate(APIView):
         return Response()
 
 
-class GenerateSavedReport(APIView):
+class GenerateReport(APIView):
     def post(self, request: Request, pk: int) -> Union[FileResponse, Response]:
         template = get_object_or_404(ReportTemplate, pk=pk)
+
+        format = request.data["format"]
 
         html_report = generate_html(
             template=template.template_md,
             template_type=template.type,
             css=template.template_css if template.template_css else "",
-            html_template=template.template_html.html
+            html_template=template.template_html.id
             if template.template_html
             else None,
+            variables=template.template_variables,
+            dependencies=request.data["dependencies"]
         )
 
-        pdf_bytes = generate_pdf(html=html_report)
+        html_report = normalize_asset_url(html_report, format)
 
-        return FileResponse(
-            ContentFile(pdf_bytes),
-            content_type="application/pdf",
-            filename=f"{template.name}.pdf",
-        )
+        if format == "html":
+            return Response(html_report)
+        elif format == "pdf":
+            pdf_bytes = generate_pdf(html=html_report)
+
+            return FileResponse(
+                ContentFile(pdf_bytes),
+                content_type="application/pdf",
+                filename=f"{template.name}.pdf",
+            )
+        else:
+            notify_error("Report format is incorrect.")
 
 
 class GenerateReportPreview(APIView):
     def post(self, request: Request) -> Union[FileResponse, Response]:
-        template_md = request.data["template_md"]
-        template_css = request.data["template_css"]
-        template_type = request.data["type"]
-        template_html = (
-            request.data["template_html"]
-            if "template_html" in request.data.keys()
-            else None
-        )
-        
+
         html_report = generate_html(
-            template=template_md,
-            template_type=template_type,
-            css=template_css,
-            html_template=template_html,
+            template=request.data["template_md"],
+            template_type=request.data["type"],
+            css=request.data["template_css"],
+            html_template=(
+                request.data["template_html"]
+                if "template_html" in request.data.keys()
+                else None
+            ),
             variables=request.data["template_variables"],
+            dependencies=request.data["dependencies"]
         )
 
         response_format = request.data["format"]
-        
+
+        html_report = normalize_asset_url(html_report, response_format)
         if response_format == "html":
             return Response(html_report)
         else:
@@ -506,11 +521,15 @@ class NginxRedirect(APIView):
     def get(self, request: Request, path: str) -> HttpResponse:
 
         id = request.query_params.get("id", "")
-        asset = ReportAsset.objects.get(id=id)
-        new_path = path.split("?")[0]
-        if asset.file.name == new_path:
-            response = HttpResponse(status=200)
-            response["X-Accel-Redirect"] = "/assets/" + new_path
-            return response
-        else:
-            raise PermissionDenied()
+        try:
+            asset_uuid = uuid.UUID(id, version=4)
+            asset = get_object_or_404(ReportAsset, id=asset_uuid)
+            new_path = path.split("?")[0]
+            if asset.file.name == new_path:
+                response = HttpResponse(status=200)
+                response["X-Accel-Redirect"] = "/assets/" + new_path
+                return response
+            else:
+                raise PermissionDenied()
+        except ValueError:
+            notify_error("There was a error processing the request")

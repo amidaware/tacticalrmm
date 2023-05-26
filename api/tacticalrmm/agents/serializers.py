@@ -95,6 +95,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
     local_ips = serializers.ReadOnlyField()
     make_model = serializers.ReadOnlyField()
     physical_disks = serializers.ReadOnlyField()
+    serial_number = serializers.ReadOnlyField()
     custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
 
     def get_alert_template(self, obj):
@@ -155,6 +156,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "make_model",
             "physical_disks",
             "custom_fields",
+            "serial_number",
         ]
         depth = 2
 

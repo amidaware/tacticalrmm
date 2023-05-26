@@ -408,6 +408,16 @@ class Agent(BaseAuditModel):
         except:
             return ["unknown disk"]
 
+    @property
+    def serial_number(self) -> str:
+        if self.is_posix:
+            return ""
+
+        try:
+            return self.wmi_detail["bios"][0][0]["SerialNumber"]
+        except:
+            return ""
+
     @classmethod
     def online_agents(cls, min_version: str = "") -> "List[Agent]":
         if min_version:

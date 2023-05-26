@@ -78,7 +78,7 @@ def clear_cache(request):
 @api_view()
 def dashboard_info(request):
     from core.utils import token_is_expired
-    from tacticalrmm.utils import get_latest_trmm_ver
+    from tacticalrmm.utils import get_latest_trmm_ver, runcmd_placeholder_text
 
     core_settings = get_core_settings()
     return Response(
@@ -105,6 +105,7 @@ def dashboard_info(request):
             "dash_positive_color": request.user.dash_positive_color,
             "dash_negative_color": request.user.dash_negative_color,
             "dash_warning_color": request.user.dash_warning_color,
+            "run_cmd_placeholder_text": runcmd_placeholder_text(),
         }
     )
 

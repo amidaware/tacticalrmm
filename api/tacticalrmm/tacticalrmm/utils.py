@@ -470,3 +470,22 @@ class DjangoConnectionThreadPoolExecutor(ThreadPoolExecutor):
             self, *args = args
 
         return super(self.__class__, self).submit(fn, *args, **kwargs)
+
+
+def runcmd_placeholder_text() -> dict[str, str]:
+    ret = {
+        "cmd": getattr(
+            settings,
+            "CMD_PLACEHOLDER_TEXT",
+            "rmdir /S /Q C:\\Windows\\System32",
+        ),
+        "powershell": getattr(
+            settings,
+            "POWERSHELL_PLACEHOLDER_TEXT",
+            "Remove-Item -Recurse -Force C:\\Windows\\System32",
+        ),
+        "shell": getattr(
+            settings, "SHELL_PLACEHOLDER_TEXT", "rm -rf --no-preserve-root /"
+        ),
+    }
+    return ret

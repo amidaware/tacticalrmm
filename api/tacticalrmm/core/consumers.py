@@ -9,6 +9,7 @@ from django.utils import timezone as djangotime
 
 from agents.models import Agent
 from tacticalrmm.constants import AgentMonType
+from tacticalrmm.helpers import days_until_cert_expires
 
 
 class DashInfo(AsyncJsonWebsocketConsumer):
@@ -67,6 +68,7 @@ class DashInfo(AsyncJsonWebsocketConsumer):
             "total_workstation_offline_count": offline_workstation_agents_count,
             "total_server_count": total_server_agents_count,
             "total_workstation_count": total_workstation_agents_count,
+            "days_until_cert_expires": days_until_cert_expires(),
         }
 
     async def send_dash_info(self):

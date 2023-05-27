@@ -26,6 +26,7 @@ from core.utils import (
     get_mesh_ws_url,
     remove_mesh_agent,
     token_is_valid,
+    wake_on_lan,
 )
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
@@ -59,6 +60,7 @@ from .permissions import (
     AgentHistoryPerms,
     AgentNotesPerms,
     AgentPerms,
+    AgentWOLPerms,
     EvtLogPerms,
     InstallAgentPerms,
     ManageProcPerms,
@@ -1161,3 +1163,18 @@ class ScriptRunHistory(APIView):
 
         ret = self.OutputSerializer(hists, many=True).data
         return Response(ret)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, AgentWOLPerms])
+def wol(request, agent_id):
+    agent = get_object_or_404(
+        Agent.objects.defer(*AGENT_DEFER),
+        agent_id=agent_id,
+    )
+    try:
+        uri = get_mesh_ws_url()
+        asyncio.run(wake_on_lan(uri=uri, mesh_node_id=agent.mesh_node_id))
+    except Exception as e:
+        return notify_error(str(e))
+    return Response(f"Wake-on-LAN sent to {agent.hostname}")

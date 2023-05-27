@@ -109,6 +109,7 @@ class Role(BaseAuditModel):
     can_run_bulk = models.BooleanField(default=False)
     can_recover_agents = models.BooleanField(default=False)
     can_list_agent_history = models.BooleanField(default=False)
+    can_send_wol = models.BooleanField(default=False)
 
     # core
     can_list_notes = models.BooleanField(default=False)

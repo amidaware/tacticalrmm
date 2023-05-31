@@ -126,6 +126,7 @@ def generate_schema() -> None:
                 "enum": [model.lower() for model, _ in REPORTING_MODELS],
             },
             "limit": {"type": "integer"},
+            "count": {"type": "boolean"}
         },
         "required": ["model"],
         "oneOf": oneOf,

@@ -6,13 +6,13 @@ For details, see: https://license.tacticalrmm.com/ee
 
 import yaml
 import re
+import pandas as pd
 
 from django.apps import apps
 from weasyprint import HTML, CSS
 from weasyprint.text.fonts import FontConfiguration
 from jinja2 import Environment, FunctionLoader
-from typing import Dict, Any, Literal
-
+from typing import Dict, Any, Literal, Union
 from .markdown.config import Markdown
 from .models import ReportHTMLTemplate, ReportTemplate, ReportAsset
 from .constants import REPORTING_MODELS
@@ -60,7 +60,6 @@ def generate_pdf(*, html: str, css: str = "") -> bytes:
 
     return pdf_bytes
 
-
 def generate_html(
     *,
     template: str,
@@ -74,7 +73,6 @@ def generate_html(
     # convert template from markdown to html if type is markdown
     template_string = Markdown.convert(template) if template_type == "markdown" else template
 
-    print(variables)
     # load yaml variables if they exist
     variables = yaml.safe_load(variables) or {}
 
@@ -118,7 +116,7 @@ def generate_html(
 
     # replace the data_sources with the actual data from DB. This will be passed to the template
     # in the form of {{data_sources.data_source_name}}
-    if isinstance(variables, dict) and "data_sources" in variables and isinstance(variables["data_sources"], dict):
+    if "data_sources" in variables.keys() and isinstance(variables["data_sources"], dict):
         for key, value in variables["data_sources"].items():
 
             data_source = {}
@@ -142,9 +140,40 @@ def generate_html(
             queryset = build_queryset(data_source=modified_datasource)
             variables["data_sources"][key] = queryset
 
+    # generate and replace charts in the variables
+    if "charts" in variables.keys() and isinstance(variables["charts"], dict):
+        for key, chart in variables["charts"].items():
+            
+            # make sure chart options are present and a dict
+            if "options" not in chart.keys() and not isinstance(chart["options"], dict):
+                break
+
+            options = chart["options"]
+            # if data_frame is present and a str that means we need to replace it with a value from variables
+            if "data_frame" in options.keys() and isinstance(options["data_frame"], str):
+                # dot dotation to datasource if exists
+                data_source = options["data_frame"].split(".")
+                data = variables
+                for path in data_source:
+                    if path in data.keys():
+                        data = data[path]
+                    else:
+                        break
+                
+                if data:
+                    chart["options"]["data_frame"] = data
+
+            layout = None
+            if "layout" in chart.keys():
+                layout = chart["layout"]
+
+            traces = None
+            if "traces" in chart.keys():
+                traces = chart["traces"]
+
+            variables["charts"][key] = generate_chart(type=chart["chartType"], format=chart["outputType"], options=chart["options"], traces=traces, layout=layout)
+
     tm = env.from_string(template_string)
-    print(dependencies)
-    print(variables)
     variables = {**variables, **dependencies}
     if variables:
         return tm.render(css=css, **variables)
@@ -189,6 +218,7 @@ ALLOWED_OPERATIONS = (
     # operations
     "aggregate",
     "annotate",
+    "count",
     # ordering
     "order_by",
 )
@@ -202,6 +232,7 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
     local_data_source = data_source
     Model = local_data_source.pop("model")
     limit = None
+    count = None
     columns = local_data_source["only"] if "only" in local_data_source.keys() else None
 
     # create a base reporting queryset
@@ -210,13 +241,15 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
     for operation, values in local_data_source.items():
         if operation not in ALLOWED_OPERATIONS:
             raise InvalidDBOperationException(
-                f"DB operation: {operation} not allowed. Supported operations: only, defer, filter, exclude, limit, select_related, prefetch_related, annotate, aggregate, order_by"
+                f"DB operation: {operation} not allowed. Supported operations: only, defer, filter, exclude, limit, select_related, prefetch_related, annotate, aggregate, order_by, count"
             )
 
         if operation == "meta":
             continue
         elif operation == "limit":
             limit = values
+        elif operation == "count":
+            count = True
         elif isinstance(values, list):
             queryset = getattr(queryset, operation)(*values)
         elif isinstance(values, dict):
@@ -224,6 +257,9 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
         else:
             queryset = getattr(queryset, operation)(values)
 
+    if count:
+        return queryset.count()
+    
     if limit:
         queryset = queryset[:limit]
 
@@ -250,3 +286,20 @@ def normalize_asset_url(text: str, type: Literal["pdf", "html"]):
             pass
 
     return new_text
+
+def generate_chart(*, type: Literal["pie", "bar", "line"], format: Literal["html", "image"], options: Dict[str, Any], traces: Dict[str, Any] = None, layout: Dict[str, Any] = None) -> Union[str, bytes]:
+    import plotly.express as px
+
+    fig = getattr(px, type)(**options)
+
+    if traces:
+        fig.update_traces(**traces)
+
+    if layout:
+        fig.update_layout(**layout)
+
+    if format == "html":
+        return fig.to_html(full_html=False, include_plotlyjs="cdn")
+    elif format == "image":
+        return fig.to_image(format="svg")
+    

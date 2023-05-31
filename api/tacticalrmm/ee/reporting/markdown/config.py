@@ -17,18 +17,11 @@ markdown_ext: "Optional[Sequence[Union[str, markdown.Extension]]]" = [
     "def_list",
     "nl2br",
     "fenced_code",
-    "full_yaml_metadata",
     "attr_list",
     IgnoreJinjaExtension(),
 ]
 
-extension_config = {
-    "full_yaml_metadata": {
-        "yaml_loader": yaml.SafeLoader,
-    },
-}
-
 # import this into views
 Markdown = markdown.Markdown(
-    extensions=markdown_ext, extension_configs=extension_config
+    extensions=markdown_ext
 )

@@ -43,4 +43,5 @@ urlpatterns = [
     path("installer/", views.install_agent),
     path("bulkrecovery/", views.bulk_agent_recovery),
     path("scripthistory/", views.ScriptRunHistory.as_view()),
+    path("<agent:agent_id>/wol/", views.wol),
 ]

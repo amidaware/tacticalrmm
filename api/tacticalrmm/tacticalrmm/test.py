@@ -11,6 +11,7 @@ from agents.models import Agent
 from automation.models import Policy
 from core.models import CoreSettings
 from tacticalrmm.constants import CustomFieldModel, CustomFieldType
+from tacticalrmm.helpers import make_random_password
 
 if TYPE_CHECKING:
     from checks.models import Check
@@ -64,7 +65,7 @@ class TacticalTestCase(TestCase):
         User.objects.create_user(  # type: ignore
             username=uuid.uuid4().hex,
             is_installer_user=True,
-            password=User.objects.make_random_password(60),  # type: ignore
+            password=make_random_password(len=60),  # type: ignore
         )
 
     def setup_client(self) -> None:
@@ -73,7 +74,7 @@ class TacticalTestCase(TestCase):
     def setup_agent_auth(self, agent: "Agent") -> None:
         agent_user = User.objects.create_user(  # type: ignore
             username=agent.agent_id,
-            password=User.objects.make_random_password(60),  # type: ignore
+            password=make_random_password(len=60),  # type: ignore
         )
         Token.objects.create(user=agent_user)
 

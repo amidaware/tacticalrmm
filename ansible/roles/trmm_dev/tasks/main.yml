@@ -1,4 +1,13 @@
 ---
+- name: Append subdomains to hosts
+  tags: hosts
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    backrefs: yes
+    regexp: '^(127\.0\.1\.1 .*)$'
+    line: "\\1 {{ api }} {{ mesh }} {{ rmm }}"
+
 - name: set mouse mode for vim
   tags: vim
   become: yes

@@ -426,6 +426,7 @@ DEMO_NOT_ALLOWED = [
     {"name": "ResetPass", "methods": ["PUT"]},
     {"name": "Reset2FA", "methods": ["PUT"]},
     {"name": "bulk_run_checks", "methods": ["GET"]},
+    {"name": "OpenAICodeCompletion", "methods": ["POST"]},
 ]
 
 CONFIG_MGMT_CMDS = (

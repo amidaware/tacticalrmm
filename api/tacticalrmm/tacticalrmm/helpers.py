@@ -1,8 +1,12 @@
 import random
+import secrets
+import string
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
+from cryptography import x509
 from django.conf import settings
 from django.utils import timezone as djangotime
 from rest_framework import status
@@ -71,3 +75,19 @@ def setup_nats_options() -> dict[str, Any]:
         "max_reconnect_attempts": 2,
     }
     return opts
+
+
+def make_random_password(*, len: int) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for i in range(len))
+
+
+def days_until_cert_expires() -> int:
+    cert_file, _ = get_certs()
+    cert_bytes = Path(cert_file).read_bytes()
+
+    cert = x509.load_pem_x509_certificate(cert_bytes)
+    expires = cert.not_valid_after.replace(tzinfo=ZoneInfo("UTC"))
+    delta = expires - djangotime.now()
+
+    return delta.days

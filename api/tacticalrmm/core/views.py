@@ -78,7 +78,7 @@ def clear_cache(request):
 @api_view()
 def dashboard_info(request):
     from core.utils import token_is_expired
-    from tacticalrmm.utils import get_latest_trmm_ver
+    from tacticalrmm.utils import get_latest_trmm_ver, runcmd_placeholder_text
 
     core_settings = get_core_settings()
     return Response(
@@ -101,6 +101,11 @@ def dashboard_info(request):
             "default_date_format": core_settings.date_format,
             "token_is_expired": token_is_expired(),
             "open_ai_integration_enabled": bool(core_settings.open_ai_token),
+            "dash_info_color": request.user.dash_info_color,
+            "dash_positive_color": request.user.dash_positive_color,
+            "dash_negative_color": request.user.dash_negative_color,
+            "dash_warning_color": request.user.dash_warning_color,
+            "run_cmd_placeholder_text": runcmd_placeholder_text(),
         }
     )
 

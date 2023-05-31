@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="22"
+SCRIPT_VERSION="24"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -8,18 +8,36 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+if [ $EUID -eq 0 ]; then
+    echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
+    exit 1
+fi
+
 if [[ $* == *--schedule* ]]; then
     (
         crontab -l 2>/dev/null
         echo "0 0 * * * /rmm/backup.sh --auto"
     ) | crontab -
+    
+     if [ ! -d /rmmbackups ]; then
+        sudo mkdir /rmmbackups
+    fi
+    
+    if [ ! -d /rmmbackups/daily ]; then
+        sudo mkdir /rmmbackups/daily
+    fi
+
+    if [ ! -d /rmmbackups/weekly ]; then
+        sudo mkdir /rmmbackups/weekly
+    fi
+
+    if [ ! -d /rmmbackups/monthly ]; then
+        sudo mkdir /rmmbackups/monthly
+    fi
+    sudo chown ${USER}:${USER} -R /rmmbackups
+    
     printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
     exit 0
-fi
-
-if [ $EUID -eq 0 ]; then
-    echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
-    exit 1
 fi
 
 if [ ! -d /rmmbackups ]; then
@@ -79,21 +97,6 @@ cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 >${t
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
 
 if [[ $* == *--auto* ]]; then
-
-    if [ ! -d /rmmbackups/daily ]; then
-        sudo mkdir /rmmbackups/daily
-        sudo chown ${USER}:${USER} /rmmbackups/daily
-    fi
-
-    if [ ! -d /rmmbackups/weekly ]; then
-        sudo mkdir /rmmbackups/weekly
-        sudo chown ${USER}:${USER} /rmmbackups/weekly
-    fi
-
-    if [ ! -d /rmmbackups/monthly ]; then
-        sudo mkdir /rmmbackups/monthly
-        sudo chown ${USER}:${USER} /rmmbackups/monthly
-    fi
 
     month_day=$(date +"%d")
     week_day=$(date +"%u")

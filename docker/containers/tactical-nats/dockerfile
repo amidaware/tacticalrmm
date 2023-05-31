@@ -1,4 +1,4 @@
-FROM nats:2.9.16-alpine
+FROM nats:2.9.17-alpine
 
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
@@ -12,7 +12,6 @@ RUN chmod +x /usr/local/bin/nats-api
 
 RUN touch /usr/local/bin/config_watcher.sh
 RUN chown 1000:1000 /usr/local/bin/config_watcher.sh
-
 
 RUN mkdir -p /var/log/supervisor
 RUN mkdir -p /etc/supervisor/conf.d

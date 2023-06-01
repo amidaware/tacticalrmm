@@ -19,7 +19,6 @@ from .constants import REPORTING_MODELS
 
 from tacticalrmm.utils import get_db_value
 
-import pysnooper
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
@@ -61,7 +60,6 @@ def generate_pdf(*, html: str, css: str = "") -> bytes:
 
     return pdf_bytes
 
-@pysnooper.snoop()
 def generate_html(
     *,
     template: str,

@@ -98,62 +98,69 @@ class GenerateReport(APIView):
 
         format = request.data["format"]
 
-        html_report = generate_html(
-            template=template.template_md,
-            template_type=template.type,
-            css=template.template_css if template.template_css else "",
-            html_template=template.template_html.id
-            if template.template_html
-            else None,
-            variables=template.template_variables,
-            dependencies=request.data["dependencies"]
-        )
-
-        html_report = normalize_asset_url(html_report, format)
-
-        if format == "html":
-            return Response(html_report)
-        elif format == "pdf":
-            pdf_bytes = generate_pdf(html=html_report)
-
-            return FileResponse(
-                ContentFile(pdf_bytes),
-                content_type="application/pdf",
-                filename=f"{template.name}.pdf",
+        try:
+            html_report = generate_html(
+                template=template.template_md,
+                template_type=template.type,
+                css=template.template_css if template.template_css else "",
+                html_template=template.template_html.id
+                if template.template_html
+                else None,
+                variables=template.template_variables,
+                dependencies=request.data["dependencies"]
             )
-        else:
-            notify_error("Report format is incorrect.")
+
+
+            html_report = normalize_asset_url(html_report, format)
+
+            if format == "html":
+                return Response(html_report)
+            elif format == "pdf":
+                pdf_bytes = generate_pdf(html=html_report)
+
+                return FileResponse(
+                    ContentFile(pdf_bytes),
+                    content_type="application/pdf",
+                    filename=f"{template.name}.pdf",
+                )
+            else:
+                notify_error("Report format is incorrect.")        
+        except Exception as error:
+            return notify_error(error)
 
 
 class GenerateReportPreview(APIView):
     def post(self, request: Request) -> Union[FileResponse, Response]:
 
-        html_report = generate_html(
-            template=request.data["template_md"],
-            template_type=request.data["type"],
-            css=request.data["template_css"],
-            html_template=(
-                request.data["template_html"]
-                if "template_html" in request.data.keys()
-                else None
-            ),
-            variables=request.data["template_variables"],
-            dependencies=request.data["dependencies"]
-        )
-
-        response_format = request.data["format"]
-
-        html_report = normalize_asset_url(html_report, response_format)
-        if response_format == "html":
-            return Response(html_report)
-        else:
-            pdf_bytes = generate_pdf(html=html_report)
-
-            return FileResponse(
-                ContentFile(pdf_bytes),
-                content_type="application/pdf",
-                filename=f"preview.pdf",
+        try:
+            html_report = generate_html(
+                template=request.data["template_md"],
+                template_type=request.data["type"],
+                css=request.data["template_css"],
+                html_template=(
+                    request.data["template_html"]
+                    if "template_html" in request.data.keys()
+                    else None
+                ),
+                variables=request.data["template_variables"],
+                dependencies=request.data["dependencies"]
             )
+
+            response_format = request.data["format"]
+
+            html_report = normalize_asset_url(html_report, response_format)
+            if response_format == "html":
+                return Response(html_report)
+            else:
+                pdf_bytes = generate_pdf(html=html_report)
+
+                return FileResponse(
+                    ContentFile(pdf_bytes),
+                    content_type="application/pdf",
+                    filename=f"preview.pdf",
+                )
+        except Exception as error:
+            return notify_error(error)
 
 
 class GetReportAssets(APIView):

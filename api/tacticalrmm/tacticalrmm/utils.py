@@ -41,7 +41,6 @@ from tacticalrmm.helpers import (
     notify_error,
 )
 
-
 def generate_winagent_exe(
     *,
     client: int,
@@ -317,17 +316,15 @@ def get_db_value(*, string: str, instance=None) -> Union[str, List, True, False,
         return None
     
     instance_value = instance
-    iterations = 0
 
     # look through all properties and return the value
     for prop in props:
-        iterations += 1
         if hasattr(instance_value, prop):
             value = getattr(instance_value, prop)
             if callable(value):
-                return
-            instance_value = getattr(instance_value, prop)
-        elif iterations == 2:
+                return None
+            instance_value = value
+        else:
             try:
                 field = CustomField.objects.get(model=props[0], name=prop)
                 model_fields = getattr(field, f"{props[0]}_fields")
@@ -338,10 +335,8 @@ def get_db_value(*, string: str, instance=None) -> Union[str, List, True, False,
                     return field.default_value if field.type != CustomFieldType.CHECKBOX else bool(field.default_value)
             except CustomField.DoesNotExist:
                 return None
-        elif iterations == 1:
-            # if the first property i.e: client is the instance then we can skip trying to lookup properties
-            pass
-        else:
+        
+        if not instance_value:
             return None
         
     return instance_value

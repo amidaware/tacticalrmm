@@ -23,7 +23,7 @@ from tacticalrmm.utils import get_db_value
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
 # {{client.name}}, client.name, client
-RE_DB_VALUE = re.compile(r'(\{\{\s*((client|site|agent|global)\.{1}[\w\s\d]+)\s*\}\})')
+RE_DB_VALUE = re.compile(r'(\{\{\s*(client|site|agent|global)\.(.*)\s*\}\})')
 
 
 # this will lookup the Jinja parent template in the DB
@@ -73,37 +73,33 @@ def generate_html(
     # convert template from markdown to html if type is markdown
     template_string = Markdown.convert(template) if template_type == "markdown" else template
 
+    # check for variables that need to be replaced with the database values ({{client.name}}, {{agent.hostname}}, etc)
+    if variables and isinstance(variables, str):
+        # returns {{ model.prop }}, prop, model
+        for string, model, prop in re.findall(RE_DB_VALUE, variables):
+            value = ""
+            # will be agent, site, client, or global
+            if model == "global":
+                value = get_db_value(string=f"{model}.{prop}")
+            elif model in ["client", "site", "agent"]:
+                if model == "client" and "client" in dependencies.keys():
+                    Model = apps.get_model("clients", "Client")
+                    instance = Model.objects.get(id=dependencies["client"])
+                elif model == "site"  and "site" in dependencies.keys():
+                    Model = apps.get_model("clients", "Site")
+                    instance = Model.objects.get(id=dependencies["site"])
+                elif model == "agent" and "agent" in dependencies.keys():
+                    Model = apps.get_model("agents", "Agent")
+                    instance = Model.objects.get(agent_id=dependencies["agent"])
+                else:
+                    instance = None
+
+                value = get_db_value(string=prop, instance=instance) if instance else None
+            if value:
+                variables = variables.replace(string, str(value))
+
     # load yaml variables if they exist
     variables = yaml.safe_load(variables) or {}
-
-    # check for variables that need to be replaced with the database values ({{client.name}}, {{agent.hostname}}, etc)
-    if variables:
-        for key, variable in variables.items():
-            if isinstance(variable, str):
-                for string, prop, model in re.findall(RE_DB_VALUE, variable):
-                    value = ""
-                    # will be agent, site, client, or global
-                    if model == "global":
-                        value = get_db_value(string=prop)
-                    elif model in ["client", "site", "agent"]:
-                        if model == "client" and "client" in dependencies.keys():
-                            Model = apps.get_model("clients", "Client")
-                            instance = Model.objects.get(id=dependencies["client"])
-                            del dependencies["client"]
-                        elif model == "site"  and "site" in dependencies.keys():
-                            Model = apps.get_model("clients", "Site")
-                            instance = Model.objects.get(id=dependencies["site"])
-                            del dependencies["site"]
-                        elif model == "agent" and "agent" in dependencies.keys():
-                            Model = apps.get_model("agents", "Agent")
-                            instance = Model.objects.get(agent_id=dependencies["agent"])
-                            del dependencies["agent"]
-                        else:
-                            instance = None
-
-                        value = get_db_value(string=prop, instance=instance) if instance else None
-                    if value:
-                        variables[key] = variable.replace(string, str(value))
 
     # append extends if html master template is configured
     if html_template:
@@ -191,7 +187,7 @@ def resolve_model(*, data_source: Dict[str, Any]) -> Dict[str, Any]:
     # check that model property is present and correct
     if "model" in data_source.keys():
         for model, app in REPORTING_MODELS:
-            if data_source["model"].capitalize() == model:
+            if data_source["model"].lower() == model.lower():
                 try:
                     # overwrite model with the model type
                     tmp_data_source["model"] = apps.get_model(app, model)

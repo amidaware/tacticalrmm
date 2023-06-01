@@ -19,6 +19,7 @@ from .constants import REPORTING_MODELS
 
 from tacticalrmm.utils import get_db_value
 
+import pysnooper
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
@@ -60,6 +61,7 @@ def generate_pdf(*, html: str, css: str = "") -> bytes:
 
     return pdf_bytes
 
+@pysnooper.snoop()
 def generate_html(
     *,
     template: str,
@@ -73,6 +75,23 @@ def generate_html(
     # convert template from markdown to html if type is markdown
     template_string = Markdown.convert(template) if template_type == "markdown" else template
 
+    # replace any data queries in data_sources with the yaml
+    variables = yaml.safe_load(variables) or {}
+    if "data_sources" in variables.keys() and isinstance(variables["data_sources"], dict):
+        for key, value in variables["data_sources"].items():
+
+            data_source = {}
+            # data_source is referencing a saved data query
+            if isinstance(value, str):
+                ReportDataQuery = apps.get_model("reporting", "ReportDataQuery")
+                try:
+                    variables["data_sources"][key] = ReportDataQuery.objects.get(
+                        name=value
+                    ).json_query
+                except ReportDataQuery.DoesNotExist:
+                    continue
+    
+    variables = yaml.dump(variables)
     # check for variables that need to be replaced with the database values ({{client.name}}, {{agent.hostname}}, etc)
     if variables and isinstance(variables, str):
         # returns {{ model.prop }}, prop, model
@@ -114,27 +133,15 @@ def generate_html(
     # in the form of {{data_sources.data_source_name}}
     if "data_sources" in variables.keys() and isinstance(variables["data_sources"], dict):
         for key, value in variables["data_sources"].items():
-
-            data_source = {}
-            # data_source is referencing a saved data query
-            if isinstance(value, str):
-                ReportDataQuery = apps.get_model("reporting", "ReportDataQuery")
-                try:
-                    data_source = ReportDataQuery.objects.get(
-                        name=value
-                    ).json_query
-                except ReportDataQuery.DoesNotExist:
-                    continue
-
-            # inline data source
-            elif isinstance(value, dict):
+            
+            if isinstance(value, dict):
                 data_source = value
 
-            _ = data_source.pop("meta") if "meta" in data_source.keys() else None
+                _ = data_source.pop("meta") if "meta" in data_source.keys() else None
 
-            modified_datasource = resolve_model(data_source=data_source)
-            queryset = build_queryset(data_source=modified_datasource)
-            variables["data_sources"][key] = queryset
+                modified_datasource = resolve_model(data_source=data_source)
+                queryset = build_queryset(data_source=modified_datasource)
+                variables["data_sources"][key] = queryset
 
     # generate and replace charts in the variables
     if "charts" in variables.keys() and isinstance(variables["charts"], dict):

@@ -90,6 +90,18 @@ def generate_html(
                     continue
     
     variables = yaml.dump(variables)
+
+    # resolve dependencies that are agent, site, or client
+    if "client" in dependencies.keys():
+        Model = apps.get_model("clients", "Client")
+        dependencies["client"] = Model.objects.get(id=dependencies["client"])
+    elif "site" in dependencies.keys():
+        Model = apps.get_model("clients", "Site")
+        dependencies["site"] = Model.objects.get(id=dependencies["site"])
+    elif "agent" in dependencies.keys():
+        Model = apps.get_model("agents", "Agent")
+        dependencies["agent"] = Model.objects.get(agent_id=dependencies["agent"])
+
     # check for variables that need to be replaced with the database values ({{client.name}}, {{agent.hostname}}, etc)
     if variables and isinstance(variables, str):
         # returns {{ model.prop }}, prop, model
@@ -98,20 +110,10 @@ def generate_html(
             # will be agent, site, client, or global
             if model == "global":
                 value = get_db_value(string=f"{model}.{prop}")
-            elif model in ["client", "site", "agent"]:
-                if model == "client" and "client" in dependencies.keys():
-                    Model = apps.get_model("clients", "Client")
-                    instance = Model.objects.get(id=dependencies["client"])
-                elif model == "site"  and "site" in dependencies.keys():
-                    Model = apps.get_model("clients", "Site")
-                    instance = Model.objects.get(id=dependencies["site"])
-                elif model == "agent" and "agent" in dependencies.keys():
-                    Model = apps.get_model("agents", "Agent")
-                    instance = Model.objects.get(agent_id=dependencies["agent"])
-                else:
-                    instance = None
-
+            elif model in dependencies.keys():
+                instance = dependencies[model]
                 value = get_db_value(string=prop, instance=instance) if instance else None
+                
             if value:
                 variables = variables.replace(string, str(value))
 

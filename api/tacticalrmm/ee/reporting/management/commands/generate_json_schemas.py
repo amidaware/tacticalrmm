@@ -79,6 +79,12 @@ def generate_schema() -> None:
                         "patternProperties": patternObj,
                         "additionalProperties": False,
                     },
+                    "get": {
+                        "type": "object",
+                        "properties": filterObj,
+                        "patternProperties": patternObj,
+                        "additionalProperties": False,
+                    },
                     "exclude": {
                         "type": "object",
                         "properties": filterObj,

@@ -6,7 +6,6 @@ For details, see: https://license.tacticalrmm.com/ee
 
 import yaml
 import re
-import pandas as pd
 
 from django.apps import apps
 from weasyprint import HTML, CSS
@@ -18,7 +17,6 @@ from .models import ReportHTMLTemplate, ReportTemplate, ReportAsset
 from .constants import REPORTING_MODELS
 
 from tacticalrmm.utils import get_db_value
-
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
@@ -215,6 +213,7 @@ ALLOWED_OPERATIONS = (
     "filter",
     "exclude",
     "limit",
+    "get",
     # relations
     "select_related",
     "prefetch_related",

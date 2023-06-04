@@ -24,7 +24,7 @@ from django.core.exceptions import (
 from django.core.files.base import ContentFile
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
-
+from jinja2.exceptions import TemplateError
 import os
 import shutil
 import uuid
@@ -125,8 +125,14 @@ class GenerateReport(APIView):
                 )
             else:
                 notify_error("Report format is incorrect.")        
-        except Exception as error:
-            return notify_error(error)
+        except TemplateError as error:
+            error_lines = error.source.split("\n")
+            error_line = error_lines[error.lineno - 1]
+
+            # find actual line number
+            template_lines = request.data["template_md"].split("\n")
+            actual_line_number = template_lines.index(error_line) + 1
+            return notify_error(f"Line {actual_line_number}: {error.message}")
 
 
 class GenerateReportPreview(APIView):
@@ -159,8 +165,15 @@ class GenerateReportPreview(APIView):
                     content_type="application/pdf",
                     filename=f"preview.pdf",
                 )
-        except Exception as error:
-            return notify_error(error)
+        except TemplateError as error:
+            error_lines = error.source.split("\n")
+            error_line = error_lines[error.lineno - 1]
+
+            # find actual line number
+            template_lines = request.data["template_md"].split("\n")
+            actual_line_number = template_lines.index(error_line) + 1
+            return notify_error(f"Line {actual_line_number}: {error.message}")
+
 
 
 class GetReportAssets(APIView):

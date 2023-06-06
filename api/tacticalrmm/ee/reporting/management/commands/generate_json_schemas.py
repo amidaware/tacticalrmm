@@ -6,8 +6,9 @@ For details, see: https://license.tacticalrmm.com/ee
 import json
 
 from django.apps import apps
-from django.core.management.base import BaseCommand
 from django.conf import settings as djangosettings
+from django.core.management.base import BaseCommand
+
 from ...constants import REPORTING_MODELS
 
 
@@ -132,7 +133,7 @@ def generate_schema() -> None:
                 "enum": [model.lower() for model, _ in REPORTING_MODELS],
             },
             "limit": {"type": "integer"},
-            "count": {"type": "boolean"}
+            "count": {"type": "boolean"},
         },
         "required": ["model"],
         "oneOf": oneOf,

@@ -4,29 +4,30 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-import yaml
 import re
+from typing import Any, Dict, Tuple, Literal, Optional, Union, cast
 
+import plotly.express as px
+import yaml
 from django.apps import apps
-from weasyprint import HTML, CSS
-from weasyprint.text.fonts import FontConfiguration
 from jinja2 import Environment, FunctionLoader
-from typing import Dict, Any, Literal, Union
-from .markdown.config import Markdown
-from .models import ReportHTMLTemplate, ReportTemplate, ReportAsset
-from .constants import REPORTING_MODELS
-
 from tacticalrmm.utils import get_db_value
+from weasyprint import CSS, HTML
+from weasyprint.text.fonts import FontConfiguration
+
+from .constants import REPORTING_MODELS
+from .markdown.config import Markdown
+from .models import ReportAsset, ReportHTMLTemplate, ReportTemplate
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
 # {{client.name}}, client.name, client
-RE_DB_VALUE = re.compile(r'(\{\{\s*(client|site|agent|global)\.(.*)\s*\}\})')
+RE_DB_VALUE = re.compile(r"(\{\{\s*(client|site|agent|global)\.(.*)\s*\}\})")
 
 
 # this will lookup the Jinja parent template in the DB
 # Example: {% extends "MASTER_TEMPLATE_NAME or REPORT_TEMPLATE_NAME" %}
-def db_template_loader(template_name):
+def db_template_loader(template_name: str) -> Optional[str]:
     # trys the ReportHTMLTemplate table and ReportTemplate table
     try:
         return ReportHTMLTemplate.objects.get(name=template_name).html
@@ -35,19 +36,21 @@ def db_template_loader(template_name):
 
     try:
         template = ReportTemplate.objects.get(name=template_name)
-        return template.template_html if template.type == "html" else template.template_md
+        return template.template_md
     except ReportHTMLTemplate.DoesNotExist:
         pass
 
     return None
 
+
 # sets up Jinja environment wiht the db loader template
 # comment tags needed to be editted because they conflicted with css properties
 env = Environment(
     loader=FunctionLoader(db_template_loader),
-    comment_start_string='{=',
-    comment_end_string='=}',
+    comment_start_string="{=",
+    comment_end_string="=}",
 )
+
 
 def generate_pdf(*, html: str, css: str = "") -> bytes:
     font_config = FontConfiguration()
@@ -58,36 +61,26 @@ def generate_pdf(*, html: str, css: str = "") -> bytes:
 
     return pdf_bytes
 
+
 def generate_html(
     *,
     template: str,
     template_type: str,
     css: str = "",
-    html_template: int = None,
+    html_template: Optional[int] = None,
     variables: str = "",
-    dependencies: Dict[str, int] = {}
-) -> str:
-    
+    dependencies: Dict[str, int] = {},
+) -> Tuple[str, Optional[Dict[str, Any]]]:
+    # validate the template before doing anything. This will throw a TemplateError exception
+    env.parse(template)
+
     # convert template from markdown to html if type is markdown
-    template_string = Markdown.convert(template) if template_type == "markdown" else template
+    template_string = (
+        Markdown.convert(template) if template_type == "markdown" else template
+    )
 
     # replace any data queries in data_sources with the yaml
-    variables = yaml.safe_load(variables) or {}
-    if "data_sources" in variables.keys() and isinstance(variables["data_sources"], dict):
-        for key, value in variables["data_sources"].items():
-
-            data_source = {}
-            # data_source is referencing a saved data query
-            if isinstance(value, str):
-                ReportDataQuery = apps.get_model("reporting", "ReportDataQuery")
-                try:
-                    variables["data_sources"][key] = ReportDataQuery.objects.get(
-                        name=value
-                    ).json_query
-                except ReportDataQuery.DoesNotExist:
-                    continue
-    
-    variables = yaml.dump(variables)
+    variables = make_dataqueries_inline(variables)
 
     # resolve dependencies that are agent, site, or client
     if "client" in dependencies.keys():
@@ -110,8 +103,10 @@ def generate_html(
                 value = get_db_value(string=f"{model}.{prop}")
             elif model in dependencies.keys():
                 instance = dependencies[model]
-                value = get_db_value(string=prop, instance=instance) if instance else None
-                
+                value = (
+                    get_db_value(string=prop, instance=instance) if instance else None
+                )
+
             if value:
                 variables = variables.replace(string, str(value))
 
@@ -123,15 +118,18 @@ def generate_html(
         try:
             html_template_name = ReportHTMLTemplate.objects.get(pk=html_template).name
 
-            template_string = f"""{{% extends "{html_template_name}" %}}\n{template_string}"""
+            template_string = (
+                f"""{{% extends "{html_template_name}" %}}\n{template_string}"""
+            )
         except ReportHTMLTemplate.DoesNotExist:
             pass
 
     # replace the data_sources with the actual data from DB. This will be passed to the template
     # in the form of {{data_sources.data_source_name}}
-    if "data_sources" in variables.keys() and isinstance(variables["data_sources"], dict):
+    if "data_sources" in variables.keys() and isinstance(
+        variables["data_sources"], dict
+    ):
         for key, value in variables["data_sources"].items():
-            
             if isinstance(value, dict):
                 data_source = value
 
@@ -144,15 +142,17 @@ def generate_html(
     # generate and replace charts in the variables
     if "charts" in variables.keys() and isinstance(variables["charts"], dict):
         for key, chart in variables["charts"].items():
-            
             # make sure chart options are present and a dict
             if "options" not in chart.keys() and not isinstance(chart["options"], dict):
                 break
 
             options = chart["options"]
             # if data_frame is present and a str that means we need to replace it with a value from variables
-            if "data_frame" in options.keys() and isinstance(options["data_frame"], str):
+            if "data_frame" in options.keys() and isinstance(
+                options["data_frame"], str
+            ):
                 # dot dotation to datasource if exists
+                # TODO: change to using yaml references instead
                 data_source = options["data_frame"].split(".")
                 data = variables
                 for path in data_source:
@@ -160,7 +160,7 @@ def generate_html(
                         data = data[path]
                     else:
                         break
-                
+
                 if data:
                     chart["options"]["data_frame"] = data
 
@@ -172,14 +172,39 @@ def generate_html(
             if "traces" in chart.keys():
                 traces = chart["traces"]
 
-            variables["charts"][key] = generate_chart(type=chart["chartType"], format=chart["outputType"], options=chart["options"], traces=traces, layout=layout)
+            variables["charts"][key] = generate_chart(
+                type=chart["chartType"],
+                format=chart["outputType"],
+                options=chart["options"],
+                traces=traces,
+                layout=layout,
+            )
 
     tm = env.from_string(template_string)
     variables = {**variables, **dependencies}
     if variables:
-        return tm.render(css=css, **variables)
+        return (tm.render(css=css, **variables), variables)
     else:
-        return tm.render(css=css)
+        return (tm.render(css=css), None)
+
+
+def make_dataqueries_inline(variables: str) -> str:
+    variables_obj = yaml.safe_load(variables) or {}
+    if "data_sources" in variables_obj.keys() and isinstance(
+        variables_obj["data_sources"], dict
+    ):
+        for key, value in variables_obj["data_sources"].items():
+            # data_source is referencing a saved data query
+            if isinstance(value, str):
+                ReportDataQuery = apps.get_model("reporting", "ReportDataQuery")
+                try:
+                    variables_obj["data_sources"][key] = ReportDataQuery.objects.get(
+                        name=value
+                    ).json_query
+                except ReportDataQuery.DoesNotExist:
+                    continue
+
+    return yaml.dump(variables_obj)
 
 
 class ResolveModelException(Exception):
@@ -261,7 +286,7 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
 
     if count:
         return queryset.count()
-    
+
     if limit:
         queryset = queryset[:limit]
 
@@ -273,15 +298,19 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
     return queryset
 
 
-def normalize_asset_url(text: str, type: Literal["pdf", "html"]):
-    RE_ASSET_URL = re.compile(r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))")
+def normalize_asset_url(text: str, type: Literal["pdf", "html"]) -> str:
+    RE_ASSET_URL = re.compile(
+        r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))"
+    )
 
     new_text = text
-    for url, id in re.findall(RE_ASSET_URL,text):
+    for url, id in re.findall(RE_ASSET_URL, text):
         try:
             asset = ReportAsset.objects.get(id=id)
             if type == "html":
-                new_text = new_text.replace(f"asset://{id}", f"{asset.file.url}?id={id}")
+                new_text = new_text.replace(
+                    f"asset://{id}", f"{asset.file.url}?id={id}"
+                )
             else:
                 new_text = new_text.replace(f"{url}", f"file://{asset.file.path}")
         except ReportAsset.DoesNotExist:
@@ -289,9 +318,15 @@ def normalize_asset_url(text: str, type: Literal["pdf", "html"]):
 
     return new_text
 
-def generate_chart(*, type: Literal["pie", "bar", "line"], format: Literal["html", "image"], options: Dict[str, Any], traces: Dict[str, Any] = None, layout: Dict[str, Any] = None) -> Union[str, bytes]:
-    import plotly.express as px
 
+def generate_chart(
+    *,
+    type: Literal["pie", "bar", "line"],
+    format: Literal["html", "image"],
+    options: Dict[str, Any],
+    traces: Optional[Dict[str, Any]] = None,
+    layout: Optional[Dict[str, Any]] = None,
+) -> Union[str, bytes]:
     fig = getattr(px, type)(**options)
 
     if traces:
@@ -301,7 +336,6 @@ def generate_chart(*, type: Literal["pie", "bar", "line"], format: Literal["html
         fig.update_layout(**layout)
 
     if format == "html":
-        return fig.to_html(full_html=False, include_plotlyjs="cdn")
+        return cast(str, fig.to_html(full_html=False, include_plotlyjs="cdn"))
     elif format == "image":
-        return fig.to_image(format="svg")
-    
+        return cast(bytes, fig.to_image(format="svg"))

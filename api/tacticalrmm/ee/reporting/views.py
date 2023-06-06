@@ -28,11 +28,18 @@ from jinja2.exceptions import TemplateError
 import os
 import shutil
 import uuid
+import json
 from .storage import report_assets_fs
 from .models import ReportTemplate, ReportAsset, ReportHTMLTemplate, ReportDataQuery
-from .utils import generate_html, generate_pdf, normalize_asset_url
+from .utils import (
+    generate_html,
+    generate_pdf,
+    normalize_asset_url,
+    make_dataqueries_inline,
+)
 
 from tacticalrmm.utils import notify_error
+
 
 def path_exists(value: str) -> None:
     if not report_assets_fs.exists(value):
@@ -50,7 +57,7 @@ class GetAddReportTemplate(APIView):
     serializer_class = ReportTemplateSerializer
 
     def get(self, request: Request) -> Response:
-        depends_on = request.query_params.getlist("dependsOn[]", [])
+        depends_on: List[str] = request.query_params.getlist("dependsOn[]", list())
 
         if depends_on:
             templates = ReportTemplate.objects.filter(depends_on__overlap=depends_on)
@@ -99,7 +106,7 @@ class GenerateReport(APIView):
         format = request.data["format"]
 
         try:
-            html_report = generate_html(
+            html_report, _ = generate_html(
                 template=template.template_md,
                 template_type=template.type,
                 css=template.template_css if template.template_css else "",
@@ -107,9 +114,8 @@ class GenerateReport(APIView):
                 if template.template_html
                 else None,
                 variables=template.template_variables,
-                dependencies=request.data["dependencies"]
+                dependencies=request.data["dependencies"],
             )
-
 
             html_report = normalize_asset_url(html_report, format)
 
@@ -124,22 +130,15 @@ class GenerateReport(APIView):
                     filename=f"{template.name}.pdf",
                 )
             else:
-                notify_error("Report format is incorrect.")        
+                return notify_error("Report format is incorrect.")
         except TemplateError as error:
-            error_lines = error.source.split("\n")
-            error_line = error_lines[error.lineno - 1]
-
-            # find actual line number
-            template_lines = request.data["template_md"].split("\n")
-            actual_line_number = template_lines.index(error_line) + 1
-            return notify_error(f"Line {actual_line_number}: {error.message}")
+            return notify_error(f"Line {error.lineno}: {error.message}")
 
 
 class GenerateReportPreview(APIView):
     def post(self, request: Request) -> Union[FileResponse, Response]:
-
         try:
-            html_report = generate_html(
+            html_report, variables = generate_html(
                 template=request.data["template_md"],
                 template_type=request.data["type"],
                 css=request.data["template_css"],
@@ -149,13 +148,18 @@ class GenerateReportPreview(APIView):
                     else None
                 ),
                 variables=request.data["template_variables"],
-                dependencies=request.data["dependencies"]
+                dependencies=request.data["dependencies"],
             )
 
             response_format = request.data["format"]
+            debug = request.data["debug"]
 
             html_report = normalize_asset_url(html_report, response_format)
-            if response_format == "html":
+
+            if debug:
+                return Response({"template": html_report, "variables": variables})
+
+            elif response_format == "html":
                 return Response(html_report)
             else:
                 pdf_bytes = generate_pdf(html=html_report)
@@ -166,14 +170,59 @@ class GenerateReportPreview(APIView):
                     filename=f"preview.pdf",
                 )
         except TemplateError as error:
-            error_lines = error.source.split("\n")
-            error_line = error_lines[error.lineno - 1]
+            return notify_error(f"Line {error.lineno}: {error.message}")
 
-            # find actual line number
-            template_lines = request.data["template_md"].split("\n")
-            actual_line_number = template_lines.index(error_line) + 1
-            return notify_error(f"Line {actual_line_number}: {error.message}")
 
+class ExportReportTemplate(APIView):
+    def post(self, request: Request, pk: int) -> Response:
+        template = get_object_or_404(ReportTemplate, pk=pk)
+
+        template_html = template.template_html if template.template_html else None
+        template_variables = make_dataqueries_inline(template.template_variables)
+
+        base_template = None
+        if template_html:
+            base_template = {"name": template_html.name, "html": template_html.html}
+        return Response(
+            {
+                "base_template": base_template,
+                "template": {
+                    "name": template.name,
+                    "template_css": template.template_css,
+                    "template_md": template.template_md,
+                    "type": template.type,
+                    "depends_on": template.depends_on,
+                    "template_variables": template_variables,
+                },
+            }
+        )
+
+
+class ImportReportTemplate(APIView):
+    def post(self, request: Request) -> Response:
+        base_template = None
+        report_template = None
+        try:
+            template_obj = json.loads(request.data["template"])
+
+            if "base_template" in template_obj.keys() and template_obj["base_template"]:
+                base_template = ReportHTMLTemplate.objects.create(
+                    **template_obj["base_template"]
+                )
+
+            if "template" in template_obj.keys() and template_obj["template"]:
+                report_template = ReportTemplate.objects.create(
+                    **template_obj["template"]
+                )
+            else:
+                base_template.delete() if base_template else None
+                return notify_error("Missing template information")
+
+            return Response(ReportTemplateSerializer(report_template).data)
+        except:
+            base_template.delete() if base_template else None
+            report_template.delete() if report_template else None
+            return notify_error("There was an error with the request")
 
 
 class GetReportAssets(APIView):
@@ -220,6 +269,7 @@ class GetAllAssets(APIView):
         # pull report assets from the database so we can pair with the file system assets
         assets = ReportAsset.objects.all()
 
+        # TODO: define a Type for file node
         def walk_folder_and_return_node(path: str):
             for current_dir, subdirs, files in os.walk(path):
                 current_dir = "Report Assets" if current_dir == "." else current_dir
@@ -227,15 +277,15 @@ class GetAllAssets(APIView):
                     "type": "folder",
                     "name": current_dir.replace("./", ""),
                     "path": path.replace("./", ""),
-                    "children": [],
+                    "children": list(),
                     "selectable": False,
                     "icon": "folder",
-                    "iconColor": "yellow-9"
+                    "iconColor": "yellow-9",
                 }
                 for dirname in subdirs:
                     dirpath = f"{path}/{dirname}"
                     node["children"].append(
-                        walk_folder_and_return_node(dirpath) # recursively call
+                        walk_folder_and_return_node(dirpath)  # recursively call
                     )
 
                 if not only_folders:
@@ -250,12 +300,12 @@ class GetAllAssets(APIView):
                                     "type": "file",
                                     "name": filename,
                                     "path": path,
-                                    "icon": "description"
+                                    "icon": "description",
                                 }
                             )
                         except ReportAsset.DoesNotExist:
                             pass
-                
+
                 return node
 
         try:
@@ -263,7 +313,7 @@ class GetAllAssets(APIView):
             response = [walk_folder_and_return_node(".")]
             return Response(response)
         except FileNotFoundError:
-            return notify_error("Unable to process request")     
+            return notify_error("Unable to process request")
 
 
 class RenameReportAsset(APIView):
@@ -535,11 +585,11 @@ class GetEditDeleteReportDataQuery(APIView):
 
         return Response()
 
+
 class NginxRedirect(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request: Request, path: str) -> HttpResponse:
-
         id = request.query_params.get("id", "")
         try:
             asset_uuid = uuid.UUID(id, version=4)
@@ -552,4 +602,4 @@ class NginxRedirect(APIView):
             else:
                 raise PermissionDenied()
         except ValueError:
-            notify_error("There was a error processing the request")
+            return notify_error("There was a error processing the request")

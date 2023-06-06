@@ -5,6 +5,7 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 from django.urls import path
+
 from . import views
 
 urlpatterns = [
@@ -12,7 +13,9 @@ urlpatterns = [
     path("templates/", views.GetAddReportTemplate.as_view()),
     path("templates/<int:pk>/", views.GetEditDeleteReportTemplate.as_view()),
     path("templates/<int:pk>/run/", views.GenerateReport.as_view()),
+    path("templates/<int:pk>/export/", views.ExportReportTemplate.as_view()),
     path("templates/preview/", views.GenerateReportPreview.as_view()),
+    path("templates/import/", views.ImportReportTemplate.as_view()),
     # report assets
     path("assets/", views.GetReportAssets.as_view()),
     path("assets/all/", views.GetAllAssets.as_view()),

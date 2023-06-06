@@ -4,9 +4,11 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-from django.db import models
-from django.contrib.postgres.fields import ArrayField
 import uuid
+
+from django.contrib.postgres.fields import ArrayField
+from django.db import models
+
 from .storage import report_assets_fs
 
 
@@ -32,8 +34,10 @@ class ReportTemplate(models.Model):
         default=ReportFormatType.MARKDOWN,
     )
     template_variables = models.TextField(blank=True, default="")
-    depends_on = ArrayField(models.CharField(max_length=20, blank=True), blank=True, default=list)
-    
+    depends_on = ArrayField(
+        models.CharField(max_length=20, blank=True), blank=True, default=list
+    )
+
     def __str__(self) -> str:
         return self.name
 

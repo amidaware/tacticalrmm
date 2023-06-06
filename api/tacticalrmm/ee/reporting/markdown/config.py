@@ -5,8 +5,8 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 from typing import Optional, Sequence, Union
+
 import markdown
-import yaml
 
 from .ignorejinja_ext import IgnoreJinjaExtension
 
@@ -22,6 +22,4 @@ markdown_ext: "Optional[Sequence[Union[str, markdown.Extension]]]" = [
 ]
 
 # import this into views
-Markdown = markdown.Markdown(
-    extensions=markdown_ext
-)
+Markdown = markdown.Markdown(extensions=markdown_ext)

@@ -5,10 +5,11 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 import re
-from typing import List, Any
+from typing import Any, List
+
 from markdown import Extension, Markdown
-from markdown.preprocessors import Preprocessor
 from markdown.postprocessors import Postprocessor
+from markdown.preprocessors import Preprocessor
 
 
 class IgnoreJinjaExtension(Extension):
@@ -19,7 +20,9 @@ class IgnoreJinjaExtension(Extension):
         md.preprocessors.register(IgnoreJinjaPreprocessor(md), "preignorejinja", 0)
         md.postprocessors.register(IgnoreJinjaPostprocessor(md), "postignorejinja", 0)
 
+
 PRE_RE = re.compile(r"(\{\%.*\%\})")
+
 
 class IgnoreJinjaPreprocessor(Preprocessor):
     """
@@ -39,7 +42,9 @@ class IgnoreJinjaPreprocessor(Preprocessor):
 
         return new_lines
 
+
 POST_RE = re.compile(r"\<\!\-\-\-\s{1}(\{\%.*\%\})\s{1}\-\-\>")
+
 
 class IgnoreJinjaPostprocessor(Postprocessor):
     """
@@ -58,7 +63,7 @@ class IgnoreJinjaPostprocessor(Postprocessor):
             else:
                 new_lines.append(line)
         return "\n".join(new_lines)
-    
+
 
 def makeExtension(*args: Any, **kwargs: Any) -> IgnoreJinjaExtension:
     """set up extension."""

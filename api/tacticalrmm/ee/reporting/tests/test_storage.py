@@ -4,11 +4,12 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-from ..storage import ReportAssetStorage
-from django.core.exceptions import SuspiciousFileOperation
 from pathlib import Path
 
 import pytest
+from django.core.exceptions import SuspiciousFileOperation
+
+from ..storage import ReportAssetStorage
 
 
 def test_is_file(tmp_path: Path) -> None:

@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 sql_commands += f"""GRANT SELECT ON {app}_{model.lower()} TO {trmm_reporting_conn["USER"]};\n"""  # type: ignore
 
             cursor.execute(sql_commands)
-            conn.commit()
+            cursor.execute("COMMIT")
             cursor.close()
             conn.close()
         except Exception as error:

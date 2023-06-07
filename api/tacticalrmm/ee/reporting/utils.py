@@ -70,6 +70,7 @@ def generate_html(
     html_template: Optional[int] = None,
     variables: str = "",
     dependencies: Dict[str, int] = {},
+    debug: bool = False,
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     # validate the template before doing anything. This will throw a TemplateError exception
     env.parse(template)
@@ -97,7 +98,7 @@ def generate_html(
     if variables and isinstance(variables, str):
         # returns {{ model.prop }}, prop, model
         for string, model, prop in re.findall(RE_DB_VALUE, variables):
-            value = ""
+            value: Any = ""
             # will be agent, site, client, or global
             if model == "global":
                 value = get_db_value(string=f"{model}.{prop}")
@@ -109,6 +110,14 @@ def generate_html(
 
             if value:
                 variables = variables.replace(string, str(value))
+
+    # check for any non-database dependencies and replace in variables
+    if variables and isinstance(variables, str):
+        RE_DEP_VALUE = re.compile(r"(\{\{\s*(.*)\s*\}\})")
+
+        for string, dep in re.findall(RE_DEP_VALUE, variables):
+            if dep in dependencies.keys():
+                variables = variables.replace(string, str(dependencies[dep]))
 
     # load yaml variables if they exist
     variables = yaml.safe_load(variables) or {}
@@ -136,7 +145,7 @@ def generate_html(
                 _ = data_source.pop("meta") if "meta" in data_source.keys() else None
 
                 modified_datasource = resolve_model(data_source=data_source)
-                queryset = build_queryset(data_source=modified_datasource)
+                queryset = build_queryset(data_source=modified_datasource, debug=debug)
                 variables["data_sources"][key] = queryset
 
     # generate and replace charts in the variables
@@ -145,24 +154,6 @@ def generate_html(
             # make sure chart options are present and a dict
             if "options" not in chart.keys() and not isinstance(chart["options"], dict):
                 break
-
-            options = chart["options"]
-            # if data_frame is present and a str that means we need to replace it with a value from variables
-            if "data_frame" in options.keys() and isinstance(
-                options["data_frame"], str
-            ):
-                # dot dotation to datasource if exists
-                # TODO: change to using yaml references instead
-                data_source = options["data_frame"].split(".")
-                data = variables
-                for path in data_source:
-                    if path in data.keys():
-                        data = data[path]
-                    else:
-                        break
-
-                if data:
-                    chart["options"]["data_frame"] = data
 
             layout = None
             if "layout" in chart.keys():
@@ -239,6 +230,8 @@ ALLOWED_OPERATIONS = (
     "exclude",
     "limit",
     "get",
+    "first",
+    "all",
     # relations
     "select_related",
     "prefetch_related",
@@ -246,6 +239,7 @@ ALLOWED_OPERATIONS = (
     "aggregate",
     "annotate",
     "count",
+    "values",
     # ordering
     "order_by",
 )
@@ -255,11 +249,14 @@ class InvalidDBOperationException(Exception):
     pass
 
 
-def build_queryset(*, data_source: Dict[str, Any]) -> Any:
+def build_queryset(*, data_source: Dict[str, Any], debug: bool = False) -> Any:
     local_data_source = data_source
     Model = local_data_source.pop("model")
     limit = None
-    count = None
+    count = False
+    get = False
+    first = False
+    all = False
     columns = local_data_source["only"] if "only" in local_data_source.keys() else None
 
     # create a base reporting queryset
@@ -268,7 +265,7 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
     for operation, values in local_data_source.items():
         if operation not in ALLOWED_OPERATIONS:
             raise InvalidDBOperationException(
-                f"DB operation: {operation} not allowed. Supported operations: only, defer, filter, exclude, limit, select_related, prefetch_related, annotate, aggregate, order_by, count"
+                f"DB operation: {operation} not allowed. Supported operations: only, defer, filter, get, first, all, exclude, limit, select_related, prefetch_related, annotate, aggregate, order_by, count"
             )
 
         if operation == "meta":
@@ -277,6 +274,12 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
             limit = values
         elif operation == "count":
             count = True
+        elif operation == "get":
+            get = True
+        elif operation == "first":
+            first = True
+        elif operation == "all":
+            all = True
         elif isinstance(values, list):
             queryset = getattr(queryset, operation)(*values)
         elif isinstance(values, dict):
@@ -284,16 +287,22 @@ def build_queryset(*, data_source: Dict[str, Any]) -> Any:
         else:
             queryset = getattr(queryset, operation)(values)
 
+    if all:
+        queryset = queryset.all()
+
     if count:
         return queryset.count()
 
     if limit:
         queryset = queryset[:limit]
 
-    if columns:
-        queryset = queryset.values(*columns)
-    else:
+    if debug:
         queryset = queryset.values()
+
+    if get:
+        queryset = queryset.get()
+    elif first:
+        queryset = queryset.first()
 
     return queryset
 

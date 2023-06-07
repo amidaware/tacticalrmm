@@ -132,12 +132,19 @@ class GenerateReport(APIView):
             else:
                 return notify_error("Report format is incorrect.")
         except TemplateError as error:
-            return notify_error(f"Line {error.lineno}: {error.message}")
+            if hasattr(error, "lineno"):
+                return notify_error(f"Line {error.lineno}: {error.message}")
+            else:
+                return notify_error(str(error))
+        except Exception as error:
+            return notify_error(str(error))
 
 
 class GenerateReportPreview(APIView):
     def post(self, request: Request) -> Union[FileResponse, Response]:
         try:
+            debug = request.data["debug"]
+
             html_report, variables = generate_html(
                 template=request.data["template_md"],
                 template_type=request.data["type"],
@@ -149,6 +156,7 @@ class GenerateReportPreview(APIView):
                 ),
                 variables=request.data["template_variables"],
                 dependencies=request.data["dependencies"],
+                debug=request.data["debug"],
             )
 
             response_format = request.data["format"]
@@ -157,6 +165,32 @@ class GenerateReportPreview(APIView):
             html_report = normalize_asset_url(html_report, response_format)
 
             if debug:
+                # need to serialize the models if an agent, site, or client is specified
+                if variables:
+                    from django.forms.models import model_to_dict
+
+                    if "agent" in variables.keys():
+                        variables["agent"] = model_to_dict(
+                            variables["agent"],
+                            fields=[
+                                field.name for field in variables["agent"]._meta.fields
+                            ],
+                        )
+                    if "site" in variables.keys():
+                        variables["site"] = model_to_dict(
+                            variables["site"],
+                            fields=[
+                                field.name for field in variables["site"]._meta.fields
+                            ],
+                        )
+                    if "client" in variables.keys():
+                        variables["client"] = model_to_dict(
+                            variables["client"],
+                            fields=[
+                                field.name for field in variables["client"]._meta.fields
+                            ],
+                        )
+
                 return Response({"template": html_report, "variables": variables})
 
             elif response_format == "html":
@@ -170,7 +204,12 @@ class GenerateReportPreview(APIView):
                     filename=f"preview.pdf",
                 )
         except TemplateError as error:
-            return notify_error(f"Line {error.lineno}: {error.message}")
+            if hasattr(error, "lineno"):
+                return notify_error(f"Line {error.lineno}: {error.message}")
+            else:
+                return notify_error(str(error))
+        except Exception as error:
+            return notify_error(str(error))
 
 
 class ExportReportTemplate(APIView):

@@ -296,11 +296,10 @@ def build_queryset(*, data_source: Dict[str, Any], debug: bool = False) -> Any:
     if limit:
         queryset = queryset[:limit]
 
-    if debug:
-        if columns:
-            queryset = queryset.values(*columns)
-        else:
-            queryset = queryset.values()
+    if columns:
+        queryset = queryset.values(*columns)
+    else:
+        queryset = queryset.values()
 
     if get:
         queryset = queryset.get()

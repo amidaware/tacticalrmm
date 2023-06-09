@@ -15,7 +15,7 @@ from rest_framework.serializers import (
     ValidationError,
 )
 from rest_framework.permissions import AllowAny
-from typing import Union, List
+from typing import Union, List, Optional, Dict, Any
 from django.core.exceptions import (
     SuspiciousFileOperation,
     ObjectDoesNotExist,
@@ -262,6 +262,46 @@ class ImportReportTemplate(APIView):
             base_template.delete() if base_template else None
             report_template.delete() if report_template else None
             return notify_error("There was an error with the request")
+
+
+class GetAllowedValues(APIView):
+    def post(self, request: Request) -> Response:
+        # pass in blank template. We are just interested in variables
+        _, variables = generate_html(
+            template="",
+            template_type="html",
+            variables=request.data["variables"],
+            dependencies=request.data["dependencies"],
+        )
+
+        # recursive function to get properties on any embedded objects
+        def get_dot_notation(
+            d: Dict[str, Any], parent_key: str = "", path: Optional[str] = None
+        ) -> Dict[str, Any]:
+            items = {}
+            for k, v in d.items():
+                new_key = f"{parent_key}.{k}" if parent_key else k
+                if isinstance(v, dict):
+                    items[new_key] = "Object"
+                    items.update(get_dot_notation(v, new_key, path=path))
+                elif isinstance(v, list) or type(v).__name__ == "PermissionQuerySet":
+                    items[new_key] = "Array"
+                    if v:  # Ensure the list is not empty
+                        item = v[0]
+                        if isinstance(item, dict):
+                            items.update(
+                                get_dot_notation(item, f"{new_key}[0]", path=path)
+                            )
+                        else:
+                            items[f"{new_key}[0]"] = type(item).__name__
+                else:
+                    items[new_key] = type(v).__name__
+            return items
+
+        if variables:
+            return Response(get_dot_notation(variables))
+        else:
+            return Response()
 
 
 class GetReportAssets(APIView):

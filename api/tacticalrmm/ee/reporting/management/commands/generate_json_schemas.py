@@ -8,14 +8,14 @@ import json
 from django.apps import apps
 from django.conf import settings as djangosettings
 from django.core.management.base import BaseCommand
-
+from typing import Dict, Tuple, Any
 from ...constants import REPORTING_MODELS
 
 
 class Command(BaseCommand):
     help = "Generate JSON Schemas"
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Tuple[Any, Any], **kwargs: Dict[str, Any]) -> None:
         generate_schema()
 
 
@@ -80,12 +80,6 @@ def generate_schema() -> None:
                         "patternProperties": patternObj,
                         "additionalProperties": False,
                     },
-                    "get": {
-                        "type": "object",
-                        "properties": filterObj,
-                        "patternProperties": patternObj,
-                        "additionalProperties": False,
-                    },
                     "exclude": {
                         "type": "object",
                         "properties": filterObj,
@@ -134,6 +128,8 @@ def generate_schema() -> None:
             },
             "limit": {"type": "integer"},
             "count": {"type": "boolean"},
+            "get": {"type": "boolean"},
+            "first": {"type": "boolean"},
         },
         "required": ["model"],
         "oneOf": oneOf,

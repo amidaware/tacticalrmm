@@ -285,7 +285,7 @@ class GetAllowedValues(APIView):
                     items[new_key] = "Object"
                     items.update(get_dot_notation(v, new_key, path=path))
                 elif isinstance(v, list) or type(v).__name__ == "PermissionQuerySet":
-                    items[new_key] = "Array"
+                    items[new_key] = f"Array ({len(v)} Results)"
                     if v:  # Ensure the list is not empty
                         item = v[0]
                         if isinstance(item, dict):

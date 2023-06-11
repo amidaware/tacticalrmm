@@ -36,6 +36,7 @@ from .utils import (
     generate_pdf,
     normalize_asset_url,
     make_dataqueries_inline,
+    prep_variables_for_template,
 )
 
 from tacticalrmm.utils import notify_error
@@ -156,7 +157,6 @@ class GenerateReportPreview(APIView):
                 ),
                 variables=request.data["template_variables"],
                 dependencies=request.data["dependencies"],
-                debug=request.data["debug"],
             )
 
             response_format = request.data["format"]
@@ -217,7 +217,9 @@ class ExportReportTemplate(APIView):
         template = get_object_or_404(ReportTemplate, pk=pk)
 
         template_html = template.template_html if template.template_html else None
-        template_variables = make_dataqueries_inline(template.template_variables)
+        template_variables = make_dataqueries_inline(
+            variables=template.template_variables
+        )
 
         base_template = None
         if template_html:
@@ -267,11 +269,10 @@ class ImportReportTemplate(APIView):
 class GetAllowedValues(APIView):
     def post(self, request: Request) -> Response:
         # pass in blank template. We are just interested in variables
-        _, variables = generate_html(
-            template="",
-            template_type="html",
+        variables = prep_variables_for_template(
             variables=request.data["variables"],
             dependencies=request.data["dependencies"],
+            limit_query_results=1,  # only get first item for querysets
         )
 
         # recursive function to get properties on any embedded objects
@@ -294,6 +295,7 @@ class GetAllowedValues(APIView):
                             )
                         else:
                             items[f"{new_key}[0]"] = type(item).__name__
+
                 else:
                     items[new_key] = type(v).__name__
             return items

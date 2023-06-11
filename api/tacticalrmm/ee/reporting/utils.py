@@ -70,7 +70,6 @@ def generate_html(
     html_template: Optional[int] = None,
     variables: str = "",
     dependencies: Dict[str, int] = {},
-    debug: bool = False,
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     # validate the template before doing anything. This will throw a TemplateError exception
     env.parse(template)
@@ -80,8 +79,55 @@ def generate_html(
         Markdown.convert(template) if template_type == "markdown" else template
     )
 
+    # append extends if html master template is configured
+    if html_template:
+        try:
+            html_template_name = ReportHTMLTemplate.objects.get(pk=html_template).name
+
+            template_string = (
+                f"""{{% extends "{html_template_name}" %}}\n{template_string}"""
+            )
+        except ReportHTMLTemplate.DoesNotExist:
+            pass
+
+    tm = env.from_string(template_string)
+
+    variables = prep_variables_for_template(
+        variables=variables, dependencies=dependencies
+    )
+    if variables:
+        return (tm.render(css=css, **variables), variables)
+    else:
+        return (tm.render(css=css), None)
+
+
+def make_dataqueries_inline(*, variables: str) -> str:
+    variables_obj = yaml.safe_load(variables) or {}
+    if "data_sources" in variables_obj.keys() and isinstance(
+        variables_obj["data_sources"], dict
+    ):
+        for key, value in variables_obj["data_sources"].items():
+            # data_source is referencing a saved data query
+            if isinstance(value, str):
+                ReportDataQuery = apps.get_model("reporting", "ReportDataQuery")
+                try:
+                    variables_obj["data_sources"][key] = ReportDataQuery.objects.get(
+                        name=value
+                    ).json_query
+                except ReportDataQuery.DoesNotExist:
+                    continue
+
+    return yaml.dump(variables_obj)
+
+
+def prep_variables_for_template(
+    *,
+    variables: str,
+    dependencies: Dict[str, Any] = {},
+    limit_query_results: Optional[int] = None,
+) -> Dict[str, Any]:
     # replace any data queries in data_sources with the yaml
-    variables = make_dataqueries_inline(variables)
+    variables = make_dataqueries_inline(variables=variables)
 
     # resolve dependencies that are agent, site, or client
     if "client" in dependencies.keys():
@@ -122,17 +168,6 @@ def generate_html(
     # load yaml variables if they exist
     variables = yaml.safe_load(variables) or {}
 
-    # append extends if html master template is configured
-    if html_template:
-        try:
-            html_template_name = ReportHTMLTemplate.objects.get(pk=html_template).name
-
-            template_string = (
-                f"""{{% extends "{html_template_name}" %}}\n{template_string}"""
-            )
-        except ReportHTMLTemplate.DoesNotExist:
-            pass
-
     # replace the data_sources with the actual data from DB. This will be passed to the template
     # in the form of {{data_sources.data_source_name}}
     if "data_sources" in variables.keys() and isinstance(
@@ -145,7 +180,9 @@ def generate_html(
                 _ = data_source.pop("meta") if "meta" in data_source.keys() else None
 
                 modified_datasource = resolve_model(data_source=data_source)
-                queryset = build_queryset(data_source=modified_datasource, debug=debug)
+                queryset = build_queryset(
+                    data_source=modified_datasource, limit=limit_query_results
+                )
                 variables["data_sources"][key] = queryset
 
     # generate and replace charts in the variables
@@ -155,47 +192,15 @@ def generate_html(
             if "options" not in chart.keys() and not isinstance(chart["options"], dict):
                 break
 
-            layout = None
-            if "layout" in chart.keys():
-                layout = chart["layout"]
-
-            traces = None
-            if "traces" in chart.keys():
-                traces = chart["traces"]
-
             variables["charts"][key] = generate_chart(
                 type=chart["chartType"],
                 format=chart["outputType"],
                 options=chart["options"],
-                traces=traces,
-                layout=layout,
+                traces=chart["traces"] or None,
+                layout=chart["layout"] or None,
             )
 
-    tm = env.from_string(template_string)
-    variables = {**variables, **dependencies}
-    if variables:
-        return (tm.render(css=css, **variables), variables)
-    else:
-        return (tm.render(css=css), None)
-
-
-def make_dataqueries_inline(variables: str) -> str:
-    variables_obj = yaml.safe_load(variables) or {}
-    if "data_sources" in variables_obj.keys() and isinstance(
-        variables_obj["data_sources"], dict
-    ):
-        for key, value in variables_obj["data_sources"].items():
-            # data_source is referencing a saved data query
-            if isinstance(value, str):
-                ReportDataQuery = apps.get_model("reporting", "ReportDataQuery")
-                try:
-                    variables_obj["data_sources"][key] = ReportDataQuery.objects.get(
-                        name=value
-                    ).json_query
-                except ReportDataQuery.DoesNotExist:
-                    continue
-
-    return yaml.dump(variables_obj)
+    return {**variables, **dependencies}
 
 
 class ResolveModelException(Exception):
@@ -249,10 +254,10 @@ class InvalidDBOperationException(Exception):
     pass
 
 
-def build_queryset(*, data_source: Dict[str, Any], debug: bool = False) -> Any:
+def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) -> Any:
     local_data_source = data_source
     Model = local_data_source.pop("model")
-    limit = None
+    limit = limit
     count = False
     get = False
     first = False

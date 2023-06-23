@@ -79,7 +79,7 @@ def generate_html(
         Markdown.convert(template) if template_type == "markdown" else template
     )
 
-    # append extends if html master template is configured
+    # append extends if base template is configured
     if html_template:
         try:
             html_template_name = ReportHTMLTemplate.objects.get(pk=html_template).name
@@ -192,12 +192,29 @@ def prep_variables_for_template(
             if "options" not in chart.keys() and not isinstance(chart["options"], dict):
                 break
 
+            options = chart["options"]
+            # if data_frame is present and a str that means we need to replace it with a value from variables
+            if "data_frame" in options.keys() and isinstance(
+                options["data_frame"], str
+            ):
+                # dot dotation to datasource if exists
+                data_source = options["data_frame"].split(".")
+                data = variables
+                for path in data_source:
+                    if path in data.keys():
+                        data = data[path]
+                    else:
+                        break
+
+                if data:
+                    chart["options"]["data_frame"] = data
+
             variables["charts"][key] = generate_chart(
                 type=chart["chartType"],
                 format=chart["outputType"],
                 options=chart["options"],
-                traces=chart["traces"] or None,
-                layout=chart["layout"] or None,
+                traces=chart["traces"] if "traces" in chart.keys() else None,
+                layout=chart["layout"] if "layout" in chart.keys() else None,
             )
 
     return {**variables, **dependencies}

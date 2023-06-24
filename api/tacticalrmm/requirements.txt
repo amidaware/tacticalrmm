@@ -7,12 +7,12 @@ channels==4.0.0
 channels_redis==4.1.0
 cryptography==41.0.1
 daphne==4.0.0
-Django==4.1.9
+Django==4.2.2
 django-cors-headers==4.1.0
 django-ipware==5.0.0
 django-rest-knox==4.2.0
 djangorestframework==3.14.0
-drf-spectacular==0.26.2
+drf-spectacular==0.26.3
 hiredis==2.2.3
 meshctrl==0.1.15
 msgpack==1.0.5

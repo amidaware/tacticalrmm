@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="24"
+SCRIPT_VERSION="25"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -18,11 +18,11 @@ if [[ $* == *--schedule* ]]; then
         crontab -l 2>/dev/null
         echo "0 0 * * * /rmm/backup.sh --auto"
     ) | crontab -
-    
-     if [ ! -d /rmmbackups ]; then
+
+    if [ ! -d /rmmbackups ]; then
         sudo mkdir /rmmbackups
     fi
-    
+
     if [ ! -d /rmmbackups/daily ]; then
         sudo mkdir /rmmbackups/daily
     fi
@@ -35,7 +35,7 @@ if [[ $* == *--schedule* ]]; then
         sudo mkdir /rmmbackups/monthly
     fi
     sudo chown ${USER}:${USER} -R /rmmbackups
-    
+
     printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
     exit 0
 fi
@@ -70,7 +70,7 @@ POSTGRES_PW=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config 
 
 pg_dump --dbname=postgresql://"${POSTGRES_USER}":"${POSTGRES_PW}"@127.0.0.1:5432/tacticalrmm | gzip -9 >${tmp_dir}/postgres/db-${dt_now}.psql.gz
 
-tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules /meshcentral
+node /meshcentral/node_modules/meshcentral --dbexport # for import to postgres
 
 if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
     if ! which jq >/dev/null; then
@@ -83,6 +83,8 @@ else
     mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
 fi
 
+tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules /meshcentral
+
 sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
 
 for i in rmm frontend meshcentral; do
@@ -93,7 +95,6 @@ sudo tar -czvf ${tmp_dir}/confd/etc-confd.tar.gz -C /etc/conf.d .
 
 sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/meshcentral.service ${sysd}/nats.service ${sysd}/daphne.service ${sysd}/nats-api.service ${tmp_dir}/systemd/
 
-cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 >${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
 
 if [[ $* == *--auto* ]]; then

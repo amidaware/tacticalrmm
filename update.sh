@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="144"
+SCRIPT_VERSION="145"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -225,16 +225,24 @@ if ! [[ $HAS_PY311 ]]; then
   sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 fi
 
+arch=$(uname -m)
+nats_server='/usr/local/bin/nats-server'
+
 HAS_LATEST_NATS=$(/usr/local/bin/nats-server -version | grep "${NATS_SERVER_VER}")
 if ! [[ $HAS_LATEST_NATS ]]; then
   printf >&2 "${GREEN}Updating nats to v${NATS_SERVER_VER}${NC}\n"
   nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-  wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
-  tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
-  sudo rm -f /usr/local/bin/nats-server
-  sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
-  sudo chmod +x /usr/local/bin/nats-server
-  sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+  if [ "$arch" = "x86_64" ]; then
+    natsarch='amd64'
+  else
+    natsarch='arm64'
+  fi
+  wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}.tar.gz -P ${nats_tmp}
+  tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}.tar.gz -C ${nats_tmp}
+  sudo rm -f $nats_server
+  sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}/nats-server /usr/local/bin/
+  sudo chmod +x $nats_server
+  sudo chown ${USER}:${USER} $nats_server
   rm -rf ${nats_tmp}
 fi
 
@@ -248,24 +256,6 @@ fi
 
 if [ -d ~/.config ]; then
   sudo chown -R $USER:$GROUP ~/.config
-fi
-
-HAS_NODE16=$(node --version | grep v16)
-if ! [[ $HAS_NODE16 ]]; then
-  printf >&2 "${GREEN}Updating NodeJS to v16${NC}\n"
-  rm -rf /rmm/web/node_modules
-  sudo systemctl stop meshcentral
-  sudo apt remove -y nodejs
-  sudo rm -rf /usr/lib/node_modules
-  curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-  sudo apt update
-  sudo apt install -y nodejs
-  sudo npm install -g npm
-  sudo chown ${USER}:${USER} -R /meshcentral
-  cd /meshcentral
-  rm -rf node_modules/
-  npm install meshcentral@${LATEST_MESH_VER}
-  sudo systemctl start meshcentral
 fi
 
 sudo npm install -g npm
@@ -324,9 +314,16 @@ EOF
   echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
 fi
 
-sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
-sudo chown ${USER}:${USER} /usr/local/bin/nats-api
-sudo chmod +x /usr/local/bin/nats-api
+if [ "$arch" = "x86_64" ]; then
+  natsapi='nats-api'
+else
+  natsapi='nats-api-arm64'
+fi
+
+nats_api='/usr/local/bin/nats-api'
+sudo cp /rmm/natsapi/bin/${natsapi} $nats_api
+sudo chown ${USER}:${USER} $nats_api
+sudo chmod +x $nats_api
 
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/api/env

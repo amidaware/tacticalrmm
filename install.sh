@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="73"
+SCRIPT_VERSION="74"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -30,8 +30,8 @@ fi
 rm -f $TMP_FILE
 
 arch=$(uname -m)
-if [ "$arch" != "x86_64" ]; then
-  echo -ne "${RED}ERROR: Only x86_64 arch is supported, not ${arch}${NC}\n"
+if [[ "$arch" != "x86_64" ]] && [[ "$arch" != "aarch64" ]]; then
+  echo -ne "${RED}ERROR: Only x86_64 and aarch64 is supported, not ${arch}${NC}\n"
   exit 1
 fi
 
@@ -49,19 +49,22 @@ codename=$(lsb_release -sc)
 relno=$(lsb_release -sr | cut -d. -f1)
 fullrelno=$(lsb_release -sr)
 
-# Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
-if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
-  osname=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
-  osname=${osname^}
-fi
+not_supported() {
+  echo -ne "${RED}ERROR: Only Debian 11, Debian 12 and Ubuntu 22.04 are supported.${NC}\n"
+}
 
-# determine system
-if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
-  echo $fullrel
+if [[ "$osname" == "debian" ]]; then
+  if [[ "$relno" -ne 11 && "$relno" -ne 12 ]]; then
+    not_supported
+    exit 1
+  fi
+elif [[ "$osname" == "ubuntu" ]]; then
+  if [[ "$fullrelno" != "22.04" ]]; then
+    not_supported
+    exit 1
+  fi
 else
-  echo $fullrel
-  echo -ne "${RED}Supported versions: Ubuntu 20.04, Debian 10 and 11\n"
-  echo -ne "Your system does not appear to be supported${NC}\n"
+  not_supported
   exit 1
 fi
 
@@ -78,16 +81,12 @@ if [[ "$LANG" != *".UTF-8" ]]; then
   exit 1
 fi
 
-if ([ "$osname" = "ubuntu" ]); then
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
-# there is no bullseye repo yet for mongo so just use buster on debian 11
-elif ([ "$osname" = "debian" ] && [ $relno -eq 11 ]); then
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname buster/mongodb-org/4.4 main"
+if [ "$arch" = "x86_64" ]; then
+  pgarch='amd64'
 else
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
+  pgarch='arm64'
 fi
-
-postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
+postgresql_repo="deb [arch=${pgarch}] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
@@ -98,6 +97,8 @@ MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+MESHPGUSER=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+MESHPGPWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 
 cls() {
   printf "\033c"
@@ -136,11 +137,6 @@ while [[ $letsemail != *[@]*[.]* ]]; do
   read letsemail
 done
 
-# if server is behind NAT we need to add the 3 subdomains to the host file
-# so that nginx can properly route between the frontend, backend and meshcentral
-# EDIT 8-29-2020
-# running this even if server is __not__ behind NAT just to make DNS resolving faster
-# this also allows the install script to properly finish even if DNS has not fully propagated
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
 HAS_11=$(grep 127.0.1.1 /etc/hosts)
 
@@ -230,20 +226,11 @@ done
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
 sudo npm install -g npm
-
-print_green 'Installing MongoDB'
-
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-sudo apt update
-sudo apt install -y mongodb-org
-sudo systemctl enable mongod
-sudo systemctl restart mongod
 
 print_green "Installing Python ${PYTHON_VER}"
 
@@ -268,7 +255,7 @@ echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-14
+sudo apt install -y postgresql-15
 sleep 2
 sudo systemctl enable --now postgresql
 
@@ -277,7 +264,7 @@ until pg_isready >/dev/null; do
   sleep 3
 done
 
-print_green 'Creating database for the rmm'
+print_green 'Creating database for trmm'
 
 sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
 sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
@@ -285,6 +272,19 @@ sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+sudo -u postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
+sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
+
+print_green 'Creating database for meshcentral'
+
+sudo -u postgres psql -c "CREATE DATABASE meshcentral"
+sudo -u postgres psql -c "CREATE USER ${MESHPGUSER} WITH PASSWORD '${MESHPGPWD}'"
+sudo -u postgres psql -c "ALTER ROLE ${MESHPGUSER} SET client_encoding TO 'utf8'"
+sudo -u postgres psql -c "ALTER ROLE ${MESHPGUSER} SET default_transaction_isolation TO 'read committed'"
+sudo -u postgres psql -c "ALTER ROLE ${MESHPGUSER} SET timezone TO 'UTC'"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESHPGUSER}"
+sudo -u postgres psql -c "ALTER DATABASE meshcentral OWNER TO ${MESHPGUSER}"
+sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESHPGUSER}"
 
 print_green 'Cloning repos'
 
@@ -308,11 +308,17 @@ git checkout main
 
 print_green 'Downloading NATS'
 
+if [ "$arch" = "x86_64" ]; then
+  natsarch='amd64'
+else
+  natsarch='arm64'
+fi
+
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
-tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
-sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
+wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}.tar.gz -P ${nats_tmp}
+tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}.tar.gz -C ${nats_tmp}
+sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}/nats-server /usr/local/bin/
 sudo chmod +x /usr/local/bin/nats-server
 sudo chown ${USER}:${USER} /usr/local/bin/nats-server
 rm -rf ${nats_tmp}
@@ -332,8 +338,6 @@ meshcfg="$(
 {
   "settings": {
     "cert": "${meshdomain}",
-    "mongoDb": "mongodb://127.0.0.1:27017",
-    "mongoDbName": "meshcentral",
     "WANonly": true,
     "minify": 1,
     "port": 4430,
@@ -341,15 +345,20 @@ meshcfg="$(
     "redirPort": 800,
     "allowLoginToken": true,
     "allowFraming": true,
-    "_agentPing": 60,
-    "agentPong": 300,
+    "agentPing": 35,
     "allowHighQualityDesktop": true,
     "tlsOffload": "127.0.0.1",
     "agentCoreDump": false,
     "compression": true,
     "wsCompression": true,
     "agentWsCompression": true,
-    "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
+    "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 },
+    "postgres": {
+      "user": "${MESHPGUSER}",
+      "password": "${MESHPGPWD}",
+      "port": "5432",
+      "host": "localhost"
+    }
   },
   "domains": {
     "": {
@@ -400,7 +409,13 @@ EOF
 )"
 echo "${localvars}" >/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
-sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
+if [ "$arch" = "x86_64" ]; then
+  natsapi='nats-api'
+else
+  natsapi='nats-api-arm64'
+fi
+
+sudo cp /rmm/natsapi/bin/${natsapi} /usr/local/bin/nats-api
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
@@ -495,7 +510,7 @@ ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
 ExecReload=/usr/bin/kill -s HUP \$MAINPID
 ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
 User=${USER}
-Group=www-data
+Group=${USER}
 Restart=always
 RestartSec=5s
 LimitNOFILE=1000000
@@ -567,12 +582,19 @@ server {
     
     location /static/ {
         root /rmm/api/tacticalrmm;
+        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
         alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+    }
+
+    location /assets/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
+        alias /opt/tactical/reporting/assets/;
     }
 
     location ~ ^/ws/ {
@@ -736,7 +758,7 @@ meshservice="$(
   cat <<EOF
 [Unit]
 Description=MeshCentral Server
-After=network.target mongod.service nginx.service
+After=network.target postgresql.service nginx.service
 [Service]
 Type=simple
 LimitNOFILE=1000000
@@ -840,7 +862,7 @@ sleep 3
 while ! [[ $CHECK_MESH_READY ]]; do
   CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
   echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
-  sleep 3
+  sleep 5
 done
 
 print_green 'Generating meshcentral login token key'
@@ -870,7 +892,7 @@ sleep 5
 while ! [[ $CHECK_MESH_READY2 ]]; do
   CHECK_MESH_READY2=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
   echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
-  sleep 3
+  sleep 5
 done
 
 node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM

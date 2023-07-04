@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="48"
+SCRIPT_VERSION="49"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -30,8 +30,8 @@ fi
 rm -f $TMP_FILE
 
 arch=$(uname -m)
-if [ "$arch" != "x86_64" ]; then
-  echo -ne "${RED}ERROR: Only x86_64 arch is supported, not ${arch}${NC}\n"
+if [[ "$arch" != "x86_64" ]] && [[ "$arch" != "aarch64" ]]; then
+  echo -ne "${RED}ERROR: Only x86_64 and aarch64 is supported, not ${arch}${NC}\n"
   exit 1
 fi
 
@@ -49,32 +49,24 @@ codename=$(lsb_release -sc)
 relno=$(lsb_release -sr | cut -d. -f1)
 fullrelno=$(lsb_release -sr)
 
-# Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
-if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
-  osname=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
-  osname=${osname^}
-fi
+not_supported() {
+  echo -ne "${RED}ERROR: Only Debian 11, Debian 12 and Ubuntu 22.04 are supported.${NC}\n"
+}
 
-# determine system
-if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
-  echo $fullrel
+if [[ "$osname" == "debian" ]]; then
+  if [[ "$relno" -ne 11 && "$relno" -ne 12 ]]; then
+    not_supported
+    exit 1
+  fi
+elif [[ "$osname" == "ubuntu" ]]; then
+  if [[ "$fullrelno" != "22.04" ]]; then
+    not_supported
+    exit 1
+  fi
 else
-  echo $fullrel
-  echo -ne "${RED}Supported versions: Ubuntu 20.04, Debian 10 and 11\n"
-  echo -ne "Your system does not appear to be supported${NC}\n"
+  not_supported
   exit 1
 fi
-
-if ([ "$osname" = "ubuntu" ]); then
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
-# there is no bullseye repo yet for mongo so just use buster on debian 11
-elif ([ "$osname" = "debian" ] && [ $relno -eq 11 ]); then
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname buster/mongodb-org/4.4 main"
-else
-  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
-fi
-
-postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
@@ -88,6 +80,13 @@ if [[ "$LANG" != *".UTF-8" ]]; then
   printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
   exit 1
 fi
+
+if [ "$arch" = "x86_64" ]; then
+  pgarch='amd64'
+else
+  pgarch='arm64'
+fi
+postgresql_repo="deb [arch=${pgarch}] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 if [ ! -f "${1}" ]; then
   echo -ne "\n${RED}usage: ./restore.sh rmm-backup-xxxx.tar${NC}\n"
@@ -123,7 +122,7 @@ sudo apt update
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
@@ -232,7 +231,7 @@ print_green 'Installing postgresql'
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-14
+sudo apt install -y postgresql-15
 sleep 2
 sudo systemctl enable --now postgresql
 
@@ -261,73 +260,114 @@ git checkout main
 
 print_green 'Restoring NATS'
 
+if [ "$arch" = "x86_64" ]; then
+  natsarch='amd64'
+else
+  natsarch='arm64'
+fi
+
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
-tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
-sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
+wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}.tar.gz -P ${nats_tmp}
+tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}.tar.gz -C ${nats_tmp}
+sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}/nats-server /usr/local/bin/
 sudo chmod +x /usr/local/bin/nats-server
 sudo chown ${USER}:${USER} /usr/local/bin/nats-server
 rm -rf ${nats_tmp}
 
 print_green 'Restoring MeshCentral'
 
+sudo apt install -y jq
+
 MESH_VER=$(grep "^MESH_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 sudo tar -xzf $tmp_dir/meshcentral/mesh.tar.gz -C /
 sudo chown ${USER}:${USER} -R /meshcentral
+rm -f /meshcentral/package.json /meshcentral/package-lock.json
+
+FROM_MONGO=false
+if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
+  MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
+  MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
+else
+  FROM_MONGO=true
+  MESH_POSTGRES_USER=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+  MESH_POSTGRES_PW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+fi
+
+print_green 'Creating MeshCentral DB'
+
+sudo -u postgres psql -c "CREATE DATABASE meshcentral"
+sudo -u postgres psql -c "CREATE USER ${MESH_POSTGRES_USER} WITH PASSWORD '${MESH_POSTGRES_PW}'"
+sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET client_encoding TO 'utf8'"
+sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET default_transaction_isolation TO 'read committed'"
+sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET timezone TO 'UTC'"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESH_POSTGRES_USER}"
+sudo -u postgres psql -c "ALTER DATABASE meshcentral OWNER TO ${MESH_POSTGRES_USER}"
+sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESH_POSTGRES_USER}"
+
+if [ "$FROM_MONGO" = true ]; then
+  print_green 'Converting mesh mongo to postgres'
+
+  # https://github.com/amidaware/trmm-awesome/blob/main/scripts/migrate-mesh-to-postgres.sh
+  mesh_data='/meshcentral/meshcentral-data'
+  if [[ ! -f "${mesh_data}/meshcentral.db.json" ]]; then
+    echo -ne "${RED}ERROR: meshcentral.db.json was not found${NC}\n"
+    echo -ne "${RED}Unable to convert mongo to postgres${NC}\n"
+    echo -ne "${RED}You probably didn't download the lastest backup.sh file before doing a backup and were using an outdated version${NC}\n"
+    echo -ne "${RED}You will need to download the latest backup script, run a fresh backup on your old server, wipe this server and attempt a fresh restore.${NC}\n"
+    exit 1
+  fi
+  MESH_PG_PORT='5432'
+  MESH_PG_HOST='localhost'
+  cp ${mesh_data}/config.json ${mesh_data}/config-mongodb-$(date "+%Y%m%dT%H%M%S").bak
+
+  cat ${mesh_data}/config.json |
+    jq '.settings |= with_entries(select((.key | ascii_downcase) as $key | $key != "mongodb" and $key != "mongodbname"))' |
+    jq " .settings.postgres.user |= \"${MESH_POSTGRES_USER}\" " |
+    jq " .settings.postgres.password |= \"${MESH_POSTGRES_PW}\" " |
+    jq " .settings.postgres.port |= \"${MESH_PG_PORT}\" " |
+    jq " .settings.postgres.host |= \"${MESH_PG_HOST}\" " >${mesh_data}/config-postgres.json
+
+  mv ${mesh_data}/config-postgres.json ${mesh_data}/config.json
+else
+  gzip -d $tmp_dir/postgres/mesh-db*.psql.gz
+  PGPASSWORD=${MESH_POSTGRES_PW} psql -h localhost -U ${MESH_POSTGRES_USER} -d meshcentral -f $tmp_dir/postgres/mesh-db*.psql
+fi
+
 cd /meshcentral
 npm install meshcentral@${MESH_VER}
 
-print_green 'Restoring MeshCentral DB'
-
-if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
-  if ! which jq >/dev/null; then
-    sudo apt-get install -y jq >null
-  fi
-  MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
-  MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
-  sudo -u postgres psql -c "DROP DATABASE IF EXISTS meshcentral"
-  sudo -u postgres psql -c "CREATE DATABASE meshcentral"
-  sudo -u postgres psql -c "CREATE USER ${MESH_POSTGRES_USER} WITH PASSWORD '${MESH_POSTGRES_PW}'"
-  sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET client_encoding TO 'utf8'"
-  sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET default_transaction_isolation TO 'read committed'"
-  sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET timezone TO 'UTC'"
-  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESH_POSTGRES_USER}"
-  gzip -d $tmp_dir/postgres/mesh-db*.psql.gz
-  PGPASSWORD=${MESH_POSTGRES_PW} psql -h localhost -U ${MESH_POSTGRES_USER} -d meshcentral -f $tmp_dir/postgres/mesh-db*.psql
-else
-  print_green 'Installing MongoDB'
-  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-  echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-  sudo apt update
-  sudo apt install -y mongodb-org
-  sudo systemctl enable --now mongod
-  sleep 5
-  mongorestore --gzip $tmp_dir/meshcentral/mongo
+if [ "$FROM_MONGO" = true ]; then
+  node node_modules/meshcentral --dbimport >/dev/null
 fi
 
 print_green 'Restoring the backend'
 
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
-gzip -d $tmp_dir/rmm/debug.log.gz
-cp $tmp_dir/rmm/django_debug.log /rmm/api/tacticalrmm/tacticalrmm/private/log/
 
-sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
+if [ "$arch" = "x86_64" ]; then
+  natsapi='nats-api'
+else
+  natsapi='nats-api-arm64'
+fi
+
+sudo cp /rmm/natsapi/bin/${natsapi} /usr/local/bin/nats-api
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
-print_green 'Restoring the database'
+print_green 'Restoring the trmm database'
 
 pgusername=$(grep -w USER /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 pgpw=$(grep -w PASSWORD /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS tacticalrmm"
 sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
 sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+sudo -u postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
+sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
 
 gzip -d $tmp_dir/postgres/db*.psql.gz
 PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql
@@ -384,7 +424,13 @@ sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
 sudo chown -R $USER:$GROUP /home/${USER}/.cache
 
-print_green 'Enabling Services'
+print_green 'Enabling and starting services'
+
+HAS_OLD_MONGO_DEP=$(grep mongod /etc/systemd/system/meshcentral.service)
+if [[ $HAS_OLD_MONGO_DEP ]]; then
+  sudo sed -i 's/mongod.service/postgresql.service/g' /etc/systemd/system/meshcentral.service
+fi
+
 sudo systemctl daemon-reload
 
 for i in celery.service celerybeat.service rmm.service daphne.service nats-api.service nginx; do

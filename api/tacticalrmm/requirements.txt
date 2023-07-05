@@ -39,7 +39,7 @@ vine==5.0.0
 websockets==11.0.3
 zipp==3.17.0
 meshctrl==0.1.15
-pandas==1.4.0
+pandas==2.0.3
 kaleido==0.2.1
 jinja2==3.0.3
 markdown==3.3.6

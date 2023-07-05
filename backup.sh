@@ -114,9 +114,9 @@ if [[ $* == *--auto* ]]; then
 
     rm -rf ${tmp_dir}
 
-    find /rmmbackups/daily/ -maxdepth 1 -mtime +14 -type d -exec rm -rv {} \;
-    find /rmmbackups/weekly/ -maxdepth 1 -mtime +60 -type d -exec rm -rv {} \;
-    find /rmmbackups/monthly/ -maxdepth 1 -mtime +380 -type d -exec rm -rv {} \;
+    find /rmmbackups/daily/ -type f -mtime +14 -name '*.tar' -execdir rm -- '{}' \;
+    find /rmmbackups/weekly/ -type f -mtime +60 -name '*.tar' -execdir rm -- '{}' \;
+    find /rmmbackups/monthly/ -type f -mtime +380 -name '*.tar' -execdir rm -- '{}' \;
     echo -ne "${GREEN}Backup Completed${NC}\n"
     exit
 

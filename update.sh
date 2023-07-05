@@ -297,7 +297,10 @@ sudo chown ${USER}:${USER} -R ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
-sudo chown ${USER}:${USER} -R /rmmbackups
+
+if [ -d /rmmbackups ]; then
+  sudo chown ${USER}:${USER} -R /rmmbackups
+fi
 
 CHECK_CELERY_CONFIG=$(grep "autoscale=20,2" /etc/conf.d/celery.conf)
 if ! [[ $CHECK_CELERY_CONFIG ]]; then
@@ -376,9 +379,6 @@ for i in nats nats-api rmm daphne celery celerybeat nginx; do
   printf >&2 "${GREEN}Starting ${i} service${NC}\n"
   sudo systemctl start ${i}
 done
-
-sleep 1
-/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py update_agents
 
 CURRENT_MESH_VER=$(cd /meshcentral/node_modules/meshcentral && node -p -e "require('./package.json').version")
 if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]]; then

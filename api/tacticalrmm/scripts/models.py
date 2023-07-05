@@ -216,7 +216,12 @@ class Script(BaseAuditModel):
                 )
 
                 if value:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
+                    try:
+                        temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
+                    except re.error:
+                        temp_args.append(
+                            re.sub("\\{\\{.*\\}\\}", re.escape(value), arg)
+                        )
                 else:
                     # pass parameter unaltered
                     temp_args.append(arg)

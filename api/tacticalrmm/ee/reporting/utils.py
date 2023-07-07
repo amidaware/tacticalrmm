@@ -5,7 +5,7 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 import re
-from typing import Any, Dict, Tuple, Literal, Optional, Union, cast
+from typing import Any, Dict, List, Tuple, Literal, Optional, cast
 
 import plotly.express as px
 import yaml
@@ -21,8 +21,12 @@ from .models import ReportAsset, ReportHTMLTemplate, ReportTemplate
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
-# {{client.name}}, client.name, client
+# i.e. - {{client.name}}, client.name, client
 RE_DB_VALUE = re.compile(r"(\{\{\s*(client|site|agent|global)\.(.*)\s*\}\})")
+
+RE_ASSET_URL = re.compile(
+    r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))"
+)
 
 
 # this will lookup the Jinja parent template in the DB
@@ -352,6 +356,36 @@ def normalize_asset_url(text: str, type: Literal["pdf", "html"]) -> str:
     return new_text
 
 
+def base64_encode_assets(template: str) -> List[Dict[str, Any]]:
+    import base64
+
+    assets = []
+    added_ids = []
+    for _, id in re.findall(RE_ASSET_URL, template):
+        if id not in added_ids:
+            try:
+                asset = ReportAsset.objects.get(pk=id)
+
+                encoded_base64_str = base64.b64encode(asset.file.file.read()).decode(
+                    "utf-8"
+                )
+                assets.append(
+                    {
+                        "id": asset.id,
+                        "name": asset.file.name,
+                        "file": encoded_base64_str,
+                    }
+                )
+                added_ids.append(asset.id)
+            except ReportAsset.DoesNotExist:
+                continue
+
+    return assets
+
+def decode_base64_asset(asset: str) -> bytes:
+    import base64
+    return base64.b64decode(asset.encode('utf-8'))
+
 def generate_chart(
     *,
     type: Literal["pie", "bar", "line"],
@@ -359,7 +393,7 @@ def generate_chart(
     options: Dict[str, Any],
     traces: Optional[Dict[str, Any]] = None,
     layout: Optional[Dict[str, Any]] = None,
-) -> Union[str, bytes]:
+) -> str:
     fig = getattr(px, type)(**options)
 
     if traces:
@@ -371,4 +405,4 @@ def generate_chart(
     if format == "html":
         return cast(str, fig.to_html(full_html=False, include_plotlyjs="cdn"))
     elif format == "image":
-        return cast(bytes, fig.to_image(format="svg"))
+        return cast(str, fig.to_image(format="svg").decode("utf-8"))

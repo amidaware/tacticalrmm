@@ -29,6 +29,7 @@ import os
 import shutil
 import uuid
 import json
+from .settings import settings
 from .storage import report_assets_fs
 from .models import ReportTemplate, ReportAsset, ReportHTMLTemplate, ReportDataQuery
 from .utils import (
@@ -37,6 +38,8 @@ from .utils import (
     normalize_asset_url,
     make_dataqueries_inline,
     prep_variables_for_template,
+    base64_encode_assets,
+    decode_base64_asset
 )
 
 from tacticalrmm.utils import notify_error
@@ -224,6 +227,12 @@ class ExportReportTemplate(APIView):
         base_template = None
         if template_html:
             base_template = {"name": template_html.name, "html": template_html.html}
+
+        assets = base64_encode_assets(
+            template.template_md + base_template["html"]
+            if base_template
+            else template.template_md
+        )
         return Response(
             {
                 "base_template": base_template,
@@ -235,29 +244,70 @@ class ExportReportTemplate(APIView):
                     "depends_on": template.depends_on,
                     "template_variables": template_variables,
                 },
+                "assets": assets,
             }
         )
 
 
 class ImportReportTemplate(APIView):
     def post(self, request: Request) -> Response:
+        import random
+        import string
+
         base_template = None
         report_template = None
         try:
             template_obj = json.loads(request.data["template"])
 
+            if "template" not in template_obj.keys():
+                return notify_error("Missing template information")
+
+            # create base template
             if "base_template" in template_obj.keys() and template_obj["base_template"]:
+                # check if there is a name conflict and append some characters to the name if so
+                if (
+                    "name" in template_obj["base_template"].keys()
+                    and ReportHTMLTemplate.objects.filter(
+                        name=template_obj["base_template"]["name"]
+                    ).exists()
+                ):
+                    template_obj["base_template"]["name"] += "".join(
+                        random.choice(string.ascii_lowercase) for i in range(6)
+                    )
                 base_template = ReportHTMLTemplate.objects.create(
                     **template_obj["base_template"]
                 )
+                base_template.refresh_from_db()
 
+            # create template
             if "template" in template_obj.keys() and template_obj["template"]:
+                # check if there is a name conflict and append some characters to the name if so
+                if (
+                    "name" in template_obj["template"].keys()
+                    and ReportTemplate.objects.filter(
+                        name=template_obj["template"]["name"]
+                    ).exists()
+                ):
+                    template_obj["template"]["name"] += "".join(
+                        random.choice(string.ascii_lowercase) for i in range(6)
+                    )
                 report_template = ReportTemplate.objects.create(
-                    **template_obj["template"]
+                    **template_obj["template"],
+                    template_html=base_template if base_template else None,
                 )
-            else:
-                base_template.delete() if base_template else None
-                return notify_error("Missing template information")
+
+            # import assets
+            if "assets" in template_obj.keys() and isinstance(
+                template_obj["assets"], list
+            ):
+                for asset in template_obj["assets"]:
+                    # asset should have id, name, and file fields
+                    try:
+                        asset = ReportAsset(id=asset["id"], file=decode_base64_asset(asset["file"]))
+                        asset.file.name = os.path.join(settings.REPORTING_ASSETS_BASE_PATH,asset["name"])
+                        asset.save()
+                    except:
+                        pass
 
             return Response(ReportTemplateSerializer(report_template).data)
         except:
@@ -353,6 +403,7 @@ class GetAllAssets(APIView):
         # TODO: define a Type for file node
         def walk_folder_and_return_node(path: str):
             for current_dir, subdirs, files in os.walk(path):
+                print(current_dir, subdirs, files)
                 current_dir = "Report Assets" if current_dir == "." else current_dir
                 node = {
                     "type": "folder",
@@ -371,7 +422,8 @@ class GetAllAssets(APIView):
 
                 if not only_folders:
                     for filename in files:
-                        path = f"{current_dir.replace('./', '')}/{filename}"
+                        print(current_dir, filename)
+                        path = f"{current_dir}/{filename}".replace('./', '').replace("Report Assets/", '')
                         try:
                             # need to remove the relative path
                             id = assets.get(file=path).id

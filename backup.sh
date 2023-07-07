@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="26"
+SCRIPT_VERSION="27"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -47,6 +47,10 @@ fi
 
 if [ -d /meshcentral/meshcentral-backup ]; then
     rm -rf /meshcentral/meshcentral-backup/*
+fi
+
+if [ -d /meshcentral/meshcentral-backups ]; then
+    rm -rf /meshcentral/meshcentral-backups/*
 fi
 
 if [ -d /meshcentral/meshcentral-coredumps ]; then

@@ -13,6 +13,8 @@
     mesh_password: "changeme"
     db_user: "changeme"
     db_passwd: "changeme"
+    mesh_db_user: "changeme"
+    mesh_db_passwd: "changeme"
     django_secret: "changeme"
     django_user: "changeme"
     django_password: "changeme"

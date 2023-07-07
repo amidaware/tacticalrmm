@@ -41,11 +41,15 @@
   with_items:
     - "{{ base_pkgs }}"
 
+- name: set arch fact
+  ansible.builtin.set_fact:
+    goarch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+
 - name: download and install golang
   tags: golang
   become: yes
   ansible.builtin.unarchive:
-    src: "https://go.dev/dl/go{{ go_ver }}.linux-amd64.tar.gz"
+    src: "https://go.dev/dl/go{{ go_ver }}.linux-{{ goarch }}.tar.gz"
     dest: /usr/local
     remote_src: yes
 
@@ -111,7 +115,7 @@
   tags: postgres
   become: yes
   ansible.builtin.copy:
-    content: "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main"
+    content: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
     dest: /etc/apt/sources.list.d/pgdg.list
     owner: root
     group: root
@@ -128,7 +132,7 @@
   tags: postgres
   become: yes
   ansible.builtin.apt:
-    pkg: postgresql-14
+    pkg: postgresql-15
     state: present
     update_cache: yes
 
@@ -140,7 +144,7 @@
     enabled: yes
     state: started
 
-- name: setup database
+- name: setup trmm database
   tags: postgres
   become: yes
   become_user: postgres
@@ -153,6 +157,23 @@
       psql -c "ALTER ROLE {{ db_user }} SET timezone TO 'UTC'"
       psql -c "ALTER ROLE {{ db_user }} CREATEDB"
       psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO {{ db_user }}"
+      psql -c "ALTER DATABASE tacticalrmm OWNER TO {{ db_user }}"
+      psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO {{ db_user }}"
+
+- name: setup mesh database
+  tags: postgres
+  become: yes
+  become_user: postgres
+  ansible.builtin.shell:
+    cmd: |
+      psql -c "CREATE DATABASE meshcentral"
+      psql -c "CREATE USER {{ mesh_db_user }} WITH PASSWORD '{{ mesh_db_passwd }}'"
+      psql -c "ALTER ROLE {{ mesh_db_user }} SET client_encoding TO 'utf8'"
+      psql -c "ALTER ROLE {{ mesh_db_user }} SET default_transaction_isolation TO 'read committed'"
+      psql -c "ALTER ROLE {{ mesh_db_user }} SET timezone TO 'UTC'"
+      psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO {{ mesh_db_user }}"
+      psql -c "ALTER DATABASE meshcentral OWNER TO {{ mesh_db_user }}"
+      psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO {{ mesh_db_user }}"
 
 - name: create repo dirs
   become: yes
@@ -202,7 +223,7 @@
 - name: download and extract nats
   tags: nats
   ansible.builtin.unarchive:
-    src: "https://github.com/nats-io/nats-server/releases/download/v{{ nats_server_ver.stdout }}/nats-server-v{{ nats_server_ver.stdout }}-linux-amd64.tar.gz"
+    src: "https://github.com/nats-io/nats-server/releases/download/v{{ nats_server_ver.stdout }}/nats-server-v{{ nats_server_ver.stdout }}-linux-{{ goarch }}.tar.gz"
     dest: "{{ nats_tmp.path }}"
     remote_src: yes
 
@@ -211,7 +232,7 @@
   become: yes
   ansible.builtin.copy:
     remote_src: yes
-    src: "{{ nats_tmp.path }}/nats-server-v{{ nats_server_ver.stdout }}-linux-amd64/nats-server"
+    src: "{{ nats_tmp.path }}/nats-server-v{{ nats_server_ver.stdout }}-linux-{{ goarch }}/nats-server"
     dest: /usr/local/bin/nats-server
     owner: "{{ user }}"
     group: "{{ user }}"
@@ -227,7 +248,7 @@
 - name: download nodejs setup
   tags: nodejs
   ansible.builtin.get_url:
-    url: https://deb.nodesource.com/setup_16.x
+    url: https://deb.nodesource.com/setup_18.x
     dest: "{{ nodejs_tmp.path }}/setup_node.sh"
     mode: "0755"
 
@@ -314,8 +335,8 @@
 - name: add nginx repo
   tags: nginx
   become: yes
-  ansible.builtin.copy:
-    src: nginx.repo
+  ansible.builtin.template:
+    src: nginx.repo.j2
     dest: /etc/apt/sources.list.d/nginx.list
     owner: "root"
     group: "root"
@@ -391,12 +412,16 @@
     enabled: yes
     state: restarted
 
+- name: set natsapi fact
+  ansible.builtin.set_fact:
+    natsapi: "{{ 'nats-api' if ansible_architecture == 'x86_64' else 'nats-api-arm64' }}"
+
 - name: copy nats-api bin
   tags: nats-api
   become: yes
   ansible.builtin.copy:
     remote_src: yes
-    src: "{{ backend_dir }}/natsapi/bin/nats-api"
+    src: "{{ backend_dir }}/natsapi/bin/{{ natsapi }}"
     dest: /usr/local/bin/nats-api
     owner: "{{ user }}"
     group: "{{ user }}"
@@ -481,39 +506,6 @@
     - { src: nats-api.systemd.j2, dest: /etc/systemd/system/nats-api.service }
     - { src: nats-server.systemd.j2, dest: /etc/systemd/system/nats.service }
     - { src: mesh.systemd.j2, dest: /etc/systemd/system/meshcentral.service }
-
-- name: import mongodb repo signing key
-  tags: mongo
-  become: yes
-  ansible.builtin.apt_key:
-    url: https://www.mongodb.org/static/pgp/server-4.4.asc
-    state: present
-
-- name: setup mongodb repo
-  tags: mongo
-  become: yes
-  ansible.builtin.copy:
-    content: "deb https://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main"
-    dest: /etc/apt/sources.list.d/mongodb-org-4.4.list
-    owner: root
-    group: root
-    mode: "0644"
-
-- name: install mongodb
-  tags: mongo
-  become: yes
-  ansible.builtin.apt:
-    pkg: mongodb-org
-    state: present
-    update_cache: yes
-
-- name: ensure mongodb enabled and started
-  tags: mongo
-  become: yes
-  ansible.builtin.service:
-    name: mongod
-    enabled: yes
-    state: started
 
 - name: get mesh_ver
   tags: mesh

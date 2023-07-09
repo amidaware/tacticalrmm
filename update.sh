@@ -403,7 +403,7 @@ if [ ! -d /opt/tactical/reporting/assets ]; then
   sudo mkdir -p /opt/tactical/reporting/schemas
 fi
 
-sudo chgrp -R ${USER}:${USER} /opt/tactical
+sudo chown -R ${USER}:${USER} /opt/tactical
 
 python manage.py pre_update_tasks
 celery -A tacticalrmm purge -f

@@ -347,7 +347,7 @@ sudo cp /rmm/natsapi/bin/${natsapi} $nats_api
 sudo chown ${USER}:${USER} $nats_api
 sudo chmod +x $nats_api
 echo 'Checking for reporting connection'
-CHECK_REPORTING_DB_CONNECTION=$(grep 'reporting': /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
+CHECK_REPORTING_DB_CONNECTION=$(grep 'reporting' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
 if ! [[ $CHECK_REPORTING_DB_CONNECTION ]]; then
   pgreportingusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
   pgreportingpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)

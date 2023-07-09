@@ -408,6 +408,7 @@ sudo chgrp -R ${USER}:${USER} /opt/tactical
 python manage.py pre_update_tasks
 celery -A tacticalrmm purge -f
 python manage.py migrate
+python manage.py generate_json_schemas
 python manage.py delete_tokens
 python manage.py collectstatic --no-input
 python manage.py reload_nats
@@ -416,7 +417,6 @@ python manage.py create_installer_user
 python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py clear_redis_celery_locks
-python manage.py generate_json_schemas
 python manage.py setup_reporting_permissions
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)

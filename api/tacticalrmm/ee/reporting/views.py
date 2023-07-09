@@ -10,13 +10,14 @@ import shutil
 import uuid
 from typing import Any, Dict, List, Optional, Union
 
+from django.conf import settings as djangosettings
 from django.core.exceptions import (
     ObjectDoesNotExist,
     PermissionDenied,
     SuspiciousFileOperation,
 )
 from django.core.files.base import ContentFile
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from jinja2.exceptions import TemplateError
 from rest_framework.permissions import AllowAny
@@ -744,3 +745,18 @@ class NginxRedirect(APIView):
                 raise PermissionDenied()
         except ValueError:
             return notify_error("There was a error processing the request")
+
+
+class QuerySchema(APIView):
+    def get(self, request):
+        schema_path = "static/reporting/schemas/query_schema.json"
+
+        if djangosettings.DEBUG:
+            with open(djangosettings.BASE_DIR / schema_path, "r") as f:
+                data = json.load(f)
+
+            return JsonResponse(data)
+        else:
+            response = HttpResponse()
+            response["X-Accel-Redirect"] = f"/{schema_path}"
+            return response

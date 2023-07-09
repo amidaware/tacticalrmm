@@ -33,4 +33,5 @@ urlpatterns = [
     path("dataqueries/<int:pk>/", views.GetEditDeleteReportDataQuery.as_view()),
     # serving assets
     path("assets/<path:path>", views.NginxRedirect.as_view()),
+    path("queryschema/", views.QuerySchema.as_view()),
 ]

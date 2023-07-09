@@ -4,45 +4,47 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-from rest_framework.response import Response
-from rest_framework.request import Request
-from rest_framework.views import APIView
-from rest_framework.serializers import (
-    Serializer,
-    ModelSerializer,
-    CharField,
-    ListField,
-    ValidationError,
-)
-from rest_framework.permissions import AllowAny
-from typing import Union, List, Optional, Dict, Any
+import json
+import os
+import shutil
+import uuid
+from typing import Any, Dict, List, Optional, Union
+
 from django.core.exceptions import (
-    SuspiciousFileOperation,
     ObjectDoesNotExist,
     PermissionDenied,
+    SuspiciousFileOperation,
 )
 from django.core.files.base import ContentFile
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from jinja2.exceptions import TemplateError
-import os
-import shutil
-import uuid
-import json
-from .settings import settings
-from .storage import report_assets_fs
-from .models import ReportTemplate, ReportAsset, ReportHTMLTemplate, ReportDataQuery
-from .utils import (
-    generate_html,
-    generate_pdf,
-    normalize_asset_url,
-    make_dataqueries_inline,
-    prep_variables_for_template,
-    base64_encode_assets,
-    decode_base64_asset
+from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.serializers import (
+    CharField,
+    ListField,
+    ModelSerializer,
+    Serializer,
+    ValidationError,
 )
+from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
+
+from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
+from .settings import settings
+from .storage import report_assets_fs
+from .utils import (
+    base64_encode_assets,
+    decode_base64_asset,
+    generate_html,
+    generate_pdf,
+    make_dataqueries_inline,
+    normalize_asset_url,
+    prep_variables_for_template,
+)
 
 
 def path_exists(value: str) -> None:
@@ -303,8 +305,12 @@ class ImportReportTemplate(APIView):
                 for asset in template_obj["assets"]:
                     # asset should have id, name, and file fields
                     try:
-                        asset = ReportAsset(id=asset["id"], file=decode_base64_asset(asset["file"]))
-                        asset.file.name = os.path.join(settings.REPORTING_ASSETS_BASE_PATH,asset["name"])
+                        asset = ReportAsset(
+                            id=asset["id"], file=decode_base64_asset(asset["file"])
+                        )
+                        asset.file.name = os.path.join(
+                            settings.REPORTING_ASSETS_BASE_PATH, asset["name"]
+                        )
                         asset.save()
                     except:
                         pass
@@ -423,7 +429,9 @@ class GetAllAssets(APIView):
                 if not only_folders:
                     for filename in files:
                         print(current_dir, filename)
-                        path = f"{current_dir}/{filename}".replace('./', '').replace("Report Assets/", '')
+                        path = f"{current_dir}/{filename}".replace("./", "").replace(
+                            "Report Assets/", ""
+                        )
                         try:
                             # need to remove the relative path
                             id = assets.get(file=path).id

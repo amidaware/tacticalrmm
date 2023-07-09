@@ -396,11 +396,11 @@ if [ ! -d /opt/tactical/reporting ]; then
 fi
 
 if [ ! -d /opt/tactical/reporting/assets ]; then
-  sudo mkdir -p /opt/tactical/reporting/assets
+  sudo mkdir /opt/tactical/reporting/assets
 fi
 
-if [ ! -d /opt/tactical/reporting/assets ]; then
-  sudo mkdir -p /opt/tactical/reporting/schemas
+if [ ! -d /opt/tactical/reporting/schemas ]; then
+  sudo mkdir /opt/tactical/reporting/schemas
 fi
 
 sudo chown -R ${USER}:${USER} /opt/tactical

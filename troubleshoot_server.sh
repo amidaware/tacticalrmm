@@ -23,24 +23,21 @@ osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
 relno=$(lsb_release -sr | cut -d. -f1)
 
 # Resolve Locally used DNS server
-if [[ "$osname" == "debian" && "$relno" == 12 ]]; then
-locdns=$(resolvconf -l | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-else
 resolvestatus=$(systemctl is-active systemd-resolved.service)
-if [ $resolvestatus = active ]; then
-    locdns=$(resolvectl | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-    echo -e $locdns
+if [[ "$osname" == "debian" && "$relno" == 12 ]]; then
+locdns=$(resolvconf -l | tail -n +1 | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+
+elif [ $resolvestatus = active ]; then
+    locdns=$(resolvectl | tail -n +1 | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
 else
-	while ! [[ $resolveconf ]]; do
+        while ! [[ $resolveconf ]]; do
     resolveconf=$(sudo systemctl status systemd-resolved.service | grep "Active: active (running)")
     sudo systemctl start systemd-resolved.service
     echo -ne "DNS Resolver not ready yet...${NC}\n"
     sleep 3
 done
-    locdns=$(resolvectl | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-    echo -e $locdns
+    locdns=$(resolvectl | tail -n +1 | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
     sudo systemctl stop systemd-resolved.service
-fi 
 fi
 
 while [[ $rmmdomain != *[.]*[.]* ]]

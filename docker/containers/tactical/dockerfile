@@ -14,17 +14,17 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 COPY api/tacticalrmm/requirements.txt ${TACTICAL_TMP_DIR}/api/requirements.txt
 
-RUN apt-get update &&
-    apt-get install -y --no-install-recommends gcc libc6-dev &&
-    pip install --upgrade pip &&
-    pip install --no-cache-dir setuptools wheel &&
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc libc6-dev && \
+    pip install --upgrade pip && \
+    pip install --no-cache-dir setuptools wheel && \
     pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt
 
 # pulls community scripts from git repo
 FROM python:3.11.4-slim AS GET_SCRIPTS_STAGE
 
-RUN apt-get update &&
-    apt-get install -y --no-install-recommends git &&
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
     git clone https://github.com/amidaware/community-scripts.git /community-scripts
 
 # runtime image
@@ -46,11 +46,11 @@ COPY --from=GET_SCRIPTS_STAGE /community-scripts ${TACTICAL_TMP_DIR}/community-s
 COPY --from=CREATE_VENV_STAGE ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 # install deps
-RUN apt-get update &&
-    apt-get upgrade -y &&
-    apt-get install -y --no-install-recommends rsync &&
-    rm -rf /var/lib/apt/lists/* &&
-    groupadd -g 1000 "${TACTICAL_USER}" &&
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends rsync && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -g 1000 "${TACTICAL_USER}" && \
     useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}"
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]

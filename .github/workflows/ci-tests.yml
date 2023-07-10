@@ -21,7 +21,7 @@ jobs:
 
       - uses: harmon758/postgresql-action@v1
         with:
-          postgresql version: "14"
+          postgresql version: "15"
           postgresql db: "pipeline"
           postgresql user: "pipeline"
           postgresql password: "pipeline123456"

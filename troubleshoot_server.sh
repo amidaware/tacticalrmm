@@ -17,7 +17,15 @@ NC='\033[0m'
 now=$(date)
 echo -e -------------- $now -------------- | tee -a checklog.log
 
+osname=$(lsb_release -si)
+osname=${osname^}
+osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
+relno=$(lsb_release -sr | cut -d. -f1)
+
 # Resolve Locally used DNS server
+if [[ "$osname" == "debian" && "$relno" == 12 ]]; then
+locdns=$(resolvconf -l | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+else
 resolvestatus=$(systemctl is-active systemd-resolved.service)
 if [ $resolvestatus = active ]; then
     locdns=$(resolvectl | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
@@ -33,6 +41,7 @@ done
     echo -e $locdns
     sudo systemctl stop systemd-resolved.service
 fi 
+fi
 
 while [[ $rmmdomain != *[.]*[.]* ]]
 do

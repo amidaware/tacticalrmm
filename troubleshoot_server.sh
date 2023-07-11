@@ -246,16 +246,17 @@ else
 fi
 
 # mongod Service
-if [ $mongodstatus = active ]; then
-	echo -e ${GREEN} Success mongod Service is running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'mongod Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
+if grep -q mongo "/meshcentral/meshcentral-data/config.json"; then
+	if [ $mongodstatus = active ]; then
+		echo -e ${GREEN} Success mongod Service is running | tee -a checklog.log
+		printf >&2 "\n\n"
+	else
+		printf >&2 "\n\n" | tee -a checklog.log
+		echo -e ${RED} 'mongod Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+		printf >&2 "\n\n"
 
+	fi
 fi
-
 # postgresql Service
 if [ $postgresqlstatus = active ]; then
 	echo -e ${GREEN} Success postgresql Service is running | tee -a checklog.log

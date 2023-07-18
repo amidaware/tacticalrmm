@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 if [ $EUID -ne 0 ]; then
-  echo "ERROR: Must be run as root"
-  exit 1
+    echo "ERROR: Must be run as root"
+    exit 1
 fi
 
 HAS_SYSTEMD=$(ps --no-headers -o comm 1)
@@ -37,15 +37,15 @@ deb=(ubuntu debian raspbian kali linuxmint)
 rhe=(fedora rocky centos rhel amzn arch opensuse)
 
 set_locale_deb() {
-locale-gen "en_US.UTF-8"
-localectl set-locale LANG=en_US.UTF-8
-. /etc/default/locale
+    locale-gen "en_US.UTF-8"
+    localectl set-locale LANG=en_US.UTF-8
+    . /etc/default/locale
 }
 
 set_locale_rhel() {
-localedef -c -i en_US -f UTF-8 en_US.UTF-8 > /dev/null 2>&1
-localectl set-locale LANG=en_US.UTF-8
-. /etc/locale.conf
+    localedef -c -i en_US -f UTF-8 en_US.UTF-8 >/dev/null 2>&1
+    localectl set-locale LANG=en_US.UTF-8
+    . /etc/locale.conf
 }
 
 RemoveOldAgent() {
@@ -67,8 +67,14 @@ RemoveOldAgent() {
 
 InstallMesh() {
     if [ -f /etc/os-release ]; then
-        distroID=$(. /etc/os-release; echo $ID)
-        distroIDLIKE=$(. /etc/os-release; echo $ID_LIKE)
+        distroID=$(
+            . /etc/os-release
+            echo $ID
+        )
+        distroIDLIKE=$(
+            . /etc/os-release
+            echo $ID_LIKE
+        )
         if [[ " ${deb[*]} " =~ " ${distroID} " ]]; then
             set_locale_deb
         elif [[ " ${deb[*]} " =~ " ${distroIDLIKE} " ]]; then
@@ -101,8 +107,8 @@ RemoveMesh() {
     fi
 
     if [ -f "${meshSysD}" ]; then
-        systemctl stop ${meshSvcName} > /dev/null 2>&1
-        systemctl disable ${meshSvcName} > /dev/null 2>&1
+        systemctl stop ${meshSvcName} >/dev/null 2>&1
+        systemctl disable ${meshSvcName} >/dev/null 2>&1
         rm -f ${meshSysD}
     fi
 
@@ -166,7 +172,8 @@ fi
 
 eval ${INSTALL_CMD}
 
-tacticalsvc="$(cat << EOF
+tacticalsvc="$(
+    cat <<EOF
 [Unit]
 Description=Tactical RMM Linux Agent
 
@@ -184,7 +191,7 @@ KillMode=process
 WantedBy=multi-user.target
 EOF
 )"
-echo "${tacticalsvc}" | tee ${agentSysD} > /dev/null
+echo "${tacticalsvc}" | tee ${agentSysD} >/dev/null
 
 systemctl daemon-reload
 systemctl enable ${agentSvcName}

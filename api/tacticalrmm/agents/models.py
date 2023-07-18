@@ -1011,6 +1011,9 @@ class AgentCustomField(models.Model):
         default=list,
     )
 
+    class Meta:
+        unique_together = (("agent", "field"),)
+
     def __str__(self) -> str:
         return self.field.name
 

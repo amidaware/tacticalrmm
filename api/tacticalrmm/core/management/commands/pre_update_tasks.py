@@ -1,3 +1,4 @@
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from core.utils import clear_entire_cache
@@ -10,3 +11,4 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING("Cleaning the cache"))
         clear_entire_cache()
         self.stdout.write(self.style.SUCCESS("Cache was cleared!"))
+        call_command("fix_dupe_agent_customfields")

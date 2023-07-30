@@ -1,7 +1,7 @@
 adrf==0.1.1
 asgiref==3.7.2
 celery==5.3.1
-certifi==2023.5.7
+certifi==2023.7.22
 cffi==1.15.1
 channels==4.0.0
 channels_redis==4.1.0
@@ -12,7 +12,7 @@ django-cors-headers==4.2.0
 django-ipware==5.0.0
 django-rest-knox==4.2.0
 djangorestframework==3.14.0
-drf-spectacular==0.26.3
+drf-spectacular==0.26.4
 hiredis==2.2.3
 meshctrl==0.1.15
 msgpack==1.0.5
@@ -22,7 +22,7 @@ psutil==5.9.5
 psycopg[binary]==3.1.9
 pycparser==2.21
 pycryptodome==3.18.0
-pyotp==2.8.0
+pyotp==2.9.0
 pyparsing==3.1.0
 pytz==2023.3
 qrcode==7.4.2
@@ -31,8 +31,8 @@ requests==2.31.0
 six==1.16.0
 sqlparse==0.4.4
 twilio==8.5.0
-urllib3==2.0.3
-uWSGI==2.0.21
+urllib3==2.0.4
+uWSGI==2.0.22
 validators==0.20.0
 vine==5.0.0
 websockets==11.0.3

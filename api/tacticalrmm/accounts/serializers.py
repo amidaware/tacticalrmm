@@ -5,6 +5,8 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
+from tacticalrmm.helpers import get_webdomain
+
 from .models import APIKey, Role, User
 
 
@@ -61,7 +63,7 @@ class TOTPSetupSerializer(ModelSerializer):
 
     def get_qr_url(self, obj):
         return pyotp.totp.TOTP(obj.totp_key).provisioning_uri(
-            obj.username, issuer_name="Tactical RMM"
+            obj.username, issuer_name=get_webdomain()
         )
 
 

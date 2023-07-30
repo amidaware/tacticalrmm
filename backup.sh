@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="27"
+SCRIPT_VERSION="28"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -89,7 +89,19 @@ fi
 
 tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules /meshcentral
 
-sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
+if [ -d /etc/letsencrypt ]; then
+    sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
+fi
+
+local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+
+if grep -q CERT_FILE "$local_settings"; then
+    mkdir -p ${tmp_dir}/certs/custom
+    CERT_FILE=$(grep "^CERT_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
+    KEY_FILE=$(grep "^KEY_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
+    cp -p $CERT_FILE ${tmp_dir}/certs/custom/cert
+    cp -p $KEY_FILE ${tmp_dir}/certs/custom/key
+fi
 
 for i in rmm frontend meshcentral; do
     sudo cp /etc/nginx/sites-available/${i}.conf ${tmp_dir}/nginx/
@@ -99,7 +111,7 @@ sudo tar -czvf ${tmp_dir}/confd/etc-confd.tar.gz -C /etc/conf.d .
 
 sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/meshcentral.service ${sysd}/nats.service ${sysd}/daphne.service ${sysd}/nats-api.service ${tmp_dir}/systemd/
 
-cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
+cp $local_settings ${tmp_dir}/rmm/
 
 if [[ $* == *--auto* ]]; then
 

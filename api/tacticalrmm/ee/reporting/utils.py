@@ -5,7 +5,18 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 import re
-from typing import Any, Dict, List, Tuple, Literal, Optional, cast
+from typing import (
+    Any,
+    Dict,
+    List,
+    Tuple,
+    Literal,
+    Optional,
+    Union,
+    Type,
+    cast,
+    TYPE_CHECKING,
+)
 
 import plotly.express as px
 import yaml
@@ -18,6 +29,10 @@ from weasyprint.text.fonts import FontConfiguration
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportHTMLTemplate, ReportTemplate
+
+if TYPE_CHECKING:
+    from agents.models import Agent
+    from clients.models import Client, Site
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
@@ -284,18 +299,29 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     first = False
     all = False
     columns = local_data_source["only"] if "only" in local_data_source.keys() else None
+    fields_to_add = []
 
     # create a base reporting queryset
     queryset = Model.objects.using("reporting")
-
+    model_name = Model.__name__.lower()
     for operation, values in local_data_source.items():
         if operation not in ALLOWED_OPERATIONS:
             raise InvalidDBOperationException(
-                f"DB operation: {operation} not allowed. Supported operations: only, defer, filter, get, first, all, exclude, limit, select_related, prefetch_related, annotate, aggregate, order_by, count"
+                f"DB operation: {operation} not allowed. Supported operations: only, defer, filter, get, first, all, custom_fields, exclude, limit, select_related, prefetch_related, annotate, aggregate, order_by, count"
             )
 
         if operation == "meta":
             continue
+        elif operation == "custom_fields" and isinstance(values, list):
+            from core.models import CustomField
+
+            if model_name in ["client", "site", "agent"]:
+                fields_to_add = [
+                    field
+                    for field in values
+                    if CustomField.objects.filter(model=model_name, name=field).exists()
+                ]
+
         elif operation == "limit":
             limit = values
         elif operation == "count":
@@ -319,7 +345,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     if count:
         return queryset.count()
 
-    if limit:
+    if limit and not first and not get:
         queryset = queryset[:limit]
 
     if columns:
@@ -327,12 +353,104 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     else:
         queryset = queryset.values()
 
-    if get:
-        queryset = queryset.get()
-    elif first:
-        queryset = queryset.first()
+    if get or first:
+        if get:
+            queryset = queryset.get()
+        elif first:
+            queryset = queryset.first()
 
-    return queryset
+        if fields_to_add:
+            return add_custom_fields(
+                data=queryset,
+                field_names=fields_to_add,
+                model_name=model_name,
+                dict_value=True,
+            )
+        else:
+            return queryset
+    else:
+        # add custom fields for list results
+        if fields_to_add:
+            return add_custom_fields(
+                data=list(queryset), field_names=fields_to_add, model_name=model_name
+            )
+        else:
+            return list(queryset)
+
+
+def add_custom_fields(
+    *,
+    data: Union[Dict[str, Any], List[Dict[str, Any]]],
+    fields_to_add: List[str],
+    model_name: Literal["client", "site", "agent"],
+    dict_value: bool = False,
+):
+    from core.models import CustomField
+    from agents.models import AgentCustomField
+    from clients.models import ClientCustomField, SiteCustomField
+
+    model_name = model_name.lower()
+    CustomFieldModel: Union[
+        Type[AgentCustomField], Type[ClientCustomField], Type[SiteCustomField]
+    ]
+    if model_name == "agent":
+        CustomFieldModel = AgentCustomField
+    elif model_name == "client":
+        CustomFieldModel = ClientCustomField
+    else:
+        CustomFieldModel = SiteCustomField
+
+    custom_fields = CustomField.objects.filter(name__in=fields_to_add, type=model_name)
+
+    if dict_value:
+        custom_field_data = list(
+            CustomFieldModel.objects.select_related("field").filter(
+                field__name__in=fields_to_add, **{f"{model_name}_id": data["id"]}
+            )
+        )
+        # hold custom field data on the returned object
+        data["custom_fields"]: Dict[str, Any] = {}
+
+        for custom_field in custom_fields:
+            find_custom_field_data = next(
+                (cf for cf in custom_field_data if cf.field_id == custom_field.id),
+                None,
+            )
+
+            if find_custom_field_data is not None:
+                data["custom_fields"][custom_field.name] = find_custom_field_data.value
+            else:
+                data["custom_fields"][custom_field.name] = custom_field.default_value
+
+        return data
+    else:
+        ids = [row["id"] for row in data]
+        custom_field_data = list(
+            CustomFieldModel.objects.select_related("field").filter(
+                field__name__in=fields_to_add, **{f"{model_name}_id__in": ids}
+            )
+        )
+
+        for row in data:
+            row["custom_fields"]: Dict[str, Any] = {}
+
+            for custom_field in custom_fields:
+                find_custom_field_data = next(
+                    (
+                        cf
+                        for cf in custom_field_data
+                        if cf.field_id == custom_field.id
+                        and getattr(cf, f"{model_name}_id") == row["id"]
+                    ),
+                    None,
+                )
+
+                if find_custom_field_data is not None:
+                    row["custom_fields"][
+                        custom_field.name
+                    ] = find_custom_field_data.value
+                else:
+                    row["custom_fields"][custom_field.name] = custom_field.default_value
 
 
 def normalize_asset_url(text: str, type: Literal["pdf", "html"]) -> str:
@@ -382,9 +500,12 @@ def base64_encode_assets(template: str) -> List[Dict[str, Any]]:
 
     return assets
 
+
 def decode_base64_asset(asset: str) -> bytes:
     import base64
-    return base64.b64decode(asset.encode('utf-8'))
+
+    return base64.b64decode(asset.encode("utf-8"))
+
 
 def generate_chart(
     *,

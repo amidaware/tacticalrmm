@@ -3,20 +3,9 @@ Copyright (c) 2023-present Amidaware Inc.
 This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
-
+import pysnooper
 import re
-from typing import (
-    Any,
-    Dict,
-    List,
-    Tuple,
-    Literal,
-    Optional,
-    Union,
-    Type,
-    cast,
-    TYPE_CHECKING,
-)
+from typing import Any, Dict, List, Tuple, Literal, Optional, Union, Type, cast
 
 import plotly.express as px
 import yaml
@@ -30,9 +19,6 @@ from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportHTMLTemplate, ReportTemplate
 
-if TYPE_CHECKING:
-    from agents.models import Agent
-    from clients.models import Client, Site
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
@@ -273,6 +259,8 @@ ALLOWED_OPERATIONS = (
     "get",
     "first",
     "all",
+    # custom fields
+    "custom_fields",
     # relations
     "select_related",
     "prefetch_related",
@@ -349,6 +337,8 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         queryset = queryset[:limit]
 
     if columns:
+        if "id" not in columns:
+            columns.append("id")
         queryset = queryset.values(*columns)
     else:
         queryset = queryset.values()
@@ -362,7 +352,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         if fields_to_add:
             return add_custom_fields(
                 data=queryset,
-                field_names=fields_to_add,
+                fields_to_add=fields_to_add,
                 model_name=model_name,
                 dict_value=True,
             )
@@ -372,19 +362,20 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         # add custom fields for list results
         if fields_to_add:
             return add_custom_fields(
-                data=list(queryset), field_names=fields_to_add, model_name=model_name
+                data=list(queryset), fields_to_add=fields_to_add, model_name=model_name
             )
         else:
             return list(queryset)
 
 
+@pysnooper.snoop()
 def add_custom_fields(
     *,
     data: Union[Dict[str, Any], List[Dict[str, Any]]],
     fields_to_add: List[str],
     model_name: Literal["client", "site", "agent"],
     dict_value: bool = False,
-):
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     from core.models import CustomField
     from agents.models import AgentCustomField
     from clients.models import ClientCustomField, SiteCustomField
@@ -400,7 +391,7 @@ def add_custom_fields(
     else:
         CustomFieldModel = SiteCustomField
 
-    custom_fields = CustomField.objects.filter(name__in=fields_to_add, type=model_name)
+    custom_fields = CustomField.objects.filter(name__in=fields_to_add, model=model_name)
 
     if dict_value:
         custom_field_data = list(
@@ -451,6 +442,8 @@ def add_custom_fields(
                     ] = find_custom_field_data.value
                 else:
                     row["custom_fields"][custom_field.name] = custom_field.default_value
+
+        return data
 
 
 def normalize_asset_url(text: str, type: Literal["pdf", "html"]) -> str:

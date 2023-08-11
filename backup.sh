@@ -16,7 +16,7 @@ fi
 if [[ $* == *--schedule* ]]; then
     (
         crontab -l 2>/dev/null
-        echo "0 0 * * * /rmm/backup.sh --auto"
+        echo "0 0 * * * /rmm/backup.sh --auto > /dev/null 2>&1"
     ) | crontab -
 
     if [ ! -d /rmmbackups ]; then
@@ -78,7 +78,7 @@ node /meshcentral/node_modules/meshcentral --dbexport # for import to postgres
 
 if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
     if ! which jq >/dev/null; then
-        sudo apt-get install -y jq >null
+        sudo apt-get install -y jq >/dev/null
     fi
     MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
     MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)

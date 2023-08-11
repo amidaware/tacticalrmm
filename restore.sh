@@ -410,6 +410,12 @@ deactivate
 
 print_green 'Restoring hosts file'
 
+if grep -q manage_etc_hosts /etc/hosts; then
+  sudo sed -i '/manage_etc_hosts = True/d' /etc/cloud/cloud.cfg >/dev/null
+  echo -e "\nmanage_etc_hosts = False" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
+  sudo systemctl restart cloud-init >/dev/null
+fi
+
 HAS_11=$(grep 127.0.1.1 /etc/hosts)
 if [[ $HAS_11 ]]; then
   sudo sed -i "/127.0.1.1/s/$/ ${API} ${webdomain} ${meshdomain}/" /etc/hosts

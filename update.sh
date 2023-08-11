@@ -362,9 +362,9 @@ MESHDOMAIN=$(python manage.py get_config meshdomain)
 deactivate
 
 if grep -q manage_etc_hosts /etc/hosts; then
-  sudo sed -i '/manage_etc_hosts = True/d' /etc/cloud/cloud.cfg >/dev/null
-  if ! grep -q "manage_etc_hosts = False" /etc/cloud/cloud.cfg; then
-    echo -e "\nmanage_etc_hosts = False" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
+  sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
+  if ! grep -q "manage_etc_hosts: false" /etc/cloud/cloud.cfg; then
+    echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
     sudo systemctl restart cloud-init >/dev/null
   fi
 fi

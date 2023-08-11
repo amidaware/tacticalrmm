@@ -411,8 +411,8 @@ deactivate
 print_green 'Restoring hosts file'
 
 if grep -q manage_etc_hosts /etc/hosts; then
-  sudo sed -i '/manage_etc_hosts = True/d' /etc/cloud/cloud.cfg >/dev/null
-  echo -e "\nmanage_etc_hosts = False" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
+  sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
+  echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
   sudo systemctl restart cloud-init >/dev/null
 fi
 

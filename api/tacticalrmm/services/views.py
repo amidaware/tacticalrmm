@@ -65,6 +65,8 @@ class GetEditActionService(APIView):
     # win service action
     def post(self, request, agent_id, svcname):
         agent = get_object_or_404(Agent, agent_id=agent_id)
+        if agent.is_posix:
+            return notify_error("Please use 'Recover Connection' instead.")
         action = request.data["sv_action"]
         data = {
             "func": "winsvcaction",

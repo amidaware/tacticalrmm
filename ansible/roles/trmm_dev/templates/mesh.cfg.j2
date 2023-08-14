@@ -1,8 +1,6 @@
 {
   "settings": {
     "Cert": "{{ mesh }}",
-    "MongoDb": "mongodb://127.0.0.1:27017",
-    "MongoDbName": "meshcentral",
     "WANonly": true,
     "Minify": 1,
     "Port": 4430,
@@ -10,19 +8,25 @@
     "RedirPort": 800,
     "AllowLoginToken": true,
     "AllowFraming": true,
-    "AgentPong": 300,
+    "AgentPing": 35,
     "AllowHighQualityDesktop": true,
     "TlsOffload": "127.0.0.1",
     "agentCoreDump": false,
     "Compression": true,
     "WsCompression": true,
     "AgentWsCompression": true,
-    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
+    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 },
+    "postgres": {
+      "user": "{{ mesh_db_user }}",
+      "password": "{{ mesh_db_passwd }}",
+      "port": "5432",
+      "host": "localhost"
+    }
   },
   "domains": {
     "": {
-      "Title": "Tactical RMM",
-      "Title2": "Tactical RMM",
+      "Title": "Tactical RMM Dev",
+      "Title2": "Tactical RMM Dev",
       "NewAccounts": false,
       "CertUrl": "https://{{ mesh }}:443/",
       "GeoLocation": true,

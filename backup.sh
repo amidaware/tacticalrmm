@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="25"
+SCRIPT_VERSION="28"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -16,7 +16,7 @@ fi
 if [[ $* == *--schedule* ]]; then
     (
         crontab -l 2>/dev/null
-        echo "0 0 * * * /rmm/backup.sh --auto"
+        echo "0 0 * * * /rmm/backup.sh --auto > /dev/null 2>&1"
     ) | crontab -
 
     if [ ! -d /rmmbackups ]; then
@@ -49,6 +49,10 @@ if [ -d /meshcentral/meshcentral-backup ]; then
     rm -rf /meshcentral/meshcentral-backup/*
 fi
 
+if [ -d /meshcentral/meshcentral-backups ]; then
+    rm -rf /meshcentral/meshcentral-backups/*
+fi
+
 if [ -d /meshcentral/meshcentral-coredumps ]; then
     rm -f /meshcentral/meshcentral-coredumps/*
 fi
@@ -74,7 +78,7 @@ node /meshcentral/node_modules/meshcentral --dbexport # for import to postgres
 
 if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
     if ! which jq >/dev/null; then
-        sudo apt-get install -y jq >null
+        sudo apt-get install -y jq >/dev/null
     fi
     MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
     MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
@@ -85,7 +89,19 @@ fi
 
 tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules /meshcentral
 
-sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
+if [ -d /etc/letsencrypt ]; then
+    sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
+fi
+
+local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+
+if grep -q CERT_FILE "$local_settings"; then
+    mkdir -p ${tmp_dir}/certs/custom
+    CERT_FILE=$(grep "^CERT_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
+    KEY_FILE=$(grep "^KEY_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
+    cp -p $CERT_FILE ${tmp_dir}/certs/custom/cert
+    cp -p $KEY_FILE ${tmp_dir}/certs/custom/key
+fi
 
 for i in rmm frontend meshcentral; do
     sudo cp /etc/nginx/sites-available/${i}.conf ${tmp_dir}/nginx/
@@ -95,7 +111,7 @@ sudo tar -czvf ${tmp_dir}/confd/etc-confd.tar.gz -C /etc/conf.d .
 
 sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/meshcentral.service ${sysd}/nats.service ${sysd}/daphne.service ${sysd}/nats-api.service ${tmp_dir}/systemd/
 
-cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py ${tmp_dir}/rmm/
+cp $local_settings ${tmp_dir}/rmm/
 
 if [[ $* == *--auto* ]]; then
 
@@ -114,9 +130,9 @@ if [[ $* == *--auto* ]]; then
 
     rm -rf ${tmp_dir}
 
-    find /rmmbackups/daily/ -maxdepth 1 -mtime +14 -type d -exec rm -rv {} \;
-    find /rmmbackups/weekly/ -maxdepth 1 -mtime +60 -type d -exec rm -rv {} \;
-    find /rmmbackups/monthly/ -maxdepth 1 -mtime +380 -type d -exec rm -rv {} \;
+    find /rmmbackups/daily/ -type f -mtime +14 -name '*.tar' -execdir rm -- '{}' \;
+    find /rmmbackups/weekly/ -type f -mtime +60 -name '*.tar' -execdir rm -- '{}' \;
+    find /rmmbackups/monthly/ -type f -mtime +380 -name '*.tar' -execdir rm -- '{}' \;
     echo -ne "${GREEN}Backup Completed${NC}\n"
     exit
 

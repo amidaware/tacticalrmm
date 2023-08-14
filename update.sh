@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="145"
+SCRIPT_VERSION="146"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -357,7 +357,28 @@ python manage.py clear_redis_celery_locks
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)
+FRONTEND=$(python manage.py get_config webdomain)
+MESHDOMAIN=$(python manage.py get_config meshdomain)
 deactivate
+
+if grep -q manage_etc_hosts /etc/hosts; then
+  sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
+  if ! grep -q "manage_etc_hosts: false" /etc/cloud/cloud.cfg; then
+    echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
+    sudo systemctl restart cloud-init >/dev/null
+  fi
+fi
+
+CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$API" | grep "$FRONTEND" | grep "$MESHDOMAIN")
+HAS_11=$(grep 127.0.1.1 /etc/hosts)
+
+if ! [[ $CHECK_HOSTS ]]; then
+  if [[ $HAS_11 ]]; then
+    sudo sed -i "/127.0.1.1/s/$/ ${API} ${FRONTEND} ${MESHDOMAIN}/" /etc/hosts
+  else
+    echo "127.0.1.1 ${API} ${FRONTEND} ${MESHDOMAIN}" | sudo tee --append /etc/hosts >/dev/null
+  fi
+fi
 
 if [ -d /rmm/web ]; then
   rm -rf /rmm/web

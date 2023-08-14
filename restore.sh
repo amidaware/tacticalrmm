@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="49"
+SCRIPT_VERSION="50"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -193,10 +193,24 @@ sudo apt install -y certbot openssl
 
 print_green 'Restoring certs'
 
-sudo rm -rf /etc/letsencrypt
-sudo mkdir /etc/letsencrypt
-sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
-sudo chown ${USER}:${USER} -R /etc/letsencrypt
+if [ -f "$tmp_dir/certs/etc-letsencrypt.tar.gz" ]; then
+  sudo rm -rf /etc/letsencrypt
+  sudo mkdir /etc/letsencrypt
+  sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
+  sudo chown ${USER}:${USER} -R /etc/letsencrypt
+fi
+
+if [ -d "${tmp_dir}/certs/custom" ]; then
+  CERT_FILE=$(grep "^CERT_FILE" "$tmp_dir/rmm/local_settings.py" | awk -F'[= "]' '{print $5}')
+  KEY_FILE=$(grep "^KEY_FILE" "$tmp_dir/rmm/local_settings.py" | awk -F'[= "]' '{print $5}')
+
+  sudo mkdir -p $(dirname $CERT_FILE) $(dirname $KEY_FILE)
+  sudo chown ${USER}:${USER} $(dirname $CERT_FILE) $(dirname $KEY_FILE)
+
+  cp -p ${tmp_dir}/certs/custom/cert $CERT_FILE
+  cp -p ${tmp_dir}/certs/custom/key $KEY_FILE
+
+fi
 
 print_green 'Restoring celery configs'
 
@@ -395,6 +409,12 @@ meshdomain=$(python manage.py get_config meshdomain)
 deactivate
 
 print_green 'Restoring hosts file'
+
+if grep -q manage_etc_hosts /etc/hosts; then
+  sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
+  echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
+  sudo systemctl restart cloud-init >/dev/null
+fi
 
 HAS_11=$(grep 127.0.1.1 /etc/hosts)
 if [[ $HAS_11 ]]; then

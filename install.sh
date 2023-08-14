@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="74"
+SCRIPT_VERSION="75"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -136,6 +136,12 @@ while [[ $letsemail != *[@]*[.]* ]]; do
   echo -ne "${YELLOW}Enter a valid email address for django and meshcentral${NC}: "
   read letsemail
 done
+
+if grep -q manage_etc_hosts /etc/hosts; then
+  sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
+  echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
+  sudo systemctl restart cloud-init >/dev/null
+fi
 
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
 HAS_11=$(grep 127.0.1.1 /etc/hosts)

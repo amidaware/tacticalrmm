@@ -30,6 +30,12 @@ services:
       POSTGRES_DB: tacticalrmm
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "tactical", "-d", "tacticalrmm" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -42,6 +48,12 @@ services:
     user: 1000:1000
     command: redis-server
     restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     volumes:
       - redis_data:/data
     networks:
@@ -128,6 +140,12 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
       MONGO_INITDB_DATABASE: meshcentral
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/meshcentral --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     networks:
       - mesh-db
     volumes:
@@ -191,6 +209,12 @@ services:
       MESH_HOST: ${MESH_HOST}
       CERT_PUB_KEY: ${CERT_PUB_KEY}
       CERT_PRIV_KEY: ${CERT_PRIV_KEY}
+    healthcheck:
+      test: [ "CMD", "curl", "--silent", "--fail", "http://localhost:8080" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     networks:
       proxy:
         ipv4_address: 172.20.0.20

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="50"
+SCRIPT_VERSION="51"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -349,7 +349,21 @@ else
 fi
 
 cd /meshcentral
-npm install meshcentral@${MESH_VER}
+mesh_pkg="$(
+  cat <<EOF
+{
+  "dependencies": {
+    "archiver": "5.3.1",
+    "meshcentral": "${MESH_VER}",
+    "otplib": "10.2.3",
+    "pg": "8.7.1",
+    "pgtools": "0.3.2"
+  }
+}
+EOF
+)"
+echo "${mesh_pkg}" >/meshcentral/package.json
+npm install
 
 if [ "$FROM_MONGO" = true ]; then
   node node_modules/meshcentral --dbimport >/dev/null

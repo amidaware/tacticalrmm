@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="75"
+SCRIPT_VERSION="76"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -336,8 +336,22 @@ MESH_VER=$(grep "^MESH_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 sudo mkdir -p /meshcentral/meshcentral-data
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral@${MESH_VER}
 sudo chown ${USER}:${USER} -R /meshcentral
+
+mesh_pkg="$(
+  cat <<EOF
+{
+  "dependencies": {
+    "archiver": "5.3.1",
+    "meshcentral": "${MESH_VER}",
+    "otplib": "10.2.3",
+    "pg": "8.7.1",
+    "pgtools": "0.3.2"
+  }
+}
+EOF
+)"
+echo "${mesh_pkg}" >/meshcentral/package.json
 
 meshcfg="$(
   cat <<EOF
@@ -381,6 +395,8 @@ meshcfg="$(
 EOF
 )"
 echo "${meshcfg}" >/meshcentral/meshcentral-data/config.json
+
+npm install
 
 localvars="$(
   cat <<EOF

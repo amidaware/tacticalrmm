@@ -88,8 +88,12 @@ def get_mesh_ws_url() -> str:
     if settings.DOCKER_BUILD:
         uri = f"{settings.MESH_WS_URL}/control.ashx?auth={token}"
     else:
-        site = core.mesh_site.replace("https", "wss")
-        uri = f"{site}/control.ashx?auth={token}"
+        if getattr(settings, "TRMM_INSECURE", False):
+            site = core.mesh_site.replace("https", "ws")
+            uri = f"{site}:4430/control.ashx?auth={token}"
+        else:
+            site = core.mesh_site.replace("https", "wss")
+            uri = f"{site}/control.ashx?auth={token}"
 
     return uri
 
@@ -181,6 +185,8 @@ def get_meshagent_url(
 ) -> str:
     if settings.DOCKER_BUILD:
         base = settings.MESH_WS_URL.replace("ws://", "http://")
+    elif getattr(settings, "TRMM_INSECURE", False):
+        base = mesh_site.replace("https", "http") + ":4430"
     else:
         base = mesh_site
 

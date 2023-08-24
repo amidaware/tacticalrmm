@@ -14,6 +14,7 @@ NC='\033[0m'
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.11.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
+local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -161,19 +162,38 @@ if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192
   BEHIND_NAT=true
 fi
 
+insecure=false
+if [[ $* == *--insecure* ]]; then
+  insecure=true
+fi
+
 sudo apt install -y software-properties-common
 sudo apt update
-sudo apt install -y certbot openssl
+sudo apt install -y openssl
 
-print_green 'Getting wildcard cert'
+if [[ "$insecure" = true ]]; then
+  print_green 'Generating self-signed cert'
+  certdir='/etc/ssl/tactical'
+  sudo mkdir -p $certdir
+  sudo chown ${USER}:${USER} $certdir
+  sudo chmod 770 $certdir
+  CERT_PRIV_KEY=${certdir}/privkey.pem
+  CERT_PUB_KEY=${certdir}/fullchain.pem
+  openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
+    -nodes -keyout ${CERT_PRIV_KEY} -out ${CERT_PUB_KEY} -subj "/CN=${rootdomain}" \
+    -addext "subjectAltName=DNS:${rootdomain},DNS:*.${rootdomain}"
 
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
-while [[ $? -ne 0 ]]; do
+else
+  sudo apt install -y certbot
+  print_green 'Getting wildcard cert'
+
   sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
-done
-
-CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
-CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
+  while [[ $? -ne 0 ]]; do
+    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
+  done
+  CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
+  CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
+fi
 
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 
@@ -429,7 +449,11 @@ REDIS_HOST    = "localhost"
 ADMIN_ENABLED = True
 EOF
 )"
-echo "${localvars}" >/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+echo "${localvars}" >$local_settings
+
+if [[ "$insecure" = true ]]; then
+  echo "TRMM_INSECURE = True" | tee --append $local_settings >/dev/null
+fi
 
 if [ "$arch" = "x86_64" ]; then
   natsapi='nats-api'
@@ -896,7 +920,7 @@ meshtoken="$(
 MESH_TOKEN_KEY = "${MESHTOKENKEY}"
 EOF
 )"
-echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
+echo "${meshtoken}" | tee --append $local_settings >/dev/null
 
 print_green 'Creating meshcentral account and group'
 
@@ -933,7 +957,7 @@ sudo systemctl enable nats-api.service
 sudo systemctl start nats-api.service
 
 ## disable django admin
-sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' $local_settings
 
 print_green 'Restarting services'
 for i in rmm.service daphne.service celery.service celerybeat.service; do

@@ -502,3 +502,27 @@ class TestCoreUtils(TacticalTestCase):
             r,
             "http://tactical-meshcentral:4443/meshagents?id=4&meshid=abc123&installflags=0",
         )
+
+    @override_settings(TRMM_INSECURE=True)
+    def test_get_meshagent_url_insecure(self):
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://mesh.example.com:4430/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://mesh.example.com:4430/meshagents?id=4&meshid=abc123&installflags=0",
+        )

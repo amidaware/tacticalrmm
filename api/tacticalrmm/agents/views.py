@@ -672,6 +672,9 @@ def install_agent(request):
             if int(request.data["power"]):
                 cmd.append("--power")
 
+            if getattr(settings, "TRMM_INSECURE", False):
+                cmd.append("--insecure")
+
             resp["cmd"] = " ".join(str(i) for i in cmd)
         else:
             install_flags.insert(0, f"sudo ./{inno}")

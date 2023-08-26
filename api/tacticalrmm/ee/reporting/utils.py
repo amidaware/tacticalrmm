@@ -3,8 +3,9 @@ Copyright (c) 2023-present Amidaware Inc.
 This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
-import pysnooper
+
 import re
+import json
 from typing import Any, Dict, List, Tuple, Literal, Optional, Union, Type, cast
 
 import plotly.express as px
@@ -261,6 +262,8 @@ ALLOWED_OPERATIONS = (
     "all",
     # custom fields
     "custom_fields",
+    # presentation
+    "json",
     # relations
     "select_related",
     "prefetch_related",
@@ -286,6 +289,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     get = False
     first = False
     all = False
+    isJson = False
     columns = local_data_source["only"] if "only" in local_data_source.keys() else None
     fields_to_add = []
 
@@ -320,6 +324,8 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             first = True
         elif operation == "all":
             all = True
+        elif operation == "json":
+            isJson = True
         elif isinstance(values, list):
             queryset = getattr(queryset, operation)(*values)
         elif isinstance(values, dict):
@@ -357,7 +363,10 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
                 dict_value=True,
             )
         else:
-            return queryset
+            if isJson:
+                return json.dumps(queryset, default=str)
+            else:
+                return queryset
     else:
         # add custom fields for list results
         if fields_to_add:
@@ -365,17 +374,19 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
                 data=list(queryset), fields_to_add=fields_to_add, model_name=model_name
             )
         else:
-            return list(queryset)
+            if isJson:
+                return json.dumps(list(queryset), default=str)
+            else:
+                return list(queryset)
 
 
-@pysnooper.snoop()
 def add_custom_fields(
     *,
     data: Union[Dict[str, Any], List[Dict[str, Any]]],
     fields_to_add: List[str],
     model_name: Literal["client", "site", "agent"],
     dict_value: bool = False,
-) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+):
     from core.models import CustomField
     from agents.models import AgentCustomField
     from clients.models import ClientCustomField, SiteCustomField
@@ -442,8 +453,6 @@ def add_custom_fields(
                     ] = find_custom_field_data.value
                 else:
                     row["custom_fields"][custom_field.name] = custom_field.default_value
-
-        return data
 
 
 def normalize_asset_url(text: str, type: Literal["pdf", "html"]) -> str:

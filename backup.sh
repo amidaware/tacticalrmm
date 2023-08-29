@@ -101,6 +101,11 @@ if grep -q CERT_FILE "$local_settings"; then
     KEY_FILE=$(grep "^KEY_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
     cp -p $CERT_FILE ${tmp_dir}/certs/custom/cert
     cp -p $KEY_FILE ${tmp_dir}/certs/custom/key
+elif grep -q TRMM_INSECURE "$local_settings"; then
+    mkdir -p ${tmp_dir}/certs/selfsigned
+    certdir='/etc/ssl/tactical'
+    cp -p ${certdir}/key.pem ${tmp_dir}/certs/selfsigned/
+    cp -p ${certdir}/cert.pem ${tmp_dir}/certs/selfsigned/
 fi
 
 for i in rmm frontend meshcentral; do

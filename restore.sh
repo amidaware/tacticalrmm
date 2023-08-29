@@ -209,7 +209,13 @@ if [ -d "${tmp_dir}/certs/custom" ]; then
 
   cp -p ${tmp_dir}/certs/custom/cert $CERT_FILE
   cp -p ${tmp_dir}/certs/custom/key $KEY_FILE
-
+elif [ -d "${tmp_dir}/certs/selfsigned" ]; then
+  certdir='/etc/ssl/tactical'
+  sudo mkdir -p $certdir
+  sudo chown ${USER}:${USER} $certdir
+  sudo chmod 770 $certdir
+  cp -p ${tmp_dir}/certs/selfsigned/key.pem $certdir
+  cp -p ${tmp_dir}/certs/selfsigned/cert.pem $certdir
 fi
 
 print_green 'Restoring celery configs'

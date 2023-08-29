@@ -177,8 +177,8 @@ if [[ "$insecure" = true ]]; then
   sudo mkdir -p $certdir
   sudo chown ${USER}:${USER} $certdir
   sudo chmod 770 $certdir
-  CERT_PRIV_KEY=${certdir}/privkey.pem
-  CERT_PUB_KEY=${certdir}/fullchain.pem
+  CERT_PRIV_KEY=${certdir}/key.pem
+  CERT_PUB_KEY=${certdir}/cert.pem
   openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
     -nodes -keyout ${CERT_PRIV_KEY} -out ${CERT_PUB_KEY} -subj "/CN=${rootdomain}" \
     -addext "subjectAltName=DNS:${rootdomain},DNS:*.${rootdomain}"

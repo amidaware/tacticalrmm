@@ -1,9 +1,10 @@
 from django.urls import path
 
-from . import views
-from checks.views import GetAddChecks
 from autotasks.views import GetAddAutoTasks
+from checks.views import GetAddChecks
 from logs.views import PendingActions
+
+from . import views
 
 urlpatterns = [
     # agent views
@@ -40,5 +41,7 @@ urlpatterns = [
     path("versions/", views.get_agent_versions),
     path("update/", views.update_agents),
     path("installer/", views.install_agent),
-    path("<str:arch>/getmeshexe/", views.get_mesh_exe),
+    path("bulkrecovery/", views.bulk_agent_recovery),
+    path("scripthistory/", views.ScriptRunHistory.as_view()),
+    path("<agent:agent_id>/wol/", views.wol),
 ]

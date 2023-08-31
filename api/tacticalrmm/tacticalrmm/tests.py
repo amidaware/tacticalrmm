@@ -2,15 +2,19 @@ from unittest.mock import mock_open, patch
 
 import requests
 from django.test import override_settings
+
+from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    CHECKS_NON_EDITABLE_FIELDS,
+    FIELDS_TRIGGER_TASK_UPDATE_AGENT,
+    ONLINE_AGENTS,
+    POLICY_CHECK_FIELDS_TO_COPY,
+    POLICY_TASK_FIELDS_TO_COPY,
+)
 from tacticalrmm.test import TacticalTestCase
 
-from .utils import (
-    bitdays_to_string,
-    generate_winagent_exe,
-    get_bit_days,
-    reload_nats,
-    AGENT_DEFER,
-)
+from .utils import bitdays_to_string, generate_winagent_exe, get_bit_days, reload_nats
 
 
 class TestUtils(TacticalTestCase):
@@ -27,7 +31,7 @@ class TestUtils(TacticalTestCase):
             rdp=1,
             ping=0,
             power=0,
-            arch="64",
+            goarch="amd64",
             token="abc123",
             api="https://api.example.com",
             file_name="rmm-client-site-server.exe",
@@ -45,7 +49,7 @@ class TestUtils(TacticalTestCase):
             rdp=1,
             ping=0,
             power=0,
-            arch="64",
+            goarch="amd64",
             token="abc123",
             api="https://api.example.com",
             file_name="rmm-client-site-server.exe",
@@ -94,10 +98,39 @@ class TestUtils(TacticalTestCase):
         r = bitdays_to_string(bit_weekdays)
         self.assertEqual(r, "Every day")
 
-    def test_defer_fields_exist(self):
+    # for checking when removing db fields, make sure we update these tuples
+    def test_constants_fields_exist(self) -> None:
         from agents.models import Agent
+        from autotasks.models import AutomatedTask
+        from checks.models import Check, CheckResult
 
-        fields = [i.name for i in Agent._meta.get_fields()]
+        agent_fields = [i.name for i in Agent._meta.get_fields()]
+        agent_fields.append("pk")
+
+        autotask_fields = [i.name for i in AutomatedTask._meta.get_fields()]
+        check_fields = [i.name for i in Check._meta.get_fields()]
+        check_result_fields = [i.name for i in CheckResult._meta.get_fields()]
 
         for i in AGENT_DEFER:
-            self.assertIn(i, fields)
+            self.assertIn(i, agent_fields)
+
+        for i in ONLINE_AGENTS:
+            self.assertIn(i, agent_fields)
+
+        for i in FIELDS_TRIGGER_TASK_UPDATE_AGENT:
+            self.assertIn(i, autotask_fields)
+
+        for i in POLICY_TASK_FIELDS_TO_COPY:
+            self.assertIn(i, autotask_fields)
+
+        for i in CHECKS_NON_EDITABLE_FIELDS:
+            self.assertIn(i, check_fields)
+
+        for i in POLICY_CHECK_FIELDS_TO_COPY:
+            self.assertIn(i, check_fields)
+
+        for i in CHECK_DEFER:
+            self.assertIn(i, check_fields)
+
+        for i in CHECK_RESULT_DEFER:
+            self.assertIn(i, check_result_fields)

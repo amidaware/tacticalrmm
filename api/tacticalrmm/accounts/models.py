@@ -1,26 +1,17 @@
+from typing import Optional
+
 from django.contrib.auth.models import AbstractUser
+from django.core.cache import cache
 from django.db import models
 from django.db.models.fields import CharField, DateTimeField
 
 from logs.models import BaseAuditModel
-
-AGENT_DBLCLICK_CHOICES = [
-    ("editagent", "Edit Agent"),
-    ("takecontrol", "Take Control"),
-    ("remotebg", "Remote Background"),
-    ("urlaction", "URL Action"),
-]
-
-AGENT_TBL_TAB_CHOICES = [
-    ("server", "Servers"),
-    ("workstation", "Workstations"),
-    ("mixed", "Mixed"),
-]
-
-CLIENT_TREE_SORT_CHOICES = [
-    ("alphafail", "Move failing clients to the top"),
-    ("alpha", "Sort alphabetically"),
-]
+from tacticalrmm.constants import (
+    ROLE_CACHE_PREFIX,
+    AgentDblClick,
+    AgentTableTabs,
+    ClientTreeSort,
+)
 
 
 class User(AbstractUser, BaseAuditModel):
@@ -29,8 +20,8 @@ class User(AbstractUser, BaseAuditModel):
     totp_key = models.CharField(max_length=50, null=True, blank=True)
     dark_mode = models.BooleanField(default=True)
     show_community_scripts = models.BooleanField(default=True)
-    agent_dblclick_action = models.CharField(
-        max_length=50, choices=AGENT_DBLCLICK_CHOICES, default="editagent"
+    agent_dblclick_action: "AgentDblClick" = models.CharField(
+        max_length=50, choices=AgentDblClick.choices, default=AgentDblClick.EDIT_AGENT
     )
     url_action = models.ForeignKey(
         "core.URLAction",
@@ -40,15 +31,20 @@ class User(AbstractUser, BaseAuditModel):
         on_delete=models.SET_NULL,
     )
     default_agent_tbl_tab = models.CharField(
-        max_length=50, choices=AGENT_TBL_TAB_CHOICES, default="server"
+        max_length=50, choices=AgentTableTabs.choices, default=AgentTableTabs.MIXED
     )
     agents_per_page = models.PositiveIntegerField(default=50)  # not currently used
     client_tree_sort = models.CharField(
-        max_length=50, choices=CLIENT_TREE_SORT_CHOICES, default="alphafail"
+        max_length=50, choices=ClientTreeSort.choices, default=ClientTreeSort.ALPHA_FAIL
     )
     client_tree_splitter = models.PositiveIntegerField(default=11)
     loading_bar_color = models.CharField(max_length=255, default="red")
+    dash_info_color = models.CharField(max_length=255, default="info")
+    dash_positive_color = models.CharField(max_length=255, default="positive")
+    dash_negative_color = models.CharField(max_length=255, default="negative")
+    dash_warning_color = models.CharField(max_length=255, default="warning")
     clear_search_when_switching = models.BooleanField(default=True)
+    date_format = models.CharField(max_length=30, blank=True, null=True)
     is_installer_user = models.BooleanField(default=False)
     last_login_ip = models.GenericIPAddressField(default=None, blank=True, null=True)
 
@@ -75,6 +71,23 @@ class User(AbstractUser, BaseAuditModel):
 
         return UserSerializer(user).data
 
+    def get_and_set_role_cache(self) -> "Optional[Role]":
+        role = cache.get(f"{ROLE_CACHE_PREFIX}{self.role}")
+
+        if role and isinstance(role, Role):
+            return role
+        elif not role and not self.role:
+            return None
+        else:
+            models.prefetch_related_objects(
+                [self.role],
+                "can_view_clients",
+                "can_view_sites",
+            )
+
+            cache.set(f"{ROLE_CACHE_PREFIX}{self.role}", self.role, 600)
+            return self.role
+
 
 class Role(BaseAuditModel):
     name = models.CharField(max_length=255, unique=True)
@@ -96,6 +109,7 @@ class Role(BaseAuditModel):
     can_run_bulk = models.BooleanField(default=False)
     can_recover_agents = models.BooleanField(default=False)
     can_list_agent_history = models.BooleanField(default=False)
+    can_send_wol = models.BooleanField(default=False)
 
     # core
     can_list_notes = models.BooleanField(default=False)
@@ -174,6 +188,11 @@ class Role(BaseAuditModel):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs) -> None:
+        # delete cache on save
+        cache.delete(f"{ROLE_CACHE_PREFIX}{self.name}")
+        super(BaseAuditModel, self).save(*args, **kwargs)
 
     @staticmethod
     def serialize(role):

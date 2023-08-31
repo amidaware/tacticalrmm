@@ -1,2 +1,9 @@
-coveralls==3.2.0
+coverage
 model_bakery
+black
+pytest
+pytest-django
+pytest-xdist
+pytest-cov
+refurb
+flake8

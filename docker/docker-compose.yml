@@ -10,8 +10,9 @@ networks:
         - subnet: 172.20.0.0/24
   api-db: null
   redis: null
-  mesh-db: null # docker managed persistent volumes
+  mesh-db: null
 
+# docker managed persistent volumes
 volumes:
   tactical_data: null
   postgres_data: null
@@ -38,7 +39,8 @@ services:
   tactical-redis:
     container_name: trmm-redis
     image: redis:6.0-alpine
-    command: redis-server --appendonly yes
+    user: 1000:1000
+    command: redis-server
     restart: always
     volumes:
       - redis_data:/data
@@ -63,16 +65,22 @@ services:
     depends_on:
       - tactical-postgres
       - tactical-meshcentral
+      - tactical-redis
     networks:
       - api-db
       - proxy
+      - redis
     volumes:
       - tactical_data:/opt/tactical
+      - mesh_data:/meshcentral-data
+      - mongo_data:/mongo/data/db
+      - redis_data:/redis/data
 
   # nats
   tactical-nats:
     container_name: trmm-nats
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
+    user: 1000:1000
     restart: always
     environment:
       API_HOST: ${API_HOST}
@@ -90,6 +98,7 @@ services:
   tactical-meshcentral:
     container_name: trmm-meshcentral
     image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
+    user: 1000:1000
     restart: always
     environment:
       MESH_HOST: ${MESH_HOST}
@@ -113,6 +122,7 @@ services:
   tactical-mongodb:
     container_name: trmm-mongodb
     image: mongo:4.4
+    user: 1000:1000
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
@@ -127,9 +137,12 @@ services:
   tactical-frontend:
     container_name: trmm-frontend
     image: ${IMAGE_REPO}tactical-frontend:${VERSION}
+    user: 1000:1000
     restart: always
     networks:
       - proxy
+    volumes:
+      - tactical_data:/opt/tactical
     environment:
       API_HOST: ${API_HOST}
 
@@ -137,6 +150,7 @@ services:
   tactical-backend:
     container_name: trmm-backend
     image: ${IMAGE_REPO}tactical:${VERSION}
+    user: 1000:1000
     command: [ "tactical-backend" ]
     restart: always
     networks:
@@ -152,6 +166,7 @@ services:
   tactical-websockets:
     container_name: trmm-websockets
     image: ${IMAGE_REPO}tactical:${VERSION}
+    user: 1000:1000
     command: [ "tactical-websockets" ]
     restart: always
     networks:
@@ -168,6 +183,7 @@ services:
   tactical-nginx:
     container_name: trmm-nginx
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
+    user: 1000:1000
     restart: always
     environment:
       APP_HOST: ${APP_HOST}
@@ -179,8 +195,8 @@ services:
       proxy:
         ipv4_address: 172.20.0.20
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:8080"
+      - "443:4443"
     volumes:
       - tactical_data:/opt/tactical
 
@@ -188,6 +204,7 @@ services:
   tactical-celery:
     container_name: trmm-celery
     image: ${IMAGE_REPO}tactical:${VERSION}
+    user: 1000:1000
     command: [ "tactical-celery" ]
     restart: always
     networks:
@@ -204,6 +221,7 @@ services:
   tactical-celerybeat:
     container_name: trmm-celerybeat
     image: ${IMAGE_REPO}tactical:${VERSION}
+    user: 1000:1000
     command: [ "tactical-celerybeat" ]
     restart: always
     networks:

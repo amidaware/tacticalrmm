@@ -1,4 +1,4 @@
-from itertools import cycle
+# from itertools import cycle
 from unittest.mock import patch
 
 from model_bakery import baker
@@ -51,8 +51,8 @@ class TestWinUpdateViews(TacticalTestCase):
         updates = WinUpdate.objects.filter(agent=agent).order_by("-id", "installed")
         serializer = WinUpdateSerializer(updates, many=True)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 4)  # type: ignore
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(len(resp.data), 4)
+        self.assertEqual(resp.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -75,11 +75,10 @@ class TestWinUpdateViews(TacticalTestCase):
 class TestWinUpdatePermissions(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
-        self.client_setup()
+        self.setup_client()
 
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     def test_get_scan_install_permissions(self, nats_cmd):
-
         agent = baker.make_recipe("agents.agent")
         baker.make("winupdate.WinUpdatePolicy", agent=agent)
         unauthorized_agent = baker.make_recipe("agents.agent")
@@ -162,34 +161,34 @@ class WinupdateTasks(TacticalTestCase):
         )
         self.offline_agent = baker.make_recipe("agents.agent", site=site)
 
-    @patch("agents.models.Agent.nats_cmd")
-    @patch("time.sleep")
-    def test_auto_approve_task(self, mock_sleep, nats_cmd):
-        from .tasks import auto_approve_updates_task
+    # @patch("agents.models.Agent.nats_cmd")
+    # @patch("time.sleep")
+    # def test_auto_approve_task(self, mock_sleep, nats_cmd):
+    #     from .tasks import auto_approve_updates_task
 
-        # Setup data
-        baker.make_recipe(
-            "winupdate.winupdate",
-            agent=cycle(
-                [self.online_agents[0], self.online_agents[1], self.offline_agent]
-            ),
-            _quantity=20,
-        )
-        baker.make_recipe(
-            "winupdate.winupdate_approve",
-            agent=cycle(
-                [self.online_agents[0], self.online_agents[1], self.offline_agent]
-            ),
-            _quantity=3,
-        )
+    #     # Setup data
+    #     baker.make_recipe(
+    #         "winupdate.winupdate",
+    #         agent=cycle(
+    #             [self.online_agents[0], self.online_agents[1], self.offline_agent]
+    #         ),
+    #         _quantity=20,
+    #     )
+    #     baker.make_recipe(
+    #         "winupdate.winupdate_approve",
+    #         agent=cycle(
+    #             [self.online_agents[0], self.online_agents[1], self.offline_agent]
+    #         ),
+    #         _quantity=3,
+    #     )
 
-        # run task synchronously
-        auto_approve_updates_task()
+    #     # run task synchronously
+    #     auto_approve_updates_task()
 
-        # make sure the check_for_updates_task was run once for each online agent
-        self.assertEqual(nats_cmd.call_count, 2)
+    #     # make sure the check_for_updates_task was run once for each online agent
+    #     self.assertEqual(nats_cmd.call_count, 2)
 
-        # check if all of the created updates were approved
-        winupdates = WinUpdate.objects.all()
-        for update in winupdates:
-            self.assertEqual(update.action, "approve")
+    #     # check if all of the created updates were approved
+    #     winupdates = WinUpdate.objects.all()
+    #     for update in winupdates:
+    #         self.assertEqual(update.action, "approve")

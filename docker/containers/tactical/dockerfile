@@ -1,5 +1,5 @@
 # creates python virtual env
-FROM python:3.9.9-slim AS CREATE_VENV_STAGE
+FROM python:3.11.4-slim AS CREATE_VENV_STAGE
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -16,14 +16,19 @@ COPY api/tacticalrmm/requirements.txt ${TACTICAL_TMP_DIR}/api/requirements.txt
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc libc6-dev && \
-    rm -rf /var/lib/apt/lists/* && \
     pip install --upgrade pip && \
     pip install --no-cache-dir setuptools wheel && \
     pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt
 
+# pulls community scripts from git repo
+FROM python:3.11.4-slim AS GET_SCRIPTS_STAGE
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
+    git clone https://github.com/amidaware/community-scripts.git /community-scripts
 
 # runtime image
-FROM python:3.9.9-slim
+FROM python:3.11.4-slim
 
 # set env variables
 ENV VIRTUAL_ENV /opt/venv
@@ -35,7 +40,7 @@ ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
 
 # copy files from repo
 COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
-COPY scripts ${TACTICAL_TMP_DIR}/scripts
+COPY --from=GET_SCRIPTS_STAGE /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
 
 # copy go install from build stage
 COPY --from=CREATE_VENV_STAGE ${VIRTUAL_ENV} ${VIRTUAL_ENV}
@@ -57,4 +62,4 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 WORKDIR ${TACTICAL_DIR}/api
 
-EXPOSE 80 443 8383
+EXPOSE 8080 4443 8383

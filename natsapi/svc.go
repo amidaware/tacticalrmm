@@ -20,7 +20,27 @@ func Svc(logger *logrus.Logger, cfg string) {
 		logger.Fatalln(err)
 	}
 
-	opts := setupNatsOptions(r.Key)
+	opts := []nats.Option{
+		nats.Name("trmm-nats-api"),
+		nats.UserInfo("tacticalrmm", r.Key),
+		nats.ReconnectWait(time.Second * 2),
+		nats.RetryOnFailedConnect(true),
+		nats.IgnoreAuthErrorAbort(),
+		nats.MaxReconnects(-1),
+		nats.ReconnectBufSize(-1),
+		nats.DisconnectErrHandler(func(nc *nats.Conn, nerr error) {
+			logger.Debugln("NATS disconnected:", nerr)
+			logger.Debugf("%+v\n", nc.Statistics)
+		}),
+		nats.ReconnectHandler(func(nc *nats.Conn) {
+			logger.Debugln("NATS reconnected")
+			logger.Debugf("%+v\n", nc.Statistics)
+		}),
+		nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, nerr error) {
+			logger.Errorln("NATS error:", nerr)
+			logger.Errorf("%+v\n", sub)
+		}),
+	}
 	nc, err := nats.Connect(r.NatsURL, opts...)
 	if err != nil {
 		logger.Fatalln(err)
@@ -74,11 +94,11 @@ func Svc(logger *logrus.Logger, cfg string) {
 					stmt := `
 						UPDATE agents_agent
 						SET hostname=$1, operating_system=$2,
-						plat=$3, total_ram=$4, boot_time=$5, needs_reboot=$6, logged_in_username=$7
-						WHERE agents_agent.agent_id=$8;`
+						plat=$3, total_ram=$4, boot_time=$5, needs_reboot=$6, logged_in_username=$7, goarch=$8
+						WHERE agents_agent.agent_id=$9;`
 
 					logger.Debugln("Info", r)
-					_, err = db.Exec(stmt, r.Hostname, r.OS, r.Platform, r.TotalRAM, r.BootTime, r.RebootNeeded, r.Username, r.Agentid)
+					_, err = db.Exec(stmt, r.Hostname, r.OS, r.Platform, r.TotalRAM, r.BootTime, r.RebootNeeded, r.Username, r.GoArch, r.Agentid)
 					if err != nil {
 						logger.Errorln(err)
 					}

@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from tacticalrmm.utils import notify_error
+from tacticalrmm.helpers import notify_error
 
 from .models import Alert, AlertTemplate
 from .permissions import AlertPerms, AlertTemplatePerms
@@ -23,15 +23,18 @@ class GetAddAlerts(APIView):
     permission_classes = [IsAuthenticated, AlertPerms]
 
     def patch(self, request):
-
         # top 10 alerts for dashboard icon
         if "top" in request.data.keys():
-            alerts = Alert.objects.filter(
-                resolved=False, snoozed=False, hidden=False
-            ).order_by("alert_time")[: int(request.data["top"])]
-            count = Alert.objects.filter(
-                resolved=False, snoozed=False, hidden=False
-            ).count()
+            alerts = (
+                Alert.objects.filter_by_role(request.user)
+                .filter(resolved=False, snoozed=False, hidden=False)
+                .order_by("alert_time")[: int(request.data["top"])]
+            )
+            count = (
+                Alert.objects.filter_by_role(request.user)
+                .filter(resolved=False, snoozed=False, hidden=False)
+                .count()
+            )
             return Response(
                 {
                     "alerts_count": count,
@@ -41,13 +44,13 @@ class GetAddAlerts(APIView):
 
         elif any(
             key
-            in [
+            in (
                 "timeFilter",
                 "clientFilter",
                 "severityFilter",
                 "resolvedFilter",
                 "snoozedFilter",
-            ]
+            )
             for key in request.data.keys()
         ):
             clientFilter = Q()
@@ -92,7 +95,7 @@ class GetAddAlerts(APIView):
                 )
 
             alerts = (
-                Alert.objects.filter_by_role(request.user)
+                Alert.objects.filter_by_role(request.user)  # type: ignore
                 .filter(clientFilter)
                 .filter(severityFilter)
                 .filter(resolvedFilter)
@@ -102,7 +105,7 @@ class GetAddAlerts(APIView):
             return Response(AlertSerializer(alerts, many=True).data)
 
         else:
-            alerts = Alert.objects.filter_by_role(request.user)
+            alerts = Alert.objects.filter_by_role(request.user)  # type: ignore
             return Response(AlertSerializer(alerts, many=True).data)
 
     def post(self, request):

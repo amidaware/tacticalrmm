@@ -12,7 +12,7 @@ echo "window._env_ = {PROD_URL: \"https://${API_HOST}\"}" >> ${PUBLIC_DIR}/env-c
 
 nginx_config="$(cat << EOF
 server {
-  listen 80;
+  listen 8080;
   charset utf-8;
 
   location / {
@@ -21,9 +21,6 @@ server {
     add_header Cache-Control "no-store, no-cache, must-revalidate";
     add_header Pragma "no-cache";
   }
-
-  error_log /var/log/nginx/app-error.log;
-  access_log /var/log/nginx/app-access.log;
 }
 EOF
 )"

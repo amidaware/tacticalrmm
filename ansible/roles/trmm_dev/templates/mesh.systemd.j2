@@ -1,0 +1,17 @@
+[Unit]
+Description=MeshCentral Server
+After=network.target postgresql.service nginx.service
+
+[Service]
+Type=simple
+LimitNOFILE=1000000
+ExecStart=/usr/bin/node node_modules/meshcentral
+Environment=NODE_ENV=production
+WorkingDirectory={{ mesh_dir }}
+User={{ user }}
+Group={{ user }}
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

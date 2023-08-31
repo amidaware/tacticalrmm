@@ -1,70 +1,78 @@
 {
-    "python.pythonPath": "api/tacticalrmm/env/bin/python",
-    "python.languageServer": "Pylance",
-    "python.analysis.extraPaths": [
-        "api/tacticalrmm",
-        "api/env",
-    ],
-    "python.analysis.diagnosticSeverityOverrides": {
-        "reportUnusedImport": "error",
-        "reportDuplicateImport": "error",
-    },
-    "python.analysis.memory.keepLibraryAst": true,
-    "python.linting.mypyEnabled": true,
-    "python.analysis.typeCheckingMode": "basic",
-    "python.formatting.provider": "black",
-    "editor.formatOnSave": true,
-    "vetur.format.defaultFormatter.js": "prettier",
-    "vetur.format.defaultFormatterOptions": {
-        "prettier": {
-            "semi": true,
-            "printWidth": 120,
-            "tabWidth": 2,
-            "useTabs": false,
-            "arrowParens": "avoid",
-        }
-    },
-    "vetur.format.options.tabSize": 2,
-    "vetur.format.options.useTabs": false,
+  "python.defaultInterpreterPath": "api/env/bin/python",
+  "python.languageServer": "Pylance",
+  "python.analysis.extraPaths": ["api/tacticalrmm", "api/env"],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportUnusedImport": "error",
+    "reportDuplicateImport": "error",
+    "reportGeneralTypeIssues": "none"
+  },
+  "python.analysis.typeCheckingMode": "basic",
+  "python.linting.enabled": true,
+  "python.linting.mypyEnabled": true,
+  "python.linting.mypyArgs": [
+    "--ignore-missing-imports",
+    "--follow-imports=silent",
+    "--show-column-numbers",
+    "--strict"
+  ],
+  "python.linting.ignorePatterns": [
+    "**/site-packages/**/*.py",
+    ".vscode/*.py",
+    "**env/**"
+  ],
+  "python.formatting.provider": "none",
+  //"mypy.targets": [
+  //"api/tacticalrmm"
+  //],
+  //"mypy.runUsingActiveInterpreter": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "**/ansible/**/*.yml": "ansible",
+    "**/docker/**/docker-compose*.yml": "dockercompose"
+  },
+  "files.watcherExclude": {
     "files.watcherExclude": {
-        "files.watcherExclude": {
-            "**/.git/objects/**": true,
-            "**/.git/subtree-cache/**": true,
-            "**/node_modules/": true,
-            "/node_modules/**": true,
-            "**/env/": true,
-            "/env/**": true,
-            "**/__pycache__": true,
-            "/__pycache__/**": true,
-            "**/.cache": true,
-            "**/.eggs": true,
-            "**/.ipynb_checkpoints": true,
-            "**/.mypy_cache": true,
-            "**/.pytest_cache": true,
-            "**/*.egg-info": true,
-            "**/*.feather": true,
-            "**/*.parquet*": true,
-            "**/*.pyc": true,
-            "**/*.zip": true
-        },
-    },
-    "go.useLanguageServer": true,
-    "[go]": {
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": false,
-        },
-        "editor.snippetSuggestions": "none",
-    },
-    "[go.mod]": {
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": true,
-        },
-    },
-    "gopls": {
-        "usePlaceholders": true,
-        "completeUnimported": true,
-        "staticcheck": true,
+      "**/.git/objects/**": true,
+      "**/.git/subtree-cache/**": true,
+      "**/node_modules/": true,
+      "/node_modules/**": true,
+      "**/env/": true,
+      "/env/**": true,
+      "**/__pycache__": true,
+      "/__pycache__/**": true,
+      "**/.cache": true,
+      "**/.eggs": true,
+      "**/.ipynb_checkpoints": true,
+      "**/.mypy_cache": true,
+      "**/.pytest_cache": true,
+      "**/*.egg-info": true,
+      "**/*.feather": true,
+      "**/*.parquet*": true,
+      "**/*.pyc": true,
+      "**/*.zip": true
     }
+  },
+  "go.useLanguageServer": true,
+  "[go]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": false
+    },
+    "editor.snippetSuggestions": "none"
+  },
+  "[go.mod]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    }
+  },
+  "gopls": {
+    "usePlaceholders": true,
+    "completeUnimported": true,
+    "staticcheck": true
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  }
 }

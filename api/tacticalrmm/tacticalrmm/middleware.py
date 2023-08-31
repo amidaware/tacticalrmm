@@ -1,17 +1,22 @@
 import threading
+from contextlib import suppress
+from typing import Any, Dict, Optional
 
 from django.conf import settings
-from rest_framework.exceptions import AuthenticationFailed
 from ipware import get_client_ip
+from rest_framework.exceptions import AuthenticationFailed
+
+from tacticalrmm.constants import DEMO_NOT_ALLOWED
+from tacticalrmm.helpers import notify_error
 
 request_local = threading.local()
 
 
-def get_username():
+def get_username() -> Optional[str]:
     return getattr(request_local, "username", None)
 
 
-def get_debug_info():
+def get_debug_info() -> Dict[str, Any]:
     return getattr(request_local, "debug_info", {})
 
 
@@ -24,13 +29,17 @@ EXCLUDE_PATHS = (
     "/api/schema",
 )
 
+DEMO_EXCLUDE_PATHS = (
+    "/api/v3",
+    "/api/schema",
+)
+
 
 class AuditMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-
         response = self.get_response(request)
         return response
 
@@ -53,15 +62,18 @@ class AuditMiddleware:
                 request = APIView().initialize_request(request)
 
             # check if user is authenticated
-            try:
+            with suppress(AuthenticationFailed):
                 if hasattr(request, "user") and request.user.is_authenticated:
-
+                    try:
+                        view_Name = view_func.__dict__["view_class"].__name__
+                    except:
+                        view_Name = view_func.__name__
                     debug_info = {}
                     # gather and save debug info
                     debug_info["url"] = request.path
                     debug_info["method"] = request.method
                     debug_info["view_class"] = view_func.cls.__name__
-                    debug_info["view_func"] = view_func.__name__
+                    debug_info["view_func"] = view_Name
                     debug_info["view_args"] = view_args
                     debug_info["view_kwargs"] = view_kwargs
                     debug_info["ip"] = request._client_ip
@@ -70,8 +82,6 @@ class AuditMiddleware:
 
                     # get authenticated user after request
                     request_local.username = request.user.username
-            except AuthenticationFailed:
-                pass
 
     def process_exception(self, request, exception):
         request_local.debug_info = None
@@ -88,8 +98,38 @@ class LogIPMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        client_ip, is_routable = get_client_ip(request)
+        client_ip, _ = get_client_ip(request)
 
         request._client_ip = client_ip
         response = self.get_response(request)
         return response
+
+
+class DemoMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+        self.not_allowed = DEMO_NOT_ALLOWED
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def drf_mock_response(self, request, resp):
+        from rest_framework.views import APIView
+
+        view = APIView()
+        view.headers = view.default_response_headers
+        return view.finalize_response(request, resp).render()
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        err = "Not available in demo"
+        if request.path.startswith(DEMO_EXCLUDE_PATHS):
+            return self.drf_mock_response(request, notify_error(err))
+
+        try:
+            view_Name = view_func.__dict__["view_class"].__name__
+        except:
+            return
+        for i in self.not_allowed:
+            if view_Name == i["name"] and request.method in i["methods"]:
+                return self.drf_mock_response(request, notify_error(err))

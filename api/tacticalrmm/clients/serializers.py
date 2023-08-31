@@ -1,8 +1,8 @@
 from rest_framework.serializers import (
     ModelSerializer,
     ReadOnlyField,
-    ValidationError,
     SerializerMethodField,
+    ValidationError,
 )
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
@@ -30,9 +30,8 @@ class SiteCustomFieldSerializer(ModelSerializer):
 class SiteSerializer(ModelSerializer):
     client_name = ReadOnlyField(source="client.name")
     custom_fields = SiteCustomFieldSerializer(many=True, read_only=True)
+    maintenance_mode = ReadOnlyField()
     agent_count = ReadOnlyField()
-    maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
-    failing_checks = ReadOnlyField(source="has_failing_checks")
 
     class Meta:
         model = Site
@@ -94,13 +93,12 @@ class ClientCustomFieldSerializer(ModelSerializer):
 class ClientSerializer(ModelSerializer):
     sites = SerializerMethodField()
     custom_fields = ClientCustomFieldSerializer(many=True, read_only=True)
+    maintenance_mode = ReadOnlyField()
     agent_count = ReadOnlyField()
-    maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
-    failing_checks = ReadOnlyField(source="has_failing_checks")
 
     def get_sites(self, obj):
         return SiteSerializer(
-            obj.sites.select_related("client").filter_by_role(self.context["user"]),
+            obj.filtered_sites,
             many=True,
         ).data
 
@@ -143,7 +141,7 @@ class DeploymentSerializer(ModelSerializer):
             "client_name",
             "site_name",
             "mon_type",
-            "arch",
+            "goarch",
             "expiry",
             "install_flags",
             "created",

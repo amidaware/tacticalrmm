@@ -1,0 +1,37 @@
+{
+  "settings": {
+    "Cert": "{{ mesh }}",
+    "WANonly": true,
+    "Minify": 1,
+    "Port": 4430,
+    "AliasPort": 443,
+    "RedirPort": 800,
+    "AllowLoginToken": true,
+    "AllowFraming": true,
+    "AgentPing": 35,
+    "AllowHighQualityDesktop": true,
+    "TlsOffload": "127.0.0.1",
+    "agentCoreDump": false,
+    "Compression": true,
+    "WsCompression": true,
+    "AgentWsCompression": true,
+    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 },
+    "postgres": {
+      "user": "{{ mesh_db_user }}",
+      "password": "{{ mesh_db_passwd }}",
+      "port": "5432",
+      "host": "localhost"
+    }
+  },
+  "domains": {
+    "": {
+      "Title": "Tactical RMM Dev",
+      "Title2": "Tactical RMM Dev",
+      "NewAccounts": false,
+      "CertUrl": "https://{{ mesh }}:443/",
+      "GeoLocation": true,
+      "CookieIpCheck": false,
+      "mstsc": true
+    }
+  }
+}

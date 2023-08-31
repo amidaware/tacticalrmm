@@ -1,122 +1,54 @@
-import asyncio
 import datetime as dt
-import random
 from time import sleep
-from typing import Union
+from typing import TYPE_CHECKING, Optional
 
-from alerts.models import Alert
-from core.models import CoreSettings
-from django.conf import settings
+from django.core.management import call_command
 from django.utils import timezone as djangotime
-from logs.models import DebugLog, PendingAction
-from packaging import version as pyver
-from scripts.models import Script
-from tacticalrmm.celery import app
 
 from agents.models import Agent
-from agents.utils import get_winagent_url
-from tacticalrmm.utils import AGENT_DEFER
+from core.utils import get_core_settings
+from logs.models import DebugLog
+from scripts.models import Script
+from tacticalrmm.celery import app
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    AGENT_OUTAGES_LOCK,
+    AGENT_STATUS_OVERDUE,
+    CheckStatus,
+    DebugLogType,
+)
+from tacticalrmm.helpers import rand_range
+from tacticalrmm.utils import redis_lock
 
-
-def agent_update(agent_id: str, force: bool = False) -> str:
-
-    agent = Agent.objects.get(agent_id=agent_id)
-
-    if pyver.parse(agent.version) <= pyver.parse("1.3.0"):
-        return "not supported"
-
-    # skip if we can't determine the arch
-    if agent.arch is None:
-        DebugLog.warning(
-            agent=agent,
-            log_type="agent_issues",
-            message=f"Unable to determine arch on {agent.hostname}({agent.agent_id}). Skipping agent update.",
-        )
-        return "noarch"
-
-    version = settings.LATEST_AGENT_VER
-    inno = agent.win_inno_exe
-    url = get_winagent_url(agent.arch)
-
-    if not force:
-        if agent.pendingactions.filter(
-            action_type="agentupdate", status="pending"
-        ).exists():
-            agent.pendingactions.filter(
-                action_type="agentupdate", status="pending"
-            ).delete()
-
-        PendingAction.objects.create(
-            agent=agent,
-            action_type="agentupdate",
-            details={
-                "url": url,
-                "version": version,
-                "inno": inno,
-            },
-        )
-
-    nats_data = {
-        "func": "agentupdate",
-        "payload": {
-            "url": url,
-            "version": version,
-            "inno": inno,
-        },
-    }
-    asyncio.run(agent.nats_cmd(nats_data, wait=False))
-    return "created"
+if TYPE_CHECKING:
+    from django.db.models.query import QuerySet
 
 
 @app.task
-def force_code_sign(agent_ids: list[str]) -> None:
-    chunks = (agent_ids[i : i + 50] for i in range(0, len(agent_ids), 50))
-    for chunk in chunks:
-        for agent_id in chunk:
-            agent_update(agent_id=agent_id, force=True)
-            sleep(0.05)
-        sleep(4)
-
-
-@app.task
-def send_agent_update_task(agent_ids: list[str]) -> None:
-    chunks = (agent_ids[i : i + 50] for i in range(0, len(agent_ids), 50))
-    for chunk in chunks:
-        for agent_id in chunk:
-            agent_update(agent_id)
-            sleep(0.05)
-        sleep(4)
+def send_agent_update_task(*, agent_ids: list[str], token: str, force: bool) -> None:
+    agents: "QuerySet[Agent]" = Agent.objects.defer(*AGENT_DEFER).filter(
+        agent_id__in=agent_ids
+    )
+    for agent in agents:
+        agent.do_update(token=token, force=force)
 
 
 @app.task
 def auto_self_agent_update_task() -> None:
-    core = CoreSettings.objects.first()
-    if not core.agent_auto_update:  # type:ignore
-        return
-
-    q = Agent.objects.only("agent_id", "version")
-    agent_ids: list[str] = [
-        i.agent_id
-        for i in q
-        if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
-    ]
-
-    chunks = (agent_ids[i : i + 30] for i in range(0, len(agent_ids), 30))
-    for chunk in chunks:
-        for agent_id in chunk:
-            agent_update(agent_id)
-            sleep(0.05)
-        sleep(4)
+    call_command("update_agents")
 
 
 @app.task
-def agent_outage_email_task(pk: int, alert_interval: Union[float, None] = None) -> str:
+def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> str:
     from alerts.models import Alert
 
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     if not alert.email_sent:
-        sleep(random.randint(1, 15))
+        sleep(rand_range(100, 1500))
         alert.agent.send_outage_email()
         alert.email_sent = djangotime.now()
         alert.save(update_fields=["email_sent"])
@@ -125,7 +57,7 @@ def agent_outage_email_task(pk: int, alert_interval: Union[float, None] = None) 
             # send an email only if the last email sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.email_sent < delta:
-                sleep(random.randint(1, 10))
+                sleep(rand_range(100, 1500))
                 alert.agent.send_outage_email()
                 alert.email_sent = djangotime.now()
                 alert.save(update_fields=["email_sent"])
@@ -137,8 +69,13 @@ def agent_outage_email_task(pk: int, alert_interval: Union[float, None] = None) 
 def agent_recovery_email_task(pk: int) -> str:
     from alerts.models import Alert
 
-    sleep(random.randint(1, 15))
-    alert = Alert.objects.get(pk=pk)
+    sleep(rand_range(100, 1500))
+
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
+
     alert.agent.send_recovery_email()
     alert.resolved_email_sent = djangotime.now()
     alert.save(update_fields=["resolved_email_sent"])
@@ -147,13 +84,16 @@ def agent_recovery_email_task(pk: int) -> str:
 
 
 @app.task
-def agent_outage_sms_task(pk: int, alert_interval: Union[float, None] = None) -> str:
+def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> str:
     from alerts.models import Alert
 
-    alert = Alert.objects.get(pk=pk)
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
 
     if not alert.sms_sent:
-        sleep(random.randint(1, 15))
+        sleep(rand_range(100, 1500))
         alert.agent.send_outage_sms()
         alert.sms_sent = djangotime.now()
         alert.save(update_fields=["sms_sent"])
@@ -162,7 +102,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Union[float, None] = None) ->
             # send an sms only if the last sms sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.sms_sent < delta:
-                sleep(random.randint(1, 10))
+                sleep(rand_range(100, 1500))
                 alert.agent.send_outage_sms()
                 alert.sms_sent = djangotime.now()
                 alert.save(update_fields=["sms_sent"])
@@ -174,8 +114,12 @@ def agent_outage_sms_task(pk: int, alert_interval: Union[float, None] = None) ->
 def agent_recovery_sms_task(pk: int) -> str:
     from alerts.models import Alert
 
-    sleep(random.randint(1, 3))
-    alert = Alert.objects.get(pk=pk)
+    sleep(rand_range(100, 1500))
+    try:
+        alert = Alert.objects.get(pk=pk)
+    except Alert.DoesNotExist:
+        return "alert not found"
+
     alert.agent.send_recovery_sms()
     alert.resolved_sms_sent = djangotime.now()
     alert.save(update_fields=["resolved_sms_sent"])
@@ -183,24 +127,20 @@ def agent_recovery_sms_task(pk: int) -> str:
     return "ok"
 
 
-@app.task
-def agent_outages_task() -> None:
-    from alerts.models import Alert
+@app.task(bind=True)
+def agent_outages_task(self) -> str:
+    with redis_lock(AGENT_OUTAGES_LOCK, self.app.oid) as acquired:
+        if not acquired:
+            return f"{self.app.oid} still running"
 
-    agents = Agent.objects.only(
-        "pk",
-        "agent_id",
-        "last_seen",
-        "offline_time",
-        "overdue_time",
-        "overdue_email_alert",
-        "overdue_text_alert",
-        "overdue_dashboard_alert",
-    )
+        from alerts.models import Alert
+        from core.tasks import _get_agent_qs
 
-    for agent in agents:
-        if agent.status == "overdue":
-            Alert.handle_alert_failure(agent)
+        for agent in _get_agent_qs():
+            if agent.status == AGENT_STATUS_OVERDUE:
+                Alert.handle_alert_failure(agent)
+
+        return "completed"
 
 
 @app.task
@@ -211,6 +151,8 @@ def run_script_email_results_task(
     emails: list[str],
     args: list[str] = [],
     history_pk: int = 0,
+    run_as_user: bool = False,
+    env_vars: list[str] = [],
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)
@@ -221,16 +163,18 @@ def run_script_email_results_task(
         timeout=nats_timeout,
         wait=True,
         history_pk=history_pk,
+        run_as_user=run_as_user,
+        env_vars=env_vars,
     )
     if r == "timeout":
         DebugLog.error(
             agent=agent,
-            log_type="scripting",
+            log_type=DebugLogType.SCRIPTING,
             message=f"{agent.hostname}({agent.pk}) timed out running script.",
         )
         return
 
-    CORE = CoreSettings.objects.first()
+    CORE = get_core_settings()
     subject = f"{agent.hostname} {script.name} Results"
     exec_time = "{:.4f}".format(r["execution_time"])
     body = (
@@ -243,25 +187,21 @@ def run_script_email_results_task(
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = CORE.smtp_from_email  # type:ignore
+    msg["From"] = CORE.smtp_from_email
 
     if emails:
         msg["To"] = ", ".join(emails)
     else:
-        msg["To"] = ", ".join(CORE.email_alert_recipients)  # type:ignore
+        msg["To"] = ", ".join(CORE.email_alert_recipients)
 
     msg.set_content(body)
 
     try:
-        with smtplib.SMTP(
-            CORE.smtp_host, CORE.smtp_port, timeout=20  # type:ignore
-        ) as server:  # type:ignore
-            if CORE.smtp_requires_auth:  # type:ignore
+        with smtplib.SMTP(CORE.smtp_host, CORE.smtp_port, timeout=20) as server:
+            if CORE.smtp_requires_auth:
                 server.ehlo()
                 server.starttls()
-                server.login(
-                    CORE.smtp_host_user, CORE.smtp_host_password  # type:ignore
-                )  # type:ignore
+                server.login(CORE.smtp_host_user, CORE.smtp_host_password)
                 server.send_message(msg)
                 server.quit()
             else:
@@ -273,18 +213,22 @@ def run_script_email_results_task(
 
 @app.task
 def clear_faults_task(older_than_days: int) -> None:
-    # https://github.com/wh1te909/tacticalrmm/issues/484
+    from alerts.models import Alert
+
+    # https://github.com/amidaware/tacticalrmm/issues/484
     agents = Agent.objects.exclude(last_seen__isnull=True).filter(
         last_seen__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     )
     for agent in agents:
-        if agent.agentchecks.exists():
-            for check in agent.agentchecks.all():
-                # reset check status
-                check.status = "passing"
-                check.save(update_fields=["status"])
-                if check.alert.filter(resolved=False).exists():
-                    check.alert.get(resolved=False).resolve()
+        for check in agent.get_checks_with_policies():
+            # reset check status
+            if check.check_result:
+                check.check_result.status = CheckStatus.PASSING
+                check.check_result.save(update_fields=["status"])
+            if check.alert.filter(agent=agent, resolved=False).exists():
+                alert = Alert.create_or_return_check_alert(check, agent=agent)
+                if alert:
+                    alert.resolve()
 
         # reset overdue alerts
         agent.overdue_email_alert = False
@@ -311,40 +255,5 @@ def prune_agent_history(older_than_days: int) -> str:
 
 
 @app.task
-def handle_agents_task() -> None:
-    q = Agent.objects.defer(*AGENT_DEFER)
-    agents = [
-        i
-        for i in q
-        if pyver.parse(i.version) >= pyver.parse("1.6.0") and i.status == "online"
-    ]
-    for agent in agents:
-        # change agent update pending status to completed if agent has just updated
-        if (
-            pyver.parse(agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
-            and agent.pendingactions.filter(
-                action_type="agentupdate", status="pending"
-            ).exists()
-        ):
-            agent.pendingactions.filter(
-                action_type="agentupdate", status="pending"
-            ).update(status="completed")
-
-        # sync scheduled tasks
-        if agent.autotasks.exclude(sync_status="synced").exists():  # type: ignore
-            tasks = agent.autotasks.exclude(sync_status="synced")  # type: ignore
-
-            for task in tasks:
-                if task.sync_status == "pendingdeletion":
-                    task.delete_task_on_agent()
-                elif task.sync_status == "initial":
-                    task.modify_task_on_agent()
-                elif task.sync_status == "notsynced":
-                    task.create_task_on_agent()
-
-        # handles any alerting actions
-        if Alert.objects.filter(agent=agent, resolved=False).exists():
-            try:
-                Alert.handle_alert_resolve(agent)
-            except:
-                continue
+def bulk_recover_agents_task() -> None:
+    call_command("bulk_restart_agents")

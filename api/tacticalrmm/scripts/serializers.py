@@ -18,10 +18,16 @@ class ScriptTableSerializer(ModelSerializer):
             "default_timeout",
             "syntax",
             "filename",
+            "hidden",
+            "supported_platforms",
+            "run_as_user",
+            "env_vars",
         ]
 
 
 class ScriptSerializer(ModelSerializer):
+    script_hash = ReadOnlyField()
+
     class Meta:
         model = Script
         fields = [
@@ -32,19 +38,25 @@ class ScriptSerializer(ModelSerializer):
             "args",
             "category",
             "favorite",
-            "code_base64",
+            "script_body",
+            "script_hash",
             "default_timeout",
             "syntax",
             "filename",
+            "hidden",
+            "supported_platforms",
+            "run_as_user",
+            "env_vars",
         ]
 
 
 class ScriptCheckSerializer(ModelSerializer):
     code = ReadOnlyField()
+    script_hash = ReadOnlyField()
 
     class Meta:
         model = Script
-        fields = ["code", "shell"]
+        fields = ["code", "shell", "run_as_user", "env_vars", "script_hash"]
 
 
 class ScriptSnippetSerializer(ModelSerializer):

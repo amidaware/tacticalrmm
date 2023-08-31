@@ -1,11 +1,13 @@
 import pyotp
 from rest_framework.serializers import (
     ModelSerializer,
-    SerializerMethodField,
     ReadOnlyField,
+    SerializerMethodField,
 )
 
-from .models import APIKey, User, Role
+from tacticalrmm.helpers import get_webdomain
+
+from .models import APIKey, Role, User
 
 
 class UserUISerializer(ModelSerializer):
@@ -20,8 +22,13 @@ class UserUISerializer(ModelSerializer):
             "client_tree_sort",
             "client_tree_splitter",
             "loading_bar_color",
+            "dash_info_color",
+            "dash_positive_color",
+            "dash_negative_color",
+            "dash_warning_color",
             "clear_search_when_switching",
             "block_dashboard_login",
+            "date_format",
         ]
 
 
@@ -39,11 +46,11 @@ class UserSerializer(ModelSerializer):
             "last_login_ip",
             "role",
             "block_dashboard_login",
+            "date_format",
         ]
 
 
 class TOTPSetupSerializer(ModelSerializer):
-
     qr_url = SerializerMethodField()
 
     class Meta:
@@ -56,7 +63,7 @@ class TOTPSetupSerializer(ModelSerializer):
 
     def get_qr_url(self, obj):
         return pyotp.totp.TOTP(obj.totp_key).provisioning_uri(
-            obj.username, issuer_name="Tactical RMM"
+            obj.username, issuer_name=get_webdomain()
         )
 
 
@@ -78,7 +85,6 @@ class RoleAuditSerializer(ModelSerializer):
 
 
 class APIKeySerializer(ModelSerializer):
-
     username = ReadOnlyField(source="user.username")
 
     class Meta:

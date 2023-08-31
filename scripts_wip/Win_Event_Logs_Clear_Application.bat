@@ -1,1 +1,0 @@
-Wevtutil.exe cl Application 

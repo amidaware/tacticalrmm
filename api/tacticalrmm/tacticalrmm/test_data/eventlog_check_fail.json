@@ -1,0 +1,132 @@
+{
+    "log": [
+        {
+            "uid": 2006,
+            "time": "2021-01-13 15:08:05 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket 1573205062969647577, type 5\nEvent Name: StoreAgentSearchUpdatePackagesFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80240024\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: S\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER7055.tmp.WERInternalMetadata.xml\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\NonCritical_Update;ScanForUp_91ddac622de2aa181226f1833763a645a6701e_00000000_a030f5e8-b201-4b3b-b9c9-2f90448b63db\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: a030f5e8-b201-4b3b-b9c9-2f90448b63db\nReport Status: 268435456\nHashed bucket: 2ec09064b27edf5bb5d525ab6926e1d9\nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2007,
+            "time": "2021-01-13 15:08:04 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket , type 0\nEvent Name: StoreAgentSearchUpdatePackagesFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80240024\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: S\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\NonCritical_Update;ScanForUp_91ddac622de2aa181226f1833763a645a6701e_00000000_a030f5e8-b201-4b3b-b9c9-2f90448b63db\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: a030f5e8-b201-4b3b-b9c9-2f90448b63db\nReport Status: 4\nHashed bucket: \nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2008,
+            "time": "2021-01-13 15:08:02 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket 2051817844803413223, type 5\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80246016\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: S\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER66BF.tmp.WERInternalMetadata.xml\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\NonCritical_Update;ScanForUp_2c3439b6a8021ac4ff7a4e7f23e5b6f1d9e0_00000000_4c8d0432-6af0-4a6b-b153-428f6d0310c9\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: 4c8d0432-6af0-4a6b-b153-428f6d0310c9\nReport Status: 268435456\nHashed bucket: 04f95e1eb7585bb17c7985757750a4e7\nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2009,
+            "time": "2021-01-13 15:08:02 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket , type 0\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80246016\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: S\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\NonCritical_Update;ScanForUp_2c3439b6a8021ac4ff7a4e7f23e5b6f1d9e0_00000000_4c8d0432-6af0-4a6b-b153-428f6d0310c9\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: 4c8d0432-6af0-4a6b-b153-428f6d0310c9\nReport Status: 4\nHashed bucket: \nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2264,
+            "time": "2021-01-12 06:28:04 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket 1693358677999346984, type 5\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80246016\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: 2\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFEF3.tmp.WERInternalMetadata.xml\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\NonCritical_Update;ScanForUp_c7a6adc885884a9aed88424cfb7d9d742f573c1_00000000_32d7534b-30da-4a6f-aa5a-7f65a48d2d47\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: 32d7534b-30da-4a6f-aa5a-7f65a48d2d47\nReport Status: 268435456\nHashed bucket: cdec799a6cf0bbef378004beef79e528\nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2265,
+            "time": "2021-01-12 06:28:03 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket , type 0\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80246016\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: 2\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\NonCritical_Update;ScanForUp_c7a6adc885884a9aed88424cfb7d9d742f573c1_00000000_32d7534b-30da-4a6f-aa5a-7f65a48d2d47\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: 32d7534b-30da-4a6f-aa5a-7f65a48d2d47\nReport Status: 4\nHashed bucket: \nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2636,
+            "time": "2021-01-10 07:13:43 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket 1573205062969647577, type 5\nEvent Name: StoreAgentSearchUpdatePackagesFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80240024\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: S\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER118F.tmp.WERInternalMetadata.xml\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\NonCritical_Update;ScanForUp_91ddac622de2aa181226f1833763a645a6701e_00000000_d75f7cf4-1ba2-4a8f-a4fb-f0336137aeb9\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: d75f7cf4-1ba2-4a8f-a4fb-f0336137aeb9\nReport Status: 268435456\nHashed bucket: 2ec09064b27edf5bb5d525ab6926e1d9\nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2637,
+            "time": "2021-01-10 07:13:42 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket , type 0\nEvent Name: StoreAgentSearchUpdatePackagesFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80240024\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: S\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\NonCritical_Update;ScanForUp_91ddac622de2aa181226f1833763a645a6701e_00000000_d75f7cf4-1ba2-4a8f-a4fb-f0336137aeb9\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: d75f7cf4-1ba2-4a8f-a4fb-f0336137aeb9\nReport Status: 4\nHashed bucket: \nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2638,
+            "time": "2021-01-10 07:13:40 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket 2051817844803413223, type 5\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80246016\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: S\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER867.tmp.WERInternalMetadata.xml\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\NonCritical_Update;ScanForUp_2c3439b6a8021ac4ff7a4e7f23e5b6f1d9e0_00000000_e423f369-52f4-4cf1-98b7-6e519dad9836\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: e423f369-52f4-4cf1-98b7-6e519dad9836\nReport Status: 268435456\nHashed bucket: 04f95e1eb7585bb17c7985757750a4e7\nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 2639,
+            "time": "2021-01-10 07:13:40 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket , type 0\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80246016\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: S\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\NonCritical_Update;ScanForUp_2c3439b6a8021ac4ff7a4e7f23e5b6f1d9e0_00000000_e423f369-52f4-4cf1-98b7-6e519dad9836\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: e423f369-52f4-4cf1-98b7-6e519dad9836\nReport Status: 4\nHashed bucket: \nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 5553,
+            "time": "2020-12-25 15:45:02 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket 1988976340961221197, type 5\nEvent Name: StoreAgentSearchUpdatePackagesFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80240024\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: G\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER784D.tmp.WERInternalMetadata.xml\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\NonCritical_Update;ScanForUp_2ae3e9964efbef3189977773239bfa7f29278_00000000_a20518d3-26b9-4e16-9223-924bc99df211\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: a20518d3-26b9-4e16-9223-924bc99df211\nReport Status: 268435456\nHashed bucket: d6c816dde23870028b9a4371ada65a4d\nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 5554,
+            "time": "2020-12-25 15:45:02 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket , type 0\nEvent Name: StoreAgentSearchUpdatePackagesFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80240024\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: G\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\NonCritical_Update;ScanForUp_2ae3e9964efbef3189977773239bfa7f29278_00000000_a20518d3-26b9-4e16-9223-924bc99df211\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: a20518d3-26b9-4e16-9223-924bc99df211\nReport Status: 4\nHashed bucket: \nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 5555,
+            "time": "2020-12-25 15:45:00 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket 1198513334388591380, type 5\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80246016\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: G\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER6F15.tmp.WERInternalMetadata.xml\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\NonCritical_Update;ScanForUp_11349d50384236752c9ebf31943a81bc9c22_00000000_d7901c46-3ff4-4e71-8d09-cb4511c1f790\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: d7901c46-3ff4-4e71-8d09-cb4511c1f790\nReport Status: 268435456\nHashed bucket: ca587589ef5ddc16c0a1f98712cd0b14\nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 5556,
+            "time": "2020-12-25 15:44:59 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket , type 0\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80246016\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: G\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\NonCritical_Update;ScanForUp_11349d50384236752c9ebf31943a81bc9c22_00000000_d7901c46-3ff4-4e71-8d09-cb4511c1f790\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: d7901c46-3ff4-4e71-8d09-cb4511c1f790\nReport Status: 4\nHashed bucket: \nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 7058,
+            "time": "2020-12-17 10:59:07 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket 1324913600230033009, type 5\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80073cf9\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: 8\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERD7E0.tmp.WERInternalMetadata.xml\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\NonCritical_Update;ScanForUp_f5657215ea2368b3b590dfaee6ea708ec7f61_00000000_979cc6e7-b0ab-42ac-8127-1fec5a11c639\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: 979cc6e7-b0ab-42ac-8127-1fec5a11c639\nReport Status: 268435456\nHashed bucket: 39ea3113ccdc8abbd26309e653cb8671\nCab Guid: 0",
+            "eventType": "INFO"
+        },
+        {
+            "uid": 7059,
+            "time": "2020-12-17 10:59:06 -0800 PST",
+            "source": "Windows Error Reporting",
+            "eventID": 1001,
+            "message": "Fault bucket , type 0\nEvent Name: StoreAgentDownloadFailure1\nResponse: Not available\nCab Id: 0\n\nProblem signature:\nP1: Update;ScanForUpdates\nP2: 80073cf9\nP3: 19041\nP4: 508\nP5: Windows.Desktop\nP6: 8\nP7: \nP8: \nP9: \nP10: \n\nAttached files:\n\nThese files may be available here:\n\\\\?\\C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\NonCritical_Update;ScanForUp_f5657215ea2368b3b590dfaee6ea708ec7f61_00000000_979cc6e7-b0ab-42ac-8127-1fec5a11c639\n\nAnalysis symbol: \nRechecking for solution: 0\nReport Id: 979cc6e7-b0ab-42ac-8127-1fec5a11c639\nReport Status: 4\nHashed bucket: \nCab Guid: 0",
+            "eventType": "INFO"
+        }
+    ]
+}

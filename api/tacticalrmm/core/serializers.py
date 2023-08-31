@@ -5,7 +5,6 @@ from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URL
 
 
 class CoreSettingsSerializer(serializers.ModelSerializer):
-
     all_timezones = serializers.SerializerMethodField("all_time_zones")
 
     def all_time_zones(self, obj):

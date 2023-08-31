@@ -9,7 +9,6 @@ urlpatterns = [
     path("<str:agentid>/checkinterval/", views.CheckRunnerInterval.as_view()),
     path("<int:pk>/<str:agentid>/taskrunner/", views.TaskRunner.as_view()),
     path("meshexe/", views.MeshExe.as_view()),
-    path("sysinfo/", views.SysInfo.as_view()),
     path("newagent/", views.NewAgent.as_view()),
     path("software/", views.Software.as_view()),
     path("installer/", views.Installer.as_view()),
@@ -19,6 +18,6 @@ urlpatterns = [
     path("winupdates/", views.WinUpdates.as_view()),
     path("superseded/", views.SupersededWinUpdate.as_view()),
     path("<int:pk>/chocoresult/", views.ChocoResult.as_view()),
-    path("<str:agentid>/recovery/", views.AgentRecovery.as_view()),
     path("<int:pk>/<str:agentid>/histresult/", views.AgentHistoryResult.as_view()),
+    path("<str:agentid>/config/", views.AgentConfig.as_view()),
 ]

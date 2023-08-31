@@ -1,21 +1,31 @@
-import os
+import json
 import re
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
+import psutil
+import requests
+from cryptography import x509
 from django.conf import settings
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from logs.models import AuditLog
-from rest_framework import status
+from django.utils import timezone as djangotime
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ParseError, PermissionDenied
-from rest_framework.parsers import FileUploadParser
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from tacticalrmm.utils import notify_error
+from core.decorators import monitoring_view
+from core.utils import get_core_settings, sysd_svc_is_running, token_is_valid
+from logs.models import AuditLog
+from tacticalrmm.constants import AuditActionType, PAStatus
+from tacticalrmm.helpers import get_certs, notify_error
 from tacticalrmm.permissions import (
-    _has_perm_on_client,
     _has_perm_on_agent,
+    _has_perm_on_client,
     _has_perm_on_site,
 )
 
@@ -23,9 +33,9 @@ from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URL
 from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
+    CustomFieldPerms,
     ServerMaintPerms,
     URLActionPerms,
-    CustomFieldPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -34,28 +44,6 @@ from .serializers import (
     KeyStoreSerializer,
     URLActionSerializer,
 )
-
-
-class UploadMeshAgent(APIView):
-    permission_classes = [IsAuthenticated, CoreSettingsPerms]
-    parser_class = (FileUploadParser,)
-
-    def put(self, request, format=None):
-        if "meshagent" not in request.data and "arch" not in request.data:
-            raise ParseError("Empty content")
-
-        arch = request.data["arch"]
-        f = request.data["meshagent"]
-        mesh_exe = os.path.join(
-            settings.EXE_DIR, "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
-        )
-        with open(mesh_exe, "wb+") as j:
-            for chunk in f.chunks():
-                j.write(chunk)
-
-        return Response(
-            "Mesh Agent uploaded successfully", status=status.HTTP_201_CREATED
-        )
 
 
 class GetEditCoreSettings(APIView):
@@ -80,9 +68,19 @@ def version(request):
 
 
 @api_view()
-def dashboard_info(request):
-    from tacticalrmm.utils import get_latest_trmm_ver
+def clear_cache(request):
+    from core.utils import clear_entire_cache
 
+    clear_entire_cache()
+    return Response("Cache was cleared!")
+
+
+@api_view()
+def dashboard_info(request):
+    from core.utils import token_is_expired
+    from tacticalrmm.utils import get_latest_trmm_ver, runcmd_placeholder_text
+
+    core_settings = get_core_settings()
     return Response(
         {
             "trmm_version": settings.TRMM_VERSION,
@@ -98,7 +96,16 @@ def dashboard_info(request):
             "client_tree_splitter": request.user.client_tree_splitter,
             "loading_bar_color": request.user.loading_bar_color,
             "clear_search_when_switching": request.user.clear_search_when_switching,
-            "hosted": hasattr(settings, "HOSTED") and settings.HOSTED,
+            "hosted": getattr(settings, "HOSTED", False),
+            "date_format": request.user.date_format,
+            "default_date_format": core_settings.date_format,
+            "token_is_expired": token_is_expired(),
+            "open_ai_integration_enabled": bool(core_settings.open_ai_token),
+            "dash_info_color": request.user.dash_info_color,
+            "dash_positive_color": request.user.dash_positive_color,
+            "dash_negative_color": request.user.dash_negative_color,
+            "dash_warning_color": request.user.dash_warning_color,
+            "run_cmd_placeholder_text": runcmd_placeholder_text(),
         }
     )
 
@@ -106,15 +113,15 @@ def dashboard_info(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, CoreSettingsPerms])
 def email_test(request):
-    core = CoreSettings.objects.first()
-    r = core.send_mail(
+    core = get_core_settings()
+
+    msg, ok = core.send_mail(
         subject="Test from Tactical RMM", body="This is a test message", test=True
     )
+    if not ok:
+        return notify_error(msg)
 
-    if not isinstance(r, bool) and isinstance(r, str):
-        return notify_error(r)
-
-    return Response("Email Test OK!")
+    return Response(msg)
 
 
 @api_view(["POST"])
@@ -130,17 +137,10 @@ def server_maintenance(request):
         return Response("Nats configuration was reloaded successfully.")
 
     if request.data["action"] == "rm_orphaned_tasks":
-        from agents.models import Agent
         from autotasks.tasks import remove_orphaned_win_tasks
 
-        agents = Agent.objects.only("pk", "last_seen", "overdue_time", "offline_time")
-        online = [i for i in agents if i.status == "online"]
-        for agent in online:
-            remove_orphaned_win_tasks.delay(agent.pk)
-
-        return Response(
-            "The task has been initiated. Check the Debug Log in the UI for progress."
-        )
+        remove_orphaned_win_tasks.delay()
+        return Response("The task has been initiated.")
 
     if request.data["action"] == "prune_db":
         from logs.models import AuditLog, PendingAction
@@ -151,12 +151,12 @@ def server_maintenance(request):
         tables = request.data["prune_tables"]
         records_count = 0
         if "audit_logs" in tables:
-            auditlogs = AuditLog.objects.filter(action="check_run")
+            auditlogs = AuditLog.objects.filter(action=AuditActionType.CHECK_RUN)
             records_count += auditlogs.count()
             auditlogs.delete()
 
         if "pending_actions" in tables:
-            pendingactions = PendingAction.objects.filter(status="completed")
+            pendingactions = PendingAction.objects.filter(status=PAStatus.COMPLETED)
             records_count += pendingactions.count()
             pendingactions.delete()
 
@@ -186,8 +186,8 @@ class GetAddCustomFields(APIView):
         if "model" in request.data.keys():
             fields = CustomField.objects.filter(model=request.data["model"])
             return Response(CustomFieldSerializer(fields, many=True).data)
-        else:
-            return notify_error("The request was invalid")
+
+        return notify_error("The request was invalid")
 
     def post(self, request):
         serializer = CustomFieldSerializer(data=request.data, partial=True)
@@ -232,27 +232,19 @@ class CodeSign(APIView):
     def patch(self, request):
         import requests
 
-        errors = []
-        for url in settings.EXE_GEN_URLS:
-            try:
-                r = requests.post(
-                    f"{url}/api/v1/checktoken",
-                    json={"token": request.data["token"]},
-                    headers={"Content-type": "application/json"},
-                    timeout=15,
-                )
-            except Exception as e:
-                errors.append(str(e))
-            else:
-                errors = []
-                break
+        try:
+            r = requests.post(
+                settings.CHECK_TOKEN_URL,
+                json={"token": request.data["token"], "api": settings.ALLOWED_HOSTS[0]},
+                headers={"Content-type": "application/json"},
+                timeout=15,
+            )
+        except Exception as e:
+            return notify_error(str(e))
 
-        if errors:
-            return notify_error(", ".join(errors))
-
-        if r.status_code == 400 or r.status_code == 401:  # type: ignore
-            return notify_error(r.json()["ret"])  # type: ignore
-        elif r.status_code == 200:  # type: ignore
+        if r.status_code in (400, 401):
+            return notify_error(r.json()["ret"])
+        elif r.status_code == 200:
             t = CodeSignToken.objects.first()
             if t is None:
                 CodeSignToken.objects.create(token=request.data["token"])
@@ -263,29 +255,28 @@ class CodeSign(APIView):
             return Response("Token was saved")
 
         try:
-            ret = r.json()["ret"]  # type: ignore
+            ret = r.json()["ret"]
         except:
             ret = "Something went wrong"
         return notify_error(ret)
 
     def post(self, request):
         from agents.models import Agent
-        from agents.tasks import force_code_sign
+        from agents.tasks import send_agent_update_task
 
-        err = "A valid token must be saved first"
-        try:
-            t = CodeSignToken.objects.first().token
-        except:
-            return notify_error(err)
-
-        if t is None or t == "":
-            return notify_error(err)
+        token, is_valid = token_is_valid()
+        if not is_valid:
+            return notify_error("Invalid token")
 
         agent_ids: list[str] = list(
             Agent.objects.only("pk", "agent_id").values_list("agent_id", flat=True)
         )
-        force_code_sign.delay(agent_ids=agent_ids)
+        send_agent_update_task.delay(agent_ids=agent_ids, token=token, force=True)
         return Response("Agents will be code signed shortly")
+
+    def delete(self, request):
+        CodeSignToken.objects.all().delete()
+        return Response("ok")
 
 
 class GetAddKeyStore(APIView):
@@ -409,16 +400,114 @@ class TwilioSMSTest(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
 
     def post(self, request):
-
-        core = CoreSettings.objects.first()
+        core = get_core_settings()
         if not core.sms_is_configured:
             return notify_error(
                 "All fields are required, including at least 1 recipient"
             )
 
-        r = core.send_sms("TacticalRMM Test SMS", test=True)
+        msg, ok = core.send_sms("TacticalRMM Test SMS", test=True)
+        if not ok:
+            return notify_error(msg)
 
-        if not isinstance(r, bool) and isinstance(r, str):
-            return notify_error(r)
+        return Response(msg)
 
-        return Response("SMS Test sent successfully!")
+
+@csrf_exempt
+@monitoring_view
+def status(request):
+    from agents.models import Agent
+    from clients.models import Client, Site
+
+    disk_usage: int = round(psutil.disk_usage("/").percent)
+    mem_usage: int = round(psutil.virtual_memory().percent)
+
+    cert_file, _ = get_certs()
+    cert_bytes = Path(cert_file).read_bytes()
+
+    cert = x509.load_pem_x509_certificate(cert_bytes)
+    expires = cert.not_valid_after.replace(tzinfo=ZoneInfo("UTC"))
+    now = djangotime.now()
+    delta = expires - now
+
+    ret = {
+        "version": settings.TRMM_VERSION,
+        "latest_agent_version": settings.LATEST_AGENT_VER,
+        "agent_count": Agent.objects.count(),
+        "client_count": Client.objects.count(),
+        "site_count": Site.objects.count(),
+        "disk_usage_percent": disk_usage,
+        "mem_usage_percent": mem_usage,
+        "days_until_cert_expires": delta.days,
+        "cert_expired": delta.days < 0,
+    }
+
+    if settings.DOCKER_BUILD:
+        ret["services_running"] = "not available in docker"
+    else:
+        ret["services_running"] = {
+            "django": sysd_svc_is_running("rmm.service"),
+            "mesh": sysd_svc_is_running("meshcentral.service"),
+            "daphne": sysd_svc_is_running("daphne.service"),
+            "celery": sysd_svc_is_running("celery.service"),
+            "celerybeat": sysd_svc_is_running("celerybeat.service"),
+            "redis": sysd_svc_is_running("redis-server.service"),
+            "postgres": sysd_svc_is_running("postgresql.service"),
+            "mongo": sysd_svc_is_running("mongod.service"),
+            "nats": sysd_svc_is_running("nats.service"),
+            "nats-api": sysd_svc_is_running("nats-api.service"),
+            "nginx": sysd_svc_is_running("nginx.service"),
+        }
+    return JsonResponse(ret, json_dumps_params={"indent": 2})
+
+
+class OpenAICodeCompletion(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        settings = get_core_settings()
+
+        if not settings.open_ai_token:
+            return notify_error(
+                "Open AI API Key not found. Open Global Settings > Open AI."
+            )
+
+        if not request.data["prompt"]:
+            return notify_error("Not prompt field found")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {settings.open_ai_token}",
+        }
+
+        data = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": request.data["prompt"],
+                },
+            ],
+            "model": settings.open_ai_model,
+            "temperature": 0.5,
+            "max_tokens": 1000,
+            "n": 1,
+            "stop": None,
+        }
+
+        try:
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                data=json.dumps(data),
+            )
+        except Exception as e:
+            return notify_error(str(e))
+
+        response_data = json.loads(response.text)
+
+        if "error" in response_data:
+            return notify_error(
+                f"The Open AI API returned an error: {response_data['error']['message']}"
+            )
+
+        return Response(response_data["choices"][0]["message"]["content"])

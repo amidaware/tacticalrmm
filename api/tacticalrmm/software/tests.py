@@ -42,7 +42,7 @@ class TestSoftwareViews(TacticalTestCase):
         # test without agent software
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEquals(resp.data, [])  # type: ignore
+        self.assertEqual(resp.data, [])
 
         # make some software
         software = baker.make(
@@ -54,13 +54,13 @@ class TestSoftwareViews(TacticalTestCase):
         serializer = InstalledSoftwareSerializer(software)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(resp.data, serializer.data)
 
         # test checking all software (multiple agents)
         serializer = InstalledSoftwareSerializer([software], many=True)
         resp = self.client.get(f"{base_url}/", format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEquals(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(resp.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -139,13 +139,13 @@ class TestSoftwareViews(TacticalTestCase):
 class TestSoftwarePermissions(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
-        self.client_setup()
+        self.setup_client()
 
     def test_list_software_permissions(self):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
         software = baker.make("software.InstalledSoftware", software={}, agent=agent)
-        unauthorized_software = baker.make(
+        unauthorized_software = baker.make(  # noqa
             "software.InstalledSoftware", software={}, agent=unauthorized_agent
         )
 
@@ -180,8 +180,10 @@ class TestSoftwarePermissions(TacticalTestCase):
     def test_install_refresh_software_permissions(self, nats_cmd):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
-        software = baker.make("software.InstalledSoftware", software={}, agent=agent)
-        unauthorized_software = baker.make(
+        software = baker.make(  # noqa
+            "software.InstalledSoftware", software={}, agent=agent
+        )
+        unauthorized_software = baker.make(  # noqa
             "software.InstalledSoftware", software={}, agent=unauthorized_agent
         )
 

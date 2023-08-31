@@ -1,0 +1,22 @@
+---
+- hosts: "{{ target }}"
+  vars:
+    ansible_user: tactical
+    fullchain_src: /path/to/fullchain.pem
+    privkey_src: /path/to/privkey.pem
+    api: "api.example.com"
+    rmm: "rmm.example.com"
+    mesh: "mesh.example.com"
+    github_username: "changeme"
+    github_email: "changeme@example.com"
+    mesh_user: "changeme"
+    mesh_password: "changeme"
+    db_user: "changeme"
+    db_passwd: "changeme"
+    mesh_db_user: "changeme"
+    mesh_db_passwd: "changeme"
+    django_secret: "changeme"
+    django_user: "changeme"
+    django_password: "changeme"
+  roles:
+    - trmm_dev

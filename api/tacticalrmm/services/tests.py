@@ -57,13 +57,12 @@ class TestServiceViews(TacticalTestCase):
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
         nats_cmd.assert_called_with(data={"func": "winservices"}, timeout=10)
-        self.assertEquals(Agent.objects.get(pk=agent.pk).services, nats_return)
+        self.assertEqual(Agent.objects.get(pk=agent.pk).services, nats_return)
 
         self.check_not_authenticated("get", url)
 
     @patch("agents.models.Agent.nats_cmd")
     def test_service_action(self, nats_cmd):
-
         data = {"sv_action": "restart"}
         # test a call where agent doesn't exist
         resp = self.client.post(
@@ -135,7 +134,7 @@ class TestServiceViews(TacticalTestCase):
         nats_cmd.assert_called_with(
             {"func": "winsvcdetail", "payload": {"name": "alg"}}, timeout=10
         )
-        self.assertEquals(resp.data, nats_return)
+        self.assertEqual(resp.data, nats_return)
 
         self.check_not_authenticated("get", url)
 
@@ -195,7 +194,7 @@ class TestServiceViews(TacticalTestCase):
 class TestServicePermissions(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
-        self.client_setup()
+        self.setup_client()
 
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     def test_services_permissions(self, nats_cmd):

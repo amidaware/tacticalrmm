@@ -1,29 +1,33 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-SCRIPT_VERSION="126"
-SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
+SCRIPT_VERSION="147"
+SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
+LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
+SCRIPTS_DIR='/opt/trmm-community-scripts'
+PYTHON_VER='3.11.4'
+SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
+
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
-curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
+curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}Old update script detected, downloading and replacing with the latest version...${NC}\n"
-    wget -q "${SCRIPT_URL}" -O update.sh
-    exec ${THIS_SCRIPT}
+  printf >&2 "${YELLOW}Old update script detected, downloading and replacing with the latest version...${NC}\n"
+  wget -q "${SCRIPT_URL}" -O update.sh
+  exec ${THIS_SCRIPT}
 fi
 
 rm -f $TMP_FILE
 
 force=false
 if [[ $* == *--force* ]]; then
-    force=true
+  force=true
 fi
 
 if [ $EUID -eq 0 ]; then
@@ -41,15 +45,8 @@ if [ "$ORIGUSER" != "$USER" ]; then
   exit 1
 fi
 
-CHECK_TOO_OLD=$(grep natsapi /etc/nginx/sites-available/rmm.conf)
-if ! [[ $CHECK_TOO_OLD ]]; then
-  printf >&2 "${RED}Your version of TRMM is no longer supported. Refusing to update.${NC}\n"
-  exit 1
-fi
-
 TMP_SETTINGS=$(mktemp -p "" "rmmsettings_XXXXXXXXXX")
-curl -s -L "${LATEST_SETTINGS_URL}" > ${TMP_SETTINGS}
-SETTINGS_FILE="/rmm/api/tacticalrmm/tacticalrmm/settings.py"
+curl -s -L "${LATEST_SETTINGS_URL}" >${TMP_SETTINGS}
 
 LATEST_TRMM_VER=$(grep "^TRMM_VERSION" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 CURRENT_TRMM_VER=$(grep "^TRMM_VERSION" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
@@ -62,47 +59,86 @@ fi
 
 LATEST_MESH_VER=$(grep "^MESH_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 LATEST_PIP_VER=$(grep "^PIP_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
-LATEST_NPM_VER=$(grep "^NPM_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-
-
-if [ -f /etc/systemd/system/natsapi.service ]; then
-  printf >&2 "${GREEN}Removing natsapi.service${NC}\n"
-  sudo systemctl stop natsapi.service
-  sudo systemctl disable natsapi.service
-  sudo rm -f /etc/systemd/system/natsapi.service
-  sudo systemctl daemon-reload
-fi
 
 cls() {
   printf "\033c"
 }
 
-CHECK_HAS_DAPHNE=$(grep daphne.sock /etc/nginx/sites-available/rmm.conf)
-if ! [[ $CHECK_HAS_DAPHNE ]]; then
-  cls
-  echo -ne "${RED}Nginx config changes required before continuing.${NC}\n"
-  echo -ne "${RED}Please check the v0.5.0 release notes on github for instructions, then re-run this script.${NC}\n"
-  echo -ne "${YELLOW}https://github.com/wh1te909/tacticalrmm/releases/tag/v0.5.0${NC}\n"
-  echo -ne "${RED}Aborting...${NC}\n"
-  exit 1
-fi
+CHECK_NATS_LIMITNOFILE=$(grep LimitNOFILE /etc/systemd/system/nats.service)
+if ! [[ $CHECK_NATS_LIMITNOFILE ]]; then
 
-if ! sudo nginx -t > /dev/null 2>&1; then
-  sudo nginx -t
-  echo -ne "\n"
-  echo -ne "${RED}You have syntax errors in your nginx configs. See errors above. Please fix them and re-run this script.${NC}\n"
-  echo -ne "${RED}Aborting...${NC}\n"
-  exit 1
-fi
+  sudo rm -f /etc/systemd/system/nats.service
 
-if ! [ -f /etc/systemd/system/daphne.service ]; then
-daphneservice="$(cat << EOF
+  natsservice="$(
+    cat <<EOF
 [Unit]
-Description=django channels daemon
+Description=NATS Server
+After=network.target
+
+[Service]
+PrivateTmp=true
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecReload=/usr/bin/kill -s HUP \$MAINPID
+ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
+User=${USER}
+Group=www-data
+Restart=always
+RestartSec=5s
+LimitNOFILE=1000000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  )"
+  echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service >/dev/null
+  sudo systemctl daemon-reload
+fi
+
+rmmconf='/etc/nginx/sites-available/rmm.conf'
+CHECK_NATS_WEBSOCKET=$(grep natsws $rmmconf)
+if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
+  echo "Adding nats websocket to nginx config"
+  echo "$(awk '
+  /location \/ {/ {
+      print "    location ~ ^/natsws {"
+      print "        proxy_pass http://127.0.0.1:9235;"
+      print "        proxy_http_version 1.1;"
+      print "        proxy_set_header Host $host;"
+      print "        proxy_set_header Upgrade $http_upgrade;"
+      print "        proxy_set_header Connection \"upgrade\";"
+      print "        proxy_set_header X-Forwarded-Host $host:$server_port;"
+      print "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;"
+      print "        proxy_set_header X-Forwarded-Proto $scheme;"
+      print "    }"
+      print "\n"
+  }
+  { print }
+  ' $rmmconf)" | sudo tee $rmmconf >/dev/null
+fi
+
+printf >&2 "${GREEN}Stopping celery and celerybeat services (this might take a while)...${NC}\n"
+for i in celerybeat celery; do
+  sudo systemctl stop ${i}
+done
+
+for i in nginx nats-api nats rmm daphne; do
+  printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
+  sudo systemctl stop ${i}
+done
+
+CHECK_DAPHNE=$(grep v2 /etc/systemd/system/daphne.service)
+if ! [[ $CHECK_DAPHNE ]]; then
+
+  sudo rm -f /etc/systemd/system/daphne.service
+
+  daphneservice="$(
+    cat <<EOF
+[Unit]
+Description=django channels daemon v2
 After=network.target
 
 [Service]
@@ -111,137 +147,120 @@ Group=www-data
 WorkingDirectory=/rmm/api/tacticalrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+ExecStartPre=rm -f /rmm/daphne.sock
+ExecStartPre=rm -f /rmm/daphne.sock.lock
 Restart=always
 RestartSec=3s
 
 [Install]
 WantedBy=multi-user.target
 EOF
-)"
-echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable daphne.service
+  )"
+  echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
+  sudo systemctl daemon-reload
 fi
 
-if [ ! -f /etc/systemd/system/nats-api.service ]; then
-natsapi="$(cat << EOF
-[Unit]
-Description=TacticalRMM Nats Api v1
-After=nats.service
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/nats-api
-User=${USER}
-Group=${USER}
-Restart=always
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
+if [ ! -f /etc/apt/sources.list.d/nginx.list ]; then
+  osname=$(lsb_release -si)
+  osname=${osname^}
+  osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
+  codename=$(lsb_release -sc)
+  nginxrepo="$(
+    cat <<EOF
+deb https://nginx.org/packages/$osname/ $codename nginx
+deb-src https://nginx.org/packages/$osname/ $codename nginx
 EOF
-)"
-echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service > /dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable nats-api.service
+  )"
+  echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
+  wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+  sudo apt update
+  sudo apt install -y nginx
 fi
 
-for i in nginx nats-api nats rmm daphne celery celerybeat
-do
-printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
-sudo systemctl stop ${i}
-done
-
-printf >&2 "${GREEN}Restarting postgresql database${NC}\n"
-sudo systemctl restart postgresql
-sleep 5
-
-rm -f /rmm/api/tacticalrmm/app.ini
-
-numprocs=$(nproc)
-uwsgiprocs=4
-if [[ "$numprocs" == "1" ]]; then
-  uwsgiprocs=2
-else
-  uwsgiprocs=$numprocs
-fi
-
-uwsgini="$(cat << EOF
-[uwsgi]
-chdir = /rmm/api/tacticalrmm
-module = tacticalrmm.wsgi
-home = /rmm/api/env
-master = true
-processes = ${uwsgiprocs}
-threads = ${uwsgiprocs}
-enable-threads = true
-socket = /rmm/api/tacticalrmm/tacticalrmm.sock
-harakiri = 300
-chmod-socket = 660
-buffer-size = 65535
-vacuum = true
-die-on-term = true
-max-requests = 500
-EOF
-)"
-echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
-
-CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" /etc/nginx/nginx.conf)
+nginxdefaultconf='/etc/nginx/nginx.conf'
+CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 4096" $nginxdefaultconf)
 if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
-  printf >&2 "${GREEN}Changing nginx worker connections to 2048${NC}\n"
-  sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
+  printf >&2 "${GREEN}Changing nginx worker connections to 4096${NC}\n"
+  sudo sed -i 's/worker_connections.*/worker_connections 4096;/g' $nginxdefaultconf
 fi
 
-HAS_PY39=$(which python3.9)
-if ! [[ $HAS_PY39 ]]; then
-  printf >&2 "${GREEN}Updating to Python 3.9${NC}\n"
+CHECK_NGINX_NOLIMIT=$(grep "worker_rlimit_nofile 1000000" $nginxdefaultconf)
+if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
+  sudo sed -i '/worker_rlimit_nofile.*/d' $nginxdefaultconf
+  printf >&2 "${GREEN}Increasing nginx open file limit${NC}\n"
+  sudo sed -i '1s/^/worker_rlimit_nofile 1000000;\
+/' $nginxdefaultconf
+fi
+
+backend_conf='/etc/nginx/sites-available/rmm.conf'
+CHECK_NGINX_REUSEPORT=$(grep reuseport $backend_conf)
+if ! [[ $CHECK_NGINX_REUSEPORT ]]; then
+  printf >&2 "${GREEN}Setting nginx reuseport${NC}\n"
+  sudo sed -i 's/listen 443 ssl;/listen 443 ssl reuseport;/g' $backend_conf
+fi
+
+sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' $nginxdefaultconf
+
+if ! sudo nginx -t >/dev/null 2>&1; then
+  sudo nginx -t
+  echo -ne "\n"
+  echo -ne "${RED}You have syntax errors in your nginx configs. See errors above. Please fix them and re-run this script.${NC}\n"
+  echo -ne "${RED}Aborting...${NC}\n"
+  exit 1
+fi
+
+HAS_PY311=$(python3.11 --version | grep ${PYTHON_VER})
+if ! [[ $HAS_PY311 ]]; then
+  printf >&2 "${GREEN}Updating to ${PYTHON_VER}${NC}\n"
   sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
   numprocs=$(nproc)
   cd ~
-  wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz
-  tar -xf Python-3.9.9.tgz
-  cd Python-3.9.9
+  wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
+  tar -xf Python-${PYTHON_VER}.tgz
+  cd Python-${PYTHON_VER}
   ./configure --enable-optimizations
   make -j $numprocs
   sudo make altinstall
   cd ~
-  sudo rm -rf Python-3.9.9 Python-3.9.9.tgz
+  sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 fi
+
+arch=$(uname -m)
+nats_server='/usr/local/bin/nats-server'
 
 HAS_LATEST_NATS=$(/usr/local/bin/nats-server -version | grep "${NATS_SERVER_VER}")
 if ! [[ $HAS_LATEST_NATS ]]; then
   printf >&2 "${GREEN}Updating nats to v${NATS_SERVER_VER}${NC}\n"
   nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-  wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
-  tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
-  sudo rm -f /usr/local/bin/nats-server
-  sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
-  sudo chmod +x /usr/local/bin/nats-server
-  sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+  if [ "$arch" = "x86_64" ]; then
+    natsarch='amd64'
+  else
+    natsarch='arm64'
+  fi
+  wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}.tar.gz -P ${nats_tmp}
+  tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}.tar.gz -C ${nats_tmp}
+  sudo rm -f $nats_server
+  sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-${natsarch}/nats-server /usr/local/bin/
+  sudo chmod +x $nats_server
+  sudo chown ${USER}:${USER} $nats_server
   rm -rf ${nats_tmp}
 fi
 
-HAS_NODE14=$(/usr/bin/node --version | grep v14)
-if ! [[ $HAS_NODE14 ]]; then
-  printf >&2 "${GREEN}Updating NodeJS to v14${NC}\n"
-  rm -rf /rmm/web/node_modules
-  sudo systemctl stop meshcentral
-  sudo apt remove -y nodejs
-  sudo rm -rf /usr/lib/node_modules
-  sudo rm -rf /home/${USER}/.npm/*
-  curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-  sudo apt update
-  sudo apt install -y nodejs
-  sudo npm install -g npm
-  sudo chown ${USER}:${USER} -R /meshcentral
-  cd /meshcentral
-  rm -rf node_modules/
-  npm install meshcentral@${LATEST_MESH_VER}
-  sudo systemctl start meshcentral
+if [ -d ~/.npm ]; then
+  sudo rm -rf ~/.npm
+fi
+
+if [ -d ~/.cache ]; then
+  sudo rm -rf ~/.cache
+fi
+
+if [ -d ~/.config ]; then
+  sudo chown -R $USER:$GROUP ~/.config
 fi
 
 sudo npm install -g npm
 
+# update from main repo
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -251,36 +270,68 @@ git reset --hard FETCH_HEAD
 git clean -df
 git pull
 
+# update from community-scripts repo
+if [[ ! -d ${SCRIPTS_DIR} ]]; then
+  sudo mkdir -p ${SCRIPTS_DIR}
+  sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
+  git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+  cd ${SCRIPTS_DIR}
+  git config user.email "admin@example.com"
+  git config user.name "Bob"
+else
+  cd ${SCRIPTS_DIR}
+  git config user.email "admin@example.com"
+  git config user.name "Bob"
+  git fetch
+  git checkout main
+  git reset --hard FETCH_HEAD
+  git clean -df
+  git pull
+fi
+
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-
 sudo chown ${USER}:${USER} -R /rmm
+sudo chown ${USER}:${USER} -R ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
-sudo chown -R $USER:$GROUP /home/${USER}/.npm
-sudo chown -R $USER:$GROUP /home/${USER}/.config
-sudo chown -R $USER:$GROUP /home/${USER}/.cache
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
-sudo chmod 775 -R /etc/letsencrypt
+
+if [ -d /rmmbackups ]; then
+  sudo chown ${USER}:${USER} -R /rmmbackups
+fi
+
+CHECK_CELERY_CONFIG=$(grep "autoscale=20,2" /etc/conf.d/celery.conf)
+if ! [[ $CHECK_CELERY_CONFIG ]]; then
+  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"/g' /etc/conf.d/celery.conf
+fi
 
 CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
 if ! [[ $CHECK_ADMIN_ENABLED ]]; then
-adminenabled="$(cat << EOF
+  adminenabled="$(
+    cat <<EOF
 ADMIN_ENABLED = False
 EOF
-)"
-echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
+  )"
+  echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
 fi
 
-sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
-sudo chown ${USER}:${USER} /usr/local/bin/nats-api
-sudo chmod +x /usr/local/bin/nats-api
+if [ "$arch" = "x86_64" ]; then
+  natsapi='nats-api'
+else
+  natsapi='nats-api-arm64'
+fi
+
+nats_api='/usr/local/bin/nats-api'
+sudo cp /rmm/natsapi/bin/${natsapi} $nats_api
+sudo chown ${USER}:${USER} $nats_api
+sudo chmod +x $nats_api
 
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/api/env
   cd /rmm/api
-  python3.9 -m venv env
+  python3.11 -m venv env
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip
@@ -293,6 +344,7 @@ else
 fi
 
 python manage.py pre_update_tasks
+celery -A tacticalrmm purge -f
 python manage.py migrate
 python manage.py delete_tokens
 python manage.py collectstatic --no-input
@@ -300,30 +352,54 @@ python manage.py reload_nats
 python manage.py load_chocos
 python manage.py create_installer_user
 python manage.py create_natsapi_conf
+python manage.py create_uwsgi_conf
+python manage.py clear_redis_celery_locks
 python manage.py post_update_tasks
+API=$(python manage.py get_config api)
+WEB_VERSION=$(python manage.py get_config webversion)
+FRONTEND=$(python manage.py get_config webdomain)
+MESHDOMAIN=$(python manage.py get_config meshdomain)
 deactivate
 
-rm -rf /rmm/web/dist
-rm -rf /rmm/web/.quasar
-cd /rmm/web
-if [[ "${CURRENT_NPM_VER}" != "${LATEST_NPM_VER}" ]] || [[ "$force" = true ]]; then
-  rm -rf /rmm/web/node_modules
+if grep -q manage_etc_hosts /etc/hosts; then
+  sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
+  if ! grep -q "manage_etc_hosts: false" /etc/cloud/cloud.cfg; then
+    echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
+    sudo systemctl restart cloud-init >/dev/null
+  fi
 fi
 
-npm install
-npm run build
+CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$API" | grep "$FRONTEND" | grep "$MESHDOMAIN")
+HAS_11=$(grep 127.0.1.1 /etc/hosts)
+
+if ! [[ $CHECK_HOSTS ]]; then
+  if [[ $HAS_11 ]]; then
+    sudo sed -i "/127.0.1.1/s/$/ ${API} ${FRONTEND} ${MESHDOMAIN}/" /etc/hosts
+  else
+    echo "127.0.1.1 ${API} ${FRONTEND} ${MESHDOMAIN}" | sudo tee --append /etc/hosts >/dev/null
+  fi
+fi
+
+if [ -d /rmm/web ]; then
+  rm -rf /rmm/web
+fi
+
+if [ ! -d /var/www/rmm ]; then
+  sudo mkdir -p /var/www/rmm
+fi
+
+webtar="trmm-web-v${WEB_VERSION}.tar.gz"
+wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
 sudo rm -rf /var/www/rmm/dist
-sudo cp -pr /rmm/web/dist /var/www/rmm/
+sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
+echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null
 sudo chown www-data:www-data -R /var/www/rmm/dist
+rm -f /tmp/${webtar}
 
-for i in nats nats-api rmm daphne celery celerybeat nginx
-do
-printf >&2 "${GREEN}Starting ${i} service${NC}\n"
-sudo systemctl start ${i}
+for i in nats nats-api rmm daphne celery celerybeat nginx; do
+  printf >&2 "${GREEN}Starting ${i} service${NC}\n"
+  sudo systemctl start ${i}
 done
-
-sleep 1
-/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py update_agents
 
 CURRENT_MESH_VER=$(cd /meshcentral/node_modules/meshcentral && node -p -e "require('./package.json').version")
 if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]]; then
@@ -331,14 +407,24 @@ if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]];
   sudo systemctl stop meshcentral
   sudo chown ${USER}:${USER} -R /meshcentral
   cd /meshcentral
-  rm -rf node_modules/
-  npm install meshcentral@${LATEST_MESH_VER}
+  rm -rf node_modules/ package.json package-lock.json
+  mesh_pkg="$(
+    cat <<EOF
+{
+  "dependencies": {
+    "archiver": "5.3.1",
+    "meshcentral": "${LATEST_MESH_VER}",
+    "otplib": "10.2.3",
+    "pg": "8.7.1",
+    "pgtools": "0.3.2"
+  }
+}
+EOF
+  )"
+  echo "${mesh_pkg}" >/meshcentral/package.json
+  npm install
   sudo systemctl start meshcentral
 fi
-
-# apply redis configuration
-sudo redis-cli config set appendonly yes
-sudo redis-cli config rewrite
 
 rm -f $TMP_SETTINGS
 printf >&2 "${GREEN}Update finished!${NC}\n"

@@ -3,7 +3,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("uploadmesh/", views.UploadMeshAgent.as_view()),
     path("settings/", views.GetEditCoreSettings.as_view()),
     path("version/", views.version),
     path("emailtest/", views.email_test),
@@ -18,4 +17,7 @@ urlpatterns = [
     path("urlaction/<int:pk>/", views.UpdateDeleteURLAction.as_view()),
     path("urlaction/run/", views.RunURLAction.as_view()),
     path("smstest/", views.TwilioSMSTest.as_view()),
+    path("clearcache/", views.clear_cache),
+    path("status/", views.status),
+    path("openai/generate/", views.OpenAICodeCompletion.as_view()),
 ]

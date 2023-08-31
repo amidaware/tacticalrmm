@@ -1,23 +1,24 @@
-from agents.models import Agent
-from autotasks.models import AutomatedTask
-from checks.models import Check
-from clients.models import Client
 from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
-from tacticalrmm.utils import notify_error
+
+from agents.models import Agent
+from autotasks.models import TaskResult
+from checks.models import CheckResult
+from clients.models import Client, Site
 from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
+from django.db.models import Prefetch
 
 from .models import Policy
 from .permissions import AutomationPolicyPerms
 from .serializers import (
     PolicyCheckStatusSerializer,
-    PolicyRelatedSerializer,
     PolicyOverviewSerializer,
+    PolicyRelatedSerializer,
     PolicySerializer,
     PolicyTableSerializer,
     PolicyTaskStatusSerializer,
@@ -28,7 +29,9 @@ class GetAddPolicies(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
 
     def get(self, request):
-        policies = Policy.objects.all()
+        policies = Policy.objects.select_related("alert_template").prefetch_related(
+            "excluded_agents", "excluded_sites", "excluded_clients"
+        )
 
         return Response(
             PolicyTableSerializer(
@@ -50,9 +53,9 @@ class GetAddPolicies(APIView):
                 check.create_policy_check(policy=policy)
 
             tasks = copyPolicy.autotasks.all()
-
             for task in tasks:
-                task.create_policy_task(policy=policy)
+                if not task.assigned_check:
+                    task.create_policy_task(policy=policy)
 
         return Response("ok")
 
@@ -66,21 +69,11 @@ class GetUpdateDeletePolicy(APIView):
         return Response(PolicySerializer(policy).data)
 
     def put(self, request, pk):
-        from .tasks import generate_agent_checks_task
-
         policy = get_object_or_404(Policy, pk=pk)
 
         serializer = PolicySerializer(instance=policy, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        # check for excluding objects and in the request and if present generate policies
-        if (
-            "excluded_sites" in request.data.keys()
-            or "excluded_clients" in request.data.keys()
-            or "excluded_agents" in request.data.keys()
-        ):
-            generate_agent_checks_task.delay(policy=pk, create_tasks=True)
 
         return Response("ok")
 
@@ -90,25 +83,10 @@ class GetUpdateDeletePolicy(APIView):
         return Response("ok")
 
 
-class PolicySync(APIView):
-    def post(self, request):
-        if "policy" in request.data.keys():
-            from automation.tasks import generate_agent_checks_task
-
-            generate_agent_checks_task.delay(
-                policy=request.data["policy"], create_tasks=True
-            )
-            return Response("ok")
-
-        else:
-            return notify_error("The request was invalid")
-
-
 class PolicyAutoTask(APIView):
-
     # get status of all tasks
     def get(self, request, task):
-        tasks = AutomatedTask.objects.filter(parent_task=task)
+        tasks = TaskResult.objects.filter(task=task)
         return Response(PolicyTaskStatusSerializer(tasks, many=True).data)
 
     # bulk run win tasks associated with policy
@@ -123,20 +101,30 @@ class PolicyCheck(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
 
     def get(self, request, check):
-        checks = Check.objects.filter(parent_check=check)
+        checks = CheckResult.objects.filter(assigned_check=check)
         return Response(PolicyCheckStatusSerializer(checks, many=True).data)
 
 
 class OverviewPolicy(APIView):
     def get(self, request):
-
-        clients = Client.objects.all()
+        clients = (
+            Client.objects.filter_by_role(request.user)
+            .select_related("workstation_policy", "server_policy")
+            .prefetch_related(
+                Prefetch(
+                    "sites",
+                    queryset=Site.objects.select_related(
+                        "workstation_policy", "server_policy"
+                    ),
+                    to_attr="filtered_sites",
+                )
+            )
+        )
         return Response(PolicyOverviewSerializer(clients, many=True).data)
 
 
 class GetRelated(APIView):
     def get(self, request, pk):
-
         policy = (
             Policy.objects.filter(pk=pk)
             .prefetch_related(
@@ -155,13 +143,14 @@ class GetRelated(APIView):
 
 class UpdatePatchPolicy(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
+
     # create new patch policy
     def post(self, request):
         policy = get_object_or_404(Policy, pk=request.data["policy"])
 
         serializer = WinUpdatePolicySerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.policy = policy  # type: ignore
+        serializer.policy = policy
         serializer.save()
 
         return Response("ok")
@@ -188,13 +177,12 @@ class UpdatePatchPolicy(APIView):
 class ResetPatchPolicy(APIView):
     # bulk reset agent patch policy
     def post(self, request):
-
         if "client" in request.data:
             if not _has_perm_on_client(request.user, request.data["client"]):
                 raise PermissionDenied()
 
             agents = (
-                Agent.objects.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)  # type: ignore
                 .prefetch_related("winupdatepolicy")
                 .filter(site__client_id=request.data["client"])
             )
@@ -203,13 +191,13 @@ class ResetPatchPolicy(APIView):
                 raise PermissionDenied()
 
             agents = (
-                Agent.objects.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)  # type: ignore
                 .prefetch_related("winupdatepolicy")
                 .filter(site_id=request.data["site"])
             )
         else:
             agents = (
-                Agent.objects.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)  # type: ignore
                 .prefetch_related("winupdatepolicy")
                 .only("pk")
             )

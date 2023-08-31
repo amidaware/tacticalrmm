@@ -5,15 +5,18 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
-from tacticalrmm.utils import notify_error, get_default_timezone, AGENT_DEFER
-from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
 
-from .models import AuditLog, PendingAction, DebugLog
 from agents.models import Agent
+from tacticalrmm.constants import AGENT_DEFER, PAAction
+from tacticalrmm.helpers import notify_error
+from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
+from tacticalrmm.utils import get_default_timezone
+
+from .models import AuditLog, DebugLog, PendingAction
 from .permissions import AuditLogPerms, DebugLogPerms, PendingActionPerms
 from .serializers import AuditLogSerializer, DebugLogSerializer, PendingActionSerializer
 
@@ -94,14 +97,22 @@ class PendingActions(APIView):
     def get(self, request, agent_id=None):
         if agent_id:
             agent = get_object_or_404(
-                Agent.objects.defer(*AGENT_DEFER), agent_id=agent_id
+                Agent.objects.defer(*AGENT_DEFER).prefetch_related("pendingactions"),
+                agent_id=agent_id,
             )
-            actions = PendingAction.objects.filter(agent=agent)
+            actions = (
+                PendingAction.objects.filter(agent=agent)
+                .select_related("agent__site", "agent__site__client")
+                .defer("agent__services", "agent__wmi_detail")
+            )
         else:
             actions = (
-                PendingAction.objects.select_related("agent")
+                PendingAction.objects.filter_by_role(request.user)  # type: ignore
+                .select_related(
+                    "agent__site",
+                    "agent__site__client",
+                )
                 .defer("agent__services", "agent__wmi_detail")
-                .filter_by_role(request.user)  # type: ignore
             )
 
         return Response(PendingActionSerializer(actions, many=True).data)
@@ -112,13 +123,14 @@ class PendingActions(APIView):
         if not _has_perm_on_agent(request.user, action.agent.agent_id):
             raise PermissionDenied()
 
-        nats_data = {
-            "func": "delschedtask",
-            "schedtaskpayload": {"name": action.details["taskname"]},
-        }
-        r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
-        if r != "ok":
-            return notify_error(r)
+        if action.action_type == PAAction.SCHED_REBOOT:
+            nats_data = {
+                "func": "delschedtask",
+                "schedtaskpayload": {"name": action.details["taskname"]},
+            }
+            r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
+            if r != "ok":
+                return notify_error(r)
 
         action.delete()
         return Response(f"{action.agent.hostname}: {action.description} was cancelled")
@@ -143,7 +155,7 @@ class GetDebugLog(APIView):
 
         debug_logs = (
             DebugLog.objects.prefetch_related("agent")
-            .filter_by_role(request.user)
+            .filter_by_role(request.user)  # type: ignore
             .filter(logLevelFilter)
             .filter(agentFilter)
             .filter(logTypeFilter)

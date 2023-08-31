@@ -44,9 +44,7 @@ class WinUpdate(models.Model):
     )
     guid = models.CharField(max_length=255, null=True, blank=True)
     kb = models.CharField(max_length=100, null=True, blank=True)
-    mandatory = models.BooleanField(default=False)  # deprecated
     title = models.TextField(null=True, blank=True)
-    needs_reboot = models.BooleanField(default=False)  # deprecated
     installed = models.BooleanField(default=False)
     downloaded = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True)
@@ -145,8 +143,8 @@ class WinUpdatePolicy(BaseAuditModel):
     def __str__(self):
         if self.agent:
             return self.agent.hostname
-        else:
-            return self.policy.name
+
+        return self.policy.name
 
     @staticmethod
     def serialize(policy):

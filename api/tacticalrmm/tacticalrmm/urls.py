@@ -3,6 +3,7 @@ from django.urls import include, path, register_converter
 from knox import views as knox_views
 
 from accounts.views import CheckCreds, LoginView
+from agents.consumers import SendCMD
 from core.consumers import DashInfo
 
 
@@ -39,12 +40,15 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
 ]
 
-if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:
+if getattr(settings, "ADMIN_ENABLED", False):
     from django.contrib import admin
 
     urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)
 
-if hasattr(settings, "SWAGGER_ENABLED") and settings.SWAGGER_ENABLED:
+if getattr(settings, "DEBUG", False) and not getattr(settings, "DEMO", False):
+    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
+
+if getattr(settings, "SWAGGER_ENABLED", False):
     from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
     urlpatterns += (
@@ -57,5 +61,6 @@ if hasattr(settings, "SWAGGER_ENABLED") and settings.SWAGGER_ENABLED:
     )
 
 ws_urlpatterns = [
-    path("ws/dashinfo/", DashInfo.as_asgi()),  # type: ignore
+    path("ws/dashinfo/", DashInfo.as_asgi()),
+    path("ws/sendcmd/", SendCMD.as_asgi()),
 ]

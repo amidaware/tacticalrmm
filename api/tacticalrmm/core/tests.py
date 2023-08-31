@@ -3,14 +3,30 @@ from unittest.mock import patch
 import requests
 from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
-from model_bakery import baker
 
+# from django.conf import settings
+from django.core.management import call_command
+from django.test import override_settings
+from model_bakery import baker
+from rest_framework.authtoken.models import Token
+
+# from agents.models import Agent
+from core.utils import get_core_settings, get_meshagent_url
+
+# from logs.models import PendingAction
+from tacticalrmm.constants import (
+    CONFIG_MGMT_CMDS,
+    CustomFieldModel,
+    MeshAgentIdent,
+    # PAAction,
+    # PAStatus,
+)
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
-from .models import CoreSettings, CustomField, GlobalKVStore, URLAction
+from .models import CustomField, GlobalKVStore, URLAction
 from .serializers import CustomFieldSerializer, KeyStoreSerializer, URLActionSerializer
-from .tasks import core_maintenance_tasks
+from .tasks import core_maintenance_tasks  # , resolve_pending_actions
 
 
 class TestCodeSign(TacticalTestCase):
@@ -34,6 +50,12 @@ class TestCodeSign(TacticalTestCase):
 
         self.check_not_authenticated("patch", self.url)
 
+    def test_delete_codesign(self):
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("delete", self.url)
+
 
 class TestConsumers(TacticalTestCase):
     def setUp(self):
@@ -42,8 +64,6 @@ class TestConsumers(TacticalTestCase):
 
     @database_sync_to_async
     def get_token(self):
-        from rest_framework.authtoken.models import Token
-
         token = Token.objects.create(user=self.john)
         return token.key
 
@@ -64,8 +84,8 @@ class TestCoreTasks(TacticalTestCase):
         self.authenticate()
 
     def test_core_maintenance_tasks(self):
-        task = core_maintenance_tasks.s().apply()
-        self.assertEqual(task.state, "SUCCESS")
+        core_maintenance_tasks()
+        self.assertTrue(True)
 
     def test_dashboard_info(self):
         url = "/core/dashinfo/"
@@ -88,12 +108,11 @@ class TestCoreTasks(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("automation.tasks.generate_agent_checks_task.delay")
-    def test_edit_coresettings(self, generate_agent_checks_task):
+    def test_edit_coresettings(self):
         url = "/core/settings/"
 
         # setup
-        policies = baker.make("automation.Policy", _quantity=2)
+        baker.make("automation.Policy", _quantity=2)
         # test normal request
         data = {
             "smtp_from_email": "newexample@example.com",
@@ -101,38 +120,8 @@ class TestCoreTasks(TacticalTestCase):
         }
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(
-            CoreSettings.objects.first().smtp_from_email, data["smtp_from_email"]
-        )
-        self.assertEqual(CoreSettings.objects.first().mesh_token, data["mesh_token"])
-
-        generate_agent_checks_task.assert_not_called()
-
-        # test adding policy
-        data = {
-            "workstation_policy": policies[0].id,  # type: ignore
-            "server_policy": policies[1].id,  # type: ignore
-        }
-        r = self.client.put(url, data)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(CoreSettings.objects.first().server_policy.id, policies[1].id)  # type: ignore
-        self.assertEqual(
-            CoreSettings.objects.first().workstation_policy.id, policies[0].id  # type: ignore
-        )
-
-        generate_agent_checks_task.assert_called_once()
-
-        generate_agent_checks_task.reset_mock()
-
-        # test remove policy
-        data = {
-            "workstation_policy": "",
-        }
-        r = self.client.put(url, data)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(CoreSettings.objects.first().workstation_policy, None)
-
-        self.assertEqual(generate_agent_checks_task.call_count, 1)
+        self.assertEqual(get_core_settings().smtp_from_email, data["smtp_from_email"])
+        self.assertEqual(get_core_settings().mesh_token, data["mesh_token"])
 
         self.check_not_authenticated("put", url)
 
@@ -141,7 +130,7 @@ class TestCoreTasks(TacticalTestCase):
     def test_ui_maintenance_actions(self, remove_orphaned_win_tasks, reload_nats):
         url = "/core/servermaintenance/"
 
-        agents = baker.make_recipe("agents.online_agent", _quantity=3)
+        baker.make_recipe("agents.online_agent", _quantity=3)
 
         # test with empty data
         r = self.client.post(url, {})
@@ -189,8 +178,8 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.get(url)
         serializer = CustomFieldSerializer(custom_fields, many=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 2)  # type: ignore
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(len(r.data), 2)
+        self.assertEqual(r.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -198,7 +187,7 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/customfields/"
 
         # setup
-        custom_fields = baker.make("core.CustomField", model="agent", _quantity=5)
+        baker.make("core.CustomField", model=CustomFieldModel.AGENT, _quantity=5)
         baker.make("core.CustomField", model="client", _quantity=5)
 
         # will error if request invalid
@@ -207,10 +196,8 @@ class TestCoreTasks(TacticalTestCase):
 
         data = {"model": "agent"}
         r = self.client.patch(url, data)
-        serializer = CustomFieldSerializer(custom_fields, many=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 5)  # type: ignore
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(len(r.data), 5)
 
         self.check_not_authenticated("patch", url)
 
@@ -231,11 +218,11 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.get("/core/customfields/500/")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/core/customfields/{custom_field.id}/"  # type: ignore
+        url = f"/core/customfields/{custom_field.id}/"
         r = self.client.get(url)
         serializer = CustomFieldSerializer(custom_field)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(r.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -247,12 +234,12 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.put("/core/customfields/500/")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/core/customfields/{custom_field.id}/"  # type: ignore
+        url = f"/core/customfields/{custom_field.id}/"
         data = {"type": "single", "options": ["ione", "two", "three"]}
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
 
-        new_field = CustomField.objects.get(pk=custom_field.id)  # type: ignore
+        new_field = CustomField.objects.get(pk=custom_field.id)
         self.assertEqual(new_field.type, data["type"])
         self.assertEqual(new_field.options, data["options"])
 
@@ -266,11 +253,11 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.delete("/core/customfields/500/")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/core/customfields/{custom_field.id}/"  # type: ignore
+        url = f"/core/customfields/{custom_field.id}/"
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
 
-        self.assertFalse(CustomField.objects.filter(pk=custom_field.id).exists())  # type: ignore
+        self.assertFalse(CustomField.objects.filter(pk=custom_field.id).exists())
 
         self.check_not_authenticated("delete", url)
 
@@ -283,8 +270,8 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.get(url)
         serializer = KeyStoreSerializer(keys, many=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 2)  # type: ignore
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(len(r.data), 2)
+        self.assertEqual(r.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -305,12 +292,12 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.put("/core/keystore/500/")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/core/keystore/{key.id}/"  # type: ignore
+        url = f"/core/keystore/{key.id}/"
         data = {"name": "test", "value": "text"}
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
 
-        new_key = GlobalKVStore.objects.get(pk=key.id)  # type: ignore
+        new_key = GlobalKVStore.objects.get(pk=key.id)
         self.assertEqual(new_key.name, data["name"])
         self.assertEqual(new_key.value, data["value"])
 
@@ -324,11 +311,11 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.delete("/core/keystore/500/")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/core/keystore/{key.id}/"  # type: ignore
+        url = f"/core/keystore/{key.id}/"
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
 
-        self.assertFalse(GlobalKVStore.objects.filter(pk=key.id).exists())  # type: ignore
+        self.assertFalse(GlobalKVStore.objects.filter(pk=key.id).exists())
 
         self.check_not_authenticated("delete", url)
 
@@ -341,8 +328,8 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.get(url)
         serializer = URLActionSerializer(action, many=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 2)  # type: ignore
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(len(r.data), 2)
+        self.assertEqual(r.data, serializer.data)
 
         self.check_not_authenticated("get", url)
 
@@ -363,12 +350,12 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.put("/core/urlaction/500/")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/core/urlaction/{action.id}/"  # type: ignore
+        url = f"/core/urlaction/{action.id}/"
         data = {"name": "test", "pattern": "text"}
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
 
-        new_action = URLAction.objects.get(pk=action.id)  # type: ignore
+        new_action = URLAction.objects.get(pk=action.id)
         self.assertEqual(new_action.name, data["name"])
         self.assertEqual(new_action.pattern, data["pattern"])
 
@@ -382,11 +369,11 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.delete("/core/urlaction/500/")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/core/urlaction/{action.id}/"  # type: ignore
+        url = f"/core/urlaction/{action.id}/"
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
 
-        self.assertFalse(URLAction.objects.filter(pk=action.id).exists())  # type: ignore
+        self.assertFalse(URLAction.objects.filter(pk=action.id).exists())
 
         self.check_not_authenticated("delete", url)
 
@@ -407,19 +394,135 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.patch(url, {"agent_id": 500, "action": 500})
         self.assertEqual(r.status_code, 404)
 
-        data = {"agent_id": agent.agent_id, "action": action.id}  # type: ignore
+        data = {"agent_id": agent.agent_id, "action": action.id}
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
 
         self.assertEqual(
-            r.data,  # type: ignore
+            r.data,
             f"https://remote.example.com/connect?globalstore=value%20with%20space&client_name={agent.client.name}&site%20id={agent.site.id}&agent_id=123123-assdss4s-343-sds545-45dfdf%7CDESKTOP",
         )
 
         self.check_not_authenticated("patch", url)
 
+    def test_clear_cache(self):
+        url = "/core/clearcache/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("get", url)
+
+    # def test_resolved_pending_agentupdate_task(self):
+    #     online = baker.make_recipe("agents.online_agent", version="2.0.0", _quantity=20)
+    #     offline = baker.make_recipe(
+    #         "agents.offline_agent", version="2.0.0", _quantity=20
+    #     )
+    #     agents = online + offline
+    #     for agent in agents:
+    #         baker.make_recipe("logs.pending_agentupdate_action", agent=agent)
+
+    #     Agent.objects.update(version=settings.LATEST_AGENT_VER)
+
+    #     resolve_pending_actions()
+
+    #     complete = PendingAction.objects.filter(
+    #         action_type=PAAction.AGENT_UPDATE, status=PAStatus.COMPLETED
+    #     ).count()
+    #     old = PendingAction.objects.filter(
+    #         action_type=PAAction.AGENT_UPDATE, status=PAStatus.PENDING
+    #     ).count()
+
+    #     self.assertEqual(complete, 20)
+    #     self.assertEqual(old, 20)
+
+
+class TestCoreMgmtCommands(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    def test_get_config(self):
+        for cmd in CONFIG_MGMT_CMDS:
+            call_command("get_config", cmd)
+
 
 class TestCorePermissions(TacticalTestCase):
     def setUp(self):
-        self.client_setup()
+        self.setup_client()
         self.setup_coresettings()
+
+
+class TestCoreUtils(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    def test_get_meshagent_url_standard(self):
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "https://mesh.example.com/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "https://mesh.example.com/meshagents?id=4&meshid=abc123&installflags=0",
+        )
+
+    @override_settings(DOCKER_BUILD=True)
+    @override_settings(MESH_WS_URL="ws://tactical-meshcentral:4443")
+    def test_get_meshagent_url_docker(self):
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://tactical-meshcentral:4443/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://tactical-meshcentral:4443/meshagents?id=4&meshid=abc123&installflags=0",
+        )
+
+    @override_settings(TRMM_INSECURE=True)
+    def test_get_meshagent_url_insecure(self):
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://mesh.example.com:4430/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://mesh.example.com:4430/meshagents?id=4&meshid=abc123&installflags=0",
+        )

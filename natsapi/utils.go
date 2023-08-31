@@ -5,25 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	nats "github.com/nats-io/nats.go"
 	trmm "github.com/wh1te909/trmm-shared"
 )
-
-func setupNatsOptions(key string) []nats.Option {
-	opts := []nats.Option{
-		nats.Name("TacticalRMM"),
-		nats.UserInfo("tacticalrmm", key),
-		nats.ReconnectWait(time.Second * 2),
-		nats.RetryOnFailedConnect(true),
-		nats.MaxReconnects(-1),
-		nats.ReconnectBufSize(-1),
-	}
-	return opts
-}
 
 func GetConfig(cfg string) (db *sqlx.DB, r DjangoConfig, err error) {
 	if cfg == "" {
@@ -41,8 +27,8 @@ func GetConfig(cfg string) (db *sqlx.DB, r DjangoConfig, err error) {
 	}
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		r.Host, r.Port, r.User, r.Pass, r.DBName)
+		"password=%s dbname=%s sslmode=%s",
+		r.Host, r.Port, r.User, r.Pass, r.DBName, r.SSLMode)
 
 	db, err = sqlx.Connect("postgres", psqlInfo)
 	if err != nil {

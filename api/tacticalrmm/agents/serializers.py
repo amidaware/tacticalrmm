@@ -1,8 +1,10 @@
 import pytz
 from rest_framework import serializers
+
+from tacticalrmm.constants import AGENT_STATUS_ONLINE
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, AgentCustomField, Note, AgentHistory
+from .models import Agent, AgentCustomField, AgentHistory, Note
 
 
 class AgentCustomFieldSerializer(serializers.ModelSerializer):
@@ -40,6 +42,33 @@ class AgentSerializer(serializers.ModelSerializer):
     custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
     patches_last_installed = serializers.ReadOnlyField()
     last_seen = serializers.ReadOnlyField()
+    applied_policies = serializers.SerializerMethodField()
+    effective_patch_policy = serializers.SerializerMethodField()
+    alert_template = serializers.SerializerMethodField()
+
+    def get_alert_template(self, obj):
+        from alerts.serializers import AlertTemplateSerializer
+
+        return (
+            AlertTemplateSerializer(obj.alert_template).data
+            if obj.alert_template
+            else None
+        )
+
+    def get_effective_patch_policy(self, obj):
+        return WinUpdatePolicySerializer(obj.get_patch_policy()).data
+
+    def get_applied_policies(self, obj):
+        from automation.serializers import PolicySerializer
+
+        policies = obj.get_agent_policies()
+
+        # need to serialize model objects manually
+        for key, policy in policies.items():
+            if policy:
+                policies[key] = PolicySerializer(policy).data
+
+        return policies
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones
@@ -52,44 +81,44 @@ class AgentSerializer(serializers.ModelSerializer):
 class AgentTableSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
-    last_seen = serializers.SerializerMethodField()
     client_name = serializers.ReadOnlyField(source="client.name")
     site_name = serializers.ReadOnlyField(source="site.name")
     logged_username = serializers.SerializerMethodField()
     italic = serializers.SerializerMethodField()
     policy = serializers.ReadOnlyField(source="policy.id")
     alert_template = serializers.SerializerMethodField()
+    last_seen = serializers.ReadOnlyField()
+    pending_actions_count = serializers.ReadOnlyField()
+    has_patches_pending = serializers.ReadOnlyField()
+    cpu_model = serializers.ReadOnlyField()
+    graphics = serializers.ReadOnlyField()
+    local_ips = serializers.ReadOnlyField()
+    make_model = serializers.ReadOnlyField()
+    physical_disks = serializers.ReadOnlyField()
+    serial_number = serializers.ReadOnlyField()
+    custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
 
     def get_alert_template(self, obj):
-
         if not obj.alert_template:
             return None
-        else:
-            return {
-                "name": obj.alert_template.name,
-                "always_email": obj.alert_template.agent_always_email,
-                "always_text": obj.alert_template.agent_always_text,
-                "always_alert": obj.alert_template.agent_always_alert,
-            }
 
-    def get_last_seen(self, obj) -> str:
-        if obj.time_zone is not None:
-            agent_tz = pytz.timezone(obj.time_zone)
-        else:
-            agent_tz = self.context["default_tz"]
-
-        return obj.last_seen.astimezone(agent_tz).strftime("%m %d %Y %H:%M")
+        return {
+            "name": obj.alert_template.name,
+            "always_email": obj.alert_template.agent_always_email,
+            "always_text": obj.alert_template.agent_always_text,
+            "always_alert": obj.alert_template.agent_always_alert,
+        }
 
     def get_logged_username(self, obj) -> str:
-        if obj.logged_in_username == "None" and obj.status == "online":
+        if obj.logged_in_username == "None" and obj.status == AGENT_STATUS_ONLINE:
             return obj.last_logged_in_user
         elif obj.logged_in_username != "None":
             return obj.logged_in_username
-        else:
-            return "-"
+
+        return "-"
 
     def get_italic(self, obj) -> bool:
-        return obj.logged_in_username == "None" and obj.status == "online"
+        return obj.logged_in_username == "None" and obj.status == AGENT_STATUS_ONLINE
 
     class Meta:
         model = Agent
@@ -102,7 +131,6 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "monitoring_type",
             "description",
             "needs_reboot",
-            "has_patches_pending",
             "pending_actions_count",
             "status",
             "overdue_text_alert",
@@ -116,14 +144,21 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "italic",
             "policy",
             "block_policy_inheritance",
+            "plat",
+            "goarch",
+            "has_patches_pending",
+            "version",
+            "operating_system",
+            "public_ip",
+            "cpu_model",
+            "graphics",
+            "local_ips",
+            "make_model",
+            "physical_disks",
+            "custom_fields",
+            "serial_number",
         ]
         depth = 2
-
-
-class WinAgentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Agent
-        fields = "__all__"
 
 
 class AgentHostnameSerializer(serializers.ModelSerializer):
@@ -152,16 +187,11 @@ class AgentNoteSerializer(serializers.ModelSerializer):
 
 
 class AgentHistorySerializer(serializers.ModelSerializer):
-    time = serializers.SerializerMethodField(read_only=True)
     script_name = serializers.ReadOnlyField(source="script.name")
 
     class Meta:
         model = AgentHistory
         fields = "__all__"
-
-    def get_time(self, history):
-        tz = self.context["default_tz"]
-        return history.time.astimezone(tz).strftime("%m %d %Y %H:%M:%S")
 
 
 class AgentAuditSerializer(serializers.ModelSerializer):

@@ -1,0 +1,3102 @@
+{
+    "graphics": [
+        [
+            {
+                "Name": "NVIDIA Quadro P520",
+                "Status": "OK",
+                "Caption": "NVIDIA Quadro P520",
+                "DeviceID": "VideoController1",
+                "AdapterRAM": 2147483648,
+                "DriverDate": "2020-11-20T00:00:00Z",
+                "SystemName": "VMHOST-123456",
+                "Description": "NVIDIA Quadro P520",
+                "InstallDate": "0001-01-01T00:00:00Z",
+                "Availability": 3,
+                "DriverVersion": "27.21.14.5266",
+                "AdapterDACType": "Integrated RAMDAC",
+                "MaxRefreshRate": 0,
+                "MinRefreshRate": 0,
+                "VideoProcessor": "Quadro P520",
+                "TimeOfLastReset": "0001-01-01T00:00:00Z",
+                "CurrentRefreshRate": 60,
+                "MaxMemorySupported": 0,
+                "AdapterCompatibility": "NVIDIA",
+                "VideoModeDescription": "2560 x 1440 x 4294967296 colors",
+                "CapabilityDescriptions": null,
+                "AcceleratorCapabilities": null,
+                "InstalledDisplayDrivers": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlt.inf_amd64_3156bc34fe7846db\\nvldumdx.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlt.inf_amd64_3156bc34fe7846db\\nvldumdx.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlt.inf_amd64_3156bc34fe7846db\\nvldumdx.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlt.inf_amd64_3156bc34fe7846db\\nvldumdx.dll",
+                "SystemCreationClassName": "Win32_ComputerSystem",
+                "CurrentVerticalResolution": 1440
+            }
+        ],
+        [
+            {
+                "Name": "Intel(R) UHD Graphics 620",
+                "Status": "OK",
+                "Caption": "Intel(R) UHD Graphics 620",
+                "DeviceID": "VideoController2",
+                "AdapterRAM": 1073741824,
+                "DriverDate": "2020-10-28T00:00:00Z",
+                "SystemName": "VMHOST-123456",
+                "Description": "Intel(R) UHD Graphics 620",
+                "InstallDate": "0001-01-01T00:00:00Z",
+                "Availability": 3,
+                "DriverVersion": "27.20.100.8935",
+                "AdapterDACType": "Internal",
+                "MaxRefreshRate": 60,
+                "MinRefreshRate": 29,
+                "VideoProcessor": "Intel(R) UHD Graphics Family",
+                "TimeOfLastReset": "0001-01-01T00:00:00Z",
+                "CurrentRefreshRate": 59,
+                "MaxMemorySupported": 0,
+                "AdapterCompatibility": "Intel Corporation",
+                "VideoModeDescription": "3840 x 1600 x 4294967296 colors",
+                "CapabilityDescriptions": null,
+                "AcceleratorCapabilities": null,
+                "InstalledDisplayDrivers": "C:\\Windows\\System32\\DriverStore\\FileRepository\\iigd_dch.inf_amd64_997a69017605b77c\\igdumdim64.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\iigd_dch.inf_amd64_997a69017605b77c\\igd10iumd64.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\iigd_dch.inf_amd64_997a69017605b77c\\igd10iumd64.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\iigd_dch.inf_amd64_997a69017605b77c\\igd12umd64.dll",
+                "SystemCreationClassName": "Win32_ComputerSystem",
+                "CurrentVerticalResolution": 1600
+            }
+        ]
+    ],
+    "os": [
+        [
+            {
+                "BootDevice": "\\Device\\HarddiskVolume5"
+            },
+            {
+                "BuildNumber": "17763"
+            },
+            {
+                "BuildType": "Multiprocessor Free"
+            },
+            {
+                "Caption": "Microsoft Windows Server 2019 Standard"
+            },
+            {
+                "CodeSet": "1252"
+            },
+            {
+                "CountryCode": "1"
+            },
+            {
+                "CreationClassName": "Win32_OperatingSystem"
+            },
+            {
+                "CSCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "CSName": "VMHOST-123456"
+            },
+            {
+                "CurrentTimeZone": -420
+            },
+            {
+                "DataExecutionPrevention_32BitApplications": true
+            },
+            {
+                "DataExecutionPrevention_Available": true
+            },
+            {
+                "DataExecutionPrevention_Drivers": true
+            },
+            {
+                "DataExecutionPrevention_SupportPolicy": 3
+            },
+            {
+                "Debug": false
+            },
+            {
+                "Description": ""
+            },
+            {
+                "Distributed": false
+            },
+            {
+                "EncryptionLevel": 256
+            },
+            {
+                "ForegroundApplicationBoost": 2
+            },
+            {
+                "FreePhysicalMemory": "68727684"
+            },
+            {
+                "FreeSpaceInPagingFiles": "19922944"
+            },
+            {
+                "FreeVirtualMemory": "88989360"
+            },
+            {
+                "InstallDate": "20200313074752.000000-420"
+            },
+            {
+                "LastBootUpTime": "20200511200945.500000-420"
+            },
+            {
+                "LocalDateTime": "20200712214050.120000-420"
+            },
+            {
+                "Locale": "0409"
+            },
+            {
+                "Manufacturer": "Microsoft Corporation"
+            },
+            {
+                "MaxNumberOfProcesses": -1
+            },
+            {
+                "MaxProcessMemorySize": "137438953344"
+            },
+            {
+                "MUILanguages": [
+                    "en-US"
+                ]
+            },
+            {
+                "Name": "Microsoft Windows Server 2019 Standard|C:\\Windows|\\Device\\Harddisk1\\Partition4"
+            },
+            {
+                "NumberOfLicensedUsers": 0
+            },
+            {
+                "NumberOfProcesses": 115
+            },
+            {
+                "NumberOfUsers": 0
+            },
+            {
+                "OperatingSystemSKU": 7
+            },
+            {
+                "Organization": ""
+            },
+            {
+                "OSArchitecture": "64-bit"
+            },
+            {
+                "OSLanguage": 1033
+            },
+            {
+                "OSProductSuite": 272
+            },
+            {
+                "OSType": 18
+            },
+            {
+                "PortableOperatingSystem": false
+            },
+            {
+                "Primary": true
+            },
+            {
+                "ProductType": 3
+            },
+            {
+                "RegisteredUser": "Windows User"
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "ServicePackMajorVersion": 0
+            },
+            {
+                "ServicePackMinorVersion": 0
+            },
+            {
+                "SizeStoredInPagingFiles": "19922944"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SuiteMask": 272
+            },
+            {
+                "SystemDevice": "\\Device\\HarddiskVolume7"
+            },
+            {
+                "SystemDirectory": "C:\\Windows\\system32"
+            },
+            {
+                "SystemDrive": "C:"
+            },
+            {
+                "TotalVirtualMemorySize": "154088928"
+            },
+            {
+                "TotalVisibleMemorySize": "134165984"
+            },
+            {
+                "Version": "10.0.17763"
+            },
+            {
+                "WindowsDirectory": "C:\\Windows"
+            }
+        ]
+    ],
+    "cpu": [
+        [
+            {
+                "AddressWidth": 64
+            },
+            {
+                "Architecture": 9
+            },
+            {
+                "AssetTag": "Unknown"
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "AMD64 Family 23 Model 113 Stepping 0"
+            },
+            {
+                "Characteristics": 252
+            },
+            {
+                "CpuStatus": 1
+            },
+            {
+                "CreationClassName": "Win32_Processor"
+            },
+            {
+                "CurrentClockSpeed": 3793
+            },
+            {
+                "CurrentVoltage": 11
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "AMD64 Family 23 Model 113 Stepping 0"
+            },
+            {
+                "DeviceID": "CPU0"
+            },
+            {
+                "ExtClock": 100
+            },
+            {
+                "Family": 107
+            },
+            {
+                "L2CacheSize": 6144
+            },
+            {
+                "L3CacheSize": 65536
+            },
+            {
+                "L3CacheSpeed": 0
+            },
+            {
+                "Level": 23
+            },
+            {
+                "LoadPercentage": 1
+            },
+            {
+                "Manufacturer": "AuthenticAMD"
+            },
+            {
+                "MaxClockSpeed": 3793
+            },
+            {
+                "Name": "AMD Ryzen 9 3900X 12-Core Processor            "
+            },
+            {
+                "NumberOfCores": 12
+            },
+            {
+                "NumberOfEnabledCore": 12
+            },
+            {
+                "NumberOfLogicalProcessors": 24
+            },
+            {
+                "PartNumber": "Unknown"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProcessorId": "178BFBFF00870F10"
+            },
+            {
+                "ProcessorType": 3
+            },
+            {
+                "Revision": 28928
+            },
+            {
+                "Role": "CPU"
+            },
+            {
+                "SecondLevelAddressTranslationExtensions": false
+            },
+            {
+                "SerialNumber": "Unknown"
+            },
+            {
+                "SocketDesignation": "AM4"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "StatusInfo": 3
+            },
+            {
+                "Stepping": "0"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "ThreadCount": 24
+            },
+            {
+                "UpgradeMethod": 49
+            },
+            {
+                "Version": "Model 1, Stepping 0"
+            },
+            {
+                "VirtualizationFirmwareEnabled": true
+            },
+            {
+                "VMMonitorModeExtensions": false
+            }
+        ]
+    ],
+    "mem": [
+        [
+            {
+                "Attributes": 2
+            },
+            {
+                "BankLabel": "P0 CHANNEL A"
+            },
+            {
+                "Capacity": "34359738368"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "DIMM 0"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "Unknown"
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "CMK64GX4M2D3000C16"
+            },
+            {
+                "SerialNumber": "00000000"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2133
+            },
+            {
+                "Tag": "Physical Memory 0"
+            },
+            {
+                "TotalWidth": 64
+            },
+            {
+                "TypeDetail": 16512
+            }
+        ],
+        [
+            {
+                "Attributes": 2
+            },
+            {
+                "BankLabel": "P0 CHANNEL A"
+            },
+            {
+                "Capacity": "34359738368"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "DIMM 1"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "Unknown"
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "CMK64GX4M2D3000C16"
+            },
+            {
+                "SerialNumber": "00000000"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2133
+            },
+            {
+                "Tag": "Physical Memory 1"
+            },
+            {
+                "TotalWidth": 64
+            },
+            {
+                "TypeDetail": 16512
+            }
+        ],
+        [
+            {
+                "Attributes": 2
+            },
+            {
+                "BankLabel": "P0 CHANNEL B"
+            },
+            {
+                "Capacity": "34359738368"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "DIMM 0"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "Unknown"
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "CMK64GX4M2D3000C16"
+            },
+            {
+                "SerialNumber": "00000000"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2133
+            },
+            {
+                "Tag": "Physical Memory 2"
+            },
+            {
+                "TotalWidth": 64
+            },
+            {
+                "TypeDetail": 16512
+            }
+        ],
+        [
+            {
+                "Attributes": 2
+            },
+            {
+                "BankLabel": "P0 CHANNEL B"
+            },
+            {
+                "Capacity": "34359738368"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "DIMM 1"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "Unknown"
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "CMK64GX4M2D3000C16"
+            },
+            {
+                "SerialNumber": "00000000"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2133
+            },
+            {
+                "Tag": "Physical Memory 3"
+            },
+            {
+                "TotalWidth": 64
+            },
+            {
+                "TypeDetail": 16512
+            }
+        ]
+    ],
+    "usb": [
+        [
+            {
+                "Caption": "AMD USB 3.10 eXtensible Host Controller - 1.10 (Microsoft)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_USBController"
+            },
+            {
+                "Description": "USB xHCI Compliant Host Controller"
+            },
+            {
+                "DeviceID": "PCI\\VEN_1022&DEV_149C&SUBSYS_14861022&REV_00\\6&1EA5F98D&0&0140000A"
+            },
+            {
+                "Manufacturer": "Generic USB xHCI Host Controller"
+            },
+            {
+                "Name": "AMD USB 3.10 eXtensible Host Controller - 1.10 (Microsoft)"
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_1022&DEV_149C&SUBSYS_14861022&REV_00\\6&1EA5F98D&0&0140000A"
+            },
+            {
+                "ProtocolSupported": 16
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            }
+        ],
+        [
+            {
+                "Caption": "AMD USB 3.10 eXtensible Host Controller - 1.10 (Microsoft)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_USBController"
+            },
+            {
+                "Description": "USB xHCI Compliant Host Controller"
+            },
+            {
+                "DeviceID": "PCI\\VEN_1022&DEV_149C&SUBSYS_50071458&REV_00\\4&1FDE7688&0&0341"
+            },
+            {
+                "Manufacturer": "Generic USB xHCI Host Controller"
+            },
+            {
+                "Name": "AMD USB 3.10 eXtensible Host Controller - 1.10 (Microsoft)"
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_1022&DEV_149C&SUBSYS_50071458&REV_00\\4&1FDE7688&0&0341"
+            },
+            {
+                "ProtocolSupported": 16
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            }
+        ],
+        [
+            {
+                "Caption": "AMD USB 3.10 eXtensible Host Controller - 1.10 (Microsoft)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_USBController"
+            },
+            {
+                "Description": "USB xHCI Compliant Host Controller"
+            },
+            {
+                "DeviceID": "PCI\\VEN_1022&DEV_149C&SUBSYS_148C1022&REV_00\\6&1EA5F98D&0&0340000A"
+            },
+            {
+                "Manufacturer": "Generic USB xHCI Host Controller"
+            },
+            {
+                "Name": "AMD USB 3.10 eXtensible Host Controller - 1.10 (Microsoft)"
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_1022&DEV_149C&SUBSYS_148C1022&REV_00\\6&1EA5F98D&0&0340000A"
+            },
+            {
+                "ProtocolSupported": 16
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            }
+        ]
+    ],
+    "bios": [
+        [
+            {
+                "BiosCharacteristics": [
+                    7,
+                    11,
+                    12,
+                    15,
+                    16,
+                    17,
+                    19,
+                    23,
+                    24,
+                    25,
+                    26,
+                    28,
+                    29,
+                    32,
+                    33,
+                    40,
+                    42,
+                    43
+                ]
+            },
+            {
+                "BIOSVersion": [
+                    "ALASKA - 1072009",
+                    "F11",
+                    "American Megatrends - 5000E"
+                ]
+            },
+            {
+                "Caption": "F11"
+            },
+            {
+                "CurrentLanguage": "en|US|iso8859-1"
+            },
+            {
+                "Description": "F11"
+            },
+            {
+                "EmbeddedControllerMajorVersion": 255
+            },
+            {
+                "EmbeddedControllerMinorVersion": 255
+            },
+            {
+                "InstallableLanguages": 15
+            },
+            {
+                "ListOfLanguages": [
+                    "en|US|iso8859-1",
+                    "zh|TW|unicode",
+                    "zh|CN|unicode",
+                    "ru|RU|iso8859-5",
+                    "de|DE|iso8859-1",
+                    "ja|JP|unicode",
+                    "ko|KR|unicode",
+                    "es|ES|iso8859-1",
+                    "fr|FR|iso8859-1",
+                    "it|IT|iso8859-1",
+                    "pt|PT|iso8859-1",
+                    "vi|VI|iso8859-1",
+                    "id|ID|iso8859-1",
+                    "tr|TR|iso8859-1",
+                    "pl|PL|iso8859-1"
+                ]
+            },
+            {
+                "Manufacturer": "American Megatrends Inc."
+            },
+            {
+                "Name": "F11"
+            },
+            {
+                "PrimaryBIOS": true
+            },
+            {
+                "ReleaseDate": "20191206000000.000000+000"
+            },
+            {
+                "SerialNumber": "Default string"
+            },
+            {
+                "SMBIOSBIOSVersion": "F11"
+            },
+            {
+                "SMBIOSMajorVersion": 3
+            },
+            {
+                "SMBIOSMinorVersion": 2
+            },
+            {
+                "SMBIOSPresent": true
+            },
+            {
+                "SoftwareElementID": "F11"
+            },
+            {
+                "SoftwareElementState": 3
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemBiosMajorVersion": 5
+            },
+            {
+                "SystemBiosMinorVersion": 14
+            },
+            {
+                "TargetOperatingSystem": 0
+            },
+            {
+                "Version": "ALASKA - 1072009"
+            }
+        ]
+    ],
+    "disk": [
+        [
+            {
+                "BytesPerSector": 512
+            },
+            {
+                "Capabilities": [
+                    3,
+                    4
+                ]
+            },
+            {
+                "CapabilityDescriptions": [
+                    "Random Access",
+                    "Supports Writing"
+                ]
+            },
+            {
+                "Caption": "Microsoft Storage Space Device"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DiskDrive"
+            },
+            {
+                "Description": "Disk drive"
+            },
+            {
+                "DeviceID": "\\\\.\\PHYSICALDRIVE5"
+            },
+            {
+                "FirmwareRevision": "0.1"
+            },
+            {
+                "Index": 5
+            },
+            {
+                "InterfaceType": "SCSI"
+            },
+            {
+                "Manufacturer": "(Standard disk drives)"
+            },
+            {
+                "MediaLoaded": true
+            },
+            {
+                "MediaType": "Fixed hard disk media"
+            },
+            {
+                "Model": "Microsoft Storage Space Device"
+            },
+            {
+                "Name": "\\\\.\\PHYSICALDRIVE5"
+            },
+            {
+                "Partitions": 1
+            },
+            {
+                "PNPDeviceID": "STORAGE\\DISK\\{1AD24CEE-DC2A-4A4D-A3A3-FDD0A25BFE07}"
+            },
+            {
+                "SCSIBus": 0
+            },
+            {
+                "SCSILogicalUnit": 1
+            },
+            {
+                "SCSIPort": 0
+            },
+            {
+                "SCSITargetId": 0
+            },
+            {
+                "SectorsPerTrack": 63
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "Size": "2040107973120"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TotalCylinders": "248029"
+            },
+            {
+                "TotalHeads": 255
+            },
+            {
+                "TotalSectors": "3984585885"
+            },
+            {
+                "TotalTracks": "63247395"
+            },
+            {
+                "TracksPerCylinder": 255
+            }
+        ],
+        [
+            {
+                "BytesPerSector": 512
+            },
+            {
+                "Capabilities": [
+                    3,
+                    4,
+                    10
+                ]
+            },
+            {
+                "CapabilityDescriptions": [
+                    "Random Access",
+                    "Supports Writing",
+                    "SMART Notification"
+                ]
+            },
+            {
+                "Caption": "WDC WD60EFRX-68MYMN1"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DiskDrive"
+            },
+            {
+                "Description": "Disk drive"
+            },
+            {
+                "DeviceID": "\\\\.\\PHYSICALDRIVE0"
+            },
+            {
+                "FirmwareRevision": "82.00A82"
+            },
+            {
+                "Index": 0
+            },
+            {
+                "InterfaceType": "IDE"
+            },
+            {
+                "Manufacturer": "(Standard disk drives)"
+            },
+            {
+                "MediaLoaded": true
+            },
+            {
+                "MediaType": "Fixed hard disk media"
+            },
+            {
+                "Model": "WDC WD60EFRX-68MYMN1"
+            },
+            {
+                "Name": "\\\\.\\PHYSICALDRIVE0"
+            },
+            {
+                "Partitions": 1
+            },
+            {
+                "PNPDeviceID": "SCSI\\DISK&VEN_WDC&PROD_WD60EFRX-68MYMN1\\7&2E1550D9&0&000000"
+            },
+            {
+                "SCSIBus": 0
+            },
+            {
+                "SCSILogicalUnit": 0
+            },
+            {
+                "SCSIPort": 1
+            },
+            {
+                "SCSITargetId": 0
+            },
+            {
+                "SectorsPerTrack": 63
+            },
+            {
+                "SerialNumber": "WD-123456"
+            },
+            {
+                "Size": "6001172513280"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TotalCylinders": "729601"
+            },
+            {
+                "TotalHeads": 255
+            },
+            {
+                "TotalSectors": "11721040065"
+            },
+            {
+                "TotalTracks": "186048255"
+            },
+            {
+                "TracksPerCylinder": 255
+            }
+        ],
+        [
+            {
+                "BytesPerSector": 512
+            },
+            {
+                "Capabilities": [
+                    3,
+                    4,
+                    10
+                ]
+            },
+            {
+                "CapabilityDescriptions": [
+                    "Random Access",
+                    "Supports Writing",
+                    "SMART Notification"
+                ]
+            },
+            {
+                "Caption": "Samsung SSD 860 EVO 500GB"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DiskDrive"
+            },
+            {
+                "Description": "Disk drive"
+            },
+            {
+                "DeviceID": "\\\\.\\PHYSICALDRIVE1"
+            },
+            {
+                "FirmwareRevision": "RVT04B6Q"
+            },
+            {
+                "Index": 1
+            },
+            {
+                "InterfaceType": "IDE"
+            },
+            {
+                "Manufacturer": "(Standard disk drives)"
+            },
+            {
+                "MediaLoaded": true
+            },
+            {
+                "MediaType": "Fixed hard disk media"
+            },
+            {
+                "Model": "Samsung SSD 860 EVO 500GB"
+            },
+            {
+                "Name": "\\\\.\\PHYSICALDRIVE1"
+            },
+            {
+                "Partitions": 3
+            },
+            {
+                "PNPDeviceID": "SCSI\\DISK&VEN_SAMSUNG&PROD_SSD_860_EVO_500G\\7&2E1550D9&0&010000"
+            },
+            {
+                "SCSIBus": 1
+            },
+            {
+                "SCSILogicalUnit": 0
+            },
+            {
+                "SCSIPort": 1
+            },
+            {
+                "SCSITargetId": 0
+            },
+            {
+                "SectorsPerTrack": 63
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "Size": "500105249280"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TotalCylinders": "60801"
+            },
+            {
+                "TotalHeads": 255
+            },
+            {
+                "TotalSectors": "976768065"
+            },
+            {
+                "TotalTracks": "15504255"
+            },
+            {
+                "TracksPerCylinder": 255
+            }
+        ]
+    ],
+    "comp_sys": [
+        [
+            {
+                "AdminPasswordStatus": 3
+            },
+            {
+                "AutomaticManagedPagefile": true
+            },
+            {
+                "AutomaticResetBootOption": true
+            },
+            {
+                "AutomaticResetCapability": true
+            },
+            {
+                "BootROMSupported": true
+            },
+            {
+                "BootStatus": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "BootupState": "Normal boot"
+            },
+            {
+                "Caption": "VMHOST-123456"
+            },
+            {
+                "ChassisBootupState": 3
+            },
+            {
+                "ChassisSKUNumber": "Default string"
+            },
+            {
+                "CreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "CurrentTimeZone": -420
+            },
+            {
+                "DaylightInEffect": true
+            },
+            {
+                "Description": "AT/AT COMPATIBLE"
+            },
+            {
+                "DNSHostName": "VMHOST-123456"
+            },
+            {
+                "Domain": "WORKGROUP"
+            },
+            {
+                "DomainRole": 2
+            },
+            {
+                "EnableDaylightSavingsTime": true
+            },
+            {
+                "FrontPanelResetStatus": 3
+            },
+            {
+                "HypervisorPresent": true
+            },
+            {
+                "InfraredSupported": false
+            },
+            {
+                "KeyboardPasswordStatus": 3
+            },
+            {
+                "Manufacturer": "Gigabyte Technology Co., Ltd."
+            },
+            {
+                "Model": "X570 AORUS ULTRA"
+            },
+            {
+                "Name": "VMHOST-123456"
+            },
+            {
+                "NetworkServerModeEnabled": true
+            },
+            {
+                "NumberOfLogicalProcessors": 24
+            },
+            {
+                "NumberOfProcessors": 1
+            },
+            {
+                "OEMStringArray": [
+                    "Default string"
+                ]
+            },
+            {
+                "PartOfDomain": false
+            },
+            {
+                "PauseAfterReset": "-1"
+            },
+            {
+                "PCSystemType": 1
+            },
+            {
+                "PCSystemTypeEx": 1
+            },
+            {
+                "PowerOnPasswordStatus": 3
+            },
+            {
+                "PowerState": 0
+            },
+            {
+                "PowerSupplyState": 3
+            },
+            {
+                "PrimaryOwnerName": "Windows User"
+            },
+            {
+                "ResetCapability": 1
+            },
+            {
+                "ResetCount": -1
+            },
+            {
+                "ResetLimit": -1
+            },
+            {
+                "Roles": [
+                    "LM_Workstation",
+                    "LM_Server",
+                    "NT",
+                    "Server_NT"
+                ]
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemFamily": "Default string"
+            },
+            {
+                "SystemSKUNumber": "Default string"
+            },
+            {
+                "SystemType": "x64-based PC"
+            },
+            {
+                "ThermalState": 3
+            },
+            {
+                "TotalPhysicalMemory": "137385967616"
+            },
+            {
+                "WakeUpType": 6
+            },
+            {
+                "Workgroup": "WORKGROUP"
+            }
+        ]
+    ],
+    "base_board": [
+        [
+            {
+                "Caption": "Base Board"
+            },
+            {
+                "ConfigOptions": [
+                    "Default string"
+                ]
+            },
+            {
+                "CreationClassName": "Win32_BaseBoard"
+            },
+            {
+                "Description": "Base Board"
+            },
+            {
+                "HostingBoard": true
+            },
+            {
+                "HotSwappable": false
+            },
+            {
+                "Manufacturer": "Gigabyte Technology Co., Ltd."
+            },
+            {
+                "Name": "Base Board"
+            },
+            {
+                "PoweredOn": true
+            },
+            {
+                "Product": "X570 AORUS ULTRA"
+            },
+            {
+                "Removable": false
+            },
+            {
+                "Replaceable": true
+            },
+            {
+                "RequiresDaughterBoard": false
+            },
+            {
+                "SerialNumber": "Default string"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "Tag": "Base Board"
+            },
+            {
+                "Version": "x.x"
+            }
+        ]
+    ],
+    "comp_sys_prod": [
+        [
+            {
+                "Caption": "Computer System Product"
+            },
+            {
+                "Description": "Computer System Product"
+            },
+            {
+                "IdentifyingNumber": "123456"
+            },
+            {
+                "Name": "X570 AORUS ULTRA"
+            },
+            {
+                "UUID": "123456"
+            },
+            {
+                "Vendor": "Gigabyte Technology Co., Ltd."
+            },
+            {
+                "Version": "-CF"
+            }
+        ]
+    ],
+    "network_config": [
+        [
+            {
+                "Caption": "[00000000] Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "Description": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 0
+            },
+            {
+                "InterfaceIndex": 12
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "kdnic"
+            },
+            {
+                "SettingID": "{7C68344E-1DD8-4B8C-A839-714591D8E25C}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000001] Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "Description": "Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 1
+            },
+            {
+                "InterfaceIndex": 4
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "6C:B3:11:1C:A9:EA"
+            },
+            {
+                "ServiceName": "e1iexpress"
+            },
+            {
+                "SettingID": "{29D28E82-B624-4A0D-B71B-2355B00E7D9B}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000002] Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "DatabasePath": "%SystemRoot%\\System32\\drivers\\etc"
+            },
+            {
+                "DefaultIPGateway": [
+                    "192.168.10.1"
+                ]
+            },
+            {
+                "Description": "Intel(R) Gigabit ET Dual Port Server Adapter #2"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "DHCPLeaseExpires": "20200713201124.000000-420"
+            },
+            {
+                "DHCPLeaseObtained": "20200712201124.000000-420"
+            },
+            {
+                "DHCPServer": "192.168.10.1"
+            },
+            {
+                "DNSDomainSuffixSearchOrder": []
+            },
+            {
+                "DNSEnabledForWINSResolution": false
+            },
+            {
+                "DNSHostName": "VMHOST-123456"
+            },
+            {
+                "DNSServerSearchOrder": [
+                    "192.168.10.18",
+                    "192.168.1.18"
+                ]
+            },
+            {
+                "DomainDNSRegistrationEnabled": false
+            },
+            {
+                "FullDNSRegistrationEnabled": true
+            },
+            {
+                "GatewayCostMetric": [
+                    0
+                ]
+            },
+            {
+                "Index": 2
+            },
+            {
+                "InterfaceIndex": 6
+            },
+            {
+                "IPAddress": [
+                    "192.168.10.149",
+                    "fe80::f3:2cf2:4961:8d13"
+                ]
+            },
+            {
+                "IPConnectionMetric": 25
+            },
+            {
+                "IPEnabled": true
+            },
+            {
+                "IPFilterSecurityEnabled": false
+            },
+            {
+                "IPSecPermitIPProtocols": []
+            },
+            {
+                "IPSecPermitTCPPorts": []
+            },
+            {
+                "IPSecPermitUDPPorts": []
+            },
+            {
+                "IPSubnet": [
+                    "255.255.255.0",
+                    "64"
+                ]
+            },
+            {
+                "MACAddress": "6C:B3:11:1C:A9:EB"
+            },
+            {
+                "ServiceName": "e1iexpress"
+            },
+            {
+                "SettingID": "{3F06220B-C096-4A4A-9573-FB344A2EC698}"
+            },
+            {
+                "TcpipNetbiosOptions": 0
+            },
+            {
+                "WINSEnableLMHostsLookup": true
+            },
+            {
+                "WINSScopeID": ""
+            }
+        ],
+        [
+            {
+                "Caption": "[00000003] WAN Miniport (SSTP)"
+            },
+            {
+                "Description": "WAN Miniport (SSTP)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 3
+            },
+            {
+                "InterfaceIndex": 9
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "RasSstp"
+            },
+            {
+                "SettingID": "{6CA87764-F71A-42CC-B59A-32A28EBCBEF3}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000004] WAN Miniport (IKEv2)"
+            },
+            {
+                "Description": "WAN Miniport (IKEv2)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 4
+            },
+            {
+                "InterfaceIndex": 14
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "RasAgileVpn"
+            },
+            {
+                "SettingID": "{94FED5A7-D831-4166-BB67-00B982CE2178}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000005] WAN Miniport (L2TP)"
+            },
+            {
+                "Description": "WAN Miniport (L2TP)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 5
+            },
+            {
+                "InterfaceIndex": 10
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "Rasl2tp"
+            },
+            {
+                "SettingID": "{76D5C158-4596-4B39-9C92-5B5F06F440BC}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000006] WAN Miniport (PPTP)"
+            },
+            {
+                "Description": "WAN Miniport (PPTP)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 6
+            },
+            {
+                "InterfaceIndex": 8
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "PptpMiniport"
+            },
+            {
+                "SettingID": "{6B96FDEA-4293-4B11-87FF-3EBECD19D8F7}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000007] WAN Miniport (PPPOE)"
+            },
+            {
+                "Description": "WAN Miniport (PPPOE)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 7
+            },
+            {
+                "InterfaceIndex": 2
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "RasPppoe"
+            },
+            {
+                "SettingID": "{03839347-0867-4E47-8C29-8241418B3E5D}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000008] WAN Miniport (GRE)"
+            },
+            {
+                "Description": "WAN Miniport (GRE)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 8
+            },
+            {
+                "InterfaceIndex": 7
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "RasGre"
+            },
+            {
+                "SettingID": "{5C698A0B-6D28-4F36-9312-5AE8254526F0}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000009] WAN Miniport (IP)"
+            },
+            {
+                "Description": "WAN Miniport (IP)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 9
+            },
+            {
+                "InterfaceIndex": 18
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "42:9F:20:52:41:53"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SettingID": "{EDC2CD2D-21AE-4288-9515-B291533CA32E}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000010] WAN Miniport (IPv6)"
+            },
+            {
+                "Description": "WAN Miniport (IPv6)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 10
+            },
+            {
+                "InterfaceIndex": 16
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "42:9F:20:52:41:53"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SettingID": "{B577201A-EA0A-4415-9113-D986CADB1F4B}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000011] WAN Miniport (Network Monitor)"
+            },
+            {
+                "Description": "WAN Miniport (Network Monitor)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 11
+            },
+            {
+                "InterfaceIndex": 11
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "44:02:20:52:41:53"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SettingID": "{7885E3B5-1002-4B2C-AF70-9FCE946CCF8C}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000012] Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 12
+            },
+            {
+                "InterfaceIndex": 17
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "VMSMP"
+            },
+            {
+                "SettingID": "{E9114E10-1F94-4A24-A129-2D07B40CB70A}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000013] Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "DatabasePath": "%SystemRoot%\\System32\\drivers\\etc"
+            },
+            {
+                "DefaultIPGateway": [
+                    "192.168.10.1"
+                ]
+            },
+            {
+                "Description": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "DHCPLeaseExpires": "20200713201124.000000-420"
+            },
+            {
+                "DHCPLeaseObtained": "20200712201124.000000-420"
+            },
+            {
+                "DHCPServer": "192.168.10.1"
+            },
+            {
+                "DNSDomainSuffixSearchOrder": []
+            },
+            {
+                "DNSEnabledForWINSResolution": false
+            },
+            {
+                "DNSHostName": "VMHOST-123456"
+            },
+            {
+                "DNSServerSearchOrder": [
+                    "8.8.8.8",
+                    "208.67.222.222"
+                ]
+            },
+            {
+                "DomainDNSRegistrationEnabled": false
+            },
+            {
+                "FullDNSRegistrationEnabled": true
+            },
+            {
+                "GatewayCostMetric": [
+                    0
+                ]
+            },
+            {
+                "Index": 13
+            },
+            {
+                "InterfaceIndex": 15
+            },
+            {
+                "IPAddress": [
+                    "192.168.10.114",
+                    "fe80::c5fd:fc78:8f5a:d037"
+                ]
+            },
+            {
+                "IPConnectionMetric": 25
+            },
+            {
+                "IPEnabled": true
+            },
+            {
+                "IPFilterSecurityEnabled": false
+            },
+            {
+                "IPSecPermitIPProtocols": []
+            },
+            {
+                "IPSecPermitTCPPorts": []
+            },
+            {
+                "IPSecPermitUDPPorts": []
+            },
+            {
+                "IPSubnet": [
+                    "255.255.255.0",
+                    "64"
+                ]
+            },
+            {
+                "MACAddress": "6C:B3:11:1C:A9:EA"
+            },
+            {
+                "ServiceName": "VMSNPXYMP"
+            },
+            {
+                "SettingID": "{965FB0D4-E52D-4131-8DA3-57EDBF70EBF7}"
+            },
+            {
+                "TcpipNetbiosOptions": 0
+            },
+            {
+                "WINSEnableLMHostsLookup": true
+            },
+            {
+                "WINSScopeID": ""
+            }
+        ]
+    ],
+    "desktop_monitor": [
+        [
+            {
+                "Availability": 8
+            },
+            {
+                "Caption": "Generic Non-PnP Monitor"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DesktopMonitor"
+            },
+            {
+                "Description": "Generic Non-PnP Monitor"
+            },
+            {
+                "DeviceID": "DesktopMonitor1"
+            },
+            {
+                "MonitorManufacturer": "(Standard monitor types)"
+            },
+            {
+                "MonitorType": "Generic Non-PnP Monitor"
+            },
+            {
+                "Name": "Generic Non-PnP Monitor"
+            },
+            {
+                "PixelsPerXLogicalInch": 96
+            },
+            {
+                "PixelsPerYLogicalInch": 96
+            },
+            {
+                "PNPDeviceID": "DISPLAY\\DEFAULT_MONITOR\\7&2BA76299&0&UID0"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            }
+        ]
+    ],
+    "network_adapter": [
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000000] Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "DeviceID": "0"
+            },
+            {
+                "Index": 0
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 12
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "ROOT\\KDNIC\\0000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "ServiceName": "kdnic"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000001] Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "DeviceID": "1"
+            },
+            {
+                "GUID": "{29D28E82-B624-4A0D-B71B-2355B00E7D9B}"
+            },
+            {
+                "Index": 1
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 4
+            },
+            {
+                "MACAddress": "6C:B3:11:1C:A9:EA"
+            },
+            {
+                "Manufacturer": "Intel Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "NetConnectionID": "Ethernet"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_8086&DEV_10C9&SUBSYS_A03C8086&REV_01\\6CB311FFFF1CA9EA00"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "ServiceName": "e1iexpress"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000002] Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "DeviceID": "2"
+            },
+            {
+                "GUID": "{3F06220B-C096-4A4A-9573-FB344A2EC698}"
+            },
+            {
+                "Index": 2
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 6
+            },
+            {
+                "MACAddress": "6C:B3:11:1C:A9:EB"
+            },
+            {
+                "Manufacturer": "Intel Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Intel(R) Gigabit ET Dual Port Server Adapter #2"
+            },
+            {
+                "NetConnectionID": "Ethernet 2"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_8086&DEV_10C9&SUBSYS_A03C8086&REV_01\\6CB311FFFF1CA9EA01"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Intel(R) Gigabit ET Dual Port Server Adapter"
+            },
+            {
+                "ServiceName": "e1iexpress"
+            },
+            {
+                "Speed": "1000000000"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000003] WAN Miniport (SSTP)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (SSTP)"
+            },
+            {
+                "DeviceID": "3"
+            },
+            {
+                "Index": 3
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 9
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (SSTP)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_SSTPMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (SSTP)"
+            },
+            {
+                "ServiceName": "RasSstp"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000004] WAN Miniport (IKEv2)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (IKEv2)"
+            },
+            {
+                "DeviceID": "4"
+            },
+            {
+                "Index": 4
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 14
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (IKEv2)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_AGILEVPNMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (IKEv2)"
+            },
+            {
+                "ServiceName": "RasAgileVpn"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000005] WAN Miniport (L2TP)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (L2TP)"
+            },
+            {
+                "DeviceID": "5"
+            },
+            {
+                "Index": 5
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 10
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (L2TP)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_L2TPMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (L2TP)"
+            },
+            {
+                "ServiceName": "Rasl2tp"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000006] WAN Miniport (PPTP)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (PPTP)"
+            },
+            {
+                "DeviceID": "6"
+            },
+            {
+                "Index": 6
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 8
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (PPTP)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_PPTPMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (PPTP)"
+            },
+            {
+                "ServiceName": "PptpMiniport"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000007] WAN Miniport (PPPOE)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (PPPOE)"
+            },
+            {
+                "DeviceID": "7"
+            },
+            {
+                "Index": 7
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 2
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (PPPOE)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_PPPOEMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (PPPOE)"
+            },
+            {
+                "ServiceName": "RasPppoe"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000008] WAN Miniport (GRE)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (GRE)"
+            },
+            {
+                "DeviceID": "8"
+            },
+            {
+                "Index": 8
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 7
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (GRE)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_GREMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (GRE)"
+            },
+            {
+                "ServiceName": "RasGre"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000009] WAN Miniport (IP)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (IP)"
+            },
+            {
+                "DeviceID": "9"
+            },
+            {
+                "Index": 9
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 18
+            },
+            {
+                "MACAddress": "42:9F:20:52:41:53"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (IP)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_NDISWANIP"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (IP)"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000010] WAN Miniport (IPv6)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (IPv6)"
+            },
+            {
+                "DeviceID": "10"
+            },
+            {
+                "Index": 10
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 16
+            },
+            {
+                "MACAddress": "42:9F:20:52:41:53"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (IPv6)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_NDISWANIPV6"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (IPv6)"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000011] WAN Miniport (Network Monitor)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (Network Monitor)"
+            },
+            {
+                "DeviceID": "11"
+            },
+            {
+                "Index": 11
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 11
+            },
+            {
+                "MACAddress": "44:02:20:52:41:53"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (Network Monitor)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_NDISWANBH"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (Network Monitor)"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000012] Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "DeviceID": "12"
+            },
+            {
+                "Index": 12
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 17
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "ROOT\\VMS_VSMP\\0000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "ServiceName": "VMSMP"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000013] Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "DeviceID": "13"
+            },
+            {
+                "GUID": "{965FB0D4-E52D-4131-8DA3-57EDBF70EBF7}"
+            },
+            {
+                "Index": 13
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 15
+            },
+            {
+                "MACAddress": "6C:B3:11:1C:A9:EA"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "NetConnectionID": "vEthernet (shared1)"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "ROOT\\VMS_MP\\0000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "ServiceName": "VMSNPXYMP"
+            },
+            {
+                "Speed": "1000000000"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "VMHOST-123456"
+            },
+            {
+                "TimeOfLastReset": "20200511200945.500000-420"
+            }
+        ]
+    ]
+}

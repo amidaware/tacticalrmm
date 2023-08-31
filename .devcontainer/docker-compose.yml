@@ -5,10 +5,11 @@ services:
     container_name: trmm-api-dev
     image: api-dev
     restart: always
+    user: 1000:1000
     build:
       context: ..
       dockerfile: .devcontainer/api.dockerfile
-    command: ["tactical-api"]
+    command: [ "tactical-api" ]
     environment:
       API_PORT: ${API_PORT}
     ports:
@@ -18,29 +19,15 @@ services:
       - ..:/workspace:cached
     networks:
       dev:
-        aliases: 
+        aliases:
           - tactical-backend
-
-  app-dev:
-    container_name: trmm-app-dev
-    image: node:14-alpine
-    restart: always
-    command: /bin/sh -c "npm install npm@latest -g && npm install && npm run serve -- --host 0.0.0.0 --port ${APP_PORT}"
-    working_dir: /workspace/web
-    volumes:
-      - ..:/workspace:cached
-    ports:
-      - "8080:${APP_PORT}"
-    networks:
-      dev:
-        aliases: 
-          - tactical-frontend
 
   # nats
   nats-dev:
     container_name: trmm-nats-dev
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
     restart: always
+    user: 1000:1000
     environment:
       API_HOST: ${API_HOST}
       API_PORT: ${API_PORT}
@@ -61,7 +48,8 @@ services:
     container_name: trmm-meshcentral-dev
     image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
     restart: always
-    environment: 
+    user: 1000:1000
+    environment:
       MESH_HOST: ${MESH_HOST}
       MESH_USER: ${MESH_USER}
       MESH_PASS: ${MESH_PASS}
@@ -84,6 +72,7 @@ services:
     container_name: trmm-mongodb-dev
     image: mongo:4.4
     restart: always
+    user: 1000:1000
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
@@ -101,7 +90,7 @@ services:
     image: postgres:13-alpine
     restart: always
     environment:
-      POSTGRES_DB: tacticalrmm
+      POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
     volumes:
@@ -115,9 +104,10 @@ services:
   redis-dev:
     container_name: trmm-redis-dev
     restart: always
-    command: redis-server --appendonly yes
+    user: 1000:1000
+    command: redis-server
     image: redis:6.0-alpine
-    volumes: 
+    volumes:
       - redis-data-dev:/data
     networks:
       dev:
@@ -128,7 +118,7 @@ services:
     container_name: trmm-init-dev
     image: api-dev
     restart: on-failure
-    command: ["tactical-init-dev"]
+    command: [ "tactical-init-dev" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
@@ -140,6 +130,7 @@ services:
       TRMM_PASS: ${TRMM_PASS}
       HTTP_PROTOCOL: ${HTTP_PROTOCOL}
       APP_PORT: ${APP_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
     depends_on:
       - postgres-dev
       - meshcentral-dev
@@ -147,14 +138,18 @@ services:
       - dev
     volumes:
       - tactical-data-dev:/opt/tactical
+      - mesh-data-dev:/meshcentral-data
+      - redis-data-dev:/redis/data
+      - mongo-dev-data:/mongo/data/db
       - ..:/workspace:cached
 
   # container for celery worker service
   celery-dev:
     container_name: trmm-celery-dev
     image: api-dev
-    command: ["tactical-celery-dev"]
+    command: [ "tactical-celery-dev" ]
     restart: always
+    user: 1000:1000
     networks:
       - dev
     volumes:
@@ -168,8 +163,9 @@ services:
   celerybeat-dev:
     container_name: trmm-celerybeat-dev
     image: api-dev
-    command: ["tactical-celerybeat-dev"]
+    command: [ "tactical-celerybeat-dev" ]
     restart: always
+    user: 1000:1000
     networks:
       - dev
     volumes:
@@ -183,8 +179,9 @@ services:
   websockets-dev:
     container_name: trmm-websockets-dev
     image: api-dev
-    command: ["tactical-websockets-dev"]
+    command: [ "tactical-websockets-dev" ]
     restart: always
+    user: 1000:1000
     networks:
       dev:
         aliases:
@@ -201,6 +198,7 @@ services:
     container_name: trmm-nginx-dev
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
     restart: always
+    user: 1000:1000
     environment:
       APP_HOST: ${APP_HOST}
       API_HOST: ${API_HOST}
@@ -214,29 +212,17 @@ services:
       dev:
         ipv4_address: ${DOCKER_NGINX_IP}
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:8080"
+      - "443:4443"
     volumes:
       - tactical-data-dev:/opt/tactical
 
-  mkdocs-dev:
-    container_name: trmm-mkdocs-dev
-    image: api-dev
-    restart: always
-    command: ["tactical-mkdocs-dev"]
-    ports:
-      - "8005:8005"
-    volumes:
-      - ..:/workspace:cached
-    networks:
-      - dev
-
 volumes:
-  tactical-data-dev:
-  postgres-data-dev:
-  mongo-dev-data:
-  mesh-data-dev:
-  redis-data-dev:
+  tactical-data-dev: null
+  postgres-data-dev: null
+  mongo-dev-data: null
+  mesh-data-dev: null
+  redis-data-dev: null
 
 networks:
   dev:

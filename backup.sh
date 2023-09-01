@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="28"
+SCRIPT_VERSION="29"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

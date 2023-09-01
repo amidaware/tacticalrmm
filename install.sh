@@ -489,7 +489,7 @@ python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
-printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
+printf >&2 "${YELLOW}Please create your login for the RMM website${NC}\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 echo -ne "Username: "
@@ -899,7 +899,7 @@ done
 sleep 5
 sudo systemctl enable meshcentral
 
-print_green 'Starting meshcentral and waiting for it to install plugins'
+print_green 'Starting meshcentral and waiting for it to be ready'
 
 sudo systemctl restart meshcentral
 
@@ -972,7 +972,6 @@ printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
-printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${rmmdomain}/${ADMINURL}/${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral username: ${GREEN}${meshusername}${NC}\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
 

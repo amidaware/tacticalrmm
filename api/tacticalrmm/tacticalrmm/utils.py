@@ -34,7 +34,12 @@ from tacticalrmm.constants import (
     DebugLogType,
     ScriptShell,
 )
-from tacticalrmm.helpers import get_certs, get_nats_ports, notify_error
+from tacticalrmm.helpers import (
+    get_certs,
+    get_nats_internal_protocol,
+    get_nats_ports,
+    notify_error,
+)
 
 
 def generate_winagent_exe(
@@ -204,10 +209,6 @@ def reload_nats() -> None:
     nats_std_port, nats_ws_port = get_nats_ports()
 
     config = {
-        "tls": {
-            "cert_file": cert_file,
-            "key_file": key_file,
-        },
         "authorization": {"users": users},
         "max_payload": 67108864,
         "port": nats_std_port,  # internal only
@@ -216,6 +217,12 @@ def reload_nats() -> None:
             "no_tls": True,  # TLS is handled by nginx, so not needed here
         },
     }
+
+    if get_nats_internal_protocol() == "tls":
+        config["tls"] = {
+            "cert_file": cert_file,
+            "key_file": key_file,
+        }
 
     if "NATS_HTTP_PORT" in os.environ:
         config["http_port"] = int(os.getenv("NATS_HTTP_PORT"))  # type: ignore

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="76"
+SCRIPT_VERSION="77"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
-sudo apt install -y curl wget dirmngr gnupg lsb-release
+sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -14,6 +14,7 @@ NC='\033[0m'
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.11.4'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
+local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -161,19 +162,38 @@ if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192
   BEHIND_NAT=true
 fi
 
+insecure=false
+if [[ $* == *--insecure* ]]; then
+  insecure=true
+fi
+
 sudo apt install -y software-properties-common
 sudo apt update
-sudo apt install -y certbot openssl
+sudo apt install -y openssl
 
-print_green 'Getting wildcard cert'
+if [[ "$insecure" = true ]]; then
+  print_green 'Generating self-signed cert'
+  certdir='/etc/ssl/tactical'
+  sudo mkdir -p $certdir
+  sudo chown ${USER}:${USER} $certdir
+  sudo chmod 770 $certdir
+  CERT_PRIV_KEY=${certdir}/key.pem
+  CERT_PUB_KEY=${certdir}/cert.pem
+  openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
+    -nodes -keyout ${CERT_PRIV_KEY} -out ${CERT_PUB_KEY} -subj "/CN=${rootdomain}" \
+    -addext "subjectAltName=DNS:${rootdomain},DNS:*.${rootdomain}"
 
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
-while [[ $? -ne 0 ]]; do
+else
+  sudo apt install -y certbot
+  print_green 'Getting wildcard cert'
+
   sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
-done
-
-CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
-CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
+  while [[ $? -ne 0 ]]; do
+    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
+  done
+  CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
+  CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
+fi
 
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 
@@ -232,7 +252,10 @@ done
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+NODE_MAJOR=18
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
@@ -253,7 +276,7 @@ cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_green 'Installing redis and git'
-sudo apt install -y ca-certificates redis git
+sudo apt install -y redis git
 
 print_green 'Installing postgresql'
 
@@ -429,7 +452,11 @@ REDIS_HOST    = "localhost"
 ADMIN_ENABLED = True
 EOF
 )"
-echo "${localvars}" >/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+echo "${localvars}" >$local_settings
+
+if [[ "$insecure" = true ]]; then
+  echo "TRMM_INSECURE = True" | tee --append $local_settings >/dev/null
+fi
 
 if [ "$arch" = "x86_64" ]; then
   natsapi='nats-api'
@@ -462,7 +489,7 @@ python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
-printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
+printf >&2 "${YELLOW}Please create your login for the RMM website${NC}\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 echo -ne "Username: "
@@ -872,7 +899,7 @@ done
 sleep 5
 sudo systemctl enable meshcentral
 
-print_green 'Starting meshcentral and waiting for it to install plugins'
+print_green 'Starting meshcentral and waiting for it to be ready'
 
 sudo systemctl restart meshcentral
 
@@ -896,7 +923,7 @@ meshtoken="$(
 MESH_TOKEN_KEY = "${MESHTOKENKEY}"
 EOF
 )"
-echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
+echo "${meshtoken}" | tee --append $local_settings >/dev/null
 
 print_green 'Creating meshcentral account and group'
 
@@ -933,7 +960,7 @@ sudo systemctl enable nats-api.service
 sudo systemctl start nats-api.service
 
 ## disable django admin
-sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' $local_settings
 
 print_green 'Restarting services'
 for i in rmm.service daphne.service celery.service celerybeat.service; do
@@ -945,7 +972,6 @@ printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
-printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${rmmdomain}/${ADMINURL}/${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral username: ${GREEN}${meshusername}${NC}\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
 

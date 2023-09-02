@@ -172,6 +172,31 @@ class TestCheckViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
+    def test_reset_all_checks_status(self):
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        check = baker.make_recipe("checks.diskspace_check", agent=agent)
+        baker.make("checks.CheckResult", assigned_check=check, agent=agent)
+        baker.make(
+            "checks.CheckHistory",
+            check_id=check.id,
+            agent_id=agent.agent_id,
+            _quantity=30,
+        )
+        baker.make(
+            "checks.CheckHistory",
+            check_id=check.id,
+            agent_id=agent.agent_id,
+            _quantity=30,
+        )
+
+        url = f"{base_url}/{agent.agent_id}/resetall/"
+
+        resp = self.client.post(url)
+        self.assertEqual(resp.status_code, 200)
+
+        self.check_not_authenticated("post", url)
+
     def test_add_memory_check(self):
         url = f"{base_url}/"
         agent = baker.make_recipe("agents.agent")

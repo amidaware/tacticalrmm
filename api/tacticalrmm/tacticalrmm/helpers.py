@@ -42,6 +42,13 @@ def get_nats_ports() -> tuple[int, int]:
     return nats_standard_port, nats_websocket_port
 
 
+def get_nats_internal_protocol() -> str:
+    if getattr(settings, "TRMM_INSECURE", False):
+        return "nats"
+
+    return "tls"
+
+
 def date_is_in_past(*, datetime_obj: "datetime", agent_tz: str) -> bool:
     """
     datetime_obj must be a naive datetime
@@ -66,8 +73,9 @@ def rand_range(min: int, max: int) -> float:
 
 def setup_nats_options() -> dict[str, Any]:
     nats_std_port, _ = get_nats_ports()
+    proto = get_nats_internal_protocol()
     opts = {
-        "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
+        "servers": f"{proto}://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
         "user": "tacticalrmm",
         "name": "trmm-django",
         "password": settings.SECRET_KEY,

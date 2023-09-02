@@ -12,6 +12,16 @@ if [ "${HAS_SYSTEMD}" != 'systemd' ]; then
     exit 1
 fi
 
+if [[ $DISPLAY ]]; then
+    echo "ERROR: Display detected. Installer only supports running headless, i.e from ssh."
+    echo "If you cannot ssh in then please run 'sudo systemctl isolate multi-user.target' to switch to a non-graphical user session and run the installer again."
+    exit 1
+fi
+
+DEBUG=0
+INSECURE=0
+NOMESH=0
+
 agentDL='agentDLChange'
 meshDL='meshDLChange'
 
@@ -124,6 +134,19 @@ if [ $# -ne 0 ] && [ $1 == 'uninstall' ]; then
     exit 0
 fi
 
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+    --debug) DEBUG=1 ;;
+    --insecure) INSECURE=1 ;;
+    --nomesh) NOMESH=1 ;;
+    *)
+        echo "ERROR: Unknown parameter: $1"
+        exit 1
+        ;;
+    esac
+    shift
+done
+
 RemoveOldAgent
 
 echo "Downloading tactical agent..."
@@ -136,7 +159,7 @@ chmod +x ${agentBin}
 
 MESH_NODE_ID=""
 
-if [ $# -ne 0 ] && [ $1 == '--nomesh' ]; then
+if [[ $NOMESH -eq 1 ]]; then
     echo "Skipping mesh install"
 else
     if [ -f "${meshSystemBin}" ]; then
@@ -154,18 +177,22 @@ if [ ! -d "${agentBinPath}" ]; then
     mkdir -p ${agentBinPath}
 fi
 
-if [ $# -ne 0 ] && [ $1 == '--debug' ]; then
-    INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token} -log debug"
-else
-    INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"
-fi
+INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"
 
 if [ "${MESH_NODE_ID}" != '' ]; then
-    INSTALL_CMD+=" -meshnodeid ${MESH_NODE_ID}"
+    INSTALL_CMD+=" --meshnodeid ${MESH_NODE_ID}"
+fi
+
+if [[ $DEBUG -eq 1 ]]; then
+    INSTALL_CMD+=" --log debug"
+fi
+
+if [[ $INSECURE -eq 1 ]]; then
+    INSTALL_CMD+=" --insecure"
 fi
 
 if [ "${proxy}" != '' ]; then
-    INSTALL_CMD+=" -proxy ${proxy}"
+    INSTALL_CMD+=" --proxy ${proxy}"
 fi
 
 eval ${INSTALL_CMD}

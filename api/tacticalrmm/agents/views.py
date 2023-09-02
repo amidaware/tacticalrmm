@@ -570,6 +570,13 @@ def install_agent(request):
     from agents.utils import get_agent_url
     from core.utils import token_is_valid
 
+    insecure = getattr(settings, "TRMM_INSECURE", False)
+
+    if insecure and request.data["installMethod"] in {"exe", "powershell"}:
+        return notify_error(
+            "Not available in insecure mode. Please use the 'Manual' method."
+        )
+
     # TODO rework this ghetto validation hack
     # https://github.com/amidaware/tacticalrmm/issues/1461
     try:
@@ -672,6 +679,9 @@ def install_agent(request):
             if int(request.data["power"]):
                 cmd.append("--power")
 
+            if insecure:
+                cmd.append("--insecure")
+
             resp["cmd"] = " ".join(str(i) for i in cmd)
         else:
             install_flags.insert(0, f"sudo ./{inno}")
@@ -680,6 +690,8 @@ def install_agent(request):
             resp["cmd"] = (
                 dl + f" && chmod +x {inno} && " + " ".join(str(i) for i in cmd)
             )
+            if insecure:
+                resp["cmd"] += " --insecure"
 
         resp["url"] = download_url
 

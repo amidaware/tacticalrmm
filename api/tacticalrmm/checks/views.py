@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime as dt
 
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from rest_framework.decorators import api_view, permission_classes
@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from agents.models import Agent
 from alerts.models import Alert
 from automation.models import Policy
-from tacticalrmm.constants import CheckStatus, CheckType
+from tacticalrmm.constants import AGENT_DEFER, CheckStatus, CheckType
 from tacticalrmm.exceptions import NatsDown
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.nats_utils import abulk_nats_command
@@ -122,13 +122,52 @@ class ResetCheck(APIView):
         result.save()
 
         # resolve any alerts that are open
-        alert = Alert.create_or_return_check_alert(
+        if alert := Alert.create_or_return_check_alert(
             result.assigned_check, agent=result.agent, skip_create=True
-        )
-        if alert:
+        ):
             alert.resolve()
 
         return Response("The check status was reset")
+
+
+class ResetAllChecksStatus(APIView):
+    permission_classes = [IsAuthenticated, ChecksPerms]
+
+    def post(self, request, agent_id):
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER)
+            .select_related(
+                "policy",
+                "policy__alert_template",
+                "alert_template",
+            )
+            .prefetch_related(
+                Prefetch(
+                    "checkresults",
+                    queryset=CheckResult.objects.select_related("assigned_check"),
+                ),
+                "agentchecks",
+            ),
+            agent_id=agent_id,
+        )
+
+        if not _has_perm_on_agent(request.user, agent.agent_id):
+            raise PermissionDenied()
+
+        for check in agent.get_checks_with_policies():
+            try:
+                result = check.check_result
+                result.status = CheckStatus.PASSING
+                result.save()
+                if alert := Alert.create_or_return_check_alert(
+                    result.assigned_check, agent=agent, skip_create=True
+                ):
+                    alert.resolve()
+            except:
+                # check hasn't run yet, no check result entry
+                continue
+
+        return Response("All checks status were reset")
 
 
 class GetCheckHistory(APIView):

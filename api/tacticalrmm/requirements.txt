@@ -9,6 +9,7 @@ cryptography==41.0.4
 daphne==4.0.0
 Django==4.2.5
 django-cors-headers==4.2.0
+django-filter==23.2
 django-ipware==5.0.0
 django-rest-knox==4.2.0
 djangorestframework==3.14.0

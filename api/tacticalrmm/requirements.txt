@@ -1,4 +1,4 @@
-adrf==0.1.1
+adrf==0.1.2
 asgiref==3.7.2
 celery==5.3.1
 certifi==2023.7.22
@@ -7,7 +7,7 @@ channels==4.0.0
 channels_redis==4.1.0
 cryptography==41.0.3
 daphne==4.0.0
-Django==4.2.4
+Django==4.2.5
 django-cors-headers==4.2.0
 django-ipware==5.0.0
 django-rest-knox==4.2.0
@@ -30,7 +30,7 @@ redis==4.5.5
 requests==2.31.0
 six==1.16.0
 sqlparse==0.4.4
-twilio==8.5.0
+twilio==8.8.0
 urllib3==2.0.4
 uWSGI==2.0.22
 validators==0.20.0

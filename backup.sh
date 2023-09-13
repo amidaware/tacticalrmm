@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="29"
+SCRIPT_VERSION="30"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -143,6 +143,7 @@ if [[ $* == *--auto* ]]; then
 
 else
     tar -cf /rmmbackups/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+    rm -rf ${tmp_dir}
 
     echo -ne "${GREEN}Backup saved to /rmmbackups/rmm-backup-${dt_now}.tar${NC}\n"
 fi

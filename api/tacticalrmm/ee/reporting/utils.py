@@ -15,6 +15,7 @@ from jinja2 import Environment, FunctionLoader
 from tacticalrmm.utils import get_db_value
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
+from enum import Enum
 
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
@@ -182,9 +183,6 @@ def resolve_model(*, data_source: Dict[str, Any]) -> Dict[str, Any]:
         raise ResolveModelException(f"Model lookup failed for {data_source['model']}")
     else:
         raise ResolveModelException("Model key must be present on data_source")
-
-
-from enum import Enum
 
 
 class AllowedOperations(Enum):

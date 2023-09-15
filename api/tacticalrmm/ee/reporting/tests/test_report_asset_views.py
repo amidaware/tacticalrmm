@@ -164,8 +164,8 @@ class TestGetAllAssets:
             [(".", ["subdir"], ["file1.txt"]), ("./subdir", [], ["subdirfile.txt"])]
         )
 
-        asset1 = baker.make("reporting.ReportAsset", file="file1.txt")
-        asset2 = baker.make("reporting.ReportAsset", file="subdir/subdirfile.txt")
+        baker.make("reporting.ReportAsset", file="file1.txt")
+        baker.make("reporting.ReportAsset", file="subdir/subdirfile.txt")
 
         response = authenticated_client.get("/reporting/assets/all/?onlyFolders=true")
 
@@ -186,9 +186,9 @@ class TestRenameAsset:
             return_value="path/to/newname.txt",
         ) as mock_rename, patch(
             "ee.reporting.views.report_assets_fs.isfile", return_value=True
-        ) as mock_isfile, patch(
+        ), patch(
             "ee.reporting.views.report_assets_fs.exists", return_value=True
-        ) as mock_exists:
+        ):
             asset = baker.make("reporting.ReportAsset", file="path/to/file.txt")
 
             response = authenticated_client.put(
@@ -211,9 +211,9 @@ class TestRenameAsset:
             return_value="path/to/newfolder",
         ) as mock_rename, patch(
             "ee.reporting.views.report_assets_fs.isfile", return_value=False
-        ) as mock_isfile, patch(
+        ), patch(
             "ee.reporting.views.report_assets_fs.exists", return_value=True
-        ) as mock_exists:
+        ):
             response = authenticated_client.put(
                 "/reporting/assets/rename/",
                 data={"path": "path/to/folder", "newName": "newfolder"},
@@ -229,7 +229,7 @@ class TestRenameAsset:
             side_effect=OSError("File not found"),
         ) as mock_rename, patch(
             "ee.reporting.views.report_assets_fs.exists", return_value=True
-        ) as mock_exists:
+        ):
             response = authenticated_client.put(
                 "/reporting/assets/rename/",
                 data={

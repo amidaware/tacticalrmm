@@ -245,5 +245,5 @@ class TestImportReportTemplate:
         assert asset.file.name != valid_assets_data[0]["name"]
 
     def test_unauthenticated_import_report_template_view(self, unauthenticated_client):
-        response = unauthenticated_client.post(f"/reporting/templates/import/")
+        response = unauthenticated_client.post("/reporting/templates/import/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

@@ -42,7 +42,6 @@ from tacticalrmm.helpers import (
 )
 
 if TYPE_CHECKING:
-    from agents.models import Agent
     from clients.models import Site, Client
 
 
@@ -306,8 +305,6 @@ def get_db_value(
 
     # get properties into an array
     props = string.strip().split(".")
-
-    model = props[0]
 
     # value is in the global keystore and replace value
     if props[0] == "global" and len(props) == 2:

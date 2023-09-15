@@ -8,7 +8,7 @@ import json
 from django.apps import apps
 from django.conf import settings as djangosettings
 from django.core.management.base import BaseCommand
-from typing import Dict, Tuple, List, Any, Type, TYPE_CHECKING
+from typing import Dict, Tuple, List, Any, TYPE_CHECKING
 from ...constants import REPORTING_MODELS
 
 if TYPE_CHECKING:

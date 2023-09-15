@@ -18,7 +18,7 @@ from agents.models import Agent
 @pytest.mark.django_db
 class TestMakeVariablesInline:
     def test_make_dataqueries_inline_valid_reference(self):
-        data_query = baker.make(
+        baker.make(
             "reporting.ReportDataQuery", name="test_query", json_query={"test": "query"}
         )
         variables = yaml.dump({"data_sources": {"source1": "test_query"}})
@@ -57,7 +57,7 @@ class TestResolvingModels:
     def test_all_reporting_models_valid(self):
         for model_name, app_name in REPORTING_MODELS:
             try:
-                model = apps.get_model(app_name, model_name)
+                apps.get_model(app_name, model_name)
             except LookupError:
                 pytest.fail(f"Model: {model_name} does not exist in app: {app_name}")
 
@@ -425,7 +425,7 @@ class TestAddingCustomFields:
     def test_add_custom_fields_with_list_of_dicts(self, model_name, custom_field_model):
         custom_field = baker.make("core.CustomField", name="field1", model=model_name)
         default_value = "Default Value"
-        custom_field2 = baker.make(
+        baker.make(
             "core.CustomField",
             name="field2",
             model=model_name,
@@ -491,7 +491,7 @@ class TestAddingCustomFields:
     )
     def test_add_custom_fields_with_default_value(self, model_name):
         default_value = "default_value"
-        custom_field = baker.make(
+        baker.make(
             "core.CustomField",
             name="field1",
             model=model_name,

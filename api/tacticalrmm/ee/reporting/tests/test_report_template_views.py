@@ -88,13 +88,13 @@ class TestReportTemplateViews:
 
     # test unauthorized access
     def test_unauthorized_get_report_templates_view(self, unauthenticated_client):
-        url = f"/reporting/templates/"
+        url = "/reporting/templates/"
         response = unauthenticated_client.get(url)
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_unauthorized_add_report_template_view(self, unauthenticated_client):
-        url = f"/reporting/templates/"
+        url = "/reporting/templates/"
         response = unauthenticated_client.post(url)
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -352,7 +352,7 @@ class TestGetAllowedValues:
             )
 
         assert response.status_code == 200
-        assert response.data == None
+        assert response.data is None
 
     def test_invalid_input(self, authenticated_client):
         data = {"invalidKey": {}}

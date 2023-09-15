@@ -3,7 +3,7 @@ import json
 from model_bakery import baker
 from rest_framework.test import APIClient
 from rest_framework import status
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, mock_open
 from ..models import ReportDataQuery
 
 
@@ -180,5 +180,5 @@ class TestQuerySchema:
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_unauthenticated_query_schema_view(self, unauthenticated_client):
-        response = unauthenticated_client.delete(f"/reporting/queryschema/")
+        response = unauthenticated_client.delete("/reporting/queryschema/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

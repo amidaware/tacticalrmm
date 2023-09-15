@@ -168,26 +168,6 @@ class TestProcessDataSourceVariables:
             # Assert that the "source2" data remains unchanged
             assert result["data_sources"]["source2"] == "some_string_value"
 
-    def test_process_data_sources_with_non_dict_data_sources(self):
-        variables = {
-            "data_sources": {
-                "source1": {"model": "agent", "other_field": "value"},
-                "source2": "some_string_value",
-            }
-        }
-
-        mock_queryset = 5
-
-        # Mock build_queryset to return the mock_queryset
-        with patch("ee.reporting.utils.build_queryset", return_value=mock_queryset):
-            result = process_data_sources(variables=variables)
-
-            # Assert that the data_sources for "source1" is replaced with mock_queryset
-            assert result["data_sources"]["source1"] == mock_queryset
-
-            # Assert that the "source2" data remains unchanged
-            assert result["data_sources"]["source2"] == "some_string_value"
-
 
 class TestProcessChartVariables:
     def test_process_chart_no_replace_data_frame(self):

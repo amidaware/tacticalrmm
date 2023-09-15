@@ -382,7 +382,7 @@ class RunURLAction(APIView):
         url_pattern = action.pattern
 
         for string in re.findall(pattern, action.pattern):
-            value = get_db_value(string=string, instance=instance, quotes=False)
+            value = get_db_value(string=string, instance=instance)
 
             url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
 

@@ -18,7 +18,7 @@ from weasyprint.text.fonts import FontConfiguration
 
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
-from .models import ReportAsset, ReportHTMLTemplate, ReportTemplate
+from .models import ReportAsset, ReportHTMLTemplate, ReportTemplate, ReportDataQuery
 
 
 # regex for db data replacement
@@ -29,6 +29,8 @@ RE_DB_VALUE = re.compile(r"(\{\{\s*(client|site|agent|global)\.(.*)\s*\}\})")
 RE_ASSET_URL = re.compile(
     r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))"
 )
+
+RE_DEPENDENCY_VALUE = re.compile(r"(\{\{\s*(.*)\s*\}\})")
 
 
 # this will lookup the Jinja parent template in the DB
@@ -43,7 +45,7 @@ def db_template_loader(template_name: str) -> Optional[str]:
     try:
         template = ReportTemplate.objects.get(name=template_name)
         return template.template_md
-    except ReportHTMLTemplate.DoesNotExist:
+    except ReportTemplate.DoesNotExist:
         pass
 
     return None
@@ -75,12 +77,15 @@ def generate_html(
     css: str = "",
     html_template: Optional[int] = None,
     variables: str = "",
-    dependencies: Dict[str, int] = {},
-) -> Tuple[str, Optional[Dict[str, Any]]]:
-    # validate the template before doing anything. This will throw a TemplateError exception
+    dependencies: Optional[Dict[str, int]] = None,
+) -> Tuple[str, Dict[str, Any]]:
+    if dependencies is None:
+        dependencies = {}
+
+    # validate the template
     env.parse(template)
 
-    # convert template from markdown to html if type is markdown
+    # convert template
     template_string = (
         Markdown.convert(template) if template_type == "markdown" else template
     )
@@ -89,7 +94,6 @@ def generate_html(
     if html_template:
         try:
             html_template_name = ReportHTMLTemplate.objects.get(pk=html_template).name
-
             template_string = (
                 f"""{{% extends "{html_template_name}" %}}\n{template_string}"""
             )
@@ -98,28 +102,26 @@ def generate_html(
 
     tm = env.from_string(template_string)
 
-    variables = prep_variables_for_template(
+    variables_dict = prep_variables_for_template(
         variables=variables, dependencies=dependencies
     )
-    if variables:
-        return (tm.render(css=css, **variables), variables)
-    else:
-        return (tm.render(css=css), None)
+
+    return (tm.render(css=css, **variables_dict), variables_dict)
 
 
 def make_dataqueries_inline(*, variables: str) -> str:
-    variables_obj = yaml.safe_load(variables) or {}
-    if "data_sources" in variables_obj.keys() and isinstance(
-        variables_obj["data_sources"], dict
-    ):
-        for key, value in variables_obj["data_sources"].items():
-            # data_source is referencing a saved data query
+    try:
+        variables_obj = yaml.safe_load(variables) or {}
+    except (yaml.parser.ParserError, yaml.YAMLError):
+        variables_obj = {}
+
+    data_sources = variables_obj.get("data_sources", {})
+    if isinstance(data_sources, dict):
+        for key, value in data_sources.items():
             if isinstance(value, str):
-                ReportDataQuery = apps.get_model("reporting", "ReportDataQuery")
                 try:
-                    variables_obj["data_sources"][key] = ReportDataQuery.objects.get(
-                        name=value
-                    ).json_query
+                    query = ReportDataQuery.objects.get(name=value).json_query
+                    variables_obj["data_sources"][key] = query
                 except ReportDataQuery.DoesNotExist:
                     continue
 
@@ -129,101 +131,33 @@ def make_dataqueries_inline(*, variables: str) -> str:
 def prep_variables_for_template(
     *,
     variables: str,
-    dependencies: Dict[str, Any] = {},
+    dependencies: Optional[Dict[str, Any]] = None,
     limit_query_results: Optional[int] = None,
 ) -> Dict[str, Any]:
+    if not dependencies:
+        dependencies = {}
+
+    if not variables:
+        variables = ""
+
     # replace any data queries in data_sources with the yaml
     variables = make_dataqueries_inline(variables=variables)
 
-    # resolve dependencies that are agent, site, or client
-    if "client" in dependencies.keys():
-        Model = apps.get_model("clients", "Client")
-        dependencies["client"] = Model.objects.get(id=dependencies["client"])
-    elif "site" in dependencies.keys():
-        Model = apps.get_model("clients", "Site")
-        dependencies["site"] = Model.objects.get(id=dependencies["site"])
-    elif "agent" in dependencies.keys():
-        Model = apps.get_model("agents", "Agent")
-        dependencies["agent"] = Model.objects.get(agent_id=dependencies["agent"])
-
-    # check for variables that need to be replaced with the database values ({{client.name}}, {{agent.hostname}}, etc)
-    if variables and isinstance(variables, str):
-        # returns {{ model.prop }}, prop, model
-        for string, model, prop in re.findall(RE_DB_VALUE, variables):
-            value: Any = ""
-            # will be agent, site, client, or global
-            if model == "global":
-                value = get_db_value(string=f"{model}.{prop}")
-            elif model in dependencies.keys():
-                instance = dependencies[model]
-                value = (
-                    get_db_value(string=prop, instance=instance) if instance else None
-                )
-
-            if value:
-                variables = variables.replace(string, str(value))
-
-    # check for any non-database dependencies and replace in variables
-    if variables and isinstance(variables, str):
-        RE_DEP_VALUE = re.compile(r"(\{\{\s*(.*)\s*\}\})")
-
-        for string, dep in re.findall(RE_DEP_VALUE, variables):
-            if dep in dependencies.keys():
-                variables = variables.replace(string, str(dependencies[dep]))
-
-    # load yaml variables if they exist
-    variables = yaml.safe_load(variables) or {}
+    # process report dependencies
+    variables_dict = process_dependencies(
+        variables=variables, dependencies=dependencies
+    )
 
     # replace the data_sources with the actual data from DB. This will be passed to the template
     # in the form of {{data_sources.data_source_name}}
-    if "data_sources" in variables.keys() and isinstance(
-        variables["data_sources"], dict
-    ):
-        for key, value in variables["data_sources"].items():
-            if isinstance(value, dict):
-                data_source = value
-
-                _ = data_source.pop("meta") if "meta" in data_source.keys() else None
-
-                modified_datasource = resolve_model(data_source=data_source)
-                queryset = build_queryset(
-                    data_source=modified_datasource, limit=limit_query_results
-                )
-                variables["data_sources"][key] = queryset
+    variables_dict = process_data_sources(
+        variables=variables_dict, limit_query_results=limit_query_results
+    )
 
     # generate and replace charts in the variables
-    if "charts" in variables.keys() and isinstance(variables["charts"], dict):
-        for key, chart in variables["charts"].items():
-            # make sure chart options are present and a dict
-            if "options" not in chart.keys() and not isinstance(chart["options"], dict):
-                break
+    variables_dict = process_chart_variables(variables=variables_dict)
 
-            options = chart["options"]
-            # if data_frame is present and a str that means we need to replace it with a value from variables
-            if "data_frame" in options.keys() and isinstance(
-                options["data_frame"], str
-            ):
-                # dot dotation to datasource if exists
-                data_source = options["data_frame"].split(".")
-                data = variables
-                for path in data_source:
-                    if path in data.keys():
-                        data = data[path]
-                    else:
-                        break
-
-                if data:
-                    chart["options"]["data_frame"] = data
-
-            variables["charts"][key] = generate_chart(
-                type=chart["chartType"],
-                format=chart["outputType"],
-                options=chart["options"],
-                traces=chart["traces"] if "traces" in chart.keys() else None,
-                layout=chart["layout"] if "layout" in chart.keys() else None,
-            )
-
-    return {**variables, **dependencies}
+    return variables_dict
 
 
 class ResolveModelException(Exception):
@@ -250,31 +184,33 @@ def resolve_model(*, data_source: Dict[str, Any]) -> Dict[str, Any]:
         raise ResolveModelException("Model key must be present on data_source")
 
 
-ALLOWED_OPERATIONS = (
+from enum import Enum
+
+
+class AllowedOperations(Enum):
     # filtering
-    "only",
-    "defer",
-    "filter",
-    "exclude",
-    "limit",
-    "get",
-    "first",
-    "all",
+    ONLY = "only"
+    DEFER = "defer"
+    FILTER = "filter"
+    EXCLUDE = "exclude"
+    LIMIT = "limit"
+    GET = "get"
+    FIRST = "first"
+    ALL = "all"
     # custom fields
-    "custom_fields",
+    CUSTOM_FIELDS = "custom_fields"
     # presentation
-    "json",
+    JSON = "json"
     # relations
-    "select_related",
-    "prefetch_related",
+    SELECT_RELATED = "select_related"
+    PREFETCH_RELATED = "prefetch_related"
     # operations
-    "aggregate",
-    "annotate",
-    "count",
-    "values",
+    AGGREGATE = "aggregate"
+    ANNOTATE = "annotate"
+    COUNT = "count"
+    VALUES = "values"
     # ordering
-    "order_by",
-)
+    ORDER_BY = "order_by"
 
 
 class InvalidDBOperationException(Exception):
@@ -284,22 +220,23 @@ class InvalidDBOperationException(Exception):
 def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) -> Any:
     local_data_source = data_source
     Model = local_data_source.pop("model")
-    limit = limit
     count = False
     get = False
     first = False
     all = False
     isJson = False
-    columns = local_data_source["only"] if "only" in local_data_source.keys() else None
+    defer = local_data_source.get("defer", None)
+    columns = local_data_source.get("only", None)
     fields_to_add = []
 
     # create a base reporting queryset
     queryset = Model.objects.using("reporting")
     model_name = Model.__name__.lower()
     for operation, values in local_data_source.items():
-        if operation not in ALLOWED_OPERATIONS:
+        # Usage in the build_queryset function:
+        if operation not in [op.value for op in AllowedOperations]:
             raise InvalidDBOperationException(
-                f"DB operation: {operation} not allowed. Supported operations: only, defer, filter, get, first, all, custom_fields, exclude, limit, select_related, prefetch_related, annotate, aggregate, order_by, count"
+                f"DB operation: {operation} not allowed. Supported operations: {', '.join(op.value for op in AllowedOperations)}"
             )
 
         if operation == "meta":
@@ -308,10 +245,9 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             from core.models import CustomField
 
             if model_name in ["client", "site", "agent"]:
+                fields = CustomField.objects.filter(model=model_name)
                 fields_to_add = [
-                    field
-                    for field in values
-                    if CustomField.objects.filter(model=model_name, name=field).exists()
+                    field for field in values if fields.filter(name=field).exists()
                 ]
 
         elif operation == "limit":
@@ -319,6 +255,9 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         elif operation == "count":
             count = True
         elif operation == "get":
+            # need to add a filter for the get if present
+            if isinstance(values, dict):
+                queryset = queryset.filter(**values)
             get = True
         elif operation == "first":
             first = True
@@ -343,9 +282,20 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         queryset = queryset[:limit]
 
     if columns:
+        # remove columns from only if defer is also present
+        if defer:
+            columns = [column for column in columns if column not in defer]
         if "id" not in columns:
             columns.append("id")
+
         queryset = queryset.values(*columns)
+    elif defer:
+        # Since values seems to ignore only and defer, we need to get all columns and remove the defered ones.
+        # Then we can pass the rest of the columns in
+        included_fields = [
+            field.name for field in Model._meta.local_fields if field.name not in defer
+        ]
+        queryset = queryset.values(*included_fields)
     else:
         queryset = queryset.values()
 
@@ -386,7 +336,7 @@ def add_custom_fields(
     fields_to_add: List[str],
     model_name: Literal["client", "site", "agent"],
     dict_value: bool = False,
-):
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     from core.models import CustomField
     from agents.models import AgentCustomField
     from clients.models import ClientCustomField, SiteCustomField
@@ -454,6 +404,8 @@ def add_custom_fields(
                 else:
                     row["custom_fields"][custom_field.name] = custom_field.default_value
 
+        return data
+
 
 def normalize_asset_url(text: str, type: Literal["pdf", "html"]) -> str:
     RE_ASSET_URL = re.compile(
@@ -496,7 +448,9 @@ def base64_encode_assets(template: str) -> List[Dict[str, Any]]:
                         "file": encoded_base64_str,
                     }
                 )
-                added_ids.append(asset.id)
+                added_ids.append(
+                    str(asset.id)
+                )  # need to convert uuid to str for easy comparison
             except ReportAsset.DoesNotExist:
                 continue
 
@@ -507,6 +461,106 @@ def decode_base64_asset(asset: str) -> bytes:
     import base64
 
     return base64.b64decode(asset.encode("utf-8"))
+
+
+def process_data_sources(
+    *, variables: Dict[str, Any], limit_query_results: Optional[int] = None
+) -> Dict[str, Any]:
+    data_sources = variables.get("data_sources")
+
+    if isinstance(data_sources, dict):
+        for key, value in data_sources.items():
+            if isinstance(value, dict):
+                modified_datasource = resolve_model(data_source=value)
+                queryset = build_queryset(
+                    data_source=modified_datasource, limit=limit_query_results
+                )
+                data_sources[key] = queryset
+
+    return variables
+
+
+def process_dependencies(
+    *, variables: str, dependencies: Dict[str, Any]
+) -> Dict[str, Any]:
+    DEPENDENCY_MODELS = {
+        "client": ("clients", "Client"),
+        "site": ("clients", "Site"),
+        "agent": ("agents", "Agent"),
+    }
+
+    # Resolve dependencies that are agent, site, or client
+    for dep, (app_label, model_name) in DEPENDENCY_MODELS.items():
+        if dep in dependencies:
+            Model = apps.get_model(app_label, model_name)
+            # Assumes each model has a unique lookup mechanism
+            lookup_param = "agent_id" if dep == "agent" else "id"
+            dependencies[dep] = Model.objects.get(**{lookup_param: dependencies[dep]})
+
+    # Handle database value placeholders
+    for string, model, prop in re.findall(RE_DB_VALUE, variables):
+        value = get_value_for_model(model, prop, dependencies)
+        if value:
+            variables = variables.replace(string, str(value))
+
+    # Handle non-database dependencies
+    for string, dep in re.findall(RE_DEPENDENCY_VALUE, variables):
+        value = dependencies.get(dep)
+        if value:
+            variables = variables.replace(string, str(value))
+
+    # Load yaml variables if they exist
+    variables = yaml.safe_load(variables) or {}
+
+    return {**variables, **dependencies}
+
+
+def get_value_for_model(model: str, prop: str, dependencies: Dict[str, Any]) -> Any:
+    if model == "global":
+        return get_db_value(string=f"{model}.{prop}")
+    instance = dependencies.get(model)
+    return get_db_value(string=prop, instance=instance) if instance else None
+
+
+def process_chart_variables(*, variables: Dict[str, Any]) -> Dict[str, Any]:
+    charts = variables.get("charts")
+
+    if not isinstance(charts, dict):
+        return variables
+
+    for key, chart in charts.items():
+        options = chart.get("options")
+        if not isinstance(options, dict):
+            continue
+
+        data_frame = options.get("data_frame")
+        if isinstance(data_frame, str):
+            data_source = data_frame.split(".")
+            data = variables
+
+            path_exists = True
+            for path in data_source:
+                data = data.get(path)
+                if data is None:
+                    path_exists = False
+                    break
+
+            if not path_exists:
+                continue
+
+            options["data_frame"] = data
+
+        traces = chart.get("traces")
+        layout = chart.get("layout")
+        charts[key] = generate_chart(
+            type=chart["chartType"],
+            format=chart["outputType"],
+            options=options,
+            traces=traces,
+            layout=layout,
+        )
+
+    return variables
 
 
 def generate_chart(

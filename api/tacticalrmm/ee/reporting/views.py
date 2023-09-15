@@ -8,7 +8,7 @@ import json
 import os
 import shutil
 import uuid
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from django.conf import settings as djangosettings
 from django.core.exceptions import (
@@ -16,6 +16,7 @@ from django.core.exceptions import (
     PermissionDenied,
     SuspiciousFileOperation,
 )
+from django.db import transaction
 from django.core.files.base import ContentFile
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -26,6 +27,10 @@ from rest_framework.response import Response
 from rest_framework.serializers import (
     CharField,
     ListField,
+    IntegerField,
+    JSONField,
+    ChoiceField,
+    BooleanField,
     ModelSerializer,
     Serializer,
     ValidationError,
@@ -35,7 +40,6 @@ from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
-from .settings import settings
 from .storage import report_assets_fs
 from .utils import (
     base64_encode_assets,
@@ -112,6 +116,9 @@ class GenerateReport(APIView):
 
         format = request.data["format"]
 
+        if format not in ["pdf", "html"]:
+            return notify_error("Report format is incorrect.")
+
         try:
             html_report, _ = generate_html(
                 template=template.template_md,
@@ -128,7 +135,7 @@ class GenerateReport(APIView):
 
             if format == "html":
                 return Response(html_report)
-            elif format == "pdf":
+            else:
                 pdf_bytes = generate_pdf(html=html_report)
 
                 return FileResponse(
@@ -136,8 +143,7 @@ class GenerateReport(APIView):
                     content_type="application/pdf",
                     filename=f"{template.name}.pdf",
                 )
-            else:
-                return notify_error("Report format is incorrect.")
+
         except TemplateError as error:
             if hasattr(error, "lineno"):
                 return notify_error(f"Line {error.lineno}: {error.message}")
@@ -148,74 +154,93 @@ class GenerateReport(APIView):
 
 
 class GenerateReportPreview(APIView):
+    class InputRequest:
+        template_md: str
+        type: Literal["markdown", "html"]
+        template_css: str
+        template_html: int
+        template_variables: Dict[str, Any]
+        dependencies: Dict[str, Any]
+        format: Literal["html", "pdf"]
+        debug: bool
+
+    class InputSerializer(Serializer[InputRequest]):
+        template_md = CharField()
+        type = CharField()
+        template_css = CharField(required=False)
+        template_html = IntegerField(required=False)
+        template_variables = JSONField()
+        dependencies = JSONField()
+        format = ChoiceField(choices=["html", "pdf"])
+        debug = BooleanField(default=False)
+
     def post(self, request: Request) -> Union[FileResponse, Response]:
         try:
-            debug = request.data["debug"]
-
+            report_data = self._parse_and_validate_request_data(request.data)
             html_report, variables = generate_html(
-                template=request.data["template_md"],
-                template_type=request.data["type"],
-                css=request.data["template_css"],
-                html_template=(
-                    request.data["template_html"]
-                    if "template_html" in request.data.keys()
-                    else None
-                ),
-                variables=request.data["template_variables"],
-                dependencies=request.data["dependencies"],
+                template=report_data["template_md"],
+                template_type=report_data["type"],
+                css=report_data.get("template_css", ""),
+                html_template=report_data.get("template_html"),
+                variables=report_data["template_variables"],
+                dependencies=report_data["dependencies"],
             )
 
-            response_format = request.data["format"]
-            debug = request.data["debug"]
-
-            html_report = normalize_asset_url(html_report, response_format)
-
-            if debug:
-                # need to serialize the models if an agent, site, or client is specified
-                if variables:
-                    from django.forms.models import model_to_dict
-
-                    if "agent" in variables.keys():
-                        variables["agent"] = model_to_dict(
-                            variables["agent"],
-                            fields=[
-                                field.name for field in variables["agent"]._meta.fields
-                            ],
-                        )
-                    if "site" in variables.keys():
-                        variables["site"] = model_to_dict(
-                            variables["site"],
-                            fields=[
-                                field.name for field in variables["site"]._meta.fields
-                            ],
-                        )
-                    if "client" in variables.keys():
-                        variables["client"] = model_to_dict(
-                            variables["client"],
-                            fields=[
-                                field.name for field in variables["client"]._meta.fields
-                            ],
-                        )
-
-                return Response({"template": html_report, "variables": variables})
-
-            elif response_format == "html":
-                return Response(html_report)
-            else:
-                pdf_bytes = generate_pdf(html=html_report)
-
-                return FileResponse(
-                    ContentFile(pdf_bytes),
-                    content_type="application/pdf",
-                    filename=f"preview.pdf",
-                )
+            if report_data["debug"]:
+                return self._process_debug_response(html_report, variables)
+            return self._generate_response_based_on_format(
+                html_report, report_data["format"]
+            )
         except TemplateError as error:
-            if hasattr(error, "lineno"):
-                return notify_error(f"Line {error.lineno}: {error.message}")
-            else:
-                return notify_error(str(error))
+            return self._handle_template_error(error)
         except Exception as error:
             return notify_error(str(error))
+
+    def _parse_and_validate_request_data(self, data: Dict[str, Any]) -> Any:
+        serializer = self.InputSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
+
+    def _process_debug_response(
+        self, html_report: str, variables: Dict[str, Any]
+    ) -> Response:
+        if variables:
+            from django.forms.models import model_to_dict
+
+            # serialize any model instances provided
+            for model_name in ["agent", "site", "client"]:
+                if model_name in variables:
+                    model_instance = variables[model_name]
+                    serialized_model = model_to_dict(
+                        model_instance,
+                        fields=[field.name for field in model_instance._meta.fields],
+                    )
+                    variables[model_name] = serialized_model
+
+        return Response({"template": html_report, "variables": variables})
+
+    def _generate_response_based_on_format(
+        self, html_report: str, format: Literal["html", "pdf"]
+    ) -> Union[Response, FileResponse]:
+        html_report = normalize_asset_url(html_report, format)
+
+        if format == "html":
+            return Response(html_report)
+        else:
+            pdf_bytes = generate_pdf(html=html_report)
+            return FileResponse(
+                ContentFile(pdf_bytes),
+                content_type="application/pdf",
+                filename="preview.pdf",
+            )
+
+    def _handle_template_error(self, error: TemplateError) -> Response:
+        if hasattr(error, "lineno"):
+            error_message = f"Line {error.lineno}: {error.message}"
+        else:
+            error_message = str(error)
+
+        return notify_error(error_message)
 
 
 class ExportReportTemplate(APIView):
@@ -253,121 +278,156 @@ class ExportReportTemplate(APIView):
 
 
 class ImportReportTemplate(APIView):
+    @transaction.atomic
     def post(self, request: Request) -> Response:
-        import random
-        import string
-
-        base_template = None
-        report_template = None
         try:
             template_obj = json.loads(request.data["template"])
 
-            if "template" not in template_obj.keys():
-                return notify_error("Missing template information")
+            # import base template if exists
+            base_template_id = self._import_base_template(
+                template_obj.get("base_template")
+            )
 
-            # create base template
-            if "base_template" in template_obj.keys() and template_obj["base_template"]:
-                # check if there is a name conflict and append some characters to the name if so
-                if (
-                    "name" in template_obj["base_template"].keys()
-                    and ReportHTMLTemplate.objects.filter(
-                        name=template_obj["base_template"]["name"]
-                    ).exists()
-                ):
-                    template_obj["base_template"]["name"] += "".join(
-                        random.choice(string.ascii_lowercase) for i in range(6)
-                    )
-                base_template = ReportHTMLTemplate.objects.create(
-                    **template_obj["base_template"]
-                )
-                base_template.refresh_from_db()
+            # import base template if exists
+            report_template = self._import_report_template(
+                template_obj.get("template"), base_template_id
+            )
 
-            # create template
-            if "template" in template_obj.keys() and template_obj["template"]:
-                # check if there is a name conflict and append some characters to the name if so
-                if (
-                    "name" in template_obj["template"].keys()
-                    and ReportTemplate.objects.filter(
-                        name=template_obj["template"]["name"]
-                    ).exists()
-                ):
-                    template_obj["template"]["name"] += "".join(
-                        random.choice(string.ascii_lowercase) for i in range(6)
-                    )
-                report_template = ReportTemplate.objects.create(
-                    **template_obj["template"],
-                    template_html=base_template if base_template else None,
-                )
-
-            # import assets
-            if "assets" in template_obj.keys() and isinstance(
-                template_obj["assets"], list
-            ):
-                for asset in template_obj["assets"]:
-                    # asset should have id, name, and file fields
-                    try:
-                        asset = ReportAsset(
-                            id=asset["id"], file=decode_base64_asset(asset["file"])
-                        )
-                        asset.file.name = os.path.join(
-                            settings.REPORTING_ASSETS_BASE_PATH, asset["name"]
-                        )
-                        asset.save()
-                    except:
-                        pass
+            # import assets if exists
+            self._import_assets(template_obj.get("assets"))
 
             return Response(ReportTemplateSerializer(report_template).data)
-        except:
-            base_template.delete() if base_template else None
-            report_template.delete() if report_template else None
-            return notify_error("There was an error with the request")
+
+        except Exception as e:
+            # rollback db transaction if any exception occurs
+            transaction.set_rollback(True)
+            return notify_error(str(e))
+
+    def _import_base_template(
+        self, base_template_data: Optional[Dict[str, Any]] = None
+    ) -> Optional[int]:
+        if base_template_data:
+            # Check name conflict and modify name if necessary
+            name = base_template_data.get("name")
+            html = base_template_data.get("html")
+
+            if not name:
+                raise ValidationError("base_template is missing 'name' key")
+            if not html:
+                raise ValidationError("base_template is missing 'html' field")
+
+            if ReportHTMLTemplate.objects.filter(name=name).exists():
+                name += self._generate_random_string()
+            base_template = ReportHTMLTemplate.objects.create(name=name, html=html)
+            base_template.refresh_from_db()
+            return base_template.id
+        return None
+
+    def _import_report_template(
+        self,
+        report_template_data: Dict[str, Any],
+        base_template_id: Optional[int] = None,
+    ) -> "ReportTemplate":
+        if report_template_data:
+            name = report_template_data.pop("name", None)
+            template_md = report_template_data.get("template_md")
+            if not name:
+                raise ValidationError("template requires a 'name' key")
+            if not template_md:
+                raise ValidationError("template requires a 'template_md' field")
+
+            if ReportTemplate.objects.filter(name=name).exists():
+                name += self._generate_random_string()
+            report_template = ReportTemplate.objects.create(
+                name=name, template_html_id=base_template_id, **report_template_data
+            )
+            return report_template
+        else:
+            raise ValidationError("'template' key is required in input")
+
+    def _import_assets(self, assets: List[Dict[str, Any]]) -> None:
+        from django.core.files import File
+        import io
+        from .storage import report_assets_fs
+
+        if isinstance(assets, list):
+            for asset in assets:
+                parent_folder = report_assets_fs.getreldir(path=asset["name"])
+                path = report_assets_fs.get_available_name(
+                    os.path.join(parent_folder, asset["name"])
+                )
+                asset_obj = ReportAsset(
+                    id=asset["id"],
+                    file=File(
+                        io.BytesIO(decode_base64_asset(asset["file"])),
+                        name=path,
+                    ),
+                )
+                asset_obj.save()
+
+    @staticmethod
+    def _generate_random_string(length: int = 6) -> str:
+        import random
+        import string
+
+        return "".join(random.choice(string.ascii_lowercase) for i in range(length))
 
 
 class GetAllowedValues(APIView):
     def post(self, request: Request) -> Response:
-        # pass in blank template. We are just interested in variables
+        variables = request.data.get("variables", None)
+        if variables is None:
+            return notify_error("'variables' is required")
+
+        dependencies = request.data.get("dependencies", None)
+
+        # process variables and dependencies
         variables = prep_variables_for_template(
-            variables=request.data["variables"],
-            dependencies=request.data["dependencies"],
+            variables=variables,
+            dependencies=dependencies,
             limit_query_results=1,  # only get first item for querysets
         )
 
-        # recursive function to get properties on any embedded objects
-        def get_dot_notation(
-            d: Dict[str, Any], parent_key: str = "", path: Optional[str] = None
-        ) -> Dict[str, Any]:
-            items = {}
-            for k, v in d.items():
-                new_key = f"{parent_key}.{k}" if parent_key else k
-                if isinstance(v, dict):
-                    items[new_key] = "Object"
-                    items.update(get_dot_notation(v, new_key, path=path))
-                elif isinstance(v, list) or type(v).__name__ == "PermissionQuerySet":
-                    items[new_key] = f"Array ({len(v)} Results)"
-                    if v:  # Ensure the list is not empty
-                        item = v[0]
-                        if isinstance(item, dict):
-                            items.update(
-                                get_dot_notation(item, f"{new_key}[0]", path=path)
-                            )
-                        else:
-                            items[f"{new_key}[0]"] = type(item).__name__
-
-                else:
-                    items[new_key] = type(v).__name__
-            return items
-
         if variables:
-            return Response(get_dot_notation(variables))
+            return Response(self._get_dot_notation(variables))
         else:
             return Response()
+
+    # recursive function to get properties on any embedded objects
+    def _get_dot_notation(
+        self, d: Dict[str, Any], parent_key: str = "", path: Optional[str] = None
+    ) -> Dict[str, Any]:
+        items = {}
+        for k, v in d.items():
+            new_key = f"{parent_key}.{k}" if parent_key else k
+            if isinstance(v, dict):
+                items[new_key] = "Object"
+                items.update(self._get_dot_notation(v, new_key, path=path))
+            elif isinstance(v, list) or type(v).__name__ == "PermissionQuerySet":
+                items[new_key] = f"Array ({len(v)} Results)"
+                if v:  # Ensure the list is not empty
+                    item = v[0]
+                    if isinstance(item, dict):
+                        items.update(
+                            self._get_dot_notation(item, f"{new_key}[0]", path=path)
+                        )
+                    else:
+                        items[f"{new_key}[0]"] = type(item).__name__
+
+            else:
+                items[new_key] = type(v).__name__
+        return items
 
 
 class GetReportAssets(APIView):
     def get(self, request: Request) -> Response:
         path = request.query_params.get("path", "").lstrip("/")
 
-        directories, files = report_assets_fs.listdir(path)
+        try:
+            directories, files = report_assets_fs.listdir(path)
+        except FileNotFoundError:
+            return notify_error("The path is invalid")
+
         response = list()
 
         # parse directories
@@ -401,61 +461,60 @@ class GetReportAssets(APIView):
 
 class GetAllAssets(APIView):
     def get(self, request: Request) -> Response:
-        only_folders = request.query_params.get("OnlyFolders", None)
+        only_folders = request.query_params.get("onlyFolders", None)
         only_folders = True if only_folders and only_folders == "true" else False
-
-        # pull report assets from the database so we can pair with the file system assets
-        assets = ReportAsset.objects.all()
-
-        # TODO: define a Type for file node
-        def walk_folder_and_return_node(path: str):
-            for current_dir, subdirs, files in os.walk(path):
-                print(current_dir, subdirs, files)
-                current_dir = "Report Assets" if current_dir == "." else current_dir
-                node = {
-                    "type": "folder",
-                    "name": current_dir.replace("./", ""),
-                    "path": path.replace("./", ""),
-                    "children": list(),
-                    "selectable": False,
-                    "icon": "folder",
-                    "iconColor": "yellow-9",
-                }
-                for dirname in subdirs:
-                    dirpath = f"{path}/{dirname}"
-                    node["children"].append(
-                        walk_folder_and_return_node(dirpath)  # recursively call
-                    )
-
-                if not only_folders:
-                    for filename in files:
-                        print(current_dir, filename)
-                        path = f"{current_dir}/{filename}".replace("./", "").replace(
-                            "Report Assets/", ""
-                        )
-                        try:
-                            # need to remove the relative path
-                            id = assets.get(file=path).id
-                            node["children"].append(
-                                {
-                                    "id": id,
-                                    "type": "file",
-                                    "name": filename,
-                                    "path": path,
-                                    "icon": "description",
-                                }
-                            )
-                        except ReportAsset.DoesNotExist:
-                            pass
-
-                return node
 
         try:
             os.chdir(report_assets_fs.base_location)
-            response = [walk_folder_and_return_node(".")]
+            response = [self._walk_folder_and_return_node(".", only_folders)]
             return Response(response)
         except FileNotFoundError:
             return notify_error("Unable to process request")
+
+    # TODO: define a Type for file node
+    def _walk_folder_and_return_node(self, path: str, only_folders: bool = False):
+        # pull report assets from the database so we can pair with the file system assets
+        assets = ReportAsset.objects.all()
+
+        for current_dir, subdirs, files in os.walk(path):
+            current_dir = "Report Assets" if current_dir == "." else current_dir
+            node = {
+                "type": "folder",
+                "name": current_dir.replace("./", ""),
+                "path": path.replace("./", ""),
+                "children": list(),
+                "selectable": False,
+                "icon": "folder",
+                "iconColor": "yellow-9",
+            }
+            for dirname in subdirs:
+                dirpath = f"{path}/{dirname}"
+                node["children"].append(
+                    # recursively call
+                    self._walk_folder_and_return_node(dirpath, only_folders)
+                )
+
+            if not only_folders:
+                for filename in files:
+                    path = f"{current_dir}/{filename}".replace("./", "").replace(
+                        "Report Assets/", ""
+                    )
+                    try:
+                        # need to remove the relative path
+                        id = assets.get(file=path).id
+                        node["children"].append(
+                            {
+                                "id": id,
+                                "type": "file",
+                                "name": filename,
+                                "path": path,
+                                "icon": "description",
+                            }
+                        )
+                    except ReportAsset.DoesNotExist:
+                        pass
+
+            return node
 
 
 class RenameReportAsset(APIView):
@@ -496,6 +555,8 @@ class CreateAssetFolder(APIView):
     def post(self, request: Request) -> Response:
         path = request.data["path"].lstrip("/") if "path" in request.data else ""
 
+        if not path:
+            return notify_error("'path' in required.")
         try:
             new_path = report_assets_fs.createfolder(path=path)
             return Response(new_path)
@@ -752,10 +813,13 @@ class QuerySchema(APIView):
         schema_path = "static/reporting/schemas/query_schema.json"
 
         if djangosettings.DEBUG:
-            with open(djangosettings.BASE_DIR / schema_path, "r") as f:
-                data = json.load(f)
+            try:
+                with open(djangosettings.BASE_DIR / schema_path, "r") as f:
+                    data = json.load(f)
 
-            return JsonResponse(data)
+                return JsonResponse(data)
+            except FileNotFoundError:
+                return notify_error("There was an error getting the file")
         else:
             response = HttpResponse()
             response["X-Accel-Redirect"] = f"/{schema_path}"

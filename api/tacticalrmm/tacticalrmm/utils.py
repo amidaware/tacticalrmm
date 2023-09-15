@@ -6,7 +6,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import wraps
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Literal, TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 import requests
@@ -40,6 +40,11 @@ from tacticalrmm.helpers import (
     get_nats_ports,
     notify_error,
 )
+
+if TYPE_CHECKING:
+    from agents.models import Agent
+    from clients.models import Site, Client
+
 
 def generate_winagent_exe(
     *,
@@ -286,35 +291,75 @@ def get_latest_trmm_ver() -> str:
     return "error"
 
 
-# Receives something like {{ client.name }} and a Model instance of Client, Site, or Agent. If an 
+# Receives something like {{ client.name }} and a Model instance of Client, Site, or Agent. If an
 # agent instance is passed it will resolve the value of agent.client.name and return the agent's client name.
-# 
+#
 # You can query custom fields by using their name. {{ site.Custom Field Name }}
 #
 # This will recursively lookup values for relations. {{ client.site.id }}
-# 
+#
 # You can also use {{ global.value }} without an obj instance to use the global key store
-def get_db_value(*, string: str, instance=None) -> Union[str, List, True, False, None]:
+def get_db_value(
+    *, string: str, instance: Optional[Union["Agent", "Client", "Site"]] = None
+) -> Union[str, List[str], Literal[True], Literal[False], None]:
     from core.models import CustomField, GlobalKVStore
 
     # get properties into an array
     props = string.strip().split(".")
 
+    model = props[0]
+
     # value is in the global keystore and replace value
     if props[0] == "global" and len(props) == 2:
-        try: 
+        try:
             return GlobalKVStore.objects.get(name=props[1]).value
         except GlobalKVStore.DoesNotExist:
             DebugLog.error(
                 log_type=DebugLogType.SCRIPTING,
-                message=f"Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
+                message=f"Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",
             )
             return None
 
     if not instance:
         # instance must be set if not global property
         return None
-    
+
+    # custom field lookup
+    try:
+        # looking up custom field directly on this instance
+        if len(props) == 2:
+            field = CustomField.objects.get(model=props[0], name=props[1])
+            model_fields = getattr(field, f"{props[0]}_fields")
+
+            try:
+                # resolve the correct model id
+                if props[0] != instance.__class__.__name__.lower():
+                    value = model_fields.get(
+                        **{props[0]: getattr(instance, props[0])}
+                    ).value
+                else:
+                    value = model_fields.get(**{f"{props[0]}_id": instance.id}).value
+
+                if field.type != CustomFieldType.CHECKBOX:
+                    if value:
+                        return value
+                    else:
+                        return field.default_value
+                else:
+                    return bool(value)
+            except:
+                return (
+                    field.default_value
+                    if field.type != CustomFieldType.CHECKBOX
+                    else bool(field.default_value)
+                )
+    except CustomField.DoesNotExist:
+        pass
+
+    # if the instance is the same as the first prop. We remove it.
+    if props[0] == instance.__class__.__name__.lower():
+        del props[0]
+
     instance_value = instance
 
     # look through all properties and return the value
@@ -324,27 +369,16 @@ def get_db_value(*, string: str, instance=None) -> Union[str, List, True, False,
             if callable(value):
                 return None
             instance_value = value
-        else:
-            try:
-                field = CustomField.objects.get(model=props[0], name=prop)
-                model_fields = getattr(field, f"{props[0]}_fields")
-                try:
-                    value = model_fields.get(**{props[0]: instance}).value
-                    return value if field.type != CustomFieldType.CHECKBOX else bool(field.default_value)
-                except:
-                    return field.default_value if field.type != CustomFieldType.CHECKBOX else bool(field.default_value)
-            except CustomField.DoesNotExist:
-                return None
-        
+
         if not instance_value:
             return None
-        
+
     return instance_value
-        
+
+
 def replace_arg_db_values(
     string: str, instance=None, shell: str = None, quotes=True  # type:ignore
 ) -> Union[str, None]:
-
     # resolve the value
     value = get_db_value(string=string, instance=instance)
 
@@ -365,12 +399,8 @@ def replace_arg_db_values(
 
     # format args for list
     elif isinstance(value, list):
-        return (
-            f"'{format_shell_array(value)}'"
-            if quotes
-            else format_shell_array(value)
-        )
-    
+        return f"'{format_shell_array(value)}'" if quotes else format_shell_array(value)
+
     # format args for bool
     elif value is True or value is False:
         return format_shell_bool(value, shell)

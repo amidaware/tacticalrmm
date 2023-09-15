@@ -257,4 +257,12 @@ def test_move_folder_with_name_conflict(tmp_path: Path) -> None:
 
 
 def test_move_directory_traversal(tmp_path: Path) -> None:
-    assert False
+    storage = ReportAssetStorage(location=tmp_path)
+
+    with pytest.raises(SuspiciousFileOperation):
+        # relative
+        storage.move(source="../../file", destination="../..")
+
+    with pytest.raises(SuspiciousFileOperation):
+        # absolute
+        storage.move(source="/etc", destination="/newpath")

@@ -83,10 +83,10 @@ node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} -
 node node_modules/meshcentral --adminaccount ${MESH_USER}
 
 if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
-    mesh_token=$(node node_modules/meshcentral --logintokenkey)
+    mesh_token=$(node node_modules/meshcentral --logintokenkey 2>&1 | grep -Eo '[0-9a-f]{160}')
 
     if [[ ${#mesh_token} -eq 160 ]]; then
-      echo ${mesh_token} > /opt/tactical/tmp/mesh_token
+      echo "${mesh_token}" > "${TACTICAL_DIR}/tmp/mesh_token"
     else
       echo "Failed to generate mesh token. Fix the error and restart the mesh container"
     fi

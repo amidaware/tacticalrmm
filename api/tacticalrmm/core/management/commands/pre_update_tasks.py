@@ -11,4 +11,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING("Cleaning the cache"))
         clear_entire_cache()
         self.stdout.write(self.style.SUCCESS("Cache was cleared!"))
-        call_command("fix_dupe_agent_customfields")
+        try:
+            call_command("fix_dupe_agent_customfields")
+        except:
+            pass

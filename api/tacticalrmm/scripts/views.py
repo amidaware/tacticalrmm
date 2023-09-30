@@ -148,6 +148,9 @@ class TestScript(APIView):
         parsed_args = Script.parse_script_args(
             agent, request.data["shell"], request.data["args"]
         )
+        parsed_env_vars = Script.parse_script_env_vars(
+            agent, request.data["shell"], request.data["env_vars"]
+        )
 
         data = {
             "func": "runscript",
@@ -158,7 +161,7 @@ class TestScript(APIView):
                 "shell": request.data["shell"],
             },
             "run_as_user": request.data["run_as_user"],
-            "env_vars": request.data["env_vars"],
+            "env_vars": parsed_env_vars,
         }
 
         r = asyncio.run(

@@ -38,8 +38,10 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
-    path("beta/v1/", include("beta.v1.urls")),
 ]
+
+if getattr(settings, "CRUD_API_ENABLED", False):
+    urlpatterns += (path("beta/v1/", include("beta.v1.urls")),)
 
 if getattr(settings, "ADMIN_ENABLED", False):
     from django.contrib import admin

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="52"
+SCRIPT_VERSION="53"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -86,7 +86,7 @@ if [ "$arch" = "x86_64" ]; then
 else
   pgarch='arm64'
 fi
-postgresql_repo="deb [arch=${pgarch}] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
+postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 if [ ! -f "${1}" ]; then
   echo -ne "\n${RED}usage: ./restore.sh rmm-backup-xxxx.tar${NC}\n"
@@ -133,12 +133,11 @@ sudo npm install -g npm
 
 print_green 'Restoring Nginx'
 
-wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
 
 nginxrepo="$(
   cat <<EOF
-deb https://nginx.org/packages/$osname/ $codename nginx
-deb-src https://nginx.org/packages/$osname/ $codename nginx
+deb [signed-by=/etc/apt/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/$osname $codename nginx
 EOF
 )"
 echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
@@ -252,7 +251,7 @@ sudo apt install -y redis git
 print_green 'Installing postgresql'
 
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql-archive-keyring.gpg
 sudo apt update
 sudo apt install -y postgresql-15
 sleep 2

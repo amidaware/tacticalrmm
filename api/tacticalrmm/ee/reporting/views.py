@@ -167,8 +167,8 @@ class GenerateReportPreview(APIView):
     class InputSerializer(Serializer[InputRequest]):
         template_md = CharField()
         type = CharField()
-        template_css = CharField(required=False)
-        template_html = IntegerField(required=False)
+        template_css = CharField(allow_blank=True, required=False)
+        template_html = IntegerField(allow_null=True, required=False)
         template_variables = JSONField()
         dependencies = JSONField()
         format = ChoiceField(choices=["html", "pdf"])

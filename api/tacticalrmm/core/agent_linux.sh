@@ -15,6 +15,9 @@ fi
 if [[ $DISPLAY ]]; then
     echo "ERROR: Display detected. Installer only supports running headless, i.e from ssh."
     echo "If you cannot ssh in then please run 'sudo systemctl isolate multi-user.target' to switch to a non-graphical user session and run the installer again."
+    echo "If you are already running headless, then you are probably running with X forwarding which is setting DISPLAY, if so then simply run"
+    echo "unset DISPLAY"
+    echo "to unset the variable and then try running the installer again"
     exit 1
 fi
 

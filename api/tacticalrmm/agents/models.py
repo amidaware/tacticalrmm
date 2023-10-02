@@ -556,6 +556,7 @@ class Agent(BaseAuditModel):
             run_as_user = True
 
         parsed_args = script.parse_script_args(self, script.shell, args)
+        parsed_env_vars = script.parse_script_env_vars(self, script.shell, env_vars)
 
         data = {
             "func": "runscriptfull" if full else "runscript",
@@ -566,7 +567,7 @@ class Agent(BaseAuditModel):
                 "shell": script.shell,
             },
             "run_as_user": run_as_user,
-            "env_vars": env_vars,
+            "env_vars": parsed_env_vars,
         }
 
         if history_pk != 0:

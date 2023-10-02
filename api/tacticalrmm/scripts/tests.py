@@ -242,6 +242,25 @@ class TestScriptViews(TacticalTestCase):
             Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
+    def test_script_env_vars_variable_replacement(self):
+        agent = baker.make_recipe("agents.agent", public_ip="12.12.12.12")
+        env_vars = [
+            "PUBIP={{agent.public_ip}}",
+            "123CLIENT={{client.name}}",
+            "FOOBARSITE={{site.name}}",
+        ]
+
+        self.assertEqual(
+            [
+                "PUBIP=12.12.12.12",
+                f"123CLIENT={agent.client.name}",
+                f"FOOBARSITE={agent.site.name}",
+            ],
+            Script.parse_script_env_vars(
+                agent=agent, shell=ScriptShell.POWERSHELL, env_vars=env_vars
+            ),
+        )
+
     def test_script_arg_replacement_custom_field(self):
         agent = baker.make_recipe("agents.agent")
         field = baker.make(
@@ -272,6 +291,40 @@ class TestScriptViews(TacticalTestCase):
             Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
         )
 
+    def test_script_env_vars_replacement_custom_field(self):
+        agent = baker.make_recipe("agents.agent")
+        field = baker.make(
+            "core.CustomField",
+            name="Test Field",
+            model=CustomFieldModel.AGENT,
+            type=CustomFieldType.TEXT,
+            default_value_string="DEFAULT",
+        )
+
+        env_vars = ["FOOBAR={{agent.Test Field}}"]
+
+        # test default value
+        self.assertEqual(
+            ["FOOBAR=DEFAULT"],
+            Script.parse_script_env_vars(
+                agent=agent, shell=ScriptShell.POWERSHELL, env_vars=env_vars
+            ),
+        )
+
+        # test with set value
+        baker.make(
+            "agents.AgentCustomField",
+            field=field,
+            agent=agent,
+            string_value="CUSTOM VALUE",
+        )
+        self.assertEqual(
+            ["FOOBAR=CUSTOM VALUE"],
+            Script.parse_script_env_vars(
+                agent=agent, shell=ScriptShell.POWERSHELL, env_vars=env_vars
+            ),
+        )
+
     def test_script_arg_replacement_client_custom_fields(self):
         agent = baker.make_recipe("agents.agent")
         field = baker.make(
@@ -300,6 +353,42 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(
             ["-Parameter", "-Another 'CUSTOM VALUE'"],
             Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
+        )
+
+    def test_script_env_vars_replacement_client_custom_fields(self):
+        agent = baker.make_recipe("agents.agent")
+        field = baker.make(
+            "core.CustomField",
+            name="test123",
+            model=CustomFieldModel.CLIENT,
+            type=CustomFieldType.TEXT,
+            default_value_string="https://a1234lkasd.asdinasd234.com/ask2348uASDlk234@!#$@#asd1dsf",
+        )
+
+        env_vars = ["FOOBAR={{client.test123}}"]
+
+        # test default value
+        self.assertEqual(
+            ["FOOBAR=https://a1234lkasd.asdinasd234.com/ask2348uASDlk234@!#$@#asd1dsf"],
+            Script.parse_script_env_vars(
+                agent=agent, shell=ScriptShell.POWERSHELL, env_vars=env_vars
+            ),
+        )
+
+        # test with set value
+        baker.make(
+            "clients.ClientCustomField",
+            field=field,
+            client=agent.client,
+            string_value="uASdklj23487ASDkjhr345il987UASXK<DFOIul32oi454329837492384512342134!@#!@#ADSFW45X",
+        )
+        self.assertEqual(
+            [
+                "FOOBAR=uASdklj23487ASDkjhr345il987UASXK<DFOIul32oi454329837492384512342134!@#!@#ADSFW45X"
+            ],
+            Script.parse_script_env_vars(
+                agent=agent, shell=ScriptShell.POWERSHELL, env_vars=env_vars
+            ),
         )
 
     def test_script_arg_replacement_site_custom_fields(self):
@@ -348,6 +437,51 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(
             ["-Parameter", "-Another ''"],
             Script.parse_script_args(agent=agent, shell=ScriptShell.PYTHON, args=args),
+        )
+
+    def test_script_env_vars_replacement_site_custom_fields(self):
+        agent = baker.make_recipe("agents.agent")
+        field = baker.make(
+            "core.CustomField",
+            name="ffas2345asdasasdWEdd",
+            model=CustomFieldModel.SITE,
+            type=CustomFieldType.TEXT,
+            default_value_string="https://site.easkdjas.com/asik2348aSDH234RJKADBCA%123SAD",
+        )
+
+        env_vars = ["ASD45ASDKJASHD={{site.ffas2345asdasasdWEdd}}"]
+
+        # test default value
+        self.assertEqual(
+            ["ASD45ASDKJASHD=https://site.easkdjas.com/asik2348aSDH234RJKADBCA%123SAD"],
+            Script.parse_script_env_vars(
+                agent=agent, shell=ScriptShell.POWERSHELL, env_vars=env_vars
+            ),
+        )
+
+        # test with set value
+        value = baker.make(
+            "clients.SiteCustomField",
+            field=field,
+            site=agent.site,
+            string_value="g435asdASD2354SDFasdfsdf",
+        )
+        self.assertEqual(
+            ["ASD45ASDKJASHD=g435asdASD2354SDFasdfsdf"],
+            Script.parse_script_env_vars(
+                agent=agent, shell=ScriptShell.POWERSHELL, env_vars=env_vars
+            ),
+        )
+
+        # test with set but empty field value
+        value.string_value = ""
+        value.save()
+
+        self.assertEqual(
+            ["ASD45ASDKJASHD=https://site.easkdjas.com/asik2348aSDH234RJKADBCA%123SAD"],
+            Script.parse_script_env_vars(
+                agent=agent, shell=ScriptShell.POWERSHELL, env_vars=env_vars
+            ),
         )
 
     def test_script_arg_replacement_array_fields(self):

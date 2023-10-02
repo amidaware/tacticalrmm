@@ -40,7 +40,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
 ]
 
-if getattr(settings, "CRUD_API_ENABLED", False):
+if getattr(settings, "BETA_API_ENABLED", False):
     urlpatterns += (path("beta/v1/", include("beta.v1.urls")),)
 
 if getattr(settings, "ADMIN_ENABLED", False):

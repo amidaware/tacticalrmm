@@ -248,7 +248,7 @@ class Script(BaseAuditModel):
                 continue
             if match := pattern.match(env_val):
                 string = match.group(1)
-                value = replace_db_values(
+                value = replace_arg_db_values(
                     string=string,
                     instance=agent,
                     shell=shell,

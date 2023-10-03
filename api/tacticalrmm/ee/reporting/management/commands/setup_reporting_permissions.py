@@ -6,7 +6,7 @@ For details, see: https://license.tacticalrmm.com/ee
 
 from django.conf import settings as djangosettings
 from django.core.management.base import BaseCommand
-from psycopg2 import connect
+from psycopg import connect
 
 from ...constants import REPORTING_MODELS
 

@@ -124,6 +124,7 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
   ' $rmmconf)" | sudo tee $rmmconf >/dev/null
 fi
 
+front_end=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config webdomain)
 CHECK_ASSETS_NGINX=$(grep assets $rmmconf)
 if ! [[ $CHECK_ASSETS_NGINX ]]; then
   echo "Adding assets to nginx config"
@@ -131,7 +132,7 @@ if ! [[ $CHECK_ASSETS_NGINX ]]; then
   /location \/ {/ {
       print "    location /assets/ {"
       print "        internal;"
-      print "        add_header 'Access-Control-Allow-Origin' 'https://${APP_HOST}';"
+      print "        add_header 'Access-Control-Allow-Origin' 'https://${front_end}';"
       print "        alias /opt/tactical/reporting/assets/;"
       print "    }"
       print "\n"
@@ -391,12 +392,8 @@ else
   pip install -r requirements.txt
 fi
 
-if [ ! -d /opt/tactical/reporting ]; then
-  sudo mkdir -p /opt/tactical/reporting
-fi
-
 if [ ! -d /opt/tactical/reporting/assets ]; then
-  sudo mkdir /opt/tactical/reporting/assets
+  sudo mkdir -p /opt/tactical/reporting/assets
 fi
 
 if [ ! -d /opt/tactical/reporting/schemas ]; then

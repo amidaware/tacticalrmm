@@ -526,6 +526,9 @@ def process_chart_variables(*, variables: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(charts, dict):
         return variables
 
+    # these will be remove so they don't render in the template
+    invalid_chart_keys = []
+
     for key, chart in charts.items():
         options = chart.get("options")
         if not isinstance(options, dict):
@@ -546,6 +549,10 @@ def process_chart_variables(*, variables: Dict[str, Any]) -> Dict[str, Any]:
             if not path_exists:
                 continue
 
+            if not data:
+                invalid_chart_keys.append(key)
+                continue
+
             options["data_frame"] = data
 
         traces = chart.get("traces")
@@ -557,6 +564,9 @@ def process_chart_variables(*, variables: Dict[str, Any]) -> Dict[str, Any]:
             traces=traces,
             layout=layout,
         )
+
+    for key in invalid_chart_keys:
+        del charts[key]
 
     return variables
 

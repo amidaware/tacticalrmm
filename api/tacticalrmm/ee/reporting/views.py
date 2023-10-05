@@ -116,7 +116,7 @@ class GenerateReport(APIView):
 
         format = request.data["format"]
 
-        if format not in ["pdf", "html"]:
+        if format not in ["pdf", "html", "plaintext"]:
             return notify_error("Report format is incorrect.")
 
         try:
@@ -133,7 +133,7 @@ class GenerateReport(APIView):
 
             html_report = normalize_asset_url(html_report, format)
 
-            if format == "html":
+            if format != "pdf":
                 return Response(html_report)
             else:
                 pdf_bytes = generate_pdf(html=html_report)
@@ -161,7 +161,7 @@ class GenerateReportPreview(APIView):
         template_html: int
         template_variables: Dict[str, Any]
         dependencies: Dict[str, Any]
-        format: Literal["html", "pdf"]
+        format: Literal["html", "pdf", "plaintext"]
         debug: bool
 
     class InputSerializer(Serializer[InputRequest]):
@@ -171,7 +171,7 @@ class GenerateReportPreview(APIView):
         template_html = IntegerField(allow_null=True, required=False)
         template_variables = JSONField()
         dependencies = JSONField()
-        format = ChoiceField(choices=["html", "pdf"])
+        format = ChoiceField(choices=["html", "pdf", "plaintext"])
         debug = BooleanField(default=False)
 
     def post(self, request: Request) -> Union[FileResponse, Response]:
@@ -220,11 +220,11 @@ class GenerateReportPreview(APIView):
         return Response({"template": html_report, "variables": variables})
 
     def _generate_response_based_on_format(
-        self, html_report: str, format: Literal["html", "pdf"]
+        self, html_report: str, format: Literal["html", "pdf", "plaintext"]
     ) -> Union[Response, FileResponse]:
         html_report = normalize_asset_url(html_report, format)
 
-        if format == "html":
+        if format != "pdf":
             return Response(html_report)
         else:
             pdf_bytes = generate_pdf(html=html_report)

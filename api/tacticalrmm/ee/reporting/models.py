@@ -15,6 +15,7 @@ from .storage import get_report_assets_fs
 class ReportFormatType(models.TextChoices):
     MARKDOWN = "markdown", "Markdown"
     HTML = "html", "Html"
+    PLAIN_TEXT = "plaintext", "Plain Text"
 
 
 class ReportTemplate(models.Model):

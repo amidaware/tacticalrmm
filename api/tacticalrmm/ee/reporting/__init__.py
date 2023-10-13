@@ -7,6 +7,7 @@ For details, see: https://license.tacticalrmm.com/ee
 import yaml
 import re
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 now_regex = re.compile(
     r"^(weeks|days|hours|minutes|seconds|microseconds)=(-?\d*)$", re.X
@@ -16,7 +17,7 @@ now_regex = re.compile(
 def construct_yaml_now(loader, node):
     loader.construct_scalar(node)
     match = now_regex.match(node.value)
-    now = datetime.now()
+    now = timezone.now()
     if match:
         now = now + timedelta(**{match.group(1): int(match.group(2))})
     return now

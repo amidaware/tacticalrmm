@@ -141,9 +141,6 @@ def prep_variables_for_template(
     if not variables:
         variables = ""
 
-    # replace any data queries in data_sources with the yaml
-    variables = make_dataqueries_inline(variables=variables)
-
     # process report dependencies
     variables_dict = process_dependencies(
         variables=variables, dependencies=dependencies
@@ -199,6 +196,7 @@ class AllowedOperations(Enum):
     CUSTOM_FIELDS = "custom_fields"
     # presentation
     JSON = "json"
+    CSV = "csv"
     # relations
     SELECT_RELATED = "select_related"
     PREFETCH_RELATED = "prefetch_related"
@@ -223,12 +221,14 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     first = False
     all = False
     isJson = False
+    isCsv = False
+    csv_columns = {}
     defer = local_data_source.get("defer", None)
     columns = local_data_source.get("only", None)
     fields_to_add = []
 
     # create a base reporting queryset
-    queryset = Model.objects.using("reporting")
+    queryset = Model.objects.using("default")
     model_name = Model.__name__.lower()
     for operation, values in local_data_source.items():
         # Usage in the build_queryset function:
@@ -263,6 +263,10 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             all = True
         elif operation == "json":
             isJson = True
+        elif operation == "csv":
+            if isinstance(values, dict):
+                csv_columns = values
+            isCsv = True
         elif isinstance(values, list):
             queryset = getattr(queryset, operation)(*values)
         elif isinstance(values, dict):
@@ -313,6 +317,14 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         else:
             if isJson:
                 return json.dumps(queryset, default=str)
+            elif isCsv:
+                import pandas as pd
+
+                df = pd.DataFrame.from_dict([queryset])
+                df.drop("id", axis=1, inplace=True)
+                if csv_columns:
+                    df = df.rename(columns=csv_columns)
+                return df.to_csv(index=False)
             else:
                 return queryset
     else:
@@ -324,6 +336,15 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         else:
             if isJson:
                 return json.dumps(list(queryset), default=str)
+            elif isCsv:
+                import pandas as pd
+
+                df = pd.DataFrame.from_dict(list(queryset))
+                df.drop("id", axis=1, inplace=True)
+                print(csv_columns)
+                if csv_columns:
+                    df = df.rename(columns=csv_columns)
+                return df.to_csv(index=False)
             else:
                 return list(queryset)
 

@@ -114,7 +114,6 @@ EOF
   "${VIRTUAL_ENV}"/bin/python manage.py load_community_scripts
   "${VIRTUAL_ENV}"/bin/python manage.py reload_nats
   "${VIRTUAL_ENV}"/bin/python manage.py create_natsapi_conf
-  "${VIRTUAL_ENV}"/bin/python manage.py setup_reporting_permissions
   "${VIRTUAL_ENV}"/bin/python manage.py create_installer_user
   "${VIRTUAL_ENV}"/bin/python manage.py post_update_tasks
   

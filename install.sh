@@ -114,8 +114,6 @@ ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-pgreportingusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
-pgreportingpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 MESHPGUSER=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 MESHPGPWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
@@ -334,11 +332,6 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESH
 sudo -u postgres psql -c "ALTER DATABASE meshcentral OWNER TO ${MESHPGUSER}"
 sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESHPGUSER}"
 
-print_green 'Creating reporting user'
-sudo -u postgres psql -c "CREATE USER ${pgreportingusername} WITH PASSWORD '${pgreportingpw}'"
-sudo -u postgres psql -c "GRANT CONNECT ON DATABASE tacticalrmm TO ${pgreportingusername}"
-sudo -u postgres psql -c "GRANT USAGE ON SCHEMA public TO ${pgreportingusername}"
-
 print_green 'Cloning repos'
 
 sudo mkdir /rmm
@@ -467,17 +460,6 @@ DATABASES = {
         'PASSWORD': '${pgpw}',
         'HOST': 'localhost',
         'PORT': '5432',
-    },
-    'reporting': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tacticalrmm',
-        'USER': '${pgreportingusername}',
-        'PASSWORD': '${pgreportingpw}',
-        'HOST': 'localhost',
-        'PORT': '5432',
-        'OPTIONS': {
-          'options': '-c default_transaction_read_only=on'
-        }    
     }
 }
 
@@ -526,7 +508,6 @@ python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
-python manage.py setup_reporting_permissions
 WEB_VERSION=$(python manage.py get_config webversion)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

@@ -219,6 +219,32 @@ class TestBuildingQueryset:
         result_data = json.loads(result)
         assert result_data[0]["hostname"] == setup_agents[0].hostname
 
+    def test_build_queryset_csv_presentation(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "only": ["hostname", "operating_system"],
+            "csv": True,
+        }
+
+        result = build_queryset(data_source=data_source)
+        # should be a string in csv format
+        assert isinstance(result, str)
+        assert "hostname" in result.split("\n")[0]
+        assert "operating_system" in result.split("\n")[0]
+
+    def test_build_queryset_csv_presentation_rename_columns(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "only": ["hostname", "operating_system"],
+            "csv": {"hostname": "Hostname", "operating_system": "Operating System"},
+        }
+
+        result = build_queryset(data_source=data_source)
+        # should be a string in csv format
+        assert isinstance(result, str)
+        assert "Hostname" in result.split("\n")[0]
+        assert "Operating System" in result.split("\n")[0]
+
     def test_build_queryset_custom_fields(self, mock, setup_agents):
         default_value = "Default Value"
 

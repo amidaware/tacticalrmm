@@ -43,7 +43,6 @@ from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemp
 from .storage import report_assets_fs
 from .utils import (
     base64_encode_assets,
-    decode_base64_asset,
     generate_html,
     generate_pdf,
     normalize_asset_url,
@@ -358,7 +357,7 @@ class SharedTemplatesRepo(APIView):
         import requests
 
         try:
-            url = f"https://api.github.com/repos/amidaware/private-scripts/contents/Reporting%20Templates/"
+            url = "https://api.github.com/repos/amidaware/private-scripts/contents/Reporting%20Templates/"
             headers = {"Authorization": f"Bearer {djangosettings.GH_TOKEN}"}
             response = requests.get(url, headers=headers)
             files = response.json()
@@ -383,30 +382,30 @@ class SharedTemplatesRepo(APIView):
             return notify_error("No templates to import")
 
         headers = {"Authorization": f"Bearer {djangosettings.GH_TOKEN}"}
-        # try:
-        for template in templates:
-            response = requests.get(template["url"], headers=headers)
-            template_obj = response.json()
+        try:
+            for template in templates:
+                response = requests.get(template["url"], headers=headers)
+                template_obj = response.json()
 
-            # import base template if exists
-            base_template_id = _import_base_template(
-                template_obj.get("base_template"), overwrite
-            )
+                # import base template if exists
+                base_template_id = _import_base_template(
+                    template_obj.get("base_template"), overwrite
+                )
 
-            # import template if exists
-            report_template = _import_report_template(
-                template_obj.get("template"), base_template_id, overwrite
-            )
+                # import template if exists
+                _import_report_template(
+                    template_obj.get("template"), base_template_id, overwrite
+                )
 
-            # import assets if exists
-            _import_assets(template_obj.get("assets"))
+                # import assets if exists
+                _import_assets(template_obj.get("assets"))
 
-        return Response()
+            return Response()
 
-        # except Exception as e:
-        #     # rollback db transaction if any exception occurs
-        #     transaction.set_rollback(True)
-        #     return notify_error(str(e))
+        except Exception as e:
+            # rollback db transaction if any exception occurs
+            transaction.set_rollback(True)
+            return notify_error(str(e))
 
 
 class GetReportAssets(APIView):

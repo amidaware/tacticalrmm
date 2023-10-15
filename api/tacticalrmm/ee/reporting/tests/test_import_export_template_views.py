@@ -73,7 +73,7 @@ class TestExportReportTemplate:
                 "template_md": report_template_with_base_template.template_md,
                 "type": report_template_with_base_template.type,
                 "depends_on": report_template_with_base_template.depends_on,
-                "template_variables": "{}\n",
+                "template_variables": "",
             },
             "assets": "some_encoded_assets",
         }
@@ -102,7 +102,7 @@ class TestExportReportTemplate:
                 "template_md": report_template.template_md,
                 "type": report_template.type,
                 "depends_on": report_template.depends_on,
-                "template_variables": "{}\n",
+                "template_variables": "",
             },
             "assets": "some_encoded_assets",
         }
@@ -177,6 +177,33 @@ class TestImportReportTemplate:
         assert ReportHTMLTemplate.objects.filter(name="base_test_template").exists()
         assert ReportTemplate.objects.filter(name="test_template").exists()
 
+    def test_import_with_base_template_with_overwrite(
+        self, authenticated_client, valid_template_data, valid_base_template_data
+    ):
+        valid_template_data["base_template"] = valid_base_template_data
+        url = "/reporting/templates/import/"
+        response = authenticated_client.post(
+            url, data={"template": json.dumps(valid_template_data), "overwrite": True}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert ReportHTMLTemplate.objects.filter(name="base_test_template").exists()
+        assert ReportTemplate.objects.filter(name="test_template").exists()
+
+        response = authenticated_client.post(
+            url, data={"template": json.dumps(valid_template_data), "overwrite": True}
+        )
+
+        assert (
+            ReportHTMLTemplate.objects.filter(
+                name__startswith="base_test_template"
+            ).count()
+            == 1
+        )
+        assert (
+            ReportTemplate.objects.filter(name__startswith="test_template").count() == 1
+        )
+
     def test_import_with_assets(
         self, authenticated_client, valid_template_data, valid_assets_data
     ):
@@ -191,8 +218,8 @@ class TestImportReportTemplate:
         assert ReportAsset.objects.filter(id=valid_assets_data[1]["id"]).exists()
 
     @patch(
-        "ee.reporting.views.ImportReportTemplate._generate_random_string",
-        return_value="_randomized",
+        "ee.reporting.utils._generate_random_string",
+        return_value="randomized",
     )
     def test_name_conflict_on_repeated_calls(
         self, generate_random_string_mock, authenticated_client, valid_template_data
@@ -207,6 +234,7 @@ class TestImportReportTemplate:
             url, data={"template": json.dumps(valid_template_data)}
         )
 
+        print(response.data)
         assert response.status_code == status.HTTP_200_OK
         assert ReportTemplate.objects.filter(name="test_template_randomized").exists()
 

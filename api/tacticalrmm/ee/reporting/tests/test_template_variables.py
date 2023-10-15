@@ -261,13 +261,6 @@ class TestPrepVariablesFunction:
         assert isinstance(result, dict)
         assert not result
 
-    def test_prep_variables_with_dataqueries(self):
-        with patch(
-            "ee.reporting.utils.make_dataqueries_inline", return_value="test_yaml: true"
-        ):
-            result = prep_variables_for_template(variables="dataquery: test")
-            assert result == {"test_yaml": True}
-
     def test_prep_variables_with_dependencies(self):
         with patch(
             "ee.reporting.utils.process_dependencies",

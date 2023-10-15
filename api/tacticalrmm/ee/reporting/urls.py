@@ -17,6 +17,8 @@ urlpatterns = [
     path("templates/preview/", views.GenerateReportPreview.as_view()),
     path("templates/preview/analysis/", views.GetAllowedValues.as_view()),
     path("templates/import/", views.ImportReportTemplate.as_view()),
+    # shared templates
+    path("templates/shared/", views.SharedTemplatesRepo.as_view()),
     # report assets
     path("assets/", views.GetReportAssets.as_view()),
     path("assets/all/", views.GetAllAssets.as_view()),

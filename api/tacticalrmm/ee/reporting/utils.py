@@ -20,7 +20,7 @@ from enum import Enum
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportHTMLTemplate, ReportTemplate, ReportDataQuery
-
+from rest_framework.serializers import ValidationError
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
@@ -612,3 +612,101 @@ def generate_chart(
         return cast(str, fig.to_html(full_html=False, include_plotlyjs="cdn"))
     elif format == "image":
         return cast(str, fig.to_image(format="svg").decode("utf-8"))
+
+
+# import report functions
+def _import_base_template(
+    base_template_data: Optional[Dict[str, Any]] = None,
+    overwrite: bool = False,
+) -> Optional[int]:
+    if base_template_data:
+        # Check name conflict and modify name if necessary
+        name = base_template_data.get("name")
+        html = base_template_data.get("html")
+
+        if not name:
+            raise ValidationError("base_template is missing 'name' key")
+        if not html:
+            raise ValidationError("base_template is missing 'html' field")
+
+        if ReportHTMLTemplate.objects.filter(name=name).exists():
+            base_template = ReportHTMLTemplate.objects.filter(name=name).get()
+            if overwrite:
+                base_template.html = html
+                base_template.save()
+            else:
+                name += f"_{_generate_random_string()}"
+                base_template = ReportHTMLTemplate.objects.create(name=name, html=html)
+        else:
+            base_template = ReportHTMLTemplate.objects.create(name=name, html=html)
+
+        base_template.refresh_from_db()
+        return base_template.id
+    return None
+
+
+def _import_report_template(
+    report_template_data: Dict[str, Any],
+    base_template_id: Optional[int] = None,
+    overwrite: bool = False,
+) -> "ReportTemplate":
+    if report_template_data:
+        name = report_template_data.pop("name", None)
+        template_md = report_template_data.get("template_md")
+
+        if not name:
+            raise ValidationError("template requires a 'name' key")
+        if not template_md:
+            raise ValidationError("template requires a 'template_md' field")
+
+        if ReportTemplate.objects.filter(name=name).exists():
+            report_template = ReportTemplate.objects.filter(name=name).get()
+            if overwrite:
+                for key, value in report_template_data.items():
+                    setattr(report_template, key, value)
+
+                report_template.save()
+            else:
+                name += f"_{_generate_random_string()}"
+                report_template = ReportTemplate.objects.create(
+                    name=name,
+                    template_html_id=base_template_id,
+                    **report_template_data,
+                )
+        else:
+            report_template = ReportTemplate.objects.create(
+                name=name, template_html_id=base_template_id, **report_template_data
+            )
+        report_template.refresh_from_db()
+        return report_template
+    else:
+        raise ValidationError("'template' key is required in input")
+
+
+def _import_assets(assets: List[Dict[str, Any]]) -> None:
+    from django.core.files import File
+    import io
+    import os
+    from .storage import report_assets_fs
+
+    if isinstance(assets, list):
+        for asset in assets:
+            parent_folder = report_assets_fs.getreldir(path=asset["name"])
+            path = report_assets_fs.get_available_name(
+                os.path.join(parent_folder, asset["name"])
+            )
+            asset_obj = ReportAsset(
+                id=asset["id"],
+                file=File(
+                    io.BytesIO(decode_base64_asset(asset["file"])),
+                    name=path,
+                ),
+            )
+            asset_obj.save()
+
+
+def _generate_random_string(length: int = 6) -> str:
+    import random
+    import string
+
+    return "".join(random.choice(string.ascii_lowercase) for i in range(length))

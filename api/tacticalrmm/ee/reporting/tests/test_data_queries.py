@@ -1,11 +1,9 @@
 import pytest
-import yaml
 from unittest.mock import patch
 from model_bakery import baker
 from django.apps import apps
 from ..utils import (
     add_custom_fields,
-    make_dataqueries_inline,
     build_queryset,
     resolve_model,
     ResolveModelException,
@@ -13,44 +11,6 @@ from ..utils import (
 )
 from ..constants import REPORTING_MODELS
 from agents.models import Agent
-
-
-@pytest.mark.django_db
-class TestMakeVariablesInline:
-    def test_make_dataqueries_inline_valid_reference(self):
-        baker.make(
-            "reporting.ReportDataQuery", name="test_query", json_query={"test": "query"}
-        )
-        variables = yaml.dump({"data_sources": {"source1": "test_query"}})
-
-        result = make_dataqueries_inline(variables=variables)
-
-        assert yaml.safe_load(result) == {
-            "data_sources": {"source1": {"test": "query"}}
-        }
-
-    def test_make_dataqueries_inline_invalid_reference(self):
-        variables = yaml.dump({"data_sources": {"source1": "nonexistent_query"}})
-
-        result = make_dataqueries_inline(variables=variables)
-
-        assert yaml.safe_load(result) == {
-            "data_sources": {"source1": "nonexistent_query"}
-        }
-
-    def test_make_dataqueries_inline_no_reference(self):
-        variables = yaml.dump({"key": "value"})
-
-        result = make_dataqueries_inline(variables=variables)
-
-        assert yaml.safe_load(result) == {"key": "value"}
-
-    def test_make_dataqueries_inline_invalid_yaml(self):
-        variables = "{some: invalid: yaml}"
-
-        result = make_dataqueries_inline(variables=variables)
-
-        assert yaml.safe_load(result) == {}
 
 
 class TestResolvingModels:

@@ -46,7 +46,6 @@ from .utils import (
     decode_base64_asset,
     generate_html,
     generate_pdf,
-    make_dataqueries_inline,
     normalize_asset_url,
     prep_variables_for_template,
 )
@@ -248,13 +247,14 @@ class ExportReportTemplate(APIView):
         template = get_object_or_404(ReportTemplate, pk=pk)
 
         template_html = template.template_html if template.template_html else None
-        template_variables = make_dataqueries_inline(
-            variables=template.template_variables
-        )
 
         base_template = None
         if template_html:
-            base_template = {"name": template_html.name, "html": template_html.html}
+            base_template = {
+                "name": template_html.name,
+                "html": template_html.html,
+                "uuid": template_html.uuid,
+            }
 
         assets = base64_encode_assets(
             template.template_md + base_template["html"]
@@ -270,7 +270,8 @@ class ExportReportTemplate(APIView):
                     "template_md": template.template_md,
                     "type": template.type,
                     "depends_on": template.depends_on,
-                    "template_variables": template_variables,
+                    "template_variables": template.template_variables,
+                    "uuid": template.uuid,
                 },
                 "assets": assets,
             }
@@ -278,25 +279,33 @@ class ExportReportTemplate(APIView):
 
 
 class ImportReportTemplate(APIView):
+    did_overwrite = False
+
     @transaction.atomic
     def post(self, request: Request) -> Response:
         try:
             template_obj = json.loads(request.data["template"])
+            overwrite = request.data.get("overwrite", False)
 
             # import base template if exists
             base_template_id = self._import_base_template(
-                template_obj.get("base_template")
+                template_obj.get("base_template"), overwrite
             )
 
-            # import base template if exists
+            # import template if exists
             report_template = self._import_report_template(
-                template_obj.get("template"), base_template_id
+                template_obj.get("template"), base_template_id, overwrite
             )
 
             # import assets if exists
             self._import_assets(template_obj.get("assets"))
 
-            return Response(ReportTemplateSerializer(report_template).data)
+            return Response(
+                {
+                    "template": ReportTemplateSerializer(report_template).data,
+                    "overwrite": self.did_overwrite,
+                }
+            )
 
         except Exception as e:
             # rollback db transaction if any exception occurs
@@ -304,7 +313,9 @@ class ImportReportTemplate(APIView):
             return notify_error(str(e))
 
     def _import_base_template(
-        self, base_template_data: Optional[Dict[str, Any]] = None
+        self,
+        base_template_data: Optional[Dict[str, Any]] = None,
+        overwrite: bool = False,
     ) -> Optional[int]:
         if base_template_data:
             # Check name conflict and modify name if necessary
@@ -317,8 +328,18 @@ class ImportReportTemplate(APIView):
                 raise ValidationError("base_template is missing 'html' field")
 
             if ReportHTMLTemplate.objects.filter(name=name).exists():
-                name += self._generate_random_string()
-            base_template = ReportHTMLTemplate.objects.create(name=name, html=html)
+                base_template = ReportHTMLTemplate.objects.filter(name=name).get()
+                if overwrite:
+                    base_template.html = html
+                    base_template.save()
+                else:
+                    name += f"_{self._generate_random_string()}"
+                    base_template = ReportHTMLTemplate.objects.create(
+                        name=name, html=html
+                    )
+            else:
+                base_template = ReportHTMLTemplate.objects.create(name=name, html=html)
+
             base_template.refresh_from_db()
             return base_template.id
         return None
@@ -327,20 +348,37 @@ class ImportReportTemplate(APIView):
         self,
         report_template_data: Dict[str, Any],
         base_template_id: Optional[int] = None,
+        overwrite: bool = False,
     ) -> "ReportTemplate":
         if report_template_data:
             name = report_template_data.pop("name", None)
             template_md = report_template_data.get("template_md")
+
             if not name:
                 raise ValidationError("template requires a 'name' key")
             if not template_md:
                 raise ValidationError("template requires a 'template_md' field")
 
             if ReportTemplate.objects.filter(name=name).exists():
-                name += self._generate_random_string()
-            report_template = ReportTemplate.objects.create(
-                name=name, template_html_id=base_template_id, **report_template_data
-            )
+                report_template = ReportTemplate.objects.filter(name=name).get()
+                if overwrite:
+                    self.did_overwrite = True
+                    for key, value in report_template_data.items():
+                        setattr(report_template, key, value)
+
+                    report_template.save()
+                else:
+                    name += f"_{self._generate_random_string()}"
+                    report_template = ReportTemplate.objects.create(
+                        name=name,
+                        template_html_id=base_template_id,
+                        **report_template_data,
+                    )
+            else:
+                report_template = ReportTemplate.objects.create(
+                    name=name, template_html_id=base_template_id, **report_template_data
+                )
+            report_template.refresh_from_db()
             return report_template
         else:
             raise ValidationError("'template' key is required in input")

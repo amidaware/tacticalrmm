@@ -23,6 +23,7 @@ REPORTING_MODELS = (
     ("GlobalKVStore", "core"),
     ("AuditLog", "logs"),
     ("DebugLog", "logs"),
+    ("PendingAction", "logs"),
     ("ChocoSoftware", "software"),
     ("InstalledSoftware", "software"),
     ("WinUpdate", "winupdate"),

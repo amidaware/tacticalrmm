@@ -9,7 +9,7 @@ from ..models import ReportHTMLTemplate
 @pytest.fixture
 def authenticated_client():
     client = APIClient()
-    user = baker.make("accounts.User")
+    user = baker.make("accounts.User", is_superuser=True)
     client.force_authenticate(user=user)
     return client
 

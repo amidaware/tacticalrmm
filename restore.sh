@@ -220,6 +220,17 @@ elif [ -d "${tmp_dir}/certs/selfsigned" ]; then
   cp -p ${tmp_dir}/certs/selfsigned/cert.pem $certdir
 fi
 
+print_green 'Restoring assets'
+if [ -f "$tmp_dir/opt/opt-tactical.tar.gz" ]; then
+  sudo mkdir -p /opt/tactical
+  sudo tar -xzf $tmp_dir/opt/opt-tactical.tar.gz -C /opt/tactical
+  sudo chown ${USER}:${USER} -R /opt/tactical
+else
+  sudo mkdir -p /opt/tactical/reporting/assets
+  sudo mkdir -p /opt/tactical/reporting/schemas
+  sudo chown -R ${USER}:${USER} /opt/tactical
+fi
+
 print_green 'Restoring celery configs'
 
 sudo mkdir /etc/conf.d

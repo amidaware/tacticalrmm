@@ -10,27 +10,28 @@ import shutil
 import uuid
 from typing import Any, Dict, List, Literal, Optional, Union
 
+import requests
 from django.conf import settings as djangosettings
 from django.core.exceptions import (
     ObjectDoesNotExist,
     PermissionDenied,
     SuspiciousFileOperation,
 )
-from django.db import transaction
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from jinja2.exceptions import TemplateError
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import (
+    BooleanField,
     CharField,
-    ListField,
+    ChoiceField,
     IntegerField,
     JSONField,
-    ChoiceField,
-    BooleanField,
+    ListField,
     ModelSerializer,
     Serializer,
     ValidationError,
@@ -40,16 +41,17 @@ from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
+from .permissions import ReportingPerms, GenerateReportPerms
 from .storage import report_assets_fs
 from .utils import (
+    _import_assets,
+    _import_base_template,
+    _import_report_template,
     base64_encode_assets,
     generate_html,
     generate_pdf,
     normalize_asset_url,
     prep_variables_for_template,
-    _import_report_template,
-    _import_assets,
-    _import_base_template,
 )
 
 
@@ -65,6 +67,7 @@ class ReportTemplateSerializer(ModelSerializer[ReportTemplate]):
 
 
 class GetAddReportTemplate(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
     queryset = ReportTemplate.objects.all()
     serializer_class = ReportTemplateSerializer
 
@@ -86,6 +89,7 @@ class GetAddReportTemplate(APIView):
 
 
 class GetEditDeleteReportTemplate(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
     queryset = ReportTemplate.objects.all()
     serializer_class = ReportTemplateSerializer
 
@@ -112,6 +116,8 @@ class GetEditDeleteReportTemplate(APIView):
 
 
 class GenerateReport(APIView):
+    permission_classes = [IsAuthenticated, GenerateReportPerms]
+
     def post(self, request: Request, pk: int) -> Union[FileResponse, Response]:
         template = get_object_or_404(ReportTemplate, pk=pk)
 
@@ -155,6 +161,8 @@ class GenerateReport(APIView):
 
 
 class GenerateReportPreview(APIView):
+    permission_classes = [IsAuthenticated, GenerateReportPerms]
+
     class InputRequest:
         template_md: str
         type: Literal["markdown", "html"]
@@ -245,6 +253,8 @@ class GenerateReportPreview(APIView):
 
 
 class ExportReportTemplate(APIView):
+    permission_classes = [IsAuthenticated, GenerateReportPerms]
+
     def post(self, request: Request, pk: int) -> Response:
         template = get_object_or_404(ReportTemplate, pk=pk)
 
@@ -279,6 +289,8 @@ class ExportReportTemplate(APIView):
 
 
 class ImportReportTemplate(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     @transaction.atomic
     def post(self, request: Request) -> Response:
         try:
@@ -307,6 +319,8 @@ class ImportReportTemplate(APIView):
 
 
 class GetAllowedValues(APIView):
+    permission_classes = [IsAuthenticated, GenerateReportPerms]
+
     def post(self, request: Request) -> Response:
         variables = request.data.get("variables", None)
         if variables is None:
@@ -353,9 +367,9 @@ class GetAllowedValues(APIView):
 
 
 class SharedTemplatesRepo(APIView):
-    def get(self, request: Request) -> Response:
-        import requests
+    permission_classes = [IsAuthenticated, ReportingPerms]
 
+    def get(self, request: Request) -> Response:
         try:
             url = "https://api.github.com/repos/amidaware/private-scripts/contents/Reporting%20Templates/"
             headers = {"Authorization": f"Bearer {djangosettings.GH_TOKEN}"}
@@ -373,8 +387,6 @@ class SharedTemplatesRepo(APIView):
 
     @transaction.atomic
     def post(self, request: Request) -> Response:
-        import requests
-
         overwrite = request.data.get("overwrite", False)
         templates = request.data.get("templates", None)
 
@@ -409,6 +421,8 @@ class SharedTemplatesRepo(APIView):
 
 
 class GetReportAssets(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def get(self, request: Request) -> Response:
         path = request.query_params.get("path", "").lstrip("/")
 
@@ -449,6 +463,8 @@ class GetReportAssets(APIView):
 
 
 class GetAllAssets(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def get(self, request: Request) -> Response:
         only_folders = request.query_params.get("onlyFolders", None)
         only_folders = True if only_folders and only_folders == "true" else False
@@ -507,6 +523,8 @@ class GetAllAssets(APIView):
 
 
 class RenameReportAsset(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     class InputRequest:
         path: str
         newName: str
@@ -541,6 +559,8 @@ class RenameReportAsset(APIView):
 
 
 class CreateAssetFolder(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def post(self, request: Request) -> Response:
         path = request.data["path"].lstrip("/") if "path" in request.data else ""
 
@@ -556,6 +576,8 @@ class CreateAssetFolder(APIView):
 
 
 class DeleteAssets(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     class InputRequest:
         paths: List[str]
 
@@ -591,6 +613,8 @@ class DeleteAssets(APIView):
 
 
 class UploadAssets(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def post(self, request: Request) -> Response:
         path = (
             request.data["parentPath"].lstrip("/")
@@ -626,6 +650,8 @@ class UploadAssets(APIView):
 
 
 class DownloadAssets(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def get(self, request: Request) -> Union[Response, FileResponse]:
         path = request.query_params.get("path", "")
 
@@ -664,6 +690,8 @@ class DownloadAssets(APIView):
 
 
 class MoveAssets(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     class InputRequest:
         srcPaths: List[str]
         destination: str
@@ -701,6 +729,8 @@ class ReportHTMLTemplateSerializer(ModelSerializer[ReportHTMLTemplate]):
 
 
 class GetAddReportHTMLTemplate(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def get(self, request: Request) -> Response:
         reports = ReportHTMLTemplate.objects.all()
         return Response(ReportHTMLTemplateSerializer(reports, many=True).data)
@@ -714,6 +744,8 @@ class GetAddReportHTMLTemplate(APIView):
 
 
 class GetEditDeleteReportHTMLTemplate(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def get(self, request: Request, pk: int) -> Response:
         template = get_object_or_404(ReportHTMLTemplate, pk=pk)
 
@@ -743,6 +775,8 @@ class ReportDataQuerySerializer(ModelSerializer[ReportDataQuery]):
 
 
 class GetAddReportDataQuery(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def get(self, request: Request) -> Response:
         reports = ReportDataQuery.objects.all()
         return Response(ReportDataQuerySerializer(reports, many=True).data)
@@ -756,6 +790,8 @@ class GetAddReportDataQuery(APIView):
 
 
 class GetEditDeleteReportDataQuery(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def get(self, request: Request, pk: int) -> Response:
         template = get_object_or_404(ReportDataQuery, pk=pk)
 
@@ -798,6 +834,8 @@ class NginxRedirect(APIView):
 
 
 class QuerySchema(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
     def get(self, request):
         schema_path = "static/reporting/schemas/query_schema.json"
 

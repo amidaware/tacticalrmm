@@ -195,8 +195,8 @@ services:
       proxy:
         ipv4_address: 172.20.0.20
     ports:
-      - "80:8080"
-      - "443:4443"
+      - "${TRMM_HTTP_PORT-80}:8080"
+      - "${TRMM_HTTPS_PORT-443}:4443"
     volumes:
       - tactical_data:/opt/tactical
 

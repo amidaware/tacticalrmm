@@ -252,7 +252,11 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
                         "shell": script.shell,
                         "timeout": action["timeout"],
                         "run_as_user": script.run_as_user,
-                        "env_vars": env_vars,
+                        "env_vars": Script.parse_script_env_vars(
+                            agent=agent,
+                            shell=script.shell,
+                            env_vars=env_vars,
+                        ),
                     }
                 )
         if actions_to_remove:

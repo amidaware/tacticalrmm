@@ -627,8 +627,7 @@ class Alert(models.Model):
         pattern = re.compile(".*\\{\\{alert\\.(.*)\\}\\}.*")
 
         for arg in args:
-            match = pattern.match(arg)
-            if match:
+            if match := pattern.match(arg):
                 name = match.group(1)
 
                 # check if attr exists and isn't a function

@@ -10,7 +10,22 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 COPY api/tacticalrmm/tacticalrmm/settings.py /tmp/settings.py
 
-RUN npm install meshcentral@$(grep -o 'MESH_VER.*' /tmp/settings.py | cut -d'"' -f 2)
+RUN MESH_VER=$(grep -o 'MESH_VER.*' /tmp/settings.py | cut -d'"' -f 2) && \
+    cat > package.json <<EOF
+{
+  "dependencies": {
+    "archiver": "5.3.1",
+    "meshcentral": "$MESH_VER",
+    "mongodb": "4.13.0",
+    "otplib": "10.2.3",
+    "pg": "8.7.1",
+    "pgtools": "0.3.2",
+    "saslprep": "1.0.3"
+  }
+}
+EOF
+
+RUN npm install
 
 RUN chown -R node:node /home/node
 

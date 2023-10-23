@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="76"
+SCRIPT_VERSION="78"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
 
-sudo apt install -y curl wget dirmngr gnupg lsb-release
+sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -87,7 +87,7 @@ if [ "$arch" = "x86_64" ]; then
 else
   pgarch='arm64'
 fi
-postgresql_repo="deb [arch=${pgarch}] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
+postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
@@ -199,12 +199,13 @@ sudo chown ${USER}:${USER} -R /etc/letsencrypt
 
 print_green 'Installing Nginx'
 
-wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+sudo mkdir -p /etc/apt/keyrings
+
+wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
 
 nginxrepo="$(
   cat <<EOF
-deb https://nginx.org/packages/$osname/ $codename nginx
-deb-src https://nginx.org/packages/$osname/ $codename nginx
+deb [signed-by=/etc/apt/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/$osname $codename nginx
 EOF
 )"
 echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
@@ -252,7 +253,9 @@ done
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+NODE_MAJOR=18
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
@@ -273,13 +276,13 @@ cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_green 'Installing redis and git'
-sudo apt install -y ca-certificates redis git
+sudo apt install -y redis git
 
 print_green 'Installing postgresql'
 
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql-archive-keyring.gpg
 sudo apt update
 sudo apt install -y postgresql-15
 sleep 2
@@ -486,7 +489,7 @@ python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
-printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
+printf >&2 "${YELLOW}Please create your login for the RMM website${NC}\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 echo -ne "Username: "
@@ -896,7 +899,7 @@ done
 sleep 5
 sudo systemctl enable meshcentral
 
-print_green 'Starting meshcentral and waiting for it to install plugins'
+print_green 'Starting meshcentral and waiting for it to be ready'
 
 sudo systemctl restart meshcentral
 
@@ -969,7 +972,6 @@ printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
-printf >&2 "${YELLOW}Django admin url (disabled by default): ${GREEN}https://${rmmdomain}/${ADMINURL}/${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral username: ${GREEN}${meshusername}${NC}\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
 

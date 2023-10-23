@@ -77,7 +77,7 @@ def bulk_script_task(
                 "shell": script.shell,
             },
             "run_as_user": run_as_user,
-            "env_vars": env_vars,
+            "env_vars": script.parse_script_env_vars(agent, script.shell, env_vars),
         }
         tup = (agent.agent_id, data)
         items.append(tup)

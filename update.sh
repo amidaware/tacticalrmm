@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="147"
+SCRIPT_VERSION="148"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -66,6 +66,10 @@ CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 cls() {
   printf "\033c"
 }
+
+if [ ! -d /etc/apt/keyrings ]; then
+  sudo mkdir -p /etc/apt/keyrings
+fi
 
 CHECK_NATS_LIMITNOFILE=$(grep LimitNOFILE /etc/systemd/system/nats.service)
 if ! [[ $CHECK_NATS_LIMITNOFILE ]]; then
@@ -167,12 +171,11 @@ if [ ! -f /etc/apt/sources.list.d/nginx.list ]; then
   codename=$(lsb_release -sc)
   nginxrepo="$(
     cat <<EOF
-deb https://nginx.org/packages/$osname/ $codename nginx
-deb-src https://nginx.org/packages/$osname/ $codename nginx
+deb [signed-by=/etc/apt/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/$osname $codename nginx
 EOF
   )"
   echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
-  wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo apt-key add -
+  wget -qO - https://nginx.org/packages/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
   sudo apt update
   sudo apt install -y nginx
 fi

@@ -17,6 +17,7 @@ set -e
 : "${API_HOST:=tactical-backend}"
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
+: "${SKIP_UWSGI_CONFIG:=0}"
 
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
 : "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
@@ -121,7 +122,11 @@ EOF
   python manage.py load_community_scripts
   python manage.py reload_nats
   python manage.py create_natsapi_conf
-  python manage.py create_uwsgi_conf
+
+  if [ "$SKIP_UWSGI_CONFIG" = 0 ]; then
+    python manage.py create_uwsgi_conf
+  fi
+
   python manage.py create_installer_user
   python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks

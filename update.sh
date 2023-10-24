@@ -390,6 +390,7 @@ API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)
 FRONTEND=$(python manage.py get_config webdomain)
 MESHDOMAIN=$(python manage.py get_config meshdomain)
+WEBTAR_URL=$(python manage.py get_webtar_url)
 deactivate
 
 if grep -q manage_etc_hosts /etc/hosts; then
@@ -420,7 +421,7 @@ if [ ! -d /var/www/rmm ]; then
 fi
 
 webtar="trmm-web-v${WEB_VERSION}.tar.gz"
-wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
+wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo rm -rf /var/www/rmm/dist
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
 echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null

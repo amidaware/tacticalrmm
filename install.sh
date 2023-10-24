@@ -4,16 +4,16 @@ REPO=amidaware
 BRANCH=master
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -r|--repo)
-      REPO="$2"
-      shift # past argument
-      shift # past value
-      ;;
-    -b|--branch)
-      BRANCH="$2"
-      shift # past argument
-      shift # past value
-      ;;
+  -r | --repo)
+    REPO="$2"
+    shift # past argument
+    shift # past value
+    ;;
+  -b | --branch)
+    BRANCH="$2"
+    shift # past argument
+    shift # past value
+    ;;
   esac
 done
 
@@ -509,6 +509,7 @@ python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
+WEBTAR_URL=$(python manage.py get_webtar_url)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website${NC}\n"
@@ -860,7 +861,7 @@ fi
 print_green 'Installing the frontend'
 
 webtar="trmm-web-v${WEB_VERSION}.tar.gz"
-wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
+wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo mkdir -p /var/www/rmm
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
 echo "window._env_ = {PROD_URL: \"https://${rmmdomain}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null

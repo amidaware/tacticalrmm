@@ -371,9 +371,8 @@ class SharedTemplatesRepo(APIView):
 
     def get(self, request: Request) -> Response:
         try:
-            url = "https://api.github.com/repos/amidaware/private-scripts/contents/Reporting%20Templates/"
-            headers = {"Authorization": f"Bearer {djangosettings.GH_TOKEN}"}
-            response = requests.get(url, headers=headers)
+            url = "https://raw.githubusercontent.com/amidaware/reporting-templates/master/index.json"
+            response = requests.get(url, timeout=15)
             files = response.json()
             return Response(
                 [
@@ -393,10 +392,9 @@ class SharedTemplatesRepo(APIView):
         if not templates:
             return notify_error("No templates to import")
 
-        headers = {"Authorization": f"Bearer {djangosettings.GH_TOKEN}"}
         try:
             for template in templates:
-                response = requests.get(template["url"], headers=headers)
+                response = requests.get(template["url"], timeout=10)
                 template_obj = response.json()
 
                 # import base template if exists

@@ -381,8 +381,8 @@ class SharedTemplatesRepo(APIView):
                     if file["download_url"]
                 ]
             )
-        except:
-            return notify_error("Unable to connect to repo")
+        except Exception as e:
+            return notify_error(str(e))
 
     @transaction.atomic
     def post(self, request: Request) -> Response:

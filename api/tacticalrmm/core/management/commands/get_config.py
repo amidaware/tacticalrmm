@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from tacticalrmm.helpers import get_webdomain
+from tacticalrmm.utils import get_certs
 
 
 class Command(BaseCommand):
@@ -59,3 +60,9 @@ class Command(BaseCommand):
                     obj = core.mesh_token
 
                 self.stdout.write(obj)
+            case "certfile" | "keyfile":
+                crt, key = get_certs()
+                if kwargs["name"] == "certfile":
+                    self.stdout.write(crt)
+                elif kwargs["name"] == "keyfile":
+                    self.stdout.write(key)

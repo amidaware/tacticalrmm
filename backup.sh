@@ -68,6 +68,7 @@ mkdir ${tmp_dir}/nginx
 mkdir ${tmp_dir}/systemd
 mkdir ${tmp_dir}/rmm
 mkdir ${tmp_dir}/confd
+mkdir ${tmp_dir}/opt
 
 POSTGRES_USER=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config dbuser)
 POSTGRES_PW=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config dbpw)
@@ -91,6 +92,10 @@ tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules
 
 if [ -d /etc/letsencrypt ]; then
     sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
+fi
+
+if [ -d /opt/tactical ]; then
+    sudo tar -czvf ${tmp_dir}/opt/opt-tactical.tar.gz -C /opt/tactical .
 fi
 
 local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'

@@ -54,6 +54,13 @@ if [[ $DEV -eq 1 ]]; then
         proxy_set_header X-Forwarded-Host  \$host;
         proxy_set_header X-Forwarded-Port  \$server_port;
 "
+
+STATIC_ASSETS="
+    location /static/ {
+        root /workspace/api/tacticalrmm;
+        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
+    }
+"
 else
     API_NGINX="
         #Using variable to disable start checks
@@ -61,6 +68,13 @@ else
 
         include         uwsgi_params;
         uwsgi_pass      \$api;
+"
+
+    STATIC_ASSETS="
+    location /static/ {
+        root ${TACTICAL_DIR}/api/;
+        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
+    }
 "
 fi
 
@@ -75,9 +89,7 @@ server  {
         ${API_NGINX}
     }
 
-    location /static/ {
-        root ${TACTICAL_DIR}/api;
-    }
+    ${STATIC_ASSETS}
 
     location /private/ {
         internal;
@@ -98,6 +110,12 @@ server  {
         proxy_set_header   X-Real-IP \$remote_addr;
         proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Host \$server_name;
+    }
+
+    location /assets/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
+        alias /opt/tactical/reporting/assets/;
     }
 
     location ~ ^/natsws {

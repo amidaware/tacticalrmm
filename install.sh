@@ -1,7 +1,24 @@
 #!/usr/bin/env bash
 
+REPO=amidaware
+BRANCH=master
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  -r | --repo)
+    REPO="$2"
+    shift # past argument
+    shift # past value
+    ;;
+  -b | --branch)
+    BRANCH="$2"
+    shift # past argument
+    shift # past value
+    ;;
+  esac
+done
+
 SCRIPT_VERSION="78"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh'
+SCRIPT_URL="https://raw.githubusercontent.com/${REPO}/tacticalrmm/${BRANCH}/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
 
@@ -276,7 +293,7 @@ cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_green 'Installing redis and git'
-sudo apt install -y redis git
+sudo apt install -y ca-certificates redis git weasyprint
 
 print_green 'Installing postgresql'
 
@@ -321,11 +338,11 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+git clone https://github.com/${REPO}/tacticalrmm.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
-git checkout master
+git checkout ${BRANCH}
 
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
@@ -473,6 +490,10 @@ print_green 'Installing the backend'
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
+sudo mkdir -p /opt/tactical/reporting/assets
+sudo mkdir -p /opt/tactical/reporting/schemas
+sudo chown -R ${USER}:${USER} /opt/tactical
+
 cd /rmm/api
 python3.11 -m venv env
 source /rmm/api/env/bin/activate
@@ -481,12 +502,14 @@ pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
+python manage.py generate_json_schemas
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
+WEBTAR_URL=$(python manage.py get_webtar_url)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website${NC}\n"
@@ -838,7 +861,7 @@ fi
 print_green 'Installing the frontend'
 
 webtar="trmm-web-v${WEB_VERSION}.tar.gz"
-wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
+wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo mkdir -p /var/www/rmm
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
 echo "window._env_ = {PROD_URL: \"https://${rmmdomain}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null

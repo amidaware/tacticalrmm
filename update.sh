@@ -124,6 +124,23 @@ if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
   ' $rmmconf)" | sudo tee $rmmconf >/dev/null
 fi
 
+front_end=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config webdomain)
+CHECK_ASSETS_NGINX=$(grep assets $rmmconf)
+if ! [[ $CHECK_ASSETS_NGINX ]]; then
+  echo "Adding assets to nginx config"
+  echo "$(awk '
+  /location \/ {/ {
+      print "    location /assets/ {"
+      print "        internal;"
+      print "        add_header 'Access-Control-Allow-Origin' 'https://${front_end}';"
+      print "        alias /opt/tactical/reporting/assets/;"
+      print "    }"
+      print "\n"
+  }
+  { print }
+  ' $rmmconf)" | sudo tee $rmmconf >/dev/null
+fi
+
 printf >&2 "${GREEN}Stopping celery and celerybeat services (this might take a while)...${NC}\n"
 for i in celerybeat celery; do
   sudo systemctl stop ${i}
@@ -346,9 +363,20 @@ else
   pip install -r requirements.txt
 fi
 
+if [ ! -d /opt/tactical/reporting/assets ]; then
+  sudo mkdir -p /opt/tactical/reporting/assets
+fi
+
+if [ ! -d /opt/tactical/reporting/schemas ]; then
+  sudo mkdir /opt/tactical/reporting/schemas
+fi
+
+sudo chown -R ${USER}:${USER} /opt/tactical
+
 python manage.py pre_update_tasks
 celery -A tacticalrmm purge -f
 python manage.py migrate
+python manage.py generate_json_schemas
 python manage.py delete_tokens
 python manage.py collectstatic --no-input
 python manage.py reload_nats
@@ -362,6 +390,7 @@ API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)
 FRONTEND=$(python manage.py get_config webdomain)
 MESHDOMAIN=$(python manage.py get_config meshdomain)
+WEBTAR_URL=$(python manage.py get_webtar_url)
 deactivate
 
 if grep -q manage_etc_hosts /etc/hosts; then
@@ -392,7 +421,7 @@ if [ ! -d /var/www/rmm ]; then
 fi
 
 webtar="trmm-web-v${WEB_VERSION}.tar.gz"
-wget -q https://github.com/amidaware/tacticalrmm-web/releases/download/v${WEB_VERSION}/${webtar} -O /tmp/${webtar}
+wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo rm -rf /var/www/rmm/dist
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
 echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null

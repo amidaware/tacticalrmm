@@ -57,3 +57,4 @@ daphne.sock.lock
 coverage.xml
 setup_dev.yml
 11env/
+query_schema.json

@@ -77,6 +77,8 @@ with suppress(ImportError):
 CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"
 AGENTS_URL = f"{AGENT_BASE_URL}/api/v2/agents/?"
 EXE_GEN_URL = f"{AGENT_BASE_URL}/api/v2/exe"
+REPORTING_CHECK_URL = f"{AGENT_BASE_URL}/api/v2/reporting/check"
+REPORTING_DL_URL = f"{AGENT_BASE_URL}/api/v2/reporting/download/?"
 
 if "GHACTIONS" in os.environ:
     DEBUG = False
@@ -130,6 +132,7 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
+    "ee.reporting",
 ]
 
 CHANNEL_LAYERS = {

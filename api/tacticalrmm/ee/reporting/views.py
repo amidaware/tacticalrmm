@@ -37,11 +37,10 @@ from rest_framework.serializers import (
     ValidationError,
 )
 from rest_framework.views import APIView
-
 from tacticalrmm.utils import notify_error
 
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
-from .permissions import ReportingPerms, GenerateReportPerms
+from .permissions import GenerateReportPerms, ReportingPerms
 from .storage import report_assets_fs
 from .utils import (
     _import_assets,

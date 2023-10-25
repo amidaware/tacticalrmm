@@ -4,11 +4,12 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 import json
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 from django.apps import apps
 from django.conf import settings as djangosettings
 from django.core.management.base import BaseCommand
-from typing import Dict, Tuple, List, Any, TYPE_CHECKING
+
 from ...constants import REPORTING_MODELS
 
 if TYPE_CHECKING:

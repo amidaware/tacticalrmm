@@ -1,9 +1,11 @@
-import pytest
 import json
+from unittest.mock import mock_open, patch
+
+import pytest
 from model_bakery import baker
-from rest_framework.test import APIClient
 from rest_framework import status
-from unittest.mock import patch, mock_open
+from rest_framework.test import APIClient
+
 from ..models import ReportDataQuery
 
 

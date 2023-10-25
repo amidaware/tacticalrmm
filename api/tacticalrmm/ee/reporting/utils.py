@@ -4,23 +4,23 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-import re
 import json
-from typing import Any, Dict, List, Tuple, Literal, Optional, Union, Type, cast
+import re
+from enum import Enum
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast
 
 import plotly.express as px
 import yaml
 from django.apps import apps
 from jinja2 import Environment, FunctionLoader
+from rest_framework.serializers import ValidationError
 from tacticalrmm.utils import get_db_value
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
-from enum import Enum
 
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
-from .models import ReportAsset, ReportHTMLTemplate, ReportTemplate, ReportDataQuery
-from rest_framework.serializers import ValidationError
+from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
@@ -356,9 +356,9 @@ def add_custom_fields(
     model_name: Literal["client", "site", "agent"],
     dict_value: bool = False,
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
-    from core.models import CustomField
     from agents.models import AgentCustomField
     from clients.models import ClientCustomField, SiteCustomField
+    from core.models import CustomField
 
     model_name = model_name.lower()
     CustomFieldModel: Union[
@@ -684,9 +684,11 @@ def _import_report_template(
 
 
 def _import_assets(assets: List[Dict[str, Any]]) -> None:
-    from django.core.files import File
     import io
     import os
+
+    from django.core.files import File
+
     from .storage import report_assets_fs
 
     if isinstance(assets, list):

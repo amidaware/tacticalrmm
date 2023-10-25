@@ -1,12 +1,14 @@
-import pytest
-import uuid
 import os
-from rest_framework.test import APIClient
-from unittest.mock import patch, mock_open
-from model_bakery import baker
-from rest_framework import status
+import uuid
+from unittest.mock import mock_open, patch
+
+import pytest
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.uploadedfile import SimpleUploadedFile
+from model_bakery import baker
+from rest_framework import status
+from rest_framework.test import APIClient
+
 from ..models import ReportAsset
 
 

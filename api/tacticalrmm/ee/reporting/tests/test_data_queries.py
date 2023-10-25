@@ -1,16 +1,18 @@
-import pytest
 from unittest.mock import patch
-from model_bakery import baker
+
+import pytest
+from agents.models import Agent
 from django.apps import apps
+from model_bakery import baker
+
+from ..constants import REPORTING_MODELS
 from ..utils import (
+    InvalidDBOperationException,
+    ResolveModelException,
     add_custom_fields,
     build_queryset,
     resolve_model,
-    ResolveModelException,
-    InvalidDBOperationException,
 )
-from ..constants import REPORTING_MODELS
-from agents.models import Agent
 
 
 class TestResolvingModels:

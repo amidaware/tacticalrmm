@@ -1,7 +1,7 @@
 import pytest
 from model_bakery import baker
 
-from ..utils import generate_html, db_template_loader
+from ..utils import db_template_loader, generate_html
 
 
 @pytest.mark.django_db

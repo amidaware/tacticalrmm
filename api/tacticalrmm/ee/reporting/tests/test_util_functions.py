@@ -1,11 +1,9 @@
+import base64
+
 import pytest
 from model_bakery import baker
-from ..utils import (
-    normalize_asset_url,
-    base64_encode_assets,
-    decode_base64_asset,
-)
-import base64
+
+from ..utils import base64_encode_assets, decode_base64_asset, normalize_asset_url
 
 
 @pytest.mark.django_db

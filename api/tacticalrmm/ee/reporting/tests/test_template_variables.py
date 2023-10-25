@@ -1,11 +1,13 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 from model_bakery import baker
+
 from ..utils import (
-    process_dependencies,
-    process_data_sources,
-    process_chart_variables,
     prep_variables_for_template,
+    process_chart_variables,
+    process_data_sources,
+    process_dependencies,
 )
 
 

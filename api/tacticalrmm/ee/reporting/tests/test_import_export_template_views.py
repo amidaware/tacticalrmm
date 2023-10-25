@@ -1,12 +1,14 @@
-import pytest
-import uuid
 import base64
 import json
-from model_bakery import baker
-from rest_framework.test import APIClient
+import uuid
 from unittest.mock import patch
+
+import pytest
+from model_bakery import baker
 from rest_framework import status
-from ..models import ReportAsset, ReportTemplate, ReportHTMLTemplate
+from rest_framework.test import APIClient
+
+from ..models import ReportAsset, ReportHTMLTemplate, ReportTemplate
 
 
 @pytest.fixture

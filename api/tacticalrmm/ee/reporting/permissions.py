@@ -1,5 +1,4 @@
 from rest_framework import permissions
-
 from tacticalrmm.permissions import _has_perm
 
 

@@ -6,7 +6,7 @@ For details, see: https://license.tacticalrmm.com/ee
 
 from django.contrib import admin
 
-from .models import ReportTemplate, ReportAsset
+from .models import ReportAsset, ReportTemplate
 
 admin.site.register(ReportTemplate)
 admin.site.register(ReportAsset)

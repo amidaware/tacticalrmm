@@ -1,10 +1,10 @@
-import pytest
-
-from rest_framework.test import APIClient
 from unittest.mock import patch
+
+import pytest
+from jinja2.exceptions import TemplateError
 from model_bakery import baker
 from rest_framework import status
-from jinja2.exceptions import TemplateError
+from rest_framework.test import APIClient
 
 
 @pytest.fixture

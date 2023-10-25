@@ -8,10 +8,9 @@ from time import sleep
 from typing import Any, Optional
 
 import requests
+from core.models import CodeSignToken
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
-from core.models import CodeSignToken
 
 
 class Command(BaseCommand):

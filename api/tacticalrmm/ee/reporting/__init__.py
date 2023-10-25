@@ -4,13 +4,14 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-import yaml
 import re
 from datetime import datetime, timedelta
+
+import yaml
 from django.utils import timezone
 
 now_regex = re.compile(
-    r"^(weeks|days|hours|minutes|seconds|microseconds)=(-?\d*)$", re.X
+    r"^(weeks|days|hours|minutes|seconds|microseconds)=(-?\d*)$", re.VERBOSE
 )
 
 

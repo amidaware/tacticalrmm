@@ -71,7 +71,7 @@ class GetAddReportTemplate(APIView):
     serializer_class = ReportTemplateSerializer
 
     def get(self, request: Request) -> Response:
-        depends_on: List[str] = request.query_params.getlist("dependsOn[]", list())
+        depends_on: List[str] = request.query_params.getlist("dependsOn[]", [])
 
         if depends_on:
             templates = ReportTemplate.objects.filter(depends_on__overlap=depends_on)
@@ -122,14 +122,14 @@ class GenerateReport(APIView):
 
         format = request.data["format"]
 
-        if format not in ["pdf", "html", "plaintext"]:
+        if format not in ("pdf", "html", "plaintext"):
             return notify_error("Report format is incorrect.")
 
         try:
             html_report, _ = generate_html(
                 template=template.template_md,
                 template_type=template.type,
-                css=template.template_css if template.template_css else "",
+                css=template.template_css or "",
                 html_template=template.template_html.id
                 if template.template_html
                 else None,
@@ -216,7 +216,7 @@ class GenerateReportPreview(APIView):
             from django.forms.models import model_to_dict
 
             # serialize any model instances provided
-            for model_name in ["agent", "site", "client"]:
+            for model_name in ("agent", "site", "client"):
                 if model_name in variables:
                     model_instance = variables[model_name]
                     serialized_model = model_to_dict(
@@ -257,7 +257,7 @@ class ExportReportTemplate(APIView):
     def post(self, request: Request, pk: int) -> Response:
         template = get_object_or_404(ReportTemplate, pk=pk)
 
-        template_html = template.template_html if template.template_html else None
+        template_html = template.template_html or None
 
         base_template = None
         if template_html:
@@ -336,8 +336,8 @@ class GetAllowedValues(APIView):
 
         if variables:
             return Response(self._get_dot_notation(variables))
-        else:
-            return Response()
+
+        return Response()
 
     # recursive function to get properties on any embedded objects
     def _get_dot_notation(
@@ -428,7 +428,7 @@ class GetReportAssets(APIView):
         except FileNotFoundError:
             return notify_error("The path is invalid")
 
-        response = list()
+        response = []
 
         # parse directories
         for foldername in directories:
@@ -484,7 +484,7 @@ class GetAllAssets(APIView):
                 "type": "folder",
                 "name": current_dir.replace("./", ""),
                 "path": path.replace("./", ""),
-                "children": list(),
+                "children": [],
                 "selectable": False,
                 "icon": "folder",
                 "iconColor": "yellow-9",

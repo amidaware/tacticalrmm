@@ -166,7 +166,7 @@ def resolve_model(*, data_source: Dict[str, Any]) -> Dict[str, Any]:
     tmp_data_source = data_source
 
     # check that model property is present and correct
-    if "model" in data_source.keys():
+    if "model" in data_source:
         for model, app in REPORTING_MODELS:
             if data_source["model"].lower() == model.lower():
                 try:
@@ -242,7 +242,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         elif operation == "custom_fields" and isinstance(values, list):
             from core.models import CustomField
 
-            if model_name in ["client", "site", "agent"]:
+            if model_name in ("client", "site", "agent"):
                 fields = CustomField.objects.filter(model=model_name)
                 fields_to_add = [
                     field for field in values if fields.filter(name=field).exists()
@@ -427,12 +427,8 @@ def add_custom_fields(
 
 
 def normalize_asset_url(text: str, type: Literal["pdf", "html", "plaintext"]) -> str:
-    RE_ASSET_URL = re.compile(
-        r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))"
-    )
-
     new_text = text
-    for url, id in re.findall(RE_ASSET_URL, text):
+    for url, id in RE_ASSET_URL.findall(text):
         try:
             asset = ReportAsset.objects.get(id=id)
             if type == "html":
@@ -452,7 +448,7 @@ def base64_encode_assets(template: str) -> List[Dict[str, Any]]:
 
     assets = []
     added_ids = []
-    for _, id in re.findall(RE_ASSET_URL, template):
+    for _, id in RE_ASSET_URL.findall(template):
         if id not in added_ids:
             try:
                 asset = ReportAsset.objects.get(pk=id)
@@ -517,13 +513,13 @@ def process_dependencies(
             dependencies[dep] = Model.objects.get(**{lookup_param: dependencies[dep]})
 
     # Handle database value placeholders
-    for string, model, prop in re.findall(RE_DB_VALUE, variables):
+    for string, model, prop in RE_DB_VALUE.findall(variables):
         value = get_value_for_model(model, prop, dependencies)
         if value:
             variables = variables.replace(string, str(value))
 
     # Handle non-database dependencies
-    for string, dep in re.findall(RE_DEPENDENCY_VALUE, variables):
+    for string, dep in RE_DEPENDENCY_VALUE.findall(variables):
         value = dependencies.get(dep)
         if value:
             variables = variables.replace(string, str(value))

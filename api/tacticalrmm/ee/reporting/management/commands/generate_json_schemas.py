@@ -77,7 +77,7 @@ def traverse_model_fields(
 
 
 def generate_schema() -> None:
-    oneOf = list()
+    oneOf = []
 
     for model, app in REPORTING_MODELS:
         Model = apps.get_model(app_label=app, model_name=model)

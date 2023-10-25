@@ -39,7 +39,7 @@ class Command(BaseCommand):
                 attempts += 1
                 sleep(3)
             else:
-                if r.status_code // 100 in [3, 5]:
+                if r.status_code // 100 in (3, 5):
                     self.stderr.write(f"Error getting web tarball: {r.status_code}")
                     attempts += 1
                     sleep(3)

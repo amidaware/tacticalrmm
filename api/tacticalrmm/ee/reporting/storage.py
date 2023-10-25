@@ -35,8 +35,8 @@ class ReportAssetStorage(FileSystemStorage):
         """
         if self.exists(path):
             return os.path.dirname(path)
-        else:
-            return ""
+
+        return ""
 
     def rename(self, *, path: str, new_name: str) -> str:
         """Renames the file or folder specified. If the name is already taken

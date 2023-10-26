@@ -1,7 +1,8 @@
 FROM nginxinc/nginx-unprivileged:stable-alpine
 
 ENV PUBLIC_DIR /usr/share/nginx/html
-
+ENV TACTICAL_DIR /opt/tactical
+ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
 USER root
 
 RUN deluser --remove-home nginx \

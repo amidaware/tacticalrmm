@@ -118,6 +118,7 @@ EOF
   python manage.py pre_update_tasks
   python manage.py migrate --no-input
   python manage.py generate_json_schemas
+  python manage.py get_webtar_url > ${TACTICAL_DIR}/tmp/web_tar_url
   python manage.py collectstatic --no-input
   python manage.py initial_db_setup
   python manage.py initial_mesh_setup
@@ -127,7 +128,6 @@ EOF
   python manage.py create_natsapi_conf
   python manage.py create_uwsgi_conf
   python manage.py create_installer_user
-  python manage.py setup_reporting_permissions
   python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks
 

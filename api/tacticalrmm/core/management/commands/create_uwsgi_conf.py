@@ -35,7 +35,7 @@ class Command(BaseCommand):
             "buffer-size": str(getattr(settings, "UWSGI_BUFFER_SIZE", 65535)),
             "vacuum": str(getattr(settings, "UWSGI_VACUUM", True)).lower(),
             "die-on-term": str(getattr(settings, "UWSGI_DIE_ON_TERM", True)).lower(),
-            "max-requests": str(getattr(settings, "UWSGI_MAX_REQUESTS", 500)),
+            "max-requests": str(getattr(settings, "UWSGI_MAX_REQUESTS", 50)),
             "disable-logging": str(
                 getattr(settings, "UWSGI_DISABLE_LOGGING", True)
             ).lower(),

@@ -10,7 +10,7 @@ NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.11.4'
+PYTHON_VER='3.11.6'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
@@ -102,45 +102,6 @@ EOF
   sudo systemctl daemon-reload
 fi
 
-rmmconf='/etc/nginx/sites-available/rmm.conf'
-CHECK_NATS_WEBSOCKET=$(grep natsws $rmmconf)
-if ! [[ $CHECK_NATS_WEBSOCKET ]]; then
-  echo "Adding nats websocket to nginx config"
-  echo "$(awk '
-  /location \/ {/ {
-      print "    location ~ ^/natsws {"
-      print "        proxy_pass http://127.0.0.1:9235;"
-      print "        proxy_http_version 1.1;"
-      print "        proxy_set_header Host $host;"
-      print "        proxy_set_header Upgrade $http_upgrade;"
-      print "        proxy_set_header Connection \"upgrade\";"
-      print "        proxy_set_header X-Forwarded-Host $host:$server_port;"
-      print "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;"
-      print "        proxy_set_header X-Forwarded-Proto $scheme;"
-      print "    }"
-      print "\n"
-  }
-  { print }
-  ' $rmmconf)" | sudo tee $rmmconf >/dev/null
-fi
-
-front_end=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config webdomain)
-CHECK_ASSETS_NGINX=$(grep assets $rmmconf)
-if ! [[ $CHECK_ASSETS_NGINX ]]; then
-  echo "Adding assets to nginx config"
-  echo "$(awk '
-  /location \/ {/ {
-      print "    location /assets/ {"
-      print "        internal;"
-      print "        add_header 'Access-Control-Allow-Origin' 'https://${front_end}';"
-      print "        alias /opt/tactical/reporting/assets/;"
-      print "    }"
-      print "\n"
-  }
-  { print }
-  ' $rmmconf)" | sudo tee $rmmconf >/dev/null
-fi
-
 printf >&2 "${GREEN}Stopping celery and celerybeat services (this might take a while)...${NC}\n"
 for i in celerybeat celery; do
   sudo systemctl stop ${i}
@@ -212,13 +173,6 @@ if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
 /' $nginxdefaultconf
 fi
 
-backend_conf='/etc/nginx/sites-available/rmm.conf'
-CHECK_NGINX_REUSEPORT=$(grep reuseport $backend_conf)
-if ! [[ $CHECK_NGINX_REUSEPORT ]]; then
-  printf >&2 "${GREEN}Setting nginx reuseport${NC}\n"
-  sudo sed -i 's/listen 443 ssl;/listen 443 ssl reuseport;/g' $backend_conf
-fi
-
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' $nginxdefaultconf
 
 if ! sudo nginx -t >/dev/null 2>&1; then
@@ -243,6 +197,11 @@ if ! [[ $HAS_PY311 ]]; then
   sudo make altinstall
   cd ~
   sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+fi
+
+HAS_WEASYPRINT=$(dpkg -l | grep weasyprint)
+if ! [[ $HAS_WEASYPRINT ]]; then
+  sudo apt install -y weasyprint
 fi
 
 arch=$(uname -m)
@@ -391,6 +350,8 @@ WEB_VERSION=$(python manage.py get_config webversion)
 FRONTEND=$(python manage.py get_config webdomain)
 MESHDOMAIN=$(python manage.py get_config meshdomain)
 WEBTAR_URL=$(python manage.py get_webtar_url)
+CERT_PUB_KEY=$(python manage.py get_config certfile)
+CERT_PRIV_KEY=$(python manage.py get_config keyfile)
 deactivate
 
 if grep -q manage_etc_hosts /etc/hosts; then
@@ -399,6 +360,109 @@ if grep -q manage_etc_hosts /etc/hosts; then
     echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
     sudo systemctl restart cloud-init >/dev/null
   fi
+fi
+
+rmmconf='/etc/nginx/sites-available/rmm.conf'
+if ! grep -q "location /assets/" $rmmconf; then
+  printf >&2 "${YELLOW}WARNING!!!!\n\n"
+  printf >&2 "${rmmconf} will now be replaced due to changes needed for this update.\n\n"
+  printf >&2 "A backup of the existing config will be created in your home directory at ~/rmm.conf.nginx.bak\n\n"
+  printf >&2 "If you have made any custom or unsupported changes to this file please add them back in after this update.\n\n"
+  read -n 1 -s -r -p "Press any key to confirm you have read the above and continue..."
+  printf >&2 "\n${NC}\n"
+  cp $rmmconf ~/rmm.conf.nginx.bak
+  nginxrmm="$(
+    cat <<EOF
+server_tokens off;
+
+upstream tacticalrmm {
+    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+}
+
+map \$http_user_agent \$ignore_ua {
+    "~python-requests.*" 0;
+    "~go-resty.*" 0;
+    default 1;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${API};
+    return 301 https://\$server_name\$request_uri;
+}
+
+server {
+    listen 443 ssl reuseport;
+    listen [::]:443 ssl;
+    server_name ${API};
+    client_max_body_size 300M;
+    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
+    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    ssl_certificate ${CERT_PUB_KEY};
+    ssl_certificate_key ${CERT_PRIV_KEY};
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header X-Content-Type-Options nosniff;
+    
+    location /static/ {
+        root /rmm/api/tacticalrmm;
+        add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
+    }
+
+    location /private/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
+        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+    }
+
+    location /assets/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
+        alias /opt/tactical/reporting/assets/;
+    }
+
+    location ~ ^/ws/ {
+        proxy_pass http://unix:/rmm/daphne.sock;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_redirect     off;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Host \$server_name;
+    }
+
+    location ~ ^/natsws {
+        proxy_pass http://127.0.0.1:9235;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host \$host;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Forwarded-Host \$host:\$server_port;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location / {
+        uwsgi_pass  tacticalrmm;
+        include     /etc/nginx/uwsgi_params;
+        uwsgi_read_timeout 300s;
+        uwsgi_ignore_client_abort on;
+    }
+}
+EOF
+  )"
+  echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
 fi
 
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$API" | grep "$FRONTEND" | grep "$MESHDOMAIN")

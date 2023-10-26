@@ -29,7 +29,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.11.4'
+PYTHON_VER='3.11.6'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
@@ -292,8 +292,8 @@ sudo make altinstall
 cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
-print_green 'Installing redis and git'
-sudo apt install -y ca-certificates redis git weasyprint
+print_green 'Installing redis git and weasyprint'
+sudo apt install -y redis git weasyprint
 
 print_green 'Installing postgresql'
 

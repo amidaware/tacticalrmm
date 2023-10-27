@@ -14,6 +14,7 @@ django-ipware==5.0.0
 django-rest-knox==4.2.0
 djangorestframework==3.14.0
 drf-spectacular==0.26.5
+gunicorn==21.2.0
 hiredis==2.2.3
 meshctrl==0.1.15
 msgpack==1.0.7
@@ -33,12 +34,11 @@ six==1.16.0
 sqlparse==0.4.4
 twilio==8.10.0
 urllib3==2.0.7
-uWSGI==2.0.22
 validators==0.20.0
 vine==5.0.0
 websockets==11.0.3
 zipp==3.17.0
-pandas==2.1.1
+pandas==2.1.2
 kaleido==0.2.1
 jinja2==3.1.2
 markdown==3.3.6

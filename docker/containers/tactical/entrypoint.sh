@@ -53,13 +53,13 @@ if [ "$1" = 'tactical-init' ]; then
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
   touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
-  
-  until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
+
+  until (echo >/dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &>/dev/null; do
     echo "waiting for postgresql container to be ready..."
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${MESH_SERVICE}"/4443) &> /dev/null; do
+  until (echo >/dev/tcp/"${MESH_SERVICE}"/4443) &>/dev/null; do
     echo "waiting for meshcentral container to be ready..."
     sleep 5
   done
@@ -68,8 +68,9 @@ if [ "$1" = 'tactical-init' ]; then
   MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-  
-  localvars="$(cat << EOF
+
+  localvars="$(
+    cat <<EOF
 SECRET_KEY = '${DJANGO_SEKRET}'
 
 DEBUG = False
@@ -110,15 +111,15 @@ REDIS_HOST    = '${REDIS_HOST}'
 MESH_WS_URL = '${MESH_WS_URL}'
 ADMIN_ENABLED = False
 EOF
-)"
+  )"
 
-  echo "${localvars}" > ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
+  echo "${localvars}" >${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
 
   # run migrations and init scripts
   python manage.py pre_update_tasks
   python manage.py migrate --no-input
   python manage.py generate_json_schemas
-  python manage.py get_webtar_url > ${TACTICAL_DIR}/tmp/web_tar_url
+  python manage.py get_webtar_url >${TACTICAL_DIR}/tmp/web_tar_url
   python manage.py collectstatic --no-input
   python manage.py initial_db_setup
   python manage.py initial_mesh_setup
@@ -126,12 +127,12 @@ EOF
   python manage.py load_community_scripts
   python manage.py reload_nats
   python manage.py create_natsapi_conf
-  python manage.py create_uwsgi_conf
+  python manage.py create_gunicorn_conf
   python manage.py create_installer_user
   python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks
 
-  # create super user 
+  # create super user
   echo "Creating dashboard user if it doesn't exist"
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
 
@@ -149,7 +150,7 @@ fi
 if [ "$1" = 'tactical-backend' ]; then
   check_tactical_ready
 
-  uwsgi ${TACTICAL_DIR}/api/app.ini
+  gunicorn -c ${TACTICAL_DIR}/api/gunicorn_config.py tacticalrmm.wsgi:application
 fi
 
 if [ "$1" = 'tactical-celery' ]; then

@@ -9,7 +9,6 @@ import re
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast
 
-import plotly.express as px
 import yaml
 from django.apps import apps
 from jinja2 import Environment, FunctionLoader
@@ -596,6 +595,9 @@ def generate_chart(
     traces: Optional[Dict[str, Any]] = None,
     layout: Optional[Dict[str, Any]] = None,
 ) -> str:
+    ### TODO figure out why plotly affects perf
+    import plotly.express as px
+
     fig = getattr(px, type)(**options)
 
     if traces:

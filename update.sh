@@ -392,7 +392,7 @@ if grep -q manage_etc_hosts /etc/hosts; then
 fi
 
 rmmconf='/etc/nginx/sites-available/rmm.conf'
-if ! grep -q "location /assets/" $rmmconf; then
+if ! grep -q gunicorn $rmmconf; then
   printf >&2 "${YELLOW}WARNING!!!!\n\n"
   printf >&2 "${rmmconf} will now be replaced due to changes needed for this update.\n\n"
   printf >&2 "A backup of the existing config will be created in your home directory at ~/rmm.conf.nginx.bak\n\n"

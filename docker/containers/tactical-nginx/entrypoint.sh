@@ -64,10 +64,13 @@ STATIC_ASSETS="
 else
     API_NGINX="
         #Using variable to disable start checks
-        set \$api ${BACKEND_SERVICE}:${API_PORT};
+        set \$api http://${BACKEND_SERVICE}:${API_PORT};
 
-        include         uwsgi_params;
-        uwsgi_pass      \$api;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Host \$http_host;
+        proxy_redirect off;
+        proxy_pass \$api;
 "
 
     STATIC_ASSETS="

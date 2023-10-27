@@ -115,6 +115,28 @@ EOF
 
   echo "${localvars}" >${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
 
+  gunicornconfig="$(cat << EOF
+import multiprocessing
+
+workers = multiprocessing.cpu_count() * 2 + 1
+
+bind = "0.0.0.0:8080"
+wsgi_app = "tacticalrmm.wsgi"
+raw_env = ["DJANGO_SETTINGS_MODULE=tacticalrmm.settings"]
+backlog = 2048
+worker_connections = 1000
+timeout = 300
+graceful_timeout = 300
+limit_request_line = 0
+limit_request_fields = 500
+limit_request_field_size = 0
+max_requests = 50
+max_requests_jitter = 8
+loglevel = "info"
+EOF
+)"
+  echo "${gunicornconfig}" > ${TACTICAL_DIR}/api/gunicorn.conf.py
+
   # run migrations and init scripts
   python manage.py pre_update_tasks
   python manage.py migrate --no-input
@@ -127,7 +149,6 @@ EOF
   python manage.py load_community_scripts
   python manage.py reload_nats
   python manage.py create_natsapi_conf
-  python manage.py create_gunicorn_conf
   python manage.py create_installer_user
   python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks
@@ -149,8 +170,7 @@ fi
 # backend container
 if [ "$1" = 'tactical-backend' ]; then
   check_tactical_ready
-
-  gunicorn -c ${TACTICAL_DIR}/api/gunicorn_config.py tacticalrmm.wsgi:application
+  gunicorn
 fi
 
 if [ "$1" = 'tactical-celery' ]; then

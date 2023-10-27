@@ -16,9 +16,6 @@ function check_tactical_ready {
 rm -rf ${PUBLIC_DIR}/env-config.js
 touch ${PUBLIC_DIR}/env-config.js
 
-# Add runtime base url assignment 
-echo "window._env_ = {PROD_URL: \"https://${API_HOST}\"}" >> ${PUBLIC_DIR}/env-config.js
-
 nginx_config="$(cat << EOF
 server {
   listen 8080;
@@ -55,8 +52,10 @@ if [ -f "$URL_PATH" ]; then
 
     rm -f /tmp/${webtar}
     rm -rf /tmp/dist
-   
-    chown -R nginx:nginx /etc/nginx && chown -R nginx:nginx ${PUBLIC_DIR}
     echo "Success!"
   fi
 fi  
+
+# Add runtime base url assignment 
+echo "window._env_ = {PROD_URL: \"https://${API_HOST}\"}" > ${PUBLIC_DIR}/env-config.js
+chown -R nginx:nginx /etc/nginx && chown -R nginx:nginx ${PUBLIC_DIR}

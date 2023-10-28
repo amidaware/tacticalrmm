@@ -21,14 +21,14 @@ rm -f /etc/nginx/conf.d/default.conf
 
 # check for certificates in env variable
 if [ ! -z "$CERT_PRIV_KEY" ] && [ ! -z "$CERT_PUB_KEY" ]; then
-  echo "${CERT_PRIV_KEY}" | base64 -d > ${CERT_PRIV_PATH}
-  echo "${CERT_PUB_KEY}" | base64 -d > ${CERT_PUB_PATH}
+    echo "${CERT_PRIV_KEY}" | base64 -d >${CERT_PRIV_PATH}
+    echo "${CERT_PUB_KEY}" | base64 -d >${CERT_PUB_PATH}
 else
-  # generate a self signed cert
-  if [ ! -f "${CERT_PRIV_PATH}" ] || [ ! -f "${CERT_PUB_PATH}" ]; then
-    rootdomain=$(echo ${API_HOST} | cut -d "." -f2- )
-    openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
-  fi
+    # generate a self signed cert
+    if [ ! -f "${CERT_PRIV_PATH}" ] || [ ! -f "${CERT_PUB_PATH}" ]; then
+        rootdomain=$(echo ${API_HOST} | cut -d "." -f2-)
+        openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
+    fi
 fi
 
 nginxdefaultconf='/etc/nginx/nginx.conf'
@@ -55,7 +55,7 @@ if [[ $DEV -eq 1 ]]; then
         proxy_set_header X-Forwarded-Port  \$server_port;
 "
 
-STATIC_ASSETS="
+    STATIC_ASSETS="
     location /static/ {
         root /workspace/api/tacticalrmm;
         add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
@@ -64,13 +64,10 @@ STATIC_ASSETS="
 else
     API_NGINX="
         #Using variable to disable start checks
-        set \$api http://${BACKEND_SERVICE}:${API_PORT};
+        set \$api ${BACKEND_SERVICE}:${API_PORT};
 
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Host \$http_host;
-        proxy_redirect off;
-        proxy_pass \$api;
+        include         uwsgi_params;
+        uwsgi_pass      \$api;
 "
 
     STATIC_ASSETS="
@@ -81,7 +78,8 @@ else
 "
 fi
 
-nginx_config="$(cat << EOF
+nginx_config="$(
+    cat <<EOF
 # backend config
 server  {
     resolver ${NGINX_RESOLVER} valid=30s;
@@ -250,4 +248,4 @@ server {
 EOF
 )"
 
-echo "${nginx_config}" > /etc/nginx/conf.d/default.conf
+echo "${nginx_config}" >/etc/nginx/conf.d/default.conf

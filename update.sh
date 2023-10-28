@@ -142,35 +142,6 @@ EOF
   sudo systemctl daemon-reload
 fi
 
-if ! grep -q gunicorn /etc/systemd/system/rmm.service; then
-  sudo rm -f /etc/systemd/system/rmm.service
-
-  gunicornsvc="$(
-    cat <<EOF
-[Unit]
-Description=tacticalrmm gunicorn daemon v1
-After=network.target postgresql.service
-
-[Service]
-User=${USER}
-Group=www-data
-WorkingDirectory=/rmm/api/tacticalrmm
-Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/gunicorn -c gunicorn_config.py tacticalrmm.wsgi:application
-ExecReload=/bin/kill -s HUP \$MAINPID
-ExecStartPre=rm -f /rmm/api/tacticalrmm/tacticalrmm.sock
-KillMode=mixed
-Restart=always
-RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-  )"
-  echo "${gunicornsvc}" | sudo tee /etc/systemd/system/rmm.service >/dev/null
-  sudo systemctl daemon-reload
-fi
-
 osname=$(lsb_release -si)
 osname=${osname^}
 osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
@@ -380,7 +351,7 @@ python manage.py reload_nats
 python manage.py load_chocos
 python manage.py create_installer_user
 python manage.py create_natsapi_conf
-python manage.py create_gunicorn_conf
+python manage.py create_uwsgi_conf
 python manage.py clear_redis_celery_locks
 python manage.py post_update_tasks
 API=$(python manage.py get_config api)
@@ -401,7 +372,7 @@ if grep -q manage_etc_hosts /etc/hosts; then
 fi
 
 rmmconf='/etc/nginx/sites-available/rmm.conf'
-if ! grep -q gunicorn $rmmconf; then
+if ! grep -q "location /assets/" $rmmconf; then
   printf >&2 "${YELLOW}WARNING!!!!\n\n"
   printf >&2 "${rmmconf} will now be replaced due to changes needed for this update.\n\n"
   printf >&2 "A backup of the existing config will be created in your home directory at ~/rmm.conf.nginx.bak\n\n"
@@ -413,8 +384,8 @@ if ! grep -q gunicorn $rmmconf; then
     cat <<EOF
 server_tokens off;
 
-upstream tacticalgunicorn {
-    server unix:/rmm/api/tacticalrmm/tacticalrmm.sock;
+upstream tacticalrmm {
+    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -492,11 +463,10 @@ server {
     }
 
     location / {
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Host \$http_host;
-        proxy_redirect off;
-        proxy_pass http://tacticalgunicorn;
+        uwsgi_pass  tacticalrmm;
+        include     /etc/nginx/uwsgi_params;
+        uwsgi_read_timeout 300s;
+        uwsgi_ignore_client_abort on;
     }
 }
 EOF

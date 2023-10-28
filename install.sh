@@ -518,7 +518,7 @@ python manage.py migrate
 python manage.py generate_json_schemas
 python manage.py collectstatic --no-input
 python manage.py create_natsapi_conf
-python manage.py create_gunicorn_conf
+python manage.py create_uwsgi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
@@ -541,7 +541,7 @@ read -n 1 -s -r -p "Press any key to continue..."
 rmmservice="$(
   cat <<EOF
 [Unit]
-Description=tacticalrmm gunicorn daemon v1
+Description=tacticalrmm uwsgi daemon
 After=network.target postgresql.service
 
 [Service]
@@ -549,10 +549,7 @@ User=${USER}
 Group=www-data
 WorkingDirectory=/rmm/api/tacticalrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/gunicorn -c gunicorn_config.py tacticalrmm.wsgi:application
-ExecReload=/bin/kill -s HUP \$MAINPID
-ExecStartPre=rm -f /rmm/api/tacticalrmm/tacticalrmm.sock
-KillMode=mixed
+ExecStart=/rmm/api/env/bin/uwsgi --ini app.ini
 Restart=always
 RestartSec=10s
 
@@ -633,8 +630,8 @@ nginxrmm="$(
   cat <<EOF
 server_tokens off;
 
-upstream tacticalgunicorn {
-    server unix:/rmm/api/tacticalrmm/tacticalrmm.sock;
+upstream tacticalrmm {
+    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -712,11 +709,10 @@ server {
     }
 
     location / {
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Host \$http_host;
-        proxy_redirect off;
-        proxy_pass http://tacticalgunicorn;
+        uwsgi_pass  tacticalrmm;
+        include     /etc/nginx/uwsgi_params;
+        uwsgi_read_timeout 300s;
+        uwsgi_ignore_client_abort on;
     }
 }
 EOF

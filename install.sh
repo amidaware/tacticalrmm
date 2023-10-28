@@ -292,8 +292,8 @@ sudo make altinstall
 cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
-print_green 'Installing redis git and weasyprint'
-sudo apt install -y redis git weasyprint
+print_green 'Installing redis and git'
+sudo apt install -y redis git
 
 print_green 'Installing postgresql'
 
@@ -486,6 +486,19 @@ sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
 print_green 'Installing the backend'
+
+# for weasyprint
+if [[ "$osname" == "debian" ]]; then
+  count=$(dpkg -l | grep -E "libpango-1.0-0|libpangoft2-1.0-0" | wc -l)
+  if ! [ "$count" -eq 2 ]; then
+    sudo apt install -y libpango-1.0-0 libpangoft2-1.0-0
+  fi
+elif [[ "$osname" == "ubuntu" ]]; then
+  count=$(dpkg -l | grep -E "libpango-1.0-0|libharfbuzz0b|libpangoft2-1.0-0" | wc -l)
+  if ! [ "$count" -eq 3 ]; then
+    sudo apt install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
+  fi
+fi
 
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')

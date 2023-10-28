@@ -171,10 +171,24 @@ EOF
   sudo systemctl daemon-reload
 fi
 
+osname=$(lsb_release -si)
+osname=${osname^}
+osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
+
+# for weasyprint
+if [[ "$osname" == "debian" ]]; then
+  count=$(dpkg -l | grep -E "libpango-1.0-0|libpangoft2-1.0-0" | wc -l)
+  if ! [ "$count" -eq 2 ]; then
+    sudo apt install -y libpango-1.0-0 libpangoft2-1.0-0
+  fi
+elif [[ "$osname" == "ubuntu" ]]; then
+  count=$(dpkg -l | grep -E "libpango-1.0-0|libharfbuzz0b|libpangoft2-1.0-0" | wc -l)
+  if ! [ "$count" -eq 3 ]; then
+    sudo apt install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
+  fi
+fi
+
 if [ ! -f /etc/apt/sources.list.d/nginx.list ]; then
-  osname=$(lsb_release -si)
-  osname=${osname^}
-  osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
   codename=$(lsb_release -sc)
   nginxrepo="$(
     cat <<EOF
@@ -226,11 +240,6 @@ if ! [[ $HAS_PY311 ]]; then
   sudo make altinstall
   cd ~
   sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
-fi
-
-HAS_WEASYPRINT=$(dpkg -l | grep weasyprint)
-if ! [[ $HAS_WEASYPRINT ]]; then
-  sudo apt install -y weasyprint
 fi
 
 arch=$(uname -m)

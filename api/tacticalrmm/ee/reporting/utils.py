@@ -595,7 +595,7 @@ def generate_chart(
     traces: Optional[Dict[str, Any]] = None,
     layout: Optional[Dict[str, Any]] = None,
 ) -> str:
-    ### TODO figure out why plotly affects perf
+    # TODO figure out why plotly affects perf
     import plotly.express as px
 
     fig = getattr(px, type)(**options)

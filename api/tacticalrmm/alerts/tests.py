@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from itertools import cycle
 from unittest.mock import patch
 
@@ -39,14 +39,14 @@ class TestAlertsViews(TacticalTestCase):
         alerts = baker.make(
             "alerts.Alert",
             agent=agent,
-            alert_time=seq(datetime.now(), timedelta(days=15)),
+            alert_time=seq(djangotime.now(), timedelta(days=15)),
             severity=AlertSeverity.WARNING,
             _quantity=3,
         )
         baker.make(
             "alerts.Alert",
             assigned_check=check,
-            alert_time=seq(datetime.now(), timedelta(days=15)),
+            alert_time=seq(djangotime.now(), timedelta(days=15)),
             severity=AlertSeverity.ERROR,
             _quantity=7,
         )
@@ -55,7 +55,7 @@ class TestAlertsViews(TacticalTestCase):
             assigned_task=task,
             snoozed=True,
             snooze_until=djangotime.now(),
-            alert_time=seq(datetime.now(), timedelta(days=15)),
+            alert_time=seq(djangotime.now(), timedelta(days=15)),
             _quantity=2,
         )
         baker.make(
@@ -63,7 +63,7 @@ class TestAlertsViews(TacticalTestCase):
             agent=agent,
             resolved=True,
             resolved_on=djangotime.now(),
-            alert_time=seq(datetime.now(), timedelta(days=15)),
+            alert_time=seq(djangotime.now(), timedelta(days=15)),
             _quantity=9,
         )
 
@@ -126,7 +126,7 @@ class TestAlertsViews(TacticalTestCase):
 
         agent = baker.make_recipe("agents.agent")
         data = {
-            "alert_time": datetime.now(),
+            "alert_time": djangotime.now(),
             "agent": agent.id,
             "severity": "warning",
             "alert_type": "availability",
@@ -363,7 +363,7 @@ class TestAlertTasks(TacticalTestCase):
         not_snoozed = baker.make(
             "alerts.Alert",
             snoozed=True,
-            snooze_until=seq(datetime.now(), timedelta(days=15)),
+            snooze_until=seq(djangotime.now(), timedelta(days=15)),
             _quantity=5,
         )
 
@@ -371,7 +371,7 @@ class TestAlertTasks(TacticalTestCase):
         snoozed = baker.make(
             "alerts.Alert",
             snoozed=True,
-            snooze_until=seq(datetime.now(), timedelta(days=-15)),
+            snooze_until=seq(djangotime.now(), timedelta(days=-15)),
             _quantity=5,
         )
 

@@ -169,5 +169,5 @@ if [ "$1" = 'tactical-websockets' ]; then
 
   export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
 
-  daphne tacticalrmm.asgi:application --port 8383 -b 0.0.0.0
+  uvicorn --host 0.0.0.0 --port 8383 --forwarded-allow-ips='*' tacticalrmm.asgi:application
 fi

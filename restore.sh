@@ -236,6 +236,34 @@ print_green 'Restoring systemd services'
 
 sudo cp $tmp_dir/systemd/* /etc/systemd/system/
 
+# migrate daphne to uvicorn for older systems
+if ! grep -q uvicorn /etc/systemd/system/daphne.service; then
+  sudo rm -f /etc/systemd/system/daphne.service
+
+  uviservice="$(
+    cat <<EOF
+[Unit]
+Description=uvicorn daemon v1
+After=network.target
+
+[Service]
+User=${USER}
+Group=www-data
+WorkingDirectory=/rmm/api/tacticalrmm
+Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' tacticalrmm.asgi:application
+ExecStartPre=rm -f /rmm/daphne.sock
+ExecStartPre=rm -f /rmm/daphne.sock.lock
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  )"
+  echo "${uviservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
+fi
+
 sudo systemctl daemon-reload
 
 print_green "Installing Python ${PYTHON_VER}"

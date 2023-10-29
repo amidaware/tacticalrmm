@@ -108,7 +108,6 @@ if not DEBUG:
     )
 
 INSTALLED_APPS = [
-    "daphne",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -177,6 +176,7 @@ if SWAGGER_ENABLED:
     INSTALLED_APPS += ("drf_spectacular",)
 
 if DEBUG and not DEMO:
+    INSTALLED_APPS.insert(0, "daphne")
     INSTALLED_APPS += (
         "django_extensions",
         "silk",

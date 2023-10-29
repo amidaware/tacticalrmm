@@ -559,10 +559,10 @@ EOF
 )"
 echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service >/dev/null
 
-daphneservice="$(
+uviservice="$(
   cat <<EOF
 [Unit]
-Description=django channels daemon v2
+Description=uvicorn daemon v1
 After=network.target
 
 [Service]
@@ -570,7 +570,7 @@ User=${USER}
 Group=www-data
 WorkingDirectory=/rmm/api/tacticalrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' tacticalrmm.asgi:application
 ExecStartPre=rm -f /rmm/daphne.sock
 ExecStartPre=rm -f /rmm/daphne.sock.lock
 Restart=always
@@ -580,7 +580,7 @@ RestartSec=3s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
+echo "${uviservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
 
 natsservice="$(
   cat <<EOF

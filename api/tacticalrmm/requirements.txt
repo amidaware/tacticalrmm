@@ -6,7 +6,6 @@ cffi==1.15.1
 channels==4.0.0
 channels_redis==4.1.0
 cryptography==41.0.5
-daphne==4.0.0
 Django==4.2.6
 django-cors-headers==4.3.0
 django-filter==23.3
@@ -33,6 +32,7 @@ six==1.16.0
 sqlparse==0.4.4
 twilio==8.10.0
 urllib3==2.0.7
+uvicorn[standard]==0.23.2
 uWSGI==2.0.22
 validators==0.20.0
 vine==5.0.0

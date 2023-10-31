@@ -17,7 +17,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-SCRIPT_VERSION="78"
+SCRIPT_VERSION="79"
 SCRIPT_URL="https://raw.githubusercontent.com/${REPO}/tacticalrmm/${BRANCH}/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates

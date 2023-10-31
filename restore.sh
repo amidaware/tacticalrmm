@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="53"
+SCRIPT_VERSION="54"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -473,6 +473,7 @@ python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py reload_nats
 python manage.py post_update_tasks
+echo "Running management commands...please wait..."
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)
 FRONTEND=$(python manage.py get_config webdomain)

@@ -450,4 +450,6 @@ CONFIG_MGMT_CMDS = (
     "meshuser",
     "meshtoken",
     "meshdomain",
+    "certfile",
+    "keyfile",
 )

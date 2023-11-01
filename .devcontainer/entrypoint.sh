@@ -78,6 +78,17 @@ DATABASES = {
         'PASSWORD': '${POSTGRES_PASS}',
         'HOST': '${POSTGRES_HOST}',
         'PORT': '${POSTGRES_PORT}',
+    },
+    'reporting': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': '${POSTGRES_DB}',
+        'USER': 'reporting_user',
+        'PASSWORD': 'read_password',
+        'HOST': '${POSTGRES_HOST}',
+        'PORT': '${POSTGRES_PORT}',
+        'OPTIONS': {
+            'options': '-c default_transaction_read_only=on'
+        }
     }
 }
 
@@ -95,6 +106,7 @@ EOF
   # run migrations and init scripts
   "${VIRTUAL_ENV}"/bin/python manage.py pre_update_tasks
   "${VIRTUAL_ENV}"/bin/python manage.py migrate --no-input
+  "${VIRTUAL_ENV}"/bin/python manage.py generate_json_schemas
   "${VIRTUAL_ENV}"/bin/python manage.py collectstatic --no-input
   "${VIRTUAL_ENV}"/bin/python manage.py initial_db_setup
   "${VIRTUAL_ENV}"/bin/python manage.py initial_mesh_setup
@@ -120,6 +132,8 @@ if [ "$1" = 'tactical-init-dev' ]; then
   mkdir -p /meshcentral-data
   mkdir -p ${TACTICAL_DIR}/tmp
   mkdir -p ${TACTICAL_DIR}/certs
+  mkdir -p ${TACTICAL_DIR}/reporting
+  mkdir -p ${TACTICAL_DIR}/reporting/assets
   mkdir -p /mongo/data/db
   mkdir -p /redis/data
   touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
@@ -127,6 +141,7 @@ if [ "$1" = 'tactical-init-dev' ]; then
   touch ${TACTICAL_DIR}/certs/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}/certs
   touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
   touch /redis/data/.initialized && chown -R 1000:1000 /redis/data
+  touch ${TACTICAL_DIR}/reporting && chown -R 1000:1000 ${TACTICAL_DIR}/reporting
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
   touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log

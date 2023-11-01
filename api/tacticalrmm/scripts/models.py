@@ -9,7 +9,7 @@ from django.db.models.fields import CharField, TextField
 
 from logs.models import BaseAuditModel
 from tacticalrmm.constants import ScriptShell, ScriptType
-from tacticalrmm.utils import replace_db_values
+from tacticalrmm.utils import replace_arg_db_values
 
 
 class Script(BaseAuditModel):
@@ -208,7 +208,7 @@ class Script(BaseAuditModel):
             if match := pattern.match(arg):
                 # only get the match between the () in regex
                 string = match.group(1)
-                value = replace_db_values(
+                value = replace_arg_db_values(
                     string=string,
                     instance=agent,
                     shell=shell,
@@ -248,7 +248,7 @@ class Script(BaseAuditModel):
                 continue
             if match := pattern.match(env_val):
                 string = match.group(1)
-                value = replace_db_values(
+                value = replace_arg_db_values(
                     string=string,
                     instance=agent,
                     shell=shell,

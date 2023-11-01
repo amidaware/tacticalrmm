@@ -21,14 +21,14 @@ rm -f /etc/nginx/conf.d/default.conf
 
 # check for certificates in env variable
 if [ ! -z "$CERT_PRIV_KEY" ] && [ ! -z "$CERT_PUB_KEY" ]; then
-  echo "${CERT_PRIV_KEY}" | base64 -d > ${CERT_PRIV_PATH}
-  echo "${CERT_PUB_KEY}" | base64 -d > ${CERT_PUB_PATH}
+    echo "${CERT_PRIV_KEY}" | base64 -d >${CERT_PRIV_PATH}
+    echo "${CERT_PUB_KEY}" | base64 -d >${CERT_PUB_PATH}
 else
-  # generate a self signed cert
-  if [ ! -f "${CERT_PRIV_PATH}" ] || [ ! -f "${CERT_PUB_PATH}" ]; then
-    rootdomain=$(echo ${API_HOST} | cut -d "." -f2- )
-    openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
-  fi
+    # generate a self signed cert
+    if [ ! -f "${CERT_PRIV_PATH}" ] || [ ! -f "${CERT_PUB_PATH}" ]; then
+        rootdomain=$(echo ${API_HOST} | cut -d "." -f2-)
+        openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
+    fi
 fi
 
 nginxdefaultconf='/etc/nginx/nginx.conf'
@@ -54,6 +54,13 @@ if [[ $DEV -eq 1 ]]; then
         proxy_set_header X-Forwarded-Host  \$host;
         proxy_set_header X-Forwarded-Port  \$server_port;
 "
+
+    STATIC_ASSETS="
+    location /static/ {
+        root /workspace/api/tacticalrmm;
+        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
+    }
+"
 else
     API_NGINX="
         #Using variable to disable start checks
@@ -62,9 +69,17 @@ else
         include         uwsgi_params;
         uwsgi_pass      \$api;
 "
+
+    STATIC_ASSETS="
+    location /static/ {
+        root ${TACTICAL_DIR}/api/;
+        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
+    }
+"
 fi
 
-nginx_config="$(cat << EOF
+nginx_config="$(
+    cat <<EOF
 # backend config
 server  {
     resolver ${NGINX_RESOLVER} valid=30s;
@@ -75,9 +90,7 @@ server  {
         ${API_NGINX}
     }
 
-    location /static/ {
-        root ${TACTICAL_DIR}/api;
-    }
+    ${STATIC_ASSETS}
 
     location /private/ {
         internal;
@@ -98,6 +111,12 @@ server  {
         proxy_set_header   X-Real-IP \$remote_addr;
         proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Host \$server_name;
+    }
+
+    location /assets/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
+        alias /opt/tactical/reporting/assets/;
     }
 
     location ~ ^/natsws {
@@ -229,4 +248,4 @@ server {
 EOF
 )"
 
-echo "${nginx_config}" > /etc/nginx/conf.d/default.conf
+echo "${nginx_config}" >/etc/nginx/conf.d/default.conf

@@ -1,5 +1,6 @@
 import json
 import re
+from contextlib import suppress
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -11,6 +12,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.views.decorators.csrf import csrf_exempt
+from redis import from_url
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -355,7 +357,7 @@ class RunURLAction(APIView):
 
         from agents.models import Agent
         from clients.models import Client, Site
-        from tacticalrmm.utils import replace_db_values
+        from tacticalrmm.utils import get_db_value
 
         if "agent_id" in request.data.keys():
             if not _has_perm_on_agent(request.user, request.data["agent_id"]):
@@ -382,7 +384,7 @@ class RunURLAction(APIView):
         url_pattern = action.pattern
 
         for string in re.findall(pattern, action.pattern):
-            value = replace_db_values(string=string, instance=instance, quotes=False)
+            value = get_db_value(string=string, instance=instance)
 
             url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
 
@@ -430,6 +432,13 @@ def status(request):
     now = djangotime.now()
     delta = expires - now
 
+    redis_url = f"redis://{settings.REDIS_HOST}"
+    redis_ping = False
+    with suppress(Exception):
+        with from_url(redis_url) as conn:
+            conn.ping()
+            redis_ping = True
+
     ret = {
         "version": settings.TRMM_VERSION,
         "latest_agent_version": settings.LATEST_AGENT_VER,
@@ -440,6 +449,7 @@ def status(request):
         "mem_usage_percent": mem_usage,
         "days_until_cert_expires": delta.days,
         "cert_expired": delta.days < 0,
+        "redis_ping": redis_ping,
     }
 
     if settings.DOCKER_BUILD:

@@ -1,24 +1,7 @@
 #!/usr/bin/env bash
 
-REPO=amidaware
-BRANCH=master
-while [[ $# -gt 0 ]]; do
-  case $1 in
-  -r | --repo)
-    REPO="$2"
-    shift # past argument
-    shift # past value
-    ;;
-  -b | --branch)
-    BRANCH="$2"
-    shift # past argument
-    shift # past value
-    ;;
-  esac
-done
-
-SCRIPT_VERSION="79"
-SCRIPT_URL="https://raw.githubusercontent.com/${REPO}/tacticalrmm/${BRANCH}/install.sh"
+SCRIPT_VERSION="80"
+SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
 
@@ -338,11 +321,11 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/${REPO}/tacticalrmm.git /rmm/
+git clone https://github.com/amidaware/tacticalrmm.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
-git checkout ${BRANCH}
+git checkout master
 
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}

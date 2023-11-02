@@ -21,6 +21,8 @@ from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 
+import datetime
+
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
 # i.e. - {{client.name}}, client.name, client
@@ -58,6 +60,10 @@ env = Environment(
     comment_start_string="{=",
     comment_end_string="=}",
 )
+
+# expose datetime and re to the template
+env.globals["datetime"] = datetime
+env.globals["re"] = re
 
 
 def generate_pdf(*, html: str, css: str = "") -> bytes:

@@ -61,6 +61,7 @@ env = Environment(
     loader=FunctionLoader(db_template_loader),
     comment_start_string="{=",
     comment_end_string="=}",
+    extensions=["jinja2.ext.do", "jinja2.ext.loopcontrols"],
 )
 
 

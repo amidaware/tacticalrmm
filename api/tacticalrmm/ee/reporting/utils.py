@@ -4,24 +4,25 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
+import datetime
 import json
 import re
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast
+from zoneinfo import ZoneInfo
 
 import yaml
 from django.apps import apps
 from jinja2 import Environment, FunctionLoader
 from rest_framework.serializers import ValidationError
-from tacticalrmm.utils import get_db_value
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
+
+from tacticalrmm.utils import get_db_value
 
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
-
-import datetime
 
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
@@ -63,6 +64,7 @@ env = Environment(
 
 # expose datetime and re to the template
 env.globals["datetime"] = datetime
+env.globals["ZoneInfo"] = ZoneInfo
 env.globals["re"] = re
 
 

@@ -21,7 +21,7 @@ from weasyprint.text.fonts import FontConfiguration
 from tacticalrmm.utils import get_db_value
 
 from .constants import REPORTING_MODELS
-from .custom_filters import as_tz
+from .custom_filters import as_tz, local_ips
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 
@@ -63,11 +63,20 @@ env = Environment(
     comment_end_string="=}",
 )
 
-# expose datetime and re to the template
-env.globals["datetime"] = datetime
-env.globals["ZoneInfo"] = ZoneInfo
-env.globals["re"] = re
-env.filters["as_tz"] = as_tz
+
+custom_globals = {
+    "datetime": datetime,
+    "ZoneInfo": ZoneInfo,
+    "re": re,
+}
+
+custom_filters = {
+    "as_tz": as_tz,
+    "local_ips": local_ips,
+}
+
+env.globals.update(custom_globals)
+env.filters.update(custom_filters)
 
 
 def generate_pdf(*, html: str, css: str = "") -> bytes:

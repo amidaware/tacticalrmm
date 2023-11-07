@@ -6,7 +6,7 @@ cffi==1.15.1
 channels==4.0.0
 channels_redis==4.1.0
 cryptography==41.0.5
-Django==4.2.6
+Django==4.2.7
 django-cors-headers==4.3.0
 django-filter==23.3
 django-ipware==5.0.0
@@ -41,7 +41,7 @@ zipp==3.17.0
 pandas==2.1.2
 kaleido==0.2.1
 jinja2==3.1.2
-markdown==3.5
+markdown==3.5.1
 plotly==5.18.0
 weasyprint==60.1
 ocxsect==0.1.5

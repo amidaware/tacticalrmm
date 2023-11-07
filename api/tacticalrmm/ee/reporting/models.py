@@ -19,7 +19,7 @@ class ReportFormatType(models.TextChoices):
 
 
 class ReportTemplate(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=200, unique=True)
     template_md = models.TextField()
     template_css = models.TextField(null=True, blank=True)
     template_html = models.ForeignKey(
@@ -44,7 +44,7 @@ class ReportTemplate(models.Model):
 
 
 class ReportHTMLTemplate(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=200, unique=True)
     html = models.TextField()
 
     def __str__(self) -> str:

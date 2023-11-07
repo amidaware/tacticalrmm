@@ -4,20 +4,24 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
+import datetime
 import json
 import re
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast
+from zoneinfo import ZoneInfo
 
 import yaml
 from django.apps import apps
 from jinja2 import Environment, FunctionLoader
 from rest_framework.serializers import ValidationError
-from tacticalrmm.utils import get_db_value
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
 
+from tacticalrmm.utils import get_db_value
+
 from .constants import REPORTING_MODELS
+from .custom_filters import as_tz, local_ips
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 
@@ -57,7 +61,23 @@ env = Environment(
     loader=FunctionLoader(db_template_loader),
     comment_start_string="{=",
     comment_end_string="=}",
+    extensions=["jinja2.ext.do", "jinja2.ext.loopcontrols"],
 )
+
+
+custom_globals = {
+    "datetime": datetime,
+    "ZoneInfo": ZoneInfo,
+    "re": re,
+}
+
+custom_filters = {
+    "as_tz": as_tz,
+    "local_ips": local_ips,
+}
+
+env.globals.update(custom_globals)
+env.filters.update(custom_filters)
 
 
 def generate_pdf(*, html: str, css: str = "") -> bytes:

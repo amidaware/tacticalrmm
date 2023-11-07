@@ -327,45 +327,46 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             queryset = queryset.first()
 
         if fields_to_add:
-            return add_custom_fields(
+            queryset = add_custom_fields(
                 data=queryset,
                 fields_to_add=fields_to_add,
                 model_name=model_name,
                 dict_value=True,
             )
-        else:
-            if isJson:
-                return json.dumps(queryset, default=str)
-            elif isCsv:
-                import pandas as pd
 
-                df = pd.DataFrame.from_dict([queryset])
-                df.drop("id", axis=1, inplace=True)
-                if csv_columns:
-                    df = df.rename(columns=csv_columns)
-                return df.to_csv(index=False)
-            else:
-                return queryset
+        if isJson:
+            return json.dumps(queryset, default=str)
+        elif isCsv:
+            import pandas as pd
+
+            df = pd.DataFrame.from_dict([queryset])
+            df.drop("id", axis=1, inplace=True)
+            if csv_columns:
+                df = df.rename(columns=csv_columns)
+            return df.to_csv(index=False)
+        else:
+            return queryset
     else:
         # add custom fields for list results
-        if fields_to_add:
-            return add_custom_fields(
-                data=list(queryset), fields_to_add=fields_to_add, model_name=model_name
-            )
-        else:
-            if isJson:
-                return json.dumps(list(queryset), default=str)
-            elif isCsv:
-                import pandas as pd
+        queryset = list(queryset)
 
-                df = pd.DataFrame.from_dict(list(queryset))
-                df.drop("id", axis=1, inplace=True)
-                print(csv_columns)
-                if csv_columns:
-                    df = df.rename(columns=csv_columns)
-                return df.to_csv(index=False)
-            else:
-                return list(queryset)
+        if fields_to_add:
+            queryset = add_custom_fields(
+                data=queryset, fields_to_add=fields_to_add, model_name=model_name
+            )
+
+        if isJson:
+            return json.dumps(queryset, default=str)
+        elif isCsv:
+            import pandas as pd
+
+            df = pd.DataFrame.from_dict(queryset)
+            df.drop("id", axis=1, inplace=True)
+            if csv_columns:
+                df = df.rename(columns=csv_columns)
+            return df.to_csv(index=False)
+        else:
+            return queryset
 
 
 def add_custom_fields(

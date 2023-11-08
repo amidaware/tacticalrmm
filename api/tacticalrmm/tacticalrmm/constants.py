@@ -1,3 +1,4 @@
+import zoneinfo
 from enum import Enum
 
 from django.db import models
@@ -453,3 +454,5 @@ CONFIG_MGMT_CMDS = (
     "certfile",
     "keyfile",
 )
+
+ALL_TIMEZONES = list(zoneinfo.available_timezones())

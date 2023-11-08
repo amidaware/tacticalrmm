@@ -3,7 +3,6 @@ daphne==4.0.0
 Werkzeug
 django-extensions
 isort
-types-pytz
 django-silk
 mypy
 django-stubs

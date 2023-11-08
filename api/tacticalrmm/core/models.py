@@ -3,7 +3,6 @@ from contextlib import suppress
 from email.message import EmailMessage
 from typing import TYPE_CHECKING, List, Optional, cast
 
-import pytz
 import requests
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
@@ -15,6 +14,7 @@ from twilio.rest import Client as TwClient
 
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
+    ALL_TIMEZONES,
     CORESETTINGS_CACHE_KEY,
     CustomFieldModel,
     CustomFieldType,
@@ -24,7 +24,7 @@ from tacticalrmm.constants import (
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
 
-TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
+TZ_CHOICES = [(_, _) for _ in ALL_TIMEZONES]
 
 
 class CoreSettings(BaseAuditModel):

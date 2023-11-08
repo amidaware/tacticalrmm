@@ -3,13 +3,14 @@ from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
-from ipware import get_client_ip
 from knox.views import LoginView as KnoxLoginView
+from python_ipware import IpWare
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.utils import is_root_user
 from logs.models import AuditLog
 from tacticalrmm.helpers import notify_error
 
@@ -22,7 +23,6 @@ from .serializers import (
     UserSerializer,
     UserUISerializer,
 )
-from accounts.utils import is_root_user
 
 
 class CheckCreds(KnoxLoginView):
@@ -79,9 +79,11 @@ class LoginView(KnoxLoginView):
             login(request, user)
 
             # save ip information
-            client_ip, _ = get_client_ip(request)
-            user.last_login_ip = client_ip
-            user.save()
+            ipw = IpWare()
+            client_ip, _ = ipw.get_client_ip(request.META)
+            if client_ip:
+                user.last_login_ip = str(client_ip)
+                user.save()
 
             AuditLog.audit_user_login_successful(
                 request.data["username"], debug_info={"ip": request._client_ip}

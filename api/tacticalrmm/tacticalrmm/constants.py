@@ -455,4 +455,4 @@ CONFIG_MGMT_CMDS = (
     "keyfile",
 )
 
-ALL_TIMEZONES = list(zoneinfo.available_timezones())
+ALL_TIMEZONES = sorted(zoneinfo.available_timezones())

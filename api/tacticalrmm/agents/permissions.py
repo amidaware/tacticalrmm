@@ -47,13 +47,6 @@ class UpdateAgentPerms(permissions.BasePermission):
         return _has_perm(r, "can_update_agents")
 
 
-class PingAgentPerms(permissions.BasePermission):
-    def has_permission(self, r, view) -> bool:
-        return _has_perm(r, "can_ping_agents") and _has_perm_on_agent(
-            r.user, view.kwargs["agent_id"]
-        )
-
-
 class ManageProcPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
         return _has_perm(r, "can_manage_procs") and _has_perm_on_agent(

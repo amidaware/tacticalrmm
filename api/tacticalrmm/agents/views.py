@@ -65,7 +65,6 @@ from .permissions import (
     InstallAgentPerms,
     ManageProcPerms,
     MeshPerms,
-    PingAgentPerms,
     RebootAgentPerms,
     RecoverAgentPerms,
     RunBulkPerms,
@@ -402,7 +401,7 @@ def update_agents(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, PingAgentPerms])
+@permission_classes([IsAuthenticated, AgentPerms])
 def ping(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
     status = AGENT_STATUS_OFFLINE

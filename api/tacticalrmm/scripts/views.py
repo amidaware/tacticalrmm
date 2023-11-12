@@ -190,6 +190,10 @@ def download(request, pk):
             ext = ".py"
         case ScriptShell.SHELL:
             ext = ".sh"
+        case ScriptShell.NUSHELL:
+            ext = ".nu"
+        case ScriptShell.DENO:
+            ext = ".ts"
         case _:
             ext = ""
 

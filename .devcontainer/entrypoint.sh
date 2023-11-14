@@ -70,7 +70,7 @@ ALLOWED_HOSTS = ['${API_HOST}', '*']
 ADMIN_URL = 'admin/'
 
 CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = ['https://${APP_HOST}', 'https://${API_HOST}']
+CORS_ORIGIN_WHITELIST = ['https://${APP_HOST}']
 
 DATABASES = {
     'default': {

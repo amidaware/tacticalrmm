@@ -160,7 +160,8 @@ def sync_scheduled_tasks(self) -> str:
 
         for agent in _get_agent_qs():
             if (
-                pyver.parse(agent.version) >= pyver.parse("1.6.0")
+                not agent.is_posix
+                and pyver.parse(agent.version) >= pyver.parse("1.6.0")
                 and agent.status == AGENT_STATUS_ONLINE
             ):
                 # create a list of tasks to be synced so we can run them in parallel later with thread pool executor
@@ -223,7 +224,7 @@ def sync_scheduled_tasks(self) -> str:
             action = actions[0]
             task_id = actions[1]
             agent = actions[2]
-            payload = action[3]
+            payload = actions[3]
             agent_id = actions[4]
             hostname = actions[5]
 

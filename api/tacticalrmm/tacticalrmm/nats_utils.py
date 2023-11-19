@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 import msgpack
 import nats
+from nats.errors import TimeoutError as NatsTimeout
 
 from tacticalrmm.exceptions import NatsDown
 from tacticalrmm.helpers import setup_nats_options
@@ -36,3 +37,19 @@ async def abulk_nats_command(*, items: "BULK_NATS_TASKS") -> None:
     await asyncio.gather(*tasks)
     await nc.flush()
     await nc.close()
+
+
+async def a_nats_cmd(
+    *, nc: "NClient", sub: str, data: NATS_DATA, timeout: int = 10
+) -> str | Any:
+    try:
+        msg = await nc.request(
+            subject=sub, payload=msgpack.dumps(data), timeout=timeout
+        )
+    except NatsTimeout:
+        return "timeout"
+
+    try:
+        return msgpack.loads(msg.data)
+    except Exception as e:
+        return str(e)

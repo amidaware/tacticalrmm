@@ -164,7 +164,7 @@ def sync_scheduled_tasks(self) -> str:
                 and pyver.parse(agent.version) >= pyver.parse("1.6.0")
                 and agent.status == AGENT_STATUS_ONLINE
             ):
-                # create a list of tasks to be synced so we can run them in parallel later with thread pool executor
+                # create a list of tasks to be synced so we can run them asynchronously
                 for task in agent.get_tasks_with_policies():
                     agent_obj: "Agent" = agent if task.policy else task.agent
 
@@ -278,7 +278,6 @@ def sync_scheduled_tasks(self) -> str:
                     )
                 else:
                     await task.adelete()
-                    logger.info(f"{hostname} task {task.name} was deleted")
 
         async def _run() -> str | None:
             opts = setup_nats_options()

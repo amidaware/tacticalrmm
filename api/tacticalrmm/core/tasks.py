@@ -178,9 +178,7 @@ def sync_scheduled_tasks(self) -> str:
                                 "create",
                                 task.id,
                                 agent_obj,
-                                task.generate_nats_task_payload(
-                                    agent=agent_obj, editing=False
-                                ),
+                                task.generate_nats_task_payload(),
                                 agent.agent_id,
                                 agent.hostname,
                             )
@@ -209,9 +207,7 @@ def sync_scheduled_tasks(self) -> str:
                                 "modify",
                                 task.id,
                                 agent_obj,
-                                task.generate_nats_task_payload(
-                                    agent=None, editing=True
-                                ),
+                                task.generate_nats_task_payload(),
                                 agent.agent_id,
                                 agent.hostname,
                             )
@@ -278,7 +274,7 @@ def sync_scheduled_tasks(self) -> str:
                 else:
                     await task.adelete()
 
-        async def _run() -> str | None:
+        async def _run():
             opts = setup_nats_options()
             try:
                 nc = await nats.connect(**opts)

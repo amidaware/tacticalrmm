@@ -3,7 +3,6 @@ import random
 import string
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
-from zoneinfo import ZoneInfo
 
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator

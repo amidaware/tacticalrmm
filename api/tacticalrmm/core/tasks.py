@@ -272,7 +272,9 @@ def sync_scheduled_tasks(self) -> str:
                         f"Unable to {action} scheduled task {task.name} on {hostname}: {r}"
                     )
                 else:
+                    task_name = task.name
                     await task.adelete()
+                    logger.info(f"{hostname} task {task_name} was deleted.")
 
         async def _run():
             opts = setup_nats_options()

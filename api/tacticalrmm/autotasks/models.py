@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import random
 import string
 from contextlib import suppress
@@ -13,12 +14,11 @@ from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
 
 from core.utils import get_core_settings
-from logs.models import BaseAuditModel, DebugLog
+from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
     FIELDS_TRIGGER_TASK_UPDATE_AGENT,
     POLICY_TASK_FIELDS_TO_COPY,
     AlertSeverity,
-    DebugLogType,
     TaskStatus,
     TaskSyncStatus,
     TaskType,
@@ -43,6 +43,9 @@ from tacticalrmm.utils import (
 def generate_task_name() -> str:
     chars = string.ascii_letters
     return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
+
+
+logger = logging.getLogger("trmm")
 
 
 class AutomatedTask(BaseAuditModel):
@@ -333,25 +336,22 @@ class AutomatedTask(BaseAuditModel):
             "func": "schedtask",
             "schedtaskpayload": self.generate_nats_task_payload(),
         }
+        logger.debug(nats_data)
 
-        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=5))
+        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=10))
 
         if r != "ok":
             task_result.sync_status = TaskSyncStatus.INITIAL
             task_result.save(update_fields=["sync_status"])
-            DebugLog.warning(
-                agent=agent,
-                log_type=DebugLogType.AGENT_ISSUES,
-                message=f"Unable to create scheduled task {self.name} on {task_result.agent.hostname}. It will be created when the agent checks in.",
+            logger.error(
+                f"Unable to create scheduled task {self.name} on {task_result.agent.hostname}: {r}"
             )
             return "timeout"
         else:
             task_result.sync_status = TaskSyncStatus.SYNCED
             task_result.save(update_fields=["sync_status"])
-            DebugLog.info(
-                agent=agent,
-                log_type=DebugLogType.AGENT_ISSUES,
-                message=f"{task_result.agent.hostname} task {self.name} was successfully created",
+            logger.info(
+                f"{task_result.agent.hostname} task {self.name} was successfully created."
             )
 
         return "ok"
@@ -372,25 +372,22 @@ class AutomatedTask(BaseAuditModel):
             "func": "schedtask",
             "schedtaskpayload": self.generate_nats_task_payload(),
         }
+        logger.debug(nats_data)
 
-        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=5))
+        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=10))
 
         if r != "ok":
             task_result.sync_status = TaskSyncStatus.NOT_SYNCED
             task_result.save(update_fields=["sync_status"])
-            DebugLog.warning(
-                agent=agent,
-                log_type=DebugLogType.AGENT_ISSUES,
-                message=f"Unable to modify scheduled task {self.name} on {task_result.agent.hostname}({task_result.agent.agent_id}). It will try again on next agent checkin",
+            logger.error(
+                f"Unable to modify scheduled task {self.name} on {task_result.agent.hostname}: {r}"
             )
             return "timeout"
         else:
             task_result.sync_status = TaskSyncStatus.SYNCED
             task_result.save(update_fields=["sync_status"])
-            DebugLog.info(
-                agent=agent,
-                log_type=DebugLogType.AGENT_ISSUES,
-                message=f"{task_result.agent.hostname} task {self.name} was successfully modified",
+            logger.info(
+                f"{task_result.agent.hostname} task {self.name} was successfully modified."
             )
 
         return "ok"
@@ -419,20 +416,13 @@ class AutomatedTask(BaseAuditModel):
             with suppress(DatabaseError):
                 task_result.save(update_fields=["sync_status"])
 
-            DebugLog.warning(
-                agent=agent,
-                log_type=DebugLogType.AGENT_ISSUES,
-                message=f"{task_result.agent.hostname} task {self.name} will be deleted on next checkin",
+            logger.error(
+                f"Unable to delete task {self.name} on {task_result.agent.hostname}: {r}"
             )
             return "timeout"
         else:
             self.delete()
-            DebugLog.info(
-                agent=agent,
-                log_type=DebugLogType.AGENT_ISSUES,
-                message=f"{task_result.agent.hostname}({task_result.agent.agent_id}) task {self.name} was deleted",
-            )
-
+            logger.info(f"{task_result.agent.hostname} task {self.name} was deleted.")
         return "ok"
 
     def run_win_task(self, agent: "Optional[Agent]" = None) -> str:

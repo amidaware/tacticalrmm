@@ -232,8 +232,7 @@ def sync_scheduled_tasks(self) -> str:
             try:
                 task_result = await TaskResult.objects.aget(agent=agent, task=task)
             except TaskResult.DoesNotExist:
-                task_result = TaskResult(agent=agent, task=task)
-                await task_result.asave()
+                task_result = await TaskResult.objects.acreate(agent=agent, task=task)
 
             if action in ("create", "modify"):
                 logger.debug(payload)
@@ -284,7 +283,9 @@ def sync_scheduled_tasks(self) -> str:
             try:
                 nc = await nats.connect(**opts)
             except Exception as e:
-                return str(e)
+                ret = str(e)
+                logger.error(ret)
+                return ret
 
             if tasks := [_handle_task_on_agent(nc, task) for task in actions]:
                 await asyncio.gather(*tasks)

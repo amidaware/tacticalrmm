@@ -237,7 +237,7 @@ def sync_scheduled_tasks(self) -> str:
                     "schedtaskpayload": payload,
                 }
 
-                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=5)
+                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=10)
                 if r != "ok":
                     if action == "create":
                         task_result.sync_status = TaskSyncStatus.INITIAL
@@ -260,7 +260,7 @@ def sync_scheduled_tasks(self) -> str:
                     "func": "delschedtask",
                     "schedtaskpayload": {"name": task.win_task_name},
                 }
-                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=5)
+                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=10)
 
                 if r != "ok" and "The system cannot find the file specified" not in r:
                     task_result.sync_status = TaskSyncStatus.PENDING_DELETION

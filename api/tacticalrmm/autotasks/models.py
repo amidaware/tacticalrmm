@@ -211,6 +211,8 @@ class AutomatedTask(BaseAuditModel):
             weeks = bitweeks_to_string(self.monthly_weeks_of_month)
             days = bitdays_to_string(self.run_time_bit_weekdays)
             return f"Runs on {months} on {weeks} on {days} at {run_time_nice}"
+        elif self.task_type == TaskType.ONBOARDING:
+            return "Onboarding: Run on task creation"
         return None
 
     @property
@@ -258,14 +260,12 @@ class AutomatedTask(BaseAuditModel):
             else True,
         }
 
-        if self.task_type == TaskType.RUN_ONCE and self.random_task_delay:
-            task["random_delay"] = convert_to_iso_duration(self.random_task_delay)
-
-        elif self.task_type in (
+        if self.task_type in (
             TaskType.DAILY,
             TaskType.WEEKLY,
             TaskType.MONTHLY,
             TaskType.MONTHLY_DOW,
+            TaskType.RUN_ONCE,
         ):
             if not self.run_time_date:
                 self.run_time_date = djangotime.now()

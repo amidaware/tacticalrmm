@@ -75,6 +75,7 @@ class TaskType(models.TextChoices):
     CHECK_FAILURE = "checkfailure", "On Check Failure"
     MANUAL = "manual", "Manual"
     RUN_ONCE = "runonce", "Run Once"
+    ONBOARDING = "onboarding", "Onboarding"
     SCHEDULED = "scheduled", "Scheduled"  # deprecated
 
 

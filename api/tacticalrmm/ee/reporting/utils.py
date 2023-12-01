@@ -5,6 +5,7 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 import datetime
+import inspect
 import json
 import re
 from enum import Enum
@@ -20,8 +21,8 @@ from weasyprint.text.fonts import FontConfiguration
 
 from tacticalrmm.utils import get_db_value
 
+from . import custom_filters
 from .constants import REPORTING_MODELS
-from .custom_filters import as_tz, local_ips
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 
@@ -71,13 +72,11 @@ custom_globals = {
     "re": re,
 }
 
-custom_filters = {
-    "as_tz": as_tz,
-    "local_ips": local_ips,
-}
-
 env.globals.update(custom_globals)
-env.filters.update(custom_filters)
+
+# import all functions from custom_filters.py
+for name, func in inspect.getmembers(custom_filters, inspect.isfunction):
+    env.filters[name] = func
 
 
 def generate_pdf(*, html: str, css: str = "") -> bytes:

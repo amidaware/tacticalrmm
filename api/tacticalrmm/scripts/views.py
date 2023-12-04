@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.conf import settings
 
 from agents.permissions import RunScriptPerms
 from tacticalrmm.constants import ScriptShell, ScriptType
@@ -162,6 +163,8 @@ class TestScript(APIView):
             },
             "run_as_user": request.data["run_as_user"],
             "env_vars": parsed_env_vars,
+            "nushell_enable_config": settings.NUSHELL_ENABLE_CONFIG,
+            "deno_default_permissions": settings.DENO_DEFAULT_PERMISSIONS,
         }
 
         r = asyncio.run(

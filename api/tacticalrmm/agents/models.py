@@ -549,6 +549,7 @@ class Agent(BaseAuditModel):
     ) -> Any:
         from scripts.models import Script
 
+
         script = Script.objects.get(pk=scriptpk)
 
         # always override if set on script model
@@ -568,6 +569,8 @@ class Agent(BaseAuditModel):
             },
             "run_as_user": run_as_user,
             "env_vars": parsed_env_vars,
+            "nushell_enable_config": settings.NUSHELL_ENABLE_CONFIG,
+            "deno_default_permissions": settings.DENO_DEFAULT_PERMISSIONS,
         }
 
         if history_pk != 0:

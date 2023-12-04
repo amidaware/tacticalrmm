@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from packaging import version as pyver
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -6,6 +7,8 @@ from rest_framework.views import APIView
 
 from agents.models import Agent
 from automation.models import Policy
+from tacticalrmm.constants import TaskType
+from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import _has_perm_on_agent
 
 from .models import AutomatedTask
@@ -39,6 +42,11 @@ class GetAddAutoTasks(APIView):
 
             if not _has_perm_on_agent(request.user, agent.agent_id):
                 raise PermissionDenied()
+
+            if data["task_type"] == TaskType.ONBOARDING and pyver.parse(
+                agent.version
+            ) < pyver.parse("2.6.0"):
+                return notify_error("Onboarding tasks require agent >= 2.6.0")
 
             data["agent"] = agent.pk
 

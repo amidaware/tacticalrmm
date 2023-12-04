@@ -34,6 +34,7 @@ from tacticalrmm.constants import (
     PAStatus,
     TaskStatus,
     TaskSyncStatus,
+    TaskType,
 )
 from tacticalrmm.helpers import setup_nats_options
 from tacticalrmm.nats_utils import a_nats_cmd
@@ -166,7 +167,14 @@ def sync_scheduled_tasks(self) -> str:
             ):
                 # create a list of tasks to be synced so we can run them asynchronously
                 for task in agent.get_tasks_with_policies():
+                    # TODO can we just use agent??
                     agent_obj: "Agent" = agent if task.policy else task.agent
+
+                    # onboarding tasks require agent >= 2.6.0
+                    if task.task_type == TaskType.ONBOARDING and pyver.parse(
+                        agent.version
+                    ) < pyver.parse("2.6.0"):
+                        continue
 
                     # policy tasks will be an empty dict on initial
                     if (not task.task_result) or (

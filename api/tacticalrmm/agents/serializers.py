@@ -1,7 +1,6 @@
-import pytz
 from rest_framework import serializers
 
-from tacticalrmm.constants import AGENT_STATUS_ONLINE
+from tacticalrmm.constants import AGENT_STATUS_ONLINE, ALL_TIMEZONES
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
@@ -71,7 +70,7 @@ class AgentSerializer(serializers.ModelSerializer):
         return policies
 
     def get_all_timezones(self, obj):
-        return pytz.all_timezones
+        return ALL_TIMEZONES
 
     class Meta:
         model = Agent

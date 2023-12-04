@@ -417,7 +417,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "pk": task1.pk,
                     "type": "rmm",
                     "name": task1.win_task_name,
-                    "overwrite_task": False,
+                    "overwrite_task": True,
                     "enabled": True,
                     "trigger": "daily",
                     "multiple_instances": 1,
@@ -431,7 +431,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "day_interval": 1,
                 },
             },
-            timeout=5,
+            timeout=10,
         )
         nats_cmd.reset_mock()
         self.assertEqual(
@@ -470,7 +470,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "pk": task1.pk,
                     "type": "rmm",
                     "name": task1.win_task_name,
-                    "overwrite_task": False,
+                    "overwrite_task": True,
                     "enabled": True,
                     "trigger": "weekly",
                     "multiple_instances": 2,
@@ -490,7 +490,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "days_of_week": 127,
                 },
             },
-            timeout=5,
+            timeout=10,
         )
         nats_cmd.reset_mock()
 
@@ -518,7 +518,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "pk": task1.pk,
                     "type": "rmm",
                     "name": task1.win_task_name,
-                    "overwrite_task": False,
+                    "overwrite_task": True,
                     "enabled": True,
                     "trigger": "monthly",
                     "multiple_instances": 1,
@@ -538,7 +538,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "months_of_year": 1024,
                 },
             },
-            timeout=5,
+            timeout=10,
         )
         nats_cmd.reset_mock()
 
@@ -562,7 +562,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "pk": task1.pk,
                     "type": "rmm",
                     "name": task1.win_task_name,
-                    "overwrite_task": False,
+                    "overwrite_task": True,
                     "enabled": True,
                     "trigger": "monthlydow",
                     "multiple_instances": 1,
@@ -578,7 +578,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "weeks_of_month": 3,
                 },
             },
-            timeout=5,
+            timeout=10,
         )
         nats_cmd.reset_mock()
 
@@ -600,7 +600,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "pk": task1.pk,
                     "type": "rmm",
                     "name": task1.win_task_name,
-                    "overwrite_task": False,
+                    "overwrite_task": True,
                     "enabled": True,
                     "trigger": "runonce",
                     "multiple_instances": 1,
@@ -613,38 +613,9 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "start_min": int(task1.run_time_date.strftime("%-M")),
                 },
             },
-            timeout=5,
+            timeout=10,
         )
         nats_cmd.reset_mock()
-
-        # test runonce with date in the past
-        task1 = baker.make(
-            "autotasks.AutomatedTask",
-            agent=agent,
-            name="test task 3",
-            task_type=TaskType.RUN_ONCE,
-            run_asap_after_missed=True,
-            run_time_date=djangotime.datetime(2018, 6, 1, 23, 23, 23),
-        )
-        nats_cmd.return_value = "ok"
-        create_win_task_schedule(pk=task1.pk)
-        nats_cmd.assert_called()
-
-        # check if task is scheduled for at most 5min in the future
-        _, args, _ = nats_cmd.mock_calls[0]
-
-        current_minute = int(djangotime.now().strftime("%-M"))
-
-        if current_minute >= 55 and current_minute < 60:
-            self.assertLess(
-                args[0]["schedtaskpayload"]["start_min"],
-                int(djangotime.now().strftime("%-M")),
-            )
-        else:
-            self.assertGreater(
-                args[0]["schedtaskpayload"]["start_min"],
-                int(djangotime.now().strftime("%-M")),
-            )
 
         # test checkfailure task
         nats_cmd.reset_mock()
@@ -665,7 +636,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "pk": task1.pk,
                     "type": "rmm",
                     "name": task1.win_task_name,
-                    "overwrite_task": False,
+                    "overwrite_task": True,
                     "enabled": True,
                     "trigger": "manual",
                     "multiple_instances": 1,
@@ -673,7 +644,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "start_when_available": False,
                 },
             },
-            timeout=5,
+            timeout=10,
         )
         nats_cmd.reset_mock()
 
@@ -692,7 +663,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "pk": task1.pk,
                     "type": "rmm",
                     "name": task1.win_task_name,
-                    "overwrite_task": False,
+                    "overwrite_task": True,
                     "enabled": True,
                     "trigger": "manual",
                     "multiple_instances": 1,
@@ -700,7 +671,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "start_when_available": False,
                 },
             },
-            timeout=5,
+            timeout=10,
         )
 
 

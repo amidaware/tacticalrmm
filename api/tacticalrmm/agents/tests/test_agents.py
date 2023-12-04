@@ -1020,7 +1020,6 @@ class TestAgentPermissions(TacticalTestCase):
             {"method": "post", "action": "recover", "role": "can_recover_agents"},
             {"method": "post", "action": "reboot", "role": "can_reboot_agents"},
             {"method": "patch", "action": "reboot", "role": "can_reboot_agents"},
-            {"method": "get", "action": "ping", "role": "can_ping_agents"},
             {"method": "get", "action": "meshcentral", "role": "can_use_mesh"},
             {"method": "post", "action": "meshcentral/recover", "role": "can_use_mesh"},
             {"method": "get", "action": "processes", "role": "can_manage_procs"},

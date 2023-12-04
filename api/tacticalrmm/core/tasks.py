@@ -1,8 +1,12 @@
-import time
+import asyncio
+import logging
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
+import nats
 from django.conf import settings
 from django.db.models import Prefetch
+from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
 from packaging import version as pyver
 
@@ -30,12 +34,17 @@ from tacticalrmm.constants import (
     PAStatus,
     TaskStatus,
     TaskSyncStatus,
+    TaskType,
 )
-from tacticalrmm.helpers import rand_range
-from tacticalrmm.utils import DjangoConnectionThreadPoolExecutor, redis_lock
+from tacticalrmm.helpers import setup_nats_options
+from tacticalrmm.nats_utils import a_nats_cmd
+from tacticalrmm.utils import redis_lock
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
+    from nats.aio.client import Client as NATSClient
+
+logger = logging.getLogger("trmm")
 
 
 @app.task
@@ -148,50 +157,150 @@ def sync_scheduled_tasks(self) -> str:
         if not acquired:
             return f"{self.app.oid} still running"
 
-        task_actions = []  # list of tuples
+        actions: list[tuple[str, int, Agent, Any, str, str]] = []  # list of tuples
+
         for agent in _get_agent_qs():
             if (
-                pyver.parse(agent.version) >= pyver.parse("1.6.0")
+                not agent.is_posix
+                and pyver.parse(agent.version) >= pyver.parse("1.6.0")
                 and agent.status == AGENT_STATUS_ONLINE
             ):
-                # create a list of tasks to be synced so we can run them in parallel later with thread pool executor
+                # create a list of tasks to be synced so we can run them asynchronously
                 for task in agent.get_tasks_with_policies():
-                    agent_obj = agent if task.policy else None
+                    # TODO can we just use agent??
+                    agent_obj: "Agent" = agent if task.policy else task.agent
+
+                    # onboarding tasks require agent >= 2.6.0
+                    if task.task_type == TaskType.ONBOARDING and pyver.parse(
+                        agent.version
+                    ) < pyver.parse("2.6.0"):
+                        continue
 
                     # policy tasks will be an empty dict on initial
                     if (not task.task_result) or (
                         isinstance(task.task_result, TaskResult)
                         and task.task_result.sync_status == TaskSyncStatus.INITIAL
                     ):
-                        task_actions.append(("create", task.id, agent_obj))
+                        actions.append(
+                            (
+                                "create",
+                                task.id,
+                                agent_obj,
+                                task.generate_nats_task_payload(),
+                                agent.agent_id,
+                                agent.hostname,
+                            )
+                        )
                     elif (
                         isinstance(task.task_result, TaskResult)
                         and task.task_result.sync_status
                         == TaskSyncStatus.PENDING_DELETION
                     ):
-                        task_actions.append(("delete", task.id, agent_obj))
+                        actions.append(
+                            (
+                                "delete",
+                                task.id,
+                                agent_obj,
+                                {},
+                                agent.agent_id,
+                                agent.hostname,
+                            )
+                        )
                     elif (
                         isinstance(task.task_result, TaskResult)
                         and task.task_result.sync_status == TaskSyncStatus.NOT_SYNCED
                     ):
-                        task_actions.append(("modify", task.id, agent_obj))
+                        actions.append(
+                            (
+                                "modify",
+                                task.id,
+                                agent_obj,
+                                task.generate_nats_task_payload(),
+                                agent.agent_id,
+                                agent.hostname,
+                            )
+                        )
 
-        def _handle_task(actions: tuple[str, int, Any]) -> None:
-            time.sleep(rand_range(50, 600))
-            task: "AutomatedTask" = AutomatedTask.objects.get(id=actions[1])
-            if actions[0] == "create":
-                task.create_task_on_agent(agent=actions[2])
-            elif actions[0] == "modify":
-                task.modify_task_on_agent(agent=actions[2])
-            elif actions[0] == "delete":
-                task.delete_task_on_agent(agent=actions[2])
+        async def _handle_task_on_agent(
+            nc: "NATSClient", actions: tuple[str, int, Agent, Any, str, str]
+        ) -> None:
+            # tuple: (0: action, 1: task.id, 2: agent object, 3: nats task payload, 4: agent_id, 5: agent hostname)
+            action = actions[0]
+            task_id = actions[1]
+            agent = actions[2]
+            payload = actions[3]
+            agent_id = actions[4]
+            hostname = actions[5]
 
-        # TODO this is a janky hack
-        # Rework this with asyncio. Need to rewrite all sync db operations with django's new async api
-        with DjangoConnectionThreadPoolExecutor(max_workers=50) as executor:
-            executor.map(_handle_task, task_actions)
+            task: "AutomatedTask" = await AutomatedTask.objects.aget(id=task_id)
+            try:
+                task_result = await TaskResult.objects.aget(agent=agent, task=task)
+            except TaskResult.DoesNotExist:
+                task_result = await TaskResult.objects.acreate(agent=agent, task=task)
 
-        return "completed"
+            if action in ("create", "modify"):
+                logger.debug(payload)
+                nats_data = {
+                    "func": "schedtask",
+                    "schedtaskpayload": payload,
+                }
+
+                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=10)
+                if r != "ok":
+                    if action == "create":
+                        task_result.sync_status = TaskSyncStatus.INITIAL
+                    else:
+                        task_result.sync_status = TaskSyncStatus.NOT_SYNCED
+
+                    logger.error(
+                        f"Unable to {action} scheduled task {task.name} on {hostname}: {r}"
+                    )
+                else:
+                    task_result.sync_status = TaskSyncStatus.SYNCED
+                    logger.info(
+                        f"{hostname} task {task.name} was {'created' if action == 'create' else 'modified'}"
+                    )
+
+                await task_result.asave(update_fields=["sync_status"])
+            # delete
+            else:
+                nats_data = {
+                    "func": "delschedtask",
+                    "schedtaskpayload": {"name": task.win_task_name},
+                }
+                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=10)
+
+                if r != "ok" and "The system cannot find the file specified" not in r:
+                    task_result.sync_status = TaskSyncStatus.PENDING_DELETION
+
+                    with suppress(DatabaseError):
+                        await task_result.asave(update_fields=["sync_status"])
+
+                    logger.error(
+                        f"Unable to {action} scheduled task {task.name} on {hostname}: {r}"
+                    )
+                else:
+                    task_name = task.name
+                    await task.adelete()
+                    logger.info(f"{hostname} task {task_name} was deleted.")
+
+        async def _run():
+            opts = setup_nats_options()
+            try:
+                nc = await nats.connect(**opts)
+            except Exception as e:
+                ret = str(e)
+                logger.error(ret)
+                return ret
+
+            if tasks := [_handle_task_on_agent(nc, task) for task in actions]:
+                await asyncio.gather(*tasks)
+
+            await nc.flush()
+            await nc.close()
+
+        asyncio.run(_run())
+        return "ok"
 
 
 def _get_failing_data(agents: "QuerySet[Agent]") -> dict[str, bool]:

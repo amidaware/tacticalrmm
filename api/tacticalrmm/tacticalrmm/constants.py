@@ -1,3 +1,4 @@
+import zoneinfo
 from enum import Enum
 
 from django.db import models
@@ -74,6 +75,7 @@ class TaskType(models.TextChoices):
     CHECK_FAILURE = "checkfailure", "On Check Failure"
     MANUAL = "manual", "Manual"
     RUN_ONCE = "runonce", "Run Once"
+    ONBOARDING = "onboarding", "Onboarding"
     SCHEDULED = "scheduled", "Scheduled"  # deprecated
 
 
@@ -453,3 +455,5 @@ CONFIG_MGMT_CMDS = (
     "certfile",
     "keyfile",
 )
+
+ALL_TIMEZONES = sorted(zoneinfo.available_timezones())

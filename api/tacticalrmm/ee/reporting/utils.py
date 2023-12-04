@@ -5,6 +5,7 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 import datetime
+import inspect
 import json
 import re
 from enum import Enum
@@ -20,8 +21,8 @@ from weasyprint.text.fonts import FontConfiguration
 
 from tacticalrmm.utils import get_db_value
 
+from . import custom_filters
 from .constants import REPORTING_MODELS
-from .custom_filters import as_tz, local_ips
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 
@@ -71,13 +72,11 @@ custom_globals = {
     "re": re,
 }
 
-custom_filters = {
-    "as_tz": as_tz,
-    "local_ips": local_ips,
-}
-
 env.globals.update(custom_globals)
-env.filters.update(custom_filters)
+
+# import all functions from custom_filters.py
+for name, func in inspect.getmembers(custom_filters, inspect.isfunction):
+    env.filters[name] = func
 
 
 def generate_pdf(*, html: str, css: str = "") -> bytes:
@@ -327,45 +326,46 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             queryset = queryset.first()
 
         if fields_to_add:
-            return add_custom_fields(
+            queryset = add_custom_fields(
                 data=queryset,
                 fields_to_add=fields_to_add,
                 model_name=model_name,
                 dict_value=True,
             )
-        else:
-            if isJson:
-                return json.dumps(queryset, default=str)
-            elif isCsv:
-                import pandas as pd
 
-                df = pd.DataFrame.from_dict([queryset])
-                df.drop("id", axis=1, inplace=True)
-                if csv_columns:
-                    df = df.rename(columns=csv_columns)
-                return df.to_csv(index=False)
-            else:
-                return queryset
+        if isJson:
+            return json.dumps(queryset, default=str)
+        elif isCsv:
+            import pandas as pd
+
+            df = pd.DataFrame.from_dict([queryset])
+            df.drop("id", axis=1, inplace=True)
+            if csv_columns:
+                df = df.rename(columns=csv_columns)
+            return df.to_csv(index=False)
+        else:
+            return queryset
     else:
         # add custom fields for list results
-        if fields_to_add:
-            return add_custom_fields(
-                data=list(queryset), fields_to_add=fields_to_add, model_name=model_name
-            )
-        else:
-            if isJson:
-                return json.dumps(list(queryset), default=str)
-            elif isCsv:
-                import pandas as pd
+        queryset = list(queryset)
 
-                df = pd.DataFrame.from_dict(list(queryset))
-                df.drop("id", axis=1, inplace=True)
-                print(csv_columns)
-                if csv_columns:
-                    df = df.rename(columns=csv_columns)
-                return df.to_csv(index=False)
-            else:
-                return list(queryset)
+        if fields_to_add:
+            queryset = add_custom_fields(
+                data=queryset, fields_to_add=fields_to_add, model_name=model_name
+            )
+
+        if isJson:
+            return json.dumps(queryset, default=str)
+        elif isCsv:
+            import pandas as pd
+
+            df = pd.DataFrame.from_dict(queryset)
+            df.drop("id", axis=1, inplace=True)
+            if csv_columns:
+                df = df.rename(columns=csv_columns)
+            return df.to_csv(index=False)
+        else:
+            return queryset
 
 
 def add_custom_fields(

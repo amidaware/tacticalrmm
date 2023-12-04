@@ -212,7 +212,7 @@ class AutomatedTask(BaseAuditModel):
             days = bitdays_to_string(self.run_time_bit_weekdays)
             return f"Runs on {months} on {weeks} on {days} at {run_time_nice}"
         elif self.task_type == TaskType.ONBOARDING:
-            return "Onboarding: Run on task creation"
+            return "Onboarding: Runs once on task creation."
         return None
 
     @property

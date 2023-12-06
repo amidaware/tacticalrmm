@@ -1,6 +1,6 @@
 module github.com/amidaware/tacticalrmm
 
-go 1.20
+go 1.21.4
 
 require (
 	github.com/jmoiron/sqlx v1.3.5

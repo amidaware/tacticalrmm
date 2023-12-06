@@ -34,6 +34,7 @@ from tacticalrmm.constants import (
     PAStatus,
     TaskStatus,
     TaskSyncStatus,
+    TaskType,
 )
 from tacticalrmm.helpers import setup_nats_options
 from tacticalrmm.nats_utils import a_nats_cmd
@@ -164,9 +165,16 @@ def sync_scheduled_tasks(self) -> str:
                 and pyver.parse(agent.version) >= pyver.parse("1.6.0")
                 and agent.status == AGENT_STATUS_ONLINE
             ):
-                # create a list of tasks to be synced so we can run them in parallel later with thread pool executor
+                # create a list of tasks to be synced so we can run them asynchronously
                 for task in agent.get_tasks_with_policies():
+                    # TODO can we just use agent??
                     agent_obj: "Agent" = agent if task.policy else task.agent
+
+                    # onboarding tasks require agent >= 2.6.0
+                    if task.task_type == TaskType.ONBOARDING and pyver.parse(
+                        agent.version
+                    ) < pyver.parse("2.6.0"):
+                        continue
 
                     # policy tasks will be an empty dict on initial
                     if (not task.task_result) or (
@@ -178,9 +186,7 @@ def sync_scheduled_tasks(self) -> str:
                                 "create",
                                 task.id,
                                 agent_obj,
-                                task.generate_nats_task_payload(
-                                    agent=agent_obj, editing=False
-                                ),
+                                task.generate_nats_task_payload(),
                                 agent.agent_id,
                                 agent.hostname,
                             )
@@ -209,9 +215,7 @@ def sync_scheduled_tasks(self) -> str:
                                 "modify",
                                 task.id,
                                 agent_obj,
-                                task.generate_nats_task_payload(
-                                    agent=None, editing=True
-                                ),
+                                task.generate_nats_task_payload(),
                                 agent.agent_id,
                                 agent.hostname,
                             )
@@ -232,8 +236,7 @@ def sync_scheduled_tasks(self) -> str:
             try:
                 task_result = await TaskResult.objects.aget(agent=agent, task=task)
             except TaskResult.DoesNotExist:
-                task_result = TaskResult(agent=agent, task=task)
-                await task_result.asave()
+                task_result = await TaskResult.objects.acreate(agent=agent, task=task)
 
             if action in ("create", "modify"):
                 logger.debug(payload)
@@ -242,7 +245,7 @@ def sync_scheduled_tasks(self) -> str:
                     "schedtaskpayload": payload,
                 }
 
-                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=5)
+                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=10)
                 if r != "ok":
                     if action == "create":
                         task_result.sync_status = TaskSyncStatus.INITIAL
@@ -265,7 +268,7 @@ def sync_scheduled_tasks(self) -> str:
                     "func": "delschedtask",
                     "schedtaskpayload": {"name": task.win_task_name},
                 }
-                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=5)
+                r = await a_nats_cmd(nc=nc, sub=agent_id, data=nats_data, timeout=10)
 
                 if r != "ok" and "The system cannot find the file specified" not in r:
                     task_result.sync_status = TaskSyncStatus.PENDING_DELETION
@@ -277,15 +280,18 @@ def sync_scheduled_tasks(self) -> str:
                         f"Unable to {action} scheduled task {task.name} on {hostname}: {r}"
                     )
                 else:
+                    task_name = task.name
                     await task.adelete()
-                    logger.info(f"{hostname} task {task.name} was deleted")
+                    logger.info(f"{hostname} task {task_name} was deleted.")
 
-        async def _run() -> str | None:
+        async def _run():
             opts = setup_nats_options()
             try:
                 nc = await nats.connect(**opts)
             except Exception as e:
-                return str(e)
+                ret = str(e)
+                logger.error(ret)
+                return ret
 
             if tasks := [_handle_task_on_agent(nc, task) for task in actions]:
                 await asyncio.gather(*tasks)

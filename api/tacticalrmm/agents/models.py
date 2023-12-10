@@ -551,7 +551,6 @@ class Agent(BaseAuditModel):
     ) -> Any:
         from scripts.models import Script
 
-
         script = Script.objects.get(pk=scriptpk)
 
         # always override if set on script model

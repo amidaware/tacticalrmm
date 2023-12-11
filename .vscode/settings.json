@@ -58,13 +58,13 @@
   "go.useLanguageServer": true,
   "[go]": {
     "editor.codeActionsOnSave": {
-      "source.organizeImports": false
+      "source.organizeImports": "never"
     },
     "editor.snippetSuggestions": "none"
   },
   "[go.mod]": {
     "editor.codeActionsOnSave": {
-      "source.organizeImports": true
+      "source.organizeImports": "explicit"
     }
   },
   "gopls": {

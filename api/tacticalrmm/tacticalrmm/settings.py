@@ -34,13 +34,13 @@ LATEST_AGENT_VER = "2.6.0"
 
 MESH_VER = "1.1.9"
 
-NATS_SERVER_VER = "2.10.5"
+NATS_SERVER_VER = "2.10.7"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "40"
+PIP_VER = "41"
 
-SETUPTOOLS_VER = "68.2.2"
-WHEEL_VER = "0.41.3"
+SETUPTOOLS_VER = "69.0.2"
+WHEEL_VER = "0.42.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 

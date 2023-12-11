@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="54"
+SCRIPT_VERSION="55"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -164,7 +164,7 @@ http {
         sendfile on;
         tcp_nopush on;
         types_hash_max_size 2048;
-        server_names_hash_bucket_size 64;
+        server_names_hash_bucket_size 256;
         include /etc/nginx/mime.types;
         default_type application/octet-stream;
         ssl_protocols TLSv1.2 TLSv1.3;

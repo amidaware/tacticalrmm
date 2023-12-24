@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="54"
+SCRIPT_VERSION="55"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -164,7 +164,7 @@ http {
         sendfile on;
         tcp_nopush on;
         types_hash_max_size 2048;
-        server_names_hash_bucket_size 64;
+        server_names_hash_bucket_size 256;
         include /etc/nginx/mime.types;
         default_type application/octet-stream;
         ssl_protocols TLSv1.2 TLSv1.3;
@@ -353,14 +353,14 @@ fi
 
 print_green 'Creating MeshCentral DB'
 
-sudo -u postgres psql -c "CREATE DATABASE meshcentral"
-sudo -u postgres psql -c "CREATE USER ${MESH_POSTGRES_USER} WITH PASSWORD '${MESH_POSTGRES_PW}'"
-sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESH_POSTGRES_USER}"
-sudo -u postgres psql -c "ALTER DATABASE meshcentral OWNER TO ${MESH_POSTGRES_USER}"
-sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESH_POSTGRES_USER}"
+sudo -iu postgres psql -c "CREATE DATABASE meshcentral"
+sudo -iu postgres psql -c "CREATE USER ${MESH_POSTGRES_USER} WITH PASSWORD '${MESH_POSTGRES_PW}'"
+sudo -iu postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET client_encoding TO 'utf8'"
+sudo -iu postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET default_transaction_isolation TO 'read committed'"
+sudo -iu postgres psql -c "ALTER ROLE ${MESH_POSTGRES_USER} SET timezone TO 'UTC'"
+sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESH_POSTGRES_USER}"
+sudo -iu postgres psql -c "ALTER DATABASE meshcentral OWNER TO ${MESH_POSTGRES_USER}"
+sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESH_POSTGRES_USER}"
 
 if [ "$FROM_MONGO" = true ]; then
   print_green 'Converting mesh mongo to postgres'
@@ -431,14 +431,14 @@ print_green 'Restoring the trmm database'
 pgusername=$(grep -w USER /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 pgpw=$(grep -w PASSWORD /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 
-sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
-sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
-sudo -u postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
-sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
+sudo -iu postgres psql -c "CREATE DATABASE tacticalrmm"
+sudo -iu postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
+sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
+sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
+sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
+sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+sudo -iu postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
+sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
 
 gzip -d $tmp_dir/postgres/db*.psql.gz
 PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql

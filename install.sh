@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="80"
+SCRIPT_VERSION="81"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
@@ -193,9 +193,8 @@ else
   done
   CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
   CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
+  sudo chown ${USER}:${USER} -R /etc/letsencrypt
 fi
-
-sudo chown ${USER}:${USER} -R /etc/letsencrypt
 
 print_green 'Installing Nginx'
 
@@ -232,7 +231,7 @@ http {
         sendfile on;
         tcp_nopush on;
         types_hash_max_size 2048;
-        server_names_hash_bucket_size 64;
+        server_names_hash_bucket_size 256;
         include /etc/nginx/mime.types;
         default_type application/octet-stream;
         ssl_protocols TLSv1.2 TLSv1.3;
@@ -295,25 +294,25 @@ done
 
 print_green 'Creating database for trmm'
 
-sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
-sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
-sudo -u postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
-sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
+sudo -iu postgres psql -c "CREATE DATABASE tacticalrmm"
+sudo -iu postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
+sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
+sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
+sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
+sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+sudo -iu postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
+sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
 
 print_green 'Creating database for meshcentral'
 
-sudo -u postgres psql -c "CREATE DATABASE meshcentral"
-sudo -u postgres psql -c "CREATE USER ${MESHPGUSER} WITH PASSWORD '${MESHPGPWD}'"
-sudo -u postgres psql -c "ALTER ROLE ${MESHPGUSER} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${MESHPGUSER} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${MESHPGUSER} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESHPGUSER}"
-sudo -u postgres psql -c "ALTER DATABASE meshcentral OWNER TO ${MESHPGUSER}"
-sudo -u postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESHPGUSER}"
+sudo -iu postgres psql -c "CREATE DATABASE meshcentral"
+sudo -iu postgres psql -c "CREATE USER ${MESHPGUSER} WITH PASSWORD '${MESHPGPWD}'"
+sudo -iu postgres psql -c "ALTER ROLE ${MESHPGUSER} SET client_encoding TO 'utf8'"
+sudo -iu postgres psql -c "ALTER ROLE ${MESHPGUSER} SET default_transaction_isolation TO 'read committed'"
+sudo -iu postgres psql -c "ALTER ROLE ${MESHPGUSER} SET timezone TO 'UTC'"
+sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE meshcentral TO ${MESHPGUSER}"
+sudo -iu postgres psql -c "ALTER DATABASE meshcentral OWNER TO ${MESHPGUSER}"
+sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESHPGUSER}"
 
 print_green 'Cloning repos'
 

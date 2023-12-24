@@ -30,7 +30,7 @@ WEB_VERSION = "0.101.38"
 APP_VER = "0.0.189"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.6.0"
+LATEST_AGENT_VER = "2.6.1"
 
 MESH_VER = "1.1.9"
 

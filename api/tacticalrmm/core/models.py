@@ -221,6 +221,12 @@ class CoreSettings(BaseAuditModel):
                     )
                     server.send_message(msg)
                     server.quit()
+                if self.smtp_host == "smtp-relay.gmail.com" and not self.smtp_requires_auth:
+                    # gmail smtp relay specific handling.
+                    server.ehlo()
+                    server.starttls()
+                    server.send_message(msg)
+                    server.quit()
                 else:
                     # smtp relay. no auth required
                     server.send_message(msg)

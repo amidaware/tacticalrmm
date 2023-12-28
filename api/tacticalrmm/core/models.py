@@ -221,16 +221,17 @@ class CoreSettings(BaseAuditModel):
                     )
                     server.send_message(msg)
                     server.quit()
-                if self.smtp_host == "smtp-relay.gmail.com" and not self.smtp_requires_auth:
-                    # gmail smtp relay specific handling.
-                    server.ehlo()
-                    server.starttls()
-                    server.send_message(msg)
-                    server.quit()
                 else:
-                    # smtp relay. no auth required
-                    server.send_message(msg)
-                    server.quit()
+                    # gmail smtp relay specific handling.
+                    if self.smtp_host == "smtp-relay.gmail.com":
+                        server.ehlo()
+                        server.starttls()
+                        server.send_message(msg)
+                        server.quit()
+                    else:
+                        # smtp relay. no auth required
+                        server.send_message(msg)
+                        server.quit()
 
         except Exception as e:
             DebugLog.error(message=f"Sending email failed with error: {e}")

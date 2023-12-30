@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="150"
+SCRIPT_VERSION="151"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -243,6 +243,10 @@ fi
 
 if [ -d ~/.config ]; then
   sudo chown -R $USER:$GROUP ~/.config
+fi
+
+if ! which npm >/dev/null; then
+  sudo apt install -y npm
 fi
 
 sudo npm install -g npm

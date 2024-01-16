@@ -16,6 +16,7 @@ app.task_serializer = "json"
 app.conf.task_track_started = True
 app.conf.worker_proc_alive_timeout = 30
 app.conf.worker_max_tasks_per_child = 2
+app.conf.broker_connection_retry_on_startup = True
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {

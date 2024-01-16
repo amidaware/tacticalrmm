@@ -156,7 +156,7 @@ CACHES = {
         "BACKEND": "tacticalrmm.cache.TacticalRedisCache",
         "LOCATION": f"redis://{REDIS_HOST}:6379",
         "OPTIONS": {
-            "parser_class": "redis.connection.HiredisParser",
+            "parser_class": "redis.connection._HiredisParser",
             "pool_class": "redis.BlockingConnectionPool",
             "db": "10",
         },

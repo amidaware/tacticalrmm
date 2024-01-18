@@ -22,7 +22,7 @@ from tacticalrmm.constants import (
 )
 
 if TYPE_CHECKING:
-    from core.models import CoreSettings
+    from core.models import CoreSettings, URLAction
 
 
 class CoreSettingsNotFound(Exception):
@@ -205,3 +205,19 @@ def get_meshagent_url(
         }
 
     return base + "/meshagents?" + urllib.parse.urlencode(params)
+
+
+def run_url_rest_action(action: "URLAction", instance) -> str:
+    from tacticalrmm.utils import RE_DB_VALUE
+
+    method = action.method
+    url = action.pattern
+    body = action.rest_body
+    headers = action.rest_headers
+
+    if method in ["get", "delete"]:
+        response = getattr(requests, method)(url, headers=headers)
+    else:
+        response = getattr(requests, method)(url, data=body, headers=headers)
+
+    return response

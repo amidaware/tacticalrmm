@@ -426,10 +426,31 @@ class GlobalKVStore(BaseAuditModel):
         return KeyStoreSerializer(store).data
 
 
+class URLActionType(models.TextChoices):
+    WEB = "web", "Web"
+    REST = "rest", "Rest"
+
+
+class URLActionRestMethod(models.TextChoices):
+    GET = "get", "Get"
+    POST = "post", "Post"
+    PUT = "put", "Put"
+    DELETE = "delete", "Delete"
+    PATCH = "patch", "Patch"
+
+
 class URLAction(BaseAuditModel):
     name = models.CharField(max_length=25)
     desc = models.CharField(max_length=100, null=True, blank=True)
     pattern = models.TextField()
+    action_type = models.CharField(
+        max_length=10, choices=URLActionType.choices, default="web"
+    )
+    rest_method = models.CharField(
+        max_length=10, choices=URLActionRestMethod.choices, default="get"
+    )
+    rest_body = models.TextField(null=True)
+    rest_headers = models.TextField(null=True)
 
     def __str__(self):
         return self.name

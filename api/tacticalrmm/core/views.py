@@ -366,7 +366,7 @@ class RunURLAction(APIView):
 
         from agents.models import Agent
         from clients.models import Client, Site
-        from tacticalrmm.utils import get_db_value
+        from tacticalrmm.utils import get_db_value, RE_DB_VALUE
 
         if "agent_id" in request.data.keys():
             if not _has_perm_on_agent(request.user, request.data["agent_id"]):
@@ -388,14 +388,12 @@ class RunURLAction(APIView):
 
         action = get_object_or_404(URLAction, pk=request.data["action"])
 
-        pattern = re.compile("\\{\\{([\\w\\s]+\\.[\\w\\s]+)\\}\\}")
-
         url_pattern = action.pattern
 
-        for string in re.findall(pattern, action.pattern):
-            value = get_db_value(string=string, instance=instance)
+        for string, model, prop in re.findall(RE_DB_VALUE, url_pattern):
+            value = get_db_value(string=f"{model}.{prop}", instance=instance)
 
-            url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
+            url_pattern = url_pattern.replace(string, str(value))
 
         AuditLog.audit_url_action(
             username=request.user.username,

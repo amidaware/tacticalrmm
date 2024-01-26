@@ -153,7 +153,7 @@ class TestScript(APIView):
         )
 
         data = {
-            "func": "runscript",
+            "func": "runscriptfull",
             "timeout": request.data["timeout"],
             "script_args": parsed_args,
             "payload": {

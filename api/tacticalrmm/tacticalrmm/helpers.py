@@ -1,3 +1,4 @@
+import os
 import random
 import secrets
 import string
@@ -43,10 +44,37 @@ def get_nats_ports() -> tuple[int, int]:
 
 
 def get_nats_internal_protocol() -> str:
-    if getattr(settings, "TRMM_INSECURE", False):
-        return "nats"
+    if getattr(settings, "USE_NATS_STANDARD", False):
+        return "tls"
 
-    return "tls"
+    return "nats"
+
+
+def get_nats_hosts() -> tuple[str, str]:
+    std_host = "0.0.0.0"
+    ws_host = "0.0.0.0"
+
+    if not settings.DOCKER_BUILD:
+        std_host, ws_host = "localhost", "localhost"
+
+    if "NATS_STD_HOST" in os.environ:
+        std_host = os.getenv("NATS_STD_HOST")
+    elif hasattr(settings, "NATS_STD_HOST"):
+        std_host = settings.NATS_STD_HOST
+
+    if "NATS_WS_HOST" in os.environ:
+        ws_host = os.getenv("NATS_WS_HOST")
+    elif hasattr(settings, "NATS_WS_HOST"):
+        ws_host = settings.NATS_WS_HOST
+
+    return std_host, ws_host
+
+
+def get_nats_url() -> str:
+    host, _ = get_nats_hosts()
+    proto = get_nats_internal_protocol()
+    port, _ = get_nats_ports()
+    return f"{proto}://{host}:{port}"
 
 
 def date_is_in_past(*, datetime_obj: "datetime", agent_tz: str) -> bool:
@@ -72,10 +100,8 @@ def rand_range(min: int, max: int) -> float:
 
 
 def setup_nats_options() -> dict[str, Any]:
-    nats_std_port, _ = get_nats_ports()
-    proto = get_nats_internal_protocol()
     opts = {
-        "servers": f"{proto}://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
+        "servers": get_nats_url(),
         "user": "tacticalrmm",
         "name": "trmm-django",
         "password": settings.SECRET_KEY,

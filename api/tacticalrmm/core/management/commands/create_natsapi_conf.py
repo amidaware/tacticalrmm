@@ -4,7 +4,7 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from tacticalrmm.helpers import get_nats_internal_protocol, get_nats_ports
+from tacticalrmm.helpers import get_nats_url
 
 
 class Command(BaseCommand):
@@ -20,11 +20,9 @@ class Command(BaseCommand):
         else:
             ssl = "disable"
 
-        nats_std_port, _ = get_nats_ports()
-        proto = get_nats_internal_protocol()
         config = {
             "key": settings.SECRET_KEY,
-            "natsurl": f"{proto}://{settings.ALLOWED_HOSTS[0]}:{nats_std_port}",
+            "natsurl": get_nats_url(),
             "user": db["USER"],
             "pass": db["PASSWORD"],
             "host": db["HOST"],

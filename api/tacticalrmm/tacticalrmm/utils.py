@@ -33,6 +33,7 @@ from tacticalrmm.constants import (
 )
 from tacticalrmm.helpers import (
     get_certs,
+    get_nats_hosts,
     get_nats_internal_protocol,
     get_nats_ports,
     notify_error,
@@ -206,13 +207,16 @@ def reload_nats() -> None:
             )
 
     cert_file, key_file = get_certs()
+    nats_std_host, nats_ws_host = get_nats_hosts()
     nats_std_port, nats_ws_port = get_nats_ports()
 
     config = {
         "authorization": {"users": users},
         "max_payload": 67108864,
+        "host": nats_std_host,
         "port": nats_std_port,  # internal only
         "websocket": {
+            "host": nats_ws_host,
             "port": nats_ws_port,
             "no_tls": True,  # TLS is handled by nginx, so not needed here
         },

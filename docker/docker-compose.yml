@@ -52,7 +52,7 @@ services:
     container_name: trmm-init
     image: ${IMAGE_REPO}tactical:${VERSION}
     restart: on-failure
-    command: [ "tactical-init" ]
+    command: ["tactical-init"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
@@ -151,7 +151,7 @@ services:
     container_name: trmm-backend
     image: ${IMAGE_REPO}tactical:${VERSION}
     user: 1000:1000
-    command: [ "tactical-backend" ]
+    command: ["tactical-backend"]
     restart: always
     networks:
       - proxy
@@ -167,7 +167,7 @@ services:
     container_name: trmm-websockets
     image: ${IMAGE_REPO}tactical:${VERSION}
     user: 1000:1000
-    command: [ "tactical-websockets" ]
+    command: ["tactical-websockets"]
     restart: always
     networks:
       - proxy
@@ -205,7 +205,7 @@ services:
     container_name: trmm-celery
     image: ${IMAGE_REPO}tactical:${VERSION}
     user: 1000:1000
-    command: [ "tactical-celery" ]
+    command: ["tactical-celery"]
     restart: always
     networks:
       - redis
@@ -222,7 +222,7 @@ services:
     container_name: trmm-celerybeat
     image: ${IMAGE_REPO}tactical:${VERSION}
     user: 1000:1000
-    command: [ "tactical-celerybeat" ]
+    command: ["tactical-celerybeat"]
     restart: always
     networks:
       - proxy

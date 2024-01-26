@@ -207,7 +207,7 @@ def reload_nats() -> None:
             )
 
     cert_file, key_file = get_certs()
-    nats_std_host, nats_ws_host = get_nats_hosts()
+    nats_std_host, nats_ws_host, _ = get_nats_hosts()
     nats_std_port, nats_ws_port = get_nats_ports()
 
     config = {

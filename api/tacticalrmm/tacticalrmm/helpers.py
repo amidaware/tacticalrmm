@@ -50,31 +50,43 @@ def get_nats_internal_protocol() -> str:
     return "nats"
 
 
-def get_nats_hosts() -> tuple[str, str]:
-    std_host = "0.0.0.0"
-    ws_host = "0.0.0.0"
+def get_nats_hosts() -> tuple[str, str, str]:
+    std_bind_host = "0.0.0.0"
+    ws_bind_host = "0.0.0.0"
+    connect_host = settings.ALLOWED_HOSTS[0]
 
-    if not settings.DOCKER_BUILD:
-        std_host, ws_host = "localhost", "localhost"
+    # standard install
+    if not settings.DOCKER_BUILD and not getattr(settings, "USE_NATS_STANDARD", False):
+        std_bind_host, ws_bind_host, connect_host = (
+            "localhost",
+            "localhost",
+            "localhost",
+        )
 
-    if "NATS_STD_HOST" in os.environ:
-        std_host = os.getenv("NATS_STD_HOST")
-    elif hasattr(settings, "NATS_STD_HOST"):
-        std_host = settings.NATS_STD_HOST
+    # allow customizing all nats hosts
+    if "NATS_STD_BIND_HOST" in os.environ:
+        std_bind_host = os.getenv("NATS_STD_BIND_HOST")
+    elif hasattr(settings, "NATS_STD_BIND_HOST"):
+        std_bind_host = settings.NATS_STD_BIND_HOST
 
-    if "NATS_WS_HOST" in os.environ:
-        ws_host = os.getenv("NATS_WS_HOST")
-    elif hasattr(settings, "NATS_WS_HOST"):
-        ws_host = settings.NATS_WS_HOST
+    if "NATS_WS_BIND_HOST" in os.environ:
+        ws_bind_host = os.getenv("NATS_WS_BIND_HOST")
+    elif hasattr(settings, "NATS_WS_BIND_HOST"):
+        ws_bind_host = settings.NATS_WS_BIND_HOST
 
-    return std_host, ws_host
+    if "NATS_CONNECT_HOST" in os.environ:
+        connect_host = os.getenv("NATS_CONNECT_HOST")
+    elif hasattr(settings, "NATS_CONNECT_HOST"):
+        connect_host = settings.NATS_CONNECT_HOST
+
+    return std_bind_host, ws_bind_host, connect_host
 
 
 def get_nats_url() -> str:
-    host, _ = get_nats_hosts()
+    _, _, connect_host = get_nats_hosts()
     proto = get_nats_internal_protocol()
     port, _ = get_nats_ports()
-    return f"{proto}://{host}:{port}"
+    return f"{proto}://{connect_host}:{port}"
 
 
 def date_is_in_past(*, datetime_obj: "datetime", agent_tz: str) -> bool:

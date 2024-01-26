@@ -169,15 +169,17 @@ class Alert(models.Model):
                     assigned_check=check,
                     agent=agent,
                     alert_type=AlertType.CHECK,
-                    severity=check.alert_severity
-                    if check.check_type
-                    not in {
-                        CheckType.MEMORY,
-                        CheckType.CPU_LOAD,
-                        CheckType.DISK_SPACE,
-                        CheckType.SCRIPT,
-                    }
-                    else alert_severity,
+                    severity=(
+                        check.alert_severity
+                        if check.check_type
+                        not in {
+                            CheckType.MEMORY,
+                            CheckType.CPU_LOAD,
+                            CheckType.DISK_SPACE,
+                            CheckType.SCRIPT,
+                        }
+                        else alert_severity
+                    ),
                     message=f"{agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                     hidden=True,
                 ),

@@ -507,24 +507,32 @@ class Agent(BaseAuditModel):
         )
 
         return {
-            "agent_policy": self.policy
-            if self.policy and not self.policy.is_agent_excluded(self)
-            else None,
-            "site_policy": site_policy
-            if (site_policy and not site_policy.is_agent_excluded(self))
-            and not self.block_policy_inheritance
-            else None,
-            "client_policy": client_policy
-            if (client_policy and not client_policy.is_agent_excluded(self))
-            and not self.block_policy_inheritance
-            and not self.site.block_policy_inheritance
-            else None,
-            "default_policy": default_policy
-            if (default_policy and not default_policy.is_agent_excluded(self))
-            and not self.block_policy_inheritance
-            and not self.site.block_policy_inheritance
-            and not self.client.block_policy_inheritance
-            else None,
+            "agent_policy": (
+                self.policy
+                if self.policy and not self.policy.is_agent_excluded(self)
+                else None
+            ),
+            "site_policy": (
+                site_policy
+                if (site_policy and not site_policy.is_agent_excluded(self))
+                and not self.block_policy_inheritance
+                else None
+            ),
+            "client_policy": (
+                client_policy
+                if (client_policy and not client_policy.is_agent_excluded(self))
+                and not self.block_policy_inheritance
+                and not self.site.block_policy_inheritance
+                else None
+            ),
+            "default_policy": (
+                default_policy
+                if (default_policy and not default_policy.is_agent_excluded(self))
+                and not self.block_policy_inheritance
+                and not self.site.block_policy_inheritance
+                and not self.client.block_policy_inheritance
+                else None
+            ),
         }
 
     def check_run_interval(self) -> int:

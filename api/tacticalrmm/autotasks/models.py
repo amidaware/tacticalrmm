@@ -248,16 +248,20 @@ class AutomatedTask(BaseAuditModel):
             "name": self.win_task_name,
             "overwrite_task": True,
             "enabled": self.enabled,
-            "trigger": self.task_type
-            if self.task_type != TaskType.CHECK_FAILURE
-            else TaskType.MANUAL,
+            "trigger": (
+                self.task_type
+                if self.task_type != TaskType.CHECK_FAILURE
+                else TaskType.MANUAL
+            ),
             "multiple_instances": self.task_instance_policy or 0,
-            "delete_expired_task_after": self.remove_if_not_scheduled
-            if self.expire_date
-            else False,
-            "start_when_available": self.run_asap_after_missed
-            if self.task_type != TaskType.RUN_ONCE
-            else True,
+            "delete_expired_task_after": (
+                self.remove_if_not_scheduled if self.expire_date else False
+            ),
+            "start_when_available": (
+                self.run_asap_after_missed
+                if self.task_type != TaskType.RUN_ONCE
+                else True
+            ),
         }
 
         if self.task_type in (

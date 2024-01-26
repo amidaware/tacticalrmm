@@ -187,9 +187,11 @@ class TestReportTemplateGenerateView:
             template=report_template.template_md,
             template_type=report_template.type,
             css=report_template.template_css if report_template.template_css else "",
-            html_template=report_template.template_html.id
-            if report_template.template_html
-            else None,
+            html_template=(
+                report_template.template_html.id
+                if report_template.template_html
+                else None
+            ),
             variables=report_template.template_variables,
             dependencies={"client": 1},
         )

@@ -426,7 +426,10 @@ class Agent(BaseAuditModel):
     @property
     def serial_number(self) -> str:
         if self.is_posix:
-            return ""
+            try:
+                return self.wmi_detail["serialnumber"]
+            except:
+                return ""
 
         try:
             return self.wmi_detail["bios"][0][0]["SerialNumber"]

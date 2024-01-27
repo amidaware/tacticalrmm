@@ -282,7 +282,20 @@ class Agent(BaseAuditModel):
         try:
             cpus = self.wmi_detail["cpu"]
             for cpu in cpus:
-                ret.append([x["Name"] for x in cpu if "Name" in x][0])
+                name = [x["Name"] for x in cpu if "Name" in x][0]
+                lp, nc = "", ""
+                with suppress(Exception):
+                    lp = [
+                        x["NumberOfLogicalProcessors"]
+                        for x in cpu
+                        if "NumberOfCores" in x
+                    ][0]
+                    nc = [x["NumberOfCores"] for x in cpu if "NumberOfCores" in x][0]
+                if lp and nc:
+                    cpu_string = f"{name}, {nc}C/{lp}T"
+                else:
+                    cpu_string = name
+                ret.append(cpu_string)
             return ret
         except:
             return ["unknown cpu model"]

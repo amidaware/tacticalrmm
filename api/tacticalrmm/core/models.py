@@ -314,6 +314,7 @@ class CustomField(BaseAuditModel):
         default=list,
     )
     hide_in_ui = models.BooleanField(default=False)
+    hide_in_summary = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (("model", "name"),)

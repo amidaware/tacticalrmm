@@ -126,6 +126,22 @@ class Agent(BaseAuditModel):
     def __str__(self) -> str:
         return self.hostname
 
+    def save(self, *args, **kwargs):
+        # prevent recursion since calling set_alert_template() also calls save()
+        if not hasattr(self, "_processing_set_alert_template"):
+            self._processing_set_alert_template = False
+
+        if self.pk and not self._processing_set_alert_template:
+            orig = Agent.objects.get(pk=self.pk)
+            mon_type_changed = self.monitoring_type != orig.monitoring_type
+            site_changed = self.site_id != orig.site_id
+            if mon_type_changed or site_changed:
+                self._processing_set_alert_template = True
+                self.set_alert_template()
+                self._processing_set_alert_template = False
+
+        super().save(*args, **kwargs)
+
     @property
     def client(self) -> "Client":
         return self.site.client

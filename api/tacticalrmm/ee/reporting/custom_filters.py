@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import validators
 
 
-def as_tz(date_obj, tz, format="%b %d, %I:%M %p"):
+def as_tz(date_obj, tz, format="%b %d %Y, %I:%M %p"):
     return date_obj.astimezone(ZoneInfo(tz)).strftime(format)
 
 

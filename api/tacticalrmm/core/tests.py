@@ -14,13 +14,12 @@ from rest_framework.authtoken.models import Token
 from core.utils import get_core_settings, get_meshagent_url
 
 # from logs.models import PendingAction
-from tacticalrmm.constants import (
+from tacticalrmm.constants import (  # PAAction,; PAStatus,
     CONFIG_MGMT_CMDS,
     CustomFieldModel,
     MeshAgentIdent,
-    # PAAction,
-    # PAStatus,
 )
+from tacticalrmm.helpers import get_nats_hosts, get_nats_url
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
@@ -443,6 +442,38 @@ class TestCoreMgmtCommands(TacticalTestCase):
     def test_get_config(self):
         for cmd in CONFIG_MGMT_CMDS:
             call_command("get_config", cmd)
+
+
+class TestNatsUrls(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    def test_standard_install(self):
+        self.assertEqual(get_nats_url(), "nats://localhost:4222")
+
+    @override_settings(
+        NATS_STANDARD_PORT=5000,
+        USE_NATS_STANDARD=True,
+        ALLOWED_HOSTS=["api.example.com"],
+    )
+    def test_custom_port_nats_standard(self):
+        self.assertEqual(get_nats_url(), "tls://api.example.com:5000")
+
+    @override_settings(DOCKER_BUILD=True, ALLOWED_HOSTS=["api.example.com"])
+    def test_docker_nats(self):
+        self.assertEqual(get_nats_url(), "nats://api.example.com:4222")
+
+    @patch.dict("os.environ", {"NATS_CONNECT_HOST": "172.20.4.3"})
+    @override_settings(ALLOWED_HOSTS=["api.example.com"])
+    def test_custom_connect_host_env(self):
+        self.assertEqual(get_nats_url(), "nats://172.20.4.3:4222")
+
+    def test_standard_nats_hosts(self):
+        self.assertEqual(get_nats_hosts(), ("localhost", "localhost", "localhost"))
+
+    @override_settings(DOCKER_BUILD=True, ALLOWED_HOSTS=["api.example.com"])
+    def test_docker_nats_hosts(self):
+        self.assertEqual(get_nats_hosts(), ("0.0.0.0", "0.0.0.0", "api.example.com"))
 
 
 class TestCorePermissions(TacticalTestCase):

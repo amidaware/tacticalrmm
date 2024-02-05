@@ -152,9 +152,11 @@ class TestAuditViews(TacticalTestCase):
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(
                 len(resp.data["audit_logs"]),  # type:ignore
-                pagination["rowsPerPage"]
-                if req["count"] > pagination["rowsPerPage"]
-                else req["count"],
+                (
+                    pagination["rowsPerPage"]
+                    if req["count"] > pagination["rowsPerPage"]
+                    else req["count"]
+                ),
             )
             self.assertEqual(resp.data["total"], req["count"])  # type:ignore
 

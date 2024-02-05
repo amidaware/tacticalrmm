@@ -126,6 +126,22 @@ class Agent(BaseAuditModel):
     def __str__(self) -> str:
         return self.hostname
 
+    def save(self, *args, **kwargs):
+        # prevent recursion since calling set_alert_template() also calls save()
+        if not hasattr(self, "_processing_set_alert_template"):
+            self._processing_set_alert_template = False
+
+        if self.pk and not self._processing_set_alert_template:
+            orig = Agent.objects.get(pk=self.pk)
+            mon_type_changed = self.monitoring_type != orig.monitoring_type
+            site_changed = self.site_id != orig.site_id
+            if mon_type_changed or site_changed:
+                self._processing_set_alert_template = True
+                self.set_alert_template()
+                self._processing_set_alert_template = False
+
+        super().save(*args, **kwargs)
+
     @property
     def client(self) -> "Client":
         return self.site.client
@@ -282,7 +298,20 @@ class Agent(BaseAuditModel):
         try:
             cpus = self.wmi_detail["cpu"]
             for cpu in cpus:
-                ret.append([x["Name"] for x in cpu if "Name" in x][0])
+                name = [x["Name"] for x in cpu if "Name" in x][0]
+                lp, nc = "", ""
+                with suppress(Exception):
+                    lp = [
+                        x["NumberOfLogicalProcessors"]
+                        for x in cpu
+                        if "NumberOfCores" in x
+                    ][0]
+                    nc = [x["NumberOfCores"] for x in cpu if "NumberOfCores" in x][0]
+                if lp and nc:
+                    cpu_string = f"{name}, {nc}C/{lp}T"
+                else:
+                    cpu_string = name
+                ret.append(cpu_string)
             return ret
         except:
             return ["unknown cpu model"]
@@ -413,7 +442,10 @@ class Agent(BaseAuditModel):
     @property
     def serial_number(self) -> str:
         if self.is_posix:
-            return ""
+            try:
+                return self.wmi_detail["serialnumber"]
+            except:
+                return ""
 
         try:
             return self.wmi_detail["bios"][0][0]["SerialNumber"]
@@ -507,24 +539,32 @@ class Agent(BaseAuditModel):
         )
 
         return {
-            "agent_policy": self.policy
-            if self.policy and not self.policy.is_agent_excluded(self)
-            else None,
-            "site_policy": site_policy
-            if (site_policy and not site_policy.is_agent_excluded(self))
-            and not self.block_policy_inheritance
-            else None,
-            "client_policy": client_policy
-            if (client_policy and not client_policy.is_agent_excluded(self))
-            and not self.block_policy_inheritance
-            and not self.site.block_policy_inheritance
-            else None,
-            "default_policy": default_policy
-            if (default_policy and not default_policy.is_agent_excluded(self))
-            and not self.block_policy_inheritance
-            and not self.site.block_policy_inheritance
-            and not self.client.block_policy_inheritance
-            else None,
+            "agent_policy": (
+                self.policy
+                if self.policy and not self.policy.is_agent_excluded(self)
+                else None
+            ),
+            "site_policy": (
+                site_policy
+                if (site_policy and not site_policy.is_agent_excluded(self))
+                and not self.block_policy_inheritance
+                else None
+            ),
+            "client_policy": (
+                client_policy
+                if (client_policy and not client_policy.is_agent_excluded(self))
+                and not self.block_policy_inheritance
+                and not self.site.block_policy_inheritance
+                else None
+            ),
+            "default_policy": (
+                default_policy
+                if (default_policy and not default_policy.is_agent_excluded(self))
+                and not self.block_policy_inheritance
+                and not self.site.block_policy_inheritance
+                and not self.client.block_policy_inheritance
+                else None
+            ),
         }
 
     def check_run_interval(self) -> int:

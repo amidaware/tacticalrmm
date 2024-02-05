@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -20,7 +20,7 @@ func GetConfig(cfg string) (db *sqlx.DB, r DjangoConfig, err error) {
 		}
 	}
 
-	jret, _ := ioutil.ReadFile(cfg)
+	jret, _ := os.ReadFile(cfg)
 	err = json.Unmarshal(jret, &r)
 	if err != nil {
 		return

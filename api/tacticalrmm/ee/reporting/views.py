@@ -130,9 +130,9 @@ class GenerateReport(APIView):
                 template=template.template_md,
                 template_type=template.type,
                 css=template.template_css or "",
-                html_template=template.template_html.id
-                if template.template_html
-                else None,
+                html_template=(
+                    template.template_html.id if template.template_html else None
+                ),
                 variables=template.template_variables,
                 dependencies=request.data["dependencies"],
             )

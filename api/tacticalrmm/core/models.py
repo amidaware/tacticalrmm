@@ -1,6 +1,7 @@
 import smtplib
 from contextlib import suppress
 from email.message import EmailMessage
+from email.headerregistry import Address
 from typing import TYPE_CHECKING, List, Optional, cast
 
 import requests
@@ -44,6 +45,7 @@ class CoreSettings(BaseAuditModel):
     smtp_from_email = models.CharField(
         max_length=255, blank=True, default="from@example.com"
     )
+    smtp_from_name = models.CharField(max_length=255, null=True, blank=True)
     smtp_host = models.CharField(max_length=255, blank=True, default="smtp.gmail.com")
     smtp_host_user = models.CharField(
         max_length=255, blank=True, default="admin@example.com"
@@ -207,7 +209,14 @@ class CoreSettings(BaseAuditModel):
         try:
             msg = EmailMessage()
             msg["Subject"] = subject
-            msg["From"] = from_address
+
+            if self.smtp_from_name:
+                msg["From"] = Address(
+                    display_name=self.smtp_from_name, addr_spec=from_address
+                )
+            else:
+                msg["From"] = from_address
+
             msg["To"] = email_recipients
             msg.set_content(body)
 
@@ -222,9 +231,16 @@ class CoreSettings(BaseAuditModel):
                     server.send_message(msg)
                     server.quit()
                 else:
-                    # smtp relay. no auth required
-                    server.send_message(msg)
-                    server.quit()
+                    # gmail smtp relay specific handling.
+                    if self.smtp_host == "smtp-relay.gmail.com":
+                        server.ehlo()
+                        server.starttls()
+                        server.send_message(msg)
+                        server.quit()
+                    else:
+                        # smtp relay. no auth required
+                        server.send_message(msg)
+                        server.quit()
 
         except Exception as e:
             DebugLog.error(message=f"Sending email failed with error: {e}")
@@ -298,6 +314,7 @@ class CustomField(BaseAuditModel):
         default=list,
     )
     hide_in_ui = models.BooleanField(default=False)
+    hide_in_summary = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (("model", "name"),)

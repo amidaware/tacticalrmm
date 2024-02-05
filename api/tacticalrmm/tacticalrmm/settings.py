@@ -20,26 +20,26 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.17.3"
+TRMM_VERSION = "0.17.4"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.38"
+WEB_VERSION = "0.101.40"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.189"
+APP_VER = "0.0.190"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.6.1"
+LATEST_AGENT_VER = "2.6.2"
 
-MESH_VER = "1.1.9"
+MESH_VER = "1.1.20"
 
-NATS_SERVER_VER = "2.10.7"
+NATS_SERVER_VER = "2.10.10"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "41"
+PIP_VER = "42"
 
-SETUPTOOLS_VER = "69.0.2"
+SETUPTOOLS_VER = "69.0.3"
 WHEEL_VER = "0.42.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
@@ -156,7 +156,7 @@ CACHES = {
         "BACKEND": "tacticalrmm.cache.TacticalRedisCache",
         "LOCATION": f"redis://{REDIS_HOST}:6379",
         "OPTIONS": {
-            "parser_class": "redis.connection.HiredisParser",
+            "parser_class": "redis.connection._HiredisParser",
             "pool_class": "redis.BlockingConnectionPool",
             "db": "10",
         },

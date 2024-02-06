@@ -58,9 +58,9 @@ def get_nats_hosts() -> tuple[str, str, str]:
     # standard install
     if not settings.DOCKER_BUILD and not getattr(settings, "USE_NATS_STANDARD", False):
         std_bind_host, ws_bind_host, connect_host = (
-            "localhost",
-            "localhost",
-            "localhost",
+            "127.0.0.1",
+            "127.0.0.1",
+            "127.0.0.1",
         )
 
     # allow customizing all nats hosts

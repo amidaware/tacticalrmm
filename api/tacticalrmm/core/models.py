@@ -121,7 +121,7 @@ class CoreSettings(BaseAuditModel):
                 self.mesh_token = settings.MESH_TOKEN_KEY
 
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(BaseAuditModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
         if old_settings:
             if (
@@ -365,7 +365,7 @@ class CodeSignToken(models.Model):
         if not self.pk and CodeSignToken.objects.exists():
             raise ValidationError("There can only be one CodeSignToken instance")
 
-        super(CodeSignToken, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @property
     def is_valid(self) -> bool:

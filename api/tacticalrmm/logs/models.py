@@ -47,7 +47,7 @@ class AuditLog(models.Model):
                 (self.message[:253] + "..") if len(self.message) > 255 else self.message
             )
 
-        return super(AuditLog, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     @staticmethod
     def audit_mesh_session(
@@ -454,10 +454,10 @@ class BaseAuditModel(models.Model):
                         debug_info=get_debug_info(),
                     )
 
-        super(BaseAuditModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs) -> Tuple[int, Dict[str, int]]:
-        super(BaseAuditModel, self).delete(*args, **kwargs)
+        super().delete(*args, **kwargs)
 
         username = get_username()
         if username:

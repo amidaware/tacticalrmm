@@ -49,11 +49,7 @@ class Client(BaseAuditModel):
 
         # get old client if exists
         old_client = Client.objects.get(pk=self.pk) if self.pk else None
-        super(Client, self).save(
-            old_model=old_client,
-            *args,
-            **kwargs,
-        )
+        super().save(old_model=old_client, *args, **kwargs)
 
         # check if polcies have changed and initiate task to reapply policies if so
         if old_client and (
@@ -129,11 +125,7 @@ class Site(BaseAuditModel):
 
         # get old client if exists
         old_site = Site.objects.get(pk=self.pk) if self.pk else None
-        super(Site, self).save(
-            old_model=old_site,
-            *args,
-            **kwargs,
-        )
+        super().save(old_model=old_site, *args, **kwargs)
 
         # check if polcies have changed and initiate task to reapply policies if so
         if old_site:

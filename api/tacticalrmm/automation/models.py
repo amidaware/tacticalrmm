@@ -47,7 +47,7 @@ class Policy(BaseAuditModel):
         old_policy: Optional[Policy] = (
             type(self).objects.get(pk=self.pk) if self.pk else None
         )
-        super(Policy, self).save(old_model=old_policy, *args, **kwargs)
+        super().save(old_model=old_policy, *args, **kwargs)
 
         # check if alert template was changes and cache on agents
         if old_policy:
@@ -68,10 +68,7 @@ class Policy(BaseAuditModel):
         cache.delete_many_pattern("site_server_*")
         cache.delete_many_pattern("agent_*")
 
-        super(Policy, self).delete(
-            *args,
-            **kwargs,
-        )
+        super().delete(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.name

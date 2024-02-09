@@ -168,10 +168,7 @@ class Check(BaseAuditModel):
         elif self.agent:
             cache.delete(f"agent_{self.agent.agent_id}_checks")
 
-        super(Check, self).save(
-            *args,
-            **kwargs,
-        )
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         # if check is a policy check clear cache on everything
@@ -183,10 +180,7 @@ class Check(BaseAuditModel):
         elif self.agent:
             cache.delete(f"agent_{self.agent.agent_id}_checks")
 
-        super(Check, self).delete(
-            *args,
-            **kwargs,
-        )
+        super().delete(*args, **kwargs)
 
     @property
     def readable_desc(self):
@@ -338,10 +332,7 @@ class CheckResult(models.Model):
         ):
             self.alert_severity = AlertSeverity.WARNING
 
-        super(CheckResult, self).save(
-            *args,
-            **kwargs,
-        )
+        super().save(*args, **kwargs)
 
     @property
     def history_info(self):

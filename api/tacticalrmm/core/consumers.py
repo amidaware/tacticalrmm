@@ -11,7 +11,7 @@ from django.utils import timezone as djangotime
 from agents.models import Agent
 from tacticalrmm.constants import AgentMonType
 from tacticalrmm.helpers import days_until_cert_expires
-
+from .utils import get_crontab_job
 
 class DashInfo(AsyncJsonWebsocketConsumer):
     async def connect(self):
@@ -31,6 +31,7 @@ class DashInfo(AsyncJsonWebsocketConsumer):
         self.connected = False
 
     async def receive_json(self, payload, **kwargs):
+        # trmm cli
         if payload["action"] == "trmmcli.connect":
             await self.connect_trmm_cli(payload["data"])
         elif payload["action"] == "trmmcli.input":
@@ -39,6 +40,11 @@ class DashInfo(AsyncJsonWebsocketConsumer):
             await self.resize_trmm_cli(payload["data"])
         elif payload["action"] == "trmmcli.disconnect":
             await self.disconnect_trmm_cli()
+
+        # server tasks
+        elif payload["action"] == "core.server.getcron":
+            await self.send_crontab_config()
+
 
     @database_sync_to_async
     def get_dashboard_info(self):
@@ -88,6 +94,7 @@ class DashInfo(AsyncJsonWebsocketConsumer):
             await self.send_json(c)
             await asyncio.sleep(30)
 
+    # trmm cli
     def set_winsize(self, fd, row, col, xpix=0, ypix=0):
         import struct, termios, fcntl
 
@@ -148,3 +155,18 @@ class DashInfo(AsyncJsonWebsocketConsumer):
             os.close(self.fd)
             self.fd = None
             self.child_pid = None
+
+    # trmm cron
+    async def send_crontab_config(self):
+        
+        proc = await asyncio.create_subprocess_exec(
+        'crontab','-l',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE)
+
+        stdout, stderr = await proc.communicate()
+        print(stdout, stderr)
+        await self.send_json({
+            "action": "core.server.getcron",
+            "data": f"{stdout.decode()}\n{stderr.decode()}"
+        })

@@ -135,7 +135,7 @@ class AutomatedTask(BaseAuditModel):
     run_asap_after_missed = models.BooleanField(default=False)  # added in agent v1.4.7
     task_instance_policy = models.PositiveSmallIntegerField(blank=True, default=1)
 
-    #crontab field for linux/mac tasks
+    # crontab field for linux/mac tasks
     # should only be the schedule, not the script
     crontab_schedule = models.CharField(max_length=100, null=True, blank=True)
 
@@ -478,7 +478,7 @@ class TaskResult(models.Model):
         related_name="taskresults",
         on_delete=models.CASCADE,
         blank=True,
-        null=True
+        null=True,
     )
     task = models.ForeignKey(
         "autotasks.AutomatedTask",

@@ -132,7 +132,7 @@ class Role(BaseAuditModel):
     can_view_servertasks = models.BooleanField(default=False)
     can_manage_servertasks = models.BooleanField(default=False)
     can_run_servertasks = models.BooleanField(default=False)
-    
+
     # checks
     can_list_checks = models.BooleanField(default=False)
     can_manage_checks = models.BooleanField(default=False)

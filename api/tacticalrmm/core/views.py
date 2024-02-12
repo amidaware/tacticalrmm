@@ -23,7 +23,13 @@ from rest_framework import serializers
 
 from core.decorators import monitoring_view
 from core.tasks import sync_mesh_perms_task
-from core.utils import get_core_settings, sysd_svc_is_running, token_is_valid, run_server_script, run_server_task
+from core.utils import (
+    get_core_settings,
+    sysd_svc_is_running,
+    token_is_valid,
+    run_server_script,
+    run_server_task,
+)
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
 from tacticalrmm.helpers import get_certs, notify_error
@@ -44,7 +50,7 @@ from .permissions import (
     ServerMaintPerms,
     URLActionPerms,
     ServerTaskPerms,
-    RunServerTaskPerms
+    RunServerTaskPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -418,16 +424,18 @@ class ServerTaskSerializer(serializers.ModelSerializer):
     def get_task_result(self, obj):
         from autotasks.serializers import TaskResultSerializer
         from autotasks.models import TaskResult
+
         return (
             TaskResultSerializer(obj.task_result).data
             if isinstance(obj.task_result, TaskResult)
             else {}
         )
-    
+
     def validate_actions(self, value):
         from autotasks.serializers import task_actions_validation
+
         return task_actions_validation(value)
-       
+
     class Meta:
         model = AutomatedTask
         fields = (
@@ -444,8 +452,9 @@ class ServerTaskSerializer(serializers.ModelSerializer):
             "dashboard_alert",
             "server_task",
             "alert_severity",
-            "task_result"
+            "task_result",
         )
+
 
 class GetAddServerTasks(APIView):
     permission_classes = [IsAuthenticated, ServerTaskPerms]
@@ -461,7 +470,7 @@ class GetAddServerTasks(APIView):
                 if result.task.id == task.pk:
                     task.task_result = result
                     break
-    
+
         return Response(ServerTaskSerializer(server_tasks, many=True).data)
 
     def post(self, request):
@@ -504,7 +513,7 @@ class RunServerTask(APIView):
 
         if not server_task.server_task:
             return notify_error("This task is not meant to be run on the server")
-        
+
         output, execution_time = run_server_task(server_task_id=server_task.id)
 
         # TODO: Audit server task runs
@@ -515,19 +524,21 @@ class RunServerTask(APIView):
         #     debug_info={"ip": request._client_ip},
         # )
 
-        return Response({
-            "output": output,
-            "execution_time": execution_time
-        })
-    
+        return Response({"output": output, "execution_time": execution_time})
+
+
 class RunServerScript(APIView):
     permission_classes = [IsAuthenticated, RunServerTaskPerms]
 
     def post(self, request, pk):
         script = get_object_or_404(Script, pk=pk)
 
-        
-        stdout, stderr, execution_time, retcode = run_server_script(script_id=script.id, args=request.data["args"], env_vars=request.data["env_vars"], timeout=request.data["timeout"])
+        stdout, stderr, execution_time, retcode = run_server_script(
+            script_id=script.id,
+            args=request.data["args"],
+            env_vars=request.data["env_vars"],
+            timeout=request.data["timeout"],
+        )
 
         # TODO: Audit server task runs
         # AuditLog.audit_url_action(
@@ -537,13 +548,16 @@ class RunServerScript(APIView):
         #     debug_info={"ip": request._client_ip},
         # )
 
-        return Response({
-            "stdout": stdout,
-            "stderr": stderr,
-            "execution_time": execution_time,
-            "retcode": retcode
-        })
-    
+        return Response(
+            {
+                "stdout": stdout,
+                "stderr": stderr,
+                "execution_time": execution_time,
+                "retcode": retcode,
+            }
+        )
+
+
 class TwilioSMSTest(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
 

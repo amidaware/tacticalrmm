@@ -58,7 +58,8 @@ def task_actions_validation(value):
                 )
 
     return value
-    
+
+
 class TaskSerializer(serializers.ModelSerializer):
     check_name = serializers.ReadOnlyField(source="assigned_check.readable_desc")
     schedule = serializers.ReadOnlyField()

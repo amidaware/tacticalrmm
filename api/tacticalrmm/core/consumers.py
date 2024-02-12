@@ -13,6 +13,7 @@ from tacticalrmm.constants import AgentMonType
 from tacticalrmm.helpers import days_until_cert_expires
 from .utils import get_crontab_job
 
+
 class DashInfo(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.user = self.scope["user"]
@@ -44,7 +45,6 @@ class DashInfo(AsyncJsonWebsocketConsumer):
         # server tasks
         elif payload["action"] == "core.server.getcron":
             await self.send_crontab_config()
-
 
     @database_sync_to_async
     def get_dashboard_info(self):
@@ -158,15 +158,19 @@ class DashInfo(AsyncJsonWebsocketConsumer):
 
     # trmm cron
     async def send_crontab_config(self):
-        
+
         proc = await asyncio.create_subprocess_exec(
-        'crontab','-l',
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE)
+            "crontab",
+            "-l",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
 
         stdout, stderr = await proc.communicate()
         print(stdout, stderr)
-        await self.send_json({
-            "action": "core.server.getcron",
-            "data": f"{stdout.decode()}\n{stderr.decode()}"
-        })
+        await self.send_json(
+            {
+                "action": "core.server.getcron",
+                "data": f"{stdout.decode()}\n{stderr.decode()}",
+            }
+        )

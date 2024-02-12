@@ -198,7 +198,7 @@ class GetCheckHistory(APIView):
         )
 
         return Response(CheckHistorySerializer(check_history, many=True).data)
-    
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RunChecksPerms])

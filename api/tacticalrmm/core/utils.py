@@ -218,6 +218,7 @@ def find_and_replace_db_values_str(*, text: str, instance):
         value = get_db_value(string=f"{model}.{prop}", instance=instance)
         return text.replace(string, str(value))
 
+
 def find_and_replace_db_values_dict(*, dict: Dict[str, Any], instance):
     new_dict = {}
 
@@ -227,6 +228,7 @@ def find_and_replace_db_values_dict(*, dict: Dict[str, Any], instance):
         new_dict[new_key] = new_value
 
     return new_dict
+
 
 def run_url_rest_action(*, action: "URLAction", instance) -> str:
     method = action.rest_method
@@ -238,7 +240,7 @@ def run_url_rest_action(*, action: "URLAction", instance) -> str:
     url = find_and_replace_db_values_str(text=url, instance=instance)
     body = find_and_replace_db_values_dict(dict=body, instance=instance)
     headers = find_and_replace_db_values_dict(dict=headers, instance=instance)
-    
+
     if method in ["get", "delete"]:
         response = getattr(requests, method)(url, headers=headers)
     else:
@@ -246,9 +248,11 @@ def run_url_rest_action(*, action: "URLAction", instance) -> str:
 
     return response
 
+
 def run_server_task(*, server_task_id: int):
     from autotasks.models import AutomatedTask, TaskResult
     from tacticalrmm.constants import TaskStatus
+
     task = AutomatedTask.objects.get(pk=server_task_id)
     output = ""
     total_execution_time = 0
@@ -256,10 +260,17 @@ def run_server_task(*, server_task_id: int):
 
     for action in task.actions:
         if action["type"] == "cmd":
-            stdout, stderr, execution_time, retcode = run_server_command(command=action["command"], timeout=action["timeout"])
+            stdout, stderr, execution_time, retcode = run_server_command(
+                command=action["command"], timeout=action["timeout"]
+            )
             name = action["command"]
         else:
-            stdout, stderr, execution_time, retcode = run_server_script(script_id=action["script"], args=action["script_args"], env_vars=action["env_vars"], timeout=action["timeout"])
+            stdout, stderr, execution_time, retcode = run_server_script(
+                script_id=action["script"],
+                args=action["script_args"],
+                env_vars=action["env_vars"],
+                timeout=action["timeout"],
+            )
             name = action["name"]
 
         if retcode != 0:
@@ -271,9 +282,7 @@ def run_server_task(*, server_task_id: int):
         output += f"Execution Time: {execution_time}\n\n"
 
     try:
-        task_result = (
-            TaskResult.objects.get(task=task, agent=None)
-        )
+        task_result = TaskResult.objects.get(task=task, agent=None)
         task_result.retcode = 0 if passing else 1
         task_result.execution_time = total_execution_time
         task_result.stdout = output
@@ -284,64 +293,77 @@ def run_server_task(*, server_task_id: int):
         TaskResult.objects.create(
             task=task,
             agent=None,
-            retcode = 0 if passing else 1,
-            execution_time = total_execution_time,
-            stdout = output,
-            stderr = "",
-            status = TaskStatus.PASSING if passing else TaskStatus.FAILING,
-            last_run=djangotime.now()
+            retcode=0 if passing else 1,
+            execution_time=total_execution_time,
+            stdout=output,
+            stderr="",
+            status=TaskStatus.PASSING if passing else TaskStatus.FAILING,
+            last_run=djangotime.now(),
         )
 
-    return (
-        output,
-        total_execution_time
-    )
+    return (output, total_execution_time)
+
 
 def run_server_command(*, command: List[str], timeout: int):
     start_time = time.time()
-    result = subprocess.run(command, capture_output=True, text=True, shell=True, timeout=timeout)
+    result = subprocess.run(
+        command, capture_output=True, text=True, shell=True, timeout=timeout
+    )
     execution_time = time.time() - start_time
 
-    return (
-        result.stdout,
-        result.stderr,
-        execution_time,
-        result.returncode
-    )
+    return (result.stdout, result.stderr, execution_time, result.returncode)
 
-def run_server_script(*, script_id: int, args: List[str], env_vars: List[str], timeout: int):
+
+def run_server_script(
+    *, script_id: int, args: List[str], env_vars: List[str], timeout: int
+):
     from scripts.models import Script
+
     script = Script.objects.get(pk=script_id)
 
     parsed_args = script.parse_script_args(None, script.shell, args)
-    parsed_env_vars = script.parse_script_env_vars(None, shell=script.shell, env_vars=env_vars)
+    parsed_env_vars = script.parse_script_env_vars(
+        None, shell=script.shell, env_vars=env_vars
+    )
 
     custom_env = os.environ.copy()
     for var in parsed_env_vars:
         var_split = var.split("=")
         custom_env[var_split[0]] = var_split[1]
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.sh', mode='w') as tmp_script:
+    with tempfile.NamedTemporaryFile(
+        delete=False, suffix=".sh", mode="w"
+    ) as tmp_script:
         tmp_script.write(script.script_body)
         tmp_script_path = tmp_script.name
 
     start_time = time.time()
-    subprocess.run(['chmod', '+x', tmp_script_path])
-    result = subprocess.run([tmp_script_path] + parsed_args, capture_output=True, text=True, shell=True, env=custom_env, timeout=timeout)
-    subprocess.run(['rm', tmp_script_path])
+    subprocess.run(["chmod", "+x", tmp_script_path])
+    result = subprocess.run(
+        [tmp_script_path] + parsed_args,
+        capture_output=True,
+        text=True,
+        shell=True,
+        env=custom_env,
+        timeout=timeout,
+    )
+    subprocess.run(["rm", tmp_script_path])
     execution_time = time.time() - start_time
 
-    return (
-        result.stdout,
-        result.stderr,
-        execution_time,
-        result.returncode
-    )
+    return (result.stdout, result.stderr, execution_time, result.returncode)
+
 
 async def get_crontab_job():
-    result = subprocess.run(["/usr/bin/crontab -u tactical -l"], capture_output=True, text=True, shell=True, timeout=10)
+    result = subprocess.run(
+        ["/usr/bin/crontab -u tactical -l"],
+        capture_output=True,
+        text=True,
+        shell=True,
+        timeout=10,
+    )
     print(result)
     return result.stdout, result.stderr
+
 
 def sync_crontab():
     from autotasks.models import AutomatedTask
@@ -352,4 +374,6 @@ def sync_crontab():
     crontab_config = generate_crontab_jobs(server_tasks)
 
     subprocess.run(["crontab", "-r"], capture_output=True, text=True, shell=True)
-    subprocess.run(["crontab", "-l", "|", ""], capture_output=True, text=True, shell=True)
+    subprocess.run(
+        ["crontab", "-l", "|", ""], capture_output=True, text=True, shell=True
+    )

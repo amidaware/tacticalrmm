@@ -1,12 +1,13 @@
 import json
+import os
 import subprocess
 import tempfile
 import time
 import urllib.parse
 from base64 import b64encode
-from typing import TYPE_CHECKING, Optional, List, Dict, Any, cast
+from contextlib import suppress
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-import os
 import requests
 import websockets
 from django.conf import settings
@@ -212,6 +213,7 @@ def get_meshagent_url(
 
 def find_and_replace_db_values_str(*, text: str, instance):
     import re
+
     from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 
     for string, model, prop in re.findall(RE_DB_VALUE, text):
@@ -331,26 +333,26 @@ def run_server_script(
         var_split = var.split("=")
         custom_env[var_split[0]] = var_split[1]
 
-    with tempfile.NamedTemporaryFile(
-        delete=False, suffix=".sh", mode="w"
-    ) as tmp_script:
-        tmp_script.write(script.script_body)
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmp_script:
+        tmp_script.write(script.script_body.replace("\r\n", "\n"))
         tmp_script_path = tmp_script.name
 
+    os.chmod(tmp_script_path, 0o550)
+
     start_time = time.time()
-    subprocess.run(["chmod", "+x", tmp_script_path])
     result = subprocess.run(
         [tmp_script_path] + parsed_args,
         capture_output=True,
         text=True,
-        shell=True,
         env=custom_env,
         timeout=timeout,
     )
-    subprocess.run(["rm", tmp_script_path])
     execution_time = time.time() - start_time
 
-    return (result.stdout, result.stderr, execution_time, result.returncode)
+    with suppress(Exception):
+        os.remove(tmp_script_path)
+
+    return result.stdout, result.stderr, execution_time, result.returncode
 
 
 async def get_crontab_job():
@@ -371,7 +373,7 @@ def sync_crontab():
 
     server_tasks = AutomatedTask.objects.filter(server_tasks=True, enabled=True)
 
-    crontab_config = generate_crontab_jobs(server_tasks)
+    crontab_config = generate_crontab_jobs(server_tasks)  # noqa: F841
 
     subprocess.run(["crontab", "-r"], capture_output=True, text=True, shell=True)
     subprocess.run(

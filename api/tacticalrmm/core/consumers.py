@@ -1,5 +1,11 @@
 import asyncio
+import fcntl
 import os
+import pty
+import select
+import struct
+import subprocess
+import termios
 from contextlib import suppress
 
 from channels.db import database_sync_to_async
@@ -11,7 +17,8 @@ from django.utils import timezone as djangotime
 from agents.models import Agent
 from tacticalrmm.constants import AgentMonType
 from tacticalrmm.helpers import days_until_cert_expires
-from .utils import get_crontab_job
+
+# from .utils import get_crontab_job
 
 
 class DashInfo(AsyncJsonWebsocketConsumer):
@@ -96,8 +103,6 @@ class DashInfo(AsyncJsonWebsocketConsumer):
 
     # trmm cli
     def set_winsize(self, fd, row, col, xpix=0, ypix=0):
-        import struct, termios, fcntl
-
         winsize = struct.pack("HHHH", row, col, xpix, ypix)
         fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
 
@@ -105,8 +110,6 @@ class DashInfo(AsyncJsonWebsocketConsumer):
     child_pid = None
 
     async def read_and_forward_pty_output(self):
-        import select
-
         max_read_bytes = 1024 * 20
         while True:
             await asyncio.sleep(0.01)
@@ -120,8 +123,6 @@ class DashInfo(AsyncJsonWebsocketConsumer):
                     )
 
     async def connect_trmm_cli(self, payload):
-        import pty, subprocess
-
         if self.child_pid:
             # already started child process, don't start another
             return
@@ -158,7 +159,6 @@ class DashInfo(AsyncJsonWebsocketConsumer):
 
     # trmm cron
     async def send_crontab_config(self):
-
         proc = await asyncio.create_subprocess_exec(
             "crontab",
             "-l",

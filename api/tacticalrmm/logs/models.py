@@ -26,6 +26,7 @@ def get_debug_level() -> str:
 
 
 class AuditLog(models.Model):
+    id = models.BigAutoField(primary_key=True)
     username = models.CharField(max_length=255)
     agent = models.CharField(max_length=255, null=True, blank=True)
     agent_id = models.CharField(max_length=255, blank=True, null=True)
@@ -258,6 +259,7 @@ class AuditLog(models.Model):
 class DebugLog(models.Model):
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     entry_time = models.DateTimeField(auto_now_add=True)
     agent = models.ForeignKey(
         "agents.Agent",
@@ -347,6 +349,7 @@ class DebugLog(models.Model):
 class PendingAction(models.Model):
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="pendingactions",

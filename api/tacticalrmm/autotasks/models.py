@@ -467,6 +467,7 @@ class TaskResult(models.Model):
 
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="taskresults",

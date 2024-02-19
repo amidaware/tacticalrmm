@@ -284,6 +284,7 @@ class CheckResult(models.Model):
     class Meta:
         unique_together = (("agent", "assigned_check"),)
 
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="checkresults",
@@ -664,6 +665,7 @@ class CheckResult(models.Model):
 class CheckHistory(models.Model):
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     check_id = models.PositiveIntegerField(default=0)
     agent_id = models.CharField(max_length=200, null=True, blank=True)
     x = models.DateTimeField(auto_now_add=True)

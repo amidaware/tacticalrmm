@@ -39,6 +39,7 @@ SCHEDULE_FREQUENCY_CHOICES = [
 
 
 class WinUpdate(models.Model):
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(
         Agent, related_name="winupdates", on_delete=models.CASCADE
     )

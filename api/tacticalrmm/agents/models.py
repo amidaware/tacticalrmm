@@ -1084,6 +1084,7 @@ class AgentCustomField(models.Model):
 class AgentHistory(models.Model):
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(
         Agent,
         related_name="history",

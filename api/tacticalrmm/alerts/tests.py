@@ -1429,6 +1429,8 @@ class TestAlertTasks(TacticalTestCase):
             "run_as_user": False,
             "env_vars": ["hello=world", "foo=bar"],
             "id": AgentHistory.objects.last().pk,  # type: ignore
+            "nushell_enable_config": settings.NUSHELL_ENABLE_CONFIG,
+            "deno_default_permissions": settings.DENO_DEFAULT_PERMISSIONS,
         }
 
         nats_cmd.assert_called_with(data, timeout=30, wait=True)
@@ -1460,6 +1462,8 @@ class TestAlertTasks(TacticalTestCase):
             "run_as_user": False,
             "env_vars": ["resolved=action", "env=vars"],
             "id": AgentHistory.objects.last().pk,  # type: ignore
+            "nushell_enable_config": settings.NUSHELL_ENABLE_CONFIG,
+            "deno_default_permissions": settings.DENO_DEFAULT_PERMISSIONS,
         }
 
         nats_cmd.assert_called_with(data, timeout=35, wait=True)

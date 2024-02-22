@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.utils import timezone as djangotime
 from rest_framework import serializers
+from django.conf import settings
 
 from scripts.models import Script
 from tacticalrmm.constants import TaskType
@@ -257,6 +258,8 @@ class TaskGOGetSerializer(serializers.ModelSerializer):
                             shell=script.shell,
                             env_vars=env_vars,
                         ),
+                        "nushell_enable_config": settings.NUSHELL_ENABLE_CONFIG,
+                        "deno_default_permissions": settings.DENO_DEFAULT_PERMISSIONS,
                     }
                 )
         if actions_to_remove:

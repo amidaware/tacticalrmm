@@ -18,3 +18,11 @@ class AgentCheckInConfig(TRMMStruct):
     checkin_wmi: int
     checkin_syncmesh: int
     limit_data: bool
+    install_nushell: bool
+    install_nushell_version: str
+    install_nushell_url: str
+    nushell_enable_config: bool
+    install_deno: bool
+    install_deno_version: str
+    install_deno_url: str
+    deno_default_permissions: str

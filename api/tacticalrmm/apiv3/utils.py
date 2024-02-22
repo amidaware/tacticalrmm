@@ -22,4 +22,12 @@ def get_agent_config() -> AgentCheckInConfig:
             *getattr(settings, "CHECKIN_SYNCMESH", (800, 1200))
         ),
         limit_data=getattr(settings, "LIMIT_DATA", False),
+        install_nushell=getattr(settings, "INSTALL_NUSHELL", False),
+        install_nushell_version=getattr(settings, "INSTALL_NUSHELL_VERSION", ""),
+        install_nushell_url=getattr(settings, "INSTALL_NUSHELL_URL", ""),
+        nushell_enable_config=getattr(settings, "NUSHELL_ENABLE_CONFIG", False),
+        install_deno=getattr(settings, "INSTALL_DENO", False),
+        install_deno_version=getattr(settings, "INSTALL_DENO_VERSION", ""),
+        install_deno_url=getattr(settings, "INSTALL_DENO_URL", ""),
+        deno_default_permissions=getattr(settings, "DENO_DEFAULT_PERMISSIONS", ""),
     )

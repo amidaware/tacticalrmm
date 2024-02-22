@@ -132,6 +132,8 @@ class ScriptShell(models.TextChoices):
     CMD = "cmd", "Batch (CMD)"
     PYTHON = "python", "Python"
     SHELL = "shell", "Shell"
+    NUSHELL = "nushell", "Nushell"
+    DENO = "deno", "Deno"
 
 
 class ScriptType(models.TextChoices):

@@ -36,6 +36,49 @@ MESH_VER = "1.1.21"
 
 NATS_SERVER_VER = "2.10.11"
 
+# Install Nushell on the agent
+# https://github.com/nushell/nushell
+INSTALL_NUSHELL = False
+# GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
+# Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
+# extracted and installed.
+INSTALL_NUSHELL_VERSION = ""
+# URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
+# Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
+# Windows: The ".exe" extension will be added automatically.
+# Examples:
+#   https://examplle.com/download/nushell/{OS}/{ARCH}/{VERSION}/nu
+#   https://examplle.com/download/nushell/nu-{VERSION}-{OS}-{ARCH}
+INSTALL_NUSHELL_URL = ""
+# Enable Nushell config on the agent
+# The default is to not enable the config because it could change how scripts run.
+# However, disabling the config prevents plugins from being registered.
+# https://github.com/nushell/nushell/issues/10754
+# False: --no-config-file option is added to the command line.
+# True: --config and --env-config options are added to the command line and point to the Agent's directory.
+NUSHELL_ENABLE_CONFIG = False
+
+# Install Deno on the agent
+# https://github.com/denoland/deno
+INSTALL_DENO = False
+# Version to download. If INSTALL_DENO_URL is not provided, the file will be downloaded from GitHub,
+# extracted and installed.
+INSTALL_DENO_VERSION = ""
+# URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
+# Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_DENO_VERSION respectively.
+# Windows: The ".exe" extension will be added automatically.
+# Examples:
+#   https://examplle.com/download/deno/{OS}/{ARCH}/{VERSION}/deno
+#   https://examplle.com/download/deno/deno-{VERSION}-{OS}-{ARCH}
+INSTALL_DENO_URL = ""
+# Default permissions for Deno
+# Space separated list of permissions as listed in the documentation.
+# https://docs.deno.com/runtime/manual/basics/permissions#permissions
+# Examples:
+#   DENO_DEFAULT_PERMISSIONS = "--allow-sys --allow-net --allow-env"
+#   DENO_DEFAULT_PERMISSIONS = "--allow-all"
+DENO_DEFAULT_PERMISSIONS = ""
+
 # for the update script, bump when need to recreate venv
 PIP_VER = "42"
 

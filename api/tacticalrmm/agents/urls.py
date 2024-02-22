@@ -15,6 +15,7 @@ urlpatterns = [
     path("<agent:agent_id>/wmi/", views.WMI.as_view()),
     path("<agent:agent_id>/recover/", views.recover),
     path("<agent:agent_id>/reboot/", views.Reboot.as_view()),
+    path("<agent:agent_id>/shutdown/", views.Shutdown.as_view()),
     path("<agent:agent_id>/ping/", views.ping),
     # alias for checks get view
     path("<agent:agent_id>/checks/", GetAddChecks.as_view()),

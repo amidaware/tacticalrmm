@@ -42,7 +42,7 @@ INSTALL_NUSHELL = False
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_NUSHELL_VERSION = ""
+INSTALL_NUSHELL_VERSION = "0.90.1"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.
@@ -63,7 +63,7 @@ NUSHELL_ENABLE_CONFIG = False
 INSTALL_DENO = False
 # Version to download. If INSTALL_DENO_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_DENO_VERSION = ""
+INSTALL_DENO_VERSION = "v1.41.0"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_DENO_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.
@@ -77,7 +77,7 @@ INSTALL_DENO_URL = ""
 # Examples:
 #   DENO_DEFAULT_PERMISSIONS = "--allow-sys --allow-net --allow-env"
 #   DENO_DEFAULT_PERMISSIONS = "--allow-all"
-DENO_DEFAULT_PERMISSIONS = ""
+DENO_DEFAULT_PERMISSIONS = "--allow-all"
 
 # for the update script, bump when need to recreate venv
 PIP_VER = "42"

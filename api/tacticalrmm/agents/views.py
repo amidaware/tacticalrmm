@@ -491,6 +491,19 @@ def send_raw_cmd(request, agent_id):
     return Response(r)
 
 
+class Shutdown(APIView):
+    permission_classes = [IsAuthenticated, RebootAgentPerms]
+
+    # shutdown
+    def post(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        r = asyncio.run(agent.nats_cmd({"func": "shutdown"}, timeout=10))
+        if r != "ok":
+            return notify_error("Unable to contact the agent")
+
+        return Response("ok")
+
+
 class Reboot(APIView):
     permission_classes = [IsAuthenticated, RebootAgentPerms]
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="82"
+SCRIPT_VERSION="83"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
@@ -29,6 +29,11 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+if [ -d /rmm/api/tacticalrmm ]; then
+  echo -ne "${RED}ERROR: Existing trmm installation found. The install script must be run on a clean server.${NC}\n"
+  exit 1
+fi
 
 arch=$(uname -m)
 if [[ "$arch" != "x86_64" ]] && [[ "$arch" != "aarch64" ]]; then

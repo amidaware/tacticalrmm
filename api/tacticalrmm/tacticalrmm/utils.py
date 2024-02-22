@@ -403,6 +403,10 @@ def replace_arg_db_values(
     elif value is True or value is False:
         return format_shell_bool(value, shell)
 
+    # for primary keys
+    elif isinstance(value, int):
+        return str(value)
+
 
 def format_shell_array(value: list[str]) -> str:
     temp_string = ""

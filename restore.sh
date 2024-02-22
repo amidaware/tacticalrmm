@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="56"
+SCRIPT_VERSION="57"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -28,6 +28,11 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+if [ -d /rmm/api/tacticalrmm ]; then
+  echo -ne "${RED}ERROR: Existing trmm installation found. The restore script must be run on a clean server, please re-read the docs.${NC}\n"
+  exit 1
+fi
 
 arch=$(uname -m)
 if [[ "$arch" != "x86_64" ]] && [[ "$arch" != "aarch64" ]]; then

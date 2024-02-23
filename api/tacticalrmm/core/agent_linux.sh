@@ -137,7 +137,7 @@ Uninstall() {
     RemoveOldAgent
 }
 
-if [ $# -ne 0 ] && [ $1 == 'uninstall' ]; then
+if [ $# -ne 0 ] && [[ $1 =~ ^(uninstall|-uninstall|--uninstall)$ ]]; then
     Uninstall
     # Remove the current script
     rm "$0"
@@ -146,9 +146,9 @@ fi
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-    --debug) DEBUG=1 ;;
-    --insecure) INSECURE=1 ;;
-    --nomesh) NOMESH=1 ;;
+    -debug | --debug | debug) DEBUG=1 ;;
+    -insecure | --insecure | insecure) INSECURE=1 ;;
+    -nomesh | --nomesh | nomesh) NOMESH=1 ;;
     *)
         echo "ERROR: Unknown parameter: $1"
         exit 1

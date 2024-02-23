@@ -407,6 +407,9 @@ def replace_arg_db_values(
     elif isinstance(value, int):
         return str(value)
 
+    elif isinstance(value, dict):
+        return json.dumps(value)
+
 
 def format_shell_array(value: list[str]) -> str:
     temp_string = ""

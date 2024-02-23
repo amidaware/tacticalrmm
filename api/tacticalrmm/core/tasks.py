@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
@@ -10,6 +11,8 @@ from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
 from packaging import version as pyver
 
+from accounts.models import User
+from accounts.utils import is_superuser
 from agents.models import Agent
 from agents.tasks import clear_faults_task, prune_agent_history
 from alerts.models import Alert
@@ -18,7 +21,17 @@ from autotasks.models import AutomatedTask, TaskResult
 from checks.models import Check, CheckResult
 from checks.tasks import prune_check_history
 from clients.models import Client, Site
-from core.utils import get_core_settings
+from core.mesh_utils import (
+    add_agent_to_user,
+    add_user_to_mesh,
+    delete_user_from_mesh,
+    get_mesh_users,
+    has_mesh_perms,
+    remove_agent_from_user,
+    update_mesh_displayname,
+)
+from core.models import CoreSettings
+from core.utils import get_core_settings, get_mesh_ws_url
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
 from tacticalrmm.celery import app
@@ -27,6 +40,7 @@ from tacticalrmm.constants import (
     AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
     RESOLVE_ALERTS_LOCK,
+    SYNC_MESH_PERMS_TASK_LOCK,
     SYNC_SCHED_TASK_LOCK,
     AlertSeverity,
     AlertType,
@@ -38,6 +52,7 @@ from tacticalrmm.constants import (
 )
 from tacticalrmm.helpers import setup_nats_options
 from tacticalrmm.nats_utils import a_nats_cmd
+from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.utils import redis_lock
 
 if TYPE_CHECKING:
@@ -361,3 +376,121 @@ def cache_db_fields_task() -> None:
         agents = qs.filter(site__client=client)
         client.failing_checks = _get_failing_data(agents)
         client.save(update_fields=["failing_checks"])
+
+
+@app.task(bind=True)
+def sync_mesh_perms_task(self):
+    with redis_lock(SYNC_MESH_PERMS_TASK_LOCK, self.app.oid) as acquired:
+        if not acquired:
+            return f"{self.app.oid} still running"
+
+        core = CoreSettings.objects.first()
+        if not core.sync_mesh_with_trmm:
+            return
+
+        try:
+            uri = get_mesh_ws_url()
+            company_name = core.mesh_company_name
+            mesh_users_raw = get_mesh_users(uri=uri)["users"]
+            mesh_users_dict = {
+                i["_id"]: i for i in mesh_users_raw if re.search(r".*___\d+", i["_id"])
+            }
+
+            users = User.objects.select_related("role").filter(
+                agent=None,
+                is_installer_user=False,
+            )
+
+            trmm_user_ids = set()
+
+            for user in users:
+                if not has_mesh_perms(user=user):
+                    logger.debug(f"No mesh perms for {user}")
+                    continue
+
+                if user.is_superuser or is_superuser(user):
+                    # superusers get access to all agents no matter perms
+                    trmm_agents = [
+                        {
+                            "node_id": f"node//{agent.hex_mesh_node_id}",
+                            "hostname": agent.hostname,
+                        }
+                        for agent in Agent.objects.only("mesh_node_id", "hostname")
+                    ]
+                else:
+                    trmm_agents = [
+                        {
+                            "node_id": f"node//{agent.hex_mesh_node_id}",
+                            "hostname": agent.hostname,
+                        }
+                        for agent in Agent.objects.defer(*AGENT_DEFER)
+                        if _has_perm_on_agent(user, agent.agent_id)
+                    ]
+
+                user_info = {
+                    "_id": user.mesh_user_id,
+                    "username": user.mesh_username,
+                    "email": user.email or f"{user.username}@example.com",
+                    "full_name": " ".join(
+                        filter(
+                            None,
+                            [user.first_name, user.last_name]
+                            + [f"- {company_name}" if company_name else None],
+                        )
+                    ),
+                    "links": trmm_agents,
+                }
+
+                trmm_user_ids.add(user.mesh_user_id)
+
+                # Handle new users and assign agents to them
+                if user.mesh_user_id not in mesh_users_dict:
+                    add_user_to_mesh(user_info=user_info, uri=uri)
+                    for agent in trmm_agents:
+                        add_agent_to_user(
+                            user_id=user.mesh_user_id,
+                            node_id=agent["node_id"],
+                            hostname=agent["hostname"],
+                            uri=uri,
+                        )
+                else:
+                    # For existing users, check and update agent perms
+                    existing_mesh_user = mesh_users_dict[user.mesh_user_id]
+                    mesh_agents_dict = existing_mesh_user.get("links", {})
+                    trmm_agent_ids = {agent["node_id"] for agent in trmm_agents}
+
+                    for agent in trmm_agents:
+                        if agent["node_id"] not in mesh_agents_dict:
+                            add_agent_to_user(
+                                user_id=user.mesh_user_id,
+                                node_id=agent["node_id"],
+                                hostname=agent["hostname"],
+                                uri=uri,
+                            )
+
+                    for mesh_agent_id in mesh_agents_dict:
+                        if mesh_agent_id not in trmm_agent_ids:
+                            remove_agent_from_user(
+                                user_id=user.mesh_user_id,
+                                node_id=mesh_agent_id,
+                                uri=uri,
+                            )
+
+                    # handle diplay name
+                    try:
+                        mesh_displayname = existing_mesh_user["realname"]
+                    except KeyError:
+                        logger.debug("Adding Display Name to mesh.")
+                        update_mesh_displayname(user_info=user_info, uri=uri)
+                    else:
+                        if mesh_displayname != user_info["full_name"]:
+                            logger.debug("Display names don't match. Syncing.")
+                            update_mesh_displayname(user_info=user_info, uri=uri)
+
+            # Remove users from mesh not present in trmm
+            for mesh_user_id in mesh_users_dict:
+                if mesh_user_id not in trmm_user_ids:
+                    delete_user_from_mesh(mesh_user_id=mesh_user_id, uri=uri)
+
+        except Exception as e:
+            logger.error(str(e))

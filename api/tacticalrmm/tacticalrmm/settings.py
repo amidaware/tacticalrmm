@@ -1,4 +1,5 @@
 import os
+import sys
 from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
@@ -114,6 +115,7 @@ HOSTED = False
 SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 TRMM_LOG_LEVEL = "ERROR"
+TRMM_LOG_TO = "file"
 
 with suppress(ImportError):
     from .local_settings import *  # noqa
@@ -283,6 +285,24 @@ def get_log_level() -> str:
     return TRMM_LOG_LEVEL
 
 
+def configure_logging_handler():
+    cfg = {
+        "level": get_log_level(),
+        "formatter": "verbose",
+    }
+
+    log_to = os.getenv("TRMM_LOG_TO", TRMM_LOG_TO)
+
+    if log_to == "stdout":
+        cfg["class"] = "logging.StreamHandler"
+        cfg["stream"] = sys.stdout
+    else:
+        cfg["class"] = "logging.FileHandler"
+        cfg["filename"] = os.path.join(LOG_DIR, "trmm_debug.log")
+
+    return cfg
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -299,12 +319,7 @@ LOGGING = {
             "filename": os.path.join(LOG_DIR, "django_debug.log"),
             "formatter": "verbose",
         },
-        "trmm": {
-            "level": get_log_level(),
-            "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "trmm_debug.log"),
-            "formatter": "verbose",
-        },
+        "trmm": configure_logging_handler(),
     },
     "loggers": {
         "django.request": {"handlers": ["file"], "level": "ERROR", "propagate": True},

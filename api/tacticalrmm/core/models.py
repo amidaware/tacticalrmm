@@ -1,7 +1,7 @@
 import smtplib
 from contextlib import suppress
-from email.message import EmailMessage
 from email.headerregistry import Address
+from email.message import EmailMessage
 from typing import TYPE_CHECKING, List, Optional, cast
 
 import requests
@@ -75,6 +75,8 @@ class CoreSettings(BaseAuditModel):
         max_length=255, null=True, blank=True, default="TacticalRMM"
     )
     mesh_disable_auto_login = models.BooleanField(default=False)
+    mesh_company_name = models.CharField(max_length=255, null=True, blank=True)
+    sync_mesh_with_trmm = models.BooleanField(default=True)
     agent_auto_update = models.BooleanField(default=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",

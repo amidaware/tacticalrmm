@@ -21,6 +21,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.tasks import sync_mesh_perms_task
 from core.utils import (
     get_core_settings,
     get_mesh_ws_url,
@@ -258,6 +259,7 @@ class GetUpdateDeleteAgent(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
+        sync_mesh_perms_task.delay()
         return Response("The agent was updated successfully")
 
     # uninstall agent
@@ -283,6 +285,7 @@ class GetUpdateDeleteAgent(APIView):
                 message=f"Unable to remove agent {name} from meshcentral database: {e}",
                 log_type=DebugLogType.AGENT_ISSUES,
             )
+        sync_mesh_perms_task.delay()
         return Response(f"{name} will now be uninstalled.")
 
 
@@ -326,9 +329,12 @@ class AgentMeshCentral(APIView):
         core = get_core_settings()
 
         if not core.mesh_disable_auto_login:
-            token = get_login_token(
-                key=core.mesh_token, user=f"user//{core.mesh_username}"
+            user = (
+                request.user.mesh_user_id
+                if core.sync_mesh_with_trmm
+                else f"user//{core.mesh_username}"
             )
+            token = get_login_token(key=core.mesh_token, user=user)
             token_param = f"login={token}&"
         else:
             token_param = ""

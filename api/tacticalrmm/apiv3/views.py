@@ -20,6 +20,7 @@ from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
 from checks.constants import CHECK_DEFER, CHECK_RESULT_DEFER
 from checks.models import Check, CheckResult
 from checks.serializers import CheckRunnerGetSerializer
+from core.tasks import sync_mesh_perms_task
 from core.utils import (
     download_mesh_agent,
     get_core_settings,
@@ -481,6 +482,7 @@ class NewAgent(APIView):
         )
 
         ret = {"pk": agent.pk, "token": token.key}
+        sync_mesh_perms_task.delay()
         return Response(ret)
 
 

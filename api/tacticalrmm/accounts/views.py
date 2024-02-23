@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.utils import is_root_user
+from core.tasks import sync_mesh_perms_task
 from logs.models import AuditLog
 from tacticalrmm.helpers import notify_error
 
@@ -133,6 +134,7 @@ class GetAddUsers(APIView):
             user.role = role
 
         user.save()
+        sync_mesh_perms_task.delay()
         return Response(user.username)
 
 
@@ -153,6 +155,7 @@ class GetUpdateDeleteUser(APIView):
         serializer = UserSerializer(instance=user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        sync_mesh_perms_task.delay()
 
         return Response("ok")
 
@@ -162,7 +165,7 @@ class GetUpdateDeleteUser(APIView):
             return notify_error("The root user cannot be deleted from the UI")
 
         user.delete()
-
+        sync_mesh_perms_task.delay()
         return Response("ok")
 
 
@@ -243,11 +246,13 @@ class GetUpdateDeleteRole(APIView):
         serializer = RoleSerializer(instance=role, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        sync_mesh_perms_task.delay()
         return Response("Role was edited")
 
     def delete(self, request, pk):
         role = get_object_or_404(Role, pk=pk)
         role.delete()
+        sync_mesh_perms_task.delay()
         return Response("Role was removed")
 
 

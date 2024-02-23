@@ -20,7 +20,7 @@ from packaging.version import Version as LooseVersion
 from agents.utils import get_agent_url
 from checks.models import CheckResult
 from core.models import TZ_CHOICES
-from core.utils import get_core_settings, send_command_with_mesh
+from core.utils import _b64_to_hex, get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog, PendingAction
 from tacticalrmm.constants import (
     AGENT_STATUS_OFFLINE,
@@ -451,6 +451,10 @@ class Agent(BaseAuditModel):
             return self.wmi_detail["bios"][0][0]["SerialNumber"]
         except:
             return ""
+
+    @property
+    def hex_mesh_node_id(self) -> str:
+        return _b64_to_hex(self.mesh_node_id)
 
     @classmethod
     def online_agents(cls, min_version: str = "") -> "List[Agent]":

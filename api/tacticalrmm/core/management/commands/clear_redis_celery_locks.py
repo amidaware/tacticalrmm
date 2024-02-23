@@ -5,6 +5,7 @@ from tacticalrmm.constants import (
     AGENT_OUTAGES_LOCK,
     ORPHANED_WIN_TASK_LOCK,
     RESOLVE_ALERTS_LOCK,
+    SYNC_MESH_PERMS_TASK_LOCK,
     SYNC_SCHED_TASK_LOCK,
 )
 
@@ -18,5 +19,6 @@ class Command(BaseCommand):
             ORPHANED_WIN_TASK_LOCK,
             RESOLVE_ALERTS_LOCK,
             SYNC_SCHED_TASK_LOCK,
+            SYNC_MESH_PERMS_TASK_LOCK,
         ):
             cache.delete(key)

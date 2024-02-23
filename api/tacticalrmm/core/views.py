@@ -21,6 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.decorators import monitoring_view
+from core.tasks import sync_mesh_perms_task
 from core.utils import get_core_settings, sysd_svc_is_running, token_is_valid
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
@@ -60,6 +61,7 @@ class GetEditCoreSettings(APIView):
         serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        sync_mesh_perms_task.delay()
 
         return Response("ok")
 

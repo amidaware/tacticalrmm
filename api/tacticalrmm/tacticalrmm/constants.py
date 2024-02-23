@@ -30,6 +30,7 @@ RESOLVE_ALERTS_LOCK = "resolve-alerts-lock-key"
 SYNC_SCHED_TASK_LOCK = "sync-sched-tasks-lock-key"
 AGENT_OUTAGES_LOCK = "agent-outages-task-lock-key"
 ORPHANED_WIN_TASK_LOCK = "orphaned-win-task-lock-key"
+SYNC_MESH_PERMS_TASK_LOCK = "sync-mesh-perms-lock-key"
 
 
 class GoArch(models.TextChoices):

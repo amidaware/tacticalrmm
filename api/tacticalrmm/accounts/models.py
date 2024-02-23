@@ -64,6 +64,14 @@ class User(AbstractUser, BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
+    @property
+    def mesh_user_id(self):
+        return f"user//{self.mesh_username}"
+
+    @property
+    def mesh_username(self):
+        return f"{self.username}___{self.pk}"
+
     @staticmethod
     def serialize(user):
         # serializes the task and returns json

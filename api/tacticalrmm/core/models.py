@@ -149,6 +149,11 @@ class CoreSettings(BaseAuditModel):
         return "Global Site Settings"
 
     @property
+    def mesh_api_superuser(self) -> str:
+        # must be lowercase otherwise mesh api breaks
+        return self.mesh_username.lower()
+
+    @property
     def sms_is_configured(self) -> bool:
         return all(
             [

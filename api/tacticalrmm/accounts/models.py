@@ -70,7 +70,8 @@ class User(AbstractUser, BaseAuditModel):
 
     @property
     def mesh_username(self):
-        return f"{self.username}___{self.pk}"
+        # lower() needed for mesh api
+        return f"{self.username.lower()}___{self.pk}"
 
     @staticmethod
     def serialize(user):

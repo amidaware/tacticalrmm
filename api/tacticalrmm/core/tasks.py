@@ -24,6 +24,7 @@ from clients.models import Client, Site
 from core.mesh_utils import (
     add_agent_to_user,
     add_user_to_mesh,
+    build_mesh_display_name,
     delete_user_from_mesh,
     get_mesh_users,
     has_mesh_perms,
@@ -50,7 +51,7 @@ from tacticalrmm.constants import (
     TaskSyncStatus,
     TaskType,
 )
-from tacticalrmm.helpers import setup_nats_options
+from tacticalrmm.helpers import make_random_password, setup_nats_options
 from tacticalrmm.nats_utils import a_nats_cmd
 from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.utils import redis_lock
@@ -427,17 +428,23 @@ def sync_mesh_perms_task(self):
                         if _has_perm_on_agent(user, agent.agent_id)
                     ]
 
+                full_name = build_mesh_display_name(
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    company_name=company_name,
+                )
+
+                # mesh user creation will fail if same email exists for another user
+                # make sure that doesn't happen by making a random email
+                rand_str1 = make_random_password(len=6)
+                rand_str2 = make_random_password(len=5)
+                email = f"{user.username}.{rand_str1}@tacticalrmm-do-not-change-{rand_str2}.local"
+
                 user_info = {
                     "_id": user.mesh_user_id,
                     "username": user.mesh_username,
-                    "email": user.email or f"{user.username}@example.com",
-                    "full_name": " ".join(
-                        filter(
-                            None,
-                            [user.first_name, user.last_name]
-                            + [f"- {company_name}" if company_name else None],
-                        )
-                    ),
+                    "email": email,
+                    "full_name": full_name,
                     "links": trmm_agents,
                 }
 

@@ -83,17 +83,17 @@ def get_core_settings() -> "CoreSettings":
 
 def get_mesh_ws_url() -> str:
     core = get_core_settings()
-    token = get_auth_token(core.mesh_username, core.mesh_token)
+    token = get_auth_token(core.mesh_api_superuser, core.mesh_token)
 
     if settings.DOCKER_BUILD:
         uri = f"{settings.MESH_WS_URL}/control.ashx?auth={token}"
     else:
-        if getattr(settings, "TRMM_INSECURE", False):
-            site = core.mesh_site.replace("https", "ws")
-            uri = f"{site}:4430/control.ashx?auth={token}"
-        else:
+        if getattr(settings, "USE_EXTERNAL_MESH", False):
             site = core.mesh_site.replace("https", "wss")
             uri = f"{site}/control.ashx?auth={token}"
+        else:
+            mesh_port = getattr(settings, "MESH_PORT", 4430)
+            uri = f"ws://127.0.0.1:{mesh_port}/control.ashx?auth={token}"
 
     return uri
 

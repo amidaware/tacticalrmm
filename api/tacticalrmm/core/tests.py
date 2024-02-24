@@ -11,7 +11,7 @@ from model_bakery import baker
 from rest_framework.authtoken.models import Token
 
 # from agents.models import Agent
-from core.utils import get_core_settings, get_meshagent_url
+from core.utils import get_core_settings, get_mesh_ws_url, get_meshagent_url
 
 # from logs.models import PendingAction
 from tacticalrmm.constants import (  # PAAction,; PAStatus,
@@ -474,6 +474,48 @@ class TestNatsUrls(TacticalTestCase):
     @override_settings(DOCKER_BUILD=True, ALLOWED_HOSTS=["api.example.com"])
     def test_docker_nats_hosts(self):
         self.assertEqual(get_nats_hosts(), ("0.0.0.0", "0.0.0.0", "api.example.com"))
+
+
+class TestMeshWSUrl(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    @patch("core.utils.get_auth_token")
+    def test_standard_install(self, mock_token):
+        mock_token.return_value = "abc123"
+        self.assertEqual(
+            get_mesh_ws_url(), "ws://127.0.0.1:4430/control.ashx?auth=abc123"
+        )
+
+    @patch("core.utils.get_auth_token")
+    @override_settings(MESH_PORT=8876)
+    def test_standard_install_custom_port(self, mock_token):
+        mock_token.return_value = "abc123"
+        self.assertEqual(
+            get_mesh_ws_url(), "ws://127.0.0.1:8876/control.ashx?auth=abc123"
+        )
+
+    @patch("core.utils.get_auth_token")
+    @override_settings(DOCKER_BUILD=True, MESH_WS_URL="ws://tactical-meshcentral:4443")
+    def test_docker_install(self, mock_token):
+        mock_token.return_value = "abc123"
+        self.assertEqual(
+            get_mesh_ws_url(), "ws://tactical-meshcentral:4443/control.ashx?auth=abc123"
+        )
+
+    @patch("core.utils.get_auth_token")
+    @override_settings(USE_EXTERNAL_MESH=True)
+    def test_external_mesh(self, mock_token):
+        mock_token.return_value = "abc123"
+
+        from core.models import CoreSettings
+
+        core = CoreSettings.objects.first()
+        core.mesh_site = "https://mesh.external.com"  # type: ignore
+        core.save(update_fields=["mesh_site"])  # type: ignore
+        self.assertEqual(
+            get_mesh_ws_url(), "wss://mesh.external.com/control.ashx?auth=abc123"
+        )
 
 
 class TestCorePermissions(TacticalTestCase):

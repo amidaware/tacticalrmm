@@ -332,7 +332,7 @@ class AgentMeshCentral(APIView):
             user = (
                 request.user.mesh_user_id
                 if core.sync_mesh_with_trmm
-                else f"user//{core.mesh_username}"
+                else f"user//{core.mesh_api_superuser}"
             )
             token = get_login_token(key=core.mesh_token, user=user)
             token_param = f"login={token}&"

@@ -12,6 +12,24 @@ if TYPE_CHECKING:
     from accounts.models import User
 
 
+def build_mesh_display_name(
+    *, first_name: str | None, last_name: str | None, company_name: str | None
+) -> str:
+    ret = ""
+    if first_name:
+        ret += first_name
+
+    if last_name:
+        ret += f" {last_name}"
+
+    if ret and company_name:
+        ret += f" - {company_name}"
+    elif company_name:
+        ret += company_name
+
+    return ret
+
+
 def mesh_action(
     *, payload: dict[str, Any], uri: str, wait=True
 ) -> dict[str, Any] | None:

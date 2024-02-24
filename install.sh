@@ -975,6 +975,7 @@ cd /rmm/api/tacticalrmm
 source /rmm/api/env/bin/activate
 python manage.py initial_db_setup
 python manage.py reload_nats
+python manage.py sync_mesh_with_trmm
 deactivate
 sudo systemctl start nats.service
 

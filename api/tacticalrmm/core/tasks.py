@@ -400,6 +400,8 @@ def sync_mesh_perms_task(self):
             users = User.objects.select_related("role").filter(
                 agent=None,
                 is_installer_user=False,
+                is_active=True,
+                block_dashboard_login=False,
             )
 
             trmm_user_ids = set()

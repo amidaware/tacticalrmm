@@ -39,7 +39,7 @@ NATS_SERVER_VER = "2.10.11"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
-INSTALL_NUSHELL = False
+INSTALL_NUSHELL = True
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
@@ -61,7 +61,7 @@ NUSHELL_ENABLE_CONFIG = False
 
 # Install Deno on the agent
 # https://github.com/denoland/deno
-INSTALL_DENO = False
+INSTALL_DENO = True
 # Version to download. If INSTALL_DENO_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
 INSTALL_DENO_VERSION = "v1.41.0"

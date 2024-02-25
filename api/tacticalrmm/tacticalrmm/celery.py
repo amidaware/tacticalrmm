@@ -9,7 +9,8 @@ from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
 
-app = Celery("tacticalrmm", backend="redis://" + settings.REDIS_HOST, broker="redis://" + settings.REDIS_HOST)  # type: ignore
+redis_host = f"redis://{settings.REDIS_HOST}"
+app = Celery("tacticalrmm", backend=redis_host, broker=redis_host)
 app.accept_content = ["application/json"]
 app.result_serializer = "json"
 app.task_serializer = "json"

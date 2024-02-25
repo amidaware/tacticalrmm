@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import websockets
 
 from accounts.utils import is_superuser
+from tacticalrmm.constants import WS_MAX_SIZE
 from tacticalrmm.helpers import make_random_password
 from tacticalrmm.logger import logger
 
@@ -34,7 +35,7 @@ def mesh_action(
     *, payload: dict[str, Any], uri: str, wait=True
 ) -> dict[str, Any] | None:
     async def _do(payload, uri: str):
-        async with websockets.connect(uri) as ws:
+        async with websockets.connect(uri, max_size=WS_MAX_SIZE) as ws:
             await ws.send(json.dumps(payload))
             if wait:
                 async for message in ws:

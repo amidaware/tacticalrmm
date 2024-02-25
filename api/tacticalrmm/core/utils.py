@@ -16,6 +16,7 @@ from tacticalrmm.constants import (
     AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
     CORESETTINGS_CACHE_KEY,
     ROLE_CACHE_PREFIX,
+    WS_MAX_SIZE,
     AgentPlat,
     MeshAgentIdent,
 )
@@ -99,7 +100,7 @@ def get_mesh_ws_url() -> str:
 
 
 async def get_mesh_device_id(uri: str, device_group: str) -> None:
-    async with websockets.connect(uri) as ws:
+    async with websockets.connect(uri, max_size=WS_MAX_SIZE) as ws:
         payload = {"action": "meshes", "responseid": "meshctrl"}
         await ws.send(json.dumps(payload))
 

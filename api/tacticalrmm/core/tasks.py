@@ -386,8 +386,7 @@ def sync_mesh_perms_task(self):
             return f"{self.app.oid} still running"
 
         core = CoreSettings.objects.first()
-        if not core.sync_mesh_with_trmm:
-            return
+        do_not_sync = not core.sync_mesh_with_trmm
 
         try:
             uri = get_mesh_ws_url()
@@ -407,6 +406,9 @@ def sync_mesh_perms_task(self):
             trmm_user_ids = set()
 
             for user in users:
+                if do_not_sync:
+                    continue
+
                 if not has_mesh_perms(user=user):
                     logger.debug(f"No mesh perms for {user}")
                     continue
@@ -498,7 +500,9 @@ def sync_mesh_perms_task(self):
 
             # Remove users from mesh not present in trmm
             for mesh_user_id in mesh_users_dict:
-                if mesh_user_id not in trmm_user_ids:
+                if do_not_sync:
+                    delete_user_from_mesh(mesh_user_id=mesh_user_id, uri=uri)
+                elif mesh_user_id not in trmm_user_ids:
                     delete_user_from_mesh(mesh_user_id=mesh_user_id, uri=uri)
 
         except Exception as e:

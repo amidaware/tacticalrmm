@@ -81,9 +81,9 @@ INSTALL_DENO_URL = ""
 DENO_DEFAULT_PERMISSIONS = "--allow-all"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "42"
+PIP_VER = "43"
 
-SETUPTOOLS_VER = "69.0.3"
+SETUPTOOLS_VER = "69.1.1"
 WHEEL_VER = "0.42.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"

@@ -12,6 +12,7 @@ THIS_SCRIPT=$(readlink -f "$0")
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.11.6'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
+local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -345,14 +346,14 @@ if ! [[ $CHECK_CELERY_CONFIG ]]; then
   sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"/g' /etc/conf.d/celery.conf
 fi
 
-CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
+CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED $local_settings)
 if ! [[ $CHECK_ADMIN_ENABLED ]]; then
   adminenabled="$(
     cat <<EOF
 ADMIN_ENABLED = False
 EOF
   )"
-  echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
+  echo "${adminenabled}" | tee --append $local_settings >/dev/null
 fi
 
 if [ "$arch" = "x86_64" ]; then
@@ -388,6 +389,8 @@ fi
 if [ ! -d /opt/tactical/reporting/schemas ]; then
   sudo mkdir /opt/tactical/reporting/schemas
 fi
+
+sed -i '/^REDIS_HOST/d' $local_settings
 
 sudo chown -R ${USER}:${USER} /opt/tactical
 

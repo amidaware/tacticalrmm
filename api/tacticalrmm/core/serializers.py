@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from tacticalrmm.constants import ALL_TIMEZONES
@@ -7,9 +8,27 @@ from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URL
 
 class CoreSettingsSerializer(serializers.ModelSerializer):
     all_timezones = serializers.SerializerMethodField("all_time_zones")
+    mesh_site = serializers.SerializerMethodField()
+    mesh_token = serializers.SerializerMethodField()
+    mesh_username = serializers.SerializerMethodField()
 
     def all_time_zones(self, obj):
         return ALL_TIMEZONES
+
+    def get_mesh_site(self, obj):
+        if getattr(settings, "HOSTED", False):
+            return "n/a"
+        return obj.mesh_site
+
+    def get_mesh_token(self, obj):
+        if getattr(settings, "HOSTED", False):
+            return "n/a"
+        return obj.mesh_token
+
+    def get_mesh_username(self, obj):
+        if getattr(settings, "HOSTED", False):
+            return "n/a"
+        return obj.mesh_username
 
     class Meta:
         model = CoreSettings

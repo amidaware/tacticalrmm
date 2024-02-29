@@ -6,29 +6,20 @@ from tacticalrmm.constants import ALL_TIMEZONES
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
 
 
-class CoreSettingsSerializer(serializers.ModelSerializer):
+class HostedCoreMixin:
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)  # type: ignore
+        if getattr(settings, "HOSTED", False):
+            for field in ("mesh_site", "mesh_token", "mesh_username"):
+                ret[field] = "n/a"
+        return ret
+
+
+class CoreSettingsSerializer(HostedCoreMixin, serializers.ModelSerializer):
     all_timezones = serializers.SerializerMethodField("all_time_zones")
-    mesh_site = serializers.SerializerMethodField()
-    mesh_token = serializers.SerializerMethodField()
-    mesh_username = serializers.SerializerMethodField()
 
     def all_time_zones(self, obj):
         return ALL_TIMEZONES
-
-    def get_mesh_site(self, obj):
-        if getattr(settings, "HOSTED", False):
-            return "n/a"
-        return obj.mesh_site
-
-    def get_mesh_token(self, obj):
-        if getattr(settings, "HOSTED", False):
-            return "n/a"
-        return obj.mesh_token
-
-    def get_mesh_username(self, obj):
-        if getattr(settings, "HOSTED", False):
-            return "n/a"
-        return obj.mesh_username
 
     class Meta:
         model = CoreSettings
@@ -36,7 +27,7 @@ class CoreSettingsSerializer(serializers.ModelSerializer):
 
 
 # for audting
-class CoreSerializer(serializers.ModelSerializer):
+class CoreSerializer(HostedCoreMixin, serializers.ModelSerializer):
     class Meta:
         model = CoreSettings
         fields = "__all__"

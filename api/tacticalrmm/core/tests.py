@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch
 
 import requests
@@ -109,18 +110,57 @@ class TestCoreTasks(TacticalTestCase):
 
     def test_edit_coresettings(self):
         url = "/core/settings/"
-
         # setup
         baker.make("automation.Policy", _quantity=2)
         # test normal request
         data = {
             "smtp_from_email": "newexample@example.com",
             "mesh_token": "New_Mesh_Token",
+            "mesh_site": "https://mesh.example.com",
+            "mesh_username": "bob",
         }
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(get_core_settings().smtp_from_email, data["smtp_from_email"])
-        self.assertEqual(get_core_settings().mesh_token, data["mesh_token"])
+        core = get_core_settings()
+        self.assertEqual(core.smtp_from_email, "newexample@example.com")
+        self.assertEqual(core.mesh_token, "New_Mesh_Token")
+        self.assertEqual(core.mesh_site, "https://mesh.example.com")
+        self.assertEqual(core.mesh_username, "bob")
+
+        # test to_representation
+        r = self.client.get(url)
+        self.assertEqual(r.data["smtp_from_email"], "newexample@example.com")
+        self.assertEqual(r.data["mesh_token"], "New_Mesh_Token")
+        self.assertEqual(r.data["mesh_site"], "https://mesh.example.com")
+        self.assertEqual(r.data["mesh_username"], "bob")
+
+        self.check_not_authenticated("put", url)
+
+    @override_settings(HOSTED=True)
+    def test_hosted_edit_coresettings(self):
+        url = "/core/settings/"
+        baker.make("automation.Policy", _quantity=2)
+        data = {
+            "smtp_from_email": "newexample1@example.com",
+            "mesh_token": "abc123",
+            "mesh_site": "https://mesh15534.example.com",
+            "mesh_username": "jane",
+        }
+        r = self.client.put(url, data)
+        self.assertEqual(r.status_code, 200)
+        core = get_core_settings()
+        self.assertEqual(core.smtp_from_email, "newexample1@example.com")
+        self.assertIn("41410834b8bb4481446027f8", core.mesh_token)  # type: ignore
+        if "GHACTIONS" in os.environ:
+            self.assertEqual(core.mesh_site, "https://example.com")
+            self.assertEqual(core.mesh_username, "pipeline")
+
+        # test to_representation
+        r = self.client.get(url)
+        self.assertEqual(r.data["smtp_from_email"], "newexample1@example.com")
+        self.assertEqual(r.data["mesh_token"], "n/a")
+        self.assertEqual(r.data["mesh_site"], "n/a")
+        self.assertEqual(r.data["mesh_username"], "n/a")
 
         self.check_not_authenticated("put", url)
 

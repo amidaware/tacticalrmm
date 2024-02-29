@@ -57,8 +57,15 @@ class GetEditCoreSettings(APIView):
         return Response(CoreSettingsSerializer(settings).data)
 
     def put(self, request):
+        data = request.data.copy()
+
+        if getattr(settings, "HOSTED", False):
+            data.pop("mesh_site")
+            data.pop("mesh_token")
+            data.pop("mesh_username")
+
         coresettings = CoreSettings.objects.first()
-        serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
+        serializer = CoreSettingsSerializer(instance=coresettings, data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         sync_mesh_perms_task.delay()

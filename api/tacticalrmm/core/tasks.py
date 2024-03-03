@@ -1,6 +1,6 @@
 import asyncio
 import logging
-import re
+import traceback
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
@@ -22,14 +22,11 @@ from checks.models import Check, CheckResult
 from checks.tasks import prune_check_history
 from clients.models import Client, Site
 from core.mesh_utils import (
-    add_agent_to_user,
-    add_user_to_mesh,
+    MeshSync,
     build_mesh_display_name,
-    delete_user_from_mesh,
-    get_mesh_users,
     has_mesh_perms,
-    remove_agent_from_user,
-    update_mesh_displayname,
+    transform_mesh,
+    transform_trmm,
 )
 from core.models import CoreSettings
 from core.utils import get_core_settings, get_mesh_ws_url
@@ -385,16 +382,21 @@ def sync_mesh_perms_task(self):
         if not acquired:
             return f"{self.app.oid} still running"
 
-        core = CoreSettings.objects.first()
-        do_not_sync = not core.sync_mesh_with_trmm
-
         try:
+            core = CoreSettings.objects.first()
+            do_not_sync = not core.sync_mesh_with_trmm
             uri = get_mesh_ws_url()
+            ms = MeshSync(uri)
+
+            if do_not_sync:
+                for user in ms.mesh_users:
+                    ms.delete_user_from_mesh(mesh_user_id=user)
+
+                return
+
             company_name = core.mesh_company_name
-            mesh_users_raw = get_mesh_users(uri=uri)["users"]
-            mesh_users_dict = {
-                i["_id"]: i for i in mesh_users_raw if re.search(r".*___\d+", i["_id"])
-            }
+            mnp = {"action": "nodes"}
+            mesh_nodes_raw = ms.mesh_action(payload=mnp, wait=True)["nodes"]
 
             users = User.objects.select_related("role").filter(
                 agent=None,
@@ -403,35 +405,8 @@ def sync_mesh_perms_task(self):
                 block_dashboard_login=False,
             )
 
-            trmm_user_ids = set()
-
+            mesh_users_dict = {}
             for user in users:
-                if do_not_sync:
-                    continue
-
-                if not has_mesh_perms(user=user):
-                    logger.debug(f"No mesh perms for {user}")
-                    continue
-
-                if user.is_superuser or is_superuser(user):
-                    # superusers get access to all agents no matter perms
-                    trmm_agents = [
-                        {
-                            "node_id": f"node//{agent.hex_mesh_node_id}",
-                            "hostname": agent.hostname,
-                        }
-                        for agent in Agent.objects.only("mesh_node_id", "hostname")
-                    ]
-                else:
-                    trmm_agents = [
-                        {
-                            "node_id": f"node//{agent.hex_mesh_node_id}",
-                            "hostname": agent.hostname,
-                        }
-                        for agent in Agent.objects.defer(*AGENT_DEFER)
-                        if _has_perm_on_agent(user, agent.agent_id)
-                    ]
-
                 full_name = build_mesh_display_name(
                     first_name=user.first_name,
                     last_name=user.last_name,
@@ -443,67 +418,89 @@ def sync_mesh_perms_task(self):
                 rand_str1 = make_random_password(len=6)
                 rand_str2 = make_random_password(len=5)
                 email = f"{user.username}.{rand_str1}@tacticalrmm-do-not-change-{rand_str2}.local"
-
-                user_info = {
+                mesh_users_dict[user.mesh_user_id] = {
                     "_id": user.mesh_user_id,
                     "username": user.mesh_username,
-                    "email": email,
                     "full_name": full_name,
-                    "links": trmm_agents,
+                    "email": email,
                 }
 
-                trmm_user_ids.add(user.mesh_user_id)
+            new_trmm_agents = []
+            for agent in Agent.objects.defer(*AGENT_DEFER):
+                agent_dict = {
+                    "node_id": f"node//{agent.hex_mesh_node_id}",
+                    "hostname": agent.hostname,
+                }
+                tmp: list[dict[str, str]] = []
+                for user in users:
+                    if not has_mesh_perms(user=user):
+                        logger.debug(f"No mesh perms for {user} on {agent.hostname}")
+                        continue
 
-                # Handle new users and assign agents to them
-                if user.mesh_user_id not in mesh_users_dict:
-                    add_user_to_mesh(user_info=user_info, uri=uri)
-                    for agent in trmm_agents:
-                        add_agent_to_user(
-                            user_id=user.mesh_user_id,
-                            node_id=agent["node_id"],
-                            hostname=agent["hostname"],
-                            uri=uri,
-                        )
-                else:
-                    # For existing users, check and update agent perms
-                    existing_mesh_user = mesh_users_dict[user.mesh_user_id]
-                    mesh_agents_dict = existing_mesh_user.get("links", {})
-                    trmm_agent_ids = {agent["node_id"] for agent in trmm_agents}
+                    if (user.is_superuser or is_superuser(user)) or _has_perm_on_agent(
+                        user, agent.agent_id
+                    ):
+                        tmp.append({"_id": user.mesh_user_id})
 
-                    for agent in trmm_agents:
-                        if agent["node_id"] not in mesh_agents_dict:
-                            add_agent_to_user(
-                                user_id=user.mesh_user_id,
-                                node_id=agent["node_id"],
-                                hostname=agent["hostname"],
-                                uri=uri,
-                            )
+                agent_dict["links"] = tmp
+                new_trmm_agents.append(agent_dict)
 
-                    for mesh_agent_id in mesh_agents_dict:
-                        if mesh_agent_id not in trmm_agent_ids:
-                            remove_agent_from_user(
-                                user_id=user.mesh_user_id,
-                                node_id=mesh_agent_id,
-                                uri=uri,
-                            )
+            final_trmm = transform_trmm(new_trmm_agents)
+            final_mesh = transform_mesh(mesh_nodes_raw)
 
-                    # handle diplay name
-                    try:
-                        mesh_displayname = existing_mesh_user["realname"]
-                    except KeyError:
-                        logger.debug("Adding Display Name to mesh.")
-                        update_mesh_displayname(user_info=user_info, uri=uri)
-                    else:
-                        if mesh_displayname != user_info["full_name"]:
-                            logger.debug("Display names don't match. Syncing.")
-                            update_mesh_displayname(user_info=user_info, uri=uri)
+            # delete users first
+            source_users_global = set()
+            for item in final_trmm:
+                source_users_global.update(item["user_ids"])
 
-            # Remove users from mesh not present in trmm
-            for mesh_user_id in mesh_users_dict:
-                if do_not_sync:
-                    delete_user_from_mesh(mesh_user_id=mesh_user_id, uri=uri)
-                elif mesh_user_id not in trmm_user_ids:
-                    delete_user_from_mesh(mesh_user_id=mesh_user_id, uri=uri)
+            target_users_global = set()
+            for item in final_mesh:
+                target_users_global.update(item["user_ids"])
 
-        except Exception as e:
-            logger.error(str(e))
+            # identify and create new users
+            new_users = list(source_users_global - target_users_global)
+            for user_id in new_users:
+                user_info = mesh_users_dict[user_id]
+                logger.info(f"Adding new user {user_info['username']} to mesh")
+                ms.add_user_to_mesh(user_info=user_info)
+
+            users_to_delete_globally = list(target_users_global - source_users_global)
+            for user_id in users_to_delete_globally:
+                logger.info(f"Deleting {user_id} from mesh")
+                ms.delete_user_from_mesh(mesh_user_id=user_id)
+
+            source_map = {item["node_id"]: set(item["user_ids"]) for item in final_trmm}
+            target_map = {item["node_id"]: set(item["user_ids"]) for item in final_mesh}
+
+            for node_id, source_users in source_map.items():
+                target_users = target_map.get(node_id, set()) - set(
+                    users_to_delete_globally
+                )
+                source_users_adjusted = source_users - set(users_to_delete_globally)
+
+                # find users that need to be added or deleted
+                users_to_add = list(source_users_adjusted - target_users)
+                users_to_delete = list(target_users - source_users_adjusted)
+
+                if users_to_add:
+                    logger.info(f"Adding {users_to_add} to {node_id}")
+                    ms.add_users_to_node(node_id=node_id, user_ids=users_to_add)
+
+                if users_to_delete:
+                    logger.info(f"Deleting {users_to_delete} from {node_id}")
+                    ms.delete_users_from_node(node_id=node_id, user_ids=users_to_delete)
+
+            # after all done, see if need to update display name
+            ms2 = MeshSync(uri)
+            unique_ids = ms2.get_unique_mesh_users(new_trmm_agents)
+            for user in unique_ids:
+                mesh_realname = ms2.mesh_users[user]["realname"]
+                trmm_realname = mesh_users_dict[user]["full_name"]
+                if mesh_realname != trmm_realname:
+                    logger.info(
+                        f"Display names don't match. Updating {user} name from {mesh_realname} to {trmm_realname}"
+                    )
+                    ms2.update_mesh_displayname(user_info=mesh_users_dict[user])
+
+        except Exception:
+            logger.debug(traceback.format_exc())

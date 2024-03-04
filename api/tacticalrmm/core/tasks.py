@@ -405,6 +405,12 @@ def sync_mesh_perms_task(self):
                 block_dashboard_login=False,
             )
 
+            trmm_agents_meshnodeids = [
+                f"node//{i.hex_mesh_node_id}"
+                for i in Agent.objects.only("mesh_node_id")
+                if i.mesh_node_id
+            ]
+
             mesh_users_dict = {}
             for user in users:
                 full_name = build_mesh_display_name(
@@ -473,6 +479,10 @@ def sync_mesh_perms_task(self):
             target_map = {item["node_id"]: set(item["user_ids"]) for item in final_mesh}
 
             for node_id, source_users in source_map.items():
+                # skip agents without valid node id
+                if node_id not in trmm_agents_meshnodeids:
+                    continue
+
                 target_users = target_map.get(node_id, set()) - set(
                     users_to_delete_globally
                 )
@@ -494,7 +504,10 @@ def sync_mesh_perms_task(self):
             ms2 = MeshSync(uri)
             unique_ids = ms2.get_unique_mesh_users(new_trmm_agents)
             for user in unique_ids:
-                mesh_realname = ms2.mesh_users[user]["realname"]
+                try:
+                    mesh_realname = ms2.mesh_users[user]["realname"]
+                except KeyError:
+                    mesh_realname = ""
                 trmm_realname = mesh_users_dict[user]["full_name"]
                 if mesh_realname != trmm_realname:
                     logger.info(

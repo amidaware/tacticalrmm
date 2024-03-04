@@ -59,15 +59,19 @@ def transform_mesh(obj):
         for _, nodes in obj.items():
             for node in nodes:
                 node_id = node["_id"]
-                user_ids = [
-                    user_id
-                    for user_id in node["links"].keys()
-                    if pattern.match(user_id)
-                ]
-                ret.append({"node_id": node_id, "user_ids": user_ids})
-    except KeyError:
-        # will trigger on initial sync cuz no mesh users yet
-        pass
+                try:
+                    user_ids = [
+                        user_id
+                        for user_id in node["links"].keys()
+                        if pattern.match(user_id)
+                    ]
+                except KeyError:
+                    # will trigger on initial sync cuz no mesh users yet
+                    # also triggers for invalid agents after sync
+                    pass
+                else:
+                    ret.append({"node_id": node_id, "user_ids": user_ids})
+
     except Exception:
         logger.debug(traceback.format_exc)
     return ret

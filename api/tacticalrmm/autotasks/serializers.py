@@ -119,6 +119,7 @@ class TaskSerializer(serializers.ModelSerializer):
                 TaskType.MONTHLY,
                 TaskType.MONTHLY_DOW,
             )
+            and not data["server_task"]
             and not data["run_time_date"]
         ):
             raise serializers.ValidationError(

@@ -158,19 +158,19 @@ class DashInfo(AsyncJsonWebsocketConsumer):
             self.child_pid = None
 
     # trmm cron
-    async def send_crontab_config(self):
-        proc = await asyncio.create_subprocess_exec(
-            "crontab",
-            "-l",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
+    # async def send_crontab_config(self):
+    #     proc = await asyncio.create_subprocess_exec(
+    #         "crontab",
+    #         "-l",
+    #         stdout=asyncio.subprocess.PIPE,
+    #         stderr=asyncio.subprocess.PIPE,
+    #     )
 
-        stdout, stderr = await proc.communicate()
-        print(stdout, stderr)
-        await self.send_json(
-            {
-                "action": "core.server.getcron",
-                "data": f"{stdout.decode()}\n{stderr.decode()}",
-            }
-        )
+    #     stdout, stderr = await proc.communicate()
+    #     print(stdout, stderr)
+    #     await self.send_json(
+    #         {
+    #             "action": "core.server.getcron",
+    #             "data": f"{stdout.decode()}\n{stderr.decode()}",
+    #         }
+    #     )

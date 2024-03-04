@@ -355,27 +355,27 @@ def run_server_script(
     return result.stdout, result.stderr, execution_time, result.returncode
 
 
-async def get_crontab_job():
-    result = subprocess.run(
-        ["/usr/bin/crontab -u tactical -l"],
-        capture_output=True,
-        text=True,
-        shell=True,
-        timeout=10,
-    )
-    print(result)
-    return result.stdout, result.stderr
+# async def get_crontab_job():
+#     result = subprocess.run(
+#         ["/usr/bin/crontab -u tactical -l"],
+#         capture_output=True,
+#         text=True,
+#         shell=True,
+#         timeout=10,
+#     )
+#     print(result)
+#     return result.stdout, result.stderr
 
 
-def sync_crontab():
-    from autotasks.models import AutomatedTask
-    from autotasks.utils import generate_crontab_jobs
+# def sync_crontab():
+#     from autotasks.models import AutomatedTask
+#     from autotasks.utils import generate_crontab_jobs
 
-    server_tasks = AutomatedTask.objects.filter(server_tasks=True, enabled=True)
+# #     server_tasks = AutomatedTask.objects.filter(server_tasks=True, enabled=True)
 
-    crontab_config = generate_crontab_jobs(server_tasks)  # noqa: F841
+#     crontab_config = generate_crontab_jobs(server_tasks)  # noqa: F841
 
-    subprocess.run(["crontab", "-r"], capture_output=True, text=True, shell=True)
-    subprocess.run(
-        ["crontab", "-l", "|", ""], capture_output=True, text=True, shell=True
-    )
+#     subprocess.run(["crontab", "-r"], capture_output=True, text=True, shell=True)
+#     subprocess.run(
+#         ["crontab", "-l", "|", ""], capture_output=True, text=True, shell=True
+#     )

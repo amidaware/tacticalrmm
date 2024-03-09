@@ -6,15 +6,15 @@ cffi==1.16.0
 channels==4.0.0
 channels_redis==4.2.0
 cryptography==42.0.5
-Django==4.2.10
+Django==4.2.11
 django-cors-headers==4.3.1
-django-filter==23.5
+django-filter==24.1
 django-rest-knox==4.2.0
 djangorestframework==3.14.0
 drf-spectacular==0.27.1
 hiredis==2.3.2
 meshctrl==0.1.15
-msgpack==1.0.7
+msgpack==1.0.8
 nats-py==2.7.2
 packaging==23.2
 psutil==5.9.8
@@ -22,8 +22,8 @@ psycopg[binary]==3.1.18
 pycparser==2.21
 pycryptodome==3.20.0
 pyotp==2.9.0
-pyparsing==3.1.1
-python-ipware==2.0.1
+pyparsing==3.1.2
+python-ipware==2.0.2
 qrcode==7.4.2
 redis==5.0.2
 requests==2.31.0
@@ -42,5 +42,5 @@ kaleido==0.2.1
 jinja2==3.1.3
 markdown==3.5.2
 plotly==5.19.0
-weasyprint==61.1
+weasyprint==61.2
 ocxsect==0.1.5

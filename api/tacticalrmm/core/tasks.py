@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import nats
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Prefetch
 from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
@@ -18,7 +19,7 @@ from agents.tasks import clear_faults_task, prune_agent_history
 from alerts.models import Alert
 from alerts.tasks import prune_resolved_alerts
 from autotasks.models import AutomatedTask, TaskResult
-from checks.models import Check, CheckResult
+from checks.models import Check, CheckHistory, CheckResult
 from checks.tasks import prune_check_history
 from clients.models import Client, Site
 from core.mesh_utils import (
@@ -65,6 +66,16 @@ def core_maintenance_tasks() -> None:
     AutomatedTask.objects.filter(
         remove_if_not_scheduled=True, expire_date__lt=djangotime.now()
     ).delete()
+
+    with transaction.atomic():
+        check_hist_agentids = CheckHistory.objects.values_list(
+            "agent_id", flat=True
+        ).distinct()
+        current_agentids = set(Agent.objects.values_list("agent_id", flat=True))
+        orphaned_agentids = [
+            i for i in check_hist_agentids if i not in current_agentids
+        ]
+        CheckHistory.objects.filter(agent_id__in=orphaned_agentids).delete()
 
     core = get_core_settings()
 

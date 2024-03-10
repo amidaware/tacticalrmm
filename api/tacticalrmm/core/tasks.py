@@ -2,6 +2,7 @@ import asyncio
 import logging
 import traceback
 from contextlib import suppress
+from time import sleep
 from typing import TYPE_CHECKING, Any
 
 import nats
@@ -489,6 +490,18 @@ def sync_mesh_perms_task(self):
             source_map = {item["node_id"]: set(item["user_ids"]) for item in final_trmm}
             target_map = {item["node_id"]: set(item["user_ids"]) for item in final_mesh}
 
+            def _get_sleep_after_n_inter(n):
+                # {number of agents: chunk size}
+                thresholds = {100: 50, 300: 100, 600: 150, 1000: 200}
+                for threshold, value in sorted(thresholds.items()):
+                    if n <= threshold:
+                        return value
+
+                return 250
+
+            iter_count = 0
+            sleep_after = _get_sleep_after_n_inter(len(source_map))
+
             for node_id, source_users in source_map.items():
                 # skip agents without valid node id
                 if node_id not in trmm_agents_meshnodeids:
@@ -510,6 +523,14 @@ def sync_mesh_perms_task(self):
                 if users_to_delete:
                     logger.info(f"Deleting {users_to_delete} from {node_id}")
                     ms.delete_users_from_node(node_id=node_id, user_ids=users_to_delete)
+
+                iter_count += 1
+                if iter_count % sleep_after == 0:
+                    # mesh is very inefficient with sql, give it time to catch up so we don't crash the system
+                    logger.info(
+                        f"Sleeping for 7 seconds after {iter_count} iterations."
+                    )
+                    sleep(7)
 
             # after all done, see if need to update display name
             ms2 = MeshSync(uri)

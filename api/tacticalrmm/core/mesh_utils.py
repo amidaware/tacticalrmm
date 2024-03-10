@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 import websockets
 
 from accounts.utils import is_superuser
-from tacticalrmm.constants import WS_MAX_SIZE
+from tacticalrmm.constants import TRMM_WS_MAX_SIZE
 from tacticalrmm.helpers import make_random_password
 from tacticalrmm.logger import logger
 
@@ -86,7 +86,7 @@ class MeshSync:
         self, *, payload: dict[str, Any], wait=True
     ) -> dict[str, Any] | None:
         async def _do(payload):
-            async with websockets.connect(self.uri, max_size=WS_MAX_SIZE) as ws:
+            async with websockets.connect(self.uri, max_size=TRMM_WS_MAX_SIZE) as ws:
                 await ws.send(json.dumps(payload))
                 if wait:
                     while 1:

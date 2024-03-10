@@ -1,6 +1,7 @@
 import zoneinfo
 from enum import Enum
 
+from django.conf import settings
 from django.db import models
 
 
@@ -32,7 +33,7 @@ AGENT_OUTAGES_LOCK = "agent-outages-task-lock-key"
 ORPHANED_WIN_TASK_LOCK = "orphaned-win-task-lock-key"
 SYNC_MESH_PERMS_TASK_LOCK = "sync-mesh-perms-lock-key"
 
-WS_MAX_SIZE = 100 * 2**20
+TRMM_WS_MAX_SIZE = getattr(settings, "TRMM_WS_MAX_SIZE", 100 * 2**20)
 
 
 class GoArch(models.TextChoices):

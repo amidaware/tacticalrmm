@@ -5,6 +5,8 @@ if [ $EUID -ne 0 ]; then
     exit 1
 fi
 
+CUSTOM_BIN_PATH=""
+
 HAS_SYSTEMD=$(ps --no-headers -o comm 1)
 if [ "${HAS_SYSTEMD}" != 'systemd' ]; then
     echo "This install script only supports systemd"
@@ -35,7 +37,7 @@ siteID='siteIDChange'
 agentType='agentTypeChange'
 proxy=''
 
-agentBinPath='/usr/local/bin'
+agentBinPath="${CUSTOM_BIN_PATH:-/usr/local/bin}"
 binName='tacticalagent'
 agentBin="${agentBinPath}/${binName}"
 agentConf='/etc/tacticalagent'
@@ -149,6 +151,7 @@ while [[ "$#" -gt 0 ]]; do
     -debug | --debug | debug) DEBUG=1 ;;
     -insecure | --insecure | insecure) INSECURE=1 ;;
     -nomesh | --nomesh | nomesh) NOMESH=1 ;;
+    -binpath | --binpath) CUSTOM_BIN_PATH="$2"; shift ;;
     *)
         echo "ERROR: Unknown parameter: $1"
         exit 1

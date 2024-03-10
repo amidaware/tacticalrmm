@@ -32,6 +32,8 @@ from logs.models import DebugLog, PendingAction
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    TRMM_MAX_REQUEST_SIZE,
+    AgentHistoryType,
     AgentMonType,
     AgentPlat,
     AuditActionType,
@@ -339,6 +341,12 @@ class TaskRunner(APIView):
             AutomatedTask.objects.select_related("custom_field"), pk=pk
         )
 
+        content_length = request.META.get("CONTENT_LENGTH")
+        if content_length and int(content_length) > TRMM_MAX_REQUEST_SIZE:
+            request.data["stdout"] = ""
+            request.data["stderr"] = "Content truncated due to excessive request size."
+            request.data["retcode"] = 1
+
         # get task result or create if doesn't exist
         try:
             task_result = (
@@ -357,7 +365,7 @@ class TaskRunner(APIView):
 
         AgentHistory.objects.create(
             agent=agent,
-            type=AuditActionType.TASK_RUN,
+            type=AgentHistoryType.TASK_RUN,
             command=task.name,
             script_results=request.data,
         )
@@ -561,6 +569,15 @@ class AgentHistoryResult(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, agentid, pk):
+        content_length = request.META.get("CONTENT_LENGTH")
+        if content_length and int(content_length) > TRMM_MAX_REQUEST_SIZE:
+
+            request.data["script_results"]["stdout"] = ""
+            request.data["script_results"][
+                "stderr"
+            ] = "Content truncated due to excessive request size."
+            request.data["script_results"]["retcode"] = 1
+
         hist = get_object_or_404(
             AgentHistory.objects.filter(agent__agent_id=agentid), pk=pk
         )

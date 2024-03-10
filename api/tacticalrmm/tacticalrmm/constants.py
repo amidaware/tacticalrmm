@@ -34,6 +34,7 @@ ORPHANED_WIN_TASK_LOCK = "orphaned-win-task-lock-key"
 SYNC_MESH_PERMS_TASK_LOCK = "sync-mesh-perms-lock-key"
 
 TRMM_WS_MAX_SIZE = getattr(settings, "TRMM_WS_MAX_SIZE", 100 * 2**20)
+TRMM_MAX_REQUEST_SIZE = getattr(settings, "TRMM_MAX_REQUEST_SIZE", 1 * 1024 * 1024)
 
 
 class GoArch(models.TextChoices):

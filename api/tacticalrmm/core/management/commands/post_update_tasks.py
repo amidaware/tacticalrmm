@@ -1,5 +1,6 @@
 import base64
 
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from accounts.models import User
@@ -54,4 +55,6 @@ class Command(BaseCommand):
 
                 agent.save(update_fields=["goarch"])
 
+        call_command("remove_orphaned_history_results")
+        call_command("sync_mesh_with_trmm")
         self.stdout.write("Post update tasks finished")

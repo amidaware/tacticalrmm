@@ -407,7 +407,6 @@ python manage.py create_installer_user
 python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py clear_redis_celery_locks
-python manage.py sync_mesh_with_trmm
 python manage.py post_update_tasks
 echo "Running management commands...please wait..."
 API=$(python manage.py get_config api)

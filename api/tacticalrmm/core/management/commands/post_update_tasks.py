@@ -1,12 +1,13 @@
 import base64
 
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from accounts.models import User
 from agents.models import Agent
 from autotasks.models import AutomatedTask
 from checks.models import Check, CheckHistory
+from core.models import CoreSettings
+from core.tasks import remove_orphaned_history_results, sync_mesh_perms_task
 from scripts.models import Script
 from tacticalrmm.constants import AGENT_DEFER, ScriptType
 
@@ -55,6 +56,17 @@ class Command(BaseCommand):
 
                 agent.save(update_fields=["goarch"])
 
-        call_command("remove_orphaned_history_results")
-        call_command("sync_mesh_with_trmm")
+        self.stdout.write(
+            self.style.SUCCESS("Checking for orphaned history results...")
+        )
+        count = remove_orphaned_history_results()
+        if count:
+            self.stdout.write(
+                self.style.SUCCESS(f"Removed {count} orphaned history results.")
+            )
+
+        core = CoreSettings.objects.first()
+        if core.sync_mesh_with_trmm:
+            sync_mesh_perms_task()
+
         self.stdout.write("Post update tasks finished")

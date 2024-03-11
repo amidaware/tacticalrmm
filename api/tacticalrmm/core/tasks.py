@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import traceback
 from contextlib import suppress
 from time import sleep
@@ -7,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import nats
 from django.conf import settings
-from django.core.management import call_command
+from django.db import transaction
 from django.db.models import Prefetch
 from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
@@ -20,7 +19,7 @@ from agents.tasks import clear_faults_task, prune_agent_history
 from alerts.models import Alert
 from alerts.tasks import prune_resolved_alerts
 from autotasks.models import AutomatedTask, TaskResult
-from checks.models import Check, CheckResult
+from checks.models import Check, CheckHistory, CheckResult
 from checks.tasks import prune_check_history
 from clients.models import Client, Site
 from core.mesh_utils import (
@@ -51,6 +50,7 @@ from tacticalrmm.constants import (
     TaskType,
 )
 from tacticalrmm.helpers import make_random_password, setup_nats_options
+from tacticalrmm.logger import logger
 from tacticalrmm.nats_utils import a_nats_cmd
 from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.utils import redis_lock
@@ -59,7 +59,24 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
     from nats.aio.client import Client as NATSClient
 
-logger = logging.getLogger("trmm")
+
+def remove_orphaned_history_results() -> int:
+    try:
+        with transaction.atomic():
+            check_hist_agentids = CheckHistory.objects.values_list(
+                "agent_id", flat=True
+            ).distinct()
+            current_agentids = set(Agent.objects.values_list("agent_id", flat=True))
+            orphaned_agentids = [
+                i for i in check_hist_agentids if i not in current_agentids
+            ]
+            count, _ = CheckHistory.objects.filter(
+                agent_id__in=orphaned_agentids
+            ).delete()
+            return count
+    except Exception as e:
+        logger.error(str(e))
+        return 0
 
 
 @app.task
@@ -68,7 +85,7 @@ def core_maintenance_tasks() -> None:
         remove_if_not_scheduled=True, expire_date__lt=djangotime.now()
     ).delete()
 
-    call_command("remove_orphaned_history_results")
+    remove_orphaned_history_results()
 
     core = get_core_settings()
 

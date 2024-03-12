@@ -67,6 +67,11 @@ class Command(BaseCommand):
 
         core = CoreSettings.objects.first()
         if core.sync_mesh_with_trmm:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Syncing trmm users/permissions with meshcentral, this might take a long time...please wait..."
+                )
+            )
             sync_mesh_perms_task()
 
         self.stdout.write("Post update tasks finished")

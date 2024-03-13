@@ -63,6 +63,7 @@ class GetEditCoreSettings(APIView):
             data.pop("mesh_site")
             data.pop("mesh_token")
             data.pop("mesh_username")
+            data["sync_mesh_with_trmm"] = True
 
         coresettings = CoreSettings.objects.first()
         serializer = CoreSettingsSerializer(instance=coresettings, data=data)

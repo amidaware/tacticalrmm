@@ -5,8 +5,6 @@ if [ $EUID -ne 0 ]; then
     exit 1
 fi
 
-CUSTOM_BIN_PATH=""
-
 HAS_SYSTEMD=$(ps --no-headers -o comm 1)
 if [ "${HAS_SYSTEMD}" != 'systemd' ]; then
     echo "This install script only supports systemd"
@@ -26,6 +24,7 @@ fi
 DEBUG=0
 INSECURE=0
 NOMESH=0
+CUSTOM_BIN_PATH="$2"
 
 agentDL='agentDLChange'
 meshDL='meshDLChange'

@@ -24,7 +24,7 @@ fi
 DEBUG=0
 INSECURE=0
 NOMESH=0
-CUSTOM_BIN_PATH="$2"
+CUSTOM_BIN_PATH=""
 
 agentDL='agentDLChange'
 meshDL='meshDLChange'

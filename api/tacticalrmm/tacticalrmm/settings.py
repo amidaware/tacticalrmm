@@ -31,11 +31,11 @@ WEB_VERSION = "0.101.40"
 APP_VER = "0.0.190"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.6.2"
+LATEST_AGENT_VER = "2.6.3"
 
 MESH_VER = "1.1.21"
 
-NATS_SERVER_VER = "2.10.11"
+NATS_SERVER_VER = "2.10.12"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
@@ -43,7 +43,7 @@ INSTALL_NUSHELL = True
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_NUSHELL_VERSION = "0.90.1"
+INSTALL_NUSHELL_VERSION = "0.91.0"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.
@@ -64,7 +64,7 @@ NUSHELL_ENABLE_CONFIG = False
 INSTALL_DENO = True
 # Version to download. If INSTALL_DENO_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_DENO_VERSION = "v1.41.0"
+INSTALL_DENO_VERSION = "v1.41.2"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_DENO_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.
@@ -83,8 +83,8 @@ DENO_DEFAULT_PERMISSIONS = "--allow-all"
 # for the update script, bump when need to recreate venv
 PIP_VER = "43"
 
-SETUPTOOLS_VER = "69.1.1"
-WHEEL_VER = "0.42.0"
+SETUPTOOLS_VER = "69.2.0"
+WHEEL_VER = "0.43.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 

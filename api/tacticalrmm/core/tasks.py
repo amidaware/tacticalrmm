@@ -501,12 +501,12 @@ def sync_mesh_perms_task(self):
 
             def _get_sleep_after_n_inter(n):
                 # {number of agents: chunk size}
-                thresholds = {100: 50, 300: 100, 600: 150, 1000: 200}
+                thresholds = {250: 150, 500: 275, 800: 300, 1000: 340}
                 for threshold, value in sorted(thresholds.items()):
                     if n <= threshold:
                         return value
 
-                return 250
+                return 375
 
             iter_count = 0
             sleep_after = _get_sleep_after_n_inter(len(source_map))
@@ -525,6 +525,9 @@ def sync_mesh_perms_task(self):
                 users_to_add = list(source_users_adjusted - target_users)
                 users_to_delete = list(target_users - source_users_adjusted)
 
+                if users_to_add or users_to_delete:
+                    iter_count += 1
+
                 if users_to_add:
                     logger.info(f"Adding {users_to_add} to {node_id}")
                     ms.add_users_to_node(node_id=node_id, user_ids=users_to_add)
@@ -533,8 +536,7 @@ def sync_mesh_perms_task(self):
                     logger.info(f"Deleting {users_to_delete} from {node_id}")
                     ms.delete_users_from_node(node_id=node_id, user_ids=users_to_delete)
 
-                iter_count += 1
-                if iter_count % sleep_after == 0:
+                if iter_count % sleep_after == 0 and iter_count != 0:
                     # mesh is very inefficient with sql, give it time to catch up so we don't crash the system
                     logger.info(
                         f"Sleeping for 7 seconds after {iter_count} iterations."

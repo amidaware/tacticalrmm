@@ -93,7 +93,7 @@ class GetAddClients(APIView):
             core = get_core_settings()
             core.default_time_zone = request.data["timezone"]
             core.mesh_company_name = request.data["companyname"]
-            core.save(update_fields=["default_time_zone" , "mesh_company_name"])
+            core.save(update_fields=["default_time_zone", "mesh_company_name"])
 
         # save custom fields
         if "custom_fields" in request.data.keys():

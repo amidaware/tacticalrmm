@@ -328,16 +328,13 @@ class AgentMeshCentral(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         core = get_core_settings()
 
-        if not core.mesh_disable_auto_login:
-            user = (
-                request.user.mesh_user_id
-                if core.sync_mesh_with_trmm
-                else f"user//{core.mesh_api_superuser}"
-            )
-            token = get_login_token(key=core.mesh_token, user=user)
-            token_param = f"login={token}&"
-        else:
-            token_param = ""
+        user = (
+            request.user.mesh_user_id
+            if core.sync_mesh_with_trmm
+            else f"user//{core.mesh_api_superuser}"
+        )
+        token = get_login_token(key=core.mesh_token, user=user)
+        token_param = f"login={token}&"
 
         control = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
         terminal = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=12&hide=31"

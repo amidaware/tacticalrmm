@@ -258,12 +258,7 @@ if ! which npm >/dev/null; then
   sudo apt remove -y nodejs
   sudo rm -rf /usr/lib/node_modules
 
-  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-  NODE_MAJOR=20
-  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-  sudo apt update
-  sudo apt install -y gcc g++ make
-  sudo apt install -y nodejs
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
   sudo npm install -g npm
 
   cd /meshcentral
@@ -407,7 +402,6 @@ python manage.py create_installer_user
 python manage.py create_natsapi_conf
 python manage.py create_uwsgi_conf
 python manage.py clear_redis_celery_locks
-python manage.py sync_mesh_with_trmm
 python manage.py post_update_tasks
 echo "Running management commands...please wait..."
 API=$(python manage.py get_config api)

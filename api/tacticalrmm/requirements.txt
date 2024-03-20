@@ -16,7 +16,7 @@ hiredis==2.3.2
 meshctrl==0.1.15
 msgpack==1.0.8
 nats-py==2.7.2
-packaging==23.2
+packaging==24.0
 psutil==5.9.8
 psycopg[binary]==3.1.18
 pycparser==2.21
@@ -25,7 +25,7 @@ pyotp==2.9.0
 pyparsing==3.1.2
 python-ipware==2.0.2
 qrcode==7.4.2
-redis==5.0.2
+redis==5.0.3
 requests==2.31.0
 six==1.16.0
 sqlparse==0.4.4
@@ -36,7 +36,7 @@ uWSGI==2.0.24
 validators==0.22.0
 vine==5.1.0
 websockets==12.0
-zipp==3.17.0
+zipp==3.18.1
 pandas==2.2.1
 kaleido==0.2.1
 jinja2==3.1.3

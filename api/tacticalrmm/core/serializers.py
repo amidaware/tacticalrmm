@@ -12,6 +12,9 @@ class HostedCoreMixin:
         if getattr(settings, "HOSTED", False):
             for field in ("mesh_site", "mesh_token", "mesh_username"):
                 ret[field] = "n/a"
+
+            ret["sync_mesh_with_trmm"] = True
+
         return ret
 
 

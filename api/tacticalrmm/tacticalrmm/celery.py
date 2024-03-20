@@ -35,7 +35,7 @@ app.conf.beat_schedule = {
     },
     "remove-orphaned-tasks": {
         "task": "autotasks.tasks.remove_orphaned_win_tasks",
-        "schedule": crontab(minute=50, hour="12"),
+        "schedule": crontab(minute=50, hour="*/2"),
     },
     "agent-outages-task": {
         "task": "agents.tasks.agent_outages_task",

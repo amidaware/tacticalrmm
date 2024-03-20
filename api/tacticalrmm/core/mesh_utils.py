@@ -160,6 +160,7 @@ class MeshSync:
             "resetNextLogin": False,
             "randomPassword": False,
             "removeEvents": False,
+            "emailVerified": True,
         }
         self.mesh_action(payload=payload, wait=False)
         if user_info["full_name"]:

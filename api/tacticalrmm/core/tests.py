@@ -118,6 +118,7 @@ class TestCoreTasks(TacticalTestCase):
             "mesh_token": "New_Mesh_Token",
             "mesh_site": "https://mesh.example.com",
             "mesh_username": "bob",
+            "sync_mesh_with_trmm": False,
         }
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
@@ -126,6 +127,7 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(core.mesh_token, "New_Mesh_Token")
         self.assertEqual(core.mesh_site, "https://mesh.example.com")
         self.assertEqual(core.mesh_username, "bob")
+        self.assertFalse(core.sync_mesh_with_trmm)
 
         # test to_representation
         r = self.client.get(url)
@@ -133,6 +135,7 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.data["mesh_token"], "New_Mesh_Token")
         self.assertEqual(r.data["mesh_site"], "https://mesh.example.com")
         self.assertEqual(r.data["mesh_username"], "bob")
+        self.assertFalse(r.data["sync_mesh_with_trmm"])
 
         self.check_not_authenticated("put", url)
 
@@ -145,12 +148,14 @@ class TestCoreTasks(TacticalTestCase):
             "mesh_token": "abc123",
             "mesh_site": "https://mesh15534.example.com",
             "mesh_username": "jane",
+            "sync_mesh_with_trmm": False,
         }
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
         core = get_core_settings()
         self.assertEqual(core.smtp_from_email, "newexample1@example.com")
         self.assertIn("41410834b8bb4481446027f8", core.mesh_token)  # type: ignore
+        self.assertTrue(core.sync_mesh_with_trmm)
         if "GHACTIONS" in os.environ:
             self.assertEqual(core.mesh_site, "https://example.com")
             self.assertEqual(core.mesh_username, "pipeline")
@@ -161,6 +166,7 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.data["mesh_token"], "n/a")
         self.assertEqual(r.data["mesh_site"], "n/a")
         self.assertEqual(r.data["mesh_username"], "n/a")
+        self.assertTrue(r.data["sync_mesh_with_trmm"])
 
         self.check_not_authenticated("put", url)
 

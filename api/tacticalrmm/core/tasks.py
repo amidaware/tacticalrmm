@@ -1,7 +1,7 @@
 import asyncio
-import logging
 import traceback
 from contextlib import suppress
+from time import sleep
 from typing import TYPE_CHECKING, Any
 
 import nats
@@ -50,6 +50,7 @@ from tacticalrmm.constants import (
     TaskType,
 )
 from tacticalrmm.helpers import make_random_password, setup_nats_options
+from tacticalrmm.logger import logger
 from tacticalrmm.nats_utils import a_nats_cmd
 from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.utils import redis_lock
@@ -58,7 +59,24 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
     from nats.aio.client import Client as NATSClient
 
-logger = logging.getLogger("trmm")
+
+def remove_orphaned_history_results() -> int:
+    try:
+        with transaction.atomic():
+            check_hist_agentids = CheckHistory.objects.values_list(
+                "agent_id", flat=True
+            ).distinct()
+            current_agentids = set(Agent.objects.values_list("agent_id", flat=True))
+            orphaned_agentids = [
+                i for i in check_hist_agentids if i not in current_agentids
+            ]
+            count, _ = CheckHistory.objects.filter(
+                agent_id__in=orphaned_agentids
+            ).delete()
+            return count
+    except Exception as e:
+        logger.error(str(e))
+        return 0
 
 
 @app.task
@@ -67,15 +85,7 @@ def core_maintenance_tasks() -> None:
         remove_if_not_scheduled=True, expire_date__lt=djangotime.now()
     ).delete()
 
-    with transaction.atomic():
-        check_hist_agentids = CheckHistory.objects.values_list(
-            "agent_id", flat=True
-        ).distinct()
-        current_agentids = set(Agent.objects.values_list("agent_id", flat=True))
-        orphaned_agentids = [
-            i for i in check_hist_agentids if i not in current_agentids
-        ]
-        CheckHistory.objects.filter(agent_id__in=orphaned_agentids).delete()
+    remove_orphaned_history_results()
 
     core = get_core_settings()
 
@@ -489,6 +499,18 @@ def sync_mesh_perms_task(self):
             source_map = {item["node_id"]: set(item["user_ids"]) for item in final_trmm}
             target_map = {item["node_id"]: set(item["user_ids"]) for item in final_mesh}
 
+            def _get_sleep_after_n_inter(n):
+                # {number of agents: chunk size}
+                thresholds = {250: 150, 500: 275, 800: 300, 1000: 340}
+                for threshold, value in sorted(thresholds.items()):
+                    if n <= threshold:
+                        return value
+
+                return 375
+
+            iter_count = 0
+            sleep_after = _get_sleep_after_n_inter(len(source_map))
+
             for node_id, source_users in source_map.items():
                 # skip agents without valid node id
                 if node_id not in trmm_agents_meshnodeids:
@@ -503,6 +525,9 @@ def sync_mesh_perms_task(self):
                 users_to_add = list(source_users_adjusted - target_users)
                 users_to_delete = list(target_users - source_users_adjusted)
 
+                if users_to_add or users_to_delete:
+                    iter_count += 1
+
                 if users_to_add:
                     logger.info(f"Adding {users_to_add} to {node_id}")
                     ms.add_users_to_node(node_id=node_id, user_ids=users_to_add)
@@ -510,6 +535,13 @@ def sync_mesh_perms_task(self):
                 if users_to_delete:
                     logger.info(f"Deleting {users_to_delete} from {node_id}")
                     ms.delete_users_from_node(node_id=node_id, user_ids=users_to_delete)
+
+                if iter_count % sleep_after == 0 and iter_count != 0:
+                    # mesh is very inefficient with sql, give it time to catch up so we don't crash the system
+                    logger.info(
+                        f"Sleeping for 7 seconds after {iter_count} iterations."
+                    )
+                    sleep(7)
 
             # after all done, see if need to update display name
             ms2 = MeshSync(uri)

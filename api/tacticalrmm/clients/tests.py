@@ -88,6 +88,7 @@ class TestClientViews(TacticalTestCase):
             "client": {"name": "Setup Client"},
             "site": {"name": "Setup  Site"},
             "timezone": "America/Los_Angeles",
+            "companyname": "TestCo Inc.",
             "initialsetup": True,
         }
         r = self.client.post(url, payload, format="json")

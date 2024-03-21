@@ -1,5 +1,5 @@
 black
-daphne==4.0.0
+daphne==4.1.0
 Werkzeug
 django-extensions
 isort

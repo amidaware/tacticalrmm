@@ -1,4 +1,4 @@
-adrf==0.1.4
+adrf==0.1.5
 asgiref==3.7.2
 celery==5.3.6
 certifi==2024.2.2
@@ -31,7 +31,7 @@ six==1.16.0
 sqlparse==0.4.4
 twilio==8.13.0
 urllib3==2.2.1
-uvicorn[standard]==0.27.1
+uvicorn[standard]==0.29.0
 uWSGI==2.0.24
 validators==0.22.0
 vine==5.1.0

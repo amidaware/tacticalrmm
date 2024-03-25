@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from redis import from_url
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -72,6 +72,12 @@ class GetEditCoreSettings(APIView):
         sync_mesh_perms_task.delay()
 
         return Response("ok")
+
+
+@api_view()
+@permission_classes([AllowAny])
+def home(request):
+    return Response({"status": "ok"})
 
 
 @api_view()

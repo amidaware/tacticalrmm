@@ -15,6 +15,7 @@ set -e
 : "${MESH_PASS:=meshcentralpass}"
 : "${MESH_HOST:=tactical-meshcentral}"
 : "${API_HOST:=tactical-backend}"
+: "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
 : "${API_PORT:=8000}"
 
@@ -49,7 +50,7 @@ function django_setup {
   MESH_TOKEN="$(cat ${TACTICAL_DIR}/tmp/mesh_token)"
 
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-  
+
   localvars="$(cat << EOF
 SECRET_KEY = '${DJANGO_SEKRET}'
 
@@ -69,6 +70,7 @@ ALLOWED_HOSTS = ['${API_HOST}', '*']
 ADMIN_URL = 'admin/'
 
 CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_WHITELIST = ['https://${APP_HOST}']
 
 DATABASES = {
     'default': {
@@ -117,9 +119,9 @@ EOF
   "${VIRTUAL_ENV}"/bin/python manage.py create_natsapi_conf
   "${VIRTUAL_ENV}"/bin/python manage.py create_installer_user
   "${VIRTUAL_ENV}"/bin/python manage.py post_update_tasks
-  
 
-  # create super user 
+
+  # create super user
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
 }
 

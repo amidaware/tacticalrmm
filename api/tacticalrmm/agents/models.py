@@ -20,7 +20,7 @@ from packaging.version import Version as LooseVersion
 from agents.utils import get_agent_url
 from checks.models import CheckResult
 from core.models import TZ_CHOICES
-from core.utils import get_core_settings, send_command_with_mesh
+from core.utils import _b64_to_hex, get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog, PendingAction
 from tacticalrmm.constants import (
     AGENT_STATUS_OFFLINE,
@@ -452,6 +452,10 @@ class Agent(BaseAuditModel):
         except:
             return ""
 
+    @property
+    def hex_mesh_node_id(self) -> str:
+        return _b64_to_hex(self.mesh_node_id)
+
     @classmethod
     def online_agents(cls, min_version: str = "") -> "List[Agent]":
         if min_version:
@@ -610,6 +614,8 @@ class Agent(BaseAuditModel):
             },
             "run_as_user": run_as_user,
             "env_vars": parsed_env_vars,
+            "nushell_enable_config": settings.NUSHELL_ENABLE_CONFIG,
+            "deno_default_permissions": settings.DENO_DEFAULT_PERMISSIONS,
         }
 
         if history_pk != 0:
@@ -1084,6 +1090,7 @@ class AgentCustomField(models.Model):
 class AgentHistory(models.Model):
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(
         Agent,
         related_name="history",

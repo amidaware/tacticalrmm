@@ -41,6 +41,7 @@ agentBin="${agentBinPath}/${binName}"
 agentConf='/etc/tacticalagent'
 agentSvcName='tacticalagent.service'
 agentSysD="/etc/systemd/system/${agentSvcName}"
+agentDir='/opt/tacticalagent'
 meshDir='/opt/tacticalmesh'
 meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
@@ -65,16 +66,20 @@ RemoveOldAgent() {
     if [ -f "${agentSysD}" ]; then
         systemctl disable ${agentSvcName}
         systemctl stop ${agentSvcName}
-        rm -f ${agentSysD}
+        rm -f "${agentSysD}"
         systemctl daemon-reload
     fi
 
     if [ -f "${agentConf}" ]; then
-        rm -f ${agentConf}
+        rm -f "${agentConf}"
     fi
 
     if [ -f "${agentBin}" ]; then
-        rm -f ${agentBin}
+        rm -f "${agentBin}"
+    fi
+
+    if [ -d "${agentDir}" ]; then
+        rm -rf "${agentDir}"
     fi
 }
 
@@ -132,16 +137,18 @@ Uninstall() {
     RemoveOldAgent
 }
 
-if [ $# -ne 0 ] && [ $1 == 'uninstall' ]; then
+if [ $# -ne 0 ] && [[ $1 =~ ^(uninstall|-uninstall|--uninstall)$ ]]; then
     Uninstall
+    # Remove the current script
+    rm "$0"
     exit 0
 fi
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-    --debug) DEBUG=1 ;;
-    --insecure) INSECURE=1 ;;
-    --nomesh) NOMESH=1 ;;
+    -debug | --debug | debug) DEBUG=1 ;;
+    -insecure | --insecure | insecure) INSECURE=1 ;;
+    -nomesh | --nomesh | nomesh) NOMESH=1 ;;
     *)
         echo "ERROR: Unknown parameter: $1"
         exit 1

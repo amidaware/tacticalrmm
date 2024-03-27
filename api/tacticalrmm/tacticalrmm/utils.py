@@ -403,6 +403,17 @@ def replace_arg_db_values(
     elif value is True or value is False:
         return format_shell_bool(value, shell)
 
+    elif isinstance(value, dict):
+        return json.dumps(value)
+
+    # return str for everything else
+    try:
+        ret = str(value)
+    except Exception:
+        ret = ""
+
+    return ret
+
 
 def format_shell_array(value: list[str]) -> str:
     temp_string = ""

@@ -21,6 +21,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.tasks import sync_mesh_perms_task
 from core.utils import (
     get_core_settings,
     get_mesh_ws_url,
@@ -258,6 +259,7 @@ class GetUpdateDeleteAgent(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
+        sync_mesh_perms_task.delay()
         return Response("The agent was updated successfully")
 
     # uninstall agent
@@ -283,6 +285,7 @@ class GetUpdateDeleteAgent(APIView):
                 message=f"Unable to remove agent {name} from meshcentral database: {e}",
                 log_type=DebugLogType.AGENT_ISSUES,
             )
+        sync_mesh_perms_task.delay()
         return Response(f"{name} will now be uninstalled.")
 
 
@@ -325,13 +328,13 @@ class AgentMeshCentral(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         core = get_core_settings()
 
-        if not core.mesh_disable_auto_login:
-            token = get_login_token(
-                key=core.mesh_token, user=f"user//{core.mesh_username}"
-            )
-            token_param = f"login={token}&"
-        else:
-            token_param = ""
+        user = (
+            request.user.mesh_user_id
+            if core.sync_mesh_with_trmm
+            else f"user//{core.mesh_api_superuser}"
+        )
+        token = get_login_token(key=core.mesh_token, user=user)
+        token_param = f"login={token}&"
 
         control = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
         terminal = f"{core.mesh_site}/?{token_param}gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
@@ -489,6 +492,19 @@ def send_raw_cmd(request, agent_id):
     )
 
     return Response(r)
+
+
+class Shutdown(APIView):
+    permission_classes = [IsAuthenticated, RebootAgentPerms]
+
+    # shutdown
+    def post(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        r = asyncio.run(agent.nats_cmd({"func": "shutdown"}, timeout=10))
+        if r != "ok":
+            return notify_error("Unable to contact the agent")
+
+        return Response("ok")
 
 
 class Reboot(APIView):

@@ -1,4 +1,5 @@
 import os
+import sys
 from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
@@ -20,27 +21,70 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.17.5"
+TRMM_VERSION = "0.18.0"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.40"
+WEB_VERSION = "0.101.43"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.190"
+APP_VER = "0.0.191"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.6.2"
+LATEST_AGENT_VER = "2.7.0"
 
-MESH_VER = "1.1.20"
+MESH_VER = "1.1.21"
 
-NATS_SERVER_VER = "2.10.10"
+NATS_SERVER_VER = "2.10.12"
+
+# Install Nushell on the agent
+# https://github.com/nushell/nushell
+INSTALL_NUSHELL = True
+# GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
+# Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
+# extracted and installed.
+INSTALL_NUSHELL_VERSION = "0.91.0"
+# URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
+# Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
+# Windows: The ".exe" extension will be added automatically.
+# Examples:
+#   https://examplle.com/download/nushell/{OS}/{ARCH}/{VERSION}/nu
+#   https://examplle.com/download/nushell/nu-{VERSION}-{OS}-{ARCH}
+INSTALL_NUSHELL_URL = ""
+# Enable Nushell config on the agent
+# The default is to not enable the config because it could change how scripts run.
+# However, disabling the config prevents plugins from being registered.
+# https://github.com/nushell/nushell/issues/10754
+# False: --no-config-file option is added to the command line.
+# True: --config and --env-config options are added to the command line and point to the Agent's directory.
+NUSHELL_ENABLE_CONFIG = False
+
+# Install Deno on the agent
+# https://github.com/denoland/deno
+INSTALL_DENO = True
+# Version to download. If INSTALL_DENO_URL is not provided, the file will be downloaded from GitHub,
+# extracted and installed.
+INSTALL_DENO_VERSION = "v1.41.3"
+# URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
+# Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_DENO_VERSION respectively.
+# Windows: The ".exe" extension will be added automatically.
+# Examples:
+#   https://examplle.com/download/deno/{OS}/{ARCH}/{VERSION}/deno
+#   https://examplle.com/download/deno/deno-{VERSION}-{OS}-{ARCH}
+INSTALL_DENO_URL = ""
+# Default permissions for Deno
+# Space separated list of permissions as listed in the documentation.
+# https://docs.deno.com/runtime/manual/basics/permissions#permissions
+# Examples:
+#   DENO_DEFAULT_PERMISSIONS = "--allow-sys --allow-net --allow-env"
+#   DENO_DEFAULT_PERMISSIONS = "--allow-all"
+DENO_DEFAULT_PERMISSIONS = "--allow-all"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "42"
+PIP_VER = "43"
 
-SETUPTOOLS_VER = "69.0.3"
-WHEEL_VER = "0.42.0"
+SETUPTOOLS_VER = "69.2.0"
+WHEEL_VER = "0.43.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 
@@ -71,6 +115,7 @@ HOSTED = False
 SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 TRMM_LOG_LEVEL = "ERROR"
+TRMM_LOG_TO = "file"
 
 with suppress(ImportError):
     from .local_settings import *  # noqa
@@ -240,6 +285,24 @@ def get_log_level() -> str:
     return TRMM_LOG_LEVEL
 
 
+def configure_logging_handler():
+    cfg = {
+        "level": get_log_level(),
+        "formatter": "verbose",
+    }
+
+    log_to = os.getenv("TRMM_LOG_TO", TRMM_LOG_TO)
+
+    if log_to == "stdout":
+        cfg["class"] = "logging.StreamHandler"
+        cfg["stream"] = sys.stdout
+    else:
+        cfg["class"] = "logging.FileHandler"
+        cfg["filename"] = os.path.join(LOG_DIR, "trmm_debug.log")
+
+    return cfg
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -256,12 +319,7 @@ LOGGING = {
             "filename": os.path.join(LOG_DIR, "django_debug.log"),
             "formatter": "verbose",
         },
-        "trmm": {
-            "level": get_log_level(),
-            "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "trmm_debug.log"),
-            "formatter": "verbose",
-        },
+        "trmm": configure_logging_handler(),
     },
     "loggers": {
         "django.request": {"handlers": ["file"], "level": "ERROR", "propagate": True},

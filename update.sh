@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="151"
+SCRIPT_VERSION="152"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -10,8 +10,9 @@ NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.11.6'
+PYTHON_VER='3.11.8'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
+local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -249,7 +250,49 @@ if ! which npm >/dev/null; then
   sudo apt install -y npm
 fi
 
+# older distros still might not have npm after above command, due to recent changes to node apt packages which replaces nodesource with official node
+# if we still don't have npm, force a switch to nodesource
+if ! which npm >/dev/null; then
+  sudo systemctl stop meshcentral
+  sudo chown ${USER}:${USER} -R /meshcentral
+  sudo apt remove -y nodejs
+  sudo rm -rf /usr/lib/node_modules
+
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
+  sudo npm install -g npm
+
+  cd /meshcentral
+  rm -rf node_modules/ package-lock.json
+  npm install
+  sudo systemctl start meshcentral
+fi
+
 sudo npm install -g npm
+
+CURRENT_MESH_VER=$(cd /meshcentral/node_modules/meshcentral && node -p -e "require('./package.json').version")
+if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]]; then
+  printf >&2 "${GREEN}Updating meshcentral from ${CURRENT_MESH_VER} to ${LATEST_MESH_VER}${NC}\n"
+  sudo systemctl stop meshcentral
+  sudo chown ${USER}:${USER} -R /meshcentral
+  cd /meshcentral
+  rm -rf node_modules/ package.json package-lock.json
+  mesh_pkg="$(
+    cat <<EOF
+{
+  "dependencies": {
+    "archiver": "5.3.1",
+    "meshcentral": "${LATEST_MESH_VER}",
+    "otplib": "10.2.3",
+    "pg": "8.7.1",
+    "pgtools": "0.3.2"
+  }
+}
+EOF
+  )"
+  echo "${mesh_pkg}" >/meshcentral/package.json
+  npm install
+  sudo systemctl start meshcentral
+fi
 
 # update from main repo
 cd /rmm
@@ -298,14 +341,14 @@ if ! [[ $CHECK_CELERY_CONFIG ]]; then
   sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"/g' /etc/conf.d/celery.conf
 fi
 
-CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
+CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED $local_settings)
 if ! [[ $CHECK_ADMIN_ENABLED ]]; then
   adminenabled="$(
     cat <<EOF
 ADMIN_ENABLED = False
 EOF
   )"
-  echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py >/dev/null
+  echo "${adminenabled}" | tee --append $local_settings >/dev/null
 fi
 
 if [ "$arch" = "x86_64" ]; then
@@ -342,10 +385,13 @@ if [ ! -d /opt/tactical/reporting/schemas ]; then
   sudo mkdir /opt/tactical/reporting/schemas
 fi
 
+sed -i '/^REDIS_HOST/d' $local_settings
+
 sudo chown -R ${USER}:${USER} /opt/tactical
 
 python manage.py pre_update_tasks
 celery -A tacticalrmm purge -f
+printf >&2 "${GREEN}Running database migrations (this might take a long time)...${NC}\n"
 python manage.py migrate
 python manage.py generate_json_schemas
 python manage.py delete_tokens
@@ -509,31 +555,6 @@ for i in nats nats-api rmm daphne celery celerybeat nginx; do
   printf >&2 "${GREEN}Starting ${i} service${NC}\n"
   sudo systemctl start ${i}
 done
-
-CURRENT_MESH_VER=$(cd /meshcentral/node_modules/meshcentral && node -p -e "require('./package.json').version")
-if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]]; then
-  printf >&2 "${GREEN}Updating meshcentral from ${CURRENT_MESH_VER} to ${LATEST_MESH_VER}${NC}\n"
-  sudo systemctl stop meshcentral
-  sudo chown ${USER}:${USER} -R /meshcentral
-  cd /meshcentral
-  rm -rf node_modules/ package.json package-lock.json
-  mesh_pkg="$(
-    cat <<EOF
-{
-  "dependencies": {
-    "archiver": "5.3.1",
-    "meshcentral": "${LATEST_MESH_VER}",
-    "otplib": "10.2.3",
-    "pg": "8.7.1",
-    "pgtools": "0.3.2"
-  }
-}
-EOF
-  )"
-  echo "${mesh_pkg}" >/meshcentral/package.json
-  npm install
-  sudo systemctl start meshcentral
-fi
 
 rm -f $TMP_SETTINGS
 printf >&2 "${GREEN}Update finished!${NC}\n"

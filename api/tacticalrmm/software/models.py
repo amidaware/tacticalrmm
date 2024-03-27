@@ -15,6 +15,7 @@ class ChocoSoftware(models.Model):
 class InstalledSoftware(models.Model):
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
     software = models.JSONField()
 

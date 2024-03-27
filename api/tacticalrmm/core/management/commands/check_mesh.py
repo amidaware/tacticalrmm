@@ -27,7 +27,7 @@ class Command(BaseCommand):
         self._warning("Mesh device group:", core.mesh_device_group)
 
         try:
-            token = get_auth_token(core.mesh_username, core.mesh_token)
+            token = get_auth_token(core.mesh_api_superuser, core.mesh_token)
         except Exception as e:
             self._error("Error getting auth token:")
             self._error(str(e))

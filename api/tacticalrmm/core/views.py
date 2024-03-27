@@ -15,12 +15,13 @@ from django.views.decorators.csrf import csrf_exempt
 from redis import from_url
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.decorators import monitoring_view
+from core.tasks import sync_mesh_perms_task
 from core.utils import get_core_settings, sysd_svc_is_running, token_is_valid
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
@@ -56,12 +57,27 @@ class GetEditCoreSettings(APIView):
         return Response(CoreSettingsSerializer(settings).data)
 
     def put(self, request):
+        data = request.data.copy()
+
+        if getattr(settings, "HOSTED", False):
+            data.pop("mesh_site")
+            data.pop("mesh_token")
+            data.pop("mesh_username")
+            data["sync_mesh_with_trmm"] = True
+
         coresettings = CoreSettings.objects.first()
-        serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
+        serializer = CoreSettingsSerializer(instance=coresettings, data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        sync_mesh_perms_task.delay()
 
         return Response("ok")
+
+
+@api_view()
+@permission_classes([AllowAny])
+def home(request):
+    return Response({"status": "ok"})
 
 
 @api_view()

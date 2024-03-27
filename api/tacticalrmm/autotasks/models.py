@@ -151,7 +151,7 @@ class AutomatedTask(BaseAuditModel):
 
         # get old task if exists
         old_task = AutomatedTask.objects.get(pk=self.pk) if self.pk else None
-        super(AutomatedTask, self).save(old_model=old_task, *args, **kwargs)
+        super().save(old_model=old_task, *args, **kwargs)
 
         # check if fields were updated that require a sync to the agent and set status to notsynced
         if old_task:
@@ -174,10 +174,7 @@ class AutomatedTask(BaseAuditModel):
             cache.delete_many_pattern("site_*_tasks")
             cache.delete_many_pattern("agent_*_tasks")
 
-        super(AutomatedTask, self).delete(
-            *args,
-            **kwargs,
-        )
+        super().delete(*args, **kwargs)
 
     @property
     def schedule(self) -> Optional[str]:
@@ -470,6 +467,7 @@ class TaskResult(models.Model):
 
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="taskresults",

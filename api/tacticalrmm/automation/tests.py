@@ -126,7 +126,7 @@ class TestPolicyViews(TacticalTestCase):
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        cache_alert_template.called_once()
+        cache_alert_template.assert_called_once()
 
         self.check_not_authenticated("put", url)
 

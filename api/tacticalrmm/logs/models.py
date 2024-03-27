@@ -26,6 +26,7 @@ def get_debug_level() -> str:
 
 
 class AuditLog(models.Model):
+    id = models.BigAutoField(primary_key=True)
     username = models.CharField(max_length=255)
     agent = models.CharField(max_length=255, null=True, blank=True)
     agent_id = models.CharField(max_length=255, blank=True, null=True)
@@ -47,7 +48,7 @@ class AuditLog(models.Model):
                 (self.message[:253] + "..") if len(self.message) > 255 else self.message
             )
 
-        return super(AuditLog, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     @staticmethod
     def audit_mesh_session(
@@ -258,6 +259,7 @@ class AuditLog(models.Model):
 class DebugLog(models.Model):
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     entry_time = models.DateTimeField(auto_now_add=True)
     agent = models.ForeignKey(
         "agents.Agent",
@@ -347,6 +349,7 @@ class DebugLog(models.Model):
 class PendingAction(models.Model):
     objects = PermissionQuerySet.as_manager()
 
+    id = models.BigAutoField(primary_key=True)
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="pendingactions",
@@ -454,10 +457,10 @@ class BaseAuditModel(models.Model):
                         debug_info=get_debug_info(),
                     )
 
-        super(BaseAuditModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs) -> Tuple[int, Dict[str, int]]:
-        super(BaseAuditModel, self).delete(*args, **kwargs)
+        super().delete(*args, **kwargs)
 
         username = get_username()
         if username:

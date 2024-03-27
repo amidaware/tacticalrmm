@@ -1,7 +1,7 @@
 import smtplib
 from contextlib import suppress
-from email.message import EmailMessage
 from email.headerregistry import Address
+from email.message import EmailMessage
 from typing import TYPE_CHECKING, List, Optional, cast
 
 import requests
@@ -74,7 +74,8 @@ class CoreSettings(BaseAuditModel):
     mesh_device_group = models.CharField(
         max_length=255, null=True, blank=True, default="TacticalRMM"
     )
-    mesh_disable_auto_login = models.BooleanField(default=False)
+    mesh_company_name = models.CharField(max_length=255, null=True, blank=True)
+    sync_mesh_with_trmm = models.BooleanField(default=True)
     agent_auto_update = models.BooleanField(default=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
@@ -121,7 +122,7 @@ class CoreSettings(BaseAuditModel):
                 self.mesh_token = settings.MESH_TOKEN_KEY
 
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(BaseAuditModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
         if old_settings:
             if (
@@ -145,6 +146,11 @@ class CoreSettings(BaseAuditModel):
 
     def __str__(self) -> str:
         return "Global Site Settings"
+
+    @property
+    def mesh_api_superuser(self) -> str:
+        # must be lowercase otherwise mesh api breaks
+        return self.mesh_username.lower()
 
     @property
     def sms_is_configured(self) -> bool:
@@ -365,7 +371,7 @@ class CodeSignToken(models.Model):
         if not self.pk and CodeSignToken.objects.exists():
             raise ValidationError("There can only be one CodeSignToken instance")
 
-        super(CodeSignToken, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @property
     def is_valid(self) -> bool:

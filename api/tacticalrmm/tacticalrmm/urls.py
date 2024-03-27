@@ -5,6 +5,7 @@ from knox import views as knox_views
 from accounts.views import CheckCreds, LoginView
 from agents.consumers import SendCMD
 from core.consumers import DashInfo
+from core.views import home
 
 
 class AgentIDConverter:
@@ -20,6 +21,7 @@ class AgentIDConverter:
 register_converter(AgentIDConverter, "agent")
 
 urlpatterns = [
+    path("", home),
     path("checkcreds/", CheckCreds.as_view()),
     path("login/", LoginView.as_view()),
     path("logout/", knox_views.LogoutView.as_view()),

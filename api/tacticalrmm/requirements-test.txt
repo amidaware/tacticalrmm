@@ -7,4 +7,4 @@ pytest-xdist
 pytest-cov
 refurb
 flake8
-daphne==4.0.0
+daphne==4.1.0

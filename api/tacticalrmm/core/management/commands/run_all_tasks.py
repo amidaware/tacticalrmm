@@ -8,6 +8,7 @@ from core.tasks import (
     core_maintenance_tasks,
     resolve_alerts_task,
     resolve_pending_actions,
+    sync_mesh_perms_task,
     sync_scheduled_tasks,
 )
 from winupdate.tasks import auto_approve_updates_task, check_agent_update_schedule_task
@@ -28,3 +29,4 @@ class Command(BaseCommand):
         remove_orphaned_win_tasks.delay()
         auto_approve_updates_task.delay()
         check_agent_update_schedule_task.delay()
+        sync_mesh_perms_task.delay()

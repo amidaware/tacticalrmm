@@ -5,13 +5,14 @@ import websockets
 from django.core.management.base import BaseCommand
 
 from core.utils import get_mesh_ws_url
+from tacticalrmm.constants import TRMM_WS_MAX_SIZE
 
 
 class Command(BaseCommand):
     help = "Sets up initial mesh central configuration"
 
     async def websocket_call(self, uri):
-        async with websockets.connect(uri) as websocket:
+        async with websockets.connect(uri, max_size=TRMM_WS_MAX_SIZE) as websocket:
             # Get Invitation Link
             await websocket.send(
                 json.dumps(

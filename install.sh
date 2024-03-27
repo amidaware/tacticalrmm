@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="82"
+SCRIPT_VERSION="83"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
+sudo apt install -y software-properties-common
+sudo apt update
+sudo apt install -y openssl
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -12,7 +15,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.11.6'
+PYTHON_VER='3.11.8'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
@@ -29,6 +32,11 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+if [ -d /rmm/api/tacticalrmm ]; then
+  echo -ne "${RED}ERROR: Existing trmm installation found. The install script must be run on a clean server.${NC}\n"
+  exit 1
+fi
 
 arch=$(uname -m)
 if [[ "$arch" != "x86_64" ]] && [[ "$arch" != "aarch64" ]]; then
@@ -113,6 +121,14 @@ print_green() {
   printf >&2 "\n"
 }
 
+print_error() {
+  printf >&2 "${RED}${1}${NC}\n"
+}
+
+print_yellow() {
+  printf >&2 "${YELLOW}${1}${NC}\n"
+}
+
 cls
 
 while [[ $rmmdomain != *[.]*[.]* ]]; do
@@ -137,6 +153,34 @@ while [[ $letsemail != *[@]*[.]* ]]; do
   echo -ne "${YELLOW}Enter a valid email address for django and meshcentral${NC}: "
   read letsemail
 done
+
+byocert=false
+if [[ $* == *--use-own-cert* ]]; then
+  byocert=true
+fi
+
+if [[ "$byocert" = true ]]; then
+  while true; do
+
+    print_yellow "Please enter the full path to your fullchain.pem file:"
+    read -r fullchain_path
+    print_yellow "Please enter the full path to your privkey.pem file:"
+    read -r privkey_path
+
+    if [[ ! -f "$fullchain_path" || ! -f "$privkey_path" ]]; then
+      print_error "One or both files do not exist. Please try again."
+      continue
+    fi
+
+    openssl x509 -in "$fullchain_path" -noout >/dev/null
+    if [[ $? -ne 0 ]]; then
+      print_error "ERROR: The provided file is not a valid certificate."
+      exit 1
+    fi
+
+    break
+  done
+fi
 
 if grep -q manage_etc_hosts /etc/hosts; then
   sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
@@ -167,10 +211,6 @@ if [[ $* == *--insecure* ]]; then
   insecure=true
 fi
 
-sudo apt install -y software-properties-common
-sudo apt update
-sudo apt install -y openssl
-
 if [[ "$insecure" = true ]]; then
   print_green 'Generating self-signed cert'
   certdir='/etc/ssl/tactical'
@@ -183,6 +223,10 @@ if [[ "$insecure" = true ]]; then
     -nodes -keyout ${CERT_PRIV_KEY} -out ${CERT_PUB_KEY} -subj "/CN=${rootdomain}" \
     -addext "subjectAltName=DNS:${rootdomain},DNS:*.${rootdomain}"
 
+elif [[ "$byocert" = true ]]; then
+  CERT_PRIV_KEY=$privkey_path
+  CERT_PUB_KEY=$fullchain_path
+  sudo chown ${USER}:${USER} $CERT_PRIV_KEY $CERT_PUB_KEY
 else
   sudo apt install -y certbot
   print_green 'Getting wildcard cert'
@@ -447,7 +491,6 @@ DATABASES = {
 
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
-REDIS_HOST    = "localhost"
 ADMIN_ENABLED = True
 EOF
 )"
@@ -455,6 +498,16 @@ echo "${localvars}" >$local_settings
 
 if [[ "$insecure" = true ]]; then
   echo "TRMM_INSECURE = True" | tee --append $local_settings >/dev/null
+fi
+
+if [[ "$byocert" = true ]]; then
+  owncerts="$(
+    cat <<EOF
+CERT_FILE = "${CERT_PUB_KEY}"
+KEY_FILE = "${CERT_PRIV_KEY}"
+EOF
+  )"
+  echo "${owncerts}" | tee --append $local_settings >/dev/null
 fi
 
 if [ "$arch" = "x86_64" ]; then
@@ -970,6 +1023,7 @@ cd /rmm/api/tacticalrmm
 source /rmm/api/env/bin/activate
 python manage.py initial_db_setup
 python manage.py reload_nats
+python manage.py sync_mesh_with_trmm
 deactivate
 sudo systemctl start nats.service
 

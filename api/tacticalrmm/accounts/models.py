@@ -64,6 +64,15 @@ class User(AbstractUser, BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
+    @property
+    def mesh_user_id(self):
+        return f"user//{self.mesh_username}"
+
+    @property
+    def mesh_username(self):
+        # lower() needed for mesh api
+        return f"{self.username.lower()}___{self.pk}"
+
     @staticmethod
     def serialize(user):
         # serializes the task and returns json
@@ -195,7 +204,7 @@ class Role(BaseAuditModel):
     def save(self, *args, **kwargs) -> None:
         # delete cache on save
         cache.delete(f"{ROLE_CACHE_PREFIX}{self.name}")
-        super(BaseAuditModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @staticmethod
     def serialize(role):

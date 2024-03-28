@@ -651,14 +651,28 @@ class Alert(models.Model):
 
         return temp_args
 
+class AlertTemplateActionType(models.TextChoices):
+    SCRIPT = "script", "Script"
+    SERVER = "server", "Server"
+    REST = "rest", "Rest"
 
 class AlertTemplate(BaseAuditModel):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
 
+    action_type = models.CharField(
+        max_length=10, choices=AlertTemplateActionType.choices, default="script"
+    )
     action = models.ForeignKey(
         "scripts.Script",
         related_name="alert_template",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    action_rest = models.ForeignKey(
+        "core.URLAction",
+        related_name="url_action_alert_template",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
@@ -676,9 +690,19 @@ class AlertTemplate(BaseAuditModel):
         default=list,
     )
     action_timeout = models.PositiveIntegerField(default=15)
+    resolved_action_type = models.CharField(
+        max_length=10, choices=AlertTemplateActionType.choices, default="script"
+    )
     resolved_action = models.ForeignKey(
         "scripts.Script",
         related_name="resolved_alert_template",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    resolved_action_rest = models.ForeignKey(
+        "core.URLAction",
+        related_name="resolved_url_action_alert_template",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,

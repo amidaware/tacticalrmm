@@ -3,6 +3,7 @@ import os
 import subprocess
 import tempfile
 import time
+import re
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, List, Literal, Optional, Union
 from zoneinfo import ZoneInfo
@@ -289,6 +290,12 @@ def get_latest_trmm_ver() -> str:
         DebugLog.error(message=str(e))
 
     return "error"
+
+
+# regex for db data replacement
+# will return 3 groups of matches in a tuple when uses with re.findall
+# i.e. - {{client.name}}, client, name
+RE_DB_VALUE = re.compile(r"(\{\{\s*(client|site|agent|global)\.(.*)\s*\}\})")
 
 
 # Receives something like {{ client.name }} and a Model instance of Client, Site, or Agent. If an

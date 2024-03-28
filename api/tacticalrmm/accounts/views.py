@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
+from datetime import timedelta
 from knox.views import LoginView as KnoxLoginView
 from python_ipware import IpWare
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -29,6 +30,10 @@ from .serializers import (
 class CheckCreds(KnoxLoginView):
     permission_classes = (AllowAny,)
 
+    # restrict time on tokens to just long enough to get to the totp setup view
+    def get_token_ttl(self):
+        return timedelta(seconds=30)
+
     def post(self, request, format=None):
         # check credentials
         serializer = AuthTokenSerializer(data=request.data)
@@ -47,10 +52,10 @@ class CheckCreds(KnoxLoginView):
         if not user.totp_key:
             login(request, user)
             response = super(CheckCreds, self).post(request, format=None)
-            response.data["totp"] = "totp not set"
+            response.data["totp"] = False
             return response
 
-        return Response("ok")
+        return Response({"totp": True})
 
 
 class LoginView(KnoxLoginView):

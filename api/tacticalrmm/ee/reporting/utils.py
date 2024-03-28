@@ -25,11 +25,7 @@ from . import custom_filters
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
-
-# regex for db data replacement
-# will return 3 groups of matches in a tuple when uses with re.findall
-# i.e. - {{client.name}}, client.name, client
-RE_DB_VALUE = re.compile(r"(\{\{\s*(client|site|agent|global)\.(.*)\s*\}\})")
+from tacticalrmm.utils import RE_DB_VALUE
 
 RE_ASSET_URL = re.compile(
     r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))"

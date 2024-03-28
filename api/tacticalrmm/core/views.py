@@ -19,10 +19,17 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import serializers
 
 from core.decorators import monitoring_view
 from core.tasks import sync_mesh_perms_task
-from core.utils import get_core_settings, sysd_svc_is_running, token_is_valid
+from core.utils import (
+    get_core_settings,
+    sysd_svc_is_running,
+    token_is_valid,
+    run_server_script,
+    run_server_task,
+)
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
 from tacticalrmm.helpers import get_certs, notify_error
@@ -33,12 +40,17 @@ from tacticalrmm.permissions import (
 )
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
+from autotasks.models import AutomatedTask, TaskResult
+from scripts.models import Script
+
 from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
     CustomFieldPerms,
     ServerMaintPerms,
     URLActionPerms,
+    ServerTaskPerms,
+    RunServerTaskPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -373,7 +385,7 @@ class RunURLAction(APIView):
 
         from agents.models import Agent
         from clients.models import Client, Site
-        from tacticalrmm.utils import get_db_value
+        from tacticalrmm.utils import get_db_value, RE_DB_VALUE
 
         if "agent_id" in request.data.keys():
             if not _has_perm_on_agent(request.user, request.data["agent_id"]):
@@ -395,14 +407,12 @@ class RunURLAction(APIView):
 
         action = get_object_or_404(URLAction, pk=request.data["action"])
 
-        pattern = re.compile("\\{\\{([\\w\\s]+\\.[\\w\\s]+)\\}\\}")
-
         url_pattern = action.pattern
 
-        for string in re.findall(pattern, action.pattern):
-            value = get_db_value(string=string, instance=instance)
+        for string, model, prop in re.findall(RE_DB_VALUE, url_pattern):
+            value = get_db_value(string=f"{model}.{prop}", instance=instance)
 
-            url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
+            url_pattern = url_pattern.replace(string, str(value))
 
         AuditLog.audit_url_action(
             username=request.user.username,
@@ -412,6 +422,147 @@ class RunURLAction(APIView):
         )
 
         return Response(requote_uri(url_pattern))
+
+
+class ServerTaskSerializer(serializers.ModelSerializer):
+
+    task_result = serializers.SerializerMethodField()
+
+    def get_task_result(self, obj):
+        from autotasks.serializers import TaskResultSerializer
+        from autotasks.models import TaskResult
+
+        return (
+            TaskResultSerializer(obj.task_result).data
+            if isinstance(obj.task_result, TaskResult)
+            else {}
+        )
+
+    def validate_actions(self, value):
+        from autotasks.serializers import task_actions_validation
+
+        return task_actions_validation(value)
+
+    class Meta:
+        model = AutomatedTask
+        fields = (
+            "id",
+            "name",
+            "actions",
+            "crontab_schedule",
+            "enabled",
+            "custom_field",
+            "collector_all_output",
+            "continue_on_error",
+            "email_alert",
+            "text_alert",
+            "dashboard_alert",
+            "server_task",
+            "alert_severity",
+            "task_result",
+        )
+
+
+class GetAddServerTasks(APIView):
+    permission_classes = [IsAuthenticated, ServerTaskPerms]
+
+    def get(self, request):
+        server_tasks = AutomatedTask.objects.filter(server_task=True)
+
+        results = TaskResult.objects.filter(task__server_task=True)  # type: ignore
+
+        # attach any taskresults to the object
+        for task in server_tasks:
+            for result in results:
+                if result.task.id == task.pk:
+                    task.task_result = result
+                    break
+
+        return Response(ServerTaskSerializer(server_tasks, many=True).data)
+
+    def post(self, request):
+        serializer = ServerTaskSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+
+class UpdateDeleteServerTask(APIView):
+    permission_classes = [IsAuthenticated, ServerTaskPerms]
+
+    def get(self, request, pk):
+        server_task = AutomatedTask.objects.filter(pk=pk, server_task=True)
+        return Response(ServerTaskSerializer(server_task).data)
+
+    def put(self, request, pk):
+        server_task = get_object_or_404(AutomatedTask, pk=pk)
+
+        serializer = ServerTaskSerializer(
+            instance=server_task, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+    def delete(self, request, pk):
+        get_object_or_404(AutomatedTask, pk=pk).delete()
+
+        return Response("ok")
+
+
+class RunServerTask(APIView):
+    permission_classes = [IsAuthenticated, RunServerTaskPerms]
+
+    def post(self, request, pk):
+        server_task = get_object_or_404(AutomatedTask, pk=pk)
+
+        if not server_task.server_task:
+            return notify_error("This task is not meant to be run on the server")
+
+        output, execution_time = run_server_task(server_task_id=server_task.id)
+
+        # TODO: Audit server task runs
+        # AuditLog.audit_url_action(
+        #     username=request.user.username,
+        #     urlaction=action,
+        #     instance=instance,
+        #     debug_info={"ip": request._client_ip},
+        # )
+
+        return Response({"output": output, "execution_time": execution_time})
+
+
+class RunServerScript(APIView):
+    permission_classes = [IsAuthenticated, RunServerTaskPerms]
+
+    def post(self, request, pk):
+        script = get_object_or_404(Script, pk=pk)
+
+        stdout, stderr, execution_time, retcode = run_server_script(
+            script_id=script.id,
+            args=request.data["args"],
+            env_vars=request.data["env_vars"],
+            timeout=request.data["timeout"],
+        )
+
+        # TODO: Audit server task runs
+        # AuditLog.audit_url_action(
+        #     username=request.user.username,
+        #     urlaction=action,
+        #     instance=instance,
+        #     debug_info={"ip": request._client_ip},
+        # )
+
+        return Response(
+            {
+                "stdout": stdout,
+                "stderr": stderr,
+                "execution_time": execution_time,
+                "retcode": retcode,
+            }
+        )
 
 
 class TwilioSMSTest(APIView):

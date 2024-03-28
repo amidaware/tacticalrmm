@@ -456,6 +456,8 @@ def sync_mesh_perms_task(self):
 
             new_trmm_agents = []
             for agent in Agent.objects.defer(*AGENT_DEFER):
+                if not agent.mesh_node_id:
+                    continue
                 agent_dict = {
                     "node_id": f"node//{agent.hex_mesh_node_id}",
                     "hostname": agent.hostname,

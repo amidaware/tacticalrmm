@@ -444,7 +444,8 @@ def sync_mesh_perms_task(self):
                 # make sure that doesn't happen by making a random email
                 rand_str1 = make_random_password(len=6)
                 rand_str2 = make_random_password(len=5)
-                email = f"{user.username}.{rand_str1}@tacticalrmm-do-not-change-{rand_str2}.local"
+                email_prefix = lambda s: "".join(filter(str.isalnum, s))
+                email = f"{email_prefix(user.username)}.{rand_str1}@tacticalrmm-do-not-change-{rand_str2}.local"
                 mesh_users_dict[user.mesh_user_id] = {
                     "_id": user.mesh_user_id,
                     "username": user.mesh_username,

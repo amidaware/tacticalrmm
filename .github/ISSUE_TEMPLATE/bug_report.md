@@ -14,11 +14,12 @@ assignees: ''
 
 **Installation Method:**
   - [ ] Standard
+  - [ ] Standard with `--insecure` flag at install
   - [ ] Docker
 
 **Agent Info (please complete the following information):**
 - Agent version (as shown in the 'Summary' tab of the agent from web UI):
-- Agent OS: [e.g. Win 10 v2004, Server 2012 R2]
+- Agent OS: [e.g. Win 10 v2004, Server 2016]
 
 **Describe the bug**
 A clear and concise description of what the bug is.

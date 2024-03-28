@@ -1,5 +1,5 @@
 [flake8]
-ignore = E501,W503,E722,E203,E731
+ignore = E501,W503,E722,E203
 exclude =
     .mypy*
     .pytest*

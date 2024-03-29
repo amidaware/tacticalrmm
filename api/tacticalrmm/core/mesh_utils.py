@@ -172,23 +172,3 @@ class MeshSync:
             "userid": mesh_user_id,
         }
         self.mesh_action(payload=payload, wait=False)
-
-    def add_agent_to_user(self, *, user_id: str, node_id: str) -> None:
-        payload = {
-            "action": "adddeviceuser",
-            "nodeid": node_id,
-            "userids": [user_id],
-            "rights": 72,
-            "remove": False,
-        }
-        self.mesh_action(payload=payload, wait=False)
-
-    def remove_agent_from_user(self, *, user_id: str, node_id: str) -> None:
-        payload = {
-            "action": "adddeviceuser",
-            "nodeid": node_id,
-            "userids": [user_id],
-            "rights": 0,
-            "remove": True,
-        }
-        self.mesh_action(payload=payload, wait=False)

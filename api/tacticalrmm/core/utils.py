@@ -205,3 +205,7 @@ def get_meshagent_url(
         }
 
     return base + "/meshagents?" + urllib.parse.urlencode(params)
+
+
+def make_alpha_numeric(s: str):
+    return "".join(filter(str.isalnum, s))

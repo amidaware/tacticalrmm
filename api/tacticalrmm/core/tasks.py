@@ -30,7 +30,7 @@ from core.mesh_utils import (
     transform_trmm,
 )
 from core.models import CoreSettings
-from core.utils import get_core_settings, get_mesh_ws_url
+from core.utils import get_core_settings, get_mesh_ws_url, make_alpha_numeric
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
 from tacticalrmm.celery import app
@@ -444,7 +444,9 @@ def sync_mesh_perms_task(self):
                 # make sure that doesn't happen by making a random email
                 rand_str1 = make_random_password(len=6)
                 rand_str2 = make_random_password(len=5)
-                email = f"{user.username}.{rand_str1}@tacticalrmm-do-not-change-{rand_str2}.local"
+                # for trmm users whos usernames are emails
+                email_prefix = make_alpha_numeric(user.username)
+                email = f"{email_prefix}.{rand_str1}@tacticalrmm-do-not-change-{rand_str2}.local"
                 mesh_users_dict[user.mesh_user_id] = {
                     "_id": user.mesh_user_id,
                     "username": user.mesh_username,
@@ -454,6 +456,8 @@ def sync_mesh_perms_task(self):
 
             new_trmm_agents = []
             for agent in Agent.objects.defer(*AGENT_DEFER):
+                if not agent.mesh_node_id:
+                    continue
                 agent_dict = {
                     "node_id": f"node//{agent.hex_mesh_node_id}",
                     "hostname": agent.hostname,

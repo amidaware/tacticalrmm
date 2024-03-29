@@ -1,6 +1,8 @@
 import asyncio
 import json
 import re
+import secrets
+import string
 import traceback
 from typing import TYPE_CHECKING, Any
 
@@ -8,7 +10,6 @@ import websockets
 
 from accounts.utils import is_superuser
 from tacticalrmm.constants import TRMM_WS_MAX_SIZE
-from tacticalrmm.helpers import make_random_password
 from tacticalrmm.logger import logger
 
 if TYPE_CHECKING:
@@ -38,6 +39,14 @@ def has_mesh_perms(*, user: "User") -> bool:
         return True
 
     return user.role and getattr(user.role, "can_use_mesh")
+
+
+def make_mesh_password() -> str:
+    alpha = string.ascii_letters + string.digits
+    nonalpha = "!@#$"
+    passwd = [secrets.choice(alpha) for _ in range(29)] + [secrets.choice(nonalpha)]
+    secrets.SystemRandom().shuffle(passwd)
+    return "".join(passwd)
 
 
 def transform_trmm(obj):
@@ -156,7 +165,7 @@ class MeshSync:
             "action": "adduser",
             "username": user_info["username"],
             "email": user_info["email"],
-            "pass": make_random_password(len=30),
+            "pass": make_mesh_password(),
             "resetNextLogin": False,
             "randomPassword": False,
             "removeEvents": False,

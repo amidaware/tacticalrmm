@@ -137,7 +137,7 @@ class MeshSync:
             "action": "adddeviceuser",
             "nodeid": node_id,
             "usernames": [s.replace("user//", "") for s in user_ids],
-            "rights": 3563736,
+            "rights": 4088024,
             "remove": False,
         }
         self.mesh_action(payload=payload, wait=False)

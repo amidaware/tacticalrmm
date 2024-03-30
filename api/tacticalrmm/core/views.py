@@ -331,7 +331,7 @@ class UpdateDeleteKeyStore(APIView):
 
 
 class GetAddURLAction(APIView):
-    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+    permission_classes = [IsAuthenticated, URLActionPerms]
 
     def get(self, request):
         actions = URLAction.objects.all()

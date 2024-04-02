@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="31"
+SCRIPT_VERSION="32"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -14,6 +14,11 @@ if [ $EUID -eq 0 ]; then
 fi
 
 if [[ $* == *--schedule* ]]; then
+    if ! sudo -n true 2>/dev/null; then
+        echo -ne "${RED}Error: Passwordless sudo is required for scheduling.${NC}\n"
+        exit 1
+    fi
+    
     (
         crontab -l 2>/dev/null
         echo "0 0 * * * /rmm/backup.sh --auto > /dev/null 2>&1"

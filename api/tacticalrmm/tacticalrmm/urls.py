@@ -7,6 +7,7 @@ from agents.consumers import SendCMD
 from core.consumers import DashInfo
 from core.views import home
 
+from core.consumers import DashInfo, TerminalConsumer
 
 class AgentIDConverter:
     regex = "[^/]{20}[^/]+"
@@ -69,4 +70,5 @@ if getattr(settings, "SWAGGER_ENABLED", False):
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
     path("ws/sendcmd/", SendCMD.as_asgi()),
+    path("ws/trmmcli/", TerminalConsumer.as_asgi()),
 ]

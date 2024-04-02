@@ -1,15 +1,19 @@
 import json
+import os
 import subprocess
 import tempfile
+import time
 import urllib.parse
 from base64 import b64encode
-from typing import TYPE_CHECKING, Optional, cast
+from contextlib import suppress
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast, Tuple
 
 import requests
 import websockets
 from django.conf import settings
 from django.core.cache import cache
 from django.http import FileResponse
+from django.utils import timezone as djangotime
 from meshctrl.utils import get_auth_token
 
 from tacticalrmm.constants import (
@@ -59,7 +63,7 @@ def token_is_valid() -> tuple[str, bool]:
 def token_is_expired() -> bool:
     from core.models import CodeSignToken
 
-    t: "CodeSignToken" = CodeSignToken.objects.first()
+    t: Optional["CodeSignToken"] = CodeSignToken.objects.first()
     if not t or not t.token:
         return False
 
@@ -210,3 +214,150 @@ def get_meshagent_url(
 
 def make_alpha_numeric(s: str):
     return "".join(filter(str.isalnum, s))
+
+def find_and_replace_db_values_str(*, text: str, instance):
+    import re
+
+    from tacticalrmm.utils import RE_DB_VALUE, get_db_value
+
+    for string, model, prop in re.findall(RE_DB_VALUE, text):
+        value = get_db_value(string=f"{model}.{prop}", instance=instance)
+        return text.replace(string, str(value))
+    else:
+        return text
+
+
+def find_and_replace_db_values_dict(*, dict: Dict[str, Any], instance):
+    new_dict = {}
+
+    for key, value in dict.items():
+        new_key = find_and_replace_db_values_str(text=key, instance=instance)
+        new_value = find_and_replace_db_values_str(text=value, instance=instance)
+        new_dict[new_key] = new_value
+
+    return new_dict
+
+
+def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
+    import core.models
+    action = core.models.URLAction.objects.get(pk=action_id)
+    method = action.rest_method
+    url = action.pattern
+    body = action.rest_body
+    headers = action.rest_headers
+
+    # replace url
+    url = find_and_replace_db_values_str(text=url, instance=instance)
+    body = find_and_replace_db_values_dict(dict=json.loads(body), instance=instance)
+    headers = find_and_replace_db_values_dict(dict=json.loads(headers), instance=instance)
+
+    if method in ["get", "delete"]:
+        response = getattr(requests, method)(url, headers=headers)
+    else:
+        response = getattr(requests, method)(url, data=body, headers=headers)
+
+    return (response.text, response.status_code)
+
+
+def run_server_task(*, server_task_id: int):
+    from autotasks.models import AutomatedTask, TaskResult
+    from tacticalrmm.constants import TaskStatus
+
+    task = AutomatedTask.objects.get(pk=server_task_id)
+    output = ""
+    total_execution_time = 0
+    passing = True
+
+    for action in task.actions:
+        if action["type"] == "cmd":
+            stdout, stderr, execution_time, retcode = run_server_command(
+                command=action["command"], timeout=action["timeout"]
+            )
+            name = action["command"]
+        else:
+            stdout, stderr, execution_time, retcode = run_server_script(
+                script_id=action["script"],
+                args=action["script_args"],
+                env_vars=action["env_vars"],
+                timeout=action["timeout"],
+            )
+            name = action["name"]
+
+        if retcode != 0:
+            passing = False
+
+        total_execution_time += execution_time
+        output += f"-----------------------------\n{name}\n-----------------------------\n\nStandard Output: {stdout}\n\nStandard Error: {stderr}\n"
+        output += f"Return Code: {retcode}\n"
+        output += f"Execution Time: {execution_time}\n\n"
+
+    try:
+        task_result = TaskResult.objects.get(task=task, agent=None)
+        task_result.retcode = 0 if passing else 1
+        task_result.execution_time = total_execution_time
+        task_result.stdout = output
+        task_result.stderr = ""
+        task_result.status = TaskStatus.PASSING if passing else TaskStatus.FAILING
+        task_result.save()
+    except TaskResult.DoesNotExist:
+        TaskResult.objects.create(
+            task=task,
+            agent=None,
+            retcode=0 if passing else 1,
+            execution_time=total_execution_time,
+            stdout=output,
+            stderr="",
+            status=TaskStatus.PASSING if passing else TaskStatus.FAILING,
+            last_run=djangotime.now(),
+        )
+
+    return (output, total_execution_time)
+
+
+def run_server_command(*, command: List[str], timeout: int):
+    start_time = time.time()
+    result = subprocess.run(
+        command, capture_output=True, text=True, shell=True, timeout=timeout
+    )
+    execution_time = time.time() - start_time
+
+    return (result.stdout, result.stderr, execution_time, result.returncode)
+
+
+def run_server_script(
+    *, script_id: int, args: List[str], env_vars: List[str], timeout: int
+):
+    from scripts.models import Script
+    script = Script.objects.get(pk=script_id)
+
+    parsed_args = script.parse_script_args(None, script.shell, args)
+
+    parsed_env_vars = script.parse_script_env_vars(
+        None, shell=script.shell, env_vars=env_vars
+    )
+
+    custom_env = os.environ.copy()
+    for var in parsed_env_vars:
+        var_split = var.split("=")
+        custom_env[var_split[0]] = var_split[1]
+
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmp_script:
+        tmp_script.write(script.script_body.replace("\r\n", "\n"))
+        tmp_script_path = tmp_script.name
+
+    os.chmod(tmp_script_path, 0o550)
+
+    start_time = time.time()
+    result = subprocess.run(
+        [tmp_script_path] + parsed_args,
+        capture_output=True,
+        text=True,
+        env=custom_env,
+        timeout=timeout,
+    )
+    execution_time = time.time() - start_time
+
+    with suppress(Exception):
+        os.remove(tmp_script_path)
+
+    return result.stdout, result.stderr, execution_time, result.returncode

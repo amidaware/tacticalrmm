@@ -17,6 +17,49 @@ class TaskResultSerializer(serializers.ModelSerializer):
         read_only_fields = ("agent", "task")
 
 
+# pull this log out to be used in other serializers
+def task_actions_validation(value):
+    if not value:
+        raise serializers.ValidationError(
+            "There must be at least one action configured"
+        )
+
+    for action in value:
+        if "type" not in action:
+            raise serializers.ValidationError(
+                "Each action must have a type field of either 'script' or 'cmd'"
+            )
+
+        if action["type"] == "script":
+            if "script" not in action:
+                raise serializers.ValidationError(
+                    "A script action type must have a 'script' field with primary key of script"
+                )
+
+            if "script_args" not in action:
+                raise serializers.ValidationError(
+                    "A script action type must have a 'script_args' field with an array of arguments"
+                )
+
+            if "timeout" not in action:
+                raise serializers.ValidationError(
+                    "A script action type must have a 'timeout' field"
+                )
+
+        if action["type"] == "cmd":
+            if "command" not in action:
+                raise serializers.ValidationError(
+                    "A command action type must have a 'command' field"
+                )
+
+            if "timeout" not in action:
+                raise serializers.ValidationError(
+                    "A command action type must have a 'timeout' field"
+                )
+
+    return value
+
+
 class TaskSerializer(serializers.ModelSerializer):
     check_name = serializers.ReadOnlyField(source="assigned_check.readable_desc")
     schedule = serializers.ReadOnlyField()
@@ -33,45 +76,7 @@ class TaskSerializer(serializers.ModelSerializer):
         )
 
     def validate_actions(self, value):
-        if not value:
-            raise serializers.ValidationError(
-                "There must be at least one action configured"
-            )
-
-        for action in value:
-            if "type" not in action:
-                raise serializers.ValidationError(
-                    "Each action must have a type field of either 'script' or 'cmd'"
-                )
-
-            if action["type"] == "script":
-                if "script" not in action:
-                    raise serializers.ValidationError(
-                        "A script action type must have a 'script' field with primary key of script"
-                    )
-
-                if "script_args" not in action:
-                    raise serializers.ValidationError(
-                        "A script action type must have a 'script_args' field with an array of arguments"
-                    )
-
-                if "timeout" not in action:
-                    raise serializers.ValidationError(
-                        "A script action type must have a 'timeout' field"
-                    )
-
-            if action["type"] == "cmd":
-                if "command" not in action:
-                    raise serializers.ValidationError(
-                        "A command action type must have a 'command' field"
-                    )
-
-                if "timeout" not in action:
-                    raise serializers.ValidationError(
-                        "A command action type must have a 'timeout' field"
-                    )
-
-        return value
+        return task_actions_validation(value)
 
     def validate(self, data):
         # allow editing with task_type not specified
@@ -114,6 +119,7 @@ class TaskSerializer(serializers.ModelSerializer):
                 TaskType.MONTHLY,
                 TaskType.MONTHLY_DOW,
             )
+            and not data["server_task"]
             and not data["run_time_date"]
         ):
             raise serializers.ValidationError(

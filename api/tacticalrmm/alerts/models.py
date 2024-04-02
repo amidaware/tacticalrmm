@@ -18,6 +18,8 @@ from tacticalrmm.constants import (
     DebugLogType,
 )
 from tacticalrmm.models import PermissionQuerySet
+from tacticalrmm.utils import RE_DB_VALUE, get_db_value
+from core.utils import run_server_script, run_url_rest_action
 
 if TYPE_CHECKING:
     from agents.models import Agent
@@ -454,23 +456,39 @@ class Alert(models.Model):
             and run_script_action
             and not alert.action_run
         ):
-            hist = AgentHistory.objects.create(
-                agent=agent,
-                type=AgentHistoryType.SCRIPT_RUN,
-                script=alert_template.action,
-                username="alert-action-failure",
-            )
-            r = agent.run_script(
-                scriptpk=alert_template.action.pk,
-                args=alert.parse_script_args(alert_template.action_args),
-                timeout=alert_template.action_timeout,
-                wait=True,
-                history_pk=hist.pk,
-                full=True,
-                run_on_any=True,
-                run_as_user=False,
-                env_vars=alert_template.action_env_vars,
-            )
+            if alert_template.action_type == "script":
+                hist = AgentHistory.objects.create(
+                    agent=agent,
+                    type=AgentHistoryType.SCRIPT_RUN,
+                    script=alert_template.action,
+                    username="alert-action-failure",
+                )
+                r = agent.run_script(
+                    scriptpk=alert_template.action.pk,
+                    args=alert.parse_script_args(alert_template.action_args),
+                    timeout=alert_template.action_timeout,
+                    wait=True,
+                    history_pk=hist.pk,
+                    full=True,
+                    run_on_any=True,
+                    run_as_user=False,
+                    env_vars=alert.parse_script_args(alert_template.action_env_vars),
+                )
+            elif alert_template.action_type == "server":
+                r = run_server_script(
+                    script_id=alert_template.action, 
+                    args=alert.parse_script_args(alert_template.action_args), 
+                    timeout=alert_template.action_timeout,
+                    env_vars=alert.parse_script_args(alert_template.action_env_vars),
+                )
+
+            elif alert_template.action_type == "rest":
+                output, status = run_url_rest_action(action_id=alert_template.action, instance=alert)
+                alert.action_retcode = status
+                alert.action_stdout = output
+                alert.action_run = djangotime.now()
+                alert.save()
+                return
 
             # command was successful
             if isinstance(r, dict):
@@ -481,11 +499,17 @@ class Alert(models.Model):
                 alert.action_run = djangotime.now()
                 alert.save()
             else:
-                DebugLog.error(
-                    agent=agent,
-                    log_type=DebugLogType.SCRIPTING,
-                    message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
-                )
+                if (alert_template.action_type == "script"):
+                    DebugLog.error(
+                        agent=agent,
+                        log_type=DebugLogType.SCRIPTING,
+                        message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
+                    )
+                else:
+                    DebugLog.error(
+                        log_type=DebugLogType.SCRIPTING,
+                        message=f"Failure action: {alert_template.action.name} failed to run on server for failure alert",
+                    )
 
     @classmethod
     def handle_alert_resolve(
@@ -585,23 +609,48 @@ class Alert(models.Model):
             and run_script_action
             and not alert.resolved_action_run
         ):
-            hist = AgentHistory.objects.create(
-                agent=agent,
-                type=AgentHistoryType.SCRIPT_RUN,
-                script=alert_template.action,
-                username="alert-action-resolved",
-            )
-            r = agent.run_script(
-                scriptpk=alert_template.resolved_action.pk,
-                args=alert.parse_script_args(alert_template.resolved_action_args),
-                timeout=alert_template.resolved_action_timeout,
-                wait=True,
-                history_pk=hist.pk,
-                full=True,
-                run_on_any=True,
-                run_as_user=False,
-                env_vars=alert_template.resolved_action_env_vars,
-            )
+            if alert_template.resolved_action_type == "script":
+                hist = AgentHistory.objects.create(
+                    agent=agent,
+                    type=AgentHistoryType.SCRIPT_RUN,
+                    script=alert_template.resolved_action,
+                    username="alert-action-resolved",
+                )
+                r = agent.run_script(
+                    scriptpk=alert_template.resolved_action.pk,
+                    args=alert.parse_script_args(alert_template.resolved_action_args),
+                    timeout=alert_template.resolved_action_timeout,
+                    wait=True,
+                    history_pk=hist.pk,
+                    full=True,
+                    run_on_any=True,
+                    run_as_user=False,
+                    env_vars=alert_template.resolved_action_env_vars,
+                )
+            elif alert_template.resolved_action_type == "server":
+                stdout, stderr, execution_time, retcode = run_server_script(
+                    script_id=alert_template.resolved_action, 
+                    args=alert.parse_script_args(alert_template.resolved_action_args), 
+                    timeout=alert_template.resolved_action_timeout,
+                    env_vars=alert.parse_script_args(alert_template.resolved_action_env_vars),
+                )
+                r = {
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "execution_time": execution_time,
+                    "retcode": retcode
+                }
+
+            else:
+                output, status = run_url_rest_action(action_id=alert_template.resolved_action, instance=alert.id)
+
+                r = {
+                    "stdout": output,
+                    "stderr": "",
+                    "execution_time": 0,
+                    "retcode": status                    
+                }
+
 
             # command was successful
             if isinstance(r, dict):
@@ -614,51 +663,61 @@ class Alert(models.Model):
                 alert.resolved_action_run = djangotime.now()
                 alert.save()
             else:
-                DebugLog.error(
-                    agent=agent,
-                    log_type=DebugLogType.SCRIPTING,
-                    message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
-                )
+                if alert_template.resolved_action_type == "script":
+                    DebugLog.error(
+                        agent=agent,
+                        log_type=DebugLogType.SCRIPTING,
+                        message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
+                    )
+                else:
+                    DebugLog.error(
+                        log_type=DebugLogType.SCRIPTING,
+                        message=f"Resolved action: {alert_template.action.name} failed to run on server for resolved alert",
+                    )
 
     def parse_script_args(self, args: List[str]) -> List[str]:
         if not args:
             return []
 
         temp_args = []
-        # pattern to match for injection
-        pattern = re.compile(".*\\{\\{alert\\.(.*)\\}\\}.*")
 
         for arg in args:
-            if match := pattern.match(arg):
-                name = match.group(1)
+            temp_arg = ""
+            for string, model, prop in re.findall(RE_DB_VALUE, arg):
+                value = get_db_value(string=f"{model}.{prop}", instance=self)
 
-                # check if attr exists and isn't a function
-                if hasattr(self, name) and not callable(getattr(self, name)):
-                    value = f"'{getattr(self, name)}'"
-                else:
-                    continue
-
-                try:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
-                except re.error:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", re.escape(value), arg))
-                except Exception as e:
-                    DebugLog.error(log_type=DebugLogType.SCRIPTING, message=str(e))
-                    continue
-
+                temp_arg = temp_arg.replace(string, str(value))
             else:
-                temp_args.append(arg)
+                temp_arg = arg
+
+            temp_args.append(temp_arg)
 
         return temp_args
+    
 
+
+class AlertTemplateActionType(models.TextChoices):
+    SCRIPT = "script", "Script"
+    SERVER = "server", "Server"
+    REST = "rest", "Rest"
 
 class AlertTemplate(BaseAuditModel):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
 
+    action_type = models.CharField(
+        max_length=10, choices=AlertTemplateActionType.choices, default="script"
+    )
     action = models.ForeignKey(
         "scripts.Script",
         related_name="alert_template",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    action_rest = models.ForeignKey(
+        "core.URLAction",
+        related_name="url_action_alert_template",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
@@ -676,9 +735,19 @@ class AlertTemplate(BaseAuditModel):
         default=list,
     )
     action_timeout = models.PositiveIntegerField(default=15)
+    resolved_action_type = models.CharField(
+        max_length=10, choices=AlertTemplateActionType.choices, default="script"
+    )
     resolved_action = models.ForeignKey(
         "scripts.Script",
         related_name="resolved_alert_template",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    resolved_action_rest = models.ForeignKey(
+        "core.URLAction",
+        related_name="resolved_url_action_alert_template",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,

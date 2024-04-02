@@ -92,6 +92,7 @@ class AutomatedTask(BaseAuditModel):
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
     dashboard_alert = models.BooleanField(default=False)
+    server_task = models.BooleanField(default=False)
 
     # options sent to agent for task creation
     # general task settings
@@ -133,6 +134,10 @@ class AutomatedTask(BaseAuditModel):
     remove_if_not_scheduled = models.BooleanField(default=False)
     run_asap_after_missed = models.BooleanField(default=False)  # added in agent v1.4.7
     task_instance_policy = models.PositiveSmallIntegerField(blank=True, default=1)
+
+    # crontab field for linux/mac tasks
+    # should only be the schedule, not the script
+    crontab_schedule = models.CharField(max_length=100, null=True, blank=True)
 
     # deprecated
     managed_by_policy = models.BooleanField(default=False)
@@ -472,6 +477,8 @@ class TaskResult(models.Model):
         "agents.Agent",
         related_name="taskresults",
         on_delete=models.CASCADE,
+        blank=True,
+        null=True,
     )
     task = models.ForeignKey(
         "autotasks.AutomatedTask",

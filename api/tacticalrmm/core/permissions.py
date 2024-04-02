@@ -36,3 +36,16 @@ class CustomFieldPerms(permissions.BasePermission):
             return _has_perm(r, "can_view_customfields")
 
         return _has_perm(r, "can_manage_customfields")
+
+
+class ServerTaskPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        if r.method == "GET":
+            return _has_perm(r, "can_view_servertaskss")
+
+        return _has_perm(r, "can_manage_servertasks")
+
+
+class RunServerTaskPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        return _has_perm(r, "can_run_servertasks")

@@ -1,4 +1,5 @@
 import pyotp
+import datetime
 from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
@@ -29,6 +30,10 @@ from .serializers import (
 class CheckCreds(KnoxLoginView):
     permission_classes = (AllowAny,)
 
+    # restrict time on tokens issued by this view to 3 min
+    def get_token_ttl(self):
+        return datetime.timedelta(seconds=180)
+
     def post(self, request, format=None):
         # check credentials
         serializer = AuthTokenSerializer(data=request.data)
@@ -47,10 +52,10 @@ class CheckCreds(KnoxLoginView):
         if not user.totp_key:
             login(request, user)
             response = super(CheckCreds, self).post(request, format=None)
-            response.data["totp"] = "totp not set"
+            response.data["totp"] = False
             return response
 
-        return Response("ok")
+        return Response({"totp": True})
 
 
 class LoginView(KnoxLoginView):
@@ -89,7 +94,9 @@ class LoginView(KnoxLoginView):
             AuditLog.audit_user_login_successful(
                 request.data["username"], debug_info={"ip": request._client_ip}
             )
-            return super(LoginView, self).post(request, format=None)
+            response = super(LoginView, self).post(request, format=None)
+            response.data["username"]= request.user.username
+            return Response(response.data)
         else:
             AuditLog.audit_user_failed_twofactor(
                 request.data["username"], debug_info={"ip": request._client_ip}

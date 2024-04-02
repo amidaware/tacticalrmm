@@ -425,10 +425,31 @@ class GlobalKVStore(BaseAuditModel):
         return KeyStoreSerializer(store).data
 
 
+class URLActionType(models.TextChoices):
+    WEB = "web", "Web"
+    REST = "rest", "Rest"
+
+
+class URLActionRestMethod(models.TextChoices):
+    GET = "get", "Get"
+    POST = "post", "Post"
+    PUT = "put", "Put"
+    DELETE = "delete", "Delete"
+    PATCH = "patch", "Patch"
+
+
 class URLAction(BaseAuditModel):
     name = models.CharField(max_length=25)
     desc = models.CharField(max_length=100, null=True, blank=True)
     pattern = models.TextField()
+    action_type = models.CharField(
+        max_length=10, choices=URLActionType.choices, default="web"
+    )
+    rest_method = models.CharField(
+        max_length=10, choices=URLActionRestMethod.choices, default="get"
+    )
+    rest_body = models.TextField(null=True, blank=True, default="")
+    rest_headers = models.TextField(null=True, blank=True, default="")
 
     def __str__(self):
         return self.name
@@ -439,46 +460,3 @@ class URLAction(BaseAuditModel):
 
         return URLActionSerializer(action).data
 
-
-RUN_ON_CHOICES = (
-    ("client", "Client"),
-    ("site", "Site"),
-    ("agent", "Agent"),
-    ("once", "Once"),
-)
-
-SCHEDULE_CHOICES = (("daily", "Daily"), ("weekly", "Weekly"), ("monthly", "Monthly"))
-
-
-""" class GlobalTask(models.Model):
-    script = models.ForeignKey(
-        "scripts.Script",
-        null=True,
-        blank=True,
-        related_name="script",
-        on_delete=models.SET_NULL,
-    )
-    script_args = ArrayField(
-        models.CharField(max_length=255, null=True, blank=True),
-        null=True,
-        blank=True,
-        default=list,
-    )
-    custom_field = models.OneToOneField(
-        "core.CustomField",
-        related_name="globaltask",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-    )
-    timeout = models.PositiveIntegerField(default=120)
-    retcode = models.IntegerField(null=True, blank=True)
-    stdout = models.TextField(null=True, blank=True)
-    stderr = models.TextField(null=True, blank=True)
-    execution_time = models.CharField(max_length=100, default="0.0000")
-    run_schedule = models.CharField(
-        max_length=25, choices=SCHEDULE_CHOICES, default="once"
-    )
-    run_on = models.CharField(
-        max_length=25, choices=RUN_ON_CHOICES, default="once"
-    ) """

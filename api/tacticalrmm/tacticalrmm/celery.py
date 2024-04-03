@@ -30,7 +30,7 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=5, hour="*"),
     },
     "update-systray-config": {
-        "task": "apiv3.support.tasks.update_systray_config",
+        "task": "apiv3.tasks.update_systray_config",
         "schedule": crontab(minute="*/5", hour="*"),
     }, 
     "agent-auto-update": {

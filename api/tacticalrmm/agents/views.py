@@ -987,6 +987,8 @@ def bulk(request):
         debug_info={"ip": request._client_ip},
     )
 
+    ht = "Check the History tab on the agent to view the results."
+
     if request.data["mode"] == "command":
         if request.data["shell"] == "custom" and request.data["custom_shell"]:
             shell = request.data["custom_shell"]
@@ -1001,7 +1003,7 @@ def bulk(request):
             username=request.user.username[:50],
             run_as_user=request.data["run_as_user"],
         )
-        return Response(f"Command will now be run on {len(agents)} agents")
+        return Response(f"Command will now be run on {len(agents)} agents. {ht}")
 
     elif request.data["mode"] == "script":
         script = get_object_or_404(Script, pk=request.data["script"])
@@ -1016,7 +1018,7 @@ def bulk(request):
             env_vars=request.data["env_vars"],
         )
 
-        return Response(f"{script.name} will now be run on {len(agents)} agents")
+        return Response(f"{script.name} will now be run on {len(agents)} agents. {ht}")
 
     elif request.data["mode"] == "patch":
         if request.data["patchMode"] == "install":

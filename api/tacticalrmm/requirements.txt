@@ -10,7 +10,7 @@ Django==4.2.11
 django-cors-headers==4.3.1
 django-filter==24.2
 django-rest-knox==4.2.0
-djangorestframework==3.15.1
+djangorestframework==3.14.0
 drf-spectacular==0.27.1
 hiredis==2.3.2
 meshctrl==0.1.15

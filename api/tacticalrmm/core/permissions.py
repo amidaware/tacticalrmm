@@ -13,7 +13,11 @@ class CoreSettingsPerms(permissions.BasePermission):
 
 class URLActionPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
-        return _has_perm(r, "can_run_urlactions")
+        if r.method in {"GET", "PATCH"}:
+            return _has_perm(r, "can_run_urlactions")
+
+        # TODO make a manage url action perm instead?
+        return _has_perm(r, "can_edit_core_settings")
 
 
 class ServerMaintPerms(permissions.BasePermission):

@@ -21,14 +21,14 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.18.1"
+TRMM_VERSION = "0.18.2"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.43"
+WEB_VERSION = "0.101.44"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.191"
+APP_VER = "0.0.192"
 
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.7.0"
@@ -43,7 +43,7 @@ INSTALL_NUSHELL = True
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_NUSHELL_VERSION = "0.91.0"
+INSTALL_NUSHELL_VERSION = "0.92.1"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.
@@ -64,7 +64,7 @@ NUSHELL_ENABLE_CONFIG = False
 INSTALL_DENO = True
 # Version to download. If INSTALL_DENO_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_DENO_VERSION = "v1.41.3"
+INSTALL_DENO_VERSION = "v1.42.1"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_DENO_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.

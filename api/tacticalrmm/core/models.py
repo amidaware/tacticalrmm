@@ -460,4 +460,3 @@ class URLAction(BaseAuditModel):
         from .serializers import URLActionSerializer
 
         return URLActionSerializer(action).data
-

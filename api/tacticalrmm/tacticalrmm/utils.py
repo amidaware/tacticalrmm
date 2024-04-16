@@ -298,6 +298,7 @@ def get_latest_trmm_ver() -> str:
 # i.e. - {{client.name}}, client, name
 RE_DB_VALUE = re.compile(r"(\{\{\s*(client|site|agent|global|alert)\.(.*)\s*\}\})")
 
+
 # Receives something like {{ client.name }} and a Model instance of Client, Site, or Agent. If an
 # agent instance is passed it will resolve the value of agent.client.name and return the agent's client name.
 #
@@ -434,6 +435,7 @@ def format_shell_bool(value: bool, shell: Optional[str]) -> str:
         return "$True" if value else "$False"
 
     return "1" if value else "0"
+
 
 # https://docs.celeryq.dev/en/latest/tutorials/task-cookbook.html#cookbook-task-serial
 @contextmanager

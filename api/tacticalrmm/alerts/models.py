@@ -476,8 +476,8 @@ class Alert(models.Model):
                 )
             elif alert_template.action_type == "server":
                 stdout, stderr, execution_time, retcode = run_server_script(
-                    script_id=alert_template.action.pk, 
-                    args=alert.parse_script_args(alert_template.action_args), 
+                    script_id=alert_template.action.pk,
+                    args=alert.parse_script_args(alert_template.action_args),
                     timeout=alert_template.action_timeout,
                     env_vars=alert.parse_script_args(alert_template.action_env_vars),
                 )
@@ -486,17 +486,19 @@ class Alert(models.Model):
                     "retcode": retcode,
                     "stdout": stdout,
                     "stderr": stderr,
-                    "execution_time": execution_time
+                    "execution_time": execution_time,
                 }
 
             elif alert_template.action_type == "rest":
-                output, status = run_url_rest_action(action_id=alert_template.action, instance=alert)
-                
+                output, status = run_url_rest_action(
+                    action_id=alert_template.action, instance=alert
+                )
+
                 r = {
                     "stdout": output,
                     "stderr": "",
                     "execution_time": 0,
-                    "retcode": status                    
+                    "retcode": status,
                 }
 
             # command was successful
@@ -508,7 +510,7 @@ class Alert(models.Model):
                 alert.action_run = djangotime.now()
                 alert.save()
             else:
-                if (alert_template.action_type == "script"):
+                if alert_template.action_type == "script":
                     DebugLog.error(
                         agent=agent,
                         log_type=DebugLogType.SCRIPTING,
@@ -638,28 +640,31 @@ class Alert(models.Model):
                 )
             elif alert_template.resolved_action_type == "server":
                 stdout, stderr, execution_time, retcode = run_server_script(
-                    script_id=alert_template.resolved_action.pk, 
-                    args=alert.parse_script_args(alert_template.resolved_action_args), 
+                    script_id=alert_template.resolved_action.pk,
+                    args=alert.parse_script_args(alert_template.resolved_action_args),
                     timeout=alert_template.resolved_action_timeout,
-                    env_vars=alert.parse_script_args(alert_template.resolved_action_env_vars),
+                    env_vars=alert.parse_script_args(
+                        alert_template.resolved_action_env_vars
+                    ),
                 )
                 r = {
                     "stdout": stdout,
                     "stderr": stderr,
                     "execution_time": execution_time,
-                    "retcode": retcode
+                    "retcode": retcode,
                 }
 
             else:
-                output, status = run_url_rest_action(action_id=alert_template.resolved_action.pk, instance=alert.id)
+                output, status = run_url_rest_action(
+                    action_id=alert_template.resolved_action.pk, instance=alert.id
+                )
 
                 r = {
                     "stdout": output,
                     "stderr": "",
                     "execution_time": 0,
-                    "retcode": status                    
+                    "retcode": status,
                 }
-
 
             # command was successful
             if isinstance(r, dict):
@@ -702,13 +707,13 @@ class Alert(models.Model):
             temp_args.append(temp_arg)
 
         return temp_args
-    
 
 
 class AlertTemplateActionType(models.TextChoices):
     SCRIPT = "script", "Script"
     SERVER = "server", "Server"
     REST = "rest", "Rest"
+
 
 class AlertTemplate(BaseAuditModel):
     name = models.CharField(max_length=100)

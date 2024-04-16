@@ -8,18 +8,20 @@ from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
+from core.utils import run_server_script, run_url_rest_action
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     AgentHistoryType,
     AgentMonType,
     AlertSeverity,
+    AlertTemplateActionType,
     AlertType,
     CheckType,
     DebugLogType,
 )
+from tacticalrmm.logger import logger
 from tacticalrmm.models import PermissionQuerySet
 from tacticalrmm.utils import RE_DB_VALUE, get_db_value
-from core.utils import run_server_script, run_url_rest_action
 
 if TYPE_CHECKING:
     from agents.models import Agent
@@ -449,14 +451,13 @@ class Alert(models.Model):
             ):
                 text_task.delay(pk=alert.pk, alert_interval=alert_interval)
 
-        # check if any scripts should be run
-        if (
-            alert_template
-            and alert_template.action
-            and run_script_action
-            and not alert.action_run
-        ):
-            if alert_template.action_type == "script":
+        # check if any scripts/webhooks should be run
+        if alert_template and not alert.action_run:
+            if (
+                alert_template.action_type == AlertTemplateActionType.SCRIPT
+                and alert_template.action
+                and run_script_action
+            ):
                 hist = AgentHistory.objects.create(
                     agent=agent,
                     type=AgentHistoryType.SCRIPT_RUN,
@@ -474,7 +475,11 @@ class Alert(models.Model):
                     run_as_user=False,
                     env_vars=alert.parse_script_args(alert_template.action_env_vars),
                 )
-            elif alert_template.action_type == "server":
+            elif (
+                alert_template.action_type == AlertTemplateActionType.SERVER
+                and alert_template.action
+                and run_script_action
+            ):
                 stdout, stderr, execution_time, retcode = run_server_script(
                     script_id=alert_template.action.pk,
                     args=alert.parse_script_args(alert_template.action_args),
@@ -489,10 +494,11 @@ class Alert(models.Model):
                     "execution_time": execution_time,
                 }
 
-            elif alert_template.action_type == "rest":
+            elif alert_template.action_type == AlertTemplateActionType.REST:
                 output, status = run_url_rest_action(
-                    action_id=alert_template.action, instance=alert
+                    action_id=alert_template.action_rest.id, instance=alert
                 )
+                logger.debug(f"{output=} {status=}")
 
                 r = {
                     "stdout": output,
@@ -510,7 +516,7 @@ class Alert(models.Model):
                 alert.action_run = djangotime.now()
                 alert.save()
             else:
-                if alert_template.action_type == "script":
+                if alert_template.action_type == AlertTemplateActionType.SCRIPT:
                     DebugLog.error(
                         agent=agent,
                         log_type=DebugLogType.SCRIPTING,
@@ -613,14 +619,13 @@ class Alert(models.Model):
         if text_on_resolved and not alert.resolved_sms_sent:
             resolved_text_task.delay(pk=alert.pk)
 
-        # check if resolved script should be run
-        if (
-            alert_template
-            and alert_template.resolved_action
-            and run_script_action
-            and not alert.resolved_action_run
-        ):
-            if alert_template.resolved_action_type == "script":
+        # check if resolved script/webhook should be run
+        if alert_template and not alert.resolved_action_run:
+            if (
+                alert_template.resolved_action_type == AlertTemplateActionType.SCRIPT
+                and alert_template.resolved_action
+                and run_script_action
+            ):
                 hist = AgentHistory.objects.create(
                     agent=agent,
                     type=AgentHistoryType.SCRIPT_RUN,
@@ -638,7 +643,11 @@ class Alert(models.Model):
                     run_as_user=False,
                     env_vars=alert_template.resolved_action_env_vars,
                 )
-            elif alert_template.resolved_action_type == "server":
+            elif (
+                alert_template.resolved_action_type == AlertTemplateActionType.SERVER
+                and alert_template.resolved_action
+                and run_script_action
+            ):
                 stdout, stderr, execution_time, retcode = run_server_script(
                     script_id=alert_template.resolved_action.pk,
                     args=alert.parse_script_args(alert_template.resolved_action_args),
@@ -654,10 +663,11 @@ class Alert(models.Model):
                     "retcode": retcode,
                 }
 
-            else:
+            elif alert_template.action_type == AlertTemplateActionType.REST:
                 output, status = run_url_rest_action(
-                    action_id=alert_template.resolved_action.pk, instance=alert.id
+                    action_id=alert_template.resolved_action_rest.id, instance=alert
                 )
+                logger.debug(f"{output=} {status=}")
 
                 r = {
                     "stdout": output,
@@ -677,7 +687,10 @@ class Alert(models.Model):
                 alert.resolved_action_run = djangotime.now()
                 alert.save()
             else:
-                if alert_template.resolved_action_type == "script":
+                if (
+                    alert_template.resolved_action_type
+                    == AlertTemplateActionType.SCRIPT
+                ):
                     DebugLog.error(
                         agent=agent,
                         log_type=DebugLogType.SCRIPTING,
@@ -707,12 +720,6 @@ class Alert(models.Model):
             temp_args.append(temp_arg)
 
         return temp_args
-
-
-class AlertTemplateActionType(models.TextChoices):
-    SCRIPT = "script", "Script"
-    SERVER = "server", "Server"
-    REST = "rest", "Rest"
 
 
 class AlertTemplate(BaseAuditModel):

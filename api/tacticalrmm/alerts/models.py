@@ -475,20 +475,29 @@ class Alert(models.Model):
                     env_vars=alert.parse_script_args(alert_template.action_env_vars),
                 )
             elif alert_template.action_type == "server":
-                r = run_server_script(
-                    script_id=alert_template.action, 
+                stdout, stderr, execution_time, retcode = run_server_script(
+                    script_id=alert_template.action.pk, 
                     args=alert.parse_script_args(alert_template.action_args), 
                     timeout=alert_template.action_timeout,
                     env_vars=alert.parse_script_args(alert_template.action_env_vars),
                 )
 
+                r = {
+                    "retcode": retcode,
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "execution_time": execution_time
+                }
+
             elif alert_template.action_type == "rest":
                 output, status = run_url_rest_action(action_id=alert_template.action, instance=alert)
-                alert.action_retcode = status
-                alert.action_stdout = output
-                alert.action_run = djangotime.now()
-                alert.save()
-                return
+                
+                r = {
+                    "stdout": output,
+                    "stderr": "",
+                    "execution_time": 0,
+                    "retcode": status                    
+                }
 
             # command was successful
             if isinstance(r, dict):
@@ -629,7 +638,7 @@ class Alert(models.Model):
                 )
             elif alert_template.resolved_action_type == "server":
                 stdout, stderr, execution_time, retcode = run_server_script(
-                    script_id=alert_template.resolved_action, 
+                    script_id=alert_template.resolved_action.pk, 
                     args=alert.parse_script_args(alert_template.resolved_action_args), 
                     timeout=alert_template.resolved_action_timeout,
                     env_vars=alert.parse_script_args(alert_template.resolved_action_env_vars),
@@ -642,7 +651,7 @@ class Alert(models.Model):
                 }
 
             else:
-                output, status = run_url_rest_action(action_id=alert_template.resolved_action, instance=alert.id)
+                output, status = run_url_rest_action(action_id=alert_template.resolved_action.pk, instance=alert.id)
 
                 r = {
                     "stdout": output,

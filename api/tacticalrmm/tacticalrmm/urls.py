@@ -4,10 +4,8 @@ from knox import views as knox_views
 
 from accounts.views import CheckCreds, LoginView
 from agents.consumers import SendCMD
-from core.consumers import DashInfo
-from core.views import home
-
 from core.consumers import DashInfo, TerminalConsumer
+from core.views import home
 
 
 class AgentIDConverter:

@@ -97,6 +97,12 @@ class AlertType(models.TextChoices):
     CUSTOM = "custom", "Custom"
 
 
+class AlertTemplateActionType(models.TextChoices):
+    SCRIPT = "script", "Script"
+    SERVER = "server", "Server"
+    REST = "rest", "Rest"
+
+
 class AgentHistoryType(models.TextChoices):
     TASK_RUN = "task_run", "Task Run"
     SCRIPT_RUN = "script_run", "Script Run"

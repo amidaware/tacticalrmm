@@ -215,6 +215,7 @@ def get_meshagent_url(
 def make_alpha_numeric(s: str):
     return "".join(filter(str.isalnum, s))
 
+
 def find_and_replace_db_values_str(*, text: str, instance):
     import re
 
@@ -240,6 +241,7 @@ def find_and_replace_db_values_dict(*, dict: Dict[str, Any], instance):
 
 def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
     import core.models
+
     action = core.models.URLAction.objects.get(pk=action_id)
     method = action.rest_method
     url = action.pattern
@@ -249,7 +251,9 @@ def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
     # replace url
     url = find_and_replace_db_values_str(text=url, instance=instance)
     body = find_and_replace_db_values_dict(dict=json.loads(body), instance=instance)
-    headers = find_and_replace_db_values_dict(dict=json.loads(headers), instance=instance)
+    headers = find_and_replace_db_values_dict(
+        dict=json.loads(headers), instance=instance
+    )
 
     if method in ["get", "delete"]:
         response = getattr(requests, method)(url, headers=headers)
@@ -328,6 +332,7 @@ def run_server_script(
     *, script_id: int, args: List[str], env_vars: List[str], timeout: int
 ):
     from scripts.models import Script
+
     script = Script.objects.get(pk=script_id)
 
     parsed_args = script.parse_script_args(None, script.shell, args)

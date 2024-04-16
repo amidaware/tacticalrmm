@@ -23,9 +23,7 @@ from tacticalrmm.helpers import days_until_cert_expires
 
 
 def _has_perm(user, perm: str) -> bool:
-    if user.is_superuser or (
-        user.role and getattr(user.role, "is_superuser")
-    ):
+    if user.is_superuser or (user.role and getattr(user.role, "is_superuser")):
         return True
 
     # make sure non-superusers with empty roles aren't permitted
@@ -96,9 +94,9 @@ class DashInfo(AsyncJsonWebsocketConsumer):
                 "total_server_count": total_server_agents_count,
                 "total_workstation_count": total_workstation_agents_count,
                 "days_until_cert_expires": days_until_cert_expires(),
-            }
+            },
         }
-        
+
     async def send_dash_info(self):
         while self.connected:
             c = await self.get_dashboard_info()
@@ -117,7 +115,6 @@ class TerminalConsumer(JsonWebsocketConsumer):
     connected = False
 
     def run_command(self):
-
         master_fd, slave_fd = pty.openpty()
 
         self.fd = master_fd
@@ -142,7 +139,6 @@ class TerminalConsumer(JsonWebsocketConsumer):
                 self.close(4030)
 
     def connect(self):
-
         if not "user" in self.scope:
             self.close(4401)
             return
@@ -157,7 +153,6 @@ class TerminalConsumer(JsonWebsocketConsumer):
             return
 
         if self.user.is_authenticated:
-
             if not _has_perm(self.user, "can_run_server_cli"):
                 self.close(4401)
 
@@ -179,7 +174,12 @@ class TerminalConsumer(JsonWebsocketConsumer):
             if not output:
                 break
             message = output.decode(errors="ignore")
-            self.send_json({"action": "trmmcli.output", "data": {"output": message, "messageId": str(uuid.uuid4())}})
+            self.send_json(
+                {
+                    "action": "trmmcli.output",
+                    "data": {"output": message, "messageId": str(uuid.uuid4())},
+                }
+            )
 
     def resize(self, row, col, xpix=0, ypix=0):
         winsize = struct.pack("HHHH", row, col, xpix, ypix)
@@ -214,4 +214,6 @@ class TerminalConsumer(JsonWebsocketConsumer):
             self.write_to_pty(message)
         elif action == "trmmcli.disconnect":
             self.kill_pty()
-            self.send_json({"action": "trmmcli.output","data": {"output": "Terminal killed!"}})
+            self.send_json(
+                {"action": "trmmcli.output", "data": {"output": "Terminal killed!"}}
+            )

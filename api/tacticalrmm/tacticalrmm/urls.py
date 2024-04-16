@@ -9,6 +9,7 @@ from core.views import home
 
 from core.consumers import DashInfo, TerminalConsumer
 
+
 class AgentIDConverter:
     regex = "[^/]{20}[^/]+"
 

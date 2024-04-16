@@ -95,7 +95,7 @@ class LoginView(KnoxLoginView):
                 request.data["username"], debug_info={"ip": request._client_ip}
             )
             response = super(LoginView, self).post(request, format=None)
-            response.data["username"]= request.user.username
+            response.data["username"] = request.user.username
             return Response(response.data)
         else:
             AuditLog.audit_user_failed_twofactor(

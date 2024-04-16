@@ -139,7 +139,7 @@ class TerminalConsumer(JsonWebsocketConsumer):
                 self.close(4030)
 
     def connect(self):
-        if not "user" in self.scope:
+        if "user" not in self.scope:
             self.close(4401)
             return
 

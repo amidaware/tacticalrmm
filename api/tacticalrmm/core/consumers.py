@@ -118,6 +118,8 @@ class TerminalConsumer(JsonWebsocketConsumer):
         master_fd, slave_fd = pty.openpty()
 
         self.fd = master_fd
+        env = os.environ.copy()
+        env["TERM"] = "xterm"
 
         with subprocess.Popen(  # pylint: disable=subprocess-popen-preexec-fn
             self.command,
@@ -125,6 +127,7 @@ class TerminalConsumer(JsonWebsocketConsumer):
             stdout=slave_fd,
             stderr=slave_fd,
             preexec_fn=os.setsid,
+            env=env,
         ) as proc:
             self.subprocess = proc
             self.child_pid = proc.pid

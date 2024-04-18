@@ -156,7 +156,7 @@ class TerminalConsumer(JsonWebsocketConsumer):
             return
 
         if self.user.is_authenticated:
-            if not _has_perm(self.user, "can_run_server_cli"):
+            if not _has_perm(self.user, "can_run_servercli"):
                 self.close(4401)
 
             self.connected = True

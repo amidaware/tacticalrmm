@@ -148,20 +148,26 @@ class TerminalConsumer(JsonWebsocketConsumer):
 
         self.user = self.scope["user"]
 
+        if isinstance(self.user, AnonymousUser):
+            self.close()
+            return
+
         if not self.user.is_authenticated:
+            self.close(4401)
+            return
+
+        if self.user.block_dashboard_login or not _has_perm(
+            self.user, "can_run_servercli"
+        ):
             self.close(4401)
             return
 
         if self.child_pid is not None:
             return
 
-        if self.user.is_authenticated:
-            if not _has_perm(self.user, "can_run_servercli"):
-                self.close(4401)
-
-            self.connected = True
-            self.authorized = True
-            self.accept()
+        self.connected = True
+        self.authorized = True
+        self.accept()
 
         # Daemonize the thread so it automatically dies when the main thread exits
         thread = threading.Thread(target=self.run_command, daemon=True)

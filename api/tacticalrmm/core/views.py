@@ -29,6 +29,7 @@ from core.utils import (
     token_is_valid,
     run_server_script,
     run_server_task,
+    run_test_url_rest_action
 )
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
@@ -423,6 +424,31 @@ class RunURLAction(APIView):
 
         return Response(requote_uri(url_pattern))
 
+class RunTestURLAction(APIView):
+    permission_classes = [IsAuthenticated, URLActionPerms]
+
+    class InputSerializer(serializers.Serializer):
+        pattern = serializers.CharField(required=True)
+        rest_body = serializers.CharField()
+        rest_headers = serializers.CharField()
+        rest_method = serializers.ChoiceField(required=True, choices=["get", "post", "put", "delete", "patch"])
+        run_instance_type = serializers.ChoiceField(choices=["agent", "client", "site", "none"])
+        run_instance_id = serializers.IntegerField(allow_null=True)
+
+    def post(self, request):
+
+        serializer = self.InputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        url = serializer.validated_data.get("pattern")
+        body = serializer.validated_data.get("rest_body", None)
+        headers = serializer.validated_data.get("rest_headers", None)
+        method = serializer.validated_data.get("rest_method")
+        instance_type = serializer.validated_data.get("run_instance_type", None)
+        instance_id = serializer.validated_data.get("instance_id", None)
+        result, _ = run_test_url_rest_action(url=url, body=body, headers=headers, method=method, instance_type=instance_type, instance_id=instance_id)
+
+        return Response({"url": url, "result": result})
 
 class ServerTaskSerializer(serializers.ModelSerializer):
 

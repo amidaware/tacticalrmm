@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import FileResponse
 from django.utils import timezone as djangotime
+from django.apps import apps
 from meshctrl.utils import get_auth_token
 
 from tacticalrmm.constants import (
@@ -228,16 +229,35 @@ def find_and_replace_db_values_str(*, text: str, instance):
         return text
 
 
-def find_and_replace_db_values_dict(*, dict: Dict[str, Any], instance):
+def find_and_replace_db_values_dict(*, dict_value: Dict[str, Any], instance)-> Dict[str, Any]:
     new_dict = {}
 
-    for key, value in dict.items():
+    for key, value in dict_value.items():
         new_key = find_and_replace_db_values_str(text=key, instance=instance)
-        new_value = find_and_replace_db_values_str(text=value, instance=instance)
+
+        # Check if the value is a dictionary and recursively call the function if it is
+        if isinstance(value, dict):
+            new_value = find_and_replace_db_values_dict(dict_value=value, instance=instance)
+        else:
+            new_value = find_and_replace_db_values_str(text=value, instance=instance)
+
         new_dict[new_key] = new_value
 
     return new_dict
 
+
+def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=None):
+    # replace url
+    new_url = find_and_replace_db_values_str(text=url, instance=instance)
+    new_body = find_and_replace_db_values_dict(dict_value=json.loads(body), instance=instance)
+    new_headers = find_and_replace_db_values_dict(
+        dict_value=json.loads(headers), instance=instance
+    )
+
+    if method in ["get", "delete"]:
+        return getattr(requests, method)(new_url, headers=new_headers)
+    else:
+        return getattr(requests, method)(new_url, data=new_body, headers=new_headers)
 
 def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
     import core.models
@@ -248,20 +268,26 @@ def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
     body = action.rest_body
     headers = action.rest_headers
 
-    # replace url
-    url = find_and_replace_db_values_str(text=url, instance=instance)
-    body = find_and_replace_db_values_dict(dict=json.loads(body), instance=instance)
-    headers = find_and_replace_db_values_dict(
-        dict=json.loads(headers), instance=instance
-    )
-
-    if method in ["get", "delete"]:
-        response = getattr(requests, method)(url, headers=headers)
-    else:
-        response = getattr(requests, method)(url, data=body, headers=headers)
+    response = _run_url_rest_action(url=url, method=method, body=body, headers=headers, instance=instance)
 
     return (response.text, response.status_code)
 
+def run_test_url_rest_action(*,  url: str, method, body: str, headers: str, instance_type: Optional[str], instance_id: Optional[int]) -> Tuple[str, int]:
+    lookup_instance = None
+    if instance_type and instance_id:
+        if instance_type == "client":
+            Client = apps.get_model("clients.Client")
+            lookup_instance = Client.objects.get(pk=instance_id)
+        elif instance_type == "site":
+            Site = apps.get_model("clients.Site")
+            lookup_instance = Site.objects.get(pk=instance_id)
+        elif instance_type == "agent":
+            Agent = apps.get_model("agents.Agent")
+            lookup_instance = Agent.objects.get(pk=instance_id)    
+
+    response = _run_url_rest_action(url=url, method=method, body=body, headers=headers, instance=lookup_instance)
+
+    return (response.text, response.status_code)
 
 def run_server_task(*, server_task_id: int):
     from autotasks.models import AutomatedTask, TaskResult

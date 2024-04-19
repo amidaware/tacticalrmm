@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="31"
+SCRIPT_VERSION="32"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -73,7 +73,7 @@ mkdir ${tmp_dir}/opt
 POSTGRES_USER=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config dbuser)
 POSTGRES_PW=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config dbpw)
 
-pg_dump --dbname=postgresql://"${POSTGRES_USER}":"${POSTGRES_PW}"@localhost:5432/tacticalrmm | gzip -9 >${tmp_dir}/postgres/db-${dt_now}.psql.gz
+pg_dump --no-privileges --no-owner --dbname=postgresql://"${POSTGRES_USER}":"${POSTGRES_PW}"@localhost:5432/tacticalrmm | gzip -9 >${tmp_dir}/postgres/db-${dt_now}.psql.gz
 
 node /meshcentral/node_modules/meshcentral --dbexport # for import to postgres
 
@@ -83,7 +83,7 @@ if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
     fi
     MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
     MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
-    pg_dump --dbname=postgresql://"${MESH_POSTGRES_USER}":"${MESH_POSTGRES_PW}"@localhost:5432/meshcentral | gzip -9 >${tmp_dir}/postgres/mesh-db-${dt_now}.psql.gz
+    pg_dump --no-privileges --no-owner --dbname=postgresql://"${MESH_POSTGRES_USER}":"${MESH_POSTGRES_PW}"@localhost:5432/meshcentral | gzip -9 >${tmp_dir}/postgres/mesh-db-${dt_now}.psql.gz
 else
     mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
 fi

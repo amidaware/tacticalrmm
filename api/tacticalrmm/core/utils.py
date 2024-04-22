@@ -6,6 +6,7 @@ import time
 import urllib.parse
 from base64 import b64encode
 from contextlib import suppress
+from requests.utils import requote_uri
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast, Tuple
 
 import requests
@@ -259,11 +260,13 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     new_headers = find_and_replace_db_values_dict(
         dict_value=json.loads(headers), instance=instance
     )
+    new_body = json.dumps(new_body)
+    new_url = requote_uri(new_url)
 
     if method in ["get", "delete"]:
         return getattr(requests, method)(new_url, headers=new_headers)
-    else:
-        return getattr(requests, method)(new_url, data=new_body, headers=new_headers)
+
+    return getattr(requests, method)(new_url, data=new_body, headers=new_headers)
 
 
 def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:

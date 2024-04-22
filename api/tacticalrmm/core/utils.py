@@ -229,7 +229,9 @@ def find_and_replace_db_values_str(*, text: str, instance):
         return text
 
 
-def find_and_replace_db_values_dict(*, dict_value: Dict[str, Any], instance)-> Dict[str, Any]:
+def find_and_replace_db_values_dict(
+    *, dict_value: Dict[str, Any], instance
+) -> Dict[str, Any]:
     new_dict = {}
 
     for key, value in dict_value.items():
@@ -237,7 +239,9 @@ def find_and_replace_db_values_dict(*, dict_value: Dict[str, Any], instance)-> D
 
         # Check if the value is a dictionary and recursively call the function if it is
         if isinstance(value, dict):
-            new_value = find_and_replace_db_values_dict(dict_value=value, instance=instance)
+            new_value = find_and_replace_db_values_dict(
+                dict_value=value, instance=instance
+            )
         else:
             new_value = find_and_replace_db_values_str(text=value, instance=instance)
 
@@ -249,7 +253,9 @@ def find_and_replace_db_values_dict(*, dict_value: Dict[str, Any], instance)-> D
 def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=None):
     # replace url
     new_url = find_and_replace_db_values_str(text=url, instance=instance)
-    new_body = find_and_replace_db_values_dict(dict_value=json.loads(body), instance=instance)
+    new_body = find_and_replace_db_values_dict(
+        dict_value=json.loads(body), instance=instance
+    )
     new_headers = find_and_replace_db_values_dict(
         dict_value=json.loads(headers), instance=instance
     )
@@ -258,6 +264,7 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
         return getattr(requests, method)(new_url, headers=new_headers)
     else:
         return getattr(requests, method)(new_url, data=new_body, headers=new_headers)
+
 
 def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
     import core.models
@@ -268,11 +275,22 @@ def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
     body = action.rest_body
     headers = action.rest_headers
 
-    response = _run_url_rest_action(url=url, method=method, body=body, headers=headers, instance=instance)
+    response = _run_url_rest_action(
+        url=url, method=method, body=body, headers=headers, instance=instance
+    )
 
     return (response.text, response.status_code)
 
-def run_test_url_rest_action(*,  url: str, method, body: str, headers: str, instance_type: Optional[str], instance_id: Optional[int]) -> Tuple[str, int]:
+
+def run_test_url_rest_action(
+    *,
+    url: str,
+    method,
+    body: str,
+    headers: str,
+    instance_type: Optional[str],
+    instance_id: Optional[int],
+) -> Tuple[str, int]:
     lookup_instance = None
     if instance_type and instance_id:
         if instance_type == "client":
@@ -283,11 +301,14 @@ def run_test_url_rest_action(*,  url: str, method, body: str, headers: str, inst
             lookup_instance = Site.objects.get(pk=instance_id)
         elif instance_type == "agent":
             Agent = apps.get_model("agents.Agent")
-            lookup_instance = Agent.objects.get(pk=instance_id)    
+            lookup_instance = Agent.objects.get(pk=instance_id)
 
-    response = _run_url_rest_action(url=url, method=method, body=body, headers=headers, instance=lookup_instance)
+    response = _run_url_rest_action(
+        url=url, method=method, body=body, headers=headers, instance=lookup_instance
+    )
 
     return (response.text, response.status_code)
+
 
 def run_server_task(*, server_task_id: int):
     from autotasks.models import AutomatedTask, TaskResult

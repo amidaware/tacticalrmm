@@ -588,7 +588,7 @@ class Alert(models.Model):
             hist = AgentHistory.objects.create(
                 agent=agent,
                 type=AgentHistoryType.SCRIPT_RUN,
-                script=alert_template.resolved_action,
+                script=alert_template.action,
                 username="alert-action-resolved",
             )
             r = agent.run_script(

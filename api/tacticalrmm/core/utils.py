@@ -230,38 +230,18 @@ def find_and_replace_db_values_str(*, text: str, instance):
         return text
 
 
-def find_and_replace_db_values_dict(
-    *, dict_value: Dict[str, Any], instance
-) -> Dict[str, Any]:
-    new_dict = {}
-
-    for key, value in dict_value.items():
-        new_key = find_and_replace_db_values_str(text=key, instance=instance)
-
-        # Check if the value is a dictionary and recursively call the function if it is
-        if isinstance(value, dict):
-            new_value = find_and_replace_db_values_dict(
-                dict_value=value, instance=instance
-            )
-        else:
-            new_value = find_and_replace_db_values_str(text=value, instance=instance)
-
-        new_dict[new_key] = new_value
-
-    return new_dict
-
-
 def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=None):
     # replace url
     new_url = find_and_replace_db_values_str(text=url, instance=instance)
-    new_body = find_and_replace_db_values_dict(
-        dict_value=json.loads(body), instance=instance
+    new_body = find_and_replace_db_values_str(
+        text=body, instance=instance
     )
-    new_headers = find_and_replace_db_values_dict(
-        dict_value=json.loads(headers), instance=instance
+    new_headers = find_and_replace_db_values_str(
+        text=headers, instance=instance
     )
-    new_body = json.dumps(new_body)
     new_url = requote_uri(new_url)
+    new_body = json.loads(new_body)
+    new_headers = json.loads(new_headers)
 
     if method in ["get", "delete"]:
         return getattr(requests, method)(new_url, headers=new_headers)
@@ -285,6 +265,12 @@ def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
     return (response.text, response.status_code)
 
 
+lookup_apps = {
+    "client": ("clients", "Client"),
+    "site": ("clients", "Site"),
+    "agent": ("agents", "Agent")
+}
+
 def run_test_url_rest_action(
     *,
     url: str,
@@ -293,24 +279,18 @@ def run_test_url_rest_action(
     headers: str,
     instance_type: Optional[str],
     instance_id: Optional[int],
-) -> Tuple[str, int]:
+) -> Tuple[str, str, str]:
     lookup_instance = None
     if instance_type and instance_id:
-        if instance_type == "client":
-            Client = apps.get_model("clients.Client")
-            lookup_instance = Client.objects.get(pk=instance_id)
-        elif instance_type == "site":
-            Site = apps.get_model("clients.Site")
-            lookup_instance = Site.objects.get(pk=instance_id)
-        elif instance_type == "agent":
-            Agent = apps.get_model("agents.Agent")
-            lookup_instance = Agent.objects.get(pk=instance_id)
+        app, model = lookup_apps[instance_type]
+        Model = apps.get_model(app, model)
+        lookup_instance = Model.objects.get(pk=instance_id)
 
     response = _run_url_rest_action(
         url=url, method=method, body=body, headers=headers, instance=lookup_instance
     )
 
-    return (response.text, response.status_code)
+    return (response.text, response.request.url, response.request.body)
 
 
 def run_server_task(*, server_task_id: int):

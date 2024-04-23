@@ -450,8 +450,9 @@ class RunTestURLAction(APIView):
         headers = serializer.validated_data.get("rest_headers", None)
         method = serializer.validated_data.get("rest_method")
         instance_type = serializer.validated_data.get("run_instance_type", None)
-        instance_id = serializer.validated_data.get("instance_id", None)
-        result, _ = run_test_url_rest_action(
+        instance_id = serializer.validated_data.get("run_instance_id", None)
+
+        result, replaced_url, replaced_body = run_test_url_rest_action(
             url=url,
             body=body,
             headers=headers,
@@ -460,7 +461,7 @@ class RunTestURLAction(APIView):
             instance_id=instance_id,
         )
 
-        return Response({"url": url, "result": result})
+        return Response({"url": replaced_url, "result": result, "body": replaced_body})
 
 
 class ServerTaskSerializer(serializers.ModelSerializer):

@@ -7,7 +7,7 @@ import urllib.parse
 from base64 import b64encode
 from contextlib import suppress
 from requests.utils import requote_uri
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast, Tuple
+from typing import TYPE_CHECKING, List, Optional, cast, Tuple
 
 import requests
 import websockets
@@ -220,14 +220,17 @@ def make_alpha_numeric(s: str):
 
 def find_and_replace_db_values_str(*, text: str, instance):
     import re
-
     from tacticalrmm.utils import RE_DB_VALUE, get_db_value
+
+    if not instance:
+        return text
+    
+    return_string = text
 
     for string, model, prop in re.findall(RE_DB_VALUE, text):
         value = get_db_value(string=f"{model}.{prop}", instance=instance)
-        return text.replace(string, str(value))
-    else:
-        return text
+        return_string = return_string.replace(string, str(value))
+    return return_string
 
 
 def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=None):

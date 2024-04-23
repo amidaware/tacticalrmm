@@ -296,7 +296,7 @@ def get_latest_trmm_ver() -> str:
 # regex for db data replacement
 # will return 3 groups of matches in a tuple when uses with re.findall
 # i.e. - {{client.name}}, client, name
-RE_DB_VALUE = re.compile(r"(\{\{\s*(client|site|agent|global|alert)\.(.*)\s*\}\})")
+RE_DB_VALUE = re.compile(r"(\{\{\s*(client|site|agent|global|alert)\.([\w\-\s]+)\s*\}\})")
 
 
 # Receives something like {{ client.name }} and a Model instance of Client, Site, or Agent. If an

@@ -442,7 +442,7 @@ class RunTestURLAction(APIView):
         run_instance_type = serializers.ChoiceField(
             choices=["agent", "client", "site", "none"]
         )
-        run_instance_id = serializers.IntegerField(allow_null=True)
+        run_instance_id = serializers.CharField(allow_null=True)
 
     def post(self, request):
 

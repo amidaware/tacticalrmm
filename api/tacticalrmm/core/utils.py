@@ -249,7 +249,7 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     if method in ["get", "delete"]:
         return getattr(requests, method)(new_url, headers=new_headers)
 
-    return getattr(requests, method)(new_url, data=new_body, headers=new_headers)
+    return getattr(requests, method)(new_url, data=json.dumps(new_body), headers=new_headers)
 
 
 def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
@@ -284,7 +284,7 @@ def run_test_url_rest_action(
     instance_id: Optional[int],
 ) -> Tuple[str, str, str]:
     lookup_instance = None
-    if instance_type and instance_id:
+    if instance_type and instance_type in lookup_apps.keys() and instance_id:
         app, model = lookup_apps[instance_type]
         Model = apps.get_model(app, model)
         if instance_type == "agent":

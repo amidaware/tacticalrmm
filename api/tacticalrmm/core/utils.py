@@ -284,7 +284,10 @@ def run_test_url_rest_action(
     if instance_type and instance_id:
         app, model = lookup_apps[instance_type]
         Model = apps.get_model(app, model)
-        lookup_instance = Model.objects.get(pk=instance_id)
+        if instance_type == "agent":
+            lookup_instance = Model.objects.get(agent_id=instance_id)
+        else:
+            lookup_instance = Model.objects.get(pk=instance_id)
 
     response = _run_url_rest_action(
         url=url, method=method, body=body, headers=headers, instance=lookup_instance

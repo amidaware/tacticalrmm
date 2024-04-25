@@ -2,6 +2,8 @@
 
 SCRIPT_VERSION="32"
 
+export DEBIAN_FRONTEND=noninteractive
+
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'

@@ -224,7 +224,7 @@ def find_and_replace_db_values_str(*, text: str, instance):
 
     if not instance:
         return text
-    
+
     return_string = text
 
     for string, model, prop in re.findall(RE_DB_VALUE, text):
@@ -236,12 +236,8 @@ def find_and_replace_db_values_str(*, text: str, instance):
 def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=None):
     # replace url
     new_url = find_and_replace_db_values_str(text=url, instance=instance)
-    new_body = find_and_replace_db_values_str(
-        text=body, instance=instance
-    )
-    new_headers = find_and_replace_db_values_str(
-        text=headers, instance=instance
-    )
+    new_body = find_and_replace_db_values_str(text=body, instance=instance)
+    new_headers = find_and_replace_db_values_str(text=headers, instance=instance)
     new_url = requote_uri(new_url)
     new_body = json.loads(new_body)
     new_headers = json.loads(new_headers)
@@ -249,7 +245,9 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     if method in ["get", "delete"]:
         return getattr(requests, method)(new_url, headers=new_headers)
 
-    return getattr(requests, method)(new_url, data=json.dumps(new_body), headers=new_headers)
+    return getattr(requests, method)(
+        new_url, data=json.dumps(new_body), headers=new_headers
+    )
 
 
 def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
@@ -271,8 +269,9 @@ def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
 lookup_apps = {
     "client": ("clients", "Client"),
     "site": ("clients", "Site"),
-    "agent": ("agents", "Agent")
+    "agent": ("agents", "Agent"),
 }
+
 
 def run_test_url_rest_action(
     *,

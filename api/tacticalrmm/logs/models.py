@@ -144,15 +144,15 @@ class AuditLog(models.Model):
 
     @staticmethod
     def audit_script_run(
-        username: str, agent: "Agent", script: str, debug_info: Dict[Any, Any] = {}
+        username: str, script: str, agent: Optional["Agent"], debug_info: Dict[Any, Any] = {}
     ) -> None:
         AuditLog.objects.create(
-            agent=agent.hostname,
-            agent_id=agent.agent_id,
+            agent=agent.hostname if agent else "Tactical RMM Server",
+            agent_id=agent.agent_id if agent else "N/A",
             username=username,
             object_type=AuditObjType.AGENT,
             action=AuditActionType.EXEC_SCRIPT,
-            message=f'{username} ran script: "{script}" on {agent.hostname}',
+            message=f'{username} ran script: "{script}" on {agent.hostname if agent else "Tactical RMM Server"}',
             debug_info=debug_info,
         )
 

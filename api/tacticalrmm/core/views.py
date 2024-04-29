@@ -468,116 +468,6 @@ class RunTestURLAction(APIView):
         return Response({"url": replaced_url, "result": result, "body": replaced_body})
 
 
-class ServerTaskSerializer(serializers.ModelSerializer):
-
-    task_result = serializers.SerializerMethodField()
-
-    def get_task_result(self, obj):
-        from autotasks.serializers import TaskResultSerializer
-        from autotasks.models import TaskResult
-
-        return (
-            TaskResultSerializer(obj.task_result).data
-            if isinstance(obj.task_result, TaskResult)
-            else {}
-        )
-
-    def validate_actions(self, value):
-        from autotasks.serializers import task_actions_validation
-
-        return task_actions_validation(value)
-
-    class Meta:
-        model = AutomatedTask
-        fields = (
-            "id",
-            "name",
-            "actions",
-            "crontab_schedule",
-            "enabled",
-            "custom_field",
-            "collector_all_output",
-            "continue_on_error",
-            "email_alert",
-            "text_alert",
-            "dashboard_alert",
-            "server_task",
-            "alert_severity",
-            "task_result",
-        )
-
-
-class GetAddServerTasks(APIView):
-    permission_classes = [IsAuthenticated, ServerTaskPerms]
-
-    def get(self, request):
-        server_tasks = AutomatedTask.objects.filter(server_task=True)
-
-        results = TaskResult.objects.filter(task__server_task=True)  # type: ignore
-
-        # attach any taskresults to the object
-        for task in server_tasks:
-            for result in results:
-                if result.task.id == task.pk:
-                    task.task_result = result
-                    break
-
-        return Response(ServerTaskSerializer(server_tasks, many=True).data)
-
-    def post(self, request):
-        serializer = ServerTaskSerializer(data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response("ok")
-
-
-class UpdateDeleteServerTask(APIView):
-    permission_classes = [IsAuthenticated, ServerTaskPerms]
-
-    def get(self, request, pk):
-        server_task = AutomatedTask.objects.filter(pk=pk, server_task=True)
-        return Response(ServerTaskSerializer(server_task).data)
-
-    def put(self, request, pk):
-        server_task = get_object_or_404(AutomatedTask, pk=pk)
-
-        serializer = ServerTaskSerializer(
-            instance=server_task, data=request.data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response("ok")
-
-    def delete(self, request, pk):
-        get_object_or_404(AutomatedTask, pk=pk).delete()
-
-        return Response("ok")
-
-
-class RunServerTask(APIView):
-    permission_classes = [IsAuthenticated, RunServerTaskPerms]
-
-    def post(self, request, pk):
-        server_task = get_object_or_404(AutomatedTask, pk=pk)
-
-        if not server_task.server_task:
-            return notify_error("This task is not meant to be run on the server")
-
-        output, execution_time = run_server_task(server_task_id=server_task.id)
-
-        # TODO: Audit server task runs
-        # AuditLog.audit_url_action(
-        #     username=request.user.username,
-        #     urlaction=action,
-        #     instance=instance,
-        #     debug_info={"ip": request._client_ip},
-        # )
-
-        return Response({"output": output, "execution_time": execution_time})
-
-
 class RunServerScript(APIView):
     permission_classes = [IsAuthenticated, RunServerTaskPerms]
 
@@ -591,13 +481,12 @@ class RunServerScript(APIView):
             timeout=request.data["timeout"],
         )
 
-        # TODO: Audit server task runs
-        # AuditLog.audit_url_action(
-        #     username=request.user.username,
-        #     urlaction=action,
-        #     instance=instance,
-        #     debug_info={"ip": request._client_ip},
-        # )
+        AuditLog.audit_script_run(
+            username=request.user.username,
+            agent=None,
+            script=script.name,
+            debug_info={"ip": request._client_ip},            
+        )
 
         return Response(
             {

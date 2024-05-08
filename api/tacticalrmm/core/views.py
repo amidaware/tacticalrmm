@@ -28,7 +28,6 @@ from core.utils import (
     sysd_svc_is_running,
     token_is_valid,
     run_server_script,
-    run_server_task,
     run_test_url_rest_action,
 )
 from logs.models import AuditLog
@@ -41,7 +40,6 @@ from tacticalrmm.permissions import (
 )
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
-from autotasks.models import AutomatedTask, TaskResult
 from scripts.models import Script
 
 from .permissions import (
@@ -50,7 +48,6 @@ from .permissions import (
     CustomFieldPerms,
     ServerMaintPerms,
     URLActionPerms,
-    ServerTaskPerms,
     RunServerTaskPerms,
 )
 from .serializers import (

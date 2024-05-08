@@ -144,7 +144,10 @@ class AuditLog(models.Model):
 
     @staticmethod
     def audit_script_run(
-        username: str, script: str, agent: Optional["Agent"], debug_info: Dict[Any, Any] = {}
+        username: str,
+        script: str,
+        agent: Optional["Agent"],
+        debug_info: Dict[Any, Any] = {},
     ) -> None:
         AuditLog.objects.create(
             agent=agent.hostname if agent else "Tactical RMM Server",

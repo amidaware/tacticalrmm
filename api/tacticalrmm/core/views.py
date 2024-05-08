@@ -438,7 +438,6 @@ class RunTestURLAction(APIView):
         run_instance_id = serializers.CharField(allow_null=True)
 
     def post(self, request):
-
         serializer = self.InputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -478,7 +477,7 @@ class RunServerScript(APIView):
             username=request.user.username,
             agent=None,
             script=script.name,
-            debug_info={"ip": request._client_ip},            
+            debug_info={"ip": request._client_ip},
         )
 
         return Response(

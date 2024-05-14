@@ -99,15 +99,15 @@ class Alert(models.Model):
     def client(self) -> "Client":
         return self.agent.client
 
-    @property 
+    @property
     def get_result(self):
         if self.alert_type == AlertType.CHECK:
             return self.assigned_check.checkresults.get(agent=self.agent)
         elif self.alert_type == AlertType.TASK:
-            return self.assigned_task.taskresults.get(agent=self.agent) 
+            return self.assigned_task.taskresults.get(agent=self.agent)
         else:
             return None
-		
+
     def resolve(self) -> None:
         self.resolved = True
         self.resolved_on = djangotime.now()

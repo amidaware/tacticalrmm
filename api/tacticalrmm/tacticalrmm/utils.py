@@ -297,7 +297,7 @@ def get_latest_trmm_ver() -> str:
 # will return 3 groups of matches in a tuple when uses with re.findall
 # i.e. - {{client.name}}, client, name
 RE_DB_VALUE = re.compile(
-    r"(\{\{\s*(client|site|agent|global|alert)\.([\w\-\s]+)\s*\}\})"
+    r"(\{\{\s*(client|site|agent|global|alert)(?:\.([\w\-\s\.]+))+\s*\}\})"
 )
 
 

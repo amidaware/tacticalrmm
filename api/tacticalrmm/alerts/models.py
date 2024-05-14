@@ -722,7 +722,7 @@ class Alert(models.Model):
             for string, model, prop in re.findall(RE_DB_VALUE, arg):
                 value = get_db_value(string=f"{model}.{prop}", instance=self)
 
-                if value != None:
+                if value is not None:
                     temp_arg = temp_arg.replace(string, str(value))
 
             temp_args.append(temp_arg)

@@ -99,6 +99,15 @@ class Alert(models.Model):
     def client(self) -> "Client":
         return self.agent.client
 
+    @property 
+    def get_result(self):
+        if self.alert_type == AlertType.CHECK:
+            return self.assigned_check.checkresults.get(agent=self.agent)
+        elif self.alert_type == AlertType.TASK:
+            return self.assigned_task.taskresults.get(agent=self.agent) 
+        else:
+            return None
+		
     def resolve(self) -> None:
         self.resolved = True
         self.resolved_on = djangotime.now()
@@ -709,13 +718,12 @@ class Alert(models.Model):
         temp_args = []
 
         for arg in args:
-            temp_arg = ""
+            temp_arg = arg
             for string, model, prop in re.findall(RE_DB_VALUE, arg):
                 value = get_db_value(string=f"{model}.{prop}", instance=self)
 
-                temp_arg = temp_arg.replace(string, str(value))
-            else:
-                temp_arg = arg
+                if value != None:
+                    temp_arg = temp_arg.replace(string, str(value))
 
             temp_args.append(temp_arg)
 

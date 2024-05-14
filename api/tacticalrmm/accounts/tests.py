@@ -23,7 +23,7 @@ class TestAccounts(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertIn("totp", r.data.keys())
-        self.assertEqual(r.data["totp"], "totp not set")
+        self.assertEqual(r.data["totp"], False)
 
         data = {"username": "bob", "password": "a3asdsa2314"}
         r = self.client.post(url, data, format="json")
@@ -40,7 +40,7 @@ class TestAccounts(TacticalTestCase):
         data = {"username": "bob", "password": "hunter2"}
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, "ok")
+        self.assertEqual(r.data["totp"], True)
 
         # test user set to block dashboard logins
         self.bob.block_dashboard_login = True
@@ -404,7 +404,7 @@ class TestTOTPSetup(TacticalTestCase):
 
         r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, "totp token already set")
+        self.assertEqual(r.data, False)
 
 
 class TestAPIAuthentication(TacticalTestCase):

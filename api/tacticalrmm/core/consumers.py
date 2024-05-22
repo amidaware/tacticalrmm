@@ -3,11 +3,11 @@ import fcntl
 import os
 import pty
 import select
+import signal
 import struct
 import subprocess
 import termios
 import threading
-import signal
 import uuid
 from contextlib import suppress
 
@@ -20,6 +20,7 @@ from django.utils import timezone as djangotime
 from agents.models import Agent
 from tacticalrmm.constants import AgentMonType
 from tacticalrmm.helpers import days_until_cert_expires
+from tacticalrmm.logger import logger
 
 
 def _has_perm(user, perm: str) -> bool:
@@ -199,9 +200,13 @@ class TerminalConsumer(JsonWebsocketConsumer):
 
     def kill_pty(self):
         if self.subprocess is not None:
-            os.killpg(os.getpgid(self.child_pid), signal.SIGTERM)
-            self.subprocess = None
-            self.child_pid = None
+            try:
+                os.killpg(os.getpgid(self.child_pid), signal.SIGKILL)
+            except Exception as e:
+                logger.error(f"Failed to kill process group: {str(e)}")
+            finally:
+                self.subprocess = None
+                self.child_pid = None
 
     def disconnect(self, code):
         self.connected = False

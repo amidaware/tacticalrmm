@@ -74,6 +74,7 @@ ws_urlpatterns = [
 if not (
     getattr(settings, "HOSTED", False)
     or getattr(settings, "TRMM_DISABLE_WEB_TERMINAL", False)
+    or getattr(settings, "DEMO", False)
 ):
     ws_urlpatterns += [
         path("ws/trmmcli/", TerminalConsumer.as_asgi()),

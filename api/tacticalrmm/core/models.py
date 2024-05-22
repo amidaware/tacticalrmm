@@ -189,8 +189,10 @@ class CoreSettings(BaseAuditModel):
 
     @property
     def server_scripts_enabled(self) -> bool:
-        if getattr(settings, "HOSTED", False) or getattr(
-            settings, "TRMM_DISABLE_SERVER_SCRIPTS", False
+        if (
+            getattr(settings, "HOSTED", False)
+            or getattr(settings, "TRMM_DISABLE_SERVER_SCRIPTS", False)
+            or getattr(settings, "DEMO", False)
         ):
             return False
 
@@ -198,8 +200,10 @@ class CoreSettings(BaseAuditModel):
 
     @property
     def web_terminal_enabled(self) -> bool:
-        if getattr(settings, "HOSTED", False) or getattr(
-            settings, "TRMM_DISABLE_WEB_TERMINAL", False
+        if (
+            getattr(settings, "HOSTED", False)
+            or getattr(settings, "TRMM_DISABLE_WEB_TERMINAL", False)
+            or getattr(settings, "DEMO", False)
         ):
             return False
 

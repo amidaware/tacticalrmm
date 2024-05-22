@@ -29,6 +29,7 @@ urlpatterns = [
 if not (
     getattr(settings, "HOSTED", False)
     or getattr(settings, "TRMM_DISABLE_SERVER_SCRIPTS", False)
+    or getattr(settings, "DEMO", False)
 ):
     urlpatterns += [
         path("serverscript/test/", views.TestRunServerScript.as_view()),

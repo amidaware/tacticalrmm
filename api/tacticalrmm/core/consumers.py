@@ -18,6 +18,7 @@ from django.db.models import F
 from django.utils import timezone as djangotime
 
 from agents.models import Agent
+from core.models import CoreSettings
 from tacticalrmm.constants import AgentMonType
 from tacticalrmm.helpers import days_until_cert_expires
 from tacticalrmm.logger import logger
@@ -154,6 +155,11 @@ class TerminalConsumer(JsonWebsocketConsumer):
             return
 
         if not self.user.is_authenticated:
+            self.close(4401)
+            return
+
+        core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+        if not core.web_terminal_enabled:
             self.close(4401)
             return
 

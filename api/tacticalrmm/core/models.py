@@ -105,6 +105,8 @@ class CoreSettings(BaseAuditModel):
     open_ai_model = models.CharField(
         max_length=255, blank=True, default="gpt-3.5-turbo"
     )
+    enable_server_scripts = models.BooleanField(default=True)
+    enable_server_webterminal = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template
@@ -184,6 +186,24 @@ class CoreSettings(BaseAuditModel):
             return True
 
         return False
+
+    @property
+    def server_scripts_enabled(self) -> bool:
+        if getattr(settings, "HOSTED", False) or getattr(
+            settings, "TRMM_DISABLE_SERVER_SCRIPTS", False
+        ):
+            return False
+
+        return self.enable_server_scripts
+
+    @property
+    def web_terminal_enabled(self) -> bool:
+        if getattr(settings, "HOSTED", False) or getattr(
+            settings, "TRMM_DISABLE_WEB_TERMINAL", False
+        ):
+            return False
+
+        return self.enable_server_webterminal
 
     def send_mail(
         self,

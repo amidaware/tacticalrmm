@@ -41,3 +41,8 @@ class CustomFieldPerms(permissions.BasePermission):
 class RunServerTaskPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
         return _has_perm(r, "can_run_servertasks")
+
+
+class WebTerminalPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        return _has_perm(r, "can_run_servercli")

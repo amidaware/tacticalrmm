@@ -7,14 +7,13 @@ import urllib.parse
 from base64 import b64encode
 from contextlib import suppress
 from requests.utils import requote_uri
-from typing import TYPE_CHECKING, List, Optional, cast, Tuple
+from typing import TYPE_CHECKING, Optional, cast, Tuple
 
 import requests
 import websockets
 from django.conf import settings
 from django.core.cache import cache
 from django.http import FileResponse
-from django.utils import timezone as djangotime
 from django.apps import apps
 from meshctrl.utils import get_auth_token
 
@@ -219,7 +218,6 @@ def make_alpha_numeric(s: str):
 
 
 def find_and_replace_db_values_str(*, text: str, instance):
-    import re
     from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 
     if not instance:
@@ -227,7 +225,7 @@ def find_and_replace_db_values_str(*, text: str, instance):
 
     return_string = text
 
-    for string, model, prop in re.findall(RE_DB_VALUE, text):
+    for string, model, prop in RE_DB_VALUE.findall(text):
         value = get_db_value(string=f"{model}.{prop}", instance=instance)
         return_string = return_string.replace(string, str(value))
     return return_string
@@ -242,7 +240,7 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     new_body = json.loads(new_body)
     new_headers = json.loads(new_headers)
 
-    if method in ["get", "delete"]:
+    if method in ("get", "delete"):
         return getattr(requests, method)(new_url, headers=new_headers)
 
     return getattr(requests, method)(
@@ -283,7 +281,7 @@ def run_test_url_rest_action(
     instance_id: Optional[int],
 ) -> Tuple[str, str, str]:
     lookup_instance = None
-    if instance_type and instance_type in lookup_apps.keys() and instance_id:
+    if instance_type and instance_type in lookup_apps and instance_id:
         app, model = lookup_apps[instance_type]
         Model = apps.get_model(app, model)
         if instance_type == "agent":
@@ -298,83 +296,14 @@ def run_test_url_rest_action(
     return (response.text, response.request.url, response.request.body)
 
 
-def run_server_task(*, server_task_id: int):
-    from autotasks.models import AutomatedTask, TaskResult
-    from tacticalrmm.constants import TaskStatus
-
-    task = AutomatedTask.objects.get(pk=server_task_id)
-    output = ""
-    total_execution_time = 0
-    passing = True
-
-    for action in task.actions:
-        if action["type"] == "cmd":
-            stdout, stderr, execution_time, retcode = run_server_command(
-                command=action["command"], timeout=action["timeout"]
-            )
-            name = action["command"]
-        else:
-            stdout, stderr, execution_time, retcode = run_server_script(
-                script_id=action["script"],
-                args=action["script_args"],
-                env_vars=action["env_vars"],
-                timeout=action["timeout"],
-            )
-            name = action["name"]
-
-        if retcode != 0:
-            passing = False
-
-        total_execution_time += execution_time
-        output += f"-----------------------------\n{name}\n-----------------------------\n\nStandard Output: {stdout}\n\nStandard Error: {stderr}\n"
-        output += f"Return Code: {retcode}\n"
-        output += f"Execution Time: {execution_time}\n\n"
-
-    try:
-        task_result = TaskResult.objects.get(task=task, agent=None)
-        task_result.retcode = 0 if passing else 1
-        task_result.execution_time = total_execution_time
-        task_result.stdout = output
-        task_result.stderr = ""
-        task_result.status = TaskStatus.PASSING if passing else TaskStatus.FAILING
-        task_result.save()
-    except TaskResult.DoesNotExist:
-        TaskResult.objects.create(
-            task=task,
-            agent=None,
-            retcode=0 if passing else 1,
-            execution_time=total_execution_time,
-            stdout=output,
-            stderr="",
-            status=TaskStatus.PASSING if passing else TaskStatus.FAILING,
-            last_run=djangotime.now(),
-        )
-
-    return (output, total_execution_time)
-
-
-def run_server_command(*, command: List[str], timeout: int):
-    start_time = time.time()
-    result = subprocess.run(
-        command, capture_output=True, text=True, shell=True, timeout=timeout
-    )
-    execution_time = time.time() - start_time
-
-    return (result.stdout, result.stderr, execution_time, result.returncode)
-
-
 def run_server_script(
-    *, script_id: int, args: List[str], env_vars: List[str], timeout: int
+    *, body: str, args: list[str], env_vars: list[str], shell: str, timeout: int
 ):
     from scripts.models import Script
 
-    script = Script.objects.get(pk=script_id)
+    parsed_args = Script.parse_script_args(None, shell, args)
 
-    parsed_args = script.parse_script_args(None, script.shell, args)
-
-    parsed_env_vars = script.parse_script_env_vars(
-        None, shell=script.shell, env_vars=env_vars
-    )
+    parsed_env_vars = Script.parse_script_env_vars(None, shell=shell, env_vars=env_vars)
 
     custom_env = os.environ.copy()
     for var in parsed_env_vars:
@@ -382,7 +311,7 @@ def run_server_script(
         custom_env[var_split[0]] = var_split[1]
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmp_script:
-        tmp_script.write(script.script_body.replace("\r\n", "\n"))
+        tmp_script.write(body.replace("\r\n", "\n"))
         tmp_script_path = tmp_script.name
 
     os.chmod(tmp_script_path, 0o550)

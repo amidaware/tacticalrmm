@@ -1,5 +1,4 @@
 import json
-import re
 from contextlib import suppress
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -19,7 +18,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import serializers
+from rest_framework import serializers, status as drf_status
 
 from core.decorators import monitoring_view
 from core.tasks import sync_mesh_perms_task
@@ -40,7 +39,6 @@ from tacticalrmm.permissions import (
 )
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
-from scripts.models import Script
 
 from .permissions import (
     CodeSignPerms,
@@ -49,6 +47,7 @@ from .permissions import (
     ServerMaintPerms,
     URLActionPerms,
     RunServerTaskPerms,
+    WebTerminalPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -134,6 +133,8 @@ def dashboard_info(request):
             "dash_negative_color": request.user.dash_negative_color,
             "dash_warning_color": request.user.dash_warning_color,
             "run_cmd_placeholder_text": runcmd_placeholder_text(),
+            "server_scripts_enabled": core_settings.server_scripts_enabled,
+            "web_terminal_enabled": core_settings.web_terminal_enabled,
         }
     )
 
@@ -407,7 +408,7 @@ class RunURLAction(APIView):
 
         url_pattern = action.pattern
 
-        for string, model, prop in re.findall(RE_DB_VALUE, url_pattern):
+        for string, model, prop in RE_DB_VALUE.findall(url_pattern):
             value = get_db_value(string=f"{model}.{prop}", instance=instance)
 
             url_pattern = url_pattern.replace(string, str(value))
@@ -460,34 +461,45 @@ class RunTestURLAction(APIView):
         return Response({"url": replaced_url, "result": result, "body": replaced_body})
 
 
-class RunServerScript(APIView):
+class TestRunServerScript(APIView):
     permission_classes = [IsAuthenticated, RunServerTaskPerms]
 
-    def post(self, request, pk):
-        script = get_object_or_404(Script, pk=pk)
+    def post(self, request):
+        core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+        if not core.server_scripts_enabled:
+            return notify_error("This feature is disabled.")
 
         stdout, stderr, execution_time, retcode = run_server_script(
-            script_id=script.id,
+            body=request.data["code"],
             args=request.data["args"],
             env_vars=request.data["env_vars"],
             timeout=request.data["timeout"],
+            shell=request.data["shell"],
         )
 
-        AuditLog.audit_script_run(
-            username=request.user.username,
-            agent=None,
-            script=script.name,
-            debug_info={"ip": request._client_ip},
-        )
+        # TODO add auditing
 
-        return Response(
-            {
-                "stdout": stdout,
-                "stderr": stderr,
-                "execution_time": execution_time,
-                "retcode": retcode,
-            }
-        )
+        ret = {
+            "stdout": stdout,
+            "stderr": stderr,
+            "execution_time": f"{execution_time:.4f}",
+            "retcode": retcode,
+        }
+
+        return Response(ret)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, WebTerminalPerms])
+def webterm_perms(request):
+    # this view is only used to display a notification if feature is disabled
+    # perms are actually enforced in the consumer
+    core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+    if not core.web_terminal_enabled:
+        ret = "This feature is disabled."
+        return Response(ret, status=drf_status.HTTP_412_PRECONDITION_FAILED)
+
+    return Response("ok")
 
 
 class TwilioSMSTest(APIView):

@@ -1,6 +1,4 @@
 import json
-import re
-import os
 from contextlib import suppress
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -21,7 +19,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import serializers
+from rest_framework import serializers, status as drf_status
 
 from apiv3.support.models import SysTray
 from apiv3.support.serializers import SysTraySerializer
@@ -44,7 +42,6 @@ from tacticalrmm.permissions import (
 )
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
-from scripts.models import Script
 
 from .permissions import (
     CodeSignPerms,
@@ -53,6 +50,7 @@ from .permissions import (
     ServerMaintPerms,
     URLActionPerms,
     RunServerTaskPerms,
+    WebTerminalPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -138,6 +136,8 @@ def dashboard_info(request):
             "dash_negative_color": request.user.dash_negative_color,
             "dash_warning_color": request.user.dash_warning_color,
             "run_cmd_placeholder_text": runcmd_placeholder_text(),
+            "server_scripts_enabled": core_settings.server_scripts_enabled,
+            "web_terminal_enabled": core_settings.web_terminal_enabled,
         }
     )
 
@@ -411,7 +411,7 @@ class RunURLAction(APIView):
 
         url_pattern = action.pattern
 
-        for string, model, prop in re.findall(RE_DB_VALUE, url_pattern):
+        for string, model, prop in RE_DB_VALUE.findall(url_pattern):
             value = get_db_value(string=f"{model}.{prop}", instance=instance)
 
             url_pattern = url_pattern.replace(string, str(value))
@@ -464,34 +464,45 @@ class RunTestURLAction(APIView):
         return Response({"url": replaced_url, "result": result, "body": replaced_body})
 
 
-class RunServerScript(APIView):
+class TestRunServerScript(APIView):
     permission_classes = [IsAuthenticated, RunServerTaskPerms]
 
-    def post(self, request, pk):
-        script = get_object_or_404(Script, pk=pk)
+    def post(self, request):
+        core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+        if not core.server_scripts_enabled:
+            return notify_error("This feature is disabled.")
 
         stdout, stderr, execution_time, retcode = run_server_script(
-            script_id=script.id,
+            body=request.data["code"],
             args=request.data["args"],
             env_vars=request.data["env_vars"],
             timeout=request.data["timeout"],
+            shell=request.data["shell"],
         )
 
-        AuditLog.audit_script_run(
-            username=request.user.username,
-            agent=None,
-            script=script.name,
-            debug_info={"ip": request._client_ip},
-        )
+        # TODO add auditing
 
-        return Response(
-            {
-                "stdout": stdout,
-                "stderr": stderr,
-                "execution_time": execution_time,
-                "retcode": retcode,
-            }
-        )
+        ret = {
+            "stdout": stdout,
+            "stderr": stderr,
+            "execution_time": f"{execution_time:.4f}",
+            "retcode": retcode,
+        }
+
+        return Response(ret)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, WebTerminalPerms])
+def webterm_perms(request):
+    # this view is only used to display a notification if feature is disabled
+    # perms are actually enforced in the consumer
+    core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+    if not core.web_terminal_enabled:
+        ret = "This feature is disabled."
+        return Response(ret, status=drf_status.HTTP_412_PRECONDITION_FAILED)
+
+    return Response("ok")
 
 
 class TwilioSMSTest(APIView):
@@ -618,6 +629,7 @@ class OpenAICodeCompletion(APIView):
 
         return Response(response_data["choices"][0]["message"]["content"])
 
+
 class SysTrayView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -633,14 +645,16 @@ class SysTrayView(APIView):
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 
-    #temp validation hack to update name in ui
+    # temp validation hack to update name in ui
     def should_ignore_icon_errors(self, errors):
-        return 'icon' in errors and len(errors) == 1
+        return "icon" in errors and len(errors) == 1
 
     def put(self, request):
-        systray_id = request.data.get('id')
+        systray_id = request.data.get("id")
         if not systray_id:
-            return Response({"error": "ID is required for updating a SysTray instance."}, status=400)
+            return Response(
+                {"error": "ID is required for updating a SysTray instance."}, status=400
+            )
 
         systray = get_object_or_404(SysTray, pk=systray_id)
         serializer = SysTraySerializer(systray, data=request.data, partial=True)
@@ -653,22 +667,28 @@ class SysTrayView(APIView):
         else:
             # Check if the only error is related to the 'icon' field
             errors = serializer.errors
-            if 'icon' in errors and len(errors) == 1:
+            if "icon" in errors and len(errors) == 1:
                 # Manually update and save the 'name' if it's provided in the request and ignore the 'icon' error
-                if 'name' in request.data:
-                    systray.name = request.data['name']
-                    systray.save(update_fields=['name'])
-                    return Response({"message": "Name updated successfully, icon ignored."}, status=200)
+                if "name" in request.data:
+                    systray.name = request.data["name"]
+                    systray.save(update_fields=["name"])
+                    return Response(
+                        {"message": "Name updated successfully, icon ignored."},
+                        status=200,
+                    )
             # Return other validation errors if present
             return Response(errors, status=400)
+
 
 class ServeFile(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, file_name):
-        file_path = os.path.join('/rmm/api/tacticalrmm/tacticalrmm/private/assets/', file_name)
+        file_path = os.path.join(
+            "/rmm/api/tacticalrmm/tacticalrmm/private/assets/", file_name
+        )
 
         if not os.path.exists(file_path):
-            return Response({'error': 'File does not exist'}, status=404)
+            return Response({"error": "File does not exist"}, status=404)
 
-        return FileResponse(open(file_path, 'rb'))
+        return FileResponse(open(file_path, "rb"))

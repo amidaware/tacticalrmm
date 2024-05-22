@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from django.contrib.postgres.fields import ArrayField
@@ -105,8 +104,8 @@ class Alert(models.Model):
             return self.assigned_check.checkresults.get(agent=self.agent)
         elif self.alert_type == AlertType.TASK:
             return self.assigned_task.taskresults.get(agent=self.agent)
-        else:
-            return None
+
+        return None
 
     def resolve(self) -> None:
         self.resolved = True
@@ -490,10 +489,11 @@ class Alert(models.Model):
                 and run_script_action
             ):
                 stdout, stderr, execution_time, retcode = run_server_script(
-                    script_id=alert_template.action.pk,
+                    body=alert_template.action.script_body,
                     args=alert.parse_script_args(alert_template.action_args),
                     timeout=alert_template.action_timeout,
                     env_vars=alert.parse_script_args(alert_template.action_env_vars),
+                    shell=alert_template.action.shell,
                 )
 
                 r = {
@@ -658,12 +658,13 @@ class Alert(models.Model):
                 and run_script_action
             ):
                 stdout, stderr, execution_time, retcode = run_server_script(
-                    script_id=alert_template.resolved_action.pk,
+                    body=alert_template.resolved_action.script_body,
                     args=alert.parse_script_args(alert_template.resolved_action_args),
                     timeout=alert_template.resolved_action_timeout,
                     env_vars=alert.parse_script_args(
                         alert_template.resolved_action_env_vars
                     ),
+                    shell=alert_template.resolved_action.shell,
                 )
                 r = {
                     "stdout": stdout,
@@ -719,7 +720,7 @@ class Alert(models.Model):
 
         for arg in args:
             temp_arg = arg
-            for string, model, prop in re.findall(RE_DB_VALUE, arg):
+            for string, model, prop in RE_DB_VALUE.findall(arg):
                 value = get_db_value(string=f"{model}.{prop}", instance=self)
 
                 if value is not None:

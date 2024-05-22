@@ -69,5 +69,12 @@ if getattr(settings, "SWAGGER_ENABLED", False):
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
     path("ws/sendcmd/", SendCMD.as_asgi()),
-    path("ws/trmmcli/", TerminalConsumer.as_asgi()),
 ]
+
+if not (
+    getattr(settings, "HOSTED", False)
+    or getattr(settings, "TRMM_DISABLE_WEB_TERMINAL", False)
+):
+    ws_urlpatterns += [
+        path("ws/trmmcli/", TerminalConsumer.as_asgi()),
+    ]

@@ -69,12 +69,9 @@ class Script(BaseAuditModel):
                 snippet_name = snippet.group(1).strip()
                 if ScriptSnippet.objects.filter(name=snippet_name).exists():
                     value = ScriptSnippet.objects.get(name=snippet_name).code
-                else:
-                    value = ""
-
-                replaced_code = re.sub(
-                    snippet.group(), value.replace("\\", "\\\\"), replaced_code
-                )
+                    replaced_code = re.sub(
+                        snippet.group(), value.replace("\\", "\\\\"), replaced_code
+                    )
             return replaced_code
 
         return code

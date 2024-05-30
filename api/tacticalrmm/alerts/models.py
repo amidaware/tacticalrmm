@@ -515,6 +515,8 @@ class Alert(models.Model):
                     "execution_time": 0,
                     "retcode": status,
                 }
+            else:
+                return
 
             # command was successful
             if isinstance(r, dict):
@@ -685,6 +687,8 @@ class Alert(models.Model):
                     "execution_time": 0,
                     "retcode": status,
                 }
+            else:
+                return
 
             # command was successful
             if isinstance(r, dict):
@@ -724,7 +728,7 @@ class Alert(models.Model):
                 value = get_db_value(string=f"{model}.{prop}", instance=self)
 
                 if value is not None:
-                    temp_arg = temp_arg.replace(string, str(value))
+                    temp_arg = temp_arg.replace(string, f"'{str(value)}'")
 
             temp_args.append(temp_arg)
 

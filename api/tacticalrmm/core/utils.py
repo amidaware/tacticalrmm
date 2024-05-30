@@ -289,9 +289,12 @@ def run_test_url_rest_action(
         else:
             lookup_instance = Model.objects.get(pk=instance_id)
 
-    response = _run_url_rest_action(
-        url=url, method=method, body=body, headers=headers, instance=lookup_instance
-    )
+    try:
+        response = _run_url_rest_action(
+            url=url, method=method, body=body, headers=headers, instance=lookup_instance
+        )
+    except requests.exceptions.ConnectionError as error:
+        return (str(error), error.request.url, error.request.body)
 
     return (response.text, response.request.url, response.request.body)
 

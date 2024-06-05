@@ -313,23 +313,37 @@ def run_server_script(
         var_split = var.split("=")
         custom_env[var_split[0]] = var_split[1]
 
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmp_script:
+    with tempfile.NamedTemporaryFile(
+        mode="w", delete=False, prefix="trmm-"
+    ) as tmp_script:
         tmp_script.write(body.replace("\r\n", "\n"))
         tmp_script_path = tmp_script.name
 
     os.chmod(tmp_script_path, 0o550)
 
+    stdout, stderr = "", ""
+    retcode = 0
+
     start_time = time.time()
-    result = subprocess.run(
-        [tmp_script_path] + parsed_args,
-        capture_output=True,
-        text=True,
-        env=custom_env,
-        timeout=timeout,
-    )
-    execution_time = time.time() - start_time
+    try:
+        ret = subprocess.run(
+            [tmp_script_path] + parsed_args,
+            capture_output=True,
+            text=True,
+            env=custom_env,
+            timeout=timeout,
+        )
+        stdout, stderr, retcode = ret.stdout, ret.stderr, ret.returncode
+    except subprocess.TimeoutExpired:
+        stderr = f"Error: Timed out after {timeout} seconds."
+        retcode = 98
+    except Exception as e:
+        stderr = f"Error: {e}"
+        retcode = 99
+    finally:
+        execution_time = time.time() - start_time
 
-    with suppress(Exception):
-        os.remove(tmp_script_path)
+        with suppress(Exception):
+            os.remove(tmp_script_path)
 
-    return result.stdout, result.stderr, execution_time, result.returncode
+    return stdout, stderr, execution_time, retcode

@@ -35,16 +35,19 @@ class AlertTemplateSerializer(ModelSerializer):
         fields = "__all__"
 
     def get_action_name(self, obj):
-        if obj.action_type == AlertTemplateActionType.REST:
+        if obj.action_type == AlertTemplateActionType.REST and obj.action_rest:
             return obj.action_rest.name
 
-        return obj.action.name
+        return obj.action.name if obj.action else ""
 
     def get_resolved_action_name(self, obj):
-        if obj.resolved_action_type == AlertTemplateActionType.REST:
+        if (
+            obj.resolved_action_type == AlertTemplateActionType.REST
+            and obj.resolved_action_rest
+        ):
             return obj.resolved_action_rest.name
 
-        return obj.resolved_action.name
+        return obj.resolved_action.name if obj.resolved_action else ""
 
     def get_applied_count(self, instance):
         return (

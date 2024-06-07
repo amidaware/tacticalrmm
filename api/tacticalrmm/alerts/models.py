@@ -118,6 +118,9 @@ class Alert(models.Model):
     def create_or_return_availability_alert(
         cls, agent: Agent, skip_create: bool = False
     ) -> Optional[Alert]:
+        if agent.maintenance_mode:
+            return None
+
         if not cls.objects.filter(
             agent=agent, alert_type=AlertType.AVAILABILITY, resolved=False
         ).exists():
@@ -166,6 +169,9 @@ class Alert(models.Model):
         alert_severity: Optional[str] = None,
         skip_create: bool = False,
     ) -> "Optional[Alert]":
+        if agent.maintenance_mode:
+            return None
+
         # need to pass agent if the check is a policy
         if not cls.objects.filter(
             assigned_check=check,
@@ -230,6 +236,9 @@ class Alert(models.Model):
         agent: "Agent",
         skip_create: bool = False,
     ) -> "Optional[Alert]":
+        if agent.maintenance_mode:
+            return None
+
         if not cls.objects.filter(
             assigned_task=task,
             agent=agent,

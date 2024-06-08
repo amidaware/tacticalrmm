@@ -17,7 +17,7 @@ class TestAccounts(TacticalTestCase):
         self.bob.save()
 
     def test_check_creds(self):
-        url = "/checkcreds/"
+        url = "/v2/checkcreds/"
 
         data = {"username": "bob", "password": "hunter2"}
         r = self.client.post(url, data, format="json")
@@ -50,7 +50,7 @@ class TestAccounts(TacticalTestCase):
 
     @patch("pyotp.TOTP.verify")
     def test_login_view(self, mock_verify):
-        url = "/login/"
+        url = "/v2/login/"
 
         mock_verify.return_value = True
         data = {"username": "bob", "password": "hunter2", "twofactor": "123456"}

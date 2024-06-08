@@ -1,5 +1,6 @@
-import pyotp
 import datetime
+
+import pyotp
 from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
@@ -27,7 +28,7 @@ from .serializers import (
 )
 
 
-class CheckCreds(KnoxLoginView):
+class CheckCredsV2(KnoxLoginView):
     permission_classes = (AllowAny,)
 
     # restrict time on tokens issued by this view to 3 min
@@ -51,14 +52,14 @@ class CheckCreds(KnoxLoginView):
         # if totp token not set modify response to notify frontend
         if not user.totp_key:
             login(request, user)
-            response = super(CheckCreds, self).post(request, format=None)
+            response = super().post(request, format=None)
             response.data["totp"] = False
             return response
 
         return Response({"totp": True})
 
 
-class LoginView(KnoxLoginView):
+class LoginViewV2(KnoxLoginView):
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
@@ -94,9 +95,86 @@ class LoginView(KnoxLoginView):
             AuditLog.audit_user_login_successful(
                 request.data["username"], debug_info={"ip": request._client_ip}
             )
-            response = super(LoginView, self).post(request, format=None)
+            response = super().post(request, format=None)
             response.data["username"] = request.user.username
             return Response(response.data)
+        else:
+            AuditLog.audit_user_failed_twofactor(
+                request.data["username"], debug_info={"ip": request._client_ip}
+            )
+            return notify_error("Bad credentials")
+
+
+class CheckCreds(KnoxLoginView):
+    # TODO
+    # This view is deprecated as of 0.19.0
+    # Needed for the initial update to 0.19.0 so frontend code doesn't break on login
+    permission_classes = (AllowAny,)
+
+    def post(self, request, format=None):
+        # check credentials
+        serializer = AuthTokenSerializer(data=request.data)
+        if not serializer.is_valid():
+            AuditLog.audit_user_failed_login(
+                request.data["username"], debug_info={"ip": request._client_ip}
+            )
+            return notify_error("Bad credentials")
+
+        user = serializer.validated_data["user"]
+
+        if user.block_dashboard_login:
+            return notify_error("Bad credentials")
+
+        # if totp token not set modify response to notify frontend
+        if not user.totp_key:
+            login(request, user)
+            response = super(CheckCreds, self).post(request, format=None)
+            response.data["totp"] = "totp not set"
+            return response
+
+        return Response("ok")
+
+
+class LoginView(KnoxLoginView):
+    # TODO
+    # This view is deprecated as of 0.19.0
+    # Needed for the initial update to 0.19.0 so frontend code doesn't break on login
+    permission_classes = (AllowAny,)
+
+    def post(self, request, format=None):
+        valid = False
+
+        serializer = AuthTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+
+        if user.block_dashboard_login:
+            return notify_error("Bad credentials")
+
+        token = request.data["twofactor"]
+        totp = pyotp.TOTP(user.totp_key)
+
+        if settings.DEBUG and token == "sekret":
+            valid = True
+        elif getattr(settings, "DEMO", False):
+            valid = True
+        elif totp.verify(token, valid_window=10):
+            valid = True
+
+        if valid:
+            login(request, user)
+
+            # save ip information
+            ipw = IpWare()
+            client_ip, _ = ipw.get_client_ip(request.META)
+            if client_ip:
+                user.last_login_ip = str(client_ip)
+                user.save()
+
+            AuditLog.audit_user_login_successful(
+                request.data["username"], debug_info={"ip": request._client_ip}
+            )
+            return super(LoginView, self).post(request, format=None)
         else:
             AuditLog.audit_user_failed_twofactor(
                 request.data["username"], debug_info={"ip": request._client_ip}

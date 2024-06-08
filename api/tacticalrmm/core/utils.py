@@ -114,7 +114,7 @@ async def get_mesh_device_id(uri: str, device_group: str) -> None:
 
 def download_mesh_agent(dl_url: str) -> FileResponse:
     with tempfile.NamedTemporaryFile(prefix="mesh-", dir=settings.EXE_DIR) as fp:
-        r = requests.get(dl_url, stream=True, timeout=15)
+        r = requests.get(dl_url, stream=True, timeout=15, verify=False)
         with open(fp.name, "wb") as f:
             for chunk in r.iter_content(chunk_size=1024):
                 if chunk:
@@ -186,10 +186,11 @@ def get_meshagent_url(
 ) -> str:
     if settings.DOCKER_BUILD:
         base = settings.MESH_WS_URL.replace("ws://", "http://")
-    elif getattr(settings, "TRMM_INSECURE", False):
-        base = mesh_site.replace("https", "http") + ":4430"
-    else:
+    elif getattr(settings, "USE_EXTERNAL_MESH", False):
         base = mesh_site
+    else:
+        mesh_port = getattr(settings, "MESH_PORT", 4430)
+        base = f"http://127.0.0.1:{mesh_port}"
 
     if plat == AgentPlat.WINDOWS:
         params = {

@@ -435,8 +435,8 @@ class MeshExe(APIView):
 
         try:
             return download_mesh_agent(dl_url)
-        except:
-            return notify_error("Unable to download mesh agent exe")
+        except Exception as e:
+            return notify_error(f"Unable to download mesh agent: {e}")
 
 
 class NewAgent(APIView):

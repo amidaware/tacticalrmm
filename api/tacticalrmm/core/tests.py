@@ -583,7 +583,7 @@ class TestCoreUtils(TacticalTestCase):
         )
         self.assertEqual(
             r,
-            "https://mesh.example.com/meshagents?id=abc123&installflags=2&meshinstall=10005",
+            "http://127.0.0.1:4430/meshagents?id=abc123&installflags=2&meshinstall=10005",
         )
 
         r = get_meshagent_url(
@@ -594,7 +594,7 @@ class TestCoreUtils(TacticalTestCase):
         )
         self.assertEqual(
             r,
-            "https://mesh.example.com/meshagents?id=4&meshid=abc123&installflags=0",
+            "http://127.0.0.1:4430/meshagents?id=4&meshid=abc123&installflags=0",
         )
 
     @override_settings(DOCKER_BUILD=True)
@@ -622,8 +622,8 @@ class TestCoreUtils(TacticalTestCase):
             "http://tactical-meshcentral:4443/meshagents?id=4&meshid=abc123&installflags=0",
         )
 
-    @override_settings(TRMM_INSECURE=True)
-    def test_get_meshagent_url_insecure(self):
+    @override_settings(USE_EXTERNAL_MESH=True)
+    def test_get_meshagent_url_external_mesh(self):
         r = get_meshagent_url(
             ident=MeshAgentIdent.DARWIN_UNIVERSAL,
             plat="darwin",
@@ -632,7 +632,7 @@ class TestCoreUtils(TacticalTestCase):
         )
         self.assertEqual(
             r,
-            "http://mesh.example.com:4430/meshagents?id=abc123&installflags=2&meshinstall=10005",
+            "https://mesh.example.com/meshagents?id=abc123&installflags=2&meshinstall=10005",
         )
 
         r = get_meshagent_url(
@@ -643,5 +643,29 @@ class TestCoreUtils(TacticalTestCase):
         )
         self.assertEqual(
             r,
-            "http://mesh.example.com:4430/meshagents?id=4&meshid=abc123&installflags=0",
+            "https://mesh.example.com/meshagents?id=4&meshid=abc123&installflags=0",
+        )
+
+    @override_settings(MESH_PORT=8653)
+    def test_get_meshagent_url_mesh_port(self):
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.DARWIN_UNIVERSAL,
+            plat="darwin",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://127.0.0.1:8653/meshagents?id=abc123&installflags=2&meshinstall=10005",
+        )
+
+        r = get_meshagent_url(
+            ident=MeshAgentIdent.WIN64,
+            plat="windows",
+            mesh_site="https://mesh.example.com",
+            mesh_device_id="abc123",
+        )
+        self.assertEqual(
+            r,
+            "http://127.0.0.1:8653/meshagents?id=4&meshid=abc123&installflags=0",
         )

@@ -129,10 +129,8 @@ class Role(BaseAuditModel):
     can_run_urlactions = models.BooleanField(default=False)
     can_view_customfields = models.BooleanField(default=False)
     can_manage_customfields = models.BooleanField(default=False)
-    can_view_servertasks = models.BooleanField(default=False)
-    can_manage_servertasks = models.BooleanField(default=False)
-    can_run_servertasks = models.BooleanField(default=False)
-    can_run_servercli = models.BooleanField(default=False)
+    can_run_server_scripts = models.BooleanField(default=False)
+    can_use_webterm = models.BooleanField(default=False)
 
     # checks
     can_list_checks = models.BooleanField(default=False)

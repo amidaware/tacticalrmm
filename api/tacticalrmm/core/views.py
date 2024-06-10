@@ -46,7 +46,7 @@ from .permissions import (
     CustomFieldPerms,
     ServerMaintPerms,
     URLActionPerms,
-    RunServerTaskPerms,
+    RunServerScriptPerms,
     WebTerminalPerms,
 )
 from .serializers import (
@@ -462,7 +462,7 @@ class RunTestURLAction(APIView):
 
 
 class TestRunServerScript(APIView):
-    permission_classes = [IsAuthenticated, RunServerTaskPerms]
+    permission_classes = [IsAuthenticated, RunServerScriptPerms]
 
     def post(self, request):
         core: CoreSettings = CoreSettings.objects.first()  # type: ignore

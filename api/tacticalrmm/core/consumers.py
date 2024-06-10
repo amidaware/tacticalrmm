@@ -164,7 +164,7 @@ class TerminalConsumer(JsonWebsocketConsumer):
             return
 
         if self.user.block_dashboard_login or not _has_perm(
-            self.user, "can_run_servercli"
+            self.user, "can_use_webterm"
         ):
             self.close(4401)
             return

@@ -115,6 +115,34 @@ for i in nginx nats-api nats rmm daphne; do
   sudo systemctl stop ${i}
 done
 
+if ! grep -q V3 /etc/systemd/system/celerybeat.service; then
+  sudo rm -f /etc/systemd/system/celerybeat.service
+
+  celerybeatservice="$(
+    cat <<EOF
+[Unit]
+Description=Celery Beat Service V3
+After=network.target redis-server.service postgresql.service
+
+[Service]
+Type=simple
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  )"
+  echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null
+  sudo systemctl daemon-reload
+fi
+
 # migrate daphne to uvicorn
 if ! grep -q uvicorn /etc/systemd/system/daphne.service; then
   sudo rm -f /etc/systemd/system/daphne.service

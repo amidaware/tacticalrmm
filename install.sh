@@ -855,7 +855,7 @@ echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf >/dev/null
 celerybeatservice="$(
   cat <<EOF
 [Unit]
-Description=Celery Beat Service V2
+Description=Celery Beat Service V3
 After=network.target redis-server.service postgresql.service
 
 [Service]
@@ -865,6 +865,7 @@ Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
 Restart=always
 RestartSec=10s
 

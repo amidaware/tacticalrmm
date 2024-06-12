@@ -463,8 +463,8 @@ class URLActionRestMethod(models.TextChoices):
 
 
 class URLAction(BaseAuditModel):
-    name = models.CharField(max_length=25)
-    desc = models.CharField(max_length=100, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    desc = models.TextField(null=True, blank=True)
     pattern = models.TextField()
     action_type = models.CharField(
         max_length=10, choices=URLActionType.choices, default="web"

@@ -107,7 +107,7 @@ class CoreSettings(BaseAuditModel):
         max_length=255, blank=True, default="gpt-3.5-turbo"
     )
     enable_server_scripts = models.BooleanField(default=True)
-    enable_server_webterminal = models.BooleanField(default=True)
+    enable_server_webterminal = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template

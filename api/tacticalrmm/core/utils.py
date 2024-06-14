@@ -6,17 +6,16 @@ import time
 import urllib.parse
 from base64 import b64encode
 from contextlib import suppress
-from requests.utils import requote_uri
-from typing import TYPE_CHECKING, Optional, cast, Tuple
+from typing import TYPE_CHECKING, Optional, cast
 
 import requests
 import websockets
+from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.http import FileResponse
-from django.apps import apps
 from meshctrl.utils import get_auth_token
-
+from requests.utils import requote_uri
 from tacticalrmm.constants import (
     AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
     CORESETTINGS_CACHE_KEY,
@@ -248,7 +247,7 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     )
 
 
-def run_url_rest_action(*, action_id: int, instance=None) -> Tuple[str, int]:
+def run_url_rest_action(*, action_id: int, instance=None) -> tuple[str, int]:
     import core.models
 
     action = core.models.URLAction.objects.get(pk=action_id)
@@ -279,7 +278,7 @@ def run_test_url_rest_action(
     headers: str,
     instance_type: Optional[str],
     instance_id: Optional[int],
-) -> Tuple[str, str, str]:
+) -> tuple[str, str, str]:
     lookup_instance = None
     if instance_type and instance_type in lookup_apps and instance_id:
         app, model = lookup_apps[instance_type]
@@ -294,15 +293,20 @@ def run_test_url_rest_action(
             url=url, method=method, body=body, headers=headers, instance=lookup_instance
         )
     except requests.exceptions.ConnectionError as error:
-        return (str(error), error.request.url, error.request.body)
+        return (str(error), str(error.request.url), str(error.request.body))
 
     return (response.text, response.request.url, response.request.body)
 
 
 def run_server_script(
     *, body: str, args: list[str], env_vars: list[str], shell: str, timeout: int
-):
+) -> tuple[str, str, float, int]:
+    from core.models import CoreSettings
     from scripts.models import Script
+
+    core = CoreSettings.objects.only("enable_server_scripts").first()
+    if not core.server_scripts_enabled:  # type: ignore
+        return "", "Error: this feature is disabled", 0.00, 1
 
     parsed_args = Script.parse_script_args(None, shell, args)
 

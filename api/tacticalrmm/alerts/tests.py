@@ -2,16 +2,20 @@ from datetime import timedelta
 from itertools import cycle
 from unittest.mock import patch
 
-from django.conf import settings
-from django.utils import timezone as djangotime
-from model_bakery import baker, seq
-
 from alerts.tasks import cache_agents_alert_template
 from autotasks.models import TaskResult
 from core.tasks import cache_db_fields_task, resolve_alerts_task
 from core.utils import get_core_settings
-from core.models import URLActionType
-from tacticalrmm.constants import AgentMonType, AlertSeverity, AlertType, CheckStatus
+from django.conf import settings
+from django.utils import timezone as djangotime
+from model_bakery import baker, seq
+from tacticalrmm.constants import (
+    AgentMonType,
+    AlertSeverity,
+    AlertType,
+    CheckStatus,
+    URLActionType,
+)
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Alert, AlertTemplate

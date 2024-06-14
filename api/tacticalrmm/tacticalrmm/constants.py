@@ -253,6 +253,19 @@ class DebugLogType(models.TextChoices):
     SCRIPTING = "scripting", "Scripting"
 
 
+class URLActionType(models.TextChoices):
+    WEB = "web", "Web"
+    REST = "rest", "Rest"
+
+
+class URLActionRestMethod(models.TextChoices):
+    GET = "get", "Get"
+    POST = "post", "Post"
+    PUT = "put", "Put"
+    DELETE = "delete", "Delete"
+    PATCH = "patch", "Patch"
+
+
 # Agent db fields that are not needed for most queries, speeds up query
 AGENT_DEFER = (
     "wmi_detail",

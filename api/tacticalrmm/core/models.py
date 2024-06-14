@@ -10,9 +10,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
-from twilio.base.exceptions import TwilioRestException
-from twilio.rest import Client as TwClient
-
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     ALL_TIMEZONES,
@@ -20,7 +17,11 @@ from tacticalrmm.constants import (
     CustomFieldModel,
     CustomFieldType,
     DebugLogLevel,
+    URLActionRestMethod,
+    URLActionType,
 )
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client as TwClient
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
@@ -449,28 +450,17 @@ class GlobalKVStore(BaseAuditModel):
         return KeyStoreSerializer(store).data
 
 
-class URLActionType(models.TextChoices):
-    WEB = "web", "Web"
-    REST = "rest", "Rest"
-
-
-class URLActionRestMethod(models.TextChoices):
-    GET = "get", "Get"
-    POST = "post", "Post"
-    PUT = "put", "Put"
-    DELETE = "delete", "Delete"
-    PATCH = "patch", "Patch"
-
-
 class URLAction(BaseAuditModel):
     name = models.CharField(max_length=255)
     desc = models.TextField(null=True, blank=True)
     pattern = models.TextField()
     action_type = models.CharField(
-        max_length=10, choices=URLActionType.choices, default="web"
+        max_length=10, choices=URLActionType.choices, default=URLActionType.WEB
     )
     rest_method = models.CharField(
-        max_length=10, choices=URLActionRestMethod.choices, default="get"
+        max_length=10,
+        choices=URLActionRestMethod.choices,
+        default=URLActionRestMethod.POST,
     )
     rest_body = models.TextField(null=True, blank=True, default="")
     rest_headers = models.TextField(null=True, blank=True, default="")

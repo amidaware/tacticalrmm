@@ -41,9 +41,11 @@ class DashInfo(AsyncJsonWebsocketConsumer):
 
         if isinstance(self.user, AnonymousUser):
             await self.close()
+            return
 
         if self.user.block_dashboard_login:
             await self.close()
+            return
 
         await self.accept()
         self.connected = True

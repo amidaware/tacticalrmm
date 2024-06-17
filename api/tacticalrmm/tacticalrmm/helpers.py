@@ -133,7 +133,6 @@ def days_until_cert_expires() -> int:
     cert_bytes = Path(cert_file).read_bytes()
 
     cert = x509.load_pem_x509_certificate(cert_bytes)
-    expires = cert.not_valid_after.replace(tzinfo=ZoneInfo("UTC"))
-    delta = expires - djangotime.now()
+    delta = cert.not_valid_after_utc - djangotime.now()
 
     return delta.days

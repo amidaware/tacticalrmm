@@ -1,7 +1,6 @@
 import json
 from contextlib import suppress
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import psutil
 import requests
@@ -532,9 +531,7 @@ def status(request):
     cert_bytes = Path(cert_file).read_bytes()
 
     cert = x509.load_pem_x509_certificate(cert_bytes)
-    expires = cert.not_valid_after.replace(tzinfo=ZoneInfo("UTC"))
-    now = djangotime.now()
-    delta = expires - now
+    delta = cert.not_valid_after_utc - djangotime.now()
 
     redis_url = f"redis://{settings.REDIS_HOST}"
     redis_ping = False

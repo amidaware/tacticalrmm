@@ -749,7 +749,9 @@ class AlertTemplate(BaseAuditModel):
     is_active = models.BooleanField(default=True)
 
     action_type = models.CharField(
-        max_length=10, choices=AlertTemplateActionType.choices, default="script"
+        max_length=10,
+        choices=AlertTemplateActionType.choices,
+        default=AlertTemplateActionType.SCRIPT,
     )
     action = models.ForeignKey(
         "scripts.Script",

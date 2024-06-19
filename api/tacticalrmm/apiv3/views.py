@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from agents.models import Agent, AgentHistory
 from agents.serializers import AgentHistorySerializer
+from alerts.tasks import cache_agents_alert_template
 from apiv3.utils import get_agent_config
 from autotasks.models import AutomatedTask, TaskResult
 from autotasks.serializers import TaskGOGetSerializer, TaskResultSerializer
@@ -491,6 +492,7 @@ class NewAgent(APIView):
 
         ret = {"pk": agent.pk, "token": token.key}
         sync_mesh_perms_task.delay()
+        cache_agents_alert_template.delay()
         return Response(ret)
 
 

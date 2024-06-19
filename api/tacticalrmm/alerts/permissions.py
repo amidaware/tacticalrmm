@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 
+from tacticalrmm.constants import AlertTemplateActionType
 from tacticalrmm.permissions import _has_perm, _has_perm_on_agent
 
 if TYPE_CHECKING:
@@ -52,5 +53,18 @@ class AlertTemplatePerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             return _has_perm(r, "can_list_alerttemplates")
+
+        if r.method in ("POST", "PUT", "PATCH"):
+            # ensure only users with explicit run server script perms can add/modify alert templates
+            # while also still requiring the manage alert template perm
+            if isinstance(r.data, dict):
+                if (
+                    r.data.get("action_type") == AlertTemplateActionType.SERVER
+                    or r.data.get("resolved_action_type")
+                    == AlertTemplateActionType.SERVER
+                ):
+                    return _has_perm(r, "can_run_server_scripts") and _has_perm(
+                        r, "can_manage_alerttemplates"
+                    )
 
         return _has_perm(r, "can_manage_alerttemplates")

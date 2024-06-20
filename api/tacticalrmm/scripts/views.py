@@ -12,6 +12,7 @@ from tacticalrmm.constants import ScriptShell, ScriptType
 from tacticalrmm.helpers import notify_error
 
 from .models import Script, ScriptSnippet
+from logs.models import AuditLog
 from .permissions import ScriptsPerms
 from .serializers import (
     ScriptSerializer,
@@ -153,12 +154,14 @@ class TestScript(APIView):
             agent, request.data["shell"], request.data["env_vars"]
         )
 
+        script_body = Script.replace_with_snippets(request.data["code"])
+
         data = {
             "func": "runscriptfull",
             "timeout": request.data["timeout"],
             "script_args": parsed_args,
             "payload": {
-                "code": Script.replace_with_snippets(request.data["code"]),
+                "code": script_body,
                 "shell": request.data["shell"],
             },
             "run_as_user": request.data["run_as_user"],
@@ -169,6 +172,13 @@ class TestScript(APIView):
 
         r = asyncio.run(
             agent.nats_cmd(data, timeout=request.data["timeout"], wait=True)
+        )
+
+        AuditLog.audit_test_script_run(
+            username=request.user.username,
+            agent=None,
+            script_body=script_body,
+            debug_info={"ip": request._client_ip},
         )
 
         return Response(r)

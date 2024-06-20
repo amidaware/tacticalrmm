@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast, Literal
 
 from django.db import models
 
@@ -160,6 +160,26 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_test_script_run(
+        username: str,
+        script_body: str,
+        agent: Optional["Agent"],
+        debug_info: Dict[Any, Any] = {},
+    ) -> None:
+        
+        debug_info["script_body"] = script_body
+        
+        AuditLog.objects.create(
+            agent=agent.hostname if agent else "Tactical RMM Server",
+            agent_id=agent.agent_id if agent else "N/A",
+            username=username,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.EXEC_SCRIPT,
+            message=f'{username} tested a script on {agent.hostname if agent else "Tactical RMM Server"}',
+            debug_info=debug_info,
+        )
+
+    @staticmethod
     def audit_user_failed_login(username: str, debug_info: Dict[Any, Any] = {}) -> None:
         AuditLog.objects.create(
             username=username,
@@ -211,6 +231,42 @@ class AuditLog(models.Model):
             object_type=classname.lower(),
             action=AuditActionType.URL_ACTION,
             message=f"{username} ran url action: {urlaction.pattern} on {classname}: {name}",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
+    def audit_url_action_test(
+        username: str,
+        url: str,
+        body: str,
+        headers: Dict[Any, Any],
+        instance_type: Literal["agent", "client", "site"],
+        instance_id: int,
+        debug_info: Dict[Any, Any] = {},
+    ) -> None:
+        from agents.models import Agent
+
+        debug_info["body"] = body
+        debug_info["headers"] = headers
+
+        if instance_type == "agent":
+            instance = Agent.objects.get(pk=instance_id)
+
+        elif instance_type == "site":
+            instance = Site.objects.get(pk=instance_id)
+            
+        elif instance_type == "client":
+            instance = Client.objects.get(pk=instance_id)
+            
+        name = instance.hostname if isinstance(instance, Agent) else instance.name
+        classname = type(instance).__name__
+        AuditLog.objects.create(
+            username=username,
+            agent=name if isinstance(instance, Agent) else None,
+            agent_id=instance.agent_id if isinstance(instance, Agent) else None,
+            object_type=classname.lower(),
+            action=AuditActionType.URL_ACTION,
+            message=f"{username} tested url action: {url} on {classname}: {name}",
             debug_info=debug_info,
         )
 

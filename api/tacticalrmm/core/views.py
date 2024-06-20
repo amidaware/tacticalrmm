@@ -451,6 +451,19 @@ class RunTestURLAction(APIView):
         instance_type = serializer.validated_data.get("run_instance_type", None)
         instance_id = serializer.validated_data.get("run_instance_id", None)
 
+        # make sure user has permissions to run against client/agent/site
+        if instance_type == "agent":
+            if not _has_perm_on_agent(request.user, instance_id):
+                raise PermissionDenied()
+
+        elif instance_type == "site":
+            if not _has_perm_on_site(request.user, instance_id):
+                raise PermissionDenied()
+            
+        elif instance_type == "client":
+            if not _has_perm_on_client(request.user, instance_id):
+                raise PermissionDenied()
+
         result, replaced_url, replaced_body = run_test_url_rest_action(
             url=url,
             body=body,
@@ -459,6 +472,17 @@ class RunTestURLAction(APIView):
             instance_type=instance_type,
             instance_id=instance_id,
         )
+
+        AuditLog.audit_url_action_test(
+            username=request.user.username,
+            url=url,
+            body=replaced_body,
+            headers=headers,
+            instance_type=instance_type,
+            instance_id=instance_id,
+            debug_info={"ip": request._client_ip},
+        )
+
 
         return Response({"url": replaced_url, "result": result, "body": replaced_body})
 
@@ -479,7 +503,12 @@ class TestRunServerScript(APIView):
             shell=request.data["shell"],
         )
 
-        # TODO add auditing
+        AuditLog.audit_test_script_run(
+            username=request.user.username,
+            agent=None,
+            script_body=request.data["code"],
+            debug_info={"ip": request._client_ip},
+        )
 
         ret = {
             "stdout": stdout,

@@ -1,25 +1,25 @@
 import asyncio
 
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.conf import settings
 
 from agents.permissions import RunScriptPerms
+from core.utils import clear_entire_cache
+from logs.models import AuditLog
 from tacticalrmm.constants import ScriptShell, ScriptType
 from tacticalrmm.helpers import notify_error
 
 from .models import Script, ScriptSnippet
-from logs.models import AuditLog
 from .permissions import ScriptsPerms
 from .serializers import (
     ScriptSerializer,
     ScriptSnippetSerializer,
     ScriptTableSerializer,
 )
-from core.utils import clear_entire_cache
 
 
 class GetAddScripts(APIView):

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast, Literal
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Tuple, Union, cast
 
 from django.db import models
 
@@ -166,9 +166,9 @@ class AuditLog(models.Model):
         agent: Optional["Agent"],
         debug_info: Dict[Any, Any] = {},
     ) -> None:
-        
+
         debug_info["script_body"] = script_body
-        
+
         AuditLog.objects.create(
             agent=agent.hostname if agent else "Tactical RMM Server",
             agent_id=agent.agent_id if agent else "N/A",
@@ -254,10 +254,10 @@ class AuditLog(models.Model):
 
         elif instance_type == "site":
             instance = Site.objects.get(pk=instance_id)
-            
+
         elif instance_type == "client":
             instance = Client.objects.get(pk=instance_id)
-            
+
         name = instance.hostname if isinstance(instance, Agent) else instance.name
         classname = type(instance).__name__
         AuditLog.objects.create(

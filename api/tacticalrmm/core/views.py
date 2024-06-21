@@ -11,22 +11,23 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.views.decorators.csrf import csrf_exempt
 from redis import from_url
+from rest_framework import serializers
+from rest_framework import status as drf_status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import serializers, status as drf_status
 
 from core.decorators import monitoring_view
 from core.tasks import sync_mesh_perms_task
 from core.utils import (
     get_core_settings,
-    sysd_svc_is_running,
-    token_is_valid,
     run_server_script,
     run_test_url_rest_action,
+    sysd_svc_is_running,
+    token_is_valid,
 )
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
@@ -38,14 +39,13 @@ from tacticalrmm.permissions import (
 )
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
-
 from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
     CustomFieldPerms,
+    RunServerScriptPerms,
     ServerMaintPerms,
     URLActionPerms,
-    RunServerScriptPerms,
     WebTerminalPerms,
 )
 from .serializers import (
@@ -383,7 +383,7 @@ class RunURLAction(APIView):
 
         from agents.models import Agent
         from clients.models import Client, Site
-        from tacticalrmm.utils import get_db_value, RE_DB_VALUE
+        from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 
         if "agent_id" in request.data.keys():
             if not _has_perm_on_agent(request.user, request.data["agent_id"]):
@@ -456,7 +456,7 @@ class RunTestURLAction(APIView):
         elif instance_type == "site":
             if not _has_perm_on_site(request.user, instance_id):
                 raise PermissionDenied()
-            
+
         elif instance_type == "client":
             if not _has_perm_on_client(request.user, instance_id):
                 raise PermissionDenied()
@@ -479,7 +479,6 @@ class RunTestURLAction(APIView):
             instance_id=instance_id,
             debug_info={"ip": request._client_ip},
         )
-
 
         return Response({"url": replaced_url, "result": result, "body": replaced_body})
 

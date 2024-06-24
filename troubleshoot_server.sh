@@ -4,6 +4,7 @@
 # Contributed by https://github.com/dinger1986
 # v1.1 1/21/2022 update to include all services
 # v 1.2 6/24/2023 changed to add date, easier readability and ipv4 addresses only for checks
+# v 1.3 6/24/2024 Adding resolvconf helper
 
 # This script asks for the 3 subdomains, checks they exist, checks they resolve locally and remotely (using google dns for remote),
 # checks services are running, checks ports are opened. The only part that will make the script stop is if the sub domains dont exist, theres literally no point in going further if thats the case

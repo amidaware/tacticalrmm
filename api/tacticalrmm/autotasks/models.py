@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from agents.models import Agent
     from checks.models import Check
 
+from tacticalrmm.helpers import has_script_actions, has_webhook
 from tacticalrmm.models import PermissionQuerySet
 from tacticalrmm.utils import (
     bitdays_to_string,
@@ -446,18 +447,19 @@ class AutomatedTask(BaseAuditModel):
         return "ok"
 
     def should_create_alert(self, alert_template=None):
+        has_autotask_notification = (
+            self.dashboard_alert or self.email_alert or self.text_alert
+        )
+        has_alert_template_notification = alert_template and (
+            alert_template.task_always_alert
+            or alert_template.task_always_email
+            or alert_template.task_always_text
+        )
         return (
-            self.dashboard_alert
-            or self.email_alert
-            or self.text_alert
-            or (
-                alert_template
-                and (
-                    alert_template.task_always_alert
-                    or alert_template.task_always_email
-                    or alert_template.task_always_text
-                )
-            )
+            has_autotask_notification
+            or has_alert_template_notification
+            or has_webhook(alert_template)
+            or has_script_actions(alert_template)
         )
 
 

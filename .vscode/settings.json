@@ -5,7 +5,8 @@
   "python.analysis.diagnosticSeverityOverrides": {
     "reportUnusedImport": "error",
     "reportDuplicateImport": "error",
-    "reportGeneralTypeIssues": "none"
+    "reportGeneralTypeIssues": "none",
+    "reportOptionalMemberAccess": "none",
   },
   "python.analysis.typeCheckingMode": "basic",
   "editor.bracketPairColorization.enabled": true,

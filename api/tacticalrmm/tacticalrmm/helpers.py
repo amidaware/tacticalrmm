@@ -16,6 +16,8 @@ from rest_framework.response import Response
 if TYPE_CHECKING:
     from datetime import datetime
 
+    from alerts.models import AlertTemplate
+
 
 def get_certs() -> tuple[str, str]:
     domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
@@ -136,3 +138,13 @@ def days_until_cert_expires() -> int:
     delta = cert.not_valid_after_utc - djangotime.now()
 
     return delta.days
+
+
+def has_webhook(alert_templ: "AlertTemplate") -> bool:
+    return bool(
+        alert_templ and (alert_templ.action_rest or alert_templ.resolved_action_rest)
+    )
+
+
+def has_script_actions(alert_templ: "AlertTemplate") -> bool:
+    return bool(alert_templ and (alert_templ.action or alert_templ.resolved_action))

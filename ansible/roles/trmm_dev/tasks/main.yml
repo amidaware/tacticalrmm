@@ -329,7 +329,7 @@
   tags: nginx
   become: yes
   ansible.builtin.apt_key:
-    url: https://nginx.org/packages/keys/nginx_signing.key
+    url: https://nginx.org/keys/nginx_signing.key
     state: present
 
 - name: add nginx repo

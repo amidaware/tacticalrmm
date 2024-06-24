@@ -13,6 +13,18 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Function to check if a resolvconf is installed
+command_exists() {
+    command -v "$1" &> /dev/null
+}
+
+# Check if resolvconf command is available
+if ! command_exists resolvconf; then
+    echo -e "${RED}Error: resolvconf command not found.${NC}"
+    echo -e "${YELLOW}Please install it using: ${NC}sudo apt install resolvconf"
+    exit 1
+fi
+
 # Set date at the top of the troubleshooting script
 now=$(date)
 echo -e -------------- $now -------------- | tee -a checklog.log

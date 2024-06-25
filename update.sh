@@ -202,6 +202,15 @@ EOF
   sudo apt install -y nginx
 fi
 
+if [ -f /etc/apt/keyrings/nginx-archive-keyring.gpg ]; then
+  NGINX_KEY_EXPIRED=$(gpg --dry-run --quiet --no-keyring --import --import-options import-show /etc/apt/keyrings/nginx-archive-keyring.gpg | grep -B 1 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62 | grep expired)
+  if [[ $NGINX_KEY_EXPIRED ]]; then
+    sudo rm -f /etc/apt/keyrings/nginx-archive-keyring.gpg
+    wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
+    sudo apt update
+  fi
+fi
+
 nginxdefaultconf='/etc/nginx/nginx.conf'
 CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 4096" $nginxdefaultconf)
 if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then

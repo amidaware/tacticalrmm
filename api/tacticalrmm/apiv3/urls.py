@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from apiv3.support import views as support_views
 
 urlpatterns = [
     path("checkrunner/", views.CheckRunner.as_view()),
@@ -20,4 +21,6 @@ urlpatterns = [
     path("<int:pk>/chocoresult/", views.ChocoResult.as_view()),
     path("<int:pk>/<str:agentid>/histresult/", views.AgentHistoryResult.as_view()),
     path("<str:agentid>/config/", views.AgentConfig.as_view()),
+    path("<str:agentid>/support/", views.SupportConfig.as_view()),
+    path("<str:agentid>/support/<str:file_name>/", support_views.ServeFile.as_view(), name='serve_file'),
 ]

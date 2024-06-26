@@ -29,6 +29,10 @@ app.conf.beat_schedule = {
         "task": "winupdate.tasks.check_agent_update_schedule_task",
         "schedule": crontab(minute=5, hour="*"),
     },
+    "update-systray-config": {
+        "task": "apiv3.tasks.update_systray_config",
+        "schedule": crontab(minute="*/5", hour="*"),
+    }, 
     "agent-auto-update": {
         "task": "agents.tasks.auto_self_agent_update_task",
         "schedule": crontab(minute=35, hour="*"),

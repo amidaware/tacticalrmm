@@ -105,6 +105,7 @@ class CoreSettings(BaseAuditModel):
     open_ai_model = models.CharField(
         max_length=255, blank=True, default="gpt-3.5-turbo"
     )
+    systray_enabled = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template

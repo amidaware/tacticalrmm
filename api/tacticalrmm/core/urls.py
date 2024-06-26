@@ -20,4 +20,6 @@ urlpatterns = [
     path("clearcache/", views.clear_cache),
     path("status/", views.status),
     path("openai/generate/", views.OpenAICodeCompletion.as_view()),
+    path("systray/", views.SysTrayView.as_view()),
+    path("systray/<str:file_name>/", views.ServeFile.as_view()),
 ]

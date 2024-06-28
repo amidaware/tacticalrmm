@@ -2,15 +2,20 @@ from datetime import timedelta
 from itertools import cycle
 from unittest.mock import patch
 
-from django.conf import settings
-from django.utils import timezone as djangotime
-from model_bakery import baker, seq
-
 from alerts.tasks import cache_agents_alert_template
 from autotasks.models import TaskResult
 from core.tasks import cache_db_fields_task, resolve_alerts_task
 from core.utils import get_core_settings
-from tacticalrmm.constants import AgentMonType, AlertSeverity, AlertType, CheckStatus
+from django.conf import settings
+from django.utils import timezone as djangotime
+from model_bakery import baker, seq
+from tacticalrmm.constants import (
+    AgentMonType,
+    AlertSeverity,
+    AlertType,
+    CheckStatus,
+    URLActionType,
+)
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Alert, AlertTemplate
@@ -277,12 +282,32 @@ class TestAlertsViews(TacticalTestCase):
         resp = self.client.get("/alerts/templates/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
-        alert_template = baker.make("alerts.AlertTemplate")
-        url = f"/alerts/templates/{alert_template.pk}/"
+        agent_script = baker.make("scripts.Script")
+        server_script = baker.make("scripts.Script")
+        webhook = baker.make("core.URLAction", action_type=URLActionType.REST)
 
+        alert_template_agent_script = baker.make(
+            "alerts.AlertTemplate", action=agent_script
+        )
+        url = f"/alerts/templates/{alert_template_agent_script.pk}/"
         resp = self.client.get(url, format="json")
-        serializer = AlertTemplateSerializer(alert_template)
+        serializer = AlertTemplateSerializer(alert_template_agent_script)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data, serializer.data)
 
+        alert_template_server_script = baker.make(
+            "alerts.AlertTemplate", action=server_script
+        )
+        url = f"/alerts/templates/{alert_template_server_script.pk}/"
+        resp = self.client.get(url, format="json")
+        serializer = AlertTemplateSerializer(alert_template_server_script)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data, serializer.data)
+
+        alert_template_webhook = baker.make("alerts.AlertTemplate", action_rest=webhook)
+        url = f"/alerts/templates/{alert_template_webhook.pk}/"
+        resp = self.client.get(url, format="json")
+        serializer = AlertTemplateSerializer(alert_template_webhook)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
 

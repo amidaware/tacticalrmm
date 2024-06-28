@@ -3,6 +3,7 @@ from rest_framework.serializers import ModelSerializer, ReadOnlyField
 
 from automation.serializers import PolicySerializer
 from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
+from tacticalrmm.constants import AlertTemplateActionType
 
 from .models import Alert, AlertTemplate
 
@@ -25,13 +26,28 @@ class AlertTemplateSerializer(ModelSerializer):
     task_settings = ReadOnlyField(source="has_task_settings")
     core_settings = ReadOnlyField(source="has_core_settings")
     default_template = ReadOnlyField(source="is_default_template")
-    action_name = ReadOnlyField(source="action.name")
-    resolved_action_name = ReadOnlyField(source="resolved_action.name")
+    action_name = SerializerMethodField()
+    resolved_action_name = SerializerMethodField()
     applied_count = SerializerMethodField()
 
     class Meta:
         model = AlertTemplate
         fields = "__all__"
+
+    def get_action_name(self, obj):
+        if obj.action_type == AlertTemplateActionType.REST and obj.action_rest:
+            return obj.action_rest.name
+
+        return obj.action.name if obj.action else ""
+
+    def get_resolved_action_name(self, obj):
+        if (
+            obj.resolved_action_type == AlertTemplateActionType.REST
+            and obj.resolved_action_rest
+        ):
+            return obj.resolved_action_rest.name
+
+        return obj.resolved_action.name if obj.resolved_action else ""
 
     def get_applied_count(self, instance):
         return (

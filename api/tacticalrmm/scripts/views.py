@@ -1,13 +1,15 @@
 import asyncio
 
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.conf import settings
 
 from agents.permissions import RunScriptPerms
+from core.utils import clear_entire_cache
+from logs.models import AuditLog
 from tacticalrmm.constants import ScriptShell, ScriptType
 from tacticalrmm.helpers import notify_error
 
@@ -18,7 +20,6 @@ from .serializers import (
     ScriptSnippetSerializer,
     ScriptTableSerializer,
 )
-from core.utils import clear_entire_cache
 
 
 class GetAddScripts(APIView):
@@ -153,12 +154,14 @@ class TestScript(APIView):
             agent, request.data["shell"], request.data["env_vars"]
         )
 
+        script_body = Script.replace_with_snippets(request.data["code"])
+
         data = {
             "func": "runscriptfull",
             "timeout": request.data["timeout"],
             "script_args": parsed_args,
             "payload": {
-                "code": Script.replace_with_snippets(request.data["code"]),
+                "code": script_body,
                 "shell": request.data["shell"],
             },
             "run_as_user": request.data["run_as_user"],
@@ -169,6 +172,13 @@ class TestScript(APIView):
 
         r = asyncio.run(
             agent.nats_cmd(data, timeout=request.data["timeout"], wait=True)
+        )
+
+        AuditLog.audit_test_script_run(
+            username=request.user.username,
+            agent=agent,
+            script_body=script_body,
+            debug_info={"ip": request._client_ip},
         )
 
         return Response(r)

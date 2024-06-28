@@ -36,3 +36,13 @@ class CustomFieldPerms(permissions.BasePermission):
             return _has_perm(r, "can_view_customfields")
 
         return _has_perm(r, "can_manage_customfields")
+
+
+class RunServerScriptPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        return _has_perm(r, "can_run_server_scripts")
+
+
+class WebTerminalPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        return _has_perm(r, "can_use_webterm")

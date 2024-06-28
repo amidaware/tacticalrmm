@@ -26,12 +26,12 @@ class GetAddAlerts(APIView):
         # top 10 alerts for dashboard icon
         if "top" in request.data.keys():
             alerts = (
-                Alert.objects.filter_by_role(request.user)
+                Alert.objects.filter_by_role(request.user)  # type: ignore
                 .filter(resolved=False, snoozed=False, hidden=False)
                 .order_by("alert_time")[: int(request.data["top"])]
             )
             count = (
-                Alert.objects.filter_by_role(request.user)
+                Alert.objects.filter_by_role(request.user)  # type: ignore
                 .filter(resolved=False, snoozed=False, hidden=False)
                 .count()
             )

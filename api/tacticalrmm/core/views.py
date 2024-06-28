@@ -1,8 +1,6 @@
 import json
-import re
 from contextlib import suppress
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import psutil
 import requests
@@ -13,6 +11,8 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.views.decorators.csrf import csrf_exempt
 from redis import from_url
+from rest_framework import serializers
+from rest_framework import status as drf_status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -22,7 +22,13 @@ from rest_framework.views import APIView
 
 from core.decorators import monitoring_view
 from core.tasks import sync_mesh_perms_task
-from core.utils import get_core_settings, sysd_svc_is_running, token_is_valid
+from core.utils import (
+    get_core_settings,
+    run_server_script,
+    run_test_url_rest_action,
+    sysd_svc_is_running,
+    token_is_valid,
+)
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
 from tacticalrmm.helpers import get_certs, notify_error
@@ -37,8 +43,10 @@ from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
     CustomFieldPerms,
+    RunServerScriptPerms,
     ServerMaintPerms,
     URLActionPerms,
+    WebTerminalPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -124,6 +132,8 @@ def dashboard_info(request):
             "dash_negative_color": request.user.dash_negative_color,
             "dash_warning_color": request.user.dash_warning_color,
             "run_cmd_placeholder_text": runcmd_placeholder_text(),
+            "server_scripts_enabled": core_settings.server_scripts_enabled,
+            "web_terminal_enabled": core_settings.web_terminal_enabled,
         }
     )
 
@@ -373,7 +383,7 @@ class RunURLAction(APIView):
 
         from agents.models import Agent
         from clients.models import Client, Site
-        from tacticalrmm.utils import get_db_value
+        from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 
         if "agent_id" in request.data.keys():
             if not _has_perm_on_agent(request.user, request.data["agent_id"]):
@@ -395,14 +405,12 @@ class RunURLAction(APIView):
 
         action = get_object_or_404(URLAction, pk=request.data["action"])
 
-        pattern = re.compile("\\{\\{([\\w\\s]+\\.[\\w\\s]+)\\}\\}")
-
         url_pattern = action.pattern
 
-        for string in re.findall(pattern, action.pattern):
-            value = get_db_value(string=string, instance=instance)
+        for string, model, prop in RE_DB_VALUE.findall(url_pattern):
+            value = get_db_value(string=f"{model}.{prop}", instance=instance)
 
-            url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
+            url_pattern = url_pattern.replace(string, str(value))
 
         AuditLog.audit_url_action(
             username=request.user.username,
@@ -412,6 +420,113 @@ class RunURLAction(APIView):
         )
 
         return Response(requote_uri(url_pattern))
+
+
+class RunTestURLAction(APIView):
+    permission_classes = [IsAuthenticated, URLActionPerms]
+
+    class InputSerializer(serializers.Serializer):
+        pattern = serializers.CharField(required=True)
+        rest_body = serializers.CharField()
+        rest_headers = serializers.CharField()
+        rest_method = serializers.ChoiceField(
+            required=True, choices=["get", "post", "put", "delete", "patch"]
+        )
+        run_instance_type = serializers.ChoiceField(
+            choices=["agent", "client", "site", "none"]
+        )
+        run_instance_id = serializers.CharField(allow_null=True)
+
+    def post(self, request):
+        serializer = self.InputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        url = serializer.validated_data.get("pattern")
+        body = serializer.validated_data.get("rest_body", None)
+        headers = serializer.validated_data.get("rest_headers", None)
+        method = serializer.validated_data.get("rest_method")
+        instance_type = serializer.validated_data.get("run_instance_type", None)
+        instance_id = serializer.validated_data.get("run_instance_id", None)
+
+        # make sure user has permissions to run against client/agent/site
+        if instance_type == "agent":
+            if not _has_perm_on_agent(request.user, instance_id):
+                raise PermissionDenied()
+
+        elif instance_type == "site":
+            if not _has_perm_on_site(request.user, instance_id):
+                raise PermissionDenied()
+
+        elif instance_type == "client":
+            if not _has_perm_on_client(request.user, instance_id):
+                raise PermissionDenied()
+
+        result, replaced_url, replaced_body = run_test_url_rest_action(
+            url=url,
+            body=body,
+            headers=headers,
+            method=method,
+            instance_type=instance_type,
+            instance_id=instance_id,
+        )
+
+        AuditLog.audit_url_action_test(
+            username=request.user.username,
+            url=url,
+            body=replaced_body,
+            headers=headers,
+            instance_type=instance_type,
+            instance_id=instance_id,
+            debug_info={"ip": request._client_ip},
+        )
+
+        return Response({"url": replaced_url, "result": result, "body": replaced_body})
+
+
+class TestRunServerScript(APIView):
+    permission_classes = [IsAuthenticated, RunServerScriptPerms]
+
+    def post(self, request):
+        core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+        if not core.server_scripts_enabled:
+            return notify_error("This feature is disabled.")
+
+        stdout, stderr, execution_time, retcode = run_server_script(
+            body=request.data["code"],
+            args=request.data["args"],
+            env_vars=request.data["env_vars"],
+            timeout=request.data["timeout"],
+            shell=request.data["shell"],
+        )
+
+        AuditLog.audit_test_script_run(
+            username=request.user.username,
+            agent=None,
+            script_body=request.data["code"],
+            debug_info={"ip": request._client_ip},
+        )
+
+        ret = {
+            "stdout": stdout,
+            "stderr": stderr,
+            "execution_time": f"{execution_time:.4f}",
+            "retcode": retcode,
+        }
+
+        return Response(ret)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, WebTerminalPerms])
+def webterm_perms(request):
+    # this view is only used to display a notification if feature is disabled
+    # perms are actually enforced in the consumer
+    core: CoreSettings = CoreSettings.objects.first()  # type: ignore
+    if not core.web_terminal_enabled:
+        ret = "This feature is disabled."
+        return Response(ret, status=drf_status.HTTP_412_PRECONDITION_FAILED)
+
+    return Response("ok")
 
 
 class TwilioSMSTest(APIView):
@@ -444,9 +559,7 @@ def status(request):
     cert_bytes = Path(cert_file).read_bytes()
 
     cert = x509.load_pem_x509_certificate(cert_bytes)
-    expires = cert.not_valid_after.replace(tzinfo=ZoneInfo("UTC"))
-    now = djangotime.now()
-    delta = expires - now
+    delta = cert.not_valid_after_utc - djangotime.now()
 
     redis_url = f"redis://{settings.REDIS_HOST}"
     redis_ping = False

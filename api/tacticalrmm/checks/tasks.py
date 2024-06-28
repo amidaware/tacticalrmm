@@ -8,6 +8,7 @@ from alerts.models import Alert
 from checks.models import CheckResult
 from tacticalrmm.celery import app
 from tacticalrmm.helpers import rand_range
+from tacticalrmm.logger import logger
 
 
 @app.task
@@ -120,9 +121,9 @@ def handle_resolved_check_email_alert_task(pk: int) -> str:
 def prune_check_history(older_than_days: int) -> str:
     from .models import CheckHistory
 
-    CheckHistory.objects.filter(
-        x__lt=djangotime.make_aware(dt.datetime.today())
-        - djangotime.timedelta(days=older_than_days)
+    c, _ = CheckHistory.objects.filter(
+        x__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     ).delete()
+    logger.info(f"Pruned {c} check history objects")
 
     return "ok"

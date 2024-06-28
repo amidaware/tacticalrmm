@@ -40,7 +40,7 @@ from tacticalrmm.constants import (
     PAAction,
     PAStatus,
 )
-from tacticalrmm.helpers import setup_nats_options
+from tacticalrmm.helpers import has_script_actions, has_webhook, setup_nats_options
 from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
@@ -950,18 +950,22 @@ class Agent(BaseAuditModel):
     def should_create_alert(
         self, alert_template: "Optional[AlertTemplate]" = None
     ) -> bool:
-        return bool(
+        has_agent_notification = (
             self.overdue_dashboard_alert
             or self.overdue_email_alert
             or self.overdue_text_alert
-            or (
-                alert_template
-                and (
-                    alert_template.agent_always_alert
-                    or alert_template.agent_always_email
-                    or alert_template.agent_always_text
-                )
-            )
+        )
+        has_alert_template_notification = alert_template and (
+            alert_template.agent_always_alert
+            or alert_template.agent_always_email
+            or alert_template.agent_always_text
+        )
+
+        return bool(
+            has_agent_notification
+            or has_alert_template_notification
+            or has_webhook(alert_template)
+            or has_script_actions(alert_template)
         )
 
     def send_outage_email(self) -> None:

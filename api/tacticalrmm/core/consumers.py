@@ -132,6 +132,7 @@ class TerminalConsumer(JsonWebsocketConsumer):
             stderr=slave_fd,
             preexec_fn=os.setsid,
             env=env,
+            cwd=os.getenv("HOME", os.getcwd()),
         ) as proc:
             self.subprocess = proc
             self.child_pid = proc.pid

@@ -14,6 +14,8 @@ class HostedCoreMixin:
                 ret[field] = "n/a"
 
             ret["sync_mesh_with_trmm"] = True
+            ret["enable_server_scripts"] = False
+            ret["enable_server_webterminal"] = False
 
         return ret
 

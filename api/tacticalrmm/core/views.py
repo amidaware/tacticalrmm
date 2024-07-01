@@ -72,6 +72,8 @@ class GetEditCoreSettings(APIView):
             data.pop("mesh_token")
             data.pop("mesh_username")
             data["sync_mesh_with_trmm"] = True
+            data["enable_server_scripts"] = False
+            data["enable_server_webterminal"] = False
 
         coresettings = CoreSettings.objects.first()
         serializer = CoreSettingsSerializer(instance=coresettings, data=data)

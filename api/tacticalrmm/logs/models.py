@@ -245,20 +245,26 @@ class AuditLog(models.Model):
         debug_info: Dict[Any, Any] = {},
     ) -> None:
         from agents.models import Agent
+        from clients.models import Client, Site
 
         debug_info["body"] = body
         debug_info["headers"] = headers
 
         if instance_type == "agent":
-            instance = Agent.objects.get(pk=instance_id)
+            instance = Agent.objects.get(agent_id=instance_id)
 
         elif instance_type == "site":
             instance = Site.objects.get(pk=instance_id)
 
         elif instance_type == "client":
             instance = Client.objects.get(pk=instance_id)
+        else:
+            instance = None
 
-        name = instance.hostname if isinstance(instance, Agent) else instance.name
+        if instance is not None:
+            name = instance.hostname if isinstance(instance, Agent) else instance.name
+        else:
+            name = "None"
         classname = type(instance).__name__
         AuditLog.objects.create(
             username=username,

@@ -243,7 +243,10 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
         return getattr(requests, method)(new_url, headers=new_headers)
 
     return getattr(requests, method)(
-        new_url, data=json.dumps(new_body), headers=new_headers
+        new_url,
+        data=json.dumps(new_body),
+        headers=new_headers,
+        timeout=8,
     )
 
 
@@ -256,9 +259,12 @@ def run_url_rest_action(*, action_id: int, instance=None) -> tuple[str, int]:
     body = action.rest_body
     headers = action.rest_headers
 
-    response = _run_url_rest_action(
-        url=url, method=method, body=body, headers=headers, instance=instance
-    )
+    try:
+        response = _run_url_rest_action(
+            url=url, method=method, body=body, headers=headers, instance=instance
+        )
+    except Exception as e:
+        return (str(e), 500)
 
     return (response.text, response.status_code)
 
@@ -294,6 +300,8 @@ def run_test_url_rest_action(
         )
     except requests.exceptions.ConnectionError as error:
         return (str(error), str(error.request.url), str(error.request.body))
+    except Exception as e:
+        return (str(e), str(e), str(e))
 
     return (response.text, response.request.url, response.request.body)
 

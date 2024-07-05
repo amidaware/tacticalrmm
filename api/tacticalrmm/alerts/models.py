@@ -293,7 +293,9 @@ class Alert(models.Model):
         from agents.models import Agent, AgentHistory
         from autotasks.models import TaskResult
         from checks.models import CheckResult
+        from core.models import CoreSettings
 
+        core = CoreSettings.objects.first()
         # set variables
         dashboard_severities = None
         email_severities = None
@@ -443,12 +445,23 @@ class Alert(models.Model):
                 alert.hidden = False
                 alert.save(update_fields=["hidden"])
 
+        # TODO rework this
+        if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
+            email_alert = False
+            always_email = False
+
+        elif (
+            alert.severity == AlertSeverity.WARNING
+            and not core.notify_on_warning_alerts
+        ):
+            email_alert = False
+            always_email = False
+
         # send email if enabled
         if email_alert or always_email:
             # check if alert template is set and specific severities are configured
-            if (
-                not alert_template
-                or alert_template
+            if not alert_template or (
+                alert_template
                 and email_severities
                 and alert.severity in email_severities
             ):
@@ -457,14 +470,22 @@ class Alert(models.Model):
                     alert_interval=alert_interval,
                 )
 
+        # TODO rework this
+        if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
+            text_alert = False
+            always_text = False
+        elif (
+            alert.severity == AlertSeverity.WARNING
+            and not core.notify_on_warning_alerts
+        ):
+            text_alert = False
+            always_text = False
+
         # send text if enabled
         if text_alert or always_text:
             # check if alert template is set and specific severities are configured
-            if (
-                not alert_template
-                or alert_template
-                and text_severities
-                and alert.severity in text_severities
+            if not alert_template or (
+                alert_template and text_severities and alert.severity in text_severities
             ):
                 text_task.delay(pk=alert.pk, alert_interval=alert_interval)
 
@@ -513,17 +534,25 @@ class Alert(models.Model):
                 }
 
             elif alert_template.action_type == AlertTemplateActionType.REST:
-                output, status = run_url_rest_action(
-                    action_id=alert_template.action_rest.id, instance=alert
-                )
-                logger.debug(f"{output=} {status=}")
+                if (
+                    alert.severity == AlertSeverity.INFO
+                    and not core.notify_on_info_alerts
+                    or alert.severity == AlertSeverity.WARNING
+                    and not core.notify_on_warning_alerts
+                ):
+                    return
+                else:
+                    output, status = run_url_rest_action(
+                        action_id=alert_template.action_rest.id, instance=alert
+                    )
+                    logger.debug(f"{output=} {status=}")
 
-                r = {
-                    "stdout": output,
-                    "stderr": "",
-                    "execution_time": 0,
-                    "retcode": status,
-                }
+                    r = {
+                        "stdout": output,
+                        "stderr": "",
+                        "execution_time": 0,
+                        "retcode": status,
+                    }
             else:
                 return
 
@@ -555,6 +584,9 @@ class Alert(models.Model):
         from agents.models import Agent, AgentHistory
         from autotasks.models import TaskResult
         from checks.models import CheckResult
+        from core.models import CoreSettings
+
+        core = CoreSettings.objects.first()
 
         # set variables
         email_on_resolved = False
@@ -633,11 +665,29 @@ class Alert(models.Model):
 
         # check if a resolved email notification should be send
         if email_on_resolved and not alert.resolved_email_sent:
-            resolved_email_task.delay(pk=alert.pk)
+            if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
+                pass
+
+            elif (
+                alert.severity == AlertSeverity.WARNING
+                and not core.notify_on_warning_alerts
+            ):
+                pass
+            else:
+                resolved_email_task.delay(pk=alert.pk)
 
         # check if resolved text should be sent
         if text_on_resolved and not alert.resolved_sms_sent:
-            resolved_text_task.delay(pk=alert.pk)
+            if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
+                pass
+
+            elif (
+                alert.severity == AlertSeverity.WARNING
+                and not core.notify_on_warning_alerts
+            ):
+                pass
+            else:
+                resolved_text_task.delay(pk=alert.pk)
 
         # check if resolved script/webhook should be run
         if alert_template and not alert.resolved_action_run:
@@ -685,17 +735,25 @@ class Alert(models.Model):
                 }
 
             elif alert_template.action_type == AlertTemplateActionType.REST:
-                output, status = run_url_rest_action(
-                    action_id=alert_template.resolved_action_rest.id, instance=alert
-                )
-                logger.debug(f"{output=} {status=}")
+                if (
+                    alert.severity == AlertSeverity.INFO
+                    and not core.notify_on_info_alerts
+                    or alert.severity == AlertSeverity.WARNING
+                    and not core.notify_on_warning_alerts
+                ):
+                    return
+                else:
+                    output, status = run_url_rest_action(
+                        action_id=alert_template.resolved_action_rest.id, instance=alert
+                    )
+                    logger.debug(f"{output=} {status=}")
 
-                r = {
-                    "stdout": output,
-                    "stderr": "",
-                    "execution_time": 0,
-                    "retcode": status,
-                }
+                    r = {
+                        "stdout": output,
+                        "stderr": "",
+                        "execution_time": 0,
+                        "retcode": status,
+                    }
             else:
                 return
 

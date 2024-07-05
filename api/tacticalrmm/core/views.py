@@ -491,7 +491,9 @@ class TestRunServerScript(APIView):
     def post(self, request):
         core: CoreSettings = CoreSettings.objects.first()  # type: ignore
         if not core.server_scripts_enabled:
-            return notify_error("This feature is disabled.")
+            return notify_error(
+                "This feature is disabled. It can be enabled in Global Settings."
+            )
 
         stdout, stderr, execution_time, retcode = run_server_script(
             body=request.data["code"],
@@ -525,7 +527,7 @@ def webterm_perms(request):
     # perms are actually enforced in the consumer
     core: CoreSettings = CoreSettings.objects.first()  # type: ignore
     if not core.web_terminal_enabled:
-        ret = "This feature is disabled."
+        ret = "This feature is disabled. It can be enabled in Global Settings."
         return Response(ret, status=drf_status.HTTP_412_PRECONDITION_FAILED)
 
     return Response("ok")

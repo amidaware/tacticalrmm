@@ -108,6 +108,8 @@ class CoreSettings(BaseAuditModel):
     )
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
+    notify_on_info_alerts = models.BooleanField(default=False)
+    notify_on_warning_alerts = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template

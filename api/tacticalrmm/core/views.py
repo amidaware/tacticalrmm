@@ -495,8 +495,12 @@ class TestRunServerScript(APIView):
                 "This feature is disabled. It can be enabled in Global Settings."
             )
 
+        code: str = request.data["code"]
+        if not code.startswith("#!"):
+            return notify_error("Missing shebang!")
+
         stdout, stderr, execution_time, retcode = run_server_script(
-            body=request.data["code"],
+            body=code,
             args=request.data["args"],
             env_vars=request.data["env_vars"],
             timeout=request.data["timeout"],
@@ -506,7 +510,7 @@ class TestRunServerScript(APIView):
         AuditLog.audit_test_script_run(
             username=request.user.username,
             agent=None,
-            script_body=request.data["code"],
+            script_body=code,
             debug_info={"ip": request._client_ip},
         )
 

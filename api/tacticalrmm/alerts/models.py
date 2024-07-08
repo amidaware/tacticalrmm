@@ -610,6 +610,8 @@ class Alert(models.Model):
                 email_on_resolved = alert_template.agent_email_on_resolved
                 text_on_resolved = alert_template.agent_text_on_resolved
                 run_script_action = alert_template.agent_script_actions
+                email_severities = [AlertSeverity.ERROR]
+                text_severities = [AlertSeverity.ERROR]
 
             if agent.overdue_email_alert:
                 email_on_resolved = True
@@ -633,6 +635,14 @@ class Alert(models.Model):
                 email_on_resolved = alert_template.check_email_on_resolved
                 text_on_resolved = alert_template.check_text_on_resolved
                 run_script_action = alert_template.check_script_actions
+                email_severities = alert_template.check_email_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                text_severities = alert_template.check_text_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
 
         elif isinstance(instance, TaskResult):
             from autotasks.tasks import (
@@ -651,6 +661,14 @@ class Alert(models.Model):
                 email_on_resolved = alert_template.task_email_on_resolved
                 text_on_resolved = alert_template.task_text_on_resolved
                 run_script_action = alert_template.task_script_actions
+                email_severities = alert_template.task_email_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                text_severities = alert_template.task_text_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
 
         else:
             return
@@ -673,6 +691,8 @@ class Alert(models.Model):
                 and not core.notify_on_warning_alerts
             ):
                 pass
+            elif alert.severity not in email_severities:
+                pass
             else:
                 resolved_email_task.delay(pk=alert.pk)
 
@@ -685,6 +705,8 @@ class Alert(models.Model):
                 alert.severity == AlertSeverity.WARNING
                 and not core.notify_on_warning_alerts
             ):
+                pass
+            elif alert.severity not in text_severities:
                 pass
             else:
                 resolved_text_task.delay(pk=alert.pk)

@@ -1,7 +1,7 @@
 adrf==0.1.6
 asgiref==3.8.1
 celery==5.4.0
-certifi==2024.6.2
+certifi==2024.7.4
 cffi==1.16.0
 channels==4.1.0
 channels_redis==4.2.0

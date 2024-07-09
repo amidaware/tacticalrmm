@@ -31,7 +31,7 @@ WEB_VERSION = "0.101.46"
 APP_VER = "0.0.193"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.7.0"
+LATEST_AGENT_VER = "2.8.0"
 
 MESH_VER = "1.1.21"
 
@@ -43,7 +43,7 @@ INSTALL_NUSHELL = True
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_NUSHELL_VERSION = "0.95.0"
+INSTALL_NUSHELL_VERSION = "0.93.0"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.

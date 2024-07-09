@@ -70,7 +70,7 @@ if getattr(settings, "SWAGGER_ENABLED", False):
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
-    path("ws/sendcmd/", SendCMD.as_asgi()),
+    # path("ws/sendcmd/", SendCMD.as_asgi()),
 ]
 
 if not (

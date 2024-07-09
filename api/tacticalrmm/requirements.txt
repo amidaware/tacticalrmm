@@ -6,7 +6,7 @@ cffi==1.16.0
 channels==4.1.0
 channels_redis==4.2.0
 cryptography==42.0.8
-Django==4.2.13
+Django==4.2.14
 django-cors-headers==4.4.0
 django-filter==24.2
 django-rest-knox==4.2.0

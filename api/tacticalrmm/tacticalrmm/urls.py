@@ -3,7 +3,8 @@ from django.urls import include, path, register_converter
 from knox import views as knox_views
 
 from accounts.views import CheckCreds, CheckCredsV2, LoginView, LoginViewV2
-from agents.consumers import SendCMD
+
+# from agents.consumers import SendCMD
 from core.consumers import DashInfo, TerminalConsumer
 from core.views import home
 

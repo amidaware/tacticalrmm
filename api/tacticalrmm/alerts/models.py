@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from django.contrib.postgres.fields import ArrayField
@@ -8,16 +7,20 @@ from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
+from core.utils import run_server_script, run_url_rest_action
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     AgentHistoryType,
     AgentMonType,
     AlertSeverity,
+    AlertTemplateActionType,
     AlertType,
     CheckType,
     DebugLogType,
 )
+from tacticalrmm.logger import logger
 from tacticalrmm.models import PermissionQuerySet
+from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 
 if TYPE_CHECKING:
     from agents.models import Agent
@@ -95,6 +98,15 @@ class Alert(models.Model):
     def client(self) -> "Client":
         return self.agent.client
 
+    @property
+    def get_result(self):
+        if self.alert_type == AlertType.CHECK:
+            return self.assigned_check.checkresults.get(agent=self.agent)
+        elif self.alert_type == AlertType.TASK:
+            return self.assigned_task.taskresults.get(agent=self.agent)
+
+        return None
+
     def resolve(self) -> None:
         self.resolved = True
         self.resolved_on = djangotime.now()
@@ -106,6 +118,9 @@ class Alert(models.Model):
     def create_or_return_availability_alert(
         cls, agent: Agent, skip_create: bool = False
     ) -> Optional[Alert]:
+        if agent.maintenance_mode:
+            return None
+
         if not cls.objects.filter(
             agent=agent, alert_type=AlertType.AVAILABILITY, resolved=False
         ).exists():
@@ -154,6 +169,9 @@ class Alert(models.Model):
         alert_severity: Optional[str] = None,
         skip_create: bool = False,
     ) -> "Optional[Alert]":
+        if agent.maintenance_mode:
+            return None
+
         # need to pass agent if the check is a policy
         if not cls.objects.filter(
             assigned_check=check,
@@ -218,6 +236,9 @@ class Alert(models.Model):
         agent: "Agent",
         skip_create: bool = False,
     ) -> "Optional[Alert]":
+        if agent.maintenance_mode:
+            return None
+
         if not cls.objects.filter(
             assigned_task=task,
             agent=agent,
@@ -272,7 +293,9 @@ class Alert(models.Model):
         from agents.models import Agent, AgentHistory
         from autotasks.models import TaskResult
         from checks.models import CheckResult
+        from core.models import CoreSettings
 
+        core = CoreSettings.objects.first()
         # set variables
         dashboard_severities = None
         email_severities = None
@@ -422,12 +445,23 @@ class Alert(models.Model):
                 alert.hidden = False
                 alert.save(update_fields=["hidden"])
 
+        # TODO rework this
+        if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
+            email_alert = False
+            always_email = False
+
+        elif (
+            alert.severity == AlertSeverity.WARNING
+            and not core.notify_on_warning_alerts
+        ):
+            email_alert = False
+            always_email = False
+
         # send email if enabled
         if email_alert or always_email:
             # check if alert template is set and specific severities are configured
-            if (
-                not alert_template
-                or alert_template
+            if not alert_template or (
+                alert_template
                 and email_severities
                 and alert.severity in email_severities
             ):
@@ -436,41 +470,91 @@ class Alert(models.Model):
                     alert_interval=alert_interval,
                 )
 
+        # TODO rework this
+        if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
+            text_alert = False
+            always_text = False
+        elif (
+            alert.severity == AlertSeverity.WARNING
+            and not core.notify_on_warning_alerts
+        ):
+            text_alert = False
+            always_text = False
+
         # send text if enabled
         if text_alert or always_text:
             # check if alert template is set and specific severities are configured
-            if (
-                not alert_template
-                or alert_template
-                and text_severities
-                and alert.severity in text_severities
+            if not alert_template or (
+                alert_template and text_severities and alert.severity in text_severities
             ):
                 text_task.delay(pk=alert.pk, alert_interval=alert_interval)
 
-        # check if any scripts should be run
-        if (
-            alert_template
-            and alert_template.action
-            and run_script_action
-            and not alert.action_run
-        ):
-            hist = AgentHistory.objects.create(
-                agent=agent,
-                type=AgentHistoryType.SCRIPT_RUN,
-                script=alert_template.action,
-                username="alert-action-failure",
-            )
-            r = agent.run_script(
-                scriptpk=alert_template.action.pk,
-                args=alert.parse_script_args(alert_template.action_args),
-                timeout=alert_template.action_timeout,
-                wait=True,
-                history_pk=hist.pk,
-                full=True,
-                run_on_any=True,
-                run_as_user=False,
-                env_vars=alert_template.action_env_vars,
-            )
+        # check if any scripts/webhooks should be run
+        if alert_template and not alert.action_run:
+            if (
+                alert_template.action_type == AlertTemplateActionType.SCRIPT
+                and alert_template.action
+                and run_script_action
+            ):
+                hist = AgentHistory.objects.create(
+                    agent=agent,
+                    type=AgentHistoryType.SCRIPT_RUN,
+                    script=alert_template.action,
+                    username="alert-action-failure",
+                )
+                r = agent.run_script(
+                    scriptpk=alert_template.action.pk,
+                    args=alert.parse_script_args(alert_template.action_args),
+                    timeout=alert_template.action_timeout,
+                    wait=True,
+                    history_pk=hist.pk,
+                    full=True,
+                    run_on_any=True,
+                    run_as_user=False,
+                    env_vars=alert.parse_script_args(alert_template.action_env_vars),
+                )
+            elif (
+                alert_template.action_type == AlertTemplateActionType.SERVER
+                and alert_template.action
+                and run_script_action
+            ):
+                stdout, stderr, execution_time, retcode = run_server_script(
+                    body=alert_template.action.script_body,
+                    args=alert.parse_script_args(alert_template.action_args),
+                    timeout=alert_template.action_timeout,
+                    env_vars=alert.parse_script_args(alert_template.action_env_vars),
+                    shell=alert_template.action.shell,
+                )
+
+                r = {
+                    "retcode": retcode,
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "execution_time": execution_time,
+                }
+
+            elif alert_template.action_type == AlertTemplateActionType.REST:
+                if (
+                    alert.severity == AlertSeverity.INFO
+                    and not core.notify_on_info_alerts
+                    or alert.severity == AlertSeverity.WARNING
+                    and not core.notify_on_warning_alerts
+                ):
+                    return
+                else:
+                    output, status = run_url_rest_action(
+                        action_id=alert_template.action_rest.id, instance=alert
+                    )
+                    logger.debug(f"{output=} {status=}")
+
+                    r = {
+                        "stdout": output,
+                        "stderr": "",
+                        "execution_time": 0,
+                        "retcode": status,
+                    }
+            else:
+                return
 
             # command was successful
             if isinstance(r, dict):
@@ -481,11 +565,17 @@ class Alert(models.Model):
                 alert.action_run = djangotime.now()
                 alert.save()
             else:
-                DebugLog.error(
-                    agent=agent,
-                    log_type=DebugLogType.SCRIPTING,
-                    message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
-                )
+                if alert_template.action_type == AlertTemplateActionType.SCRIPT:
+                    DebugLog.error(
+                        agent=agent,
+                        log_type=DebugLogType.SCRIPTING,
+                        message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
+                    )
+                else:
+                    DebugLog.error(
+                        log_type=DebugLogType.SCRIPTING,
+                        message=f"Failure action: {alert_template.action.name} failed to run on server for failure alert",
+                    )
 
     @classmethod
     def handle_alert_resolve(
@@ -494,6 +584,9 @@ class Alert(models.Model):
         from agents.models import Agent, AgentHistory
         from autotasks.models import TaskResult
         from checks.models import CheckResult
+        from core.models import CoreSettings
+
+        core = CoreSettings.objects.first()
 
         # set variables
         email_on_resolved = False
@@ -517,6 +610,8 @@ class Alert(models.Model):
                 email_on_resolved = alert_template.agent_email_on_resolved
                 text_on_resolved = alert_template.agent_text_on_resolved
                 run_script_action = alert_template.agent_script_actions
+                email_severities = [AlertSeverity.ERROR]
+                text_severities = [AlertSeverity.ERROR]
 
             if agent.overdue_email_alert:
                 email_on_resolved = True
@@ -540,6 +635,14 @@ class Alert(models.Model):
                 email_on_resolved = alert_template.check_email_on_resolved
                 text_on_resolved = alert_template.check_text_on_resolved
                 run_script_action = alert_template.check_script_actions
+                email_severities = alert_template.check_email_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                text_severities = alert_template.check_text_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
 
         elif isinstance(instance, TaskResult):
             from autotasks.tasks import (
@@ -558,6 +661,14 @@ class Alert(models.Model):
                 email_on_resolved = alert_template.task_email_on_resolved
                 text_on_resolved = alert_template.task_text_on_resolved
                 run_script_action = alert_template.task_script_actions
+                email_severities = alert_template.task_email_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
+                text_severities = alert_template.task_text_alert_severity or [
+                    AlertSeverity.ERROR,
+                    AlertSeverity.WARNING,
+                ]
 
         else:
             return
@@ -572,36 +683,101 @@ class Alert(models.Model):
 
         # check if a resolved email notification should be send
         if email_on_resolved and not alert.resolved_email_sent:
-            resolved_email_task.delay(pk=alert.pk)
+            if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
+                pass
+
+            elif (
+                alert.severity == AlertSeverity.WARNING
+                and not core.notify_on_warning_alerts
+            ):
+                pass
+            elif alert.severity not in email_severities:
+                pass
+            else:
+                resolved_email_task.delay(pk=alert.pk)
 
         # check if resolved text should be sent
         if text_on_resolved and not alert.resolved_sms_sent:
-            resolved_text_task.delay(pk=alert.pk)
+            if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
+                pass
 
-        # check if resolved script should be run
-        if (
-            alert_template
-            and alert_template.resolved_action
-            and run_script_action
-            and not alert.resolved_action_run
-        ):
-            hist = AgentHistory.objects.create(
-                agent=agent,
-                type=AgentHistoryType.SCRIPT_RUN,
-                script=alert_template.action,
-                username="alert-action-resolved",
-            )
-            r = agent.run_script(
-                scriptpk=alert_template.resolved_action.pk,
-                args=alert.parse_script_args(alert_template.resolved_action_args),
-                timeout=alert_template.resolved_action_timeout,
-                wait=True,
-                history_pk=hist.pk,
-                full=True,
-                run_on_any=True,
-                run_as_user=False,
-                env_vars=alert_template.resolved_action_env_vars,
-            )
+            elif (
+                alert.severity == AlertSeverity.WARNING
+                and not core.notify_on_warning_alerts
+            ):
+                pass
+            elif alert.severity not in text_severities:
+                pass
+            else:
+                resolved_text_task.delay(pk=alert.pk)
+
+        # check if resolved script/webhook should be run
+        if alert_template and not alert.resolved_action_run:
+            if (
+                alert_template.resolved_action_type == AlertTemplateActionType.SCRIPT
+                and alert_template.resolved_action
+                and run_script_action
+            ):
+                hist = AgentHistory.objects.create(
+                    agent=agent,
+                    type=AgentHistoryType.SCRIPT_RUN,
+                    script=alert_template.resolved_action,
+                    username="alert-action-resolved",
+                )
+                r = agent.run_script(
+                    scriptpk=alert_template.resolved_action.pk,
+                    args=alert.parse_script_args(alert_template.resolved_action_args),
+                    timeout=alert_template.resolved_action_timeout,
+                    wait=True,
+                    history_pk=hist.pk,
+                    full=True,
+                    run_on_any=True,
+                    run_as_user=False,
+                    env_vars=alert_template.resolved_action_env_vars,
+                )
+            elif (
+                alert_template.resolved_action_type == AlertTemplateActionType.SERVER
+                and alert_template.resolved_action
+                and run_script_action
+            ):
+                stdout, stderr, execution_time, retcode = run_server_script(
+                    body=alert_template.resolved_action.script_body,
+                    args=alert.parse_script_args(alert_template.resolved_action_args),
+                    timeout=alert_template.resolved_action_timeout,
+                    env_vars=alert.parse_script_args(
+                        alert_template.resolved_action_env_vars
+                    ),
+                    shell=alert_template.resolved_action.shell,
+                )
+                r = {
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "execution_time": execution_time,
+                    "retcode": retcode,
+                }
+
+            elif alert_template.action_type == AlertTemplateActionType.REST:
+                if (
+                    alert.severity == AlertSeverity.INFO
+                    and not core.notify_on_info_alerts
+                    or alert.severity == AlertSeverity.WARNING
+                    and not core.notify_on_warning_alerts
+                ):
+                    return
+                else:
+                    output, status = run_url_rest_action(
+                        action_id=alert_template.resolved_action_rest.id, instance=alert
+                    )
+                    logger.debug(f"{output=} {status=}")
+
+                    r = {
+                        "stdout": output,
+                        "stderr": "",
+                        "execution_time": 0,
+                        "retcode": status,
+                    }
+            else:
+                return
 
             # command was successful
             if isinstance(r, dict):
@@ -614,40 +790,36 @@ class Alert(models.Model):
                 alert.resolved_action_run = djangotime.now()
                 alert.save()
             else:
-                DebugLog.error(
-                    agent=agent,
-                    log_type=DebugLogType.SCRIPTING,
-                    message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
-                )
+                if (
+                    alert_template.resolved_action_type
+                    == AlertTemplateActionType.SCRIPT
+                ):
+                    DebugLog.error(
+                        agent=agent,
+                        log_type=DebugLogType.SCRIPTING,
+                        message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
+                    )
+                else:
+                    DebugLog.error(
+                        log_type=DebugLogType.SCRIPTING,
+                        message=f"Resolved action: {alert_template.action.name} failed to run on server for resolved alert",
+                    )
 
     def parse_script_args(self, args: List[str]) -> List[str]:
         if not args:
             return []
 
         temp_args = []
-        # pattern to match for injection
-        pattern = re.compile(".*\\{\\{alert\\.(.*)\\}\\}.*")
 
         for arg in args:
-            if match := pattern.match(arg):
-                name = match.group(1)
+            temp_arg = arg
+            for string, model, prop in RE_DB_VALUE.findall(arg):
+                value = get_db_value(string=f"{model}.{prop}", instance=self)
 
-                # check if attr exists and isn't a function
-                if hasattr(self, name) and not callable(getattr(self, name)):
-                    value = f"'{getattr(self, name)}'"
-                else:
-                    continue
+                if value is not None:
+                    temp_arg = temp_arg.replace(string, f"'{str(value)}'")
 
-                try:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
-                except re.error:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", re.escape(value), arg))
-                except Exception as e:
-                    DebugLog.error(log_type=DebugLogType.SCRIPTING, message=str(e))
-                    continue
-
-            else:
-                temp_args.append(arg)
+            temp_args.append(temp_arg)
 
         return temp_args
 
@@ -656,9 +828,21 @@ class AlertTemplate(BaseAuditModel):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
 
+    action_type = models.CharField(
+        max_length=10,
+        choices=AlertTemplateActionType.choices,
+        default=AlertTemplateActionType.SCRIPT,
+    )
     action = models.ForeignKey(
         "scripts.Script",
         related_name="alert_template",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    action_rest = models.ForeignKey(
+        "core.URLAction",
+        related_name="url_action_alert_template",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
@@ -676,9 +860,19 @@ class AlertTemplate(BaseAuditModel):
         default=list,
     )
     action_timeout = models.PositiveIntegerField(default=15)
+    resolved_action_type = models.CharField(
+        max_length=10, choices=AlertTemplateActionType.choices, default="script"
+    )
     resolved_action = models.ForeignKey(
         "scripts.Script",
         related_name="resolved_alert_template",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    resolved_action_rest = models.ForeignKey(
+        "core.URLAction",
+        related_name="resolved_url_action_alert_template",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,

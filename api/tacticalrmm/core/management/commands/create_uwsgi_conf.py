@@ -24,8 +24,8 @@ class Command(BaseCommand):
         try:
             ram = math.ceil(psutil.virtual_memory().total / (1024**3))
             if ram <= 2:
-                max_requests = 30
-                max_workers = 10
+                max_requests = 15
+                max_workers = 6
             elif ram <= 4:
                 max_requests = 75
                 max_workers = 20

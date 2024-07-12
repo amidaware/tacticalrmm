@@ -1,17 +1,21 @@
 import json
+import os
 import subprocess
 import tempfile
+import time
 import urllib.parse
 from base64 import b64encode
+from contextlib import suppress
 from typing import TYPE_CHECKING, Optional, cast
 
 import requests
 import websockets
+from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.http import FileResponse
 from meshctrl.utils import get_auth_token
-
+from requests.utils import requote_uri
 from tacticalrmm.constants import (
     AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
     CORESETTINGS_CACHE_KEY,
@@ -59,7 +63,7 @@ def token_is_valid() -> tuple[str, bool]:
 def token_is_expired() -> bool:
     from core.models import CodeSignToken
 
-    t: "CodeSignToken" = CodeSignToken.objects.first()
+    t: Optional["CodeSignToken"] = CodeSignToken.objects.first()
     if not t or not t.token:
         return False
 
@@ -114,7 +118,7 @@ async def get_mesh_device_id(uri: str, device_group: str) -> None:
 
 def download_mesh_agent(dl_url: str) -> FileResponse:
     with tempfile.NamedTemporaryFile(prefix="mesh-", dir=settings.EXE_DIR) as fp:
-        r = requests.get(dl_url, stream=True, timeout=15)
+        r = requests.get(dl_url, stream=True, timeout=15, verify=False)
         with open(fp.name, "wb") as f:
             for chunk in r.iter_content(chunk_size=1024):
                 if chunk:
@@ -186,10 +190,11 @@ def get_meshagent_url(
 ) -> str:
     if settings.DOCKER_BUILD:
         base = settings.MESH_WS_URL.replace("ws://", "http://")
-    elif getattr(settings, "TRMM_INSECURE", False):
-        base = mesh_site.replace("https", "http") + ":4430"
-    else:
+    elif getattr(settings, "USE_EXTERNAL_MESH", False):
         base = mesh_site
+    else:
+        mesh_port = getattr(settings, "MESH_PORT", 4430)
+        base = f"http://127.0.0.1:{mesh_port}"
 
     if plat == AgentPlat.WINDOWS:
         params = {
@@ -209,3 +214,148 @@ def get_meshagent_url(
 
 def make_alpha_numeric(s: str):
     return "".join(filter(str.isalnum, s))
+
+
+def find_and_replace_db_values_str(*, text: str, instance):
+    from tacticalrmm.utils import RE_DB_VALUE, get_db_value
+
+    if not instance:
+        return text
+
+    return_string = text
+
+    for string, model, prop in RE_DB_VALUE.findall(text):
+        value = get_db_value(string=f"{model}.{prop}", instance=instance)
+        return_string = return_string.replace(string, str(value))
+    return return_string
+
+
+def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=None):
+    # replace url
+    new_url = find_and_replace_db_values_str(text=url, instance=instance)
+    new_body = find_and_replace_db_values_str(text=body, instance=instance)
+    new_headers = find_and_replace_db_values_str(text=headers, instance=instance)
+    new_url = requote_uri(new_url)
+    new_body = json.loads(new_body)
+    new_headers = json.loads(new_headers)
+
+    if method in ("get", "delete"):
+        return getattr(requests, method)(new_url, headers=new_headers)
+
+    return getattr(requests, method)(
+        new_url,
+        data=json.dumps(new_body),
+        headers=new_headers,
+        timeout=8,
+    )
+
+
+def run_url_rest_action(*, action_id: int, instance=None) -> tuple[str, int]:
+    import core.models
+
+    action = core.models.URLAction.objects.get(pk=action_id)
+    method = action.rest_method
+    url = action.pattern
+    body = action.rest_body
+    headers = action.rest_headers
+
+    try:
+        response = _run_url_rest_action(
+            url=url, method=method, body=body, headers=headers, instance=instance
+        )
+    except Exception as e:
+        return (str(e), 500)
+
+    return (response.text, response.status_code)
+
+
+lookup_apps = {
+    "client": ("clients", "Client"),
+    "site": ("clients", "Site"),
+    "agent": ("agents", "Agent"),
+}
+
+
+def run_test_url_rest_action(
+    *,
+    url: str,
+    method,
+    body: str,
+    headers: str,
+    instance_type: Optional[str],
+    instance_id: Optional[int],
+) -> tuple[str, str, str]:
+    lookup_instance = None
+    if instance_type and instance_type in lookup_apps and instance_id:
+        app, model = lookup_apps[instance_type]
+        Model = apps.get_model(app, model)
+        if instance_type == "agent":
+            lookup_instance = Model.objects.get(agent_id=instance_id)
+        else:
+            lookup_instance = Model.objects.get(pk=instance_id)
+
+    try:
+        response = _run_url_rest_action(
+            url=url, method=method, body=body, headers=headers, instance=lookup_instance
+        )
+    except requests.exceptions.ConnectionError as error:
+        return (str(error), str(error.request.url), str(error.request.body))
+    except Exception as e:
+        return (str(e), str(e), str(e))
+
+    return (response.text, response.request.url, response.request.body)
+
+
+def run_server_script(
+    *, body: str, args: list[str], env_vars: list[str], shell: str, timeout: int
+) -> tuple[str, str, float, int]:
+    from core.models import CoreSettings
+    from scripts.models import Script
+
+    core = CoreSettings.objects.only("enable_server_scripts").first()
+    if not core.server_scripts_enabled:  # type: ignore
+        return "", "Error: this feature is disabled", 0.00, 1
+
+    parsed_args = Script.parse_script_args(None, shell, args)
+
+    parsed_env_vars = Script.parse_script_env_vars(None, shell=shell, env_vars=env_vars)
+
+    custom_env = os.environ.copy()
+    for var in parsed_env_vars:
+        var_split = var.split("=")
+        custom_env[var_split[0]] = var_split[1]
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", delete=False, prefix="trmm-"
+    ) as tmp_script:
+        tmp_script.write(body.replace("\r\n", "\n"))
+        tmp_script_path = tmp_script.name
+
+    os.chmod(tmp_script_path, 0o550)
+
+    stdout, stderr = "", ""
+    retcode = 0
+
+    start_time = time.time()
+    try:
+        ret = subprocess.run(
+            [tmp_script_path] + parsed_args,
+            capture_output=True,
+            text=True,
+            env=custom_env,
+            timeout=timeout,
+        )
+        stdout, stderr, retcode = ret.stdout, ret.stderr, ret.returncode
+    except subprocess.TimeoutExpired:
+        stderr = f"Error: Timed out after {timeout} seconds."
+        retcode = 98
+    except Exception as e:
+        stderr = f"Error: {e}"
+        retcode = 99
+    finally:
+        execution_time = time.time() - start_time
+
+        with suppress(Exception):
+            os.remove(tmp_script_path)
+
+    return stdout, stderr, execution_time, retcode

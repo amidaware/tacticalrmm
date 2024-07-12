@@ -97,6 +97,12 @@ class AlertType(models.TextChoices):
     CUSTOM = "custom", "Custom"
 
 
+class AlertTemplateActionType(models.TextChoices):
+    SCRIPT = "script", "Script"
+    SERVER = "server", "Server"
+    REST = "rest", "Rest"
+
+
 class AgentHistoryType(models.TextChoices):
     TASK_RUN = "task_run", "Task Run"
     SCRIPT_RUN = "script_run", "Script Run"
@@ -245,6 +251,19 @@ class DebugLogType(models.TextChoices):
     WIN_UPDATES = "win_updates", "Windows Updates"
     SYSTEM_ISSUES = "system_issues", "System Issues"
     SCRIPTING = "scripting", "Scripting"
+
+
+class URLActionType(models.TextChoices):
+    WEB = "web", "Web"
+    REST = "rest", "Rest"
+
+
+class URLActionRestMethod(models.TextChoices):
+    GET = "get", "Get"
+    POST = "post", "Post"
+    PUT = "put", "Put"
+    DELETE = "delete", "Delete"
+    PATCH = "patch", "Patch"
 
 
 # Agent db fields that are not needed for most queries, speeds up query

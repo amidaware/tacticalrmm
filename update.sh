@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="152"
+SCRIPT_VERSION="153"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -25,6 +25,8 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+export DEBIAN_FRONTEND=noninteractive
 
 force=false
 if [[ $* == *--force* ]]; then
@@ -113,6 +115,34 @@ for i in nginx nats-api nats rmm daphne; do
   sudo systemctl stop ${i}
 done
 
+if ! grep -q V3 /etc/systemd/system/celerybeat.service; then
+  sudo rm -f /etc/systemd/system/celerybeat.service
+
+  celerybeatservice="$(
+    cat <<EOF
+[Unit]
+Description=Celery Beat Service V3
+After=network.target redis-server.service postgresql.service
+
+[Service]
+Type=simple
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  )"
+  echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null
+  sudo systemctl daemon-reload
+fi
+
 # migrate daphne to uvicorn
 if ! grep -q uvicorn /etc/systemd/system/daphne.service; then
   sudo rm -f /etc/systemd/system/daphne.service
@@ -170,6 +200,15 @@ EOF
   wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
   sudo apt update
   sudo apt install -y nginx
+fi
+
+if [ -f /etc/apt/keyrings/nginx-archive-keyring.gpg ]; then
+  NGINX_KEY_EXPIRED=$(gpg --dry-run --quiet --no-keyring --import --import-options import-show /etc/apt/keyrings/nginx-archive-keyring.gpg | grep -B 1 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62 | grep expired)
+  if [[ $NGINX_KEY_EXPIRED ]]; then
+    sudo rm -f /etc/apt/keyrings/nginx-archive-keyring.gpg
+    wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
+    sudo apt update
+  fi
 fi
 
 nginxdefaultconf='/etc/nginx/nginx.conf'

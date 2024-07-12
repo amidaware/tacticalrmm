@@ -10,9 +10,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
-from twilio.base.exceptions import TwilioRestException
-from twilio.rest import Client as TwClient
-
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     ALL_TIMEZONES,
@@ -20,7 +17,11 @@ from tacticalrmm.constants import (
     CustomFieldModel,
     CustomFieldType,
     DebugLogLevel,
+    URLActionRestMethod,
+    URLActionType,
 )
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client as TwClient
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
@@ -105,6 +106,10 @@ class CoreSettings(BaseAuditModel):
     open_ai_model = models.CharField(
         max_length=255, blank=True, default="gpt-3.5-turbo"
     )
+    enable_server_scripts = models.BooleanField(default=True)
+    enable_server_webterminal = models.BooleanField(default=False)
+    notify_on_info_alerts = models.BooleanField(default=False)
+    notify_on_warning_alerts = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template
@@ -184,6 +189,28 @@ class CoreSettings(BaseAuditModel):
             return True
 
         return False
+
+    @property
+    def server_scripts_enabled(self) -> bool:
+        if (
+            getattr(settings, "HOSTED", False)
+            or getattr(settings, "TRMM_DISABLE_SERVER_SCRIPTS", False)
+            or getattr(settings, "DEMO", False)
+        ):
+            return False
+
+        return self.enable_server_scripts
+
+    @property
+    def web_terminal_enabled(self) -> bool:
+        if (
+            getattr(settings, "HOSTED", False)
+            or getattr(settings, "TRMM_DISABLE_WEB_TERMINAL", False)
+            or getattr(settings, "DEMO", False)
+        ):
+            return False
+
+        return self.enable_server_webterminal
 
     def send_mail(
         self,
@@ -426,9 +453,19 @@ class GlobalKVStore(BaseAuditModel):
 
 
 class URLAction(BaseAuditModel):
-    name = models.CharField(max_length=25)
-    desc = models.CharField(max_length=100, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    desc = models.TextField(null=True, blank=True)
     pattern = models.TextField()
+    action_type = models.CharField(
+        max_length=10, choices=URLActionType.choices, default=URLActionType.WEB
+    )
+    rest_method = models.CharField(
+        max_length=10,
+        choices=URLActionRestMethod.choices,
+        default=URLActionRestMethod.POST,
+    )
+    rest_body = models.TextField(null=True, blank=True, default="")
+    rest_headers = models.TextField(null=True, blank=True, default="")
 
     def __str__(self):
         return self.name
@@ -438,47 +475,3 @@ class URLAction(BaseAuditModel):
         from .serializers import URLActionSerializer
 
         return URLActionSerializer(action).data
-
-
-RUN_ON_CHOICES = (
-    ("client", "Client"),
-    ("site", "Site"),
-    ("agent", "Agent"),
-    ("once", "Once"),
-)
-
-SCHEDULE_CHOICES = (("daily", "Daily"), ("weekly", "Weekly"), ("monthly", "Monthly"))
-
-
-""" class GlobalTask(models.Model):
-    script = models.ForeignKey(
-        "scripts.Script",
-        null=True,
-        blank=True,
-        related_name="script",
-        on_delete=models.SET_NULL,
-    )
-    script_args = ArrayField(
-        models.CharField(max_length=255, null=True, blank=True),
-        null=True,
-        blank=True,
-        default=list,
-    )
-    custom_field = models.OneToOneField(
-        "core.CustomField",
-        related_name="globaltask",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-    )
-    timeout = models.PositiveIntegerField(default=120)
-    retcode = models.IntegerField(null=True, blank=True)
-    stdout = models.TextField(null=True, blank=True)
-    stderr = models.TextField(null=True, blank=True)
-    execution_time = models.CharField(max_length=100, default="0.0000")
-    run_schedule = models.CharField(
-        max_length=25, choices=SCHEDULE_CHOICES, default="once"
-    )
-    run_on = models.CharField(
-        max_length=25, choices=RUN_ON_CHOICES, default="once"
-    ) """

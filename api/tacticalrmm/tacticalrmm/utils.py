@@ -3,6 +3,7 @@ import os
 import subprocess
 import tempfile
 import time
+import re
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, List, Literal, Optional, Union
 from zoneinfo import ZoneInfo
@@ -41,6 +42,7 @@ from tacticalrmm.helpers import (
 
 if TYPE_CHECKING:
     from clients.models import Client, Site
+    from alerts.models import Alert
 
 
 def generate_winagent_exe(
@@ -291,6 +293,14 @@ def get_latest_trmm_ver() -> str:
     return "error"
 
 
+# regex for db data replacement
+# will return 3 groups of matches in a tuple when uses with re.findall
+# i.e. - {{client.name}}, client, name
+RE_DB_VALUE = re.compile(
+    r"(\{\{\s*(client|site|agent|global|alert)(?:\.([\w\-\s\.]+))+\s*\}\})"
+)
+
+
 # Receives something like {{ client.name }} and a Model instance of Client, Site, or Agent. If an
 # agent instance is passed it will resolve the value of agent.client.name and return the agent's client name.
 #
@@ -300,7 +310,7 @@ def get_latest_trmm_ver() -> str:
 #
 # You can also use {{ global.value }} without an obj instance to use the global key store
 def get_db_value(
-    *, string: str, instance: Optional[Union["Agent", "Client", "Site"]] = None
+    *, string: str, instance: Optional[Union["Agent", "Client", "Site", "Alert"]] = None
 ) -> Union[str, List[str], Literal[True], Literal[False], None]:
     from core.models import CustomField, GlobalKVStore
 

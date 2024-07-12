@@ -21,21 +21,21 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.18.2"
+TRMM_VERSION = "0.19.0"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.44"
+WEB_VERSION = "0.101.47"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.192"
+APP_VER = "0.0.193"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.7.0"
+LATEST_AGENT_VER = "2.8.0"
 
 MESH_VER = "1.1.21"
 
-NATS_SERVER_VER = "2.10.12"
+NATS_SERVER_VER = "2.10.17"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
@@ -43,7 +43,7 @@ INSTALL_NUSHELL = True
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_NUSHELL_VERSION = "0.92.1"
+INSTALL_NUSHELL_VERSION = "0.93.0"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.
@@ -64,7 +64,7 @@ NUSHELL_ENABLE_CONFIG = False
 INSTALL_DENO = True
 # Version to download. If INSTALL_DENO_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_DENO_VERSION = "v1.42.1"
+INSTALL_DENO_VERSION = "v1.44.4"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_DENO_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.
@@ -81,9 +81,9 @@ INSTALL_DENO_URL = ""
 DENO_DEFAULT_PERMISSIONS = "--allow-all"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "43"
+PIP_VER = "44"
 
-SETUPTOOLS_VER = "69.2.0"
+SETUPTOOLS_VER = "70.2.0"
 WHEEL_VER = "0.43.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"

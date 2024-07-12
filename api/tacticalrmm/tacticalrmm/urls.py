@@ -2,9 +2,10 @@ from django.conf import settings
 from django.urls import include, path, register_converter
 from knox import views as knox_views
 
-from accounts.views import CheckCreds, LoginView
-from agents.consumers import SendCMD
-from core.consumers import DashInfo
+from accounts.views import CheckCreds, CheckCredsV2, LoginView, LoginViewV2
+
+# from agents.consumers import SendCMD
+from core.consumers import DashInfo, TerminalConsumer
 from core.views import home
 
 
@@ -22,8 +23,10 @@ register_converter(AgentIDConverter, "agent")
 
 urlpatterns = [
     path("", home),
-    path("checkcreds/", CheckCreds.as_view()),
-    path("login/", LoginView.as_view()),
+    path("v2/checkcreds/", CheckCredsV2.as_view()),
+    path("v2/login/", LoginViewV2.as_view()),
+    path("checkcreds/", CheckCreds.as_view()),  # DEPRECATED AS OF 0.19.0
+    path("login/", LoginView.as_view()),  # DEPRECATED AS OF 0.19.0
     path("logout/", knox_views.LogoutView.as_view()),
     path("logoutall/", knox_views.LogoutAllView.as_view()),
     path("api/v3/", include("apiv3.urls")),
@@ -68,5 +71,14 @@ if getattr(settings, "SWAGGER_ENABLED", False):
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
-    path("ws/sendcmd/", SendCMD.as_asgi()),
+    # path("ws/sendcmd/", SendCMD.as_asgi()),
 ]
+
+if not (
+    getattr(settings, "HOSTED", False)
+    or getattr(settings, "TRMM_DISABLE_WEB_TERMINAL", False)
+    or getattr(settings, "DEMO", False)
+):
+    ws_urlpatterns += [
+        path("ws/trmmcli/", TerminalConsumer.as_asgi()),
+    ]

@@ -135,7 +135,12 @@ class Agent(BaseAuditModel):
             orig = Agent.objects.get(pk=self.pk)
             mon_type_changed = self.monitoring_type != orig.monitoring_type
             site_changed = self.site_id != orig.site_id
-            if mon_type_changed or site_changed:
+            policy_changed = self.policy != orig.policy
+            block_inherit = (
+                self.block_policy_inheritance != orig.block_policy_inheritance
+            )
+
+            if mon_type_changed or site_changed or policy_changed or block_inherit:
                 self._processing_set_alert_template = True
                 self.set_alert_template()
                 self._processing_set_alert_template = False

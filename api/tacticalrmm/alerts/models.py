@@ -589,6 +589,8 @@ class Alert(models.Model):
         core = CoreSettings.objects.first()
 
         # set variables
+        email_severities = None
+        text_severities = None
         email_on_resolved = False
         text_on_resolved = False
         resolved_email_task = None
@@ -691,7 +693,7 @@ class Alert(models.Model):
                 and not core.notify_on_warning_alerts
             ):
                 pass
-            elif alert.severity not in email_severities:
+            elif email_severities and alert.severity not in email_severities:
                 pass
             else:
                 resolved_email_task.delay(pk=alert.pk)
@@ -706,7 +708,7 @@ class Alert(models.Model):
                 and not core.notify_on_warning_alerts
             ):
                 pass
-            elif alert.severity not in text_severities:
+            elif text_severities and alert.severity not in text_severities:
                 pass
             else:
                 resolved_text_task.delay(pk=alert.pk)

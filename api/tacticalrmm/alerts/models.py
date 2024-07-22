@@ -133,7 +133,7 @@ class Alert(models.Model):
                     agent=agent,
                     alert_type=AlertType.AVAILABILITY,
                     severity=AlertSeverity.ERROR,
-                    message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is overdue.",
+                    message=f"{agent.hostname} in {agent.client.name}, {agent.site.name} is overdue.",
                     hidden=True,
                 ),
             )
@@ -306,7 +306,7 @@ class Alert(models.Model):
         alert_interval = None
         email_task = None
         text_task = None
-        run_script_action = None
+        should_run_script_or_webhook = False
 
         # check what the instance passed is
         if isinstance(instance, Agent):
@@ -332,7 +332,7 @@ class Alert(models.Model):
                 always_email = alert_template.agent_always_email
                 always_text = alert_template.agent_always_text
                 alert_interval = alert_template.agent_periodic_alert_days
-                run_script_action = alert_template.agent_script_actions
+                should_run_script_or_webhook = alert_template.agent_script_actions
 
         elif isinstance(instance, CheckResult):
             from checks.tasks import (
@@ -383,7 +383,7 @@ class Alert(models.Model):
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
                 alert_interval = alert_template.check_periodic_alert_days
-                run_script_action = alert_template.check_script_actions
+                should_run_script_or_webhook = alert_template.check_script_actions
 
         elif isinstance(instance, TaskResult):
             from autotasks.tasks import handle_task_email_alert, handle_task_sms_alert
@@ -417,7 +417,7 @@ class Alert(models.Model):
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text
                 alert_interval = alert_template.task_periodic_alert_days
-                run_script_action = alert_template.task_script_actions
+                should_run_script_or_webhook = alert_template.task_script_actions
 
         else:
             return
@@ -490,11 +490,10 @@ class Alert(models.Model):
                 text_task.delay(pk=alert.pk, alert_interval=alert_interval)
 
         # check if any scripts/webhooks should be run
-        if alert_template and not alert.action_run:
+        if alert_template and not alert.action_run and should_run_script_or_webhook:
             if (
                 alert_template.action_type == AlertTemplateActionType.SCRIPT
                 and alert_template.action
-                and run_script_action
             ):
                 hist = AgentHistory.objects.create(
                     agent=agent,
@@ -516,7 +515,6 @@ class Alert(models.Model):
             elif (
                 alert_template.action_type == AlertTemplateActionType.SERVER
                 and alert_template.action
-                and run_script_action
             ):
                 stdout, stderr, execution_time, retcode = run_server_script(
                     body=alert_template.action.script_body,
@@ -595,7 +593,7 @@ class Alert(models.Model):
         text_on_resolved = False
         resolved_email_task = None
         resolved_text_task = None
-        run_script_action = None
+        should_run_script_or_webhook = False
 
         # check what the instance passed is
         if isinstance(instance, Agent):
@@ -611,7 +609,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.agent_email_on_resolved
                 text_on_resolved = alert_template.agent_text_on_resolved
-                run_script_action = alert_template.agent_script_actions
+                should_run_script_or_webhook = alert_template.agent_script_actions
                 email_severities = [AlertSeverity.ERROR]
                 text_severities = [AlertSeverity.ERROR]
 
@@ -636,7 +634,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.check_email_on_resolved
                 text_on_resolved = alert_template.check_text_on_resolved
-                run_script_action = alert_template.check_script_actions
+                should_run_script_or_webhook = alert_template.check_script_actions
                 email_severities = alert_template.check_email_alert_severity or [
                     AlertSeverity.ERROR,
                     AlertSeverity.WARNING,
@@ -662,7 +660,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.task_email_on_resolved
                 text_on_resolved = alert_template.task_text_on_resolved
-                run_script_action = alert_template.task_script_actions
+                should_run_script_or_webhook = alert_template.task_script_actions
                 email_severities = alert_template.task_email_alert_severity or [
                     AlertSeverity.ERROR,
                     AlertSeverity.WARNING,
@@ -714,11 +712,14 @@ class Alert(models.Model):
                 resolved_text_task.delay(pk=alert.pk)
 
         # check if resolved script/webhook should be run
-        if alert_template and not alert.resolved_action_run:
+        if (
+            alert_template
+            and not alert.resolved_action_run
+            and should_run_script_or_webhook
+        ):
             if (
                 alert_template.resolved_action_type == AlertTemplateActionType.SCRIPT
                 and alert_template.resolved_action
-                and run_script_action
             ):
                 hist = AgentHistory.objects.create(
                     agent=agent,
@@ -740,7 +741,6 @@ class Alert(models.Model):
             elif (
                 alert_template.resolved_action_type == AlertTemplateActionType.SERVER
                 and alert_template.resolved_action
-                and run_script_action
             ):
                 stdout, stderr, execution_time, retcode = run_server_script(
                     body=alert_template.resolved_action.script_body,
@@ -863,7 +863,9 @@ class AlertTemplate(BaseAuditModel):
     )
     action_timeout = models.PositiveIntegerField(default=15)
     resolved_action_type = models.CharField(
-        max_length=10, choices=AlertTemplateActionType.choices, default="script"
+        max_length=10,
+        choices=AlertTemplateActionType.choices,
+        default=AlertTemplateActionType.SCRIPT,
     )
     resolved_action = models.ForeignKey(
         "scripts.Script",
@@ -917,7 +919,8 @@ class AlertTemplate(BaseAuditModel):
     agent_always_text = BooleanField(null=True, blank=True, default=None)
     agent_always_alert = BooleanField(null=True, blank=True, default=None)
     agent_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
-    agent_script_actions = BooleanField(null=True, blank=True, default=True)
+    # fmt: off
+    agent_script_actions = BooleanField(null=True, blank=True, default=True) # should be renamed because also deals with webhooks
 
     # check alert settings
     check_email_alert_severity = ArrayField(
@@ -941,7 +944,8 @@ class AlertTemplate(BaseAuditModel):
     check_always_text = BooleanField(null=True, blank=True, default=None)
     check_always_alert = BooleanField(null=True, blank=True, default=None)
     check_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
-    check_script_actions = BooleanField(null=True, blank=True, default=True)
+    # fmt: off
+    check_script_actions = BooleanField(null=True, blank=True, default=True)  # should be renamed because also deals with webhooks
 
     # task alert settings
     task_email_alert_severity = ArrayField(
@@ -965,7 +969,8 @@ class AlertTemplate(BaseAuditModel):
     task_always_text = BooleanField(null=True, blank=True, default=None)
     task_always_alert = BooleanField(null=True, blank=True, default=None)
     task_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
-    task_script_actions = BooleanField(null=True, blank=True, default=True)
+    # fmt: off
+    task_script_actions = BooleanField(null=True, blank=True, default=True)  # should be renamed because also deals with webhooks
 
     # exclusion settings
     exclude_workstations = BooleanField(null=True, blank=True, default=False)

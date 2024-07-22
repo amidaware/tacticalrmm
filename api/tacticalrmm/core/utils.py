@@ -24,6 +24,7 @@ from tacticalrmm.constants import (
     AgentPlat,
     MeshAgentIdent,
 )
+from tacticalrmm.logger import logger
 
 if TYPE_CHECKING:
     from core.models import CoreSettings
@@ -264,6 +265,7 @@ def run_url_rest_action(*, action_id: int, instance=None) -> tuple[str, int]:
             url=url, method=method, body=body, headers=headers, instance=instance
         )
     except Exception as e:
+        logger.error(str(e))
         return (str(e), 500)
 
     return (response.text, response.status_code)

@@ -969,8 +969,8 @@ class Agent(BaseAuditModel):
         return bool(
             has_agent_notification
             or has_alert_template_notification
-            or has_webhook(alert_template)
-            or has_script_actions(alert_template)
+            or has_webhook(alert_template, "agent")
+            or has_script_actions(alert_template, "agent")
         )
 
     def send_outage_email(self) -> None:

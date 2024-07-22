@@ -297,7 +297,7 @@ class AuditLog(models.Model):
             target = f"on all agents within client: {client.name}"
         elif affected["target"] == "site":
             site = Site.objects.get(pk=affected["site"])
-            target = f"on all agents within site: {site.client.name}\\{site.name}"
+            target = f"on all agents within site: {site.client.name} - {site.name}"
         elif affected["target"] == "agents":
             agents = Agent.objects.filter(agent_id__in=affected["agents"]).values_list(
                 "hostname", flat=True

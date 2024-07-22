@@ -458,8 +458,8 @@ class AutomatedTask(BaseAuditModel):
         return (
             has_autotask_notification
             or has_alert_template_notification
-            or has_webhook(alert_template)
-            or has_script_actions(alert_template)
+            or has_webhook(alert_template, "task")
+            or has_script_actions(alert_template, "task")
         )
 
 

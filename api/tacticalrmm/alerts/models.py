@@ -920,7 +920,7 @@ class AlertTemplate(BaseAuditModel):
     agent_always_alert = BooleanField(null=True, blank=True, default=None)
     agent_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
     # fmt: off
-    agent_script_actions = BooleanField(null=True, blank=True, default=True) # should be renamed because also deals with webhooks
+    agent_script_actions = BooleanField(null=True, blank=True, default=True)  # should be renamed because also deals with webhooks
 
     # check alert settings
     check_email_alert_severity = ArrayField(

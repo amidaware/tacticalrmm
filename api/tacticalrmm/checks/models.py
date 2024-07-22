@@ -242,8 +242,8 @@ class Check(BaseAuditModel):
         return (
             has_check_notifications
             or has_alert_template_notification
-            or has_webhook(alert_template)
-            or has_script_actions(alert_template)
+            or has_webhook(alert_template, "check")
+            or has_script_actions(alert_template, "check")
         )
 
     def add_check_history(

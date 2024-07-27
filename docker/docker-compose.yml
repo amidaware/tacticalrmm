@@ -62,6 +62,8 @@ services:
       MESH_HOST: ${MESH_HOST}
       TRMM_USER: ${TRMM_USER}
       TRMM_PASS: ${TRMM_PASS}
+      TRMM_DISABLE_WEB_TERMINAL: ${TRMM_DISABLE_WEB_TERMINAL}
+      TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
     depends_on:
       - tactical-postgres
       - tactical-meshcentral

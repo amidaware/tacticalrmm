@@ -237,8 +237,18 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     new_body = find_and_replace_db_values_str(text=body, instance=instance)
     new_headers = find_and_replace_db_values_str(text=headers, instance=instance)
     new_url = requote_uri(new_url)
-    new_body = json.loads(new_body, strict=False)
-    new_headers = json.loads(new_headers, strict=False)
+
+    try:
+        new_body = json.loads(new_body, strict=False)
+    except Exception as e:
+        logger.error(f"{e=} {body=}")
+        logger.error(f"{new_body=}")
+
+    try:
+        new_headers = json.loads(new_headers, strict=False)
+    except Exception as e:
+        logger.error(f"{e=} {headers=}")
+        logger.error(f"{new_headers=}")
 
     if method in ("get", "delete"):
         return getattr(requests, method)(new_url, headers=new_headers)

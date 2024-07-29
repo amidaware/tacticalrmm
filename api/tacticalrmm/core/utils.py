@@ -238,6 +238,9 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     new_headers = find_and_replace_db_values_str(text=headers, instance=instance)
     new_url = requote_uri(new_url)
 
+    # usually for stderr fields that contain windows file paths, like {{alert.get_result.stderr}}
+    new_body = new_body.replace("\\", "\\\\")
+
     try:
         new_body = json.loads(new_body, strict=False)
     except Exception as e:

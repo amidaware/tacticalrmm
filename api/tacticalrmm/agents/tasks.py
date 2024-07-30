@@ -175,7 +175,7 @@ def run_script_email_results_task(
         return
 
     CORE = get_core_settings()
-    subject = f"{agent.hostname} {script.name} Results"
+    subject = f"{agent.client.name}, {agent.site.name}, {agent.hostname} {script.name} Results"
     exec_time = "{:.4f}".format(r["execution_time"])
     body = (
         subject

@@ -233,6 +233,15 @@ def find_and_replace_db_values_str(*, text: str, instance):
     return return_string
 
 
+# usually for stderr fields that contain windows file paths, like {{alert.get_result.stderr}}
+# but preserves newlines or tabs
+# removes all control chars
+def _sanitize_webhook(s: str) -> str:
+    s = re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", s)
+    s = re.sub(r"(?<!\\)(\\)(?![\\nrt])", r"\\\\", s)
+    return s
+
+
 def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=None):
     # replace url
     new_url = find_and_replace_db_values_str(text=url, instance=instance)
@@ -240,9 +249,7 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     new_headers = find_and_replace_db_values_str(text=headers, instance=instance)
     new_url = requote_uri(new_url)
 
-    # usually for stderr fields that contain windows file paths, like {{alert.get_result.stderr}}
-    # but preserves newlines or tabs
-    new_body = re.sub(r"(?<!\\)(\\)(?![\\nrt])", r"\\\\", new_body)
+    new_body = _sanitize_webhook(new_body)
 
     try:
         new_body = json.loads(new_body, strict=False)

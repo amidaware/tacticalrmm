@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -16,6 +17,7 @@ from django.core.cache import cache
 from django.http import FileResponse
 from meshctrl.utils import get_auth_token
 from requests.utils import requote_uri
+
 from tacticalrmm.constants import (
     AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
     CORESETTINGS_CACHE_KEY,
@@ -239,7 +241,8 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     new_url = requote_uri(new_url)
 
     # usually for stderr fields that contain windows file paths, like {{alert.get_result.stderr}}
-    new_body = new_body.replace("\\", "\\\\")
+    # but preserves newlines or tabs
+    new_body = re.sub(r"(?<!\\)(\\)(?![\\nrt])", r"\\\\", new_body)
 
     try:
         new_body = json.loads(new_body, strict=False)

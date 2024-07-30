@@ -36,6 +36,8 @@ class CustomFieldPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             return _has_perm(r, "can_view_customfields")
+        elif r.method == "PATCH" and view.__class__.__name__ == "GetAddCustomFields":
+            return _has_perm(r, "can_view_customfields")
 
         return _has_perm(r, "can_manage_customfields")
 

@@ -237,7 +237,7 @@ def find_and_replace_db_values_str(*, text: str, instance):
 # but preserves newlines or tabs
 # removes all control chars
 def _sanitize_webhook(s: str) -> str:
-    s = re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", s)
+    s = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", " ", s)
     s = re.sub(r"(?<!\\)(\\)(?![\\nrt])", r"\\\\", s)
     return s
 
@@ -250,7 +250,6 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
     new_url = requote_uri(new_url)
 
     new_body = _sanitize_webhook(new_body)
-
     try:
         new_body = json.loads(new_body, strict=False)
     except Exception as e:

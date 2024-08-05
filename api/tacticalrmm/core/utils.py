@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -16,6 +17,7 @@ from django.core.cache import cache
 from django.http import FileResponse
 from meshctrl.utils import get_auth_token
 from requests.utils import requote_uri
+
 from tacticalrmm.constants import (
     AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
     CORESETTINGS_CACHE_KEY,
@@ -231,14 +233,34 @@ def find_and_replace_db_values_str(*, text: str, instance):
     return return_string
 
 
+# usually for stderr fields that contain windows file paths, like {{alert.get_result.stderr}}
+# but preserves newlines or tabs
+# removes all control chars
+def _sanitize_webhook(s: str) -> str:
+    s = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", " ", s)
+    s = re.sub(r"(?<!\\)(\\)(?![\\nrt])", r"\\\\", s)
+    return s
+
+
 def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=None):
     # replace url
     new_url = find_and_replace_db_values_str(text=url, instance=instance)
     new_body = find_and_replace_db_values_str(text=body, instance=instance)
     new_headers = find_and_replace_db_values_str(text=headers, instance=instance)
     new_url = requote_uri(new_url)
-    new_body = json.loads(new_body)
-    new_headers = json.loads(new_headers)
+
+    new_body = _sanitize_webhook(new_body)
+    try:
+        new_body = json.loads(new_body, strict=False)
+    except Exception as e:
+        logger.error(f"{e=} {body=}")
+        logger.error(f"{new_body=}")
+
+    try:
+        new_headers = json.loads(new_headers, strict=False)
+    except Exception as e:
+        logger.error(f"{e=} {headers=}")
+        logger.error(f"{new_headers=}")
 
     if method in ("get", "delete"):
         return getattr(requests, method)(new_url, headers=new_headers)

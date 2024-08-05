@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="84"
+SCRIPT_VERSION="85"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
@@ -76,6 +76,16 @@ elif [[ "$osname" == "ubuntu" ]]; then
   fi
 else
   not_supported
+  exit 1
+fi
+
+if dpkg -l | grep -qi turnkey; then
+  echo -ne "${RED}Turnkey linux is not supported. Please use the official debian/ubuntu ISO.${NC}\n"
+  exit 1
+fi
+
+if ps aux | grep -v grep | grep -qi webmin; then
+  echo -ne "${RED}Webmin running, should not be installed. Please use the official debian/ubuntu ISO.${NC}\n"
   exit 1
 fi
 

@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import User
 from .utils import get_systray_assets_fs
 from django.core.exceptions import ValidationError
 import os

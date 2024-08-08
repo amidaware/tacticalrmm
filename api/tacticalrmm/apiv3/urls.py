@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from systray import views as systray_views
 
 urlpatterns = [
     path("checkrunner/", views.CheckRunner.as_view()),
@@ -20,4 +21,6 @@ urlpatterns = [
     path("<int:pk>/chocoresult/", views.ChocoResult.as_view()),
     path("<int:pk>/<str:agentid>/histresult/", views.AgentHistoryResult.as_view()),
     path("<str:agentid>/config/", views.AgentConfig.as_view()),
+    path("<str:agentid>/systray/", views.SystrayConfig.as_view()),
+    path("<str:agentid>/systray/<str:file_name>/", systray_views.ServeFile.as_view()),
 ]

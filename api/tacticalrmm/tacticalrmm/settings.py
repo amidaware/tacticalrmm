@@ -178,6 +178,7 @@ INSTALLED_APPS = [
     "scripts",
     "alerts",
     "ee.reporting",
+    "systray",
 ]
 
 CHANNEL_LAYERS = {

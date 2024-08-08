@@ -48,6 +48,7 @@ class SiteSerializer(ModelSerializer):
             "block_policy_inheritance",
             "maintenance_mode",
             "failing_checks",
+            "trayicon",
         )
 
     def validate(self, val):

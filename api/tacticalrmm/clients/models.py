@@ -96,6 +96,7 @@ class Site(BaseAuditModel):
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     block_policy_inheritance = models.BooleanField(default=False)
+    trayicon = models.JSONField(default=list)
     failing_checks = models.JSONField(default=_default_failing_checks_data)
     workstation_policy = models.ForeignKey(
         "automation.Policy",

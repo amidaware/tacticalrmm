@@ -6,7 +6,7 @@ import psutil
 import requests
 from cryptography import x509
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.views.decorators.csrf import csrf_exempt
@@ -20,6 +20,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apiv3.support.models import SysTray
+from apiv3.support.serializers import SysTraySerializer
 from core.decorators import monitoring_view
 from core.tasks import sync_mesh_perms_task
 from core.utils import (
@@ -658,3 +660,67 @@ class OpenAICodeCompletion(APIView):
             )
 
         return Response(response_data["choices"][0]["message"]["content"])
+
+
+class SysTrayView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        systray = SysTray.objects.all()
+        serializer = SysTraySerializer(systray, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = SysTraySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+    # temp validation hack to update name in ui
+    def should_ignore_icon_errors(self, errors):
+        return "icon" in errors and len(errors) == 1
+
+    def put(self, request):
+        systray_id = request.data.get("id")
+        if not systray_id:
+            return Response(
+                {"error": "ID is required for updating a SysTray instance."}, status=400
+            )
+
+        systray = get_object_or_404(SysTray, pk=systray_id)
+        serializer = SysTraySerializer(systray, data=request.data, partial=True)
+
+        # Attempt to validate the serializer with the provided data
+        if serializer.is_valid():
+            # Save the validated changes
+            serializer.save()
+            return Response(serializer.data, status=200)
+        else:
+            # Check if the only error is related to the 'icon' field
+            errors = serializer.errors
+            if "icon" in errors and len(errors) == 1:
+                # Manually update and save the 'name' if it's provided in the request and ignore the 'icon' error
+                if "name" in request.data:
+                    systray.name = request.data["name"]
+                    systray.save(update_fields=["name"])
+                    return Response(
+                        {"message": "Name updated successfully, icon ignored."},
+                        status=200,
+                    )
+            # Return other validation errors if present
+            return Response(errors, status=400)
+
+
+class ServeFile(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, file_name):
+        file_path = os.path.join(
+            "/rmm/api/tacticalrmm/tacticalrmm/private/assets/", file_name
+        )
+
+        if not os.path.exists(file_path):
+            return Response({"error": "File does not exist"}, status=404)
+
+        return FileResponse(open(file_path, "rb"))

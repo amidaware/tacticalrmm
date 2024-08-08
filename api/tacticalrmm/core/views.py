@@ -31,6 +31,8 @@ from core.utils import (
     token_is_valid,
 )
 from logs.models import AuditLog
+from systray.models import SysTray
+from systray.serializers import SysTraySerializer
 from tacticalrmm.constants import AuditActionType, PAStatus
 from tacticalrmm.helpers import get_certs, notify_error
 from tacticalrmm.permissions import (

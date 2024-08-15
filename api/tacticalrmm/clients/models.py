@@ -133,6 +133,7 @@ class Site(BaseAuditModel):
                 old_site.alert_template != self.alert_template
                 or old_site.workstation_policy != self.workstation_policy
                 or old_site.server_policy != self.server_policy
+                or old_site.client != self.client
             ):
                 cache_agents_alert_template.delay()
 

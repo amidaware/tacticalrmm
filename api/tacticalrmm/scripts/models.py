@@ -122,7 +122,9 @@ class Script(BaseAuditModel):
 
                 syntax = script["syntax"] if "syntax" in script.keys() else ""
 
-                run_as_user = script["run_as_user"] if "run_as_user" in script.keys() else False
+                run_as_user = (
+                    script["run_as_user"] if "run_as_user" in script.keys() else False
+                )
 
                 supported_platforms = (
                     script["supported_platforms"]

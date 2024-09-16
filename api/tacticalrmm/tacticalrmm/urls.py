@@ -23,6 +23,10 @@ register_converter(AgentIDConverter, "agent")
 
 urlpatterns = [
     path("", home),
+
+    # all auth urls
+    path("_allauth/", include("allauth.headless.urls")),
+
     path("v2/checkcreds/", CheckCredsV2.as_view()),
     path("v2/login/", LoginViewV2.as_view()),
     path("checkcreds/", CheckCreds.as_view()),  # DEPRECATED AS OF 0.19.0
@@ -43,6 +47,7 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
+    path("accounts/", include("ee.sso.urls")),
     path("reporting/", include("ee.reporting.urls")),
 ]
 

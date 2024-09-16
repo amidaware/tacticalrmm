@@ -1,5 +1,4 @@
 import datetime
-
 import pyotp
 from django.conf import settings
 from django.contrib.auth import login
@@ -8,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from knox.views import LoginView as KnoxLoginView
 from python_ipware import IpWare
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView

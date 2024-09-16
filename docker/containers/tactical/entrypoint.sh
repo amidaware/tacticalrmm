@@ -88,13 +88,20 @@ LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'
 
 SCRIPTS_DIR = '/opt/tactical/community-scripts'
 
-ALLOWED_HOSTS = ['${API_HOST}', 'tactical-backend']
+ALLOWED_HOSTS = ['${API_HOST}', '${APP_HOST}', 'tactical-backend']
 
 ADMIN_URL = '${ADMINURL}/'
 
-CORS_ORIGIN_WHITELIST = [
-    'https://${APP_HOST}'
-]
+CORS_ORIGIN_WHITELIST = ['https://${API_HOST}', 'https://${APP_HOST}']
+CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_DOMAIN = '${BASE_DOMAIN}'
+CSRF_COOKIE_DOMAIN = '${BASE_DOMAIN}'
+CSRF_TRUSTED_ORIGINS = ['https://${API_HOST}', 'https://${APP_HOST}']
+
+HEADLESS_FRONTEND_URLS = {
+    'socialaccount_login_error': 'https://${APP_HOST}/account/provider/callback'
+}
 
 DATABASES = {
     'default': {

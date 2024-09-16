@@ -135,6 +135,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",
+        "allauth.account.auth_backends.AuthenticationBackend",
         "tacticalrmm.auth.APIAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -158,12 +159,18 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.staticfiles",
+    "django.contrib.messages",
     "channels",
     "rest_framework",
     "rest_framework.authtoken",
     "knox",
     "corsheaders",
     "accounts",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.openid_connect",
+    "allauth.headless",
     "apiv3",
     "clients",
     "agents",
@@ -178,6 +185,7 @@ INSTALLED_APPS = [
     "scripts",
     "alerts",
     "ee.reporting",
+    "ee.sso"
 ]
 
 CHANNEL_LAYERS = {
@@ -188,6 +196,23 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# settings for django all auth
+HEADLESS_ONLY = True
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_ONLY = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    "openid_connect": {
+        "OAUTH_PKCE_ENABLED": True
+    }
+}
+
+SESSION_COOKIE_SECURE = True
 
 # silence cache key length warnings
 import warnings  # noqa
@@ -215,7 +240,9 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 if SWAGGER_ENABLED:
@@ -231,10 +258,8 @@ if DEBUG and not DEMO:
     MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
 
 if ADMIN_ENABLED:
-    MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
     INSTALLED_APPS += (
         "django.contrib.admin",
-        "django.contrib.messages",
     )
 
 if DEMO:

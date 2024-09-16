@@ -50,6 +50,8 @@ function django_setup {
 
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
   
+  BASE_DOMAIN=$(echo "$APP_HOST" | awk -F. '{print $(NF-1)"."$NF}')
+
   localvars="$(cat << EOF
 SECRET_KEY = '${DJANGO_SEKRET}'
 
@@ -64,12 +66,20 @@ KEY_FILE = '${CERT_PRIV_PATH}'
 
 SCRIPTS_DIR = '/community-scripts'
 
-ALLOWED_HOSTS = ['${API_HOST}', '*']
-
 ADMIN_URL = 'admin/'
 
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = ['https://${API_HOST}']
+ALLOWED_HOSTS = ['${API_HOST}', '${APP_HOST}', '*']
+
+CORS_ORIGIN_WHITELIST = ['https://${API_HOST}', 'https://${APP_HOST}']
+CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_DOMAIN = '${BASE_DOMAIN}'
+CSRF_COOKIE_DOMAIN = '${BASE_DOMAIN}'
+CSRF_TRUSTED_ORIGINS = ['https://${API_HOST}', 'https://${APP_HOST}']
+
+HEADLESS_FRONTEND_URLS = {
+    'socialaccount_login_error': 'https://${APP_HOST}/account/provider/callback'
+}
 
 DATABASES = {
     'default': {

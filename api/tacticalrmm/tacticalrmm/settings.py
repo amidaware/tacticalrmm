@@ -135,7 +135,6 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",
-        "allauth.account.auth_backends.AuthenticationBackend",
         "tacticalrmm.auth.APIAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -199,9 +198,9 @@ CHANNEL_LAYERS = {
 
 # settings for django all auth
 HEADLESS_ONLY = True
+SOCIALACCOUNT_ONLY = True
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 ACCOUNT_EMAIL_VERIFICATION = 'none'
-SOCIALACCOUNT_ONLY = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = True
@@ -212,6 +211,7 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
+AUTHENTICATION_BACKENDS = ("allauth.account.auth_backends.AuthenticationBackend",)
 SESSION_COOKIE_SECURE = True
 
 # silence cache key length warnings

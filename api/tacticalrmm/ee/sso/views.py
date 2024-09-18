@@ -7,6 +7,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from accounts.permissions import AccountsPerms
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication
+from knox.views import LoginView as KnoxLoginView
+from django.contrib.auth import logout
 
 class SocialAppSerializer(ModelSerializer):
     server_url = ReadOnlyField(source="settings.server_url")
@@ -102,3 +105,16 @@ class GetUpdateDeleteSSOProvider(APIView):
         provider.delete()
         return Response("ok")
 
+
+class GetAccessToken(KnoxLoginView):
+  permission_classes = [IsAuthenticated]
+  authentication_classes = [SessionAuthentication]
+
+  def post(self, request, format=None):
+      response = super().post(request, format=None)
+      response.data["username"] = request.user.username
+
+      #invalid user session since we have an access token now
+      logout(request)
+      return Response(response.data)
+        

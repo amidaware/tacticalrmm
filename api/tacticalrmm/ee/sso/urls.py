@@ -8,4 +8,5 @@ urlpatterns = [
     path("", include("allauth.urls")),
     path("ssoproviders/", views.GetAddSSOProvider.as_view()),
     path("ssoproviders/<int:pk>/", views.GetUpdateDeleteSSOProvider.as_view()),
+    path("ssoproviders/token/", views.GetAccessToken.as_view()),
 ]

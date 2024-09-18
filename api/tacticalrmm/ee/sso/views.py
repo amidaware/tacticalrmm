@@ -4,13 +4,14 @@ from django.shortcuts import get_object_or_404
 from allauth.socialaccount.models import SocialApp
 from rest_framework.serializers import ModelSerializer, ReadOnlyField
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.views import APIView
 from accounts.permissions import AccountsPerms
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from knox.views import LoginView as KnoxLoginView
 from django.contrib.auth import logout
-
+from logs.models import AuditLog
 class SocialAppSerializer(ModelSerializer):
     server_url = ReadOnlyField(source="settings.server_url")
     class Meta:
@@ -107,14 +108,26 @@ class GetUpdateDeleteSSOProvider(APIView):
 
 
 class GetAccessToken(KnoxLoginView):
-  permission_classes = [IsAuthenticated]
-  authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication]
 
-  def post(self, request, format=None):
-      response = super().post(request, format=None)
-      response.data["username"] = request.user.username
+    def post(self, request, format=None):
+        # check for auth method before signing in
+        if "account_authentication_methods" in request.session and len(request.session["account_authentication_methods"]) > 0:
+            login_method = request.session["account_authentication_methods"][0]
 
-      #invalid user session since we have an access token now
-      logout(request)
-      return Response(response.data)
+            # get token
+            response = super().post(request, format=None)
+            response.data["username"] = request.user.username
+
+            AuditLog.audit_user_login_successful_sso(request.user.username, login_method["provider"], login_method)
+
+            #invalid user session since we have an access token now
+            logout(request)
+        
+            return Response(response.data)
+        else:
+            AuditLog.audit_user_login_failed_sso(request.user.username)
+            logout(request)
+            return Response("The credentials supplied were invalid", status.HTTP_403_FORBIDDEN)
         

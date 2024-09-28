@@ -1,3 +1,10 @@
+"""
+Copyright (c) 2023-present Amidaware Inc.
+This file is subject to the EE License Agreement.
+For details, see: https://license.tacticalrmm.com/ee
+"""
+
+
 import re
 from django.shortcuts import get_object_or_404
 
@@ -12,6 +19,8 @@ from rest_framework.authentication import SessionAuthentication
 from knox.views import LoginView as KnoxLoginView
 from django.contrib.auth import logout
 from logs.models import AuditLog
+from tacticalrmm.utils import get_core_settings
+
 class SocialAppSerializer(ModelSerializer):
     server_url = ReadOnlyField(source="settings.server_url")
     class Meta:
@@ -119,6 +128,7 @@ class GetAccessToken(KnoxLoginView):
             # get token
             response = super().post(request, format=None)
             response.data["username"] = request.user.username
+            response.data["provider"] = login_method["provider"]
 
             AuditLog.audit_user_login_successful_sso(request.user.username, login_method["provider"], login_method)
 
@@ -131,3 +141,23 @@ class GetAccessToken(KnoxLoginView):
             logout(request)
             return Response("The credentials supplied were invalid", status.HTTP_403_FORBIDDEN)
         
+
+class GetUpdateSSOSettings(APIView):
+    permission_classes = [IsAuthenticated, AccountsPerms]
+
+    def get(self, request):
+
+        settings = get_core_settings()
+
+        return Response({"block_local_user_logon": settings.block_local_user_logon})
+    
+    def post(self, request):
+
+        data = request.data
+        
+        settings = get_core_settings()
+
+        settings.block_local_user_logon = data["block_local_user_logon"]
+        settings.save(update_fields=["block_local_user_logon"])
+
+        return Response("ok")

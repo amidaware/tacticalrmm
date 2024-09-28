@@ -27,6 +27,9 @@ EXCLUDE_PATHS = (
     "/logout",
     "/agents/installer",
     "/api/schema",
+    "/accounts/ssoproviders/token",
+    "/_allauth/browser/v1/config",
+    "/_allauth/browser/v1/auth/provider/redirect"
 )
 
 DEMO_EXCLUDE_PATHS = (

@@ -1,5 +1,6 @@
 import datetime
 import pyotp
+from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -14,7 +15,7 @@ from rest_framework.views import APIView
 from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
-    ReadOnlyField
+    ReadOnlyField,
 )
 
 from accounts.utils import is_root_user
@@ -54,10 +55,10 @@ class CheckCredsV2(KnoxLoginView):
 
         if user.block_dashboard_login:
             return notify_error("Bad credentials")
-        
+
         # block local logon if configured
-        settings = get_core_settings()
-        if not user.is_superuser and settings.block_local_user_logon:
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
             return notify_error("Bad credentials")
 
         # if totp token not set modify response to notify frontend
@@ -84,10 +85,10 @@ class LoginViewV2(KnoxLoginView):
             return notify_error("Bad credentials")
 
         # block local logon if configured
-        settings = get_core_settings()
-        if not user.is_superuser and settings.block_local_user_logon:
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
             return notify_error("Bad credentials")
-        
+
         token = request.data["twofactor"]
         totp = pyotp.TOTP(user.totp_key)
 
@@ -140,10 +141,10 @@ class CheckCreds(KnoxLoginView):
 
         if user.block_dashboard_login:
             return notify_error("Bad credentials")
-        
+
         # block local logon if configured
-        settings = get_core_settings()
-        if not user.is_superuser and settings.block_local_user_logon:
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
             return notify_error("Bad credentials")
 
         # if totp token not set modify response to notify frontend
@@ -171,10 +172,10 @@ class LoginView(KnoxLoginView):
 
         if user.block_dashboard_login:
             return notify_error("Bad credentials")
-        
+
         # block local logon if configured
-        settings = get_core_settings()
-        if not user.is_superuser and settings.block_local_user_logon:
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
             return notify_error("Bad credentials")
 
         token = request.data["twofactor"]
@@ -213,6 +214,7 @@ class GetDeleteActiveLoginSessionsPerUser(APIView):
 
     class TokenSerializer(ModelSerializer):
         user = ReadOnlyField(source="user.username")
+
         class Meta:
             model = AuthToken
             fields = (
@@ -222,15 +224,17 @@ class GetDeleteActiveLoginSessionsPerUser(APIView):
                 "expiry",
             )
 
-
     def get(self, request, pk):
-        tokens = get_object_or_404(User, pk=pk).auth_token_set.filter(expiry__gt=djangotime.now())
+        tokens = get_object_or_404(User, pk=pk).auth_token_set.filter(
+            expiry__gt=djangotime.now()
+        )
 
         return Response(self.TokenSerializer(tokens, many=True).data)
-        
 
     def delete(self, request, pk):
-        tokens = get_object_or_404(User, pk=pk).auth_token_set.filter(expiry__gt=djangotime.now())
+        tokens = get_object_or_404(User, pk=pk).auth_token_set.filter(
+            expiry__gt=djangotime.now()
+        )
 
         tokens.delete()
         return Response("ok")
@@ -245,6 +249,7 @@ class DeleteActiveLoginSession(APIView):
         token.delete()
 
         return Response("ok")
+
 
 class GetAddUsers(APIView):
     permission_classes = [IsAuthenticated, AccountsPerms]
@@ -264,10 +269,10 @@ class GetAddUsers(APIView):
                     "display": account.get_provider_account().to_str(),
                     "last_login": account.last_login,
                     "date_joined": account.date_joined,
-                    "extra_data": account.extra_data
-                } 
+                    "extra_data": account.extra_data,
+                }
                 for account in accounts
-            ] 
+            ]
 
         class Meta:
             model = User
@@ -283,7 +288,7 @@ class GetAddUsers(APIView):
                 "role",
                 "block_dashboard_login",
                 "date_format",
-                "social_accounts"
+                "social_accounts",
             ]
 
     def get(self, request):

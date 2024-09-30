@@ -29,7 +29,7 @@ EXCLUDE_PATHS = (
     "/api/schema",
     "/accounts/ssoproviders/token",
     "/_allauth/browser/v1/config",
-    "/_allauth/browser/v1/auth/provider/redirect"
+    "/_allauth/browser/v1/auth/provider/redirect",
 )
 
 DEMO_EXCLUDE_PATHS = (
@@ -75,7 +75,9 @@ class AuditMiddleware:
                     # gather and save debug info
                     debug_info["url"] = request.path
                     debug_info["method"] = request.method
-                    debug_info["view_class"] = view_func.cls.__name__ if hasattr(view_func, "cls") else None
+                    debug_info["view_class"] = (
+                        view_func.cls.__name__ if hasattr(view_func, "cls") else None
+                    )
                     debug_info["view_func"] = view_Name
                     debug_info["view_args"] = view_args
                     debug_info["view_kwargs"] = view_kwargs

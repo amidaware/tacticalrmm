@@ -4,7 +4,6 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-   
 from django.urls import path
 from django.urls import include
 

@@ -184,7 +184,7 @@ INSTALLED_APPS = [
     "scripts",
     "alerts",
     "ee.reporting",
-    "ee.sso"
+    "ee.sso",
 ]
 
 CHANNEL_LAYERS = {
@@ -200,16 +200,12 @@ CHANNEL_LAYERS = {
 HEADLESS_ONLY = True
 SOCIALACCOUNT_ONLY = True
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = True
 
-SOCIALACCOUNT_PROVIDERS = {
-    "openid_connect": {
-        "OAUTH_PKCE_ENABLED": True
-    }
-}
+SOCIALACCOUNT_PROVIDERS = {"openid_connect": {"OAUTH_PKCE_ENABLED": True}}
 
 AUTHENTICATION_BACKENDS = ("allauth.account.auth_backends.AuthenticationBackend",)
 SESSION_COOKIE_SECURE = True
@@ -258,9 +254,7 @@ if DEBUG and not DEMO:
     MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
 
 if ADMIN_ENABLED:
-    INSTALLED_APPS += (
-        "django.contrib.admin",
-    )
+    INSTALLED_APPS += ("django.contrib.admin",)
 
 if DEMO:
     MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)

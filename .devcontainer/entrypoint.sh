@@ -33,12 +33,12 @@ function check_tactical_ready {
 }
 
 function django_setup {
-  until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
+  until (echo >/dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &>/dev/null; do
     echo "waiting for postgresql container to be ready..."
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${MESH_SERVICE}"/4443) &> /dev/null; do
+  until (echo >/dev/tcp/"${MESH_SERVICE}"/4443) &>/dev/null; do
     echo "waiting for meshcentral container to be ready..."
     sleep 5
   done
@@ -49,10 +49,11 @@ function django_setup {
   MESH_TOKEN="$(cat ${TACTICAL_DIR}/tmp/mesh_token)"
 
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-  
+
   BASE_DOMAIN=$(echo "$APP_HOST" | awk -F. '{print $(NF-1)"."$NF}')
 
-  localvars="$(cat << EOF
+  localvars="$(
+    cat <<EOF
 SECRET_KEY = '${DJANGO_SEKRET}'
 
 DEBUG = True
@@ -111,9 +112,9 @@ MESH_WS_URL = '${MESH_WS_URL}'
 ADMIN_ENABLED = True
 TRMM_INSECURE = True
 EOF
-)"
+  )"
 
-  echo "${localvars}" > ${WORKSPACE_DIR}/api/tacticalrmm/tacticalrmm/local_settings.py
+  echo "${localvars}" >${WORKSPACE_DIR}/api/tacticalrmm/tacticalrmm/local_settings.py
 
   # run migrations and init scripts
   "${VIRTUAL_ENV}"/bin/python manage.py pre_update_tasks
@@ -128,9 +129,8 @@ EOF
   "${VIRTUAL_ENV}"/bin/python manage.py create_natsapi_conf
   "${VIRTUAL_ENV}"/bin/python manage.py create_installer_user
   "${VIRTUAL_ENV}"/bin/python manage.py post_update_tasks
-  
 
-  # create super user 
+  # create super user
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
 }
 

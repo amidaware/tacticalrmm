@@ -1008,6 +1008,16 @@ def bulk(request):
     elif request.data["mode"] == "script":
         script = get_object_or_404(Script, pk=request.data["script"])
 
+        # prevent API from breaking for those who haven't updated payload
+        try:
+            custom_field_pk = request.data["custom_field"]
+            collector_all_output = request.data["collector_all_output"]
+            save_to_agent_note = request.data["save_to_agent_note"]
+        except KeyError:
+            custom_field_pk = None
+            collector_all_output = False
+            save_to_agent_note = False
+
         bulk_script_task.delay(
             script_pk=script.pk,
             agent_pks=agents,
@@ -1016,6 +1026,9 @@ def bulk(request):
             username=request.user.username[:50],
             run_as_user=request.data["run_as_user"],
             env_vars=request.data["env_vars"],
+            custom_field_pk=custom_field_pk,
+            collector_all_output=collector_all_output,
+            save_to_agent_note=save_to_agent_note,
         )
 
         return Response(f"{script.name} will now be run on {len(agents)} agents. {ht}")

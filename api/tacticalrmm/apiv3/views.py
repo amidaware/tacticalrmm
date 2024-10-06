@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from agents.models import Agent, AgentHistory
+from agents.models import Agent, AgentHistory, Note
 from agents.serializers import AgentHistorySerializer
 from alerts.tasks import cache_agents_alert_template
 from apiv3.utils import get_agent_config
@@ -40,6 +40,7 @@ from tacticalrmm.constants import (
     AuditActionType,
     AuditObjType,
     CheckStatus,
+    CustomFieldModel,
     DebugLogType,
     GoArch,
     MeshAgentIdent,
@@ -581,11 +582,39 @@ class AgentHistoryResult(APIView):
             request.data["script_results"]["retcode"] = 1
 
         hist = get_object_or_404(
-            AgentHistory.objects.filter(agent__agent_id=agentid), pk=pk
+            AgentHistory.objects.select_related("custom_field").filter(
+                agent__agent_id=agentid
+            ),
+            pk=pk,
         )
         s = AgentHistorySerializer(instance=hist, data=request.data, partial=True)
         s.is_valid(raise_exception=True)
         s.save()
+
+        if hist.custom_field:
+            if hist.custom_field.model == CustomFieldModel.AGENT:
+                field = hist.custom_field.get_or_create_field_value(hist.agent)
+            elif hist.custom_field.model == CustomFieldModel.CLIENT:
+                field = hist.custom_field.get_or_create_field_value(hist.agent.client)
+            elif hist.custom_field.model == CustomFieldModel.SITE:
+                field = hist.custom_field.get_or_create_field_value(hist.agent.site)
+
+            r = request.data["script_results"]["stdout"]
+            value = (
+                r.strip()
+                if hist.collector_all_output
+                else r.strip().split("\n")[-1].strip()
+            )
+
+            field.save_to_field(value)
+
+        if hist.save_to_agent_note:
+            Note.objects.create(
+                agent=hist.agent,
+                user=request.user,
+                note=request.data["script_results"]["stdout"],
+            )
+
         return Response("ok")
 
 

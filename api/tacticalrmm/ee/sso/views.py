@@ -5,18 +5,19 @@ For details, see: https://license.tacticalrmm.com/ee
 """
 
 import re
-from django.shortcuts import get_object_or_404
 
 from allauth.socialaccount.models import SocialApp
-from rest_framework.serializers import ModelSerializer, ReadOnlyField
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.views import APIView
-from accounts.permissions import AccountsPerms
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import SessionAuthentication
-from knox.views import LoginView as KnoxLoginView
 from django.contrib.auth import logout
+from django.shortcuts import get_object_or_404
+from knox.views import LoginView as KnoxLoginView
+from rest_framework import status
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer, ReadOnlyField
+from rest_framework.views import APIView
+
+from accounts.permissions import AccountsPerms
 from logs.models import AuditLog
 from tacticalrmm.utils import get_core_settings
 

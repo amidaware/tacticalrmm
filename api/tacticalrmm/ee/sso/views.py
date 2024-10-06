@@ -154,17 +154,19 @@ class GetUpdateSSOSettings(APIView):
 
     def get(self, request):
 
-        settings = get_core_settings()
+        core_settings = get_core_settings()
 
-        return Response({"block_local_user_logon": settings.block_local_user_logon})
+        return Response(
+            {"block_local_user_logon": core_settings.block_local_user_logon}
+        )
 
     def post(self, request):
 
         data = request.data
 
-        settings = get_core_settings()
+        core_settings = get_core_settings()
 
-        settings.block_local_user_logon = data["block_local_user_logon"]
-        settings.save(update_fields=["block_local_user_logon"])
+        core_settings.block_local_user_logon = data["block_local_user_logon"]
+        core_settings.save(update_fields=["block_local_user_logon"])
 
         return Response("ok")

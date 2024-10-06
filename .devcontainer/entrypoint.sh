@@ -71,7 +71,7 @@ ADMIN_URL = 'admin/'
 
 ALLOWED_HOSTS = ['${API_HOST}', '${APP_HOST}', '*']
 
-CORS_ORIGIN_WHITELIST = ['https://${API_HOST}', 'https://${APP_HOST}']
+CORS_ORIGIN_WHITELIST = ['https://${APP_HOST}', 'https://${API_HOST}']
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_DOMAIN = '${BASE_DOMAIN}'

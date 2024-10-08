@@ -16,6 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, ReadOnlyField
 from rest_framework.views import APIView
+from python_ipware import IpWare
 
 from accounts.permissions import AccountsPerms
 from logs.models import AuditLog
@@ -24,6 +25,7 @@ from tacticalrmm.utils import get_core_settings
 
 class SocialAppSerializer(ModelSerializer):
     server_url = ReadOnlyField(source="settings.server_url")
+    role = ReadOnlyField(source="settings.role")
 
     class Meta:
         model = SocialApp
@@ -36,6 +38,7 @@ class SocialAppSerializer(ModelSerializer):
             "secret",
             "server_url",
             "settings",
+            "role",
         ]
 
 
@@ -48,6 +51,7 @@ class GetAddSSOProvider(APIView):
 
     class InputSerializer(ModelSerializer):
         server_url = ReadOnlyField()
+        role = ReadOnlyField()
 
         class Meta:
             model = SocialApp
@@ -59,6 +63,7 @@ class GetAddSSOProvider(APIView):
                 "provider",
                 "provider_id",
                 "settings",
+                "role"
             ]
 
     # removed any special characters and replaces spaces with a hyphen
@@ -73,6 +78,7 @@ class GetAddSSOProvider(APIView):
         # need to move server_url into json settings
         data["settings"] = {}
         data["settings"]["server_url"] = data["server_url"]
+        data["settings"]["role"] = data["role"] if data["role"] else None
 
         # set provider to 'openid_connect'
         data["provider"] = "openid_connect"
@@ -91,10 +97,11 @@ class GetUpdateDeleteSSOProvider(APIView):
 
     class InputSerialzer(ModelSerializer):
         server_url = ReadOnlyField()
+        role = ReadOnlyField()
 
         class Meta:
             model = SocialApp
-            fields = ["client_id", "secret", "server_url", "settings"]
+            fields = ["client_id", "secret", "server_url", "settings", "role"]
 
     def put(self, request, pk):
         provider = get_object_or_404(SocialApp, pk=pk)
@@ -103,9 +110,10 @@ class GetUpdateDeleteSSOProvider(APIView):
         # need to move server_url into json settings
         data["settings"] = {}
         data["settings"]["server_url"] = data["server_url"]
+        data["settings"]["role"] = data["role"] if data["role"] else None
 
         serializer = self.InputSerialzer(
-            instance=provider, data=request.data, partial=True
+            instance=provider, data=data, partial=True
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -137,6 +145,13 @@ class GetAccessToken(KnoxLoginView):
             AuditLog.audit_user_login_successful_sso(
                 request.user.username, login_method["provider"], login_method
             )
+
+            # log ip
+            ipw = IpWare()
+            client_ip, _ = ipw.get_client_ip(request.META)
+            if client_ip:
+                request.user.last_login_ip = str(client_ip)
+                request.user.save(update_fields=["last_login_ip"])
 
             # invalid user session since we have an access token now
             logout(request)

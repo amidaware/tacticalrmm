@@ -7,6 +7,7 @@ channels==4.1.0
 channels_redis==4.2.0
 cryptography==43.0.1
 Django==4.2.16
+django-allauth[socialaccount]==64.2.1
 django-cors-headers==4.4.0
 django-filter==24.3
 django-rest-knox==4.2.0

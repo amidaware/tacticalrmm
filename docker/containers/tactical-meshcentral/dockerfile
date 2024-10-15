@@ -14,7 +14,7 @@ RUN MESH_VER=$(grep -o 'MESH_VER.*' /tmp/settings.py | cut -d'"' -f 2) && \
     cat > package.json <<EOF
 {
   "dependencies": {
-    "archiver": "5.3.1",
+    "archiver": "7.0.1",
     "meshcentral": "$MESH_VER",
     "mongodb": "4.13.0",
     "otplib": "10.2.3",

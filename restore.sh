@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="59"
+SCRIPT_VERSION="60"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -413,7 +413,7 @@ mesh_pkg="$(
   cat <<EOF
 {
   "dependencies": {
-    "archiver": "5.3.1",
+    "archiver": "7.0.1",
     "meshcentral": "${MESH_VER}",
     "otplib": "10.2.3",
     "pg": "8.7.1",

@@ -768,6 +768,10 @@ def run_script(request, agent_id):
     run_as_user: bool = request.data["run_as_user"]
     env_vars: list[str] = request.data["env_vars"]
     req_timeout = int(request.data["timeout"]) + 3
+    run_on_server: bool | None = request.data.get("run_on_server")
+
+    if run_on_server and not get_core_settings().server_scripts_enabled:
+        return notify_error("This feature is disabled.")
 
     AuditLog.audit_script_run(
         username=request.user.username,
@@ -783,6 +787,29 @@ def run_script(request, agent_id):
         username=request.user.username[:50],
     )
     history_pk = hist.pk
+
+    if run_on_server:
+        from core.utils import run_server_script
+
+        r = run_server_script(
+            body=script.script_body,
+            args=script.parse_script_args(agent, script.shell, args),
+            env_vars=script.parse_script_env_vars(agent, script.shell, env_vars),
+            shell=script.shell,
+            timeout=req_timeout,
+        )
+
+        ret = {
+            "stdout": r[0],
+            "stderr": r[1],
+            "execution_time": "{:.4f}".format(r[2]),
+            "retcode": r[3],
+        }
+
+        hist.script_results = {**ret, "id": history_pk}
+        hist.save(update_fields=["script_results"])
+
+        return Response(ret)
 
     if output == "wait":
         r = agent.run_script(

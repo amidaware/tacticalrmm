@@ -69,6 +69,10 @@ app.conf.beat_schedule = {
         "task": "core.tasks.resolve_alerts_task",
         "schedule": timedelta(seconds=80.0),
     },
+    "update-systray-config": {
+        "task": "systray.tasks.update_systray_config",
+        "schedule": crontab(minute="*/5", hour="*"),
+    },
 }
 
 

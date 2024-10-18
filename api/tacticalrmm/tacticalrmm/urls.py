@@ -9,6 +9,7 @@ from ee.sso.urls import allauth_urls
 from core.consumers import DashInfo, TerminalConsumer
 from core.views import home
 
+
 class AgentIDConverter:
     regex = "[^/]{20}[^/]+"
 

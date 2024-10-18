@@ -23,6 +23,7 @@ from logs.models import AuditLog
 from tacticalrmm.utils import get_core_settings
 from .permissions import SSOLoginPerms
 
+
 class SocialAppSerializer(ModelSerializer):
     server_url = ReadOnlyField(source="settings.server_url")
     role = ReadOnlyField(source="settings.role")
@@ -63,7 +64,7 @@ class GetAddSSOProvider(APIView):
                 "provider",
                 "provider_id",
                 "settings",
-                "role"
+                "role",
             ]
 
     # removed any special characters and replaces spaces with a hyphen
@@ -112,9 +113,7 @@ class GetUpdateDeleteSSOProvider(APIView):
         data["settings"]["server_url"] = data["server_url"]
         data["settings"]["role"] = data["role"] if data["role"] else None
 
-        serializer = self.InputSerialzer(
-            instance=provider, data=data, partial=True
-        )
+        serializer = self.InputSerialzer(instance=provider, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response("ok")
@@ -130,9 +129,9 @@ class GetAccessToken(KnoxLoginView):
     authentication_classes = [SessionAuthentication]
 
     def post(self, request, format=None):
-        
+
         core = get_core_settings()
-        
+
         # check for auth method before signing in
         if (
             core.sso_enabled
@@ -163,9 +162,7 @@ class GetAccessToken(KnoxLoginView):
             return Response(response.data)
         else:
             logout(request)
-            return Response(
-                "No pending login session found", status.HTTP_403_FORBIDDEN
-            )
+            return Response("No pending login session found", status.HTTP_403_FORBIDDEN)
 
 
 class GetUpdateSSOSettings(APIView):
@@ -178,7 +175,7 @@ class GetUpdateSSOSettings(APIView):
         return Response(
             {
                 "block_local_user_logon": core_settings.block_local_user_logon,
-                "sso_enabled": core_settings.sso_enabled
+                "sso_enabled": core_settings.sso_enabled,
             }
         )
 

@@ -3,11 +3,11 @@ from django.urls import include, path, register_converter
 from knox import views as knox_views
 
 from accounts.views import CheckCreds, CheckCredsV2, LoginView, LoginViewV2
+from ee.sso.urls import allauth_urls
 
 # from agents.consumers import SendCMD
 from core.consumers import DashInfo, TerminalConsumer
 from core.views import home
-
 
 class AgentIDConverter:
     regex = "[^/]{20}[^/]+"
@@ -24,7 +24,7 @@ register_converter(AgentIDConverter, "agent")
 urlpatterns = [
     path("", home),
     # all auth urls
-    path("_allauth/", include("allauth.headless.urls")),
+    path("_allauth/", include(allauth_urls)),
     path("v2/checkcreds/", CheckCredsV2.as_view()),
     path("v2/login/", LoginViewV2.as_view()),
     path("checkcreds/", CheckCreds.as_view()),  # DEPRECATED AS OF 0.19.0

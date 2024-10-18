@@ -208,7 +208,6 @@ SOCIALACCOUNT_EMAIL_VERIFICATION = True
 
 SOCIALACCOUNT_PROVIDERS = {"openid_connect": {"OAUTH_PKCE_ENABLED": True}}
 
-AUTHENTICATION_BACKENDS = ("allauth.account.auth_backends.AuthenticationBackend",)
 SESSION_COOKIE_SECURE = True
 
 # silence cache key length warnings

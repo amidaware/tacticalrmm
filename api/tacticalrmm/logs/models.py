@@ -226,18 +226,6 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
-    def audit_user_login_failed_sso(
-        username: str, debug_info: Dict[Any, Any] = {}
-    ) -> None:
-        AuditLog.objects.create(
-            username=username,
-            object_type=AuditObjType.USER,
-            action=AuditActionType.LOGIN,
-            message=f"{username} failed to login through unknown sso provider",
-            debug_info=debug_info,
-        )
-
-    @staticmethod
     def audit_url_action(
         username: str,
         urlaction: "URLAction",

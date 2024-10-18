@@ -112,6 +112,7 @@ class CoreSettings(BaseAuditModel):
     notify_on_warning_alerts = models.BooleanField(default=True)
 
     block_local_user_logon = models.BooleanField(default=True)
+    sso_enabled = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template

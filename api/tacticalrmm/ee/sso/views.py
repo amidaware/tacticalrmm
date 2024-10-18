@@ -125,7 +125,7 @@ class GetUpdateDeleteSSOProvider(APIView):
 
 
 class GetAccessToken(KnoxLoginView):
-    permission_classes = [SSOLoginPerms]
+    permission_classes = [IsAuthenticated, SSOLoginPerms]
     authentication_classes = [SessionAuthentication]
 
     def post(self, request, format=None):

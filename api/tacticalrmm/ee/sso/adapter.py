@@ -1,7 +1,5 @@
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.models import SocialApp
-from allauth.account.utils import user_email, user_field, user_username
-from allauth.utils import valid_email_or_none
 
 from accounts.models import Role
 

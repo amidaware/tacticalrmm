@@ -21,7 +21,7 @@ from python_ipware import IpWare
 from accounts.permissions import AccountsPerms
 from logs.models import AuditLog
 from tacticalrmm.utils import get_core_settings
-
+from .permissions import SSOLoginPerms
 
 class SocialAppSerializer(ModelSerializer):
     server_url = ReadOnlyField(source="settings.server_url")
@@ -126,13 +126,17 @@ class GetUpdateDeleteSSOProvider(APIView):
 
 
 class GetAccessToken(KnoxLoginView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [SSOLoginPerms]
     authentication_classes = [SessionAuthentication]
 
     def post(self, request, format=None):
+        
+        core = get_core_settings()
+        
         # check for auth method before signing in
         if (
-            "account_authentication_methods" in request.session
+            core.sso_enabled
+            and "account_authentication_methods" in request.session
             and len(request.session["account_authentication_methods"]) > 0
         ):
             login_method = request.session["account_authentication_methods"][0]
@@ -158,10 +162,9 @@ class GetAccessToken(KnoxLoginView):
 
             return Response(response.data)
         else:
-            AuditLog.audit_user_login_failed_sso(request.user.username)
             logout(request)
             return Response(
-                "The credentials supplied were invalid", status.HTTP_403_FORBIDDEN
+                "No pending login session found", status.HTTP_403_FORBIDDEN
             )
 
 
@@ -173,7 +176,10 @@ class GetUpdateSSOSettings(APIView):
         core_settings = get_core_settings()
 
         return Response(
-            {"block_local_user_logon": core_settings.block_local_user_logon}
+            {
+                "block_local_user_logon": core_settings.block_local_user_logon,
+                "sso_enabled": core_settings.sso_enabled
+            }
         )
 
     def post(self, request):
@@ -183,6 +189,7 @@ class GetUpdateSSOSettings(APIView):
         core_settings = get_core_settings()
 
         core_settings.block_local_user_logon = data["block_local_user_logon"]
-        core_settings.save(update_fields=["block_local_user_logon"])
+        core_settings.sso_enabled = data["sso_enabled"]
+        core_settings.save(update_fields=["block_local_user_logon", "sso_enabled"])
 
         return Response("ok")

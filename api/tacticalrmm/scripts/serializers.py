@@ -48,6 +48,7 @@ class ScriptSerializer(ModelSerializer):
             "run_as_user",
             "env_vars",
         ]
+        extra_kwargs = {"script_body": {"trim_whitespace": False}}
 
 
 class ScriptCheckSerializer(ModelSerializer):
@@ -63,3 +64,4 @@ class ScriptSnippetSerializer(ModelSerializer):
     class Meta:
         model = ScriptSnippet
         fields = "__all__"
+        extra_kwargs = {"code": {"trim_whitespace": False}}

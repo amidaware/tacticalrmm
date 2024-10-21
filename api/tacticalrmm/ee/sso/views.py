@@ -142,8 +142,14 @@ class GetAccessToken(KnoxLoginView):
 
             # get token
             response = super().post(request, format=None)
+            
             response.data["username"] = request.user.username
             response.data["provider"] = login_method["provider"]
+
+            if request.user.first_name and request.user.last_name:
+                response.data["name"] = f"{request.user.first_name} {request.user.last_name}"
+            else:
+                response.data["name"] = None
 
             AuditLog.audit_user_login_successful_sso(
                 request.user.username, login_method["provider"], login_method

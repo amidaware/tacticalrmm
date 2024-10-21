@@ -114,6 +114,10 @@ class LoginViewV2(KnoxLoginView):
             )
             response = super().post(request, format=None)
             response.data["username"] = request.user.username
+            if request.user.first_name and request.user.last_name:
+                response.data["name"] = f"{request.user.first_name} {request.user.last_name}"
+            else:
+                response.data["name"] = None
             return Response(response.data)
         else:
             AuditLog.audit_user_failed_twofactor(

@@ -6,7 +6,7 @@ For details, see: https://license.tacticalrmm.com/ee
 
 import re
 
-from allauth.socialaccount.models import SocialApp
+from allauth.socialaccount.models import SocialApp, SocialAccount
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404
 from knox.views import LoginView as KnoxLoginView
@@ -124,6 +124,17 @@ class GetUpdateDeleteSSOProvider(APIView):
         return Response("ok")
 
 
+class DisconnectSSOAccount(APIView):
+    permission_classes = [IsAuthenticated, AccountsPerms]
+
+    def delete(self, request):
+        account = get_object_or_404(SocialAccount, uid=request.data["account"], provider=request.data["provider"])
+
+        account.delete()
+
+        return Response("ok")
+
+
 class GetAccessToken(KnoxLoginView):
     permission_classes = [IsAuthenticated, SSOLoginPerms]
     authentication_classes = [SessionAuthentication]
@@ -151,16 +162,17 @@ class GetAccessToken(KnoxLoginView):
             else:
                 response.data["name"] = None
 
-            AuditLog.audit_user_login_successful_sso(
-                request.user.username, login_method["provider"], login_method
-            )
-
             # log ip
             ipw = IpWare()
             client_ip, _ = ipw.get_client_ip(request.META)
             if client_ip:
                 request.user.last_login_ip = str(client_ip)
                 request.user.save(update_fields=["last_login_ip"])
+                login_method["ip"] = str(client_ip)
+
+            AuditLog.audit_user_login_successful_sso(
+                request.user.username, login_method["provider"], login_method
+            )
 
             # invalid user session since we have an access token now
             logout(request)

@@ -172,7 +172,6 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.staticfiles",
-    "django.contrib.messages",
     "channels",
     "rest_framework",
     "rest_framework.authtoken",
@@ -237,7 +236,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
     "allauth.account.middleware.AccountMiddleware",
 ]
@@ -255,8 +253,12 @@ if DEBUG and not DEMO:
     MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
 
 if ADMIN_ENABLED:
-    INSTALLED_APPS += ("django.contrib.admin",)
-
+    MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
+    INSTALLED_APPS += (
+        "django.contrib.admin",
+        "django.contrib.messages",
+    )
+    
 if DEMO:
     MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
 

@@ -6,10 +6,7 @@ For details, see: https://license.tacticalrmm.com/ee
 
 from django.urls import path, include, re_path
 from allauth.socialaccount.providers.openid_connect.views import callback
-from allauth.headless.socialaccount.views import (
-    RedirectToProviderView,
-    ManageProvidersView,
-)
+from allauth.headless.socialaccount.views import RedirectToProviderView
 from allauth.headless.base.views import ConfigView
 
 from . import views
@@ -31,6 +28,7 @@ urlpatterns = [
     path("ssoproviders/<int:pk>/", views.GetUpdateDeleteSSOProvider.as_view()),
     path("ssoproviders/token/", views.GetAccessToken.as_view()),
     path("ssoproviders/settings/", views.GetUpdateSSOSettings.as_view()),
+    path("ssoproviders/account/", views.DisconnectSSOAccount.as_view())
 ]
 
 allauth_urls = [
@@ -40,7 +38,7 @@ allauth_urls = [
             (
                 [
                     path(
-                        "config",
+                        "config/",
                         ConfigView.as_api_view(client="browser"),
                         name="config",
                     ),
@@ -50,19 +48,12 @@ allauth_urls = [
                             (
                                 [
                                     path(
-                                        "auth/provider/redirect",
+                                        "auth/provider/redirect/",
                                         RedirectToProviderView.as_api_view(
                                             client="browser"
                                         ),
                                         name="redirect_to_provider",
-                                    ),
-                                    path(
-                                        "providers",
-                                        ManageProvidersView.as_api_view(
-                                            client="browser"
-                                        ),
-                                        name="manage_providers",
-                                    ),
+                                    )
                                 ],
                                 "headless",
                             ),

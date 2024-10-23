@@ -4,7 +4,7 @@ certifi==2024.8.30
 cffi==1.17.1
 channels==4.1.0
 channels_redis==4.2.0
-cryptography==43.0.1
+cryptography==43.0.3
 Django==4.2.16
 django-cors-headers==4.5.0
 django-filter==24.3

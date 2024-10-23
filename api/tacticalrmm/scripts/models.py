@@ -118,7 +118,13 @@ class Script(BaseAuditModel):
 
                 args = script["args"] if "args" in script.keys() else []
 
+                env = script["env"] if "env" in script.keys() else []
+
                 syntax = script["syntax"] if "syntax" in script.keys() else ""
+
+                run_as_user = (
+                    script["run_as_user"] if "run_as_user" in script.keys() else False
+                )
 
                 supported_platforms = (
                     script["supported_platforms"]
@@ -135,7 +141,9 @@ class Script(BaseAuditModel):
                     i.shell = script["shell"]
                     i.default_timeout = default_timeout
                     i.args = args
+                    i.env_vars = env
                     i.syntax = syntax
+                    i.run_as_user = run_as_user
                     i.filename = script["filename"]
                     i.supported_platforms = supported_platforms
 
@@ -163,8 +171,10 @@ class Script(BaseAuditModel):
                             category=category,
                             default_timeout=default_timeout,
                             args=args,
+                            env_vars=env,
                             filename=script["filename"],
                             syntax=syntax,
+                            run_as_user=run_as_user,
                             supported_platforms=supported_platforms,
                         )
                         # new_script.hash_script_body()  # also saves script

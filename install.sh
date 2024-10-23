@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="85"
+SCRIPT_VERSION="86"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
@@ -420,7 +420,7 @@ mesh_pkg="$(
   cat <<EOF
 {
   "dependencies": {
-    "archiver": "5.3.1",
+    "archiver": "7.0.1",
     "meshcentral": "${MESH_VER}",
     "otplib": "10.2.3",
     "pg": "8.7.1",

@@ -365,9 +365,11 @@ class CheckResult(models.Model):
             if len(self.history) > 15:
                 self.history = self.history[-15:]
 
-            update_fields.extend(["history"])
+            update_fields.extend(["history", "more_info"])
 
             avg = int(mean(self.history))
+            txt = "Memory Usage" if check.check_type == CheckType.MEMORY else "CPU Load"
+            self.more_info = f"Average {txt}: {avg}%"
 
             if check.error_threshold and avg > check.error_threshold:
                 self.status = CheckStatus.FAILING

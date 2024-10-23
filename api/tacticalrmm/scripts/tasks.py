@@ -54,11 +54,20 @@ def bulk_script_task(
     username: str,
     run_as_user: bool = False,
     env_vars: list[str] = [],
+    custom_field_pk: int | None,
+    collector_all_output: bool = False,
+    save_to_agent_note: bool = False,
 ) -> None:
     script = Script.objects.get(pk=script_pk)
     # always override if set on script model
     if script.run_as_user:
         run_as_user = True
+
+    custom_field = None
+    if custom_field_pk:
+        from core.models import CustomField
+
+        custom_field = CustomField.objects.get(pk=custom_field_pk)
 
     items = []
     agent: "Agent"
@@ -68,6 +77,9 @@ def bulk_script_task(
             type=AgentHistoryType.SCRIPT_RUN,
             script=script,
             username=username,
+            custom_field=custom_field,
+            collector_all_output=collector_all_output,
+            save_to_agent_note=save_to_agent_note,
         )
         data = {
             "func": "runscriptfull",

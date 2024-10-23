@@ -21,21 +21,21 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.19.3"
+TRMM_VERSION = "0.19.4"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.48"
+WEB_VERSION = "0.101.49"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.194"
+APP_VER = "0.0.195"
 
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.8.0"
 
-MESH_VER = "1.1.21"
+MESH_VER = "1.1.32"
 
-NATS_SERVER_VER = "2.10.17"
+NATS_SERVER_VER = "2.10.22"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
@@ -81,10 +81,10 @@ INSTALL_DENO_URL = ""
 DENO_DEFAULT_PERMISSIONS = "--allow-all"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "44"
+PIP_VER = "45"
 
-SETUPTOOLS_VER = "70.2.0"
-WHEEL_VER = "0.43.0"
+SETUPTOOLS_VER = "75.1.0"
+WHEEL_VER = "0.44.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 

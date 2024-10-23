@@ -2,7 +2,7 @@ import json
 import os
 from itertools import cycle
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -767,6 +767,67 @@ class TestAgentViews(TacticalTestCase):
         run_script.reset_mock()
 
         self.assertEqual(Note.objects.get(agent=self.agent).note, "ok")
+
+        # test run on server
+        with patch("core.utils.run_server_script") as mock_run_server_script:
+            mock_run_server_script.return_value = ("output", "error", 1.23456789, 0)
+            data = {
+                "script": script.pk,
+                "output": "wait",
+                "args": ["arg1", "arg2"],
+                "timeout": 15,
+                "run_as_user": False,
+                "env_vars": ["key1=val1", "key2=val2"],
+                "run_on_server": True,
+            }
+
+            r = self.client.post(url, data, format="json")
+            self.assertEqual(r.status_code, 200)
+            hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
+            if not hist:
+                raise AgentHistory.DoesNotExist
+
+            mock_run_server_script.assert_called_with(
+                body=script.script_body,
+                args=script.parse_script_args(self.agent, script.shell, data["args"]),
+                env_vars=script.parse_script_env_vars(
+                    self.agent, script.shell, data["env_vars"]
+                ),
+                shell=script.shell,
+                timeout=18,
+            )
+
+            expected_ret = {
+                "stdout": "output",
+                "stderr": "error",
+                "execution_time": "1.2346",
+                "retcode": 0,
+            }
+
+            self.assertEqual(r.data, expected_ret)
+
+            hist.refresh_from_db()
+            expected_script_results = {**expected_ret, "id": hist.pk}
+            self.assertEqual(hist.script_results, expected_script_results)
+
+            # test run on server with server scripts disabled
+            with patch(
+                "core.models.CoreSettings.server_scripts_enabled",
+                new_callable=PropertyMock,
+            ) as server_scripts_enabled:
+                server_scripts_enabled.return_value = False
+
+                data = {
+                    "script": script.pk,
+                    "output": "wait",
+                    "args": ["arg1", "arg2"],
+                    "timeout": 15,
+                    "run_as_user": False,
+                    "env_vars": ["key1=val1", "key2=val2"],
+                    "run_on_server": True,
+                }
+                r = self.client.post(url, data, format="json")
+                self.assertEqual(r.status_code, 400)
 
     def test_get_notes(self):
         url = f"{base_url}/notes/"

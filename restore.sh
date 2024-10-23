@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="59"
+SCRIPT_VERSION="60"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -413,7 +413,7 @@ mesh_pkg="$(
   cat <<EOF
 {
   "dependencies": {
-    "archiver": "5.3.1",
+    "archiver": "7.0.1",
     "meshcentral": "${MESH_VER}",
     "otplib": "10.2.3",
     "pg": "8.7.1",
@@ -494,7 +494,6 @@ echo "Running management commands...please wait..."
 API=$(python manage.py get_config api)
 WEB_VERSION=$(python manage.py get_config webversion)
 FRONTEND=$(python manage.py get_config webdomain)
-webdomain=$(python manage.py get_config webdomain)
 meshdomain=$(python manage.py get_config meshdomain)
 WEBTAR_URL=$(python manage.py get_webtar_url)
 CERT_PUB_KEY=$(python manage.py get_config certfile)
@@ -620,9 +619,9 @@ sudo ln -s /etc/nginx/sites-available/rmm.conf /etc/nginx/sites-enabled/rmm.conf
 
 HAS_11=$(grep 127.0.1.1 /etc/hosts)
 if [[ $HAS_11 ]]; then
-  sudo sed -i "/127.0.1.1/s/$/ ${API} ${webdomain} ${meshdomain}/" /etc/hosts
+  sudo sed -i "/127.0.1.1/s/$/ ${API} ${FRONTEND} ${meshdomain}/" /etc/hosts
 else
-  echo "127.0.1.1 ${API} ${webdomain} ${meshdomain}" | sudo tee --append /etc/hosts >/dev/null
+  echo "127.0.1.1 ${API} ${FRONTEND} ${meshdomain}" | sudo tee --append /etc/hosts >/dev/null
 fi
 
 sudo systemctl enable nats.service

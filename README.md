@@ -39,7 +39,7 @@ Demo database resets every hour. A lot of features are disabled for obvious reas
 
 ## Mac agent versions supported
 
-- 64 bit Intel and Apple Silicon (M1, M2)
+- 64 bit Intel and Apple Silicon (M-Series)
 
 ## Installation / Backup / Restore / Usage
 

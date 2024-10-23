@@ -131,6 +131,8 @@ class Role(BaseAuditModel):
     can_manage_customfields = models.BooleanField(default=False)
     can_run_server_scripts = models.BooleanField(default=False)
     can_use_webterm = models.BooleanField(default=False)
+    can_view_global_keystore = models.BooleanField(default=False)
+    can_edit_global_keystore = models.BooleanField(default=False)
 
     # checks
     can_list_checks = models.BooleanField(default=False)

@@ -43,6 +43,7 @@ from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
     CustomFieldPerms,
+    GlobalKeyStorePerms,
     RunServerScriptPerms,
     ServerMaintPerms,
     URLActionPerms,
@@ -310,7 +311,7 @@ class CodeSign(APIView):
 
 
 class GetAddKeyStore(APIView):
-    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+    permission_classes = [IsAuthenticated, GlobalKeyStorePerms]
 
     def get(self, request):
         keys = GlobalKVStore.objects.all()
@@ -325,7 +326,7 @@ class GetAddKeyStore(APIView):
 
 
 class UpdateDeleteKeyStore(APIView):
-    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+    permission_classes = [IsAuthenticated, GlobalKeyStorePerms]
 
     def put(self, request, pk):
         key = get_object_or_404(GlobalKVStore, pk=pk)

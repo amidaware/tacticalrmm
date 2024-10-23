@@ -30,6 +30,7 @@ from core.utils import (
     get_meshagent_url,
 )
 from logs.models import DebugLog, PendingAction
+from systray.models import SysTray
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
     AGENT_DEFER,
@@ -625,3 +626,53 @@ class AgentConfig(APIView):
     def get(self, request, agentid):
         ret = get_agent_config()
         return Response(ret._to_dict())
+
+
+class SystrayConfig(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        try:
+            # Fetch the Agent instance using the provided agentid
+            agent = Agent.objects.filter(agent_id=agentid).first()
+            if not agent:
+                return Response({"error": "Agent not found."}, status=404)
+
+            # Access the Site instance directly from the agent
+            site = agent.site
+            if not site:
+                return Response(
+                    {"error": "Site not found for the given agent."}, status=404
+                )
+
+            settings = get_core_settings()
+
+            systray_instance = SysTray.objects.first()
+            if not systray_instance:
+                return Response({"error": "Systray config not found"}, status=404)
+
+            if not (settings.systray_enabled or site.systray_enabled):
+                return Response({"error": "Support is not enabled."}, status=403)
+
+            # Here we use the `url` attribute to get the accessible URL of the icon
+            trayicon_icon_url = (
+                systray_instance.icon.url if systray_instance.icon else None
+            )
+            trayicon_name = systray_instance.name
+
+            return Response(
+                {
+                    "systray_config": (
+                        site.trayicon
+                        if site.trayicon
+                        else "Default logic for missing tray icon config"
+                    ),
+                    "systray_enabled": True,
+                    "systray_icon": trayicon_icon_url,  # Return the URL instead of the file path
+                    "systray_name": trayicon_name,
+                }
+            )
+        except Exception as e:
+            # Log the exception here for debugging
+            return Response({"error": "An error occurred: " + str(e)}, status=500)

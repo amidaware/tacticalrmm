@@ -28,7 +28,7 @@ urlpatterns = [
     path("ssoproviders/<int:pk>/", views.GetUpdateDeleteSSOProvider.as_view()),
     path("ssoproviders/token/", views.GetAccessToken.as_view()),
     path("ssoproviders/settings/", views.GetUpdateSSOSettings.as_view()),
-    path("ssoproviders/account/", views.DisconnectSSOAccount.as_view())
+    path("ssoproviders/account/", views.DisconnectSSOAccount.as_view()),
 ]
 
 allauth_urls = [

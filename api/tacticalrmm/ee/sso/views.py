@@ -128,7 +128,11 @@ class DisconnectSSOAccount(APIView):
     permission_classes = [IsAuthenticated, AccountsPerms]
 
     def delete(self, request):
-        account = get_object_or_404(SocialAccount, uid=request.data["account"], provider=request.data["provider"])
+        account = get_object_or_404(
+            SocialAccount,
+            uid=request.data["account"],
+            provider=request.data["provider"],
+        )
 
         account.delete()
 
@@ -153,12 +157,14 @@ class GetAccessToken(KnoxLoginView):
 
             # get token
             response = super().post(request, format=None)
-            
+
             response.data["username"] = request.user.username
             response.data["provider"] = login_method["provider"]
 
             if request.user.first_name and request.user.last_name:
-                response.data["name"] = f"{request.user.first_name} {request.user.last_name}"
+                response.data["name"] = (
+                    f"{request.user.first_name} {request.user.last_name}"
+                )
             else:
                 response.data["name"] = None
 

@@ -258,7 +258,7 @@ if ADMIN_ENABLED:
         "django.contrib.admin",
         "django.contrib.messages",
     )
-    
+
 if DEMO:
     MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
 

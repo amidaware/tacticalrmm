@@ -117,6 +117,20 @@ REDIS_HOST = "127.0.0.1"
 TRMM_LOG_LEVEL = "ERROR"
 TRMM_LOG_TO = "file"
 
+# settings for django all auth
+HEADLESS_ONLY = True
+SOCIALACCOUNT_ONLY = True
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+ACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_ADAPTER = "ee.sso.adapter.TacticalSocialAdapter"
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = True
+
+SOCIALACCOUNT_PROVIDERS = {"openid_connect": {"OAUTH_PKCE_ENABLED": True}}
+
+SESSION_COOKIE_SECURE = True
+
 with suppress(ImportError):
     from .local_settings import *  # noqa
 
@@ -164,6 +178,11 @@ INSTALLED_APPS = [
     "knox",
     "corsheaders",
     "accounts",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.openid_connect",
+    "allauth.headless",
     "apiv3",
     "clients",
     "agents",
@@ -178,6 +197,7 @@ INSTALLED_APPS = [
     "scripts",
     "alerts",
     "ee.reporting",
+    "ee.sso",
 ]
 
 CHANNEL_LAYERS = {
@@ -188,6 +208,7 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
 
 # silence cache key length warnings
 import warnings  # noqa
@@ -216,6 +237,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 if SWAGGER_ENABLED:

@@ -1,21 +1,28 @@
 import datetime
-
 import pyotp
 from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
 from knox.views import LoginView as KnoxLoginView
+from knox.models import AuthToken
 from python_ipware import IpWare
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.serializers import (
+    ModelSerializer,
+    SerializerMethodField,
+    ReadOnlyField,
+)
 
 from accounts.utils import is_root_user
 from core.tasks import sync_mesh_perms_task
 from logs.models import AuditLog
 from tacticalrmm.helpers import notify_error
+from tacticalrmm.utils import get_core_settings
 
 from .models import APIKey, Role, User
 from .permissions import AccountsPerms, APIKeyPerms, RolesPerms
@@ -49,6 +56,11 @@ class CheckCredsV2(KnoxLoginView):
         if user.block_dashboard_login:
             return notify_error("Bad credentials")
 
+        # block local logon if configured
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
+            return notify_error("Bad credentials")
+
         # if totp token not set modify response to notify frontend
         if not user.totp_key:
             login(request, user)
@@ -70,6 +82,11 @@ class LoginViewV2(KnoxLoginView):
         user = serializer.validated_data["user"]
 
         if user.block_dashboard_login:
+            return notify_error("Bad credentials")
+
+        # block local logon if configured
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
             return notify_error("Bad credentials")
 
         token = request.data["twofactor"]
@@ -97,6 +114,12 @@ class LoginViewV2(KnoxLoginView):
             )
             response = super().post(request, format=None)
             response.data["username"] = request.user.username
+            if request.user.first_name and request.user.last_name:
+                response.data["name"] = (
+                    f"{request.user.first_name} {request.user.last_name}"
+                )
+            else:
+                response.data["name"] = None
             return Response(response.data)
         else:
             AuditLog.audit_user_failed_twofactor(
@@ -125,6 +148,11 @@ class CheckCreds(KnoxLoginView):
         if user.block_dashboard_login:
             return notify_error("Bad credentials")
 
+        # block local logon if configured
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
+            return notify_error("Bad credentials")
+
         # if totp token not set modify response to notify frontend
         if not user.totp_key:
             login(request, user)
@@ -149,6 +177,11 @@ class LoginView(KnoxLoginView):
         user = serializer.validated_data["user"]
 
         if user.block_dashboard_login:
+            return notify_error("Bad credentials")
+
+        # block local logon if configured
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
             return notify_error("Bad credentials")
 
         token = request.data["twofactor"]
@@ -182,8 +215,101 @@ class LoginView(KnoxLoginView):
             return notify_error("Bad credentials")
 
 
+class GetDeleteActiveLoginSessionsPerUser(APIView):
+    permission_classes = [IsAuthenticated, AccountsPerms]
+
+    class TokenSerializer(ModelSerializer):
+        user = ReadOnlyField(source="user.username")
+
+        class Meta:
+            model = AuthToken
+            fields = (
+                "digest",
+                "user",
+                "created",
+                "expiry",
+            )
+
+    def get(self, request, pk):
+        tokens = get_object_or_404(User, pk=pk).auth_token_set.filter(
+            expiry__gt=djangotime.now()
+        )
+
+        return Response(self.TokenSerializer(tokens, many=True).data)
+
+    def delete(self, request, pk):
+        tokens = get_object_or_404(User, pk=pk).auth_token_set.filter(
+            expiry__gt=djangotime.now()
+        )
+
+        tokens.delete()
+        return Response("ok")
+
+
+class DeleteActiveLoginSession(APIView):
+    permission_classes = [IsAuthenticated, AccountsPerms]
+
+    def delete(self, request, pk):
+        token = get_object_or_404(AuthToken, digest=pk)
+
+        token.delete()
+
+        return Response("ok")
+
+
 class GetAddUsers(APIView):
     permission_classes = [IsAuthenticated, AccountsPerms]
+
+    class UserSerializerSSO(ModelSerializer):
+        social_accounts = SerializerMethodField()
+
+        def get_social_accounts(self, obj):
+            from allauth.socialaccount.models import SocialAccount, SocialApp
+
+            accounts = SocialAccount.objects.filter(user_id=obj.pk)
+
+            if accounts:
+                social_accounts = []
+                for account in accounts:
+                    try:
+                        provider_account = account.get_provider_account()
+                        display = provider_account.to_str()
+                    except SocialApp.DoesNotExist:
+                        display = "Orphaned Provider"
+                    except Exception:
+                        display = "Unknown"
+
+                    social_accounts.append(
+                        {
+                            "uid": account.uid,
+                            "provider": account.provider,
+                            "display": display,
+                            "last_login": account.last_login,
+                            "date_joined": account.date_joined,
+                            "extra_data": account.extra_data,
+                        }
+                    )
+
+                return social_accounts
+
+            return []
+
+        class Meta:
+            model = User
+            fields = [
+                "id",
+                "username",
+                "first_name",
+                "last_name",
+                "email",
+                "is_active",
+                "last_login",
+                "last_login_ip",
+                "role",
+                "block_dashboard_login",
+                "date_format",
+                "social_accounts",
+            ]
 
     def get(self, request):
         search = request.GET.get("search", None)
@@ -195,7 +321,7 @@ class GetAddUsers(APIView):
         else:
             users = User.objects.filter(agent=None, is_installer_user=False)
 
-        return Response(UserSerializer(users, many=True).data)
+        return Response(self.UserSerializerSSO(users, many=True).data)
 
     def post(self, request):
         # add new user

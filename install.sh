@@ -437,6 +437,8 @@ sudo systemctl enable --now redis
 print_green 'Installing postgresql'
 
 if [[ "${ID_LIKE}" == *debian* ]]; then
+  POSTGRESQL_SERVICE="postgresql"
+
   postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
   echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
@@ -444,17 +446,19 @@ if [[ "${ID_LIKE}" == *debian* ]]; then
   sudo apt update
   sudo apt install -y postgresql-15
   sleep 2
-  sudo systemctl enable --now postgresql
+  sudo systemctl enable --now $POSTGRESQL_SERVICE
 
   until pg_isready >/dev/null; do
     echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
     sleep 3
   done
 elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  POSTGRESQL_SERVICE="postgresql-15"
+
   sudo $RHEL_PKG_MGR install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-${relno}-$(uname -m)/pgdg-redhat-repo-latest.noarch.rpm
   sudo $RHEL_PKG_MGR install -y postgresql15-server postgresql15
   sudo /usr/pgsql-15/bin/postgresql-15-setup initdb
-  sudo systemctl enable --now postgresql-15
+  sudo systemctl enable --now $POSTGRESQL_SERVICE
 
   until /usr/pgsql-15/bin/pg_isready -h localhost -p 5432 >/dev/null; do
     echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
@@ -727,7 +731,7 @@ rmmservice="$(
   cat <<EOF
 [Unit]
 Description=tacticalrmm uwsgi daemon
-After=network.target postgresql.service
+After=network.target ${POSTGRESQL_SERVICE}.service
 
 [Service]
 User=${USER}
@@ -970,7 +974,7 @@ celeryservice="$(
   cat <<EOF
 [Unit]
 Description=Celery Service V2
-After=network.target redis-server.service postgresql.service
+After=network.target redis-server.service ${POSTGRESQL_SERVICE}.service
 
 [Service]
 Type=forking
@@ -1018,7 +1022,7 @@ celerybeatservice="$(
   cat <<EOF
 [Unit]
 Description=Celery Beat Service V3
-After=network.target redis-server.service postgresql.service
+After=network.target redis-server.service ${POSTGRESQL_SERVICE}.service
 
 [Service]
 Type=simple
@@ -1045,7 +1049,7 @@ meshservice="$(
   cat <<EOF
 [Unit]
 Description=MeshCentral Server
-After=network.target postgresql.service nginx.service
+After=network.target ${POSTGRESQL_SERVICE}.service nginx.service
 [Service]
 Type=simple
 LimitNOFILE=1000000

@@ -238,7 +238,7 @@ EOF
     fi
   fi
 elif [[ "${ID_LIKE}" == *rhel* ]]; then
-  REQUIRED_PACKAGES=("pango" "pango-devel")
+  REQUIRED_PACKAGES=("pango" "pango-devel" "cairo" "cairo-devel" "libffi-devel")
   for pkg in "${REQUIRED_PACKAGES[@]}"; do
     if ! sudo $RHEL_PKG_MGR list installed "${pkg}" >/dev/null 2>&1; then
       sudo $RHEL_PKG_MGR install -y "${pkg}"

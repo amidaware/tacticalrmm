@@ -339,11 +339,8 @@ if ! [[ $HAS_PY311 ]]; then
     SERVICES=(
       "/etc/systemd/system/rmm.service"
       "/etc/systemd/system/daphne.service"
-      "/etc/systemd/system/nats.service"
-      "/etc/systemd/system/nats-api.service"
       "/etc/systemd/system/celery.service"
       "/etc/systemd/system/celerybeat.service"
-      "/etc/systemd/system/meshcentral.service"
     )
 
     for service in "${SERVICES[@]}"; do

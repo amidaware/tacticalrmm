@@ -434,7 +434,7 @@ if ! which npm >/dev/null; then
   if [[ "${ID_LIKE}" == *debian* ]]; then
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
   elif [[ "${ID_LIKE}" == *rhel* ]]; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo $RHEL_PKG_MGR install -y nodejs
+    curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo -E bash - && sudo $RHEL_PKG_MGR install -y nodejs
   fi
   sudo npm install -g npm
 

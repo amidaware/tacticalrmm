@@ -736,6 +736,10 @@ echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dis
 sudo chown $NGINX_USER:$NGINX_GROUP -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
 
+sudo chmod 755 /rmm/api/tacticalrmm
+sudo chmod 755 /rmm/api
+sudo chmod 755 /rmm
+
 for i in nats nats-api rmm daphne celery celerybeat nginx; do
   printf >&2 "${GREEN}Starting ${i} service${NC}\n"
   sudo systemctl start ${i}

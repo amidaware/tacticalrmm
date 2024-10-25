@@ -26,7 +26,11 @@ fi
 
 rm -f $TMP_FILE
 
-export DEBIAN_FRONTEND=noninteractive
+ID_LIKE=$(grep ^ID_LIKE /etc/os-release | awk -F'[="]' '{print $3}')
+
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  export DEBIAN_FRONTEND=noninteractive
+fi
 
 force=false
 if [[ $* == *--force* ]]; then
@@ -38,7 +42,19 @@ if [ $EUID -eq 0 ]; then
   exit 1
 fi
 
-sudo apt update
+if [[ "${ID_LIKE}" == *rhel* ]]; then
+  if command -v dnf >/dev/null 2>&1; then
+    RHEL_PKG_MGR="dnf"
+  else
+    RHEL_PKG_MGR="yum"
+  fi
+fi
+
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  sudo apt -y update
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  sudo $RHEL_PKG_MGR -y update
+fi
 
 strip="User="
 ORIGUSER=$(grep ${strip} /etc/systemd/system/rmm.service | sed -e "s/^${strip}//")
@@ -70,8 +86,18 @@ cls() {
   printf "\033c"
 }
 
-if [ ! -d /etc/apt/keyrings ]; then
-  sudo mkdir -p /etc/apt/keyrings
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  if [ ! -d /etc/apt/keyrings ]; then
+    sudo mkdir -p /etc/apt/keyrings
+  fi
+fi
+
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  NGINX_USER="www-data"
+  NGINX_GROUP="www-data"
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  NGINX_USER="nginx"
+  NGINX_GROUP="nginx"
 fi
 
 CHECK_NATS_LIMITNOFILE=$(grep LimitNOFILE /etc/systemd/system/nats.service)
@@ -92,7 +118,7 @@ ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
 ExecReload=/usr/bin/kill -s HUP \$MAINPID
 ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
 User=${USER}
-Group=www-data
+Group=${NGINX_GROUP}
 Restart=always
 RestartSec=5s
 LimitNOFILE=1000000
@@ -155,7 +181,7 @@ After=network.target
 
 [Service]
 User=${USER}
-Group=www-data
+Group=${NGINX_GROUP}
 WorkingDirectory=/rmm/api/tacticalrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' tacticalrmm.asgi:application
@@ -172,42 +198,67 @@ EOF
   sudo systemctl daemon-reload
 fi
 
-osname=$(lsb_release -si)
-osname=${osname^}
-osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  osname=$(lsb_release -si)
+  osname=${osname^}
+  osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
 
-# for weasyprint
-if [[ "$osname" == "debian" ]]; then
-  count=$(dpkg -l | grep -E "libpango-1.0-0|libpangoft2-1.0-0" | wc -l)
-  if ! [ "$count" -eq 2 ]; then
-    sudo apt install -y libpango-1.0-0 libpangoft2-1.0-0
+  # for weasyprint
+  if [[ "$osname" == "debian" ]]; then
+    count=$(dpkg -l | grep -E "libpango-1.0-0|libpangoft2-1.0-0" | wc -l)
+    if ! [ "$count" -eq 2 ]; then
+      sudo apt install -y libpango-1.0-0 libpangoft2-1.0-0
+    fi
+  elif [[ "$osname" == "ubuntu" ]]; then
+    count=$(dpkg -l | grep -E "libpango-1.0-0|libharfbuzz0b|libpangoft2-1.0-0" | wc -l)
+    if ! [ "$count" -eq 3 ]; then
+      sudo apt install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
+    fi
   fi
-elif [[ "$osname" == "ubuntu" ]]; then
-  count=$(dpkg -l | grep -E "libpango-1.0-0|libharfbuzz0b|libpangoft2-1.0-0" | wc -l)
-  if ! [ "$count" -eq 3 ]; then
-    sudo apt install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
-  fi
-fi
 
-if [ ! -f /etc/apt/sources.list.d/nginx.list ]; then
-  codename=$(lsb_release -sc)
-  nginxrepo="$(
-    cat <<EOF
+  if [ ! -f /etc/apt/sources.list.d/nginx.list ]; then
+    codename=$(lsb_release -sc)
+    nginxrepo="$(
+      cat <<EOF
 deb [signed-by=/etc/apt/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/$osname $codename nginx
 EOF
-  )"
-  echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
-  wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
-  sudo apt update
-  sudo apt install -y nginx
-fi
-
-if [ -f /etc/apt/keyrings/nginx-archive-keyring.gpg ]; then
-  NGINX_KEY_EXPIRED=$(gpg --dry-run --quiet --no-keyring --import --import-options import-show /etc/apt/keyrings/nginx-archive-keyring.gpg | grep -B 1 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62 | grep expired)
-  if [[ $NGINX_KEY_EXPIRED ]]; then
-    sudo rm -f /etc/apt/keyrings/nginx-archive-keyring.gpg
+    )"
+    echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
     wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
     sudo apt update
+    sudo apt install -y nginx
+  fi
+
+  if [ -f /etc/apt/keyrings/nginx-archive-keyring.gpg ]; then
+    NGINX_KEY_EXPIRED=$(gpg --dry-run --quiet --no-keyring --import --import-options import-show /etc/apt/keyrings/nginx-archive-keyring.gpg | grep -B 1 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62 | grep expired)
+    if [[ $NGINX_KEY_EXPIRED ]]; then
+      sudo rm -f /etc/apt/keyrings/nginx-archive-keyring.gpg
+      wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
+      sudo apt update
+    fi
+  fi
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  REQUIRED_PACKAGES=("pango" "pango-devel")
+  for pkg in "${REQUIRED_PACKAGES[@]}"; do
+    if ! sudo $RHEL_PKG_MGR list installed "${pkg}" >/dev/null 2>&1; then
+      sudo $RHEL_PKG_MGR install -y "${pkg}"
+    fi
+  done
+
+  if [ ! -f /etc/yum.repos.d/nginx.repo ]; then
+    nginxrepo="$(
+      cat <<EOF
+[nginx]
+name=nginx repo
+baseurl=http://nginx.org/packages/rhel/\$releasever/\$basearch/
+gpgcheck=1
+enabled=1
+gpgkey=https://nginx.org/keys/nginx_signing.key
+EOF
+    )"
+    echo "${nginxrepo}" | sudo tee /etc/yum.repos.d/nginx.repo >/dev/null
+    sudo $RHEL_PKG_MGR makecache
+    sudo $RHEL_PKG_MGR install -y nginx
   fi
 fi
 
@@ -238,18 +289,93 @@ fi
 
 HAS_PY311=$(python3.11 --version | grep ${PYTHON_VER})
 if ! [[ $HAS_PY311 ]]; then
-  printf >&2 "${GREEN}Updating to ${PYTHON_VER}${NC}\n"
-  sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
-  numprocs=$(nproc)
-  cd ~
-  wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
-  tar -xf Python-${PYTHON_VER}.tgz
-  cd Python-${PYTHON_VER}
-  ./configure --enable-optimizations
-  make -j $numprocs
-  sudo make altinstall
-  cd ~
-  sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+  if [[ "${ID_LIKE}" == *debian* ]]; then
+    printf >&2 "${GREEN}Updating to ${PYTHON_VER}${NC}\n"
+    sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+    numprocs=$(nproc)
+    cd ~
+    wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
+    tar -xf Python-${PYTHON_VER}.tgz
+    cd Python-${PYTHON_VER}
+    ./configure --enable-optimizations
+    make -j $numprocs
+    sudo make altinstall
+    cd ~
+    sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+  elif [[ "${ID_LIKE}" == *rhel* ]]; then
+    REQUIRED_PACKAGES=("ncurses" "ncurses-devel" "ncurses-libs" "readline" "readline-devel" "sqlite" "sqlite-devel" "libsqlite3x" "libsqlite3x-devel")
+    for pkg in "${REQUIRED_PACKAGES[@]}"; do
+      if ! sudo $RHEL_PKG_MGR list installed "${pkg}" >/dev/null 2>&1; then
+        sudo $RHEL_PKG_MGR install -y "${pkg}"
+      fi
+    done
+
+    curl https://pyenv.run | bash
+
+    if ! grep -Fxq 'export PYENV_ROOT="$HOME/.pyenv"' ~/.bashrc; then
+      echo 'export PYENV_ROOT="$HOME/.pyenv"' >>~/.bashrc
+    fi
+    if ! grep -Fxq 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' ~/.bashrc; then
+      echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >>~/.bashrc
+    fi
+    # https://github.com/pyenv/pyenv/issues/264
+    if [ "$BASH_ENV" != "$HOME/.bashrc" ]; then
+      if ! grep -Fxq 'eval "$(pyenv init -)"' ~/.bashrc; then
+        echo 'eval "$(pyenv init -)"' >>~/.bashrc
+      fi
+    else
+      if ! grep -Fxq 'eval "$(pyenv init -)"' ~/.bash_profile; then
+        echo 'eval "$(pyenv init -)"' >>~/.bash_profile
+      fi
+    fi
+
+    export PYENV_ROOT="$HOME/.pyenv"
+    command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init -)"
+
+    pyenv install ${PYTHON_VER}
+    pyenv global ${PYTHON_VER}
+
+    SERVICES=(
+      "/etc/systemd/system/rmm.service"
+      "/etc/systemd/system/daphne.service"
+      "/etc/systemd/system/nats.service"
+      "/etc/systemd/system/nats-api.service"
+      "/etc/systemd/system/celery.service"
+      "/etc/systemd/system/celerybeat.service"
+      "/etc/systemd/system/meshcentral.service"
+    )
+
+    for service in "${SERVICES[@]}"; do
+      if ! grep -Fq 'Environment="PYENV_ROOT=' "${service}"; then
+        sudo sed -i '/^\[Service\]/a Environment="PYENV_ROOT=%h\/.pyenv"' "${service}"
+      fi
+
+      PYENV_SHIMS="%h/.pyenv/shims"
+      PYENV_BIN="%h/.pyenv/bin"
+
+      if grep -Fq 'Environment="PATH=' "$service"; then
+        existing_path=$(grep -F 'Environment="PATH=' "$service" | sed -E 's/Environment="PATH=(.*)"/\1/')
+        if [[ "$existing_path" != *"$PYENV_SHIMS"* ]]; then
+          new_path="${PYENV_SHIMS}:${PYENV_BIN}:${existing_path}"
+          escaped_new_path=$(echo "$new_path" | sed 's/\//\\\//g')
+          sudo sed -i "s|Environment=\"PATH=.*\"|Environment=\"PATH=${escaped_new_path}\"|" "$service"
+        fi
+      else
+        sudo sed -i '/^\[Service\]/a Environment="PATH=%h\/.pyenv\/shims:%h\/.pyenv\/bin:%s"' "$service"
+      fi
+    done
+
+    sudo systemctl daemon-reload
+
+    for service in "${SERVICES[@]}"; do
+      service_name=$(basename "${service}")
+      service_name="${service_name%.*}"
+      if systemctl is-active --quiet "${service_name}"; then
+        sudo systemctl restart "${service_name}"
+      fi
+    done
+  fi
 fi
 
 arch=$(uname -m)
@@ -286,7 +412,11 @@ if [ -d ~/.config ]; then
 fi
 
 if ! which npm >/dev/null; then
-  sudo apt install -y npm
+  if [[ "${ID_LIKE}" == *debian* ]]; then
+    sudo apt install -y npm
+  elif [[ "${ID_LIKE}" == *rhel* ]]; then
+    sudo $RHEL_PKG_MGR install -y npm
+  fi
 fi
 
 # older distros still might not have npm after above command, due to recent changes to node apt packages which replaces nodesource with official node
@@ -294,10 +424,18 @@ fi
 if ! which npm >/dev/null; then
   sudo systemctl stop meshcentral
   sudo chown ${USER}:${USER} -R /meshcentral
-  sudo apt remove -y nodejs
+  if [[ "${ID_LIKE}" == *debian* ]]; then
+    sudo apt remove -y nodejs
+  elif [[ "${ID_LIKE}" == *rhel* ]]; then
+    sudo $RHEL_PKG_MGR remove -y nodejs
+  fi
   sudo rm -rf /usr/lib/node_modules
 
-  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
+  if [[ "${ID_LIKE}" == *debian* ]]; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
+  elif [[ "${ID_LIKE}" == *rhel* ]]; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo $RHEL_PKG_MGR install -y nodejs
+  fi
   sudo npm install -g npm
 
   cd /meshcentral
@@ -428,28 +566,28 @@ sed -i '/^REDIS_HOST/d' $local_settings
 
 sudo chown -R ${USER}:${USER} /opt/tactical
 
-python manage.py pre_update_tasks
+python3.11 manage.py pre_update_tasks
 celery -A tacticalrmm purge -f
 printf >&2 "${GREEN}Running database migrations (this might take a long time)...${NC}\n"
-python manage.py migrate
-python manage.py generate_json_schemas
-python manage.py delete_tokens
-python manage.py collectstatic --no-input
-python manage.py reload_nats
-python manage.py load_chocos
-python manage.py create_installer_user
-python manage.py create_natsapi_conf
-python manage.py create_uwsgi_conf
-python manage.py clear_redis_celery_locks
-python manage.py post_update_tasks
+python3.11 manage.py migrate
+python3.11 manage.py generate_json_schemas
+python3.11 manage.py delete_tokens
+python3.11 manage.py collectstatic --no-input
+python3.11 manage.py reload_nats
+python3.11 manage.py load_chocos
+python3.11 manage.py create_installer_user
+python3.11 manage.py create_natsapi_conf
+python3.11 manage.py create_uwsgi_conf
+python3.11 manage.py clear_redis_celery_locks
+python3.11 manage.py post_update_tasks
 echo "Running management commands...please wait..."
-API=$(python manage.py get_config api)
-WEB_VERSION=$(python manage.py get_config webversion)
-FRONTEND=$(python manage.py get_config webdomain)
-MESHDOMAIN=$(python manage.py get_config meshdomain)
-WEBTAR_URL=$(python manage.py get_webtar_url)
-CERT_PUB_KEY=$(python manage.py get_config certfile)
-CERT_PRIV_KEY=$(python manage.py get_config keyfile)
+API=$(python3.11 manage.py get_config api)
+WEB_VERSION=$(python3.11 manage.py get_config webversion)
+FRONTEND=$(python3.11 manage.py get_config webdomain)
+MESHDOMAIN=$(python3.11 manage.py get_config meshdomain)
+WEBTAR_URL=$(python3.11 manage.py get_webtar_url)
+CERT_PUB_KEY=$(python3.11 manage.py get_config certfile)
+CERT_PRIV_KEY=$(python3.11 manage.py get_config keyfile)
 deactivate
 
 if grep -q manage_etc_hosts /etc/hosts; then
@@ -460,7 +598,11 @@ if grep -q manage_etc_hosts /etc/hosts; then
   fi
 fi
 
-rmmconf='/etc/nginx/sites-available/rmm.conf'
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  rmmconf='/etc/nginx/sites-available/rmm.conf'
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  rmmconf='/etc/nginx/conf.d/rmm.conf'
+fi
 if ! grep -q "location /assets/" $rmmconf; then
   printf >&2 "${YELLOW}WARNING!!!!\n\n"
   printf >&2 "${rmmconf} will now be replaced due to changes needed for this update.\n\n"
@@ -560,7 +702,11 @@ server {
 }
 EOF
   )"
-  echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
+  if [[ "${ID_LIKE}" == *debian* ]]; then
+    echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
+  elif [[ "${ID_LIKE}" == *rhel* ]]; then
+    echo "${nginxrmm}" | sudo tee /etc/nginx/conf.d/rmm.conf >/dev/null
+  fi
 fi
 
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$API" | grep "$FRONTEND" | grep "$MESHDOMAIN")
@@ -587,7 +733,7 @@ wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo rm -rf /var/www/rmm/dist
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
 echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null
-sudo chown www-data:www-data -R /var/www/rmm/dist
+sudo chown $NGINX_USER:$NGINX_GROUP -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
 
 for i in nats nats-api rmm daphne celery celerybeat nginx; do

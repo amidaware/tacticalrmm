@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2024-present Amidaware Inc.
+This file is subject to the EE License Agreement.
+For details, see: https://license.tacticalrmm.com/ee
+"""
+
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.models import SocialApp
 

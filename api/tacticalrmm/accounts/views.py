@@ -264,24 +264,35 @@ class GetAddUsers(APIView):
         social_accounts = SerializerMethodField()
 
         def get_social_accounts(self, obj):
-            from allauth.socialaccount.models import SocialAccount
+            from allauth.socialaccount.models import SocialAccount, SocialApp
 
             accounts = SocialAccount.objects.filter(user_id=obj.pk)
 
-            if len(accounts) > 0:
-                return [
-                    {
-                        "uid": account.uid,
-                        "provider": account.provider,
-                        "display": account.get_provider_account().to_str(),
-                        "last_login": account.last_login,
-                        "date_joined": account.date_joined,
-                        "extra_data": account.extra_data,
-                    }
-                    for account in accounts
-                ]
-            else:
-                return []
+            if accounts:
+                social_accounts = []
+                for account in accounts:
+                    try:
+                        provider_account = account.get_provider_account()
+                        display = provider_account.to_str()
+                    except SocialApp.DoesNotExist:
+                        display = "Orphaned Provider"
+                    except Exception:
+                        display = "Unknown"
+
+                    social_accounts.append(
+                        {
+                            "uid": account.uid,
+                            "provider": account.provider,
+                            "display": display,
+                            "last_login": account.last_login,
+                            "date_joined": account.date_joined,
+                            "extra_data": account.extra_data,
+                        }
+                    )
+
+                return social_accounts
+
+            return []
 
         class Meta:
             model = User

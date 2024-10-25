@@ -11,6 +11,7 @@ from tacticalrmm.test import TacticalTestCase
 
 class TestAccounts(TacticalTestCase):
     def setUp(self):
+        self.setup_coresettings()
         self.setup_client()
         self.bob = User(username="bob")
         self.bob.set_password("hunter2")

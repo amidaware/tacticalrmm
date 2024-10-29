@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 from tacticalrmm.permissions import _has_perm
-
+from tacticalrmm.utils import get_core_settings
 
 class AccountsPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
@@ -40,3 +40,9 @@ class APIKeyPerms(permissions.BasePermission):
             return _has_perm(r, "can_list_api_keys")
 
         return _has_perm(r, "can_manage_api_keys")
+
+
+class LocalUserPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        settings = get_core_settings()
+        return not settings.block_local_user_logon

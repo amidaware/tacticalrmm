@@ -25,7 +25,7 @@ from tacticalrmm.helpers import notify_error
 from tacticalrmm.utils import get_core_settings
 
 from .models import APIKey, Role, User
-from .permissions import AccountsPerms, APIKeyPerms, RolesPerms
+from .permissions import AccountsPerms, APIKeyPerms, RolesPerms, LocalUserPerms
 from .serializers import (
     APIKeySerializer,
     RoleSerializer,
@@ -381,7 +381,7 @@ class GetUpdateDeleteUser(APIView):
 
 
 class UserActions(APIView):
-    permission_classes = [IsAuthenticated, AccountsPerms]
+    permission_classes = [IsAuthenticated, AccountsPerms, LocalUserPerms]
 
     # reset password
     def post(self, request):
@@ -507,7 +507,7 @@ class GetUpdateDeleteAPIKey(APIView):
 
 
 class ResetPass(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, LocalUserPerms]
 
     def put(self, request):
         user = request.user
@@ -517,7 +517,7 @@ class ResetPass(APIView):
 
 
 class Reset2FA(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, LocalUserPerms]
 
     def put(self, request):
         user = request.user

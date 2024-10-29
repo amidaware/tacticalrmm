@@ -130,6 +130,13 @@ class CoreSettings(BaseAuditModel):
                 self.mesh_token = settings.MESH_TOKEN_KEY
 
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
+
+        print(old_settings.__dict__)
+        # fail safe to not lock out user logons
+        if not old_settings.sso_enabled and old_settings.block_local_user_logon:
+            self.block_local_user_logon = False
+            print("I'm Here!")
+
         super().save(*args, **kwargs)
 
         if old_settings:

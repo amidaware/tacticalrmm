@@ -17,10 +17,6 @@ from tacticalrmm.utils import get_core_settings
 class TacticalSocialAdapter(DefaultSocialAccountAdapter):
 
     def populate_user(self, request, sociallogin, data):
-        _, valid = token_is_valid()
-        if not valid:
-            raise PermissionDenied()
-
         user = super().populate_user(request, sociallogin, data)
         try:
             provider = sociallogin.account.get_provider()
@@ -31,6 +27,13 @@ class TacticalSocialAdapter(DefaultSocialAccountAdapter):
                 "Provider settings or Role not found. Continuing with blank permissions."
             )
         return user
+
+    def is_open_for_signup(self, request, sociallogin):
+        _, valid = token_is_valid()
+        if not valid:
+            raise PermissionDenied()
+
+        return super().is_open_for_signup(request, sociallogin)
 
     def list_providers(self, request):
         core_settings = get_core_settings()

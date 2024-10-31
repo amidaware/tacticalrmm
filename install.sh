@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="86"
+SCRIPT_VERSION="87"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
@@ -570,6 +570,7 @@ python manage.py load_chocos
 python manage.py load_community_scripts
 WEB_VERSION=$(python manage.py get_config webversion)
 WEBTAR_URL=$(python manage.py get_webtar_url)
+ROOT_DOMAIN=$(python manage.py get_config rootdomain)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website${NC}\n"
@@ -584,6 +585,16 @@ cls
 python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
+
+allauth="$(
+  cat <<EOF
+SESSION_COOKIE_DOMAIN = '${ROOT_DOMAIN}'
+CSRF_COOKIE_DOMAIN = '${ROOT_DOMAIN}'
+CSRF_TRUSTED_ORIGINS = ["https://${frontenddomain}", "https://${rmmdomain}"]
+HEADLESS_FRONTEND_URLS = {"socialaccount_login_error": "https://${frontenddomain}/account/provider/callback"}
+EOF
+)"
+echo "${allauth}" | tee --append $local_settings >/dev/null
 
 rmmservice="$(
   cat <<EOF

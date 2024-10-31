@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="60"
+SCRIPT_VERSION="61"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -15,6 +15,7 @@ NC='\033[0m'
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.11.8'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
+local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmrestore_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -445,8 +446,8 @@ sudo chmod +x /usr/local/bin/nats-api
 
 print_green 'Restoring the trmm database'
 
-pgusername=$(grep -w USER /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
-pgpw=$(grep -w PASSWORD /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
+pgusername=$(grep -w USER $local_settings | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
+pgpw=$(grep -w PASSWORD $local_settings | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 
 sudo -iu postgres psql -c "CREATE DATABASE tacticalrmm"
 sudo -iu postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
@@ -499,6 +500,23 @@ WEBTAR_URL=$(python manage.py get_webtar_url)
 CERT_PUB_KEY=$(python manage.py get_config certfile)
 CERT_PRIV_KEY=$(python manage.py get_config keyfile)
 deactivate
+
+HAS_ALLAUTH=$(grep HEADLESS_FRONTEND_URLS $local_settings)
+if ! [[ $HAS_ALLAUTH ]]; then
+  source /rmm/api/env/bin/activate
+  cd /rmm/api/tacticalrmm
+  ROOT_DOMAIN=$(python manage.py get_config rootdomain)
+  deactivate
+  allauth="$(
+    cat <<EOF
+SESSION_COOKIE_DOMAIN = '${ROOT_DOMAIN}'
+CSRF_COOKIE_DOMAIN = '${ROOT_DOMAIN}'
+CSRF_TRUSTED_ORIGINS = ["https://${FRONTEND}", "https://${API}"]
+HEADLESS_FRONTEND_URLS = {"socialaccount_login_error": "https://${FRONTEND}/account/provider/callback"}
+EOF
+  )"
+  echo "${allauth}" | tee --append $local_settings >/dev/null
+fi
 
 print_green 'Restoring hosts file'
 

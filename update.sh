@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="154"
+SCRIPT_VERSION="155"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -451,6 +451,23 @@ WEBTAR_URL=$(python manage.py get_webtar_url)
 CERT_PUB_KEY=$(python manage.py get_config certfile)
 CERT_PRIV_KEY=$(python manage.py get_config keyfile)
 deactivate
+
+HAS_ALLAUTH=$(grep HEADLESS_FRONTEND_URLS $local_settings)
+if ! [[ $HAS_ALLAUTH ]]; then
+  source /rmm/api/env/bin/activate
+  cd /rmm/api/tacticalrmm
+  ROOT_DOMAIN=$(python manage.py get_config rootdomain)
+  deactivate
+  allauth="$(
+    cat <<EOF
+SESSION_COOKIE_DOMAIN = '${ROOT_DOMAIN}'
+CSRF_COOKIE_DOMAIN = '${ROOT_DOMAIN}'
+CSRF_TRUSTED_ORIGINS = ["https://${FRONTEND}", "https://${API}"]
+HEADLESS_FRONTEND_URLS = {"socialaccount_login_error": "https://${FRONTEND}/account/provider/callback"}
+EOF
+  )"
+  echo "${allauth}" | tee --append $local_settings >/dev/null
+fi
 
 if grep -q manage_etc_hosts /etc/hosts; then
   sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null

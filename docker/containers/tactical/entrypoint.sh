@@ -71,6 +71,7 @@ if [ "$1" = 'tactical-init' ]; then
   MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
+  BASE_DOMAIN=$(echo "import tldextract; no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=()); extracted = no_fetch_extract('${API_HOST}'); print(f'{extracted.domain}.{extracted.suffix}')" | python)
 
   localvars="$(
     cat <<EOF
@@ -93,15 +94,12 @@ ALLOWED_HOSTS = ['${API_HOST}', '${APP_HOST}', 'tactical-backend']
 ADMIN_URL = '${ADMINURL}/'
 
 CORS_ORIGIN_WHITELIST = ['https://${APP_HOST}']
-CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_DOMAIN = '${BASE_DOMAIN}'
 CSRF_COOKIE_DOMAIN = '${BASE_DOMAIN}'
 CSRF_TRUSTED_ORIGINS = ['https://${API_HOST}', 'https://${APP_HOST}']
 
-HEADLESS_FRONTEND_URLS = {
-    'socialaccount_login_error': 'https://${APP_HOST}/account/provider/callback'
-}
+HEADLESS_FRONTEND_URLS = {'socialaccount_login_error': 'https://${APP_HOST}/account/provider/callback'}
 
 DATABASES = {
     'default': {

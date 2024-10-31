@@ -30,6 +30,7 @@ redis==5.0.8
 requests==2.32.3
 six==1.16.0
 sqlparse==0.5.1
+tldextract==5.1.2
 twilio==8.13.0
 urllib3==2.2.3
 uvicorn[standard]==0.31.1

@@ -17,6 +17,12 @@ class Command(BaseCommand):
         match kwargs["name"]:
             case "api":
                 self.stdout.write(settings.ALLOWED_HOSTS[0])
+            case "rootdomain":
+                import tldextract
+
+                no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=())
+                extracted = no_fetch_extract(settings.ALLOWED_HOSTS[0])
+                self.stdout.write(f"{extracted.domain}.{extracted.suffix}")
             case "version":
                 self.stdout.write(settings.TRMM_VERSION)
             case "webversion":

@@ -97,6 +97,7 @@ class Site(BaseAuditModel):
     name = models.CharField(max_length=255)
     block_policy_inheritance = models.BooleanField(default=False)
     failing_checks = models.JSONField(default=_default_failing_checks_data)
+    trayicon = models.JSONField(default=list, blank=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_sites",

@@ -23,6 +23,8 @@ urlpatterns = [
     path("status/", views.status),
     path("openai/generate/", views.OpenAICodeCompletion.as_view()),
     path("webtermperms/", views.webterm_perms),
+    path("systray/", views.SysTrayView.as_view()),
+    path("systray/<str:file_name>/", views.ServeFile.as_view()),
 ]
 
 

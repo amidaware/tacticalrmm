@@ -4,6 +4,7 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
+import pyotp
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.models import SocialApp
 from django.core.exceptions import PermissionDenied
@@ -26,6 +27,7 @@ class TacticalSocialAdapter(DefaultSocialAccountAdapter):
             logger.debug(
                 "Provider settings or Role not found. Continuing with blank permissions."
             )
+        user.totp_key = pyotp.random_base32()  # not actually used
         return user
 
     def is_open_for_signup(self, request, sociallogin):

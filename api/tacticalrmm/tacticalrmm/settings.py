@@ -226,6 +226,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "ee.sso.middleware.SSOIconMiddleware",
 ]
 
 if SWAGGER_ENABLED:

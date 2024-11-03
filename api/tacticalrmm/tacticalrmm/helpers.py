@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
+import tldextract
 from cryptography import x509
 from django.conf import settings
 from django.utils import timezone as djangotime
@@ -105,6 +106,12 @@ def date_is_in_past(*, datetime_obj: "datetime", agent_tz: str) -> bool:
 
 def get_webdomain() -> str:
     return urlparse(settings.CORS_ORIGIN_WHITELIST[0]).netloc
+
+
+def get_root_domain(subdomain) -> str:
+    no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=())
+    extracted = no_fetch_extract(subdomain)
+    return f"{extracted.domain}.{extracted.suffix}"
 
 
 def rand_range(min: int, max: int) -> float:

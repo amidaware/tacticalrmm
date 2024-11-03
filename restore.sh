@@ -501,23 +501,6 @@ CERT_PUB_KEY=$(python manage.py get_config certfile)
 CERT_PRIV_KEY=$(python manage.py get_config keyfile)
 deactivate
 
-HAS_ALLAUTH=$(grep HEADLESS_FRONTEND_URLS $local_settings)
-if ! [[ $HAS_ALLAUTH ]]; then
-  source /rmm/api/env/bin/activate
-  cd /rmm/api/tacticalrmm
-  ROOT_DOMAIN=$(python manage.py get_config rootdomain)
-  deactivate
-  allauth="$(
-    cat <<EOF
-SESSION_COOKIE_DOMAIN = '${ROOT_DOMAIN}'
-CSRF_COOKIE_DOMAIN = '${ROOT_DOMAIN}'
-CSRF_TRUSTED_ORIGINS = ["https://${FRONTEND}", "https://${API}"]
-HEADLESS_FRONTEND_URLS = {"socialaccount_login_error": "https://${FRONTEND}/account/provider/callback"}
-EOF
-  )"
-  echo "${allauth}" | tee --append $local_settings >/dev/null
-fi
-
 print_green 'Restoring hosts file'
 
 if grep -q manage_etc_hosts /etc/hosts; then

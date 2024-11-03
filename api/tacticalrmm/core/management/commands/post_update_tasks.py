@@ -1,9 +1,5 @@
 import base64
-import os
-import shutil
-from pathlib import Path
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from accounts.models import User
@@ -14,7 +10,6 @@ from core.models import CoreSettings
 from core.tasks import remove_orphaned_history_results, sync_mesh_perms_task
 from scripts.models import Script
 from tacticalrmm.constants import AGENT_DEFER, ScriptType
-from tacticalrmm.helpers import get_webdomain
 
 
 class Command(BaseCommand):
@@ -22,37 +17,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs) -> None:
         self.stdout.write("Running post update tasks")
-
-        # for 0.20.0 release
-        if not settings.DOCKER_BUILD:
-            needs_frontend = False
-            frontend_domain = get_webdomain().split(":")[0]
-
-            local_settings = os.path.join(
-                settings.BASE_DIR, "tacticalrmm", "local_settings.py"
-            )
-
-            with open(local_settings) as f:
-                lines = f.readlines()
-
-            modified_lines = []
-            for line in lines:
-                if line.strip().startswith("ALLOWED_HOSTS"):
-                    exec(line, globals())
-
-                    if frontend_domain not in settings.ALLOWED_HOSTS:
-                        needs_frontend = True
-                        settings.ALLOWED_HOSTS.append(frontend_domain)
-
-                    line = f"ALLOWED_HOSTS = {settings.ALLOWED_HOSTS}\n"
-
-                modified_lines.append(line)
-
-            if needs_frontend:
-                backup = Path.home() / (Path("local_settings_0.20.0.bak"))
-                shutil.copy2(local_settings, backup)
-                with open(local_settings, "w") as f:
-                    f.writelines(modified_lines)
 
         # load community scripts into the db
         Script.load_community_scripts()

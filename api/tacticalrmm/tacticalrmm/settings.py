@@ -3,6 +3,7 @@ import sys
 from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
+from tacticalrmm.helpers import get_root_domain
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -117,11 +118,37 @@ REDIS_HOST = "127.0.0.1"
 TRMM_LOG_LEVEL = "ERROR"
 TRMM_LOG_TO = "file"
 
+if not DOCKER_BUILD:
+    ALLOWED_HOSTS = []
+    CORS_ORIGIN_WHITELIST = []
+    TRMM_PROTO = "https"
+    TRMM_BACKEND_PORT = None
+
 with suppress(ImportError):
     from ee.sso.sso_settings import *  # noqa
 
 with suppress(ImportError):
     from .local_settings import *  # noqa
+
+if not DOCKER_BUILD:
+
+    TRMM_ROOT_DOMAIN = get_root_domain(ALLOWED_HOSTS[0])
+
+    ALLOWED_HOSTS.append(TRMM_ROOT_DOMAIN)
+
+    if DEBUG:
+        ALLOWED_HOSTS.append("*")
+
+    backend_url = f"{TRMM_PROTO}://{ALLOWED_HOSTS[0]}"
+    if TRMM_BACKEND_PORT:
+        backend_url = f"{backend_url}:{TRMM_BACKEND_PORT}"
+
+    SESSION_COOKIE_DOMAIN = TRMM_ROOT_DOMAIN
+    CSRF_COOKIE_DOMAIN = TRMM_ROOT_DOMAIN
+    CSRF_TRUSTED_ORIGINS = [CORS_ORIGIN_WHITELIST[0], backend_url]
+    HEADLESS_FRONTEND_URLS = {
+        "socialaccount_login_error": f"{CORS_ORIGIN_WHITELIST[0]}/account/provider/callback"
+    }
 
 CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"
 AGENTS_URL = f"{AGENT_BASE_URL}/api/v2/agents/?"

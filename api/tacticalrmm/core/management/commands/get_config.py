@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from tacticalrmm.helpers import get_webdomain
+from tacticalrmm.helpers import get_root_domain, get_webdomain
 from tacticalrmm.utils import get_certs
 
 
@@ -18,11 +18,7 @@ class Command(BaseCommand):
             case "api":
                 self.stdout.write(settings.ALLOWED_HOSTS[0])
             case "rootdomain":
-                import tldextract
-
-                no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=())
-                extracted = no_fetch_extract(settings.ALLOWED_HOSTS[0])
-                self.stdout.write(f"{extracted.domain}.{extracted.suffix}")
+                self.stdout.write(get_root_domain(settings.ALLOWED_HOSTS[0]))
             case "version":
                 self.stdout.write(settings.TRMM_VERSION)
             case "webversion":

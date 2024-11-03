@@ -3,7 +3,7 @@ import sys
 from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
-from tacticalrmm.helpers import get_root_domain
+from tacticalrmm.helpers import get_root_domain, get_webdomain
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -133,8 +133,9 @@ with suppress(ImportError):
 if not DOCKER_BUILD:
 
     TRMM_ROOT_DOMAIN = get_root_domain(ALLOWED_HOSTS[0])
+    frontend_domain = get_webdomain().split(":")[0]
 
-    ALLOWED_HOSTS.append(TRMM_ROOT_DOMAIN)
+    ALLOWED_HOSTS.append(frontend_domain)
 
     if DEBUG:
         ALLOWED_HOSTS.append("*")

@@ -130,6 +130,27 @@ with suppress(ImportError):
 with suppress(ImportError):
     from .local_settings import *  # noqa
 
+if "GHACTIONS" in os.environ:
+    print("-----------------------GHACTIONS----------------------------")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "pipeline",
+            "USER": "pipeline",
+            "PASSWORD": "pipeline123456",
+            "HOST": "127.0.0.1",
+            "PORT": "",
+        }
+    }
+    SECRET_KEY = "abcdefghijklmnoptravis123456789"
+    ALLOWED_HOSTS = ["api.example.com"]
+    ADMIN_URL = "abc123456/"
+    CORS_ORIGIN_WHITELIST = ["https://rmm.example.com"]
+    MESH_USERNAME = "pipeline"
+    MESH_SITE = "https://example.com"
+    MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
+    REDIS_HOST = "localhost"
+
 if not DOCKER_BUILD:
 
     TRMM_ROOT_DOMAIN = get_root_domain(ALLOWED_HOSTS[0])
@@ -365,25 +386,3 @@ LOGGING = {
         "trmm": {"handlers": ["trmm"], "level": get_log_level(), "propagate": False},
     },
 }
-
-
-if "GHACTIONS" in os.environ:
-    print("-----------------------GHACTIONS----------------------------")
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "pipeline",
-            "USER": "pipeline",
-            "PASSWORD": "pipeline123456",
-            "HOST": "127.0.0.1",
-            "PORT": "",
-        }
-    }
-    SECRET_KEY = "abcdefghijklmnoptravis123456789"
-    ALLOWED_HOSTS = ["api.example.com"]
-    ADMIN_URL = "abc123456/"
-    CORS_ORIGIN_WHITELIST = ["https://rmm.example.com"]
-    MESH_USERNAME = "pipeline"
-    MESH_SITE = "https://example.com"
-    MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
-    REDIS_HOST = "localhost"

@@ -3,7 +3,8 @@ import sys
 from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
-from tacticalrmm.helpers import get_root_domain, get_webdomain
+
+from tacticalrmm.util_settings import get_backend_url, get_root_domain, get_webdomain
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -117,12 +118,12 @@ SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 TRMM_LOG_LEVEL = "ERROR"
 TRMM_LOG_TO = "file"
+TRMM_PROTO = "https"
+TRMM_BACKEND_PORT = None
 
 if not DOCKER_BUILD:
     ALLOWED_HOSTS = []
     CORS_ORIGIN_WHITELIST = []
-    TRMM_PROTO = "https"
-    TRMM_BACKEND_PORT = None
 
 with suppress(ImportError):
     from ee.sso.sso_settings import *  # noqa
@@ -154,16 +155,14 @@ if "GHACTIONS" in os.environ:
 if not DOCKER_BUILD:
 
     TRMM_ROOT_DOMAIN = get_root_domain(ALLOWED_HOSTS[0])
-    frontend_domain = get_webdomain().split(":")[0]
+    frontend_domain = get_webdomain(CORS_ORIGIN_WHITELIST[0]).split(":")[0]
 
     ALLOWED_HOSTS.append(frontend_domain)
 
     if DEBUG:
         ALLOWED_HOSTS.append("*")
 
-    backend_url = f"{TRMM_PROTO}://{ALLOWED_HOSTS[0]}"
-    if TRMM_BACKEND_PORT:
-        backend_url = f"{backend_url}:{TRMM_BACKEND_PORT}"
+    backend_url = get_backend_url(ALLOWED_HOSTS[0], TRMM_PROTO, TRMM_BACKEND_PORT)
 
     SESSION_COOKIE_DOMAIN = TRMM_ROOT_DOMAIN
     CSRF_COOKIE_DOMAIN = TRMM_ROOT_DOMAIN

@@ -7,6 +7,7 @@ For details, see: https://license.tacticalrmm.com/ee
 import re
 
 from allauth.socialaccount.models import SocialAccount, SocialApp
+from django.conf import settings
 from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
@@ -16,11 +17,16 @@ from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer, ReadOnlyField
+from rest_framework.serializers import (
+    ModelSerializer,
+    ReadOnlyField,
+    SerializerMethodField,
+)
 from rest_framework.views import APIView
 
 from accounts.permissions import AccountsPerms
 from logs.models import AuditLog
+from tacticalrmm.util_settings import get_backend_url
 from tacticalrmm.utils import get_core_settings
 
 from .permissions import SSOLoginPerms
@@ -29,6 +35,15 @@ from .permissions import SSOLoginPerms
 class SocialAppSerializer(ModelSerializer):
     server_url = ReadOnlyField(source="settings.server_url")
     role = ReadOnlyField(source="settings.role")
+    callback_url = SerializerMethodField()
+    javascript_origin_url = SerializerMethodField()
+
+    def get_callback_url(self, obj):
+        backend_url = self.context["backend_url"]
+        return f"{backend_url}/accounts/oidc/{obj.provider_id}/login/callback/"
+
+    def get_javascript_origin_url(self, obj):
+        return self.context["frontend_url"]
 
     class Meta:
         model = SocialApp
@@ -42,6 +57,8 @@ class SocialAppSerializer(ModelSerializer):
             "server_url",
             "settings",
             "role",
+            "callback_url",
+            "javascript_origin_url",
         ]
 
 
@@ -49,8 +66,16 @@ class GetAddSSOProvider(APIView):
     permission_classes = [IsAuthenticated, AccountsPerms]
 
     def get(self, request):
+        ctx = {
+            "backend_url": get_backend_url(
+                settings.ALLOWED_HOSTS[0],
+                settings.TRMM_PROTO,
+                settings.TRMM_BACKEND_PORT,
+            ),
+            "frontend_url": settings.CORS_ORIGIN_WHITELIST[0],
+        }
         providers = SocialApp.objects.all()
-        return Response(SocialAppSerializer(providers, many=True).data)
+        return Response(SocialAppSerializer(providers, many=True, context=ctx).data)
 
     class InputSerializer(ModelSerializer):
         server_url = ReadOnlyField()

@@ -10,6 +10,9 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client as TwClient
+
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     ALL_TIMEZONES,
@@ -20,8 +23,6 @@ from tacticalrmm.constants import (
     URLActionRestMethod,
     URLActionType,
 )
-from twilio.base.exceptions import TwilioRestException
-from twilio.rest import Client as TwClient
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
@@ -131,12 +132,21 @@ class CoreSettings(BaseAuditModel):
 
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
 
+        if old_settings:
+            # fail safe to not lock out user logons
+            if not self.sso_enabled and self.block_local_user_logon:
+                self.block_local_user_logon = False
+
+            if old_settings.sso_enabled != self.sso_enabled and self.sso_enabled:
+                from core.utils import token_is_valid
+
+                _, valid = token_is_valid()
+                if not valid:
+                    raise ValidationError("")
+
         super().save(*args, **kwargs)
 
         if old_settings:
-            # fail safe to not lock out user logons
-            if not old_settings.sso_enabled and old_settings.block_local_user_logon:
-                self.block_local_user_logon = False
 
             if (
                 old_settings.alert_template != self.alert_template

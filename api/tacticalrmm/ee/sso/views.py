@@ -6,21 +6,23 @@ For details, see: https://license.tacticalrmm.com/ee
 
 import re
 
-from allauth.socialaccount.models import SocialApp, SocialAccount
+from allauth.socialaccount.models import SocialAccount, SocialApp
 from django.contrib.auth import logout
+from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from knox.views import LoginView as KnoxLoginView
+from python_ipware import IpWare
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, ReadOnlyField
 from rest_framework.views import APIView
-from python_ipware import IpWare
 
 from accounts.permissions import AccountsPerms
 from logs.models import AuditLog
 from tacticalrmm.utils import get_core_settings
+
 from .permissions import SSOLoginPerms
 
 
@@ -209,8 +211,14 @@ class GetUpdateSSOSettings(APIView):
 
         core_settings = get_core_settings()
 
-        core_settings.block_local_user_logon = data["block_local_user_logon"]
-        core_settings.sso_enabled = data["sso_enabled"]
-        core_settings.save(update_fields=["block_local_user_logon", "sso_enabled"])
+        try:
+            core_settings.block_local_user_logon = data["block_local_user_logon"]
+            core_settings.sso_enabled = data["sso_enabled"]
+            core_settings.save(update_fields=["block_local_user_logon", "sso_enabled"])
+        except ValidationError:
+            return Response(
+                "This feature requires a Tier 1 or higher sponsorship: https://docs.tacticalrmm.com/sponsor",
+                status=status.HTTP_423_LOCKED,
+            )
 
         return Response("ok")

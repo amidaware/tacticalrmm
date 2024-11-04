@@ -47,3 +47,8 @@ class LocalUserPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
         settings = get_core_settings()
         return not settings.block_local_user_logon
+
+
+class SelfResetSSOPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        return not r.user.is_sso_user

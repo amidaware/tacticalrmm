@@ -1,22 +1,24 @@
 import datetime
+
 import pyotp
+from allauth.socialaccount.models import SocialAccount, SocialApp
 from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from knox.views import LoginView as KnoxLoginView
 from knox.models import AuthToken
+from knox.views import LoginView as KnoxLoginView
 from python_ipware import IpWare
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.serializers import (
     ModelSerializer,
-    SerializerMethodField,
     ReadOnlyField,
+    SerializerMethodField,
 )
+from rest_framework.views import APIView
 
 from accounts.utils import is_root_user
 from core.tasks import sync_mesh_perms_task
@@ -25,7 +27,13 @@ from tacticalrmm.helpers import notify_error
 from tacticalrmm.utils import get_core_settings
 
 from .models import APIKey, Role, User
-from .permissions import AccountsPerms, APIKeyPerms, RolesPerms, LocalUserPerms
+from .permissions import (
+    AccountsPerms,
+    APIKeyPerms,
+    LocalUserPerms,
+    RolesPerms,
+    SelfResetSSOPerms,
+)
 from .serializers import (
     APIKeySerializer,
     RoleSerializer,
@@ -53,7 +61,7 @@ class CheckCredsV2(KnoxLoginView):
 
         user = serializer.validated_data["user"]
 
-        if user.block_dashboard_login:
+        if user.block_dashboard_login or user.is_sso_user:
             return notify_error("Bad credentials")
 
         # block local logon if configured
@@ -87,6 +95,9 @@ class LoginViewV2(KnoxLoginView):
         # block local logon if configured
         core_settings = get_core_settings()
         if not user.is_superuser and core_settings.block_local_user_logon:
+            return notify_error("Bad credentials")
+
+        if user.is_sso_user:
             return notify_error("Bad credentials")
 
         token = request.data["twofactor"]
@@ -145,7 +156,7 @@ class CheckCreds(KnoxLoginView):
 
         user = serializer.validated_data["user"]
 
-        if user.block_dashboard_login:
+        if user.block_dashboard_login or user.is_sso_user:
             return notify_error("Bad credentials")
 
         # block local logon if configured
@@ -176,7 +187,7 @@ class LoginView(KnoxLoginView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
 
-        if user.block_dashboard_login:
+        if user.block_dashboard_login or user.is_sso_user:
             return notify_error("Bad credentials")
 
         # block local logon if configured
@@ -264,8 +275,6 @@ class GetAddUsers(APIView):
         social_accounts = SerializerMethodField()
 
         def get_social_accounts(self, obj):
-            from allauth.socialaccount.models import SocialAccount, SocialApp
-
             accounts = SocialAccount.objects.filter(user_id=obj.pk)
 
             if accounts:
@@ -507,7 +516,7 @@ class GetUpdateDeleteAPIKey(APIView):
 
 
 class ResetPass(APIView):
-    permission_classes = [IsAuthenticated, LocalUserPerms]
+    permission_classes = [IsAuthenticated, SelfResetSSOPerms]
 
     def put(self, request):
         user = request.user
@@ -517,7 +526,7 @@ class ResetPass(APIView):
 
 
 class Reset2FA(APIView):
-    permission_classes = [IsAuthenticated, LocalUserPerms]
+    permission_classes = [IsAuthenticated, SelfResetSSOPerms]
 
     def put(self, request):
         user = request.user

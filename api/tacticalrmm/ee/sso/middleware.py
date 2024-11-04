@@ -50,7 +50,7 @@ class SSOIconMiddleware:
             with suppress(Exception):
                 data = json.loads(response.content.decode("utf-8", "ignore"))
 
-                data["data"].pop("account")
+                data["data"].pop("account", None)
                 for provider in data["data"]["socialaccount"].get("providers", []):
                     provider.pop("client_id", None)
                     provider.pop("flows", None)

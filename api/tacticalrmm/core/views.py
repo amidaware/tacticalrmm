@@ -107,7 +107,11 @@ def clear_cache(request):
 @api_view()
 def dashboard_info(request):
     from core.utils import token_is_expired
-    from tacticalrmm.utils import get_latest_trmm_ver, runcmd_placeholder_text, certexpiry_notification_text
+    from tacticalrmm.utils import (
+        get_latest_trmm_ver,
+        runcmd_placeholder_text,
+        certexpiry_notification_text,
+    )
 
     core_settings = get_core_settings()
     return Response(

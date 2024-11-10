@@ -188,12 +188,16 @@ class GetAccessToken(KnoxLoginView):
             response.data["username"] = request.user.username
             response.data["provider"] = login_method["provider"]
 
+            response.data["name"] = None
+
             if request.user.first_name and request.user.last_name:
                 response.data["name"] = (
                     f"{request.user.first_name} {request.user.last_name}"
                 )
-            else:
-                response.data["name"] = None
+            elif request.user.first_name:
+                response.data["name"] = request.user.first_name
+            elif request.user.email:
+                response.data["name"] = request.user.email
 
             # log ip
             ipw = IpWare()

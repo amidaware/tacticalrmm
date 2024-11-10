@@ -125,16 +125,7 @@ class LoginViewV2(KnoxLoginView):
             )
             response = super().post(request, format=None)
             response.data["username"] = request.user.username
-
             response.data["name"] = None
-
-            if request.user.is_sso_user:
-                if request.user.first_name and request.user.last_name:
-                    response.data["name"] = (
-                        f"{request.user.first_name} {request.user.last_name}"
-                    )
-                elif request.user.first_name:
-                    response.data["name"] = request.user.first_name
 
             return Response(response.data)
         else:

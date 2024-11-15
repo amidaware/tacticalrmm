@@ -2,7 +2,7 @@ from django.conf import settings
 from django.urls import include, path, register_converter
 from knox import views as knox_views
 
-from accounts.views import CheckCreds, CheckCredsV2, LoginView, LoginViewV2
+from accounts.views import CheckCredsV2, LoginViewV2
 from ee.sso.urls import allauth_urls
 
 # from agents.consumers import SendCMD
@@ -28,8 +28,6 @@ urlpatterns = [
     path("_allauth/", include(allauth_urls)),
     path("v2/checkcreds/", CheckCredsV2.as_view()),
     path("v2/login/", LoginViewV2.as_view()),
-    path("checkcreds/", CheckCreds.as_view()),  # DEPRECATED AS OF 0.19.0
-    path("login/", LoginView.as_view()),  # DEPRECATED AS OF 0.19.0
     path("logout/", knox_views.LogoutView.as_view()),
     path("logoutall/", knox_views.LogoutAllView.as_view()),
     path("api/v3/", include("apiv3.urls")),

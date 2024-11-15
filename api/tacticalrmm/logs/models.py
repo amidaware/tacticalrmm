@@ -474,7 +474,7 @@ class PendingAction(models.Model):
             PAAction.RUN_PATCH_SCAN,
             PAAction.RUN_PATCH_INSTALL,
         ):
-            return f"{self.action_type}"
+            return str(self.action_type)
 
         return None
 

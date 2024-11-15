@@ -96,9 +96,7 @@ class GetAddSSOProvider(APIView):
 
     # removed any special characters and replaces spaces with a hyphen
     def generate_provider_id(self, string):
-        id = re.sub(r"[^A-Za-z0-9\s]", "", string)
-        id = id.replace(" ", "-")
-        return id
+        return re.sub(r"[^A-Za-z0-9\s]", "", string).replace(" ", "-")
 
     def post(self, request):
         data = request.data
@@ -106,7 +104,7 @@ class GetAddSSOProvider(APIView):
         # need to move server_url into json settings
         data["settings"] = {}
         data["settings"]["server_url"] = data["server_url"]
-        data["settings"]["role"] = data["role"] if data["role"] else None
+        data["settings"]["role"] = data["role"] or None
 
         # set provider to 'openid_connect'
         data["provider"] = "openid_connect"
@@ -138,7 +136,7 @@ class GetUpdateDeleteSSOProvider(APIView):
         # need to move server_url into json settings
         data["settings"] = {}
         data["settings"]["server_url"] = data["server_url"]
-        data["settings"]["role"] = data["role"] if data["role"] else None
+        data["settings"]["role"] = data["role"] or None
 
         serializer = self.InputSerialzer(instance=provider, data=data, partial=True)
         serializer.is_valid(raise_exception=True)

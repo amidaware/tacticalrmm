@@ -24,8 +24,6 @@ register_converter(AgentIDConverter, "agent")
 
 urlpatterns = [
     path("", home),
-    # all auth urls
-    path("_allauth/", include(allauth_urls)),
     path("v2/checkcreds/", CheckCredsV2.as_view()),
     path("v2/login/", LoginViewV2.as_view()),
     path("logout/", knox_views.LogoutView.as_view()),
@@ -44,9 +42,14 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
-    path("accounts/", include("ee.sso.urls")),
     path("reporting/", include("ee.reporting.urls")),
 ]
+
+if not getattr(settings, "TRMM_DISABLE_SSO", False):
+    urlpatterns += (
+        path("_allauth/", include(allauth_urls)),
+        path("accounts/", include("ee.sso.urls")),
+    )
 
 if getattr(settings, "BETA_API_ENABLED", False):
     urlpatterns += (path("beta/v1/", include("beta.v1.urls")),)

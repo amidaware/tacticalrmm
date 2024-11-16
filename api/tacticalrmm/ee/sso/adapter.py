@@ -10,6 +10,7 @@ from allauth.socialaccount.models import SocialApp
 from django.core.exceptions import PermissionDenied
 
 from accounts.models import Role
+from core.tasks import sync_mesh_perms_task
 from core.utils import token_is_valid
 from tacticalrmm.logger import logger
 from tacticalrmm.utils import get_core_settings
@@ -28,6 +29,7 @@ class TacticalSocialAdapter(DefaultSocialAccountAdapter):
                 "Provider settings or Role not found. Continuing with blank permissions."
             )
         user.totp_key = pyotp.random_base32()  # not actually used
+        sync_mesh_perms_task.delay()
         return user
 
     def is_open_for_signup(self, request, sociallogin):

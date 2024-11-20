@@ -20,6 +20,7 @@ set -e
 : "${SKIP_UWSGI_CONFIG:=0}"
 : "${TRMM_DISABLE_WEB_TERMINAL:=False}"
 : "${TRMM_DISABLE_SERVER_SCRIPTS:=False}"
+: "${TRMM_DISABLE_SSO:=False}"
 
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
 : "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
@@ -71,6 +72,7 @@ if [ "$1" = 'tactical-init' ]; then
   MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
+  BASE_DOMAIN=$(echo "import tldextract; no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=()); extracted = no_fetch_extract('${API_HOST}'); print(f'{extracted.domain}.{extracted.suffix}')" | python)
 
   localvars="$(
     cat <<EOF
@@ -88,13 +90,17 @@ LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'
 
 SCRIPTS_DIR = '/opt/tactical/community-scripts'
 
-ALLOWED_HOSTS = ['${API_HOST}', 'tactical-backend']
+ALLOWED_HOSTS = ['${API_HOST}', '${APP_HOST}', 'tactical-backend']
 
 ADMIN_URL = '${ADMINURL}/'
 
-CORS_ORIGIN_WHITELIST = [
-    'https://${APP_HOST}'
-]
+CORS_ORIGIN_WHITELIST = ['https://${APP_HOST}']
+
+SESSION_COOKIE_DOMAIN = '${BASE_DOMAIN}'
+CSRF_COOKIE_DOMAIN = '${BASE_DOMAIN}'
+CSRF_TRUSTED_ORIGINS = ['https://${API_HOST}', 'https://${APP_HOST}']
+
+HEADLESS_FRONTEND_URLS = {'socialaccount_login_error': 'https://${APP_HOST}/account/provider/callback'}
 
 DATABASES = {
     'default': {
@@ -115,6 +121,7 @@ MESH_WS_URL = '${MESH_WS_URL}'
 ADMIN_ENABLED = False
 TRMM_DISABLE_WEB_TERMINAL = ${TRMM_DISABLE_WEB_TERMINAL}
 TRMM_DISABLE_SERVER_SCRIPTS = ${TRMM_DISABLE_SERVER_SCRIPTS}
+TRMM_DISABLE_SSO = ${TRMM_DISABLE_SSO}
 EOF
   )"
 

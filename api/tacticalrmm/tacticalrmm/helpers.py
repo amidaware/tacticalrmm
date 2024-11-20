@@ -6,7 +6,6 @@ import secrets
 import string
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
-from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from cryptography import x509
@@ -101,10 +100,6 @@ def date_is_in_past(*, datetime_obj: "datetime", agent_tz: str) -> bool:
     localized = datetime_obj.replace(tzinfo=ZoneInfo(agent_tz))
     utc_time = localized.astimezone(ZoneInfo("UTC"))
     return djangotime.now() > utc_time
-
-
-def get_webdomain() -> str:
-    return urlparse(settings.CORS_ORIGIN_WHITELIST[0]).netloc
 
 
 def rand_range(min: int, max: int) -> float:

@@ -4,7 +4,7 @@ Copyright (c) 2023 Amidaware Inc. All rights reserved.
 
 This Agreement is entered into between the licensee ("You" or the "Licensee") and Amidaware Inc. ("Amidaware") and governs the use of the enterprise features of the Tactical RMM Software (hereinafter referred to as the "Software").
 
-The EE features of the Software, including but not limited to Reporting and White-labeling, are exclusively contained within directories named "ee," "enterprise," or "premium" in Amidaware's repositories, or in any files bearing the EE License header. The use of the Software is also governed by the terms and conditions set forth in the Tactical RMM License, available at https://license.tacticalrmm.com, which terms are incorporated herein by reference.
+The EE features of the Software, including but not limited to SSO (Single Sign-On), Reporting and White-labeling, are exclusively contained within directories named "ee," "enterprise," or "premium" in Amidaware's repositories, or in any files bearing the EE License header. The use of the Software is also governed by the terms and conditions set forth in the Tactical RMM License, available at https://license.tacticalrmm.com, which terms are incorporated herein by reference.
 
 ## License Grant
 

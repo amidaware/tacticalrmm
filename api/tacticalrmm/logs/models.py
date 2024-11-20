@@ -214,6 +214,18 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_user_login_successful_sso(
+        username: str, provider: str, debug_info: Dict[Any, Any] = {}
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            object_type=AuditObjType.USER,
+            action=AuditActionType.LOGIN,
+            message=f"{username} logged in successfully through SSO Provider {provider}",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
     def audit_url_action(
         username: str,
         urlaction: "URLAction",
@@ -462,7 +474,7 @@ class PendingAction(models.Model):
             PAAction.RUN_PATCH_SCAN,
             PAAction.RUN_PATCH_INSTALL,
         ):
-            return f"{self.action_type}"
+            return str(self.action_type)
 
         return None
 

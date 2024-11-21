@@ -177,8 +177,7 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
         return Script.parse_script_env_vars(
             agent=agent,
             shell=obj.script.shell,
-            env_vars=obj.env_vars
-            or obj.script.env_vars,  # check's env_vars override the script's env vars
+            env_vars=obj.env_vars,
         )
 
     class Meta:

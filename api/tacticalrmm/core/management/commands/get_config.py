@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from tacticalrmm.helpers import get_webdomain
+from tacticalrmm.util_settings import get_backend_url, get_root_domain, get_webdomain
 from tacticalrmm.utils import get_certs
 
 
@@ -17,6 +17,8 @@ class Command(BaseCommand):
         match kwargs["name"]:
             case "api":
                 self.stdout.write(settings.ALLOWED_HOSTS[0])
+            case "rootdomain":
+                self.stdout.write(get_root_domain(settings.ALLOWED_HOSTS[0]))
             case "version":
                 self.stdout.write(settings.TRMM_VERSION)
             case "webversion":
@@ -27,8 +29,16 @@ class Command(BaseCommand):
                 self.stdout.write(settings.NATS_SERVER_VER)
             case "frontend":
                 self.stdout.write(settings.CORS_ORIGIN_WHITELIST[0])
+            case "backend_url":
+                self.stdout.write(
+                    get_backend_url(
+                        settings.ALLOWED_HOSTS[0],
+                        settings.TRMM_PROTO,
+                        settings.TRMM_BACKEND_PORT,
+                    )
+                )
             case "webdomain":
-                self.stdout.write(get_webdomain())
+                self.stdout.write(get_webdomain(settings.CORS_ORIGIN_WHITELIST[0]))
             case "djangoadmin":
                 url = f"https://{settings.ALLOWED_HOSTS[0]}/{settings.ADMIN_URL}"
                 self.stdout.write(url)

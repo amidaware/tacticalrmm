@@ -4,6 +4,8 @@ from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
 
+from tacticalrmm.util_settings import get_backend_url, get_root_domain, get_webdomain
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SCRIPTS_DIR = "/opt/trmm-community-scripts"
@@ -21,14 +23,14 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.19.4"
+TRMM_VERSION = "0.20.0"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.49"
+WEB_VERSION = "0.101.50"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.195"
+APP_VER = "0.0.196"
 
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.8.0"
@@ -116,15 +118,63 @@ SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
 TRMM_LOG_LEVEL = "ERROR"
 TRMM_LOG_TO = "file"
+TRMM_PROTO = "https"
+TRMM_BACKEND_PORT = None
+
+if not DOCKER_BUILD:
+    ALLOWED_HOSTS = []
+    CORS_ORIGIN_WHITELIST = []
+
+with suppress(ImportError):
+    from ee.sso.sso_settings import *  # noqa
 
 with suppress(ImportError):
     from .local_settings import *  # noqa
 
+if "GHACTIONS" in os.environ:
+    print("-----------------------GHACTIONS----------------------------")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "pipeline",
+            "USER": "pipeline",
+            "PASSWORD": "pipeline123456",
+            "HOST": "127.0.0.1",
+            "PORT": "",
+        }
+    }
+    SECRET_KEY = "abcdefghijklmnoptravis123456789"
+    ALLOWED_HOSTS = ["api.example.com"]
+    ADMIN_URL = "abc123456/"
+    CORS_ORIGIN_WHITELIST = ["https://rmm.example.com"]
+    MESH_USERNAME = "pipeline"
+    MESH_SITE = "https://example.com"
+    MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
+    REDIS_HOST = "localhost"
+
+if not DOCKER_BUILD:
+
+    TRMM_ROOT_DOMAIN = get_root_domain(ALLOWED_HOSTS[0])
+    frontend_domain = get_webdomain(CORS_ORIGIN_WHITELIST[0]).split(":")[0]
+
+    ALLOWED_HOSTS.append(frontend_domain)
+
+    if DEBUG:
+        ALLOWED_HOSTS.append("*")
+
+    backend_url = get_backend_url(ALLOWED_HOSTS[0], TRMM_PROTO, TRMM_BACKEND_PORT)
+
+    SESSION_COOKIE_DOMAIN = TRMM_ROOT_DOMAIN
+    CSRF_COOKIE_DOMAIN = TRMM_ROOT_DOMAIN
+    CSRF_TRUSTED_ORIGINS = [CORS_ORIGIN_WHITELIST[0], backend_url]
+    HEADLESS_FRONTEND_URLS = {
+        "socialaccount_login_error": f"{CORS_ORIGIN_WHITELIST[0]}/account/provider/callback"
+    }
+
 CHECK_TOKEN_URL = f"{AGENT_BASE_URL}/api/v2/checktoken"
 AGENTS_URL = f"{AGENT_BASE_URL}/api/v2/agents/?"
 EXE_GEN_URL = f"{AGENT_BASE_URL}/api/v2/exe"
-REPORTING_CHECK_URL = f"{AGENT_BASE_URL}/api/v2/reporting/check"
-REPORTING_DL_URL = f"{AGENT_BASE_URL}/api/v2/reporting/download/?"
+WEBTAR_DL_URL = f"{AGENT_BASE_URL}/api/v2/webtar/?"
 
 if "GHACTIONS" in os.environ:
     DEBUG = False
@@ -164,6 +214,11 @@ INSTALLED_APPS = [
     "knox",
     "corsheaders",
     "accounts",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.openid_connect",
+    "allauth.headless",
     "apiv3",
     "clients",
     "agents",
@@ -178,6 +233,7 @@ INSTALLED_APPS = [
     "scripts",
     "alerts",
     "ee.reporting",
+    "ee.sso",
 ]
 
 CHANNEL_LAYERS = {
@@ -188,6 +244,7 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
 
 # silence cache key length warnings
 import warnings  # noqa
@@ -216,6 +273,8 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "ee.sso.middleware.SSOIconMiddleware",
 ]
 
 if SWAGGER_ENABLED:
@@ -326,25 +385,3 @@ LOGGING = {
         "trmm": {"handlers": ["trmm"], "level": get_log_level(), "propagate": False},
     },
 }
-
-
-if "GHACTIONS" in os.environ:
-    print("-----------------------GHACTIONS----------------------------")
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "pipeline",
-            "USER": "pipeline",
-            "PASSWORD": "pipeline123456",
-            "HOST": "127.0.0.1",
-            "PORT": "",
-        }
-    }
-    SECRET_KEY = "abcdefghijklmnoptravis123456789"
-    ALLOWED_HOSTS = ["api.example.com"]
-    ADMIN_URL = "abc123456/"
-    CORS_ORIGIN_WHITELIST = ["https://rmm.example.com"]
-    MESH_USERNAME = "pipeline"
-    MESH_SITE = "https://example.com"
-    MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
-    REDIS_HOST = "localhost"

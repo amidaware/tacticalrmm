@@ -1,10 +1,11 @@
 import subprocess
 
 import pyotp
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from accounts.models import User
-from tacticalrmm.helpers import get_webdomain
+from tacticalrmm.util_settings import get_webdomain
 
 
 class Command(BaseCommand):
@@ -26,7 +27,7 @@ class Command(BaseCommand):
         user.save(update_fields=["totp_key"])
 
         url = pyotp.totp.TOTP(code).provisioning_uri(
-            username, issuer_name=get_webdomain()
+            username, issuer_name=get_webdomain(settings.CORS_ORIGIN_WHITELIST[0])
         )
         subprocess.run(f'qr "{url}"', shell=True)
         self.stdout.write(

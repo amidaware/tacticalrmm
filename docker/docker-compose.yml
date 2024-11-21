@@ -64,6 +64,7 @@ services:
       TRMM_PASS: ${TRMM_PASS}
       TRMM_DISABLE_WEB_TERMINAL: ${TRMM_DISABLE_WEB_TERMINAL}
       TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
+      TRMM_DISABLE_SSO: ${TRMM_DISABLE_SSO}
     depends_on:
       - tactical-postgres
       - tactical-meshcentral

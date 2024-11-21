@@ -1,5 +1,6 @@
 from typing import Optional
 
+from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.models import AbstractUser
 from django.core.cache import cache
 from django.db import models
@@ -72,6 +73,10 @@ class User(AbstractUser, BaseAuditModel):
     def mesh_username(self):
         # lower() needed for mesh api
         return f"{self.username.replace(' ', '').lower()}___{self.pk}"
+
+    @property
+    def is_sso_user(self):
+        return SocialAccount.objects.filter(user_id=self.pk).exists()
 
     @staticmethod
     def serialize(user):

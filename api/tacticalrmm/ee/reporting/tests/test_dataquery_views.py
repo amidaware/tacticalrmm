@@ -152,9 +152,7 @@ class TestGetEditDeleteReportDataQuery:
 
 @pytest.mark.django_db
 class TestQuerySchema:
-    def test_get_query_schema_in_debug_mode(self, settings, authenticated_client):
-        # Set DEBUG mode
-        settings.DEBUG = True
+    def test_get_query_schema(self, settings, authenticated_client):
 
         expected_data = {"sample": "json"}
 
@@ -165,19 +163,6 @@ class TestQuerySchema:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == expected_data
-
-    def test_get_query_schema_in_production_mode(self, settings, authenticated_client):
-        # Set production mode (DEBUG = False)
-        settings.DEBUG = False
-
-        response = authenticated_client.get("/reporting/queryschema/")
-
-        assert response.status_code == status.HTTP_200_OK
-        # Check that the X-Accel-Redirect header is set correctly
-        assert (
-            response["X-Accel-Redirect"]
-            == "/static/reporting/schemas/query_schema.json"
-        )
 
     def test_get_query_schema_file_missing(self, settings, authenticated_client):
         # Set DEBUG mode

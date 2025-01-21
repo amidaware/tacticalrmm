@@ -836,15 +836,10 @@ class QuerySchema(APIView):
     def get(self, request):
         schema_path = "static/reporting/schemas/query_schema.json"
 
-        if djangosettings.DEBUG:
-            try:
-                with open(djangosettings.BASE_DIR / schema_path, "r") as f:
-                    data = json.load(f)
+        try:
+            with open(djangosettings.BASE_DIR / schema_path, "r") as f:
+                data = json.load(f)
 
-                return JsonResponse(data)
-            except FileNotFoundError:
-                return notify_error("There was an error getting the file")
-        else:
-            response = HttpResponse()
-            response["X-Accel-Redirect"] = f"/{schema_path}"
-            return response
+            return JsonResponse(data)
+        except FileNotFoundError:
+            return notify_error("There was an error getting the file")

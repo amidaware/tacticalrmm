@@ -52,7 +52,7 @@ jobs:
       - name: Codestyle black
         working-directory: api
         run: |
-          black --exclude migrations/ --check tacticalrmm
+          black --exclude migrations/ --check --diff tacticalrmm
           if [ $? -ne 0 ]; then
               exit 1
           fi

@@ -623,7 +623,7 @@ def status_v2(request):
     return JsonResponse(ret, json_dumps_params={"indent": 2})
 
 
-## TODO deprecated
+# TODO deprecated
 @csrf_exempt
 @monitoring_view
 def status(request):

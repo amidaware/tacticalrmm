@@ -1,9 +1,10 @@
 import json
 import os
+import re
+import socket
 import subprocess
 import tempfile
 import time
-import re
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, List, Literal, Optional, Union
 from zoneinfo import ZoneInfo
@@ -21,6 +22,7 @@ from rest_framework.response import Response
 from agents.models import Agent
 from core.utils import get_core_settings, token_is_valid
 from logs.models import DebugLog
+from tacticalrmm.celery import app as celery_app
 from tacticalrmm.constants import (
     MONTH_DAYS,
     MONTHS,
@@ -41,8 +43,8 @@ from tacticalrmm.helpers import (
 )
 
 if TYPE_CHECKING:
-    from clients.models import Client, Site
     from alerts.models import Alert
+    from clients.models import Client, Site
 
 
 def generate_winagent_exe(
@@ -468,3 +470,21 @@ def runcmd_placeholder_text() -> dict[str, str]:
         ),
     }
     return ret
+
+
+def get_celery_queue_len():
+    try:
+        with celery_app.pool.acquire(block=True) as conn:
+            return conn.default_channel.client.llen("celery")
+    except Exception as e:
+        raise RuntimeError(f"Error getting celery queue length: {e}")
+
+
+def localhost_port_is_open(port):
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)
+            s.connect(("127.0.0.1", port))
+        return True
+    except (socket.timeout, ConnectionRefusedError):
+        return False

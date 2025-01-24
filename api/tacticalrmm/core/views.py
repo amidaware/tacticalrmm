@@ -20,7 +20,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.decorators import monitoring_view
+from core.decorators import monitoring_view, monitoring_view_v2
 from core.tasks import sync_mesh_perms_task
 from core.utils import (
     get_core_settings,
@@ -32,6 +32,7 @@ from core.utils import (
 from logs.models import AuditLog
 from tacticalrmm.constants import AuditActionType, PAStatus
 from tacticalrmm.helpers import get_certs, notify_error
+from tacticalrmm.logger import logger
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
@@ -557,6 +558,72 @@ class TwilioSMSTest(APIView):
         return Response(msg)
 
 
+@csrf_exempt
+@monitoring_view_v2
+def status_v2(request):
+    from agents.models import Agent
+    from clients.models import Client, Site
+    from tacticalrmm.helpers import get_nats_ports
+    from tacticalrmm.utils import get_celery_queue_len, localhost_port_is_open
+
+    disk_usage: int = round(psutil.disk_usage("/").percent)
+    mem_usage: int = round(psutil.virtual_memory().percent)
+
+    cert_file, _ = get_certs()
+    cert_bytes = Path(cert_file).read_bytes()
+
+    cert = x509.load_pem_x509_certificate(cert_bytes)
+    delta = cert.not_valid_after_utc - djangotime.now()
+
+    redis_url = f"redis://{settings.REDIS_HOST}"
+    redis_ping = False
+    with suppress(Exception):
+        with from_url(redis_url) as conn:
+            conn.ping()
+            redis_ping = True
+
+    celery_queue_health = "healthy"
+    try:
+        queue_len = get_celery_queue_len()
+    except RuntimeError as e:
+        queue_len = -1
+        celery_queue_health = "unhealthy"
+        logger.error(f"Error getting celery queue length: {e}")
+
+    nats_std_port, nats_ws_port = get_nats_ports()
+    mesh_port = getattr(settings, "MESH_PORT", 4430)
+
+    ret = {
+        "version": settings.TRMM_VERSION,
+        "latest_agent_version": settings.LATEST_AGENT_VER,
+        "agent_count": Agent.objects.count(),
+        "client_count": Client.objects.count(),
+        "site_count": Site.objects.count(),
+        "disk_usage_percent": disk_usage,
+        "mem_usage_percent": mem_usage,
+        "days_until_cert_expires": delta.days,
+        "cert_expired": delta.days < 0,
+        "redis_ping": redis_ping,
+        "celery_queue_len": queue_len,
+        "celery_queue_health": celery_queue_health,
+        "nats_std_ping": localhost_port_is_open(nats_std_port),
+        "nats_ws_ping": localhost_port_is_open(nats_ws_port),
+        "mesh_ping": localhost_port_is_open(mesh_port),
+        "services_running": {
+            "mesh": sysd_svc_is_running("meshcentral.service"),
+            "daphne": sysd_svc_is_running("daphne.service"),
+            "celery": sysd_svc_is_running("celery.service"),
+            "celerybeat": sysd_svc_is_running("celerybeat.service"),
+            "redis": sysd_svc_is_running("redis-server.service"),
+            "nats": sysd_svc_is_running("nats.service"),
+            "nats-api": sysd_svc_is_running("nats-api.service"),
+        }
+    }
+    
+    return JsonResponse(ret, json_dumps_params={"indent": 2})
+
+
+## TODO deprecated
 @csrf_exempt
 @monitoring_view
 def status(request):

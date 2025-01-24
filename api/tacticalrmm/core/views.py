@@ -617,9 +617,9 @@ def status_v2(request):
             "redis": sysd_svc_is_running("redis-server.service"),
             "nats": sysd_svc_is_running("nats.service"),
             "nats-api": sysd_svc_is_running("nats-api.service"),
-        }
+        },
     }
-    
+
     return JsonResponse(ret, json_dumps_params={"indent": 2})
 
 

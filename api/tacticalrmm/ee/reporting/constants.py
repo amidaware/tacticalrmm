@@ -7,6 +7,7 @@ For details, see: https://license.tacticalrmm.com/ee
 # (Model, app)
 REPORTING_MODELS = (
     ("Agent", "agents"),
+    ("Note", "agents"),
     ("AgentCustomField", "agents"),
     ("AgentHistory", "agents"),
     ("Alert", "alerts"),

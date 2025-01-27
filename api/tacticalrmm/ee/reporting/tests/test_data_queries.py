@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytest
 from agents.models import Agent
+from clients.models import Client, Site
 from django.apps import apps
 from model_bakery import baker
 
@@ -15,7 +16,7 @@ from ..constants import REPORTING_MODELS
 from ..utils import (
     InvalidDBOperationException,
     ResolveModelException,
-    add_custom_fields,
+    create_dynamic_serializer,
     build_queryset,
     resolve_model,
 )
@@ -55,6 +56,87 @@ class TestResolvingModels:
         ):
             resolve_model(data_source=data_source)
 
+
+@pytest.mark.django_db()
+class TestPropertiesExist:
+    def test_properties_exist_on_agent(self):
+        from ..constants import AGENT_PROPERTIES
+
+        model = baker.make("agents.Agent")
+        for property in AGENT_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_agent_custom_field(self):
+        from ..constants import AGENT_CUSTOM_FIELD_PROPERTIES
+
+        model = baker.make("agents.AgentCustomField")
+        for property in AGENT_CUSTOM_FIELD_PROPERTIES:
+            print(property)
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_alert(self):
+        from ..constants import ALERT_PROPERTIES
+
+        agent = baker.make_recipe("agents.agent")
+        model = baker.make("alerts.Alert", agent=agent)
+        for property in ALERT_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_policy(self):
+        from ..constants import POLICY_PROPERTIES
+
+        model = baker.make("automation.Policy")
+        for property in POLICY_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_autotask(self):
+        from ..constants import AUTOMATED_TASK_PROPERTIES
+
+        model = baker.make("autotasks.AutomatedTask")
+        for property in AUTOMATED_TASK_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_check_result(self):
+        from ..constants import CHECK_RESULT_PROPERTIES
+
+        model = baker.make("checks.CheckResult")
+        for property in CHECK_RESULT_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_check(self):
+        from ..constants import CHECK_PROPERTIES
+
+        model = baker.make("checks.Check")
+        for property in CHECK_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_client(self):
+        from ..constants import CLIENT_PROPERTIES
+
+        model = baker.make("clients.Client")
+        for property in CLIENT_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_site(self):
+        from ..constants import SITE_PROPERTIES
+
+        model = baker.make("clients.Site")
+        for property in SITE_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_client_custom_field(self):
+        from ..constants import CLIENT_CUSTOM_FIELD_PROPERTIES
+
+        model = baker.make("clients.ClientCustomField")
+        for property in CLIENT_CUSTOM_FIELD_PROPERTIES:
+            assert hasattr(model, property)
+
+    def test_properties_exist_on_site_custom_field(self):
+        from ..constants import SITE_CUSTOM_FIELD_PROPERTIES
+
+        model = baker.make("clients.SiteCustomField")
+        for property in SITE_CUSTOM_FIELD_PROPERTIES:
+            assert hasattr(model, property)
 
 @patch("agents.models.Agent.objects.using", return_value=Agent.objects.using("default"))
 @pytest.mark.django_db()
@@ -97,15 +179,6 @@ class TestBuildingQueryset:
             assert "hostname" in agent_data
             assert "operating_system" in agent_data
             assert "plat" not in agent_data
-
-    def test_build_queryset_id_is_appended_if_only_exists(self, mock, setup_agents):
-        data_source = {"model": Agent, "only": ["hostname"]}
-
-        result = build_queryset(data_source=data_source)
-
-        assert len(result) == 2
-        for agent_data in result:
-            assert "id" in agent_data
 
     def test_build_queryset_filter_operation(self, mock, setup_agents):
         data_source = {
@@ -254,14 +327,15 @@ class TestBuildingQueryset:
         assert "Operating System" in result.split("\n")[0]
 
     def test_build_queryset_custom_fields(self, mock, setup_agents):
+
         default_value = "Default Value"
 
         field1 = baker.make(
-            "core.CustomField", name="custom_1", model="agent", type="text"
+            "core.CustomField", name="custom1", model="agent", type="text", default_value_string=default_value,
         )
         baker.make(
             "core.CustomField",
-            name="custom_2",
+            name="custom2",
             model="agent",
             type="text",
             default_value_string=default_value,
@@ -269,29 +343,27 @@ class TestBuildingQueryset:
 
         baker.make(
             "agents.AgentCustomField",
-            agent=setup_agents[0],
             field=field1,
+            agent=setup_agents[0],
             string_value="Agent1",
         )
         baker.make(
             "agents.AgentCustomField",
-            agent=setup_agents[1],
             field=field1,
+            agent=setup_agents[1],
             string_value="Agent2",
         )
 
-        data_source = {"model": Agent, "custom_fields": ["custom_1", "custom_2"]}
-
+        data_source = {"model": Agent, "custom_fields": ["custom1", "custom2"], "only": ["hostname"]}
         result = build_queryset(data_source=data_source)
-        assert len(result) == 2
 
         # check agent 1
-        assert result[0]["custom_fields"]["custom_1"] == "Agent1"
-        assert result[0]["custom_fields"]["custom_2"] == default_value
+        assert result[0]["custom_fields"]["custom1"] == "Agent1"
+        assert result[0]["custom_fields"]["custom2"] == default_value
 
         # check agent 2
-        assert result[1]["custom_fields"]["custom_1"] == "Agent2"
-        assert result[1]["custom_fields"]["custom_2"] == default_value
+        assert result[1]["custom_fields"]["custom1"] == "Agent2"
+        assert result[1]["custom_fields"]["custom2"] == default_value
 
     def test_build_queryset_filter_only_json_combination(self, mock, setup_agents):
         import json
@@ -405,18 +477,62 @@ class TestBuildingQueryset:
 
         assert isinstance(parsed_result, list)
 
+    def test_build_queryset_with_computed_properties(self, mock, setup_agents):
+        data_source = {"model": Agent, "properties": ["status", "checks"]}
+
+        result = build_queryset(data_source=data_source)
+
+        assert len(result) == 2
+        assert "status" in result[0]
+        assert "checks" in result[1]
+
+    def test_build_queryset_with_computed_properties_and_only(self, mock, setup_agents):
+        data_source = {"model": Agent, "only": ["hostname", "plat"], "properties": ["status", "checks"]}
+
+        result = build_queryset(data_source=data_source)
+
+        assert len(result) == 2
+        assert "status" in result[0]
+        assert "checks" in result[0]
+        assert "hostname" in result[0]
+        assert "plat" in result[0]
+        assert "operating_system" not in result[0]
+
+    def test_build_queryset_with_computed_properties_only_and_defer(self, mock, setup_agents):
+        data_source = {"model": Agent, "defer": ["plat"], "only": ["hostname", "plat"], "properties": ["status", "checks"]}
+
+        result = build_queryset(data_source=data_source)
+
+        assert len(result) == 2
+        assert "status" in result[0]
+        assert "checks" in result[0]
+        assert "hostname" in result[0]
+        assert "plat" not in result[0]
+        assert "operating_system" not in result[0]
+
+    def test_build_queryset_with_invalid_computed_properties(self, mock, setup_agents):
+        data_source = {"model": Agent, "properties": ["status", "checks", "invalid", "save"]}
+
+        result = build_queryset(data_source=data_source)
+
+        assert len(result) == 2
+        assert "status" in result[0]
+        assert "checks" in result[0]
+        assert "invalid" not in result[0]
+        assert "save" not in result[0]
+
 
 @pytest.mark.django_db
 class TestAddingCustomFields:
     @pytest.mark.parametrize(
-        "model_name,custom_field_model",
+        "model,model_name,custom_field_model",
         [
-            ("agent", "agents.AgentCustomField"),
-            ("client", "clients.ClientCustomField"),
-            ("site", "clients.SiteCustomField"),
+            (Agent, "agent", "agents.AgentCustomField"),
+            (Client, "client", "clients.ClientCustomField"),
+            (Site, "site", "clients.SiteCustomField"),
         ],
     )
-    def test_add_custom_fields_with_list_of_dicts(self, model_name, custom_field_model):
+    def test_add_custom_fields_with_list_of_dicts(self, model, model_name, custom_field_model):
         custom_field = baker.make("core.CustomField", name="field1", model=model_name)
         default_value = "Default Value"
         baker.make(
@@ -433,16 +549,12 @@ class TestAddingCustomFields:
             custom_field_model, field=custom_field, string_value="Value"
         )
 
-        data = [
-            {"id": getattr(custom_model_instance1, f"{model_name}_id")},
-            {"id": getattr(custom_model_instance2, f"{model_name}_id")},
-        ]
         fields_to_add = ["field1", "field2"]
-        result = add_custom_fields(
-            data=data, fields_to_add=fields_to_add, model_name=model_name
+        serializer_class = create_dynamic_serializer(
+            Model=model, custom_fields=fields_to_add
         )
+        result = serializer_class(model.objects.all(), many=True).data
 
-        # Assert logic here based on what you expect the result to be
         assert result[0]["custom_fields"]["field1"] == custom_model_instance1.value
         assert result[1]["custom_fields"]["field1"] == custom_model_instance2.value
 
@@ -450,40 +562,38 @@ class TestAddingCustomFields:
         assert result[1]["custom_fields"]["field2"] == default_value
 
     @pytest.mark.parametrize(
-        "model_name,custom_field_model",
+        "model,model_name,custom_field_model",
         [
-            ("agent", "agents.AgentCustomField"),
-            ("client", "clients.ClientCustomField"),
-            ("site", "clients.SiteCustomField"),
+            (Agent, "agent", "agents.AgentCustomField"),
+            (Client, "client", "clients.ClientCustomField"),
+            (Site, "site", "clients.SiteCustomField"),
         ],
     )
-    def test_add_custom_fields_to_dictionary(self, model_name, custom_field_model):
+    def test_add_custom_fields_to_dictionary(self, model, model_name, custom_field_model):
         custom_field = baker.make("core.CustomField", name="field1", model=model_name)
         custom_model_instance = baker.make(
             custom_field_model, field=custom_field, string_value="default_value"
         )
 
-        data = {"id": getattr(custom_model_instance, f"{model_name}_id")}
         fields_to_add = ["field1"]
-        result = add_custom_fields(
-            data=data,
-            fields_to_add=fields_to_add,
-            model_name=model_name,
-            dict_value=True,
-        )
 
-        # Assert logic here based on what you expect the result to be
+        serializer_class = create_dynamic_serializer(
+            Model=model,
+            custom_fields=fields_to_add,
+        )
+        result = serializer_class(model.objects.first()).data
+
         assert result["custom_fields"]["field1"] == custom_model_instance.value
 
     @pytest.mark.parametrize(
-        "model_name",
+        "model,model_name",
         [
-            "agent",
-            "client",
-            "site",
+            (Agent, "agent"),
+            (Client, "client"),
+            (Site, "site"),
         ],
     )
-    def test_add_custom_fields_with_default_value(self, model_name):
+    def test_add_custom_fields_with_default_value(self, model, model_name):
         default_value = "default_value"
         baker.make(
             "core.CustomField",
@@ -492,16 +602,16 @@ class TestAddingCustomFields:
             default_value_string=default_value,
         )
 
-        # Note: Not creating an instance of the custom_field_model here to ensure the default value is used
+        baker.make(model)
 
-        data = {"id": 999}  # ID not associated with any custom field model instance
+        # Not creating an instance of the custom_field_model here to ensure the default value is used
+
         fields_to_add = ["field1"]
-        result = add_custom_fields(
-            data=data,
-            fields_to_add=fields_to_add,
-            model_name=model_name,
-            dict_value=True,
+        serializer_class = create_dynamic_serializer(
+            Model=model,
+            custom_fields=fields_to_add,
         )
+        result = serializer_class(model.objects.first()).data
 
         # Assert that the default value is used
         assert result["custom_fields"]["field1"] == default_value

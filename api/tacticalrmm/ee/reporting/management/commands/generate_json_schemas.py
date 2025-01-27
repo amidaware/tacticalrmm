@@ -11,7 +11,11 @@ from django.apps import apps
 from django.conf import settings as djangosettings
 from django.core.management.base import BaseCommand
 
-from ...constants import REPORTING_MODELS
+from ee.reporting.constants import (
+    REPORTING_MODELS,
+    PROPERTIES_MAP,
+)
+
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -127,6 +131,10 @@ def generate_schema() -> None:
                         },
                     },
                     "order_by": {"type": "string", "enum": order_by},
+                    "properties" : {
+                        "type": "array",
+                       "items": {"type": "string", "minimum": 1, "enum": PROPERTIES_MAP[model.upper()] if model.upper() in PROPERTIES_MAP else []} 
+                    }
                 },
             }
         )

@@ -9,7 +9,7 @@ import inspect
 import json
 import re
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple, cast
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -22,7 +22,7 @@ from weasyprint.text.fonts import FontConfiguration
 from tacticalrmm.utils import get_db_value
 
 from . import custom_filters
-from .constants import REPORTING_MODELS
+from .constants import REPORTING_MODELS, PROPERTIES_MAP
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 from tacticalrmm.utils import RE_DB_VALUE
@@ -208,6 +208,7 @@ class AllowedOperations(Enum):
     ALL = "all"
     # custom fields
     CUSTOM_FIELDS = "custom_fields"
+    PROPERTIES = "properties"
     # presentation
     JSON = "json"
     CSV = "csv"
@@ -222,10 +223,76 @@ class AllowedOperations(Enum):
     # ordering
     ORDER_BY = "order_by"
 
-
 class InvalidDBOperationException(Exception):
     pass
 
+
+def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
+    from rest_framework import serializers
+
+    if fields and defer:
+        fields = [field for field in fields if field not in defer]
+    elif not fields and defer:
+        fields = [f.name for f in Model._meta.local_fields if f.name not in defer]
+
+    model_name = Model.__name__.lower()
+
+    serializer_fields = {}
+
+    if custom_fields:
+        from agents.models import AgentCustomField
+        from clients.models import ClientCustomField, SiteCustomField
+        from core.models import CustomField
+        custom_field_models = {
+            "agent": AgentCustomField,
+            "client": ClientCustomField,
+            "site": SiteCustomField,
+        }
+
+        custom_field_objects = None
+        custom_field_objects = CustomField.objects.filter(name__in=custom_fields, model=model_name)
+
+        CustomFieldModel = custom_field_models.get(model_name)
+        if not CustomFieldModel and custom_fields:
+            raise ValueError(f"Unsupported model name: {model_name}")
+
+        if fields:
+            fields.append("custom_fields")
+
+        # serializer method field
+        def get_custom_fields(self, obj):
+            custom_field_data = CustomFieldModel.objects.select_related("field").filter(
+                field__name__in=custom_fields,
+                **{f"{model_name}_id": obj.id}
+            )
+
+            custom_field_map = {
+                custom_field.name: next(
+                    (cf.value for cf in custom_field_data if cf.field_id == custom_field.id),
+                    custom_field.default_value,
+                )
+                for custom_field in custom_field_objects
+            }
+
+            return custom_field_map
+
+        # these fields will be on the final serializer class
+        serializer_fields["custom_fields"] = serializers.SerializerMethodField(method_name="get_custom_fields")
+        serializer_fields["get_custom_fields"] = get_custom_fields
+
+    Meta = type(
+        "Meta",
+        (object,),
+        {"model": Model, "fields": fields or "__all__"}
+    )
+
+    serializer_class = type(
+        f"{Model.__name__}DynamicSerializer",
+        (serializers.ModelSerializer,),
+        {"Meta": Meta, **serializer_fields},
+    )
+
+    return serializer_class
 
 def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) -> Any:
     local_data_source = data_source
@@ -237,37 +304,35 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     isJson = False
     isCsv = False
     csv_columns = {}
-    defer = local_data_source.get("defer", None)
-    columns = local_data_source.get("only", None)
-    fields_to_add = []
+    columns = local_data_source.get("only", [])
+    defer = local_data_source.get("defer", [])
+    properties = local_data_source.pop("properties", [])
+    custom_fields = local_data_source.pop("custom_fields", [])
 
-    # create a base reporting queryset
+    # make sure approved properties are in the list
+    if properties:
+        model_name = Model.__name__.upper()
+        if model_name in PROPERTIES_MAP:
+            # remove any items not in the list
+            properties = [prop for prop in properties if prop in PROPERTIES_MAP[model_name]]
+        else:
+            # clear array in model doesn't have any properties
+            properties = []
+
     queryset = Model.objects.using("default")
-    model_name = Model.__name__.lower()
+
     for operation, values in local_data_source.items():
-        # Usage in the build_queryset function:
         if operation not in [op.value for op in AllowedOperations]:
             raise InvalidDBOperationException(
                 f"DB operation: {operation} not allowed. Supported operations: {', '.join(op.value for op in AllowedOperations)}"
             )
 
-        if operation == "meta":
-            continue
-        elif operation == "custom_fields" and isinstance(values, list):
-            from core.models import CustomField
-
-            if model_name in ("client", "site", "agent"):
-                fields = CustomField.objects.filter(model=model_name)
-                fields_to_add = [
-                    field for field in values if fields.filter(name=field).exists()
-                ]
-
-        elif operation == "limit":
+        if operation == "limit":
             limit = values
         elif operation == "count":
             count = True
         elif operation == "get":
-            # need to add a filter for the get if present
+             # need to add a filter for the get if present
             if isinstance(values, dict):
                 queryset = queryset.filter(**values)
             get = True
@@ -297,150 +362,50 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     if limit and not first and not get:
         queryset = queryset[:limit]
 
-    if columns:
-        # remove columns from only if defer is also present
-        if defer:
-            columns = [column for column in columns if column not in defer]
-        if "id" not in columns:
-            columns.append("id")
+    serializer_class = create_dynamic_serializer(
+        Model=Model,
+        fields=columns + properties,
+        defer=defer,
+        custom_fields=custom_fields
+    )
 
-        queryset = queryset.values(*columns)
-    elif defer:
-        # Since values seems to ignore only and defer, we need to get all columns and remove the defered ones.
-        # Then we can pass the rest of the columns in
-        included_fields = [
-            field.name for field in Model._meta.local_fields if field.name not in defer
-        ]
-        queryset = queryset.values(*included_fields)
-    else:
-        queryset = queryset.values()
-
+    # for dict result
     if get or first:
         if get:
             queryset = queryset.get()
         elif first:
             queryset = queryset.first()
 
-        if fields_to_add:
-            queryset = add_custom_fields(
-                data=queryset,
-                fields_to_add=fields_to_add,
-                model_name=model_name,
-                dict_value=True,
-            )
+        serializer = serializer_class(queryset)
+        result = serializer.data
 
         if isJson:
-            return json.dumps(queryset, default=str)
+            return json.dumps(result, default=str)
         elif isCsv:
             import pandas as pd
-
-            df = pd.DataFrame.from_dict([queryset])
-            df.drop("id", axis=1, inplace=True)
+            df = pd.DataFrame([result])
             if csv_columns:
                 df = df.rename(columns=csv_columns)
             return df.to_csv(index=False)
         else:
-            return queryset
+            return result
+    # for list result
     else:
-        # add custom fields for list results
-        queryset = list(queryset)
-
-        if fields_to_add:
-            queryset = add_custom_fields(
-                data=queryset, fields_to_add=fields_to_add, model_name=model_name
-            )
+        serializer = serializer_class(queryset, many=True)
+        result = serializer.data
 
         if isJson:
-            return json.dumps(queryset, default=str)
+            return json.dumps(result, default=str)
         elif isCsv:
             import pandas as pd
-
-            df = pd.DataFrame.from_dict(queryset)
-            df.drop("id", axis=1, inplace=True)
+            df = pd.DataFrame(result)
             if csv_columns:
                 df = df.rename(columns=csv_columns)
             return df.to_csv(index=False)
         else:
-            return queryset
+            return result
 
-
-def add_custom_fields(
-    *,
-    data: Union[Dict[str, Any], List[Dict[str, Any]]],
-    fields_to_add: List[str],
-    model_name: Literal["client", "site", "agent"],
-    dict_value: bool = False,
-) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
-    from agents.models import AgentCustomField
-    from clients.models import ClientCustomField, SiteCustomField
-    from core.models import CustomField
-
-    model_name = model_name.lower()
-    CustomFieldModel: Union[
-        Type[AgentCustomField], Type[ClientCustomField], Type[SiteCustomField]
-    ]
-    if model_name == "agent":
-        CustomFieldModel = AgentCustomField
-    elif model_name == "client":
-        CustomFieldModel = ClientCustomField
-    else:
-        CustomFieldModel = SiteCustomField
-
-    custom_fields = CustomField.objects.filter(name__in=fields_to_add, model=model_name)
-
-    if dict_value:
-        custom_field_data = list(
-            CustomFieldModel.objects.select_related("field").filter(
-                field__name__in=fields_to_add, **{f"{model_name}_id": data["id"]}
-            )
-        )
-        # hold custom field data on the returned object
-        data["custom_fields"]: Dict[str, Any] = {}
-
-        for custom_field in custom_fields:
-            find_custom_field_data = next(
-                (cf for cf in custom_field_data if cf.field_id == custom_field.id),
-                None,
-            )
-
-            if find_custom_field_data is not None:
-                data["custom_fields"][custom_field.name] = find_custom_field_data.value
-            else:
-                data["custom_fields"][custom_field.name] = custom_field.default_value
-
-        return data
-    else:
-        ids = [row["id"] for row in data]
-        custom_field_data = list(
-            CustomFieldModel.objects.select_related("field").filter(
-                field__name__in=fields_to_add, **{f"{model_name}_id__in": ids}
-            )
-        )
-
-        for row in data:
-            row["custom_fields"]: Dict[str, Any] = {}
-
-            for custom_field in custom_fields:
-                find_custom_field_data = next(
-                    (
-                        cf
-                        for cf in custom_field_data
-                        if cf.field_id == custom_field.id
-                        and getattr(cf, f"{model_name}_id") == row["id"]
-                    ),
-                    None,
-                )
-
-                if find_custom_field_data is not None:
-                    row["custom_fields"][
-                        custom_field.name
-                    ] = find_custom_field_data.value
-                else:
-                    row["custom_fields"][custom_field.name] = custom_field.default_value
-
-        return data
-
-
+        
 def normalize_asset_url(text: str, type: Literal["pdf", "html", "plaintext"]) -> str:
     new_text = text
     for url, id in RE_ASSET_URL.findall(text):

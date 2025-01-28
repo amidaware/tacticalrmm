@@ -13,7 +13,7 @@ from django.core.management.base import BaseCommand
 
 from ee.reporting.constants import (
     REPORTING_MODELS,
-    PROPERTIES_MAP,
+    get_property_fields,
 )
 
 
@@ -133,7 +133,7 @@ def generate_schema() -> None:
                     "order_by": {"type": "string", "enum": order_by},
                     "properties" : {
                         "type": "array",
-                       "items": {"type": "string", "minimum": 1, "enum": PROPERTIES_MAP[model.upper()] if model.upper() in PROPERTIES_MAP else []} 
+                       "items": {"type": "string", "minimum": 1, "enum": get_property_fields(Model)} 
                     }
                 },
             }

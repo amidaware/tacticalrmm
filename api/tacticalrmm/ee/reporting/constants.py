@@ -4,6 +4,25 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
+import inspect
+def get_property_fields(model_class):
+    """
+    Get all @property fields of a Django model.
+    """
+
+    model_name = model_class.__name__
+    # make sure model in is reporting models
+    if model_name not in [model for model, _ in REPORTING_MODELS]:
+        return []
+
+    # excluded properties
+    excluded = ["pk", "fields_that_trigger_task_update_on_agent"]
+
+    properties = [
+        name for name, _ in inspect.getmembers(model_class, lambda a: isinstance(a, property)) if name not in excluded
+    ]
+    return properties
+
 # (Model, app)
 REPORTING_MODELS = (
     ("Agent", "agents"),
@@ -30,79 +49,3 @@ REPORTING_MODELS = (
     ("WinUpdate", "winupdate"),
     ("WinUpdatePolicy", "winupdate"),
 )
-
-# supported @property fields
-AGENT_PROPERTIES = [
-    "client",
-    "timezone",
-    "is_posix",
-    "arch",
-    "status",
-    "checks",
-    "pending_actions_count",
-    "cpu_model",
-    "graphics",
-    "local_ips",
-    "make_model",
-    "physical_disks",
-    "serial_number",
-]
-
-AGENT_CUSTOM_FIELD_PROPERTIES = [
-    "value",
-]
-
-ALERT_PROPERTIES = [
-    "assigned_agent",
-    "site",
-    "client",
-    "get_result", 
-]
-
-POLICY_PROPERTIES = [
-    "is_default_server_policy",
-    "is_default_workstation_policy"
-]
-
-AUTOMATED_TASK_PROPERTIES = [
-    "schedule", 
-]
-
-CHECK_PROPERTIES = [
-    "readable_desc"
-]
-
-CHECK_RESULT_PROPERTIES = [
-    "history_info"
-]
-
-CLIENT_PROPERTIES = [
-    "live_agent_count",
-]
-
-SITE_PROPERTIES = [
-    "live_agent_count"
-]
-
-CLIENT_CUSTOM_FIELD_PROPERTIES = [
-    "value"
-]
-
-SITE_CUSTOM_FIELD_PROPERTIES = [
-    "value"
-]
-
-# import this
-PROPERTIES_MAP = {
-    "AGENT": AGENT_PROPERTIES,
-    "AGENTCUSTOMFIELD": AGENT_CUSTOM_FIELD_PROPERTIES,
-    "ALERT": ALERT_PROPERTIES,
-    "POLICY": POLICY_PROPERTIES,
-    "AUTOMATEDTASK": AUTOMATED_TASK_PROPERTIES,
-    "CHECK": CHECK_PROPERTIES,
-    "CHECKRESULT": CHECK_RESULT_PROPERTIES,
-    "CLIENT": CLIENT_PROPERTIES,
-    "SITE": SITE_PROPERTIES,
-    "CLIENTCUSTOMFIELD": CLIENT_CUSTOM_FIELD_PROPERTIES,
-    "SITECUSTOMFIELD": SITE_CUSTOM_FIELD_PROPERTIES,
-}

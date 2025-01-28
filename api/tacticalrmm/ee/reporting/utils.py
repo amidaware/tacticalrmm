@@ -22,7 +22,7 @@ from weasyprint.text.fonts import FontConfiguration
 from tacticalrmm.utils import get_db_value
 
 from . import custom_filters
-from .constants import REPORTING_MODELS, PROPERTIES_MAP
+from .constants import REPORTING_MODELS, get_property_fields
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 from tacticalrmm.utils import RE_DB_VALUE
@@ -311,13 +311,8 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
 
     # make sure approved properties are in the list
     if properties:
-        model_name = Model.__name__.upper()
-        if model_name in PROPERTIES_MAP:
-            # remove any items not in the list
-            properties = [prop for prop in properties if prop in PROPERTIES_MAP[model_name]]
-        else:
-            # clear array in model doesn't have any properties
-            properties = []
+        all_properties = get_property_fields(Model)
+        properties = [property for property in properties if property in all_properties]
 
     queryset = Model.objects.using("default")
 

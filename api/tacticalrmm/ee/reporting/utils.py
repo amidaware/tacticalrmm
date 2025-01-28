@@ -223,6 +223,7 @@ class AllowedOperations(Enum):
     # ordering
     ORDER_BY = "order_by"
 
+
 class InvalidDBOperationException(Exception):
     pass
 
@@ -243,6 +244,7 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
         from agents.models import AgentCustomField
         from clients.models import ClientCustomField, SiteCustomField
         from core.models import CustomField
+
         custom_field_models = {
             "agent": AgentCustomField,
             "client": ClientCustomField,
@@ -250,7 +252,9 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
         }
 
         custom_field_objects = None
-        custom_field_objects = CustomField.objects.filter(name__in=custom_fields, model=model_name)
+        custom_field_objects = CustomField.objects.filter(
+            name__in=custom_fields, model=model_name
+        )
 
         CustomFieldModel = custom_field_models.get(model_name)
         if not CustomFieldModel and custom_fields:
@@ -262,13 +266,16 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
         # serializer method field
         def get_custom_fields(self, obj):
             custom_field_data = CustomFieldModel.objects.select_related("field").filter(
-                field__name__in=custom_fields,
-                **{f"{model_name}_id": obj.id}
+                field__name__in=custom_fields, **{f"{model_name}_id": obj.id}
             )
 
             custom_field_map = {
                 custom_field.name: next(
-                    (cf.value for cf in custom_field_data if cf.field_id == custom_field.id),
+                    (
+                        cf.value
+                        for cf in custom_field_data
+                        if cf.field_id == custom_field.id
+                    ),
                     custom_field.default_value,
                 )
                 for custom_field in custom_field_objects
@@ -277,14 +284,12 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
             return custom_field_map
 
         # these fields will be on the final serializer class
-        serializer_fields["custom_fields"] = serializers.SerializerMethodField(method_name="get_custom_fields")
+        serializer_fields["custom_fields"] = serializers.SerializerMethodField(
+            method_name="get_custom_fields"
+        )
         serializer_fields["get_custom_fields"] = get_custom_fields
 
-    Meta = type(
-        "Meta",
-        (object,),
-        {"model": Model, "fields": fields or "__all__"}
-    )
+    Meta = type("Meta", (object,), {"model": Model, "fields": fields or "__all__"})
 
     serializer_class = type(
         f"{Model.__name__}DynamicSerializer",
@@ -293,6 +298,7 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
     )
 
     return serializer_class
+
 
 def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) -> Any:
     local_data_source = data_source
@@ -327,7 +333,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         elif operation == "count":
             count = True
         elif operation == "get":
-             # need to add a filter for the get if present
+            # need to add a filter for the get if present
             if isinstance(values, dict):
                 queryset = queryset.filter(**values)
             get = True
@@ -361,7 +367,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         Model=Model,
         fields=columns + properties,
         defer=defer,
-        custom_fields=custom_fields
+        custom_fields=custom_fields,
     )
 
     # for dict result
@@ -378,6 +384,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             return json.dumps(result, default=str)
         elif isCsv:
             import pandas as pd
+
             df = pd.DataFrame([result])
             if csv_columns:
                 df = df.rename(columns=csv_columns)
@@ -393,6 +400,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             return json.dumps(result, default=str)
         elif isCsv:
             import pandas as pd
+
             df = pd.DataFrame(result)
             if csv_columns:
                 df = df.rename(columns=csv_columns)
@@ -400,7 +408,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         else:
             return result
 
-        
+
 def normalize_asset_url(text: str, type: Literal["pdf", "html", "plaintext"]) -> str:
     new_text = text
     for url, id in RE_ASSET_URL.findall(text):

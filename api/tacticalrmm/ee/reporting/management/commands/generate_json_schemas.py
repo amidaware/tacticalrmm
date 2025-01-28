@@ -131,10 +131,14 @@ def generate_schema() -> None:
                         },
                     },
                     "order_by": {"type": "string", "enum": order_by},
-                    "properties" : {
+                    "properties": {
                         "type": "array",
-                       "items": {"type": "string", "minimum": 1, "enum": get_property_fields(Model)} 
-                    }
+                        "items": {
+                            "type": "string",
+                            "minimum": 1,
+                            "enum": get_property_fields(Model),
+                        },
+                    },
                 },
             }
         )

@@ -250,7 +250,11 @@ class TestBuildingQueryset:
         default_value = "Default Value"
 
         field1 = baker.make(
-            "core.CustomField", name="custom1", model="agent", type="text", default_value_string=default_value,
+            "core.CustomField",
+            name="custom1",
+            model="agent",
+            type="text",
+            default_value_string=default_value,
         )
         baker.make(
             "core.CustomField",
@@ -273,7 +277,11 @@ class TestBuildingQueryset:
             string_value="Agent2",
         )
 
-        data_source = {"model": Agent, "custom_fields": ["custom1", "custom2"], "only": ["hostname"]}
+        data_source = {
+            "model": Agent,
+            "custom_fields": ["custom1", "custom2"],
+            "only": ["hostname"],
+        }
         result = build_queryset(data_source=data_source)
 
         # check agent 1
@@ -406,7 +414,11 @@ class TestBuildingQueryset:
         assert "checks" in result[1]
 
     def test_build_queryset_with_computed_properties_and_only(self, mock, setup_agents):
-        data_source = {"model": Agent, "only": ["hostname", "plat"], "properties": ["status", "checks"]}
+        data_source = {
+            "model": Agent,
+            "only": ["hostname", "plat"],
+            "properties": ["status", "checks"],
+        }
 
         result = build_queryset(data_source=data_source)
 
@@ -417,8 +429,15 @@ class TestBuildingQueryset:
         assert "plat" in result[0]
         assert "operating_system" not in result[0]
 
-    def test_build_queryset_with_computed_properties_only_and_defer(self, mock, setup_agents):
-        data_source = {"model": Agent, "defer": ["plat"], "only": ["hostname", "plat"], "properties": ["status", "checks"]}
+    def test_build_queryset_with_computed_properties_only_and_defer(
+        self, mock, setup_agents
+    ):
+        data_source = {
+            "model": Agent,
+            "defer": ["plat"],
+            "only": ["hostname", "plat"],
+            "properties": ["status", "checks"],
+        }
 
         result = build_queryset(data_source=data_source)
 
@@ -430,7 +449,10 @@ class TestBuildingQueryset:
         assert "operating_system" not in result[0]
 
     def test_build_queryset_with_invalid_computed_properties(self, mock, setup_agents):
-        data_source = {"model": Agent, "properties": ["status", "checks", "invalid", "save"]}
+        data_source = {
+            "model": Agent,
+            "properties": ["status", "checks", "invalid", "save"],
+        }
 
         result = build_queryset(data_source=data_source)
 
@@ -451,7 +473,9 @@ class TestAddingCustomFields:
             (Site, "site", "clients.SiteCustomField"),
         ],
     )
-    def test_add_custom_fields_with_list_of_dicts(self, model, model_name, custom_field_model):
+    def test_add_custom_fields_with_list_of_dicts(
+        self, model, model_name, custom_field_model
+    ):
         custom_field = baker.make("core.CustomField", name="field1", model=model_name)
         default_value = "Default Value"
         baker.make(
@@ -488,7 +512,9 @@ class TestAddingCustomFields:
             (Site, "site", "clients.SiteCustomField"),
         ],
     )
-    def test_add_custom_fields_to_dictionary(self, model, model_name, custom_field_model):
+    def test_add_custom_fields_to_dictionary(
+        self, model, model_name, custom_field_model
+    ):
         custom_field = baker.make("core.CustomField", name="field1", model=model_name)
         custom_model_instance = baker.make(
             custom_field_model, field=custom_field, string_value="default_value"

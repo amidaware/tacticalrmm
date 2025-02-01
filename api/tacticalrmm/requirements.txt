@@ -13,7 +13,7 @@ django-rest-knox==4.2.0
 djangorestframework==3.15.2
 drf-spectacular==0.27.2
 hiredis==2.3.2
-kombu==5.3.7
+kombu==5.4.2
 meshctrl==0.1.15
 msgpack==1.1.0
 nats-py==2.9.0

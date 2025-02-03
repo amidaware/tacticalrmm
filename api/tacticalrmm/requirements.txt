@@ -41,7 +41,7 @@ websockets==13.1
 zipp==3.20.2
 pandas==2.2.3
 kaleido==0.2.1
-jinja2==3.1.4
+jinja2==3.1.5
 markdown==3.7
 plotly==5.24.1
 weasyprint==62.3

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="32"
+SCRIPT_VERSION="33"
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -95,7 +95,7 @@ else
     mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
 fi
 
-tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules /meshcentral
+tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules --exclude=/meshcentral/meshcentral-recordings /meshcentral
 
 if [ -d /etc/letsencrypt ]; then
     sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .

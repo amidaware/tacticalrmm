@@ -9,7 +9,7 @@ import inspect
 import json
 import re
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast, TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -26,6 +26,9 @@ from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 from tacticalrmm.utils import RE_DB_VALUE
+
+if TYPE_CHECKING:
+    from accounts import User
 
 RE_ASSET_URL = re.compile(
     r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))"
@@ -93,6 +96,7 @@ def generate_html(
     html_template: Optional[int] = None,
     variables: str = "",
     dependencies: Optional[Dict[str, int]] = None,
+    user: Optional["User"] = None
 ) -> Tuple[str, Dict[str, Any]]:
     if dependencies is None:
         dependencies = {}
@@ -118,7 +122,7 @@ def generate_html(
     tm = env.from_string(template_string)
 
     variables_dict = prep_variables_for_template(
-        variables=variables, dependencies=dependencies
+        variables=variables, dependencies=dependencies, user=user
     )
 
     return (tm.render(css=css, **variables_dict), variables_dict)
@@ -148,6 +152,7 @@ def prep_variables_for_template(
     variables: str,
     dependencies: Optional[Dict[str, Any]] = None,
     limit_query_results: Optional[int] = None,
+    user: Optional["User"] = None
 ) -> Dict[str, Any]:
     if not dependencies:
         dependencies = {}
@@ -163,7 +168,7 @@ def prep_variables_for_template(
     # replace the data_sources with the actual data from DB. This will be passed to the template
     # in the form of {{data_sources.data_source_name}}
     variables_dict = process_data_sources(
-        variables=variables_dict, limit_query_results=limit_query_results
+        variables=variables_dict, limit_query_results=limit_query_results, user=user
     )
 
     # generate and replace charts in the variables
@@ -227,7 +232,7 @@ class InvalidDBOperationException(Exception):
     pass
 
 
-def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) -> Any:
+def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None, user: Optional["User"] = None) -> Any:
     local_data_source = data_source
     Model = local_data_source.pop("model")
     count = False
@@ -242,7 +247,11 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     fields_to_add = []
 
     # create a base reporting queryset
-    queryset = Model.objects.using("default")
+    if user:
+        queryset = Model.objects.filter_by_role(user)
+    else:
+        queryset = Model.objects.using("default")
+
     model_name = Model.__name__.lower()
     for operation, values in local_data_source.items():
         # Usage in the build_queryset function:
@@ -494,7 +503,7 @@ def decode_base64_asset(asset: str) -> bytes:
 
 
 def process_data_sources(
-    *, variables: Dict[str, Any], limit_query_results: Optional[int] = None
+    *, variables: Dict[str, Any], limit_query_results: Optional[int] = None, user: Optional["User"] = None
 ) -> Dict[str, Any]:
     data_sources = variables.get("data_sources")
 
@@ -503,7 +512,7 @@ def process_data_sources(
             if isinstance(value, dict):
                 modified_datasource = resolve_model(data_source=value)
                 queryset = build_queryset(
-                    data_source=modified_datasource, limit=limit_query_results
+                    data_source=modified_datasource, limit=limit_query_results, user=user
                 )
                 data_sources[key] = queryset
 

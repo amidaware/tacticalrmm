@@ -244,7 +244,9 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
 
     for field_path in nested_fields:
         dot_notation_path = field_path.replace("__", ".")
-        serializer_fields[field_path] = serializers.ReadOnlyField(source=dot_notation_path)
+        serializer_fields[field_path] = serializers.ReadOnlyField(
+            source=dot_notation_path
+        )
 
     if custom_fields:
         from agents.models import AgentCustomField
@@ -292,12 +294,38 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
         )
         serializer_fields["get_custom_fields"] = get_custom_fields
 
+    # override to_representation
+    def to_representation(self, instance):
+
+        data = super(self.__class__, self).to_representation(instance)
+
+        for field_name, field in self.fields.items():
+
+            # override handling of datetime objects
+            if isinstance(
+                field,
+                (
+                    serializers.DateTimeField,
+                    serializers.DateField,
+                    serializers.TimeField,
+                ),
+            ):
+                value = getattr(instance, field.source, None)
+                if value is not None:
+                    data[field_name] = value
+
+        return data
+
+    serializer_fields["to_representation"] = to_representation
     Meta = type("Meta", (object,), {"model": Model, "fields": fields or "__all__"})
 
     serializer_class = type(
         f"{Model.__name__}DynamicSerializer",
         (serializers.ModelSerializer,),
-        {"Meta": Meta, **serializer_fields},
+        {
+            "Meta": Meta,
+            **serializer_fields,
+        },
     )
 
     return serializer_class
@@ -356,7 +384,9 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
                 continue
 
             # remove unnecessary select_related
-            filtered_select_related = [select for select in values if select.startswith(tuple(columns))]
+            filtered_select_related = [
+                select for select in values if select.startswith(tuple(columns))
+            ]
             if filtered_select_related:
                 queryset.select_related(filtered_select_related)
         elif isinstance(values, list):

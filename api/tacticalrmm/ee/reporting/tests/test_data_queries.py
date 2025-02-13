@@ -62,8 +62,12 @@ class TestResolvingModels:
 class TestBuildingQueryset:
     @pytest.fixture
     def setup_agents(self):
-        agent1 = baker.make("agents.Agent", hostname="ZAgent1", plat="windows")
-        agent2 = baker.make("agents.Agent", hostname="Agent2", plat="windows")
+        agent1 = baker.make_recipe(
+            "agents.online_agent", hostname="ZAgent1", plat="windows"
+        )
+        agent2 = baker.make_recipe(
+            "agents.online_agent", hostname="Agent2", plat="windows"
+        )
         return [agent1, agent2]
 
     def test_build_queryset_with_valid_model(self, mock, setup_agents):
@@ -466,7 +470,7 @@ class TestBuildingQueryset:
         data_source = {
             "model": Agent,
             "only": ["hostname", "site__name", "site__client__name"],
-            "first": True
+            "first": True,
         }
 
         result = build_queryset(data_source=data_source)
@@ -478,7 +482,7 @@ class TestBuildingQueryset:
         data_source = {
             "model": Agent,
             "select_related": ["site", "site__client"],
-            "first": True
+            "first": True,
         }
 
         # will ignore select_related since only is missing
@@ -489,7 +493,7 @@ class TestBuildingQueryset:
             "model": Agent,
             "only": ["site__name", "hostname"],
             "select_related": ["site", "site__client"],
-            "first": True
+            "first": True,
         }
 
         # will ignore select_related items if they aren't specified in only
@@ -498,7 +502,44 @@ class TestBuildingQueryset:
         assert "site__name" in result
         assert "site__client" not in result
 
+    def test_make_sure_datetime_fields_are_not_strings(self, mock, setup_agents):
+        from datetime import datetime
 
+        data_source = {
+            "model": Agent,
+            "only": ["hostname", "last_seen", "created_time"],
+            "first": True,
+        }
+
+        result = build_queryset(data_source=data_source)
+        print(result)
+
+        assert isinstance(result["last_seen"], datetime)
+        assert isinstance(result["created_time"], datetime)
+
+    def test_make_sure_related_datetime_fields_are_not_strings(
+        self, mock, setup_agents
+    ):
+        from datetime import datetime
+
+        data_source = {
+            "model": Agent,
+            "only": [
+                "hostname",
+                "last_seen",
+                "created_time",
+                "site__created_time",
+                "site__client__created_time",
+            ],
+            "first": True,
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert isinstance(result["last_seen"], datetime)
+        assert isinstance(result["created_time"], datetime)
+        assert isinstance(result["site__created_time"], datetime)
+        assert isinstance(result["site__client__created_time"], datetime)
 
 
 @pytest.mark.django_db

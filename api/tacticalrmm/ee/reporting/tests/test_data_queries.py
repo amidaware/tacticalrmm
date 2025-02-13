@@ -462,6 +462,44 @@ class TestBuildingQueryset:
         assert "invalid" not in result[0]
         assert "save" not in result[0]
 
+    def test_querying_nested_relations(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "only": ["hostname", "site__name", "site__client__name"],
+            "first": True
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert "site__name" in result
+        assert "site__client__name" in result
+
+    def test_skipping_select_related_if_only_missing(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "select_related": ["site", "site__client"],
+            "first": True
+        }
+
+        # will ignore select_related since only is missing
+        build_queryset(data_source=data_source)
+
+    def test_removing_not_needed_select_related(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "only": ["site__name", "hostname"],
+            "select_related": ["site", "site__client"],
+            "first": True
+        }
+
+        # will ignore select_related items if they aren't specified in only
+        result = build_queryset(data_source=data_source)
+
+        assert "site__name" in result
+        assert "site__client" not in result
+
+
+
 
 @pytest.mark.django_db
 class TestAddingCustomFields:

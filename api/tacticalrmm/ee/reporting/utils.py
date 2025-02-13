@@ -350,6 +350,15 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             if isinstance(values, dict):
                 csv_columns = values
             isCsv = True
+        elif operation == "select_related":
+            # don't process this if no columns are passed
+            if not columns:
+                continue
+
+            # remove unnecessary select_related
+            filtered_select_related = [select for select in values if select.startswith(tuple(columns))]
+            if filtered_select_related:
+                queryset.select_related(filtered_select_related)
         elif isinstance(values, list):
             queryset = getattr(queryset, operation)(*values)
         elif isinstance(values, dict):

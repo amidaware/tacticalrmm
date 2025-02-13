@@ -237,8 +237,14 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
         fields = [f.name for f in Model._meta.local_fields if f.name not in defer]
 
     model_name = Model.__name__.lower()
-
     serializer_fields = {}
+
+    # add readonly fields for nested relation fields
+    nested_fields = [f for f in fields if "__" in f]
+
+    for field_path in nested_fields:
+        dot_notation_path = field_path.replace("__", ".")
+        serializer_fields[field_path] = serializers.ReadOnlyField(source=dot_notation_path)
 
     if custom_fields:
         from agents.models import AgentCustomField
@@ -251,7 +257,6 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
             "site": SiteCustomField,
         }
 
-        custom_field_objects = None
         custom_field_objects = CustomField.objects.filter(
             name__in=custom_fields, model=model_name
         )
@@ -263,7 +268,6 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
         if fields:
             fields.append("custom_fields")
 
-        # serializer method field
         def get_custom_fields(self, obj):
             custom_field_data = CustomFieldModel.objects.select_related("field").filter(
                 field__name__in=custom_fields, **{f"{model_name}_id": obj.id}
@@ -283,7 +287,6 @@ def create_dynamic_serializer(Model, fields=[], defer=[], custom_fields=[]):
 
             return custom_field_map
 
-        # these fields will be on the final serializer class
         serializer_fields["custom_fields"] = serializers.SerializerMethodField(
             method_name="get_custom_fields"
         )

@@ -3,10 +3,25 @@
 SCRIPT_VERSION="86"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
-sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
-sudo apt install -y software-properties-common
-sudo apt update
-sudo apt install -y openssl
+ID_LIKE=$(grep ^ID_LIKE /etc/os-release | awk -F'[="]' '{print $3}')
+
+if [[ "${ID_LIKE}" == *rhel* ]]; then
+  if command -v dnf >/dev/null 2>&1; then
+    RHEL_PKG_MGR="dnf"
+  else
+    RHEL_PKG_MGR="yum"
+  fi
+fi
+
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
+  sudo apt install -y software-properties-common
+  sudo apt update
+  sudo apt install -y openssl
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  sudo $RHEL_PKG_MGR install -y epel-release
+  sudo $RHEL_PKG_MGR install -y curl wget gnupg2 ca-certificates openssl lsb_release
+fi
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -33,7 +48,9 @@ fi
 
 rm -f $TMP_FILE
 
-export DEBIAN_FRONTEND=noninteractive
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  export DEBIAN_FRONTEND=noninteractive
+fi
 
 if [ -d /rmm/api/tacticalrmm ]; then
   echo -ne "${RED}ERROR: Existing trmm installation found. The install script must be run on a clean server.${NC}\n"
@@ -61,7 +78,7 @@ relno=$(lsb_release -sr | cut -d. -f1)
 fullrelno=$(lsb_release -sr)
 
 not_supported() {
-  echo -ne "${RED}ERROR: Only Debian 11, Debian 12 and Ubuntu 22.04 are supported.${NC}\n"
+  echo -ne "${RED}ERROR: Only Debian 11, Debian 12, Ubuntu 22.04, and RHEL 7+ (and compatible derivatives) are supported.${NC}\n"
 }
 
 if [[ "$osname" == "debian" ]]; then
@@ -71,6 +88,11 @@ if [[ "$osname" == "debian" ]]; then
   fi
 elif [[ "$osname" == "ubuntu" ]]; then
   if [[ "$fullrelno" != "22.04" ]]; then
+    not_supported
+    exit 1
+  fi
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  if [[ "$relno" -lt 7 ]]; then
     not_supported
     exit 1
   fi
@@ -85,7 +107,7 @@ if dpkg -l | grep -qi turnkey; then
 fi
 
 if ps aux | grep -v grep | grep -qi webmin; then
-  echo -ne "${RED}Webmin running, should not be installed. Please use the official debian/ubuntu ISO.${NC}\n"
+  echo -ne "${RED}Webmin running, should not be installed. Please use the official debian/ubuntu or RHEL ISO.${NC}\n"
   exit 1
 fi
 
@@ -97,7 +119,11 @@ fi
 if [[ "$LANG" != *".UTF-8" ]]; then
   printf >&2 "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
   printf >&2 "${RED}Run the following command and change the default locale to your language of choice${NC}\n\n"
-  printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
+  if [[ "${ID_LIKE}" == *debian* ]]; then
+    printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
+  elif [[ "${ID_LIKE}" == *rhel* ]]; then
+    printf >&2 "${GREEN}sudo localectl set-locale LANG=<some language>.UTF-8${NC}\n\n"
+  fi
   printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
   exit 1
 fi
@@ -107,7 +133,6 @@ if [ "$arch" = "x86_64" ]; then
 else
   pgarch='arm64'
 fi
-postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
@@ -240,7 +265,12 @@ elif [[ "$byocert" = true ]]; then
   CERT_PUB_KEY=$fullchain_path
   sudo chown ${USER}:${USER} $CERT_PRIV_KEY $CERT_PUB_KEY
 else
-  sudo apt install -y certbot
+  if [[ "${ID_LIKE}" == *debian* ]]; then
+    sudo apt install -y certbot
+  elif [[ "${ID_LIKE}" == *rhel* ]]; then
+    sudo $RHEL_PKG_MGR install -y certbot
+  fi
+
   print_green 'Getting wildcard cert'
 
   sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
@@ -254,27 +284,51 @@ fi
 
 print_green 'Installing Nginx'
 
-sudo mkdir -p /etc/apt/keyrings
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  sudo mkdir -p /etc/apt/keyrings
+  wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
 
-wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
-
-nginxrepo="$(
-  cat <<EOF
+  nginxrepo="$(
+    cat <<EOF
 deb [signed-by=/etc/apt/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/$osname $codename nginx
 EOF
-)"
-echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
+  )"
+  echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
 
-sudo apt update
-sudo apt install -y nginx
+  sudo apt update
+  sudo apt install -y nginx
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  nginxrepo="$(
+    cat <<EOF
+[nginx]
+name=nginx repo
+baseurl=http://nginx.org/packages/rhel/\$releasever/\$basearch/
+gpgcheck=1
+enabled=1
+gpgkey=https://nginx.org/keys/nginx_signing.key
+EOF
+  )"
+  echo "${nginxrepo}" | sudo tee /etc/yum.repos.d/nginx.repo >/dev/null
+  sudo $RHEL_PKG_MGR makecache
+  sudo $RHEL_PKG_MGR install -y nginx
+fi
+
 sudo systemctl stop nginx
+
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  NGINX_USER="www-data"
+  NGINX_GROUP="www-data"
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  NGINX_USER="nginx"
+  NGINX_GROUP="nginx"
+fi
 
 nginxdefaultconf='/etc/nginx/nginx.conf'
 
 nginxconf="$(
   cat <<EOF
 worker_rlimit_nofile 1000000;
-user www-data;
+user ${NGINX_USER};
 worker_processes auto;
 pid /run/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
@@ -302,51 +356,115 @@ EOF
 )"
 echo "${nginxconf}" | sudo tee $nginxdefaultconf >/dev/null
 
-for i in sites-available sites-enabled; do
-  sudo mkdir -p /etc/nginx/$i
-done
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  for i in sites-available sites-enabled; do
+    sudo mkdir -p /etc/nginx/$i
+  done
+fi
 
 print_green 'Installing NodeJS'
 
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
 NODE_MAJOR=20
-echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-sudo apt update
-sudo apt install -y gcc g++ make
-sudo apt install -y nodejs
-sudo npm install -g npm
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+  sudo apt update
+  sudo apt install -y gcc g++ make
+  sudo apt install -y nodejs
+  sudo npm install -g npm
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  curl -fsSL https://rpm.nodesource.com/setup_$NODE_MAJOR.x | sudo -E bash - && sudo $RHEL_PKG_MGR install -y nodejs gcc-c++ make
+  sudo npm install -g npm
+fi
 
 print_green "Installing Python ${PYTHON_VER}"
 
-sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
-numprocs=$(nproc)
-cd ~
-wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
-tar -xf Python-${PYTHON_VER}.tgz
-cd Python-${PYTHON_VER}
-./configure --enable-optimizations
-make -j $numprocs
-sudo make altinstall
-cd ~
-sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+  numprocs=$(nproc)
+  cd ~
+  wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
+  tar -xf Python-${PYTHON_VER}.tgz
+  cd Python-${PYTHON_VER}
+  ./configure --enable-optimizations
+  make -j $numprocs
+  sudo make altinstall
+  cd ~
+  sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  REQUIRED_PACKAGES=("ncurses" "ncurses-devel" "ncurses-libs" "readline" "readline-devel" "sqlite" "sqlite-devel" "libsqlite3x" "libsqlite3x-devel")
+  for pkg in "${REQUIRED_PACKAGES[@]}"; do
+    if ! sudo $RHEL_PKG_MGR list installed "${pkg}" >/dev/null 2>&1; then
+      sudo $RHEL_PKG_MGR install -y "${pkg}"
+    fi
+  done
+
+  curl https://pyenv.run | bash
+
+  if ! grep -Fxq 'export PYENV_ROOT="$HOME/.pyenv"' ~/.bashrc; then
+    echo 'export PYENV_ROOT="$HOME/.pyenv"' >>~/.bashrc
+  fi
+  if ! grep -Fxq 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' ~/.bashrc; then
+    echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >>~/.bashrc
+  fi
+  # https://github.com/pyenv/pyenv/issues/264
+  if [ "$BASH_ENV" != "$HOME/.bashrc" ]; then
+    if ! grep -Fxq 'eval "$(pyenv init -)"' ~/.bashrc; then
+      echo 'eval "$(pyenv init -)"' >>~/.bashrc
+    fi
+  else
+    if ! grep -Fxq 'eval "$(pyenv init -)"' ~/.bash_profile; then
+      echo 'eval "$(pyenv init -)"' >>~/.bash_profile
+    fi
+  fi
+
+  export PYENV_ROOT="$HOME/.pyenv"
+  command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init -)"
+
+  pyenv install ${PYTHON_VER}
+  pyenv global ${PYTHON_VER}
+fi
 
 print_green 'Installing redis and git'
-sudo apt install -y redis git
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  sudo apt install -y redis git
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  sudo $RHEL_PKG_MGR install -y redis git
+fi
+sudo systemctl enable --now redis
 
 print_green 'Installing postgresql'
 
-echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  POSTGRESQL_SERVICE="postgresql"
 
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql-archive-keyring.gpg
-sudo apt update
-sudo apt install -y postgresql-15
-sleep 2
-sudo systemctl enable --now postgresql
+  postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
+  echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
-until pg_isready >/dev/null; do
-  echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
-  sleep 3
-done
+  wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql-archive-keyring.gpg
+  sudo apt update
+  sudo apt install -y postgresql-15
+  sleep 2
+  sudo systemctl enable --now $POSTGRESQL_SERVICE
+
+  until pg_isready >/dev/null; do
+    echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
+    sleep 3
+  done
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  POSTGRESQL_SERVICE="postgresql-15"
+
+  sudo $RHEL_PKG_MGR install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-${relno}-$(uname -m)/pgdg-redhat-repo-latest.noarch.rpm
+  sudo $RHEL_PKG_MGR install -y postgresql15-server postgresql15
+  sudo /usr/pgsql-15/bin/postgresql-15-setup initdb
+  sudo systemctl enable --now $POSTGRESQL_SERVICE
+
+  until /usr/pgsql-15/bin/pg_isready -h localhost -p 5432 >/dev/null; do
+    echo -ne "${GREEN}Waiting for PostgreSQL to be ready${NC}\n"
+    sleep 3
+  done
+fi
 
 print_green 'Creating database for trmm'
 
@@ -490,6 +608,21 @@ CORS_ORIGIN_WHITELIST = [
     "https://${frontenddomain}"
 ]
 
+CORS_ALLOW_HEADERS = [
+    'authorization',
+    'content-type',
+    'x-requested-with',
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -534,17 +667,26 @@ sudo chmod +x /usr/local/bin/nats-api
 
 print_green 'Installing the backend'
 
-# for weasyprint
-if [[ "$osname" == "debian" ]]; then
-  count=$(dpkg -l | grep -E "libpango-1.0-0|libpangoft2-1.0-0" | wc -l)
-  if ! [ "$count" -eq 2 ]; then
-    sudo apt install -y libpango-1.0-0 libpangoft2-1.0-0
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  # for weasyprint
+  if [[ "$osname" == "debian" ]]; then
+    count=$(dpkg -l | grep -E "libpango-1.0-0|libpangoft2-1.0-0" | wc -l)
+    if ! [ "$count" -eq 2 ]; then
+      sudo apt install -y libpango-1.0-0 libpangoft2-1.0-0
+    fi
+  elif [[ "$osname" == "ubuntu" ]]; then
+    count=$(dpkg -l | grep -E "libpango-1.0-0|libharfbuzz0b|libpangoft2-1.0-0" | wc -l)
+    if ! [ "$count" -eq 3 ]; then
+      sudo apt install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
+    fi
   fi
-elif [[ "$osname" == "ubuntu" ]]; then
-  count=$(dpkg -l | grep -E "libpango-1.0-0|libharfbuzz0b|libpangoft2-1.0-0" | wc -l)
-  if ! [ "$count" -eq 3 ]; then
-    sudo apt install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
-  fi
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  REQUIRED_PACKAGES=("pango" "pango-devel" "cairo" "cairo-devel" "libffi-devel")
+  for pkg in "${REQUIRED_PACKAGES[@]}"; do
+    if ! sudo $RHEL_PKG_MGR list installed "${pkg}" >/dev/null 2>&1; then
+      sudo $RHEL_PKG_MGR install -y "${pkg}"
+    fi
+  done
 fi
 
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
@@ -561,15 +703,15 @@ cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
-python manage.py migrate
-python manage.py generate_json_schemas
-python manage.py collectstatic --no-input
-python manage.py create_natsapi_conf
-python manage.py create_uwsgi_conf
-python manage.py load_chocos
-python manage.py load_community_scripts
-WEB_VERSION=$(python manage.py get_config webversion)
-WEBTAR_URL=$(python manage.py get_webtar_url)
+python3.11 manage.py migrate
+python3.11 manage.py generate_json_schemas
+python3.11 manage.py collectstatic --no-input
+python3.11 manage.py create_natsapi_conf
+python3.11 manage.py create_uwsgi_conf
+python3.11 manage.py load_chocos
+python3.11 manage.py load_community_scripts
+WEB_VERSION=$(python3.11 manage.py get_config webversion)
+WEBTAR_URL=$(python3.11 manage.py get_webtar_url)
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website${NC}\n"
@@ -577,11 +719,11 @@ printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 echo -ne "Username: "
 read djangousername
-python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
-python manage.py create_installer_user
-RANDBASE=$(python manage.py generate_totp)
+python3.11 manage.py createsuperuser --username ${djangousername} --email ${letsemail}
+python3.11 manage.py create_installer_user
+RANDBASE=$(python3.11 manage.py generate_totp)
 cls
-python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
+python3.11 manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
@@ -589,13 +731,14 @@ rmmservice="$(
   cat <<EOF
 [Unit]
 Description=tacticalrmm uwsgi daemon
-After=network.target postgresql.service
+After=network.target ${POSTGRESQL_SERVICE}.service
 
 [Service]
 User=${USER}
-Group=www-data
+Group=${NGINX_GROUP}
 WorkingDirectory=/rmm/api/tacticalrmm
-Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYENV_ROOT=%h/.pyenv"
+Environment="PATH=%h/.pyenv/shims:%h/.pyenv/bin:/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/uwsgi --ini app.ini
 Restart=always
 RestartSec=10s
@@ -614,9 +757,10 @@ After=network.target
 
 [Service]
 User=${USER}
-Group=www-data
+Group=${NGINX_GROUP}
 WorkingDirectory=/rmm/api/tacticalrmm
-Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYENV_ROOT=%h/.pyenv"
+Environment="PATH=%h/.pyenv/shims:%h/.pyenv/bin:/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' tacticalrmm.asgi:application
 ExecStartPre=rm -f /rmm/daphne.sock
 ExecStartPre=rm -f /rmm/daphne.sock.lock
@@ -764,7 +908,11 @@ server {
 }
 EOF
 )"
-echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  echo "${nginxrmm}" | sudo tee /etc/nginx/conf.d/rmm.conf >/dev/null
+fi
 
 nginxmesh="$(
   cat <<EOF
@@ -809,10 +957,16 @@ server {
 }
 EOF
 )"
-echo "${nginxmesh}" | sudo tee /etc/nginx/sites-available/meshcentral.conf >/dev/null
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  echo "${nginxmesh}" | sudo tee /etc/nginx/sites-available/meshcentral.conf >/dev/null
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  echo "${nginxmesh}" | sudo tee /etc/nginx/conf.d/meshcentral.conf >/dev/null
+fi
 
-sudo ln -s /etc/nginx/sites-available/rmm.conf /etc/nginx/sites-enabled/rmm.conf
-sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/meshcentral.conf
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  sudo ln -s /etc/nginx/sites-available/rmm.conf /etc/nginx/sites-enabled/rmm.conf
+  sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/meshcentral.conf
+fi
 
 sudo mkdir /etc/conf.d
 
@@ -820,12 +974,14 @@ celeryservice="$(
   cat <<EOF
 [Unit]
 Description=Celery Service V2
-After=network.target redis-server.service postgresql.service
+After=network.target redis-server.service ${POSTGRESQL_SERVICE}.service
 
 [Service]
 Type=forking
 User=${USER}
 Group=${USER}
+Environment="PYENV_ROOT=%h/.pyenv"
+Environment="PATH=%h/.pyenv/shims:%h/.pyenv/bin"
 EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
@@ -866,12 +1022,14 @@ celerybeatservice="$(
   cat <<EOF
 [Unit]
 Description=Celery Beat Service V3
-After=network.target redis-server.service postgresql.service
+After=network.target redis-server.service ${POSTGRESQL_SERVICE}.service
 
 [Service]
 Type=simple
 User=${USER}
 Group=${USER}
+Environment="PYENV_ROOT=%h/.pyenv"
+Environment="PATH=%h/.pyenv/shims:%h/.pyenv/bin"
 EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
@@ -891,7 +1049,7 @@ meshservice="$(
   cat <<EOF
 [Unit]
 Description=MeshCentral Server
-After=network.target postgresql.service nginx.service
+After=network.target ${POSTGRESQL_SERVICE}.service nginx.service
 [Service]
 Type=simple
 LimitNOFILE=1000000
@@ -926,7 +1084,7 @@ wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo mkdir -p /var/www/rmm
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
 echo "window._env_ = {PROD_URL: \"https://${rmmdomain}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null
-sudo chown www-data:www-data -R /var/www/rmm/dist
+sudo chown $NGINX_USER:$NGINX_GROUP -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
 
 nginxfrontend="$(
@@ -969,9 +1127,15 @@ server {
 }
 EOF
 )"
-echo "${nginxfrontend}" | sudo tee /etc/nginx/sites-available/frontend.conf >/dev/null
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  echo "${nginxfrontend}" | sudo tee /etc/nginx/sites-available/frontend.conf >/dev/null
+elif [[ "${ID_LIKE}" == *rhel* ]]; then
+  echo "${nginxfrontend}" | sudo tee /etc/nginx/conf.d/frontend.conf >/dev/null
+fi
 
-sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/frontend.conf
+if [[ "${ID_LIKE}" == *debian* ]]; then
+  sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/frontend.conf
+fi
 
 print_green 'Enabling Services'
 
@@ -1034,9 +1198,9 @@ sleep 1
 sudo systemctl enable nats.service
 cd /rmm/api/tacticalrmm
 source /rmm/api/env/bin/activate
-python manage.py initial_db_setup
-python manage.py reload_nats
-python manage.py sync_mesh_with_trmm
+python3.11 manage.py initial_db_setup
+python3.11 manage.py reload_nats
+python3.11 manage.py sync_mesh_with_trmm
 deactivate
 sudo systemctl start nats.service
 
@@ -1046,6 +1210,10 @@ sudo systemctl start nats-api.service
 
 ## disable django admin
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' $local_settings
+
+sudo chmod 755 /rmm/api/tacticalrmm
+sudo chmod 755 /rmm/api
+sudo chmod 755 /rmm
 
 print_green 'Restarting services'
 for i in rmm.service daphne.service celery.service celerybeat.service; do

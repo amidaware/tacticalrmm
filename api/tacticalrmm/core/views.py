@@ -107,7 +107,11 @@ def clear_cache(request):
 @api_view()
 def dashboard_info(request):
     from core.utils import token_is_expired
-    from tacticalrmm.utils import get_latest_trmm_ver, runcmd_placeholder_text
+    from tacticalrmm.utils import (
+        get_latest_trmm_ver,
+        runcmd_placeholder_text,
+        certexpiry_notification_text,
+    )
 
     core_settings = get_core_settings()
     return Response(
@@ -135,6 +139,7 @@ def dashboard_info(request):
             "dash_negative_color": request.user.dash_negative_color,
             "dash_warning_color": request.user.dash_warning_color,
             "run_cmd_placeholder_text": runcmd_placeholder_text(),
+            "certexpiry_notification_text": certexpiry_notification_text(),
             "server_scripts_enabled": core_settings.server_scripts_enabled,
             "web_terminal_enabled": core_settings.web_terminal_enabled,
             "block_local_user_logon": core_settings.block_local_user_logon,

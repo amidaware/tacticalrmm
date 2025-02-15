@@ -468,3 +468,7 @@ def runcmd_placeholder_text() -> dict[str, str]:
         ),
     }
     return ret
+
+
+def certexpiry_notification_text() -> str:
+    return getattr(settings, "CERTEXPIRY_NOTIFICATION_TEXT", "")

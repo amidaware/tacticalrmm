@@ -99,7 +99,7 @@ def remove_orphaned_win_tasks(self) -> str:
         exclude_tasks = ("TacticalRMM_SchedReboot",)
 
         for agent in _get_agent_qs():
-            if agent.status == AGENT_STATUS_ONLINE:
+            if not agent.is_posix and agent.status == AGENT_STATUS_ONLINE:
                 names = [task.win_task_name for task in agent.get_tasks_with_policies()]
                 items.append(AgentTup._make([agent.agent_id, names]))
 

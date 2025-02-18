@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import calendar
 import os
 import random
 import secrets
@@ -13,6 +14,8 @@ from django.conf import settings
 from django.utils import timezone as djangotime
 from rest_framework import status
 from rest_framework.response import Response
+
+from tacticalrmm.constants import MONTHS, WEEKDAY_TO_BIT
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -135,6 +138,19 @@ def days_until_cert_expires() -> int:
     delta = cert.not_valid_after_utc - djangotime.now()
 
     return delta.days
+
+
+def is_weekday_in_bitmask(weekday: int, bitmask: int) -> bool:
+    bit = WEEKDAY_TO_BIT.get(weekday)
+
+    return bit & bitmask  # type: ignore
+
+
+def is_month_in_bitmask(month: int, bitmask: int) -> bool:
+    month_name = calendar.month_name[month]
+    month_bit = MONTHS.get(month_name)
+
+    return month_bit & bitmask  # type: ignore
 
 
 def has_webhook(

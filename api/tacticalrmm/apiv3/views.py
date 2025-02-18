@@ -45,6 +45,7 @@ from tacticalrmm.constants import (
     GoArch,
     MeshAgentIdent,
     PAStatus,
+    TaskRunStatus,
 )
 from tacticalrmm.helpers import make_random_password, notify_error
 from tacticalrmm.utils import reload_nats
@@ -363,7 +364,9 @@ class TaskRunner(APIView):
             serializer = TaskResultSerializer(data=request.data, partial=True)
 
         serializer.is_valid(raise_exception=True)
-        task_result = serializer.save(last_run=djangotime.now())
+        task_result = serializer.save(
+            last_run=djangotime.now(), run_status=TaskRunStatus.COMPLETED
+        )
 
         AgentHistory.objects.create(
             agent=agent,
@@ -385,12 +388,8 @@ class TaskRunner(APIView):
                 CheckStatus.FAILING if task_result.retcode != 0 else CheckStatus.PASSING
             )
 
-        if task_result:
-            task_result.status = status
-            task_result.save(update_fields=["status"])
-        else:
-            task_result.status = status
-            task.save(update_fields=["status"])
+        task_result.status = status
+        task_result.save(update_fields=["status"])
 
         if status == CheckStatus.PASSING:
             if Alert.create_or_return_task_alert(task, agent=agent, skip_create=True):

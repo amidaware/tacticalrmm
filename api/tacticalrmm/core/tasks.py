@@ -194,9 +194,17 @@ def sync_scheduled_tasks(self) -> str:
         actions: list[tuple[str, int, Agent, Any, str, str]] = []  # list of tuples
 
         for agent in _get_agent_qs():
-            if (
-                not agent.is_posix
-                and pyver.parse(agent.version) >= pyver.parse("1.6.0")
+            if agent.is_posix:
+                for task in agent.get_tasks_with_policies():
+                    try:
+                        _ = TaskResult.objects.get(agent=agent, task=task)
+                    except TaskResult.DoesNotExist:
+                        TaskResult.objects.create(
+                            agent=agent, task=task, sync_status=TaskSyncStatus.SYNCED
+                        )
+
+            elif (
+                pyver.parse(agent.version) >= pyver.parse("1.6.0")
                 and agent.status == AGENT_STATUS_ONLINE
             ):
                 # create a list of tasks to be synced so we can run them asynchronously

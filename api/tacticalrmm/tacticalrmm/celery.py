@@ -69,6 +69,10 @@ app.conf.beat_schedule = {
         "task": "core.tasks.resolve_alerts_task",
         "schedule": timedelta(seconds=80.0),
     },
+    "trmm-scheduler": {
+        "task": "tacticalrmm.scheduler.scheduled_task_runner",
+        "schedule": crontab(),
+    },
 }
 
 

@@ -1,4 +1,5 @@
 import datetime as dt
+from unittest.mock import AsyncMock, patch
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -112,41 +113,55 @@ def setup_instance(db):
             )
 
 
+@pytest.fixture
+def mock_abulk_nats_command():
+    with patch(
+        "tacticalrmm.scheduler.abulk_nats_command", new_callable=AsyncMock
+    ) as mock_func:
+        mock_func.return_value = None
+        yield mock_func
+
+
 # only posix agents should run these tasks
 
 
 @time_machine.travel(dt.datetime(2025, 3, 22, 11, 33, tzinfo=los_angeles))
 @pytest.mark.django_db
-def test_daily_task(setup_instance):
+def test_daily_task(setup_instance, mock_abulk_nats_command):
     ret = scheduled_task_runner()
+    mock_abulk_nats_command.assert_called_once()
     assert len(ret) == 2
 
 
 @time_machine.travel(dt.datetime(2025, 4, 15, 17, 55, tzinfo=los_angeles))  # tuesday
 @pytest.mark.django_db
-def test_weekly_task(setup_instance):
+def test_weekly_task(setup_instance, mock_abulk_nats_command):
     ret = scheduled_task_runner()
+    mock_abulk_nats_command.assert_called_once()
     assert len(ret) == 2
 
 
 @time_machine.travel(dt.datetime(2025, 9, 20, 1, 23, tzinfo=los_angeles))
 @pytest.mark.django_db
-def test_monthly_task_sept_20(setup_instance):
+def test_monthly_task_sept_20(setup_instance, mock_abulk_nats_command):
     ret = scheduled_task_runner()
+    mock_abulk_nats_command.assert_called_once()
     assert len(ret) == 2
 
 
 @time_machine.travel(dt.datetime(2025, 6, 14, 1, 23, tzinfo=los_angeles))
 @pytest.mark.django_db
-def test_monthly_task_june_14(setup_instance):
+def test_monthly_task_june_14(setup_instance, mock_abulk_nats_command):
     ret = scheduled_task_runner()
+    mock_abulk_nats_command.assert_called_once()
     assert len(ret) == 2
 
 
 @time_machine.travel(dt.datetime(2025, 6, 15, 1, 23, tzinfo=los_angeles))
 @pytest.mark.django_db
-def test_monthly_task_june_15(setup_instance):
+def test_monthly_task_june_15(setup_instance, mock_abulk_nats_command):
     ret = scheduled_task_runner()
+    mock_abulk_nats_command.assert_not_called()
     assert len(ret) == 0
 
 
@@ -154,8 +169,9 @@ def test_monthly_task_june_15(setup_instance):
     dt.datetime(2026, 1, 30, 18, 32, tzinfo=los_angeles)
 )  # friday jan 30, 2026 falls in the last week of the month
 @pytest.mark.django_db
-def test_monthly_DOW(setup_instance):
+def test_monthly_DOW(setup_instance, mock_abulk_nats_command):
     ret = scheduled_task_runner()
+    mock_abulk_nats_command.assert_called_once()
     assert len(ret) == 2
 
 
@@ -163,8 +179,9 @@ def test_monthly_DOW(setup_instance):
     dt.datetime(2025, 7, 10, 17, 11, tzinfo=los_angeles)
 )  # thurs july 10, 2025 falls in the 2nd week of the month
 @pytest.mark.django_db
-def test_monthly_DOW_2(setup_instance):
+def test_monthly_DOW_2(setup_instance, mock_abulk_nats_command):
     ret = scheduled_task_runner()
+    mock_abulk_nats_command.assert_called_once()
     assert len(ret) == 2
 
 
@@ -172,6 +189,8 @@ def test_monthly_DOW_2(setup_instance):
     dt.datetime(2025, 7, 3, 17, 11, tzinfo=los_angeles)
 )  # thurs july 3, 2025 falls in the 1st week of the month, should fail
 @pytest.mark.django_db
-def test_monthly_DOW_3(setup_instance):
+@patch("asyncio.run")
+def test_monthly_DOW_3(setup_instance, mock_abulk_nats_command):
     ret = scheduled_task_runner()
+    mock_abulk_nats_command.assert_not_called()
     assert len(ret) == 0

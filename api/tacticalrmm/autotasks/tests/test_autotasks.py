@@ -6,9 +6,9 @@ from model_bakery import baker
 from tacticalrmm.constants import TaskType
 from tacticalrmm.test import TacticalTestCase
 
-from .models import AutomatedTask, TaskResult, TaskSyncStatus
-from .serializers import TaskSerializer
-from .tasks import create_win_task_schedule, run_win_task
+from autotasks.models import AutomatedTask, TaskResult, TaskSyncStatus
+from autotasks.serializers import TaskSerializer
+from autotasks.tasks import create_win_task_schedule, run_win_task
 
 base_url = "/tasks"
 

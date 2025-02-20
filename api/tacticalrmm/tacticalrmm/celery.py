@@ -70,7 +70,7 @@ app.conf.beat_schedule = {
         "schedule": timedelta(seconds=80.0),
     },
     "trmm-scheduler": {
-        "task": "tacticalrmm.scheduler.scheduled_task_runner",
+        "task": "core.tasks.scheduled_task_runner",
         "schedule": crontab(),
     },
 }

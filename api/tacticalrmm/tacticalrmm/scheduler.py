@@ -1,22 +1,11 @@
-import asyncio
 import calendar
 from zoneinfo import ZoneInfo
 
-from django.db import transaction
-from django.utils import timezone as djangotime
-
-from autotasks.models import TaskResult
-from tacticalrmm.celery import app
 from tacticalrmm.constants import (
     MONTH_DAYS,
     WEEKS,
-    AgentPlat,
-    TaskRunStatus,
-    TaskType,
 )
 from tacticalrmm.helpers import is_month_in_bitmask, is_weekday_in_bitmask
-from tacticalrmm.logger import logger
-from tacticalrmm.nats_utils import abulk_nats_command
 
 
 def should_run_daily_task(task, agent, current_time) -> bool:
@@ -133,93 +122,3 @@ def should_run_monthly_task(task, agent, current_time) -> bool:
         return (current_hour == run_hour) and (current_minute == run_minute)
 
     return False
-
-
-@app.task
-def scheduled_task_runner():
-    now = djangotime.now()
-
-    task_results = (
-        TaskResult.objects.filter(task__enabled=True)
-        .select_related("task", "agent")
-        .only(
-            "last_run",
-            "run_status",
-            "locked_at",
-            "agent__time_zone",
-            "agent__agent_id",
-            "agent__hostname",
-            "agent__plat",
-            "task__name",
-            "task__enabled",
-            "task__task_type",
-            "task__run_time_date",
-            "task__run_time_bit_weekdays",
-            "task__monthly_days_of_month",
-            "task__monthly_months_of_year",
-            "task__monthly_weeks_of_month",
-        )
-        .exclude(agent__plat=AgentPlat.WINDOWS)
-    )
-
-    items = []
-    task_result_pks = []
-    payload = {"func": "runtask"}
-
-    for task_result in task_results:
-        task = task_result.task
-        agent = task_result.agent
-        run = False
-
-        if (
-            task_result.locked_at
-            and task_result.locked_at > now - djangotime.timedelta(seconds=55)
-        ):
-            # prevent race
-            logger.error(
-                f"Task {task.name} on {agent.hostname} already executed too recently, skipping."
-            )
-            continue
-
-        if task.task_type == TaskType.DAILY:
-            run = should_run_daily_task(task, agent, now)
-
-        elif task.task_type == TaskType.WEEKLY:
-            run = should_run_weekly_task(task, agent, now)
-
-        elif task.task_type == TaskType.MONTHLY:
-            run = should_run_monthly_task(task, agent, now)
-
-        elif task.task_type == TaskType.MONTHLY_DOW:
-            run = should_run_monthly_dow_task(task, agent, now)
-
-        elif task.task_type == TaskType.RUN_ONCE:
-            if not task_result.last_run:
-                run = should_run_once_task(task, agent, now)
-
-        elif task.task_type == TaskType.ONBOARDING:
-            if not task_result.last_run and task_result.run_status not in {
-                TaskRunStatus.RUNNING,
-                TaskRunStatus.COMPLETED,
-            }:
-                run = True
-
-        if run:
-            tmp = {**payload}
-            tmp["taskpk"] = task.pk
-            items.append((agent.agent_id, tmp))
-            task_result_pks.append(task_result.pk)
-            logger.debug(
-                f"Running {task.task_type} task {task.name} on {agent.hostname}"
-            )
-
-    if items:
-        with transaction.atomic():
-            updated = TaskResult.objects.filter(pk__in=task_result_pks).update(
-                run_status=TaskRunStatus.RUNNING, locked_at=now
-            )
-            if updated:
-                asyncio.run(abulk_nats_command(items=items))
-                logger.debug(items)
-
-    return items

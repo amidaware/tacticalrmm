@@ -116,9 +116,7 @@ def setup_instance(db):
 
 @pytest.fixture
 def mock_abulk_nats_command():
-    with patch(
-        "tacticalrmm.scheduler.abulk_nats_command", new_callable=AsyncMock
-    ) as mock_func:
+    with patch("core.tasks.abulk_nats_command", new_callable=AsyncMock) as mock_func:
         mock_func.return_value = None
         yield mock_func
 

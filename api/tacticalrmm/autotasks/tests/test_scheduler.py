@@ -7,8 +7,9 @@ import time_machine
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
+
+from core.tasks import scheduled_task_runner
 from tacticalrmm.constants import AgentPlat, TaskSyncStatus, TaskType
-from tacticalrmm.scheduler import scheduled_task_runner
 
 utc_time = ZoneInfo("UTC")
 los_angeles = ZoneInfo("America/Los_Angeles")

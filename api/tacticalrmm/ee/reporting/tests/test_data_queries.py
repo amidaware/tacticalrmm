@@ -16,9 +16,9 @@ from ..constants import REPORTING_MODELS
 from ..utils import (
     InvalidDBOperationException,
     ResolveModelException,
-    create_dynamic_serializer,
     build_queryset,
     resolve_model,
+    add_fields
 )
 
 
@@ -466,6 +466,20 @@ class TestBuildingQueryset:
         assert "invalid" not in result[0]
         assert "save" not in result[0]
 
+    def test_build_queryset_with_dict_result(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "properties": ["status", "checks", "invalid", "save"],
+            "first": True
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert "status" in result
+        assert "checks" in result
+        assert "invalid" not in result
+        assert "save" not in result
+
     def test_querying_nested_relations(self, mock, setup_agents):
         data_source = {
             "model": Agent,
@@ -512,7 +526,6 @@ class TestBuildingQueryset:
         }
 
         result = build_queryset(data_source=data_source)
-        print(result)
 
         assert isinstance(result["last_seen"], datetime)
         assert isinstance(result["created_time"], datetime)
@@ -545,16 +558,14 @@ class TestBuildingQueryset:
 @pytest.mark.django_db
 class TestAddingCustomFields:
     @pytest.mark.parametrize(
-        "model,model_name,custom_field_model",
+        "model_name,custom_field_model",
         [
-            (Agent, "agent", "agents.AgentCustomField"),
-            (Client, "client", "clients.ClientCustomField"),
-            (Site, "site", "clients.SiteCustomField"),
+            ("agent", "agents.AgentCustomField"),
+            ("client", "clients.ClientCustomField"),
+            ("site", "clients.SiteCustomField"),
         ],
     )
-    def test_add_custom_fields_with_list_of_dicts(
-        self, model, model_name, custom_field_model
-    ):
+    def test_add_custom_fields_with_list_of_dicts(self, model_name, custom_field_model):
         custom_field = baker.make("core.CustomField", name="field1", model=model_name)
         default_value = "Default Value"
         baker.make(
@@ -571,12 +582,20 @@ class TestAddingCustomFields:
             custom_field_model, field=custom_field, string_value="Value"
         )
 
+        data = [
+            {"id": getattr(custom_model_instance1, f"{model_name}_id")},
+            {"id": getattr(custom_model_instance2, f"{model_name}_id")},
+        ]
         fields_to_add = ["field1", "field2"]
-        serializer_class = create_dynamic_serializer(
-            Model=model, custom_fields=fields_to_add
+        result = add_fields(
+            data=data,
+            custom_fields=fields_to_add,
+            model_name=model_name,
+            properties=[],
+            properties_queryset=None
         )
-        result = serializer_class(model.objects.all(), many=True).data
 
+        # Assert logic here based on what you expect the result to be
         assert result[0]["custom_fields"]["field1"] == custom_model_instance1.value
         assert result[1]["custom_fields"]["field1"] == custom_model_instance2.value
 
@@ -584,40 +603,42 @@ class TestAddingCustomFields:
         assert result[1]["custom_fields"]["field2"] == default_value
 
     @pytest.mark.parametrize(
-        "model,model_name,custom_field_model",
+        "model_name,custom_field_model",
         [
-            (Agent, "agent", "agents.AgentCustomField"),
-            (Client, "client", "clients.ClientCustomField"),
-            (Site, "site", "clients.SiteCustomField"),
+            ("agent", "agents.AgentCustomField"),
+            ("client", "clients.ClientCustomField"),
+            ("site", "clients.SiteCustomField"),
         ],
     )
-    def test_add_custom_fields_to_dictionary(
-        self, model, model_name, custom_field_model
-    ):
+    def test_add_custom_fields_to_dictionary(self, model_name, custom_field_model):
         custom_field = baker.make("core.CustomField", name="field1", model=model_name)
         custom_model_instance = baker.make(
             custom_field_model, field=custom_field, string_value="default_value"
         )
 
+        data = {"id": getattr(custom_model_instance, f"{model_name}_id")}
         fields_to_add = ["field1"]
-
-        serializer_class = create_dynamic_serializer(
-            Model=model,
+        result = add_fields(
+            data=data,
             custom_fields=fields_to_add,
+            model_name=model_name,
+            dict_value=True,
+            properties=[],
+            properties_queryset=None
         )
-        result = serializer_class(model.objects.first()).data
 
+        # Assert logic here based on what you expect the result to be
         assert result["custom_fields"]["field1"] == custom_model_instance.value
 
     @pytest.mark.parametrize(
-        "model,model_name",
+        "model_name",
         [
-            (Agent, "agent"),
-            (Client, "client"),
-            (Site, "site"),
+            "agent",
+            "client",
+            "site",
         ],
     )
-    def test_add_custom_fields_with_default_value(self, model, model_name):
+    def test_add_custom_fields_with_default_value(self, model_name):
         default_value = "default_value"
         baker.make(
             "core.CustomField",
@@ -626,16 +647,18 @@ class TestAddingCustomFields:
             default_value_string=default_value,
         )
 
-        baker.make(model)
+        # Note: Not creating an instance of the custom_field_model here to ensure the default value is used
 
-        # Not creating an instance of the custom_field_model here to ensure the default value is used
-
+        data = {"id": 999}  # ID not associated with any custom field model instance
         fields_to_add = ["field1"]
-        serializer_class = create_dynamic_serializer(
-            Model=model,
+        result = add_fields(
+            data=data,
             custom_fields=fields_to_add,
+            model_name=model_name,
+            dict_value=True,
+            properties=[],
+            properties_queryset=None
         )
-        result = serializer_class(model.objects.first()).data
 
         # Assert that the default value is used
         assert result["custom_fields"]["field1"] == default_value

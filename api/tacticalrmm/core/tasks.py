@@ -416,6 +416,10 @@ def cache_db_fields_task() -> None:
 
 @app.task(bind=True)
 def sync_mesh_perms_task(self):
+
+    if getattr(settings, "TRMM_DISABLE_MESH_SYNC_TASK", False):
+        return
+
     with redis_lock(SYNC_MESH_PERMS_TASK_LOCK, self.app.oid) as acquired:
         if not acquired:
             return f"{self.app.oid} still running"

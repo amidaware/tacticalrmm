@@ -242,7 +242,6 @@ class TestImportReportTemplate:
             url, data={"template": json.dumps(valid_template_data)}
         )
 
-        print(response.data)
         assert response.status_code == status.HTTP_200_OK
         assert ReportTemplate.objects.filter(name="test_template_randomized").exists()
 

@@ -9,7 +9,7 @@ import inspect
 import json
 import re
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, Type, cast
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -22,7 +22,7 @@ from weasyprint.text.fonts import FontConfiguration
 from tacticalrmm.utils import get_db_value
 
 from . import custom_filters
-from .constants import REPORTING_MODELS
+from .constants import REPORTING_MODELS, get_property_fields
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
 from tacticalrmm.utils import RE_DB_VALUE
@@ -208,6 +208,7 @@ class AllowedOperations(Enum):
     ALL = "all"
     # custom fields
     CUSTOM_FIELDS = "custom_fields"
+    PROPERTIES = "properties"
     # presentation
     JSON = "json"
     CSV = "csv"
@@ -239,10 +240,20 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     csv_columns = {}
     defer = local_data_source.get("defer", None)
     columns = local_data_source.get("only", None)
-    fields_to_add = []
+    properties = local_data_source.pop("properties", None)
+    custom_fields = []
+
+    # make sure approved properties are in the list
+    if properties:
+        all_properties = get_property_fields(Model)
+        properties = [property for property in properties if property in all_properties]
 
     # create a base reporting queryset
     queryset = Model.objects.using("default")
+
+    # used to save the old queryset for getting properties
+    properties_queryset = None
+
     model_name = Model.__name__.lower()
     for operation, values in local_data_source.items():
         # Usage in the build_queryset function:
@@ -258,7 +269,7 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
 
             if model_name in ("client", "site", "agent"):
                 fields = CustomField.objects.filter(model=model_name)
-                fields_to_add = [
+                custom_fields = [
                     field for field in values if fields.filter(name=field).exists()
                 ]
 
@@ -297,6 +308,9 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
     if limit and not first and not get:
         queryset = queryset[:limit]
 
+    if properties:
+        properties_queryset = queryset
+
     if columns:
         # remove columns from only if defer is also present
         if defer:
@@ -321,10 +335,12 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         elif first:
             queryset = queryset.first()
 
-        if fields_to_add:
-            queryset = add_custom_fields(
+        if custom_fields or properties:
+            queryset = add_fields(
                 data=queryset,
-                fields_to_add=fields_to_add,
+                custom_fields=custom_fields,
+                properties=properties,
+                properties_queryset=properties_queryset,
                 model_name=model_name,
                 dict_value=True,
             )
@@ -345,9 +361,9 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
         # add custom fields for list results
         queryset = list(queryset)
 
-        if fields_to_add:
-            queryset = add_custom_fields(
-                data=queryset, fields_to_add=fields_to_add, model_name=model_name
+        if custom_fields or properties:
+            queryset = add_fields(
+                data=queryset, custom_fields=custom_fields, properties=properties, properties_queryset=properties_queryset, model_name=model_name
             )
 
         if isJson:
@@ -364,79 +380,102 @@ def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None) 
             return queryset
 
 
-def add_custom_fields(
+def add_fields(
     *,
     data: Union[Dict[str, Any], List[Dict[str, Any]]],
-    fields_to_add: List[str],
+    custom_fields: List[str],
+    properties: List[str],
+    properties_queryset,
     model_name: Literal["client", "site", "agent"],
     dict_value: bool = False,
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
-    from agents.models import AgentCustomField
-    from clients.models import ClientCustomField, SiteCustomField
-    from core.models import CustomField
 
-    model_name = model_name.lower()
-    CustomFieldModel: Union[
-        Type[AgentCustomField], Type[ClientCustomField], Type[SiteCustomField]
-    ]
-    if model_name == "agent":
-        CustomFieldModel = AgentCustomField
-    elif model_name == "client":
-        CustomFieldModel = ClientCustomField
-    else:
-        CustomFieldModel = SiteCustomField
+    # prep for custom fields
+    fields = []
+    if custom_fields:
+        from agents.models import AgentCustomField
+        from clients.models import ClientCustomField, SiteCustomField
+        from core.models import CustomField
 
-    custom_fields = CustomField.objects.filter(name__in=fields_to_add, model=model_name)
+        CustomFieldModel: Union[
+            Type[AgentCustomField], Type[ClientCustomField], Type[SiteCustomField]
+        ]
+        if model_name == "agent":
+            CustomFieldModel = AgentCustomField
+        elif model_name == "client":
+            CustomFieldModel = ClientCustomField
+        else:
+            CustomFieldModel = SiteCustomField
+
+        fields = CustomField.objects.filter(name__in=custom_fields, model=model_name)
+
+    prop_data = []
+    if properties:
+        prop_data = properties_queryset.only("id")
 
     if dict_value:
-        custom_field_data = list(
-            CustomFieldModel.objects.select_related("field").filter(
-                field__name__in=fields_to_add, **{f"{model_name}_id": data["id"]}
+        if custom_fields:
+            custom_field_data = list(
+                CustomFieldModel.objects.select_related("field").filter(
+                    field__name__in=custom_fields, **{f"{model_name}_id": data["id"]}
+                )
             )
-        )
-        # hold custom field data on the returned object
-        data["custom_fields"]: Dict[str, Any] = {}
+            # hold custom field data on the returned object
+            data["custom_fields"] = {}
 
-        for custom_field in custom_fields:
-            find_custom_field_data = next(
-                (cf for cf in custom_field_data if cf.field_id == custom_field.id),
-                None,
-            )
+            for field in fields:
+                if custom_fields:
+                    find_custom_field_data = next(
+                        (cf for cf in custom_field_data if cf.field_id == field.id),
+                        None,
+                    )
 
-            if find_custom_field_data is not None:
-                data["custom_fields"][custom_field.name] = find_custom_field_data.value
-            else:
-                data["custom_fields"][custom_field.name] = custom_field.default_value
+                    if find_custom_field_data is not None:
+                        data["custom_fields"][field.name] = find_custom_field_data.value
+                    else:
+                        data["custom_fields"][field.name] = field.default_value
+
+        if properties:
+            for prop in properties:
+                data[prop] = getattr(properties_queryset, prop, None)
 
         return data
     else:
-        ids = [row["id"] for row in data]
-        custom_field_data = list(
-            CustomFieldModel.objects.select_related("field").filter(
-                field__name__in=fields_to_add, **{f"{model_name}_id__in": ids}
+        if custom_fields:
+            ids = [row["id"] for row in data]
+            custom_field_data = list(
+                CustomFieldModel.objects.select_related("field").filter(
+                    field__name__in=custom_fields, **{f"{model_name}_id__in": ids}
+                )
             )
-        )
 
         for row in data:
-            row["custom_fields"]: Dict[str, Any] = {}
+            if custom_fields:
+                row["custom_fields"]: Dict[str, Any] = {}
 
-            for custom_field in custom_fields:
-                find_custom_field_data = next(
-                    (
-                        cf
-                        for cf in custom_field_data
-                        if cf.field_id == custom_field.id
-                        and getattr(cf, f"{model_name}_id") == row["id"]
-                    ),
-                    None,
-                )
+                for field in fields:
+                    if custom_fields:
+                        find_custom_field_data = next(
+                            (
+                                cf
+                                for cf in custom_field_data
+                                if cf.field_id == field.id
+                                and getattr(cf, f"{model_name}_id") == row["id"]
+                            ),
+                            None,
+                        )
 
-                if find_custom_field_data is not None:
-                    row["custom_fields"][
-                        custom_field.name
-                    ] = find_custom_field_data.value
-                else:
-                    row["custom_fields"][custom_field.name] = custom_field.default_value
+                        if find_custom_field_data is not None:
+                            row["custom_fields"][
+                                field.name
+                            ] = find_custom_field_data.value
+                        else:
+                            row["custom_fields"][field.name] = field.default_value
+
+            if properties:
+                model = next((item for item in prop_data if item.id == row["id"]), None)
+                for prop in properties:
+                    row[prop] = getattr(model, prop, None)
 
         return data
 

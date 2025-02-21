@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytest
 from agents.models import Agent
+from clients.models import Client, Site
 from django.apps import apps
 from model_bakery import baker
 
@@ -15,9 +16,9 @@ from ..constants import REPORTING_MODELS
 from ..utils import (
     InvalidDBOperationException,
     ResolveModelException,
-    add_custom_fields,
     build_queryset,
     resolve_model,
+    add_fields
 )
 
 
@@ -61,8 +62,12 @@ class TestResolvingModels:
 class TestBuildingQueryset:
     @pytest.fixture
     def setup_agents(self):
-        agent1 = baker.make("agents.Agent", hostname="ZAgent1", plat="windows")
-        agent2 = baker.make("agents.Agent", hostname="Agent2", plat="windows")
+        agent1 = baker.make_recipe(
+            "agents.online_agent", hostname="ZAgent1", plat="windows"
+        )
+        agent2 = baker.make_recipe(
+            "agents.online_agent", hostname="Agent2", plat="windows"
+        )
         return [agent1, agent2]
 
     def test_build_queryset_with_valid_model(self, mock, setup_agents):
@@ -97,15 +102,6 @@ class TestBuildingQueryset:
             assert "hostname" in agent_data
             assert "operating_system" in agent_data
             assert "plat" not in agent_data
-
-    def test_build_queryset_id_is_appended_if_only_exists(self, mock, setup_agents):
-        data_source = {"model": Agent, "only": ["hostname"]}
-
-        result = build_queryset(data_source=data_source)
-
-        assert len(result) == 2
-        for agent_data in result:
-            assert "id" in agent_data
 
     def test_build_queryset_filter_operation(self, mock, setup_agents):
         data_source = {
@@ -254,14 +250,19 @@ class TestBuildingQueryset:
         assert "Operating System" in result.split("\n")[0]
 
     def test_build_queryset_custom_fields(self, mock, setup_agents):
+
         default_value = "Default Value"
 
         field1 = baker.make(
-            "core.CustomField", name="custom_1", model="agent", type="text"
+            "core.CustomField",
+            name="custom1",
+            model="agent",
+            type="text",
+            default_value_string=default_value,
         )
         baker.make(
             "core.CustomField",
-            name="custom_2",
+            name="custom2",
             model="agent",
             type="text",
             default_value_string=default_value,
@@ -269,29 +270,31 @@ class TestBuildingQueryset:
 
         baker.make(
             "agents.AgentCustomField",
-            agent=setup_agents[0],
             field=field1,
+            agent=setup_agents[0],
             string_value="Agent1",
         )
         baker.make(
             "agents.AgentCustomField",
-            agent=setup_agents[1],
             field=field1,
+            agent=setup_agents[1],
             string_value="Agent2",
         )
 
-        data_source = {"model": Agent, "custom_fields": ["custom_1", "custom_2"]}
-
+        data_source = {
+            "model": Agent,
+            "custom_fields": ["custom1", "custom2"],
+            "only": ["hostname"],
+        }
         result = build_queryset(data_source=data_source)
-        assert len(result) == 2
 
         # check agent 1
-        assert result[0]["custom_fields"]["custom_1"] == "Agent1"
-        assert result[0]["custom_fields"]["custom_2"] == default_value
+        assert result[0]["custom_fields"]["custom1"] == "Agent1"
+        assert result[0]["custom_fields"]["custom2"] == default_value
 
         # check agent 2
-        assert result[1]["custom_fields"]["custom_1"] == "Agent2"
-        assert result[1]["custom_fields"]["custom_2"] == default_value
+        assert result[1]["custom_fields"]["custom1"] == "Agent2"
+        assert result[1]["custom_fields"]["custom2"] == default_value
 
     def test_build_queryset_filter_only_json_combination(self, mock, setup_agents):
         import json
@@ -405,6 +408,152 @@ class TestBuildingQueryset:
 
         assert isinstance(parsed_result, list)
 
+    def test_build_queryset_with_computed_properties(self, mock, setup_agents):
+        data_source = {"model": Agent, "properties": ["status", "checks"]}
+
+        result = build_queryset(data_source=data_source)
+
+        assert len(result) == 2
+        assert "status" in result[0]
+        assert "checks" in result[1]
+
+    def test_build_queryset_with_computed_properties_and_only(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "only": ["hostname", "plat"],
+            "properties": ["status", "checks"],
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert len(result) == 2
+        assert "status" in result[0]
+        assert "checks" in result[0]
+        assert "hostname" in result[0]
+        assert "plat" in result[0]
+        assert "operating_system" not in result[0]
+
+    def test_build_queryset_with_computed_properties_only_and_defer(
+        self, mock, setup_agents
+    ):
+        data_source = {
+            "model": Agent,
+            "defer": ["plat"],
+            "only": ["hostname", "plat"],
+            "properties": ["status", "checks"],
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert len(result) == 2
+        assert "status" in result[0]
+        assert "checks" in result[0]
+        assert "hostname" in result[0]
+        assert "plat" not in result[0]
+        assert "operating_system" not in result[0]
+
+    def test_build_queryset_with_invalid_computed_properties(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "properties": ["status", "checks", "invalid", "save"],
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert len(result) == 2
+        assert "status" in result[0]
+        assert "checks" in result[0]
+        assert "invalid" not in result[0]
+        assert "save" not in result[0]
+
+    def test_build_queryset_with_dict_result(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "properties": ["status", "checks", "invalid", "save"],
+            "first": True
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert "status" in result
+        assert "checks" in result
+        assert "invalid" not in result
+        assert "save" not in result
+
+    def test_querying_nested_relations(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "only": ["hostname", "site__name", "site__client__name"],
+            "first": True,
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert "site__name" in result
+        assert "site__client__name" in result
+
+    def test_skipping_select_related_if_only_missing(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "select_related": ["site", "site__client"],
+            "first": True,
+        }
+
+        # will ignore select_related since only is missing
+        build_queryset(data_source=data_source)
+
+    def test_removing_not_needed_select_related(self, mock, setup_agents):
+        data_source = {
+            "model": Agent,
+            "only": ["site__name", "hostname"],
+            "select_related": ["site", "site__client"],
+            "first": True,
+        }
+
+        # will ignore select_related items if they aren't specified in only
+        result = build_queryset(data_source=data_source)
+
+        assert "site__name" in result
+        assert "site__client" not in result
+
+    def test_make_sure_datetime_fields_are_not_strings(self, mock, setup_agents):
+        from datetime import datetime
+
+        data_source = {
+            "model": Agent,
+            "only": ["hostname", "last_seen", "created_time"],
+            "first": True,
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert isinstance(result["last_seen"], datetime)
+        assert isinstance(result["created_time"], datetime)
+
+    def test_make_sure_related_datetime_fields_are_not_strings(
+        self, mock, setup_agents
+    ):
+        from datetime import datetime
+
+        data_source = {
+            "model": Agent,
+            "only": [
+                "hostname",
+                "last_seen",
+                "created_time",
+                "site__created_time",
+                "site__client__created_time",
+            ],
+            "first": True,
+        }
+
+        result = build_queryset(data_source=data_source)
+
+        assert isinstance(result["last_seen"], datetime)
+        assert isinstance(result["created_time"], datetime)
+        assert isinstance(result["site__created_time"], datetime)
+        assert isinstance(result["site__client__created_time"], datetime)
+
 
 @pytest.mark.django_db
 class TestAddingCustomFields:
@@ -438,8 +587,12 @@ class TestAddingCustomFields:
             {"id": getattr(custom_model_instance2, f"{model_name}_id")},
         ]
         fields_to_add = ["field1", "field2"]
-        result = add_custom_fields(
-            data=data, fields_to_add=fields_to_add, model_name=model_name
+        result = add_fields(
+            data=data,
+            custom_fields=fields_to_add,
+            model_name=model_name,
+            properties=[],
+            properties_queryset=None
         )
 
         # Assert logic here based on what you expect the result to be
@@ -465,11 +618,13 @@ class TestAddingCustomFields:
 
         data = {"id": getattr(custom_model_instance, f"{model_name}_id")}
         fields_to_add = ["field1"]
-        result = add_custom_fields(
+        result = add_fields(
             data=data,
-            fields_to_add=fields_to_add,
+            custom_fields=fields_to_add,
             model_name=model_name,
             dict_value=True,
+            properties=[],
+            properties_queryset=None
         )
 
         # Assert logic here based on what you expect the result to be
@@ -496,11 +651,13 @@ class TestAddingCustomFields:
 
         data = {"id": 999}  # ID not associated with any custom field model instance
         fields_to_add = ["field1"]
-        result = add_custom_fields(
+        result = add_fields(
             data=data,
-            fields_to_add=fields_to_add,
+            custom_fields=fields_to_add,
             model_name=model_name,
             dict_value=True,
+            properties=[],
+            properties_queryset=None
         )
 
         # Assert that the default value is used

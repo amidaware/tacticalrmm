@@ -6,7 +6,7 @@ For details, see: https://license.tacticalrmm.com/ee
 
 import pytest
 from model_bakery import baker
-
+from datetime import datetime
 from ..utils import db_template_loader, generate_html
 
 
@@ -111,3 +111,70 @@ class TestJinjaDBLoader:
 
         result = db_template_loader(template_name)
         assert result == "Test HTML"  # HTML has priority
+
+
+@pytest.mark.django_db
+class TestJinjaGlobals:
+    @pytest.fixture
+    def agent(self):
+        agent1 = baker.make_recipe(
+            "agents.online_agent", hostname="ZAgent1", plat="windows"
+        )
+        return agent1
+
+    def test_datetime(self, agent):
+        variables = """
+data_sources:
+    agent:
+        model: agent
+        only:
+            - last_seen
+        first: true
+"""
+
+        template = """
+{% set pst_zone = ZoneInfo('America/Los_Angeles') %}
+{% set last_seen_pst = data_sources.agent.last_seen.astimezone(pst_zone) %}
+{{ last_seen_pst.strftime('%Y-%m-%d %H:%M:%S %Z') }}
+"""
+        # will throw exception if last_seen is in wrong format, or if jinja globals arn't added
+        template, _ = generate_html(
+            template=template, template_type="html", css="", variables=variables
+        )
+
+    def test_if_re_is_available_in_template(self, agent):
+        template = """
+{% if re is defined %}
+    True
+{% else %}
+    False
+{% endif %}
+"""
+
+        template, _ = generate_html(
+            template=template, template_type="html", css="", variables=""
+        )
+
+        assert template.strip() == "True"
+
+
+class TestYamlProcessors:
+    def test_yaml_command_now(self):
+        variables = "now: !now"
+
+        _, vars = generate_html(
+            template="{{ now }}", template_type="html", css="", variables=variables
+        )
+
+        # these will throw an exception is a valid date string isn't returned
+        assert isinstance(vars["now"], datetime)
+
+    def test_yaml_command_now_last_30_days(self):
+        variables = "last_30_days: !now days=-30"
+
+        _, vars = generate_html(
+            template="{{ now }}", template_type="html", css="", variables=variables
+        )
+
+        # these will throw an exception is a valid date string isn't returned
+        assert isinstance(vars["last_30_days"], datetime)

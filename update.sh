@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="154"
+SCRIPT_VERSION="155"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -115,13 +115,13 @@ for i in nginx nats-api nats rmm daphne; do
   sudo systemctl stop ${i}
 done
 
-if ! grep -q V3 /etc/systemd/system/celerybeat.service; then
+if ! grep -q V4 /etc/systemd/system/celerybeat.service; then
   sudo rm -f /etc/systemd/system/celerybeat.service
 
   celerybeatservice="$(
     cat <<EOF
 [Unit]
-Description=Celery Beat Service V3
+Description=Celery Beat Service V4
 After=network.target redis-server.service postgresql.service
 
 [Service]
@@ -132,6 +132,7 @@ EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
 ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
+ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
 Restart=always
 RestartSec=10s
 

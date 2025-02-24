@@ -72,6 +72,11 @@ class TaskStatus(models.TextChoices):
     PENDING = "pending", "Pending"
 
 
+class TaskRunStatus(models.TextChoices):
+    RUNNING = "running", "Running"
+    COMPLETED = "completed", "Completed"
+
+
 class TaskType(models.TextChoices):
     DAILY = "daily", "Daily"
     WEEKLY = "weekly", "Weekly"
@@ -341,6 +346,7 @@ POLICY_TASK_FIELDS_TO_COPY = [
     "run_asap_after_missed",
     "task_instance_policy",
     "continue_on_error",
+    "task_supported_platforms",
 ]
 
 CHECKS_NON_EDITABLE_FIELDS = [
@@ -419,6 +425,16 @@ WEEKS = {
     "Third Week": 0x4,
     "Fourth Week": 0x8,
     "Last Week": 0x10,
+}
+
+WEEKDAY_TO_BIT = {
+    0: 0x2,  # monday
+    1: 0x4,
+    2: 0x8,
+    3: 0x10,
+    4: 0x20,
+    5: 0x40,
+    6: 0x1,  # sunday
 }
 
 MONTH_DAYS = {f"{b}": 0x1 << a for a, b in enumerate(range(1, 32))}

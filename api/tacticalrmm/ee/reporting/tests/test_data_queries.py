@@ -61,8 +61,8 @@ class TestResolvingModels:
 class TestBuildingQueryset:
     @pytest.fixture
     def setup_agents(self):
-        agent1 = baker.make("agents.Agent", hostname="ZAgent1", plat="windows")
-        agent2 = baker.make("agents.Agent", hostname="Agent2", plat="windows")
+        agent1 = baker.make_recipe("agents.agent", hostname="ZAgent1", plat="windows")
+        agent2 = baker.make_recipe("agents.agent", hostname="Agent2", plat="windows")
         return [agent1, agent2]
 
     def test_build_queryset_with_valid_model(self, mock, setup_agents):
@@ -404,6 +404,22 @@ class TestBuildingQueryset:
             assert False
 
         assert isinstance(parsed_result, list)
+
+    def test_build_queryset_with_restricted_user(self, mock, setup_agents):
+        role = baker.make(
+            "accounts.Role",
+            can_view_reports=True,
+            can_view_clients=[setup_agents[0].client],
+        )
+        user = baker.make("accounts.User", role=role)
+
+        data_source = {"model": Agent}
+        restricted_result = build_queryset(data_source=data_source, user=user)
+
+        data_source = {"model": Agent}
+        unrestricted_result = build_queryset(data_source=data_source)
+
+        assert len(unrestricted_result) > len(restricted_result)
 
 
 @pytest.mark.django_db

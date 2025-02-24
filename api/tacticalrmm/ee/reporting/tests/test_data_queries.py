@@ -406,9 +406,13 @@ class TestBuildingQueryset:
         assert isinstance(parsed_result, list)
 
     def test_build_queryset_with_restricted_user(self, mock, setup_agents):
-        role = baker.make("accounts.Role", can_view_reports=True, can_view_clients=[setup_agents[0].client])
+        role = baker.make(
+            "accounts.Role",
+            can_view_reports=True,
+            can_view_clients=[setup_agents[0].client],
+        )
         user = baker.make("accounts.User", role=role)
-    
+
         data_source = {"model": Agent}
         restricted_result = build_queryset(data_source=data_source, user=user)
 

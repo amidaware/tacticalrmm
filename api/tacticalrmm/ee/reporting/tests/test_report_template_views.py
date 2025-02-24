@@ -194,7 +194,7 @@ class TestReportTemplateGenerateView:
             ),
             variables=report_template.template_variables,
             dependencies={"client": 1},
-            user=authenticated_client.handler._force_user
+            user=authenticated_client.handler._force_user,
         )
 
     def test_unauthenticated_generate_report_view(

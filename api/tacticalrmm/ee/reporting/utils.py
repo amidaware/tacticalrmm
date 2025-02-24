@@ -9,23 +9,32 @@ import inspect
 import json
 import re
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, cast, TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 from zoneinfo import ZoneInfo
 
 import yaml
 from django.apps import apps
 from jinja2 import Environment, FunctionLoader
 from rest_framework.serializers import ValidationError
+from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
-
-from tacticalrmm.utils import get_db_value
 
 from . import custom_filters
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
 from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
-from tacticalrmm.utils import RE_DB_VALUE
 
 if TYPE_CHECKING:
     from accounts import User
@@ -96,7 +105,7 @@ def generate_html(
     html_template: Optional[int] = None,
     variables: str = "",
     dependencies: Optional[Dict[str, int]] = None,
-    user: Optional["User"] = None
+    user: Optional["User"] = None,
 ) -> Tuple[str, Dict[str, Any]]:
     if dependencies is None:
         dependencies = {}
@@ -152,7 +161,7 @@ def prep_variables_for_template(
     variables: str,
     dependencies: Optional[Dict[str, Any]] = None,
     limit_query_results: Optional[int] = None,
-    user: Optional["User"] = None
+    user: Optional["User"] = None,
 ) -> Dict[str, Any]:
     if not dependencies:
         dependencies = {}
@@ -232,7 +241,12 @@ class InvalidDBOperationException(Exception):
     pass
 
 
-def build_queryset(*, data_source: Dict[str, Any], limit: Optional[int] = None, user: Optional["User"] = None) -> Any:
+def build_queryset(
+    *,
+    data_source: Dict[str, Any],
+    limit: Optional[int] = None,
+    user: Optional["User"] = None,
+) -> Any:
     local_data_source = data_source
     Model = local_data_source.pop("model")
     count = False
@@ -503,7 +517,10 @@ def decode_base64_asset(asset: str) -> bytes:
 
 
 def process_data_sources(
-    *, variables: Dict[str, Any], limit_query_results: Optional[int] = None, user: Optional["User"] = None
+    *,
+    variables: Dict[str, Any],
+    limit_query_results: Optional[int] = None,
+    user: Optional["User"] = None,
 ) -> Dict[str, Any]:
     data_sources = variables.get("data_sources")
 
@@ -512,7 +529,9 @@ def process_data_sources(
             if isinstance(value, dict):
                 modified_datasource = resolve_model(data_source=value)
                 queryset = build_queryset(
-                    data_source=modified_datasource, limit=limit_query_results, user=user
+                    data_source=modified_datasource,
+                    limit=limit_query_results,
+                    user=user,
                 )
                 data_sources[key] = queryset
 

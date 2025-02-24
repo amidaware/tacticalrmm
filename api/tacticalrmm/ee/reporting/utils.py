@@ -27,6 +27,7 @@ import yaml
 from django.apps import apps
 from jinja2 import Environment, FunctionLoader
 from rest_framework.serializers import ValidationError
+from tacticalrmm.logger import logger
 from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
@@ -261,9 +262,13 @@ def build_queryset(
     fields_to_add = []
 
     # create a base reporting queryset
-    if user:
-        queryset = Model.objects.filter_by_role(user)
-    else:
+    try:
+        if user and hasattr(Model.objects, "filter_by_role"):
+            queryset = Model.objects.filter_by_role(user)
+        else:
+            queryset = Model.objects.using("default")
+    except Exception as e:
+        logger.error(str(e))
         queryset = Model.objects.using("default")
 
     model_name = Model.__name__.lower()

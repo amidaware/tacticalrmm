@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import calendar
 import os
 import random
 import secrets
@@ -15,25 +14,14 @@ from django.utils import timezone as djangotime
 from rest_framework import status
 from rest_framework.response import Response
 
-from tacticalrmm.constants import MONTHS, WEEKDAY_TO_BIT
-
 if TYPE_CHECKING:
     from datetime import datetime
 
     from alerts.models import AlertTemplate
 
-
-def get_certs() -> tuple[str, str]:
-    domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
-    cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-    key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
-
-    if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
-        cert_file = settings.CERT_FILE
-        key_file = settings.KEY_FILE
-
-    return cert_file, key_file
-
+def get_certs():
+    # For local development with localhost, return empty strings
+    return "", ""
 
 def notify_error(msg: str) -> Response:
     return Response(msg, status=status.HTTP_400_BAD_REQUEST)
@@ -68,6 +56,11 @@ def get_nats_hosts() -> tuple[str, str, str]:
             "127.0.0.1",
             "127.0.0.1",
         )
+
+    if "NATS_CONNECT_HOST" in os.environ:
+        connect_host = os.getenv("NATS_CONNECT_HOST")
+    elif hasattr(settings, "NATS_CONNECT_HOST"):
+        connect_host = settings.NATS_CONNECT_HOST
 
     # allow customizing all nats hosts
     if "NATS_STD_BIND_HOST" in os.environ:
@@ -138,19 +131,6 @@ def days_until_cert_expires() -> int:
     delta = cert.not_valid_after_utc - djangotime.now()
 
     return delta.days
-
-
-def is_weekday_in_bitmask(weekday: int, bitmask: int) -> bool:
-    bit = WEEKDAY_TO_BIT.get(weekday)
-
-    return bit & bitmask  # type: ignore
-
-
-def is_month_in_bitmask(month: int, bitmask: int) -> bool:
-    month_name = calendar.month_name[month]
-    month_bit = MONTHS.get(month_name)
-
-    return month_bit & bitmask  # type: ignore
 
 
 def has_webhook(

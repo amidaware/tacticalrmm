@@ -340,6 +340,8 @@ def run_server_script(
     if not core.server_scripts_enabled:  # type: ignore
         return "", "Error: this feature is disabled", 0.00, 1
 
+    body = Script.replace_with_snippets(body)
+
     parsed_args = Script.parse_script_args(None, shell, args)
 
     parsed_env_vars = Script.parse_script_env_vars(None, shell=shell, env_vars=env_vars)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="87"
+SCRIPT_VERSION="88"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
@@ -482,62 +482,6 @@ echo "${meshcfg}" >/meshcentral/meshcentral-data/config.json
 
 npm install
 
-localvars="$(
-  cat <<EOF
-SECRET_KEY = "${DJANGO_SEKRET}"
-
-DEBUG = False
-
-ALLOWED_HOSTS = ['${rmmdomain}']
-
-ADMIN_URL = "${ADMINURL}/"
-
-CORS_ORIGIN_WHITELIST = [
-    "https://${frontenddomain}"
-]
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tacticalrmm',
-        'USER': '${pgusername}',
-        'PASSWORD': '${pgpw}',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-
-MESH_USERNAME = "${meshusername}"
-MESH_SITE = "https://${meshdomain}"
-ADMIN_ENABLED = True
-EOF
-)"
-echo "${localvars}" >$local_settings
-
-if [[ "$insecure" = true ]]; then
-  echo "TRMM_INSECURE = True" | tee --append $local_settings >/dev/null
-fi
-
-if [[ "$byocert" = true ]]; then
-  owncerts="$(
-    cat <<EOF
-CERT_FILE = "${CERT_PUB_KEY}"
-KEY_FILE = "${CERT_PRIV_KEY}"
-EOF
-  )"
-  echo "${owncerts}" | tee --append $local_settings >/dev/null
-fi
-
-if [ "$arch" = "x86_64" ]; then
-  natsapi='nats-api'
-else
-  natsapi='nats-api-arm64'
-fi
-
-sudo cp /rmm/natsapi/bin/${natsapi} /usr/local/bin/nats-api
-sudo chown ${USER}:${USER} /usr/local/bin/nats-api
-sudo chmod +x /usr/local/bin/nats-api
-
 print_green 'Installing the backend'
 
 # for weasyprint
@@ -567,6 +511,77 @@ cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
+
+# Define variables for local_settings.py
+LOCAL_SETTINGS_FILE="/rmm/api/tacticalrmm/tacticalrmm/local_settings.py"
+SECRET_KEY=$(openssl rand -hex 32)
+DB_PASSWORD=$(openssl rand -base64 16)
+
+# Create local_settings.py with default settings and cache configuration
+echo "Creating local_settings.py with cache configuration..."
+cat <<EOF > "$LOCAL_SETTINGS_FILE"
+SECRET_KEY = '$SECRET_KEY'
+DEBUG = False
+ALLOWED_HOSTS = ['${rmmdomain}']
+
+ADMIN_URL = "${ADMINURL}/"
+
+CORS_ORIGIN_WHITELIST = [
+    "https://${frontenddomain}"
+]
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'tacticalrmm',
+        'USER': '${pgusername}',
+        'PASSWORD': '${pgpw}',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+
+MESH_USERNAME = "${meshusername}"
+MESH_SITE = "https://${meshdomain}"
+ADMIN_ENABLED = True
+
+# Cache configuration with Redis
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+CACHE_MIDDLEWARE_SECONDS = 300  # Cache responses for 5 minutes
+EOF
+
+if [[ "$insecure" = true ]]; then
+  echo "TRMM_INSECURE = True" | tee --append $local_settings >/dev/null
+fi
+
+if [[ "$byocert" = true ]]; then
+  owncerts="$(
+    cat <<EOF
+CERT_FILE = "${CERT_PUB_KEY}"
+KEY_FILE = "${CERT_PRIV_KEY}"
+EOF
+  )"
+  echo "${owncerts}" | tee --append $local_settings >/dev/null
+fi
+
+if [ "$arch" = "x86_64" ]; then
+  natsapi='nats-api'
+else
+  natsapi='nats-api-arm64'
+fi
+
+sudo cp /rmm/natsapi/bin/${natsapi} /usr/local/bin/nats-api
+sudo chown ${USER}:${USER} /usr/local/bin/nats-api
+sudo chmod +x /usr/local/bin/nats-api
+
 python manage.py migrate
 python manage.py generate_json_schemas
 python manage.py collectstatic --no-input

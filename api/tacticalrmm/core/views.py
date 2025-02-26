@@ -23,9 +23,9 @@ from core.tasks import sync_mesh_perms_task
 from logs.models import AuditLog
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.utils import get_core_settings
-from .models import APIKey, Role, User
-from .permissions import AccountsPerms, APIKeyPerms, LocalUserPerms, RolesPerms, SelfResetSSOPerms
-from .serializers import APIKeySerializer, RoleSerializer, TOTPSetupSerializer, UserSerializer, UserUISerializer
+from accounts.models import APIKey, Role, User
+from accounts.permissions import AccountsPerms, APIKeyPerms, LocalUserPerms, RolesPerms, SelfResetSSOPerms
+from accounts.serializers import APIKeySerializer, RoleSerializer, TOTPSetupSerializer, UserSerializer, UserUISerializer
 
 
 def is_2fa_disabled():

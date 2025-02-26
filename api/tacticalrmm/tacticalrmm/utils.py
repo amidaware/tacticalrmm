@@ -245,13 +245,6 @@ def reload_nats(*, publish: bool = True) -> None:
         },
     }
 
-    # Add TLS if needed
-    if get_nats_internal_protocol() == "tls":
-        config["tls"] = {
-            "cert_file": cert_file,
-            "key_file": key_file,
-        }
-
     # Add HTTP port if configured
     if "NATS_HTTP_PORT" in os.environ:
         config["http_port"] = int(os.getenv("NATS_HTTP_PORT"))  # type: ignore

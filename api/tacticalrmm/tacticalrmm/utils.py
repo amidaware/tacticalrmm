@@ -261,12 +261,20 @@ def reload_nats(*, publish: bool = True) -> None:
         json.dump(config, f)
 
     # Check if nats-server binary exists
-    if not os.path.exists("/usr/local/bin/nats-server"):
+    if os.path.exists("/usr/local/bin/nats-server"):
         time.sleep(0.5)
         subprocess.run(
             ["/usr/local/bin/nats-server", "-signal", "reload"], capture_output=True
         )
         logger.info("NATS server reloaded")
+    
+    # Check if nats-server binary exists
+    if os.path.exists("/usr/local/bin/nats-api"):
+        time.sleep(0.5)
+        subprocess.run(
+            ["/usr/local/bin/nats-api", "-signal", "reload"], capture_output=True
+        )
+        logger.info("NATS API reloaded")
     
     
     # Publish notification to Redis pubsub channel if requested

@@ -2,24 +2,25 @@ import json
 import os
 import re
 import socket
-import subprocess
+import subprocess  # noqa: Used in reload_nats function
 import tempfile
 import time
+import logging  # noqa: Used in reload_nats function
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
 from zoneinfo import ZoneInfo
 
 import requests
-from channels.auth import AuthMiddlewareStack
-from channels.db import database_sync_to_async
+from channels.auth import AuthMiddlewareStack  # noqa: Required dependency for WebSockets
+from channels.db import database_sync_to_async  # noqa: Required dependency for async DB access
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.http import FileResponse
-from knox.auth import TokenAuthentication
-from rest_framework.response import Response
+from knox.auth import TokenAuthentication  # noqa: Required dependency for authentication
+from rest_framework.response import Response  # noqa: Required dependency for API responses
 
-from agents.models import Agent
+from agents.models import Agent  # type: ignore # Agent model has dynamically added properties
 from core.utils import get_core_settings, token_is_valid
 from logs.models import DebugLog
 from tacticalrmm.celery import app as celery_app
@@ -35,10 +36,10 @@ from tacticalrmm.constants import (
     ScriptShell,
 )
 from tacticalrmm.helpers import (
-    get_certs,
-    get_nats_hosts,
-    get_nats_internal_protocol,
-    get_nats_ports,
+    get_certs,  # noqa: Used in reload_nats
+    get_nats_hosts,  # noqa: Used in reload_nats
+    get_nats_internal_protocol,  # noqa: Used in reload_nats
+    get_nats_ports,  # noqa: Used in reload_nats
     notify_error,
 )
 
@@ -175,7 +176,18 @@ def convert_to_iso_duration(string: str) -> str:
     return f"PT{tmp}"
 
 
-def reload_nats() -> None:
+def reload_nats(*, publish: bool = True) -> None:
+    """
+    Generate a new NATS config and restart NATS server.
+    If publish is True, also sends a notification to the 'agent_updates' Redis channel
+    to inform other services that they should also reload their NATS configuration.
+    """
+    logger = logging.getLogger(__name__)
+    
+    # List to track agent IDs for notifications
+    agent_ids = []
+    
+    # Default tactical user
     users = [
         {
             "user": "tacticalrmm",
@@ -183,10 +195,15 @@ def reload_nats() -> None:
             "permissions": {"publish": ">", "subscribe": ">"},
         }
     ]
+    
+    # Get all agents
     agents = Agent.objects.prefetch_related("user").only(
         "pk", "agent_id"
     )  # type:ignore
+    
+    # Add each agent to the users list
     for agent in agents:
+        agent_ids.append(agent.agent_id)
         try:
             users.append(
                 {
@@ -203,17 +220,19 @@ def reload_nats() -> None:
                     },
                 }
             )
-        except:
+        except Exception:
             DebugLog.critical(
                 agent=agent,
                 log_type=DebugLogType.AGENT_ISSUES,
                 message=f"{agent.hostname} does not have a user account, NATS will not work",
             )
 
+    # Get NATS configuration details
     cert_file, key_file = get_certs()
     nats_std_host, nats_ws_host, _ = get_nats_hosts()
     nats_std_port, nats_ws_port = get_nats_ports()
 
+    # Build the configuration
     config = {
         "authorization": {"users": users},
         "max_payload": 67108864,
@@ -226,29 +245,60 @@ def reload_nats() -> None:
         },
     }
 
+    # Add TLS if needed
     if get_nats_internal_protocol() == "tls":
         config["tls"] = {
             "cert_file": cert_file,
             "key_file": key_file,
         }
 
+    # Add HTTP port if configured
     if "NATS_HTTP_PORT" in os.environ:
         config["http_port"] = int(os.getenv("NATS_HTTP_PORT"))  # type: ignore
     elif hasattr(settings, "NATS_HTTP_PORT"):
         config["http_port"] = settings.NATS_HTTP_PORT  # type: ignore
 
+    # Add WebSocket compression if configured
     if "NATS_WS_COMPRESSION" in os.environ or hasattr(settings, "NATS_WS_COMPRESSION"):
         config["websocket"]["compression"] = True
 
+    # Write the configuration to disk
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
     with open(conf, "w") as f:
         json.dump(config, f)
 
-    if not settings.DOCKER_BUILD:
-        time.sleep(0.5)
-        subprocess.run(
-            ["/usr/local/bin/nats-server", "-signal", "reload"], capture_output=True
-        )
+    # Reload the NATS server if not in Docker
+    time.sleep(0.5)
+    subprocess.run(
+        ["/usr/local/bin/nats-server", "-signal", "reload"], capture_output=True
+    )
+    logger.info("NATS server reloaded")
+    
+    # Publish notification to Redis pubsub channel if requested
+    if publish:
+        try:
+            # Get the unique service ID to include in the notification
+            from core.agent_updater import get_service_id, get_redis_client
+            
+            # Create notification
+            notification = {
+                "type": "nats_config_update",
+                "timestamp": time.time(),
+                "source_id": get_service_id(),  # Include source ID to prevent loops
+                "agent_count": len(agent_ids)
+            }
+            
+            # Publish to Redis directly using redis-py
+            redis_client = get_redis_client()
+            result = redis_client.publish("agent_updates", json.dumps(notification))
+            
+            if result > 0:
+                logger.info(f"Published NATS update notification to {result} subscribers")
+            else:
+                logger.warning("Published NATS update notification but no subscribers received it")
+                
+        except Exception as e:
+            logger.error(f"Failed to publish NATS update notification: {str(e)}")
 
 
 @database_sync_to_async
@@ -313,7 +363,7 @@ RE_DB_VALUE = re.compile(
 # You can also use {{ global.value }} without an obj instance to use the global key store
 def get_db_value(
     *, string: str, instance: Optional[Union["Agent", "Client", "Site", "Alert"]] = None
-) -> Union[str, List[str], Literal[True], Literal[False], None]:
+) -> Union[str, List[str], Literal[True], Literal[False], None, Any]:
     from core.models import CustomField, GlobalKVStore
 
     # get properties into an array

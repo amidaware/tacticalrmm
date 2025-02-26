@@ -267,7 +267,6 @@ def reload_nats(*, publish: bool = True) -> None:
     with open(conf, "w") as f:
         json.dump(config, f)
 
-    # Reload the NATS server if not in Docker
     time.sleep(0.5)
     subprocess.run(
         ["/usr/local/bin/nats-server", "-signal", "reload"], capture_output=True

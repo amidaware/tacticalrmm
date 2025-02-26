@@ -17,7 +17,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, ReadOnlyField, SerializerMethodField
 from rest_framework.views import APIView
-from django.http import HttpResponseRedirect
 
 from accounts.utils import is_root_user
 from core.tasks import sync_mesh_perms_task

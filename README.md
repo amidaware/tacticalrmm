@@ -3,6 +3,7 @@
 ![CI Tests](https://github.com/amidaware/tacticalrmm/actions/workflows/ci-tests.yml/badge.svg?branch=develop)
 [![codecov](https://codecov.io/gh/amidaware/tacticalrmm/branch/develop/graph/badge.svg?token=8ACUPVPTH6)](https://codecov.io/gh/amidaware/tacticalrmm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
+[![](https://img.shields.io/badge/Gurubase-Ask%20Tactical%20RMM%20Guru-006BFF)](https://gurubase.io/g/tactical-rmm)
 
 Tactical RMM is a remote monitoring & management tool, built with Django and Vue.\
 It uses an [agent](https://github.com/amidaware/rmmagent) written in golang and integrates with [MeshCentral](https://github.com/Ylianst/MeshCentral)

@@ -71,6 +71,9 @@ class Command(BaseCommand):
 
         try:
             uri = get_mesh_ws_url()
+            self.stdout.write(
+                "Connecting to MeshCentral at {uri}"
+            )
             asyncio.run(self.websocket_call(uri))
             self.stdout.write("Initial Mesh Central setup complete")
         except websockets.exceptions.ConnectionClosedError:

@@ -51,9 +51,6 @@ def get_nats_ports() -> tuple[int, int]:
     return nats_standard_port, nats_websocket_port
 
 def get_nats_internal_protocol() -> str:
-    if getattr(settings, "USE_NATS_STANDARD", False):
-        return "tls"
-
     return "nats"
 
 

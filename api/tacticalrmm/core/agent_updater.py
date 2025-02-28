@@ -135,11 +135,3 @@ def start_listener(daemon: bool = True) -> threading.Thread:
     print("Thread started successfully", flush=True)
     
     return thread
-
-# Example usage in a Django management command:
-# def handle(self, *args, **options):
-#     thread = start_listener(daemon=False)
-#     try:
-#         thread.join()
-#     except KeyboardInterrupt:
-#         pass 

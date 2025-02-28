@@ -12,6 +12,7 @@ import time
 import uuid
 import redis
 import os
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +37,19 @@ def handle_agent_update(channel: str, message: bytes) -> None:
         message: The message payload as bytes
     """
     try:
+        # Force output to console for debugging
+        print(f"RECEIVED MESSAGE: {message}", flush=True)
+        
         data = json.loads(message.decode('utf-8'))
         
         if data.get('type') == 'nats_config_update':
             # Don't reload if this is the originating service
             if data.get('source_id') == _SERVICE_ID:
+                print(f"Ignoring NATS update from self (ID: {_SERVICE_ID})", flush=True)
                 logger.debug("Ignoring NATS update from self")
                 return
                 
+            print(f"Received NATS configuration update notification for {data.get('agent_count')} agents", flush=True)
             logger.info(f"Received NATS configuration update notification for {data.get('agent_count')} agents")
             
             # Import here to avoid circular import
@@ -51,10 +57,14 @@ def handle_agent_update(channel: str, message: bytes) -> None:
             
             # Call reload_nats to update this service's configuration
             # Don't publish again to avoid loops
+            print("Calling reload_nats(publish=False)...", flush=True)
             reload_nats(publish=False)
+            print("Successfully reloaded NATS configuration", flush=True)
             
     except Exception as e:
-        logger.error(f"Error handling agent update: {str(e)}")
+        error_msg = f"Error handling agent update: {str(e)}"
+        print(f"ERROR: {error_msg}", flush=True)
+        logger.error(error_msg)
 
 def get_redis_client():
     """Get a Redis client using the REDIS_HOST environment variable."""
@@ -63,6 +73,8 @@ def get_redis_client():
     
     # Use default Redis port
     redis_port = 6379
+    
+    print(f"Connecting to Redis at {redis_host}:{redis_port}", flush=True)
     
     # Create and return Redis client
     return redis.Redis(host=redis_host, port=redis_port, db=0)
@@ -78,27 +90,49 @@ def start_listener(daemon: bool = True) -> threading.Thread:
         The started thread object
     """
     def listener_thread():
+        print("===== AGENT LISTENER THREAD STARTED =====", flush=True)
+        print(f"Service ID: {_SERVICE_ID}", flush=True)
+        
         while True:
             try:
+                print("Starting Redis pub/sub listener for agent updates", flush=True)
                 logger.info("Starting Redis pub/sub listener for agent updates")
                 
                 # Get Redis connection directly
                 redis_client = get_redis_client()
                 pubsub = redis_client.pubsub()
+                
+                # Test Redis connection
+                try:
+                    ping_result = redis_client.ping()
+                    print(f"Redis ping result: {ping_result}", flush=True)
+                except Exception as ping_error:
+                    print(f"Redis ping failed: {str(ping_error)}", flush=True)
+                
+                print("Subscribing to 'agent_updates' channel...", flush=True)
                 pubsub.subscribe('agent_updates')
+                print("Successfully subscribed to 'agent_updates' channel", flush=True)
                 
                 # Process messages as they come in
+                print("Entering message processing loop...", flush=True)
                 for message in pubsub.listen():
+                    print(f"Received message type: {message['type']}", flush=True)
                     if message['type'] == 'message':
                         handle_agent_update(message['channel'], message['data'])
                         
             except Exception as e:
-                logger.error(f"Redis subscription error: {str(e)}")
+                error_msg = f"Redis subscription error: {str(e)}"
+                print(f"ERROR: {error_msg}", flush=True)
+                logger.error(error_msg)
+                print("Waiting 10 seconds before reconnecting...", flush=True)
                 time.sleep(10)  # Wait before reconnecting
     
+    print("Creating agent listener thread...", flush=True)
     thread = threading.Thread(target=listener_thread)
     thread.daemon = daemon
+    print(f"Starting thread with daemon={daemon}...", flush=True)
     thread.start()
+    print("Thread started successfully", flush=True)
     
     return thread
 

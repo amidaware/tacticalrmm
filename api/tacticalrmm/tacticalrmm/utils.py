@@ -287,8 +287,11 @@ def reload_nats(*, publish: bool = True) -> None:
         print("Enabling WebSocket compression", flush=True)
         config["websocket"]["compression"] = True
 
+    # Get NATS configuration path from environment variable, or use default
+    conf = os.environ.get("NATS_CONFIG", os.path.join(settings.BASE_DIR, "nats-rmm.conf"))
+    print(f"Using NATS configuration file: {conf}", flush=True)
+    
     # Write the configuration to disk
-    conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
     print(f"Writing configuration to {conf}", flush=True)
     try:
         with open(conf, "w") as f:

@@ -302,16 +302,56 @@ def reload_nats(*, publish: bool = True) -> None:
     # Check if nats-server binary exists
     nats_server_path = "/usr/local/bin/nats-server"
     if os.path.exists(nats_server_path):
-        print(f"Found nats-server at {nats_server_path}, signaling reload", flush=True)
+        print(f"Found nats-server at {nats_server_path}, preparing to signal reload", flush=True)
+        
+        # Variable to store nats-server PID
+        nats_server_pid = None
+        
+        # Try to get nats-server PID using ps command
+        try:
+            # Using ps command to find nats-server PID
+            ps_result = subprocess.run(
+                ["ps", "-ef"],
+                capture_output=True, 
+                text=True
+            )
+            
+            # Parse ps output to find nats-server processes
+            for line in ps_result.stdout.splitlines():
+                if "nats-server" in line and "grep" not in line:
+                    parts = line.split()
+                    if len(parts) > 1:
+                        nats_server_pid = parts[1]
+                        print(f"Found NATS server PID: {nats_server_pid}", flush=True)
+                        break
+            
+            if not nats_server_pid:
+                print("Could not determine NATS server PID, reload may fail", flush=True)
+        except Exception as e:
+            print(f"Error finding NATS server PID: {str(e)}", flush=True)
+        
         time.sleep(0.5)
         try:
-            result = subprocess.run(
-                [nats_server_path, "-signal", "reload"], capture_output=True
-            )
+            # Use the PID with the reload signal if available
+            if nats_server_pid:
+                reload_cmd = [nats_server_path, "--signal", f"reload={nats_server_pid}"]
+                print(f"Executing: {' '.join(reload_cmd)}", flush=True)
+                result = subprocess.run(reload_cmd, capture_output=True)
+            else:
+                # Try without PID as fallback (might not work)
+                print("Attempting reload without PID (may not work)", flush=True)
+                result = subprocess.run(
+                    [nats_server_path, "--signal", "reload"], capture_output=True
+                )
+            
             print(f"NATS server reload stdout: {result.stdout.decode()}", flush=True)
             print(f"NATS server reload stderr: {result.stderr.decode()}", flush=True)
             print(f"NATS server reload exit code: {result.returncode}", flush=True)
-            logger.info("NATS server reloaded")
+            
+            if result.returncode == 0:
+                logger.info("NATS server reloaded successfully")
+            else:
+                logger.warning(f"NATS server reload returned non-zero exit code: {result.returncode}")
         except Exception as e:
             error_msg = f"Error reloading NATS server: {str(e)}"
             print(f"ERROR: {error_msg}", flush=True)
@@ -322,20 +362,12 @@ def reload_nats(*, publish: bool = True) -> None:
     # Check if nats-api binary exists
     nats_api_path = "/usr/local/bin/nats-api"
     if os.path.exists(nats_api_path):
-        print(f"Found nats-api at {nats_api_path}, signaling reload", flush=True)
-        time.sleep(0.5)
-        try:
-            result = subprocess.run(
-                [nats_api_path, "-signal", "reload"], capture_output=True
-            )
-            print(f"NATS API reload stdout: {result.stdout.decode()}", flush=True)
-            print(f"NATS API reload stderr: {result.stderr.decode()}", flush=True)
-            print(f"NATS API reload exit code: {result.returncode}", flush=True)
-            logger.info("NATS API reloaded")
-        except Exception as e:
-            error_msg = f"Error reloading NATS API: {str(e)}"
-            print(f"ERROR: {error_msg}", flush=True)
-            logger.error(error_msg)
+        print(f"Found nats-api at {nats_api_path}", flush=True)
+        # Note: The help output doesn't show a --signal option for nats-api
+        # If you want to reload nats-api, you may need to investigate its proper reload mechanism
+        # For now, commented out the potentially incorrect reload command
+        print("Skipping NATS API reload - check documentation for proper reload mechanism", flush=True)
+        logger.info("NATS API reload skipped - please verify correct reload mechanism")
     else:
         print(f"nats-api not found at {nats_api_path}", flush=True)
     

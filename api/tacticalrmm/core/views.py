@@ -728,3 +728,48 @@ class OpenAICodeCompletion(APIView):
             )
 
         return Response(response_data["choices"][0]["message"]["content"])
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def agent_health_check(request):
+    """
+    Simple health check endpoint for agents to verify server availability
+    No authentication required
+    """
+    from agents.models import Agent
+    
+    try:
+        # Basic system info
+        disk_usage: int = round(psutil.disk_usage("/").percent)
+        mem_usage: int = round(psutil.virtual_memory().percent)
+        
+        # Check Redis connection
+        redis_url = f"redis://{settings.REDIS_HOST}"
+        redis_ping = False
+        with suppress(Exception):
+            with from_url(redis_url) as conn:
+                conn.ping()
+                redis_ping = True
+                
+        response = {
+            "status": "healthy",
+            "version": settings.TRMM_VERSION,
+            "agent_count": Agent.objects.count(),
+            "uptime": {
+                "disk_usage_percent": disk_usage,
+                "mem_usage_percent": mem_usage,
+            },
+            "redis_ping": redis_ping,
+        }
+        
+        # If Redis is down, set status to degraded
+        if not redis_ping:
+            response["status"] = "degraded"
+            
+        return Response(response)
+    except Exception as e:
+        return Response(
+            {"status": "unhealthy", "error": str(e)},
+            status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

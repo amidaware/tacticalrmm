@@ -22,6 +22,7 @@ urlpatterns = [
     path("clearcache/", views.clear_cache),
     path("status/", views.status),  # TODO deprecated
     path("v2/status/", views.status_v2),
+    path("health/", views.agent_health_check),  # New simple health check for agents
     path("openai/generate/", views.OpenAICodeCompletion.as_view()),
     path("webtermperms/", views.webterm_perms),
 ]

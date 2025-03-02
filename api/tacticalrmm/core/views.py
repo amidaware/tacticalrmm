@@ -560,6 +560,7 @@ class TwilioSMSTest(APIView):
 
 @csrf_exempt
 @monitoring_view_v2
+@permission_classes([AllowAny])
 def status_v2(request):
     from agents.models import Agent
     from clients.models import Client, Site

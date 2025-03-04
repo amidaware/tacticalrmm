@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 import re
 from collections import Counter
 from contextlib import suppress
@@ -584,7 +585,9 @@ class Agent(BaseAuditModel):
                 # don't allow check runs less than 15s
                 interval = 15 if check.run_interval < 15 else check.run_interval
 
-        return interval
+        return interval + random.randint(
+            *getattr(settings, "CHECK_INTERVAL_JITTER", (1, 60))
+        )
 
     def run_script(
         self,

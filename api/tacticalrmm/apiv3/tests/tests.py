@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.utils import timezone as djangotime
 from model_bakery import baker
 
@@ -12,7 +14,8 @@ class TestAPIv3(TacticalTestCase):
         self.setup_coresettings()
         self.agent = baker.make_recipe("agents.agent")
 
-    def test_get_checks(self):
+    @patch("agents.models.random.randint", return_value=0)
+    def test_get_checks(self, mock_randint):
         agent = baker.make_recipe("agents.agent")
         url = f"/api/v3/{agent.agent_id}/checkrunner/"
 
@@ -67,7 +70,8 @@ class TestAPIv3(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    def test_checkrunner_interval(self):
+    @patch("agents.models.random.randint", return_value=0)
+    def test_checkrunner_interval(self, mock_randint):
         url = f"/api/v3/{self.agent.agent_id}/checkinterval/"
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)

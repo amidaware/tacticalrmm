@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="86"
+SCRIPT_VERSION="87"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
@@ -34,6 +34,12 @@ fi
 rm -f $TMP_FILE
 
 export DEBIAN_FRONTEND=noninteractive
+
+virt_type=$(systemd-detect-virt)
+if [[ "$virt_type" == "lxc" ]]; then
+  echo -ne "${RED}LXC is not supported, use a VM instead.${NC}\n"
+  exit 1
+fi
 
 if [ -d /rmm/api/tacticalrmm ]; then
   echo -ne "${RED}ERROR: Existing trmm installation found. The install script must be run on a clean server.${NC}\n"
@@ -865,7 +871,7 @@ echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf >/dev/null
 celerybeatservice="$(
   cat <<EOF
 [Unit]
-Description=Celery Beat Service V3
+Description=Celery Beat Service V4
 After=network.target redis-server.service postgresql.service
 
 [Service]
@@ -876,6 +882,7 @@ EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
 ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
+ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
 Restart=always
 RestartSec=10s
 

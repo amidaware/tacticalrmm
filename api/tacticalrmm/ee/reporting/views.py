@@ -135,6 +135,7 @@ class GenerateReport(APIView):
                 ),
                 variables=template.template_variables,
                 dependencies=request.data["dependencies"],
+                user=request.user,
             )
 
             html_report = normalize_asset_url(html_report, format)
@@ -192,6 +193,7 @@ class GenerateReportPreview(APIView):
                 html_template=report_data.get("template_html"),
                 variables=report_data["template_variables"],
                 dependencies=report_data["dependencies"],
+                user=request.user,
             )
 
             if report_data["debug"]:

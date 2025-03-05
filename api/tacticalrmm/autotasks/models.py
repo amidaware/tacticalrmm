@@ -5,6 +5,7 @@ import string
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -18,7 +19,9 @@ from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
     FIELDS_TRIGGER_TASK_UPDATE_AGENT,
     POLICY_TASK_FIELDS_TO_COPY,
+    AgentPlat,
     AlertSeverity,
+    TaskRunStatus,
     TaskStatus,
     TaskSyncStatus,
     TaskType,
@@ -44,6 +47,10 @@ from tacticalrmm.utils import (
 def generate_task_name() -> str:
     chars = string.ascii_letters
     return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
+
+
+def default_task_supported_platforms() -> list[str]:
+    return [AgentPlat.WINDOWS]
 
 
 logger = logging.getLogger("trmm")
@@ -135,6 +142,11 @@ class AutomatedTask(BaseAuditModel):
     run_asap_after_missed = models.BooleanField(default=False)  # added in agent v1.4.7
     task_instance_policy = models.PositiveSmallIntegerField(blank=True, default=1)
 
+    task_supported_platforms = ArrayField(
+        models.CharField(max_length=30, choices=AgentPlat.choices),
+        default=default_task_supported_platforms,
+    )
+
     # deprecated
     managed_by_policy = models.BooleanField(default=False)
 
@@ -159,15 +171,23 @@ class AutomatedTask(BaseAuditModel):
             for field in self.fields_that_trigger_task_update_on_agent:
                 if getattr(self, field) != getattr(old_task, field):
                     if self.policy:
-                        TaskResult.objects.exclude(
-                            sync_status=TaskSyncStatus.INITIAL
-                        ).filter(task__policy_id=self.policy.id).update(
+                        TaskResult.objects.select_related("agent", "task").defer(
+                            "agent__services", "agent__wmi_detail"
+                        ).exclude(sync_status=TaskSyncStatus.INITIAL).filter(
+                            agent__plat=AgentPlat.WINDOWS,
+                            task__policy_id=self.policy.id,
+                        ).update(
                             sync_status=TaskSyncStatus.NOT_SYNCED
                         )
                     else:
-                        TaskResult.objects.filter(agent=self.agent, task=self).update(
+                        TaskResult.objects.select_related("agent", "task").defer(
+                            "agent__services", "agent__wmi_detail"
+                        ).filter(
+                            agent=self.agent, task=self, agent__plat=AgentPlat.WINDOWS
+                        ).update(
                             sync_status=TaskSyncStatus.NOT_SYNCED
                         )
+                    break
 
     def delete(self, *args, **kwargs):
         # if task is a policy task clear cache on everything
@@ -334,6 +354,11 @@ class AutomatedTask(BaseAuditModel):
             task_result = TaskResult(agent=agent, task=self)
             task_result.save()
 
+        if agent.is_posix:
+            task_result.sync_status = TaskSyncStatus.SYNCED
+            task_result.save(update_fields=["sync_status"])
+            return "ok"
+
         nats_data = {
             "func": "schedtask",
             "schedtaskpayload": self.generate_nats_task_payload(),
@@ -370,6 +395,11 @@ class AutomatedTask(BaseAuditModel):
             task_result = TaskResult(agent=agent, task=self)
             task_result.save()
 
+        if agent.is_posix:
+            task_result.sync_status = TaskSyncStatus.SYNCED
+            task_result.save(update_fields=["sync_status"])
+            return "ok"
+
         nats_data = {
             "func": "schedtask",
             "schedtaskpayload": self.generate_nats_task_payload(),
@@ -405,6 +435,10 @@ class AutomatedTask(BaseAuditModel):
         except TaskResult.DoesNotExist:
             task_result = TaskResult(agent=agent, task=self)
             task_result.save()
+
+        if agent.is_posix:
+            self.delete()
+            return "ok"
 
         nats_data = {
             "func": "delschedtask",
@@ -491,6 +525,10 @@ class TaskResult(models.Model):
     )
     sync_status = models.CharField(
         max_length=100, choices=TaskSyncStatus.choices, default=TaskSyncStatus.INITIAL
+    )
+    locked_at = models.DateTimeField(null=True, blank=True)
+    run_status = models.CharField(
+        max_length=30, choices=TaskRunStatus.choices, null=True, blank=True
     )
 
     def __str__(self):

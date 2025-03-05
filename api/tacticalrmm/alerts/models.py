@@ -442,8 +442,9 @@ class Alert(models.Model):
                 and dashboard_severities
                 and alert.severity in dashboard_severities
             ):
-                alert.hidden = False
-                alert.save(update_fields=["hidden"])
+                if alert.hidden is not False:
+                    alert.hidden = False
+                    alert.save(update_fields=["hidden"])
 
         # TODO rework this
         if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:

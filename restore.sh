@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="61"
+SCRIPT_VERSION="62"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -31,6 +31,12 @@ fi
 rm -f $TMP_FILE
 
 export DEBIAN_FRONTEND=noninteractive
+
+virt_type=$(systemd-detect-virt)
+if [[ "$virt_type" == "lxc" ]]; then
+  echo -ne "${RED}LXC is not supported, use a VM instead.${NC}\n"
+  exit 1
+fi
 
 if [ -d /rmm/api/tacticalrmm ]; then
   echo -ne "${RED}ERROR: Existing trmm installation found. The restore script must be run on a clean server, please re-read the docs.${NC}\n"

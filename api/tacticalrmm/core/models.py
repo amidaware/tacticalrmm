@@ -2,6 +2,7 @@ import smtplib
 from contextlib import suppress
 from email.headerregistry import Address
 from email.message import EmailMessage
+from email.utils import formatdate
 from typing import TYPE_CHECKING, List, Optional, cast
 
 import requests
@@ -260,6 +261,7 @@ class CoreSettings(BaseAuditModel):
         try:
             msg = EmailMessage()
             msg["Subject"] = subject
+            msg["Date"] = formatdate(localtime=True)
 
             if self.smtp_from_name:
                 msg["From"] = Address(

@@ -23,17 +23,17 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.20.1"
+TRMM_VERSION = "1.0.0"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.52"
+WEB_VERSION = "0.101.53"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.197"
+APP_VER = "0.0.198"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.8.0"
+LATEST_AGENT_VER = "2.9.0"
 
 MESH_VER = "1.1.32"
 
@@ -83,10 +83,10 @@ INSTALL_DENO_URL = ""
 DENO_DEFAULT_PERMISSIONS = "--allow-all"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "45"
+PIP_VER = "46"
 
-SETUPTOOLS_VER = "75.1.0"
-WHEEL_VER = "0.44.0"
+SETUPTOOLS_VER = "75.8.0"
+WHEEL_VER = "0.45.1"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 

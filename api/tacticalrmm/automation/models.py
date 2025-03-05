@@ -225,7 +225,8 @@ class Policy(BaseAuditModel):
             if policy and policy.active and policy.pk not in processed_policies:
                 processed_policies.append(policy.pk)
                 for task in policy.autotasks.all():
-                    tasks.append(task)
+                    if agent.plat in task.task_supported_platforms:
+                        tasks.append(task)
 
         return tasks
 

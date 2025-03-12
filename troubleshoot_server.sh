@@ -5,7 +5,7 @@
 # v1.1 1/21/2022 update to include all services
 # v 1.2 6/24/2023 changed to add date, easier readability and ipv4 addresses only for checks
 # v 1.3 6/24/2024 Adding resolvconf helper
-# v 1.4 3/12/2025 Removed Mongo Check and added OS Check
+# v 1.4 3/12/2025 Removed Mongo Check and added OS Check and Warning for Ubuntu 20.04
 
 # This script asks for the 3 subdomains, checks they exist, checks they resolve locally and remotely (using google dns for remote),
 # checks services are running, checks ports are opened. The only part that will make the script stop is if the sub domains dont exist, theres literally no point in going further if thats the case
@@ -31,21 +31,35 @@ fullrelno=$(lsb_release -sr)
 
 not_supported() {
   echo -ne "${RED}ERROR: Only Debian 11, Debian 12 and Ubuntu 22.04 are now supported.${NC}\n"
+  exit 1
+}
+
+needs_updated() {
+  echo -ne "${YELLOW}WARNING: Ubuntu 20.04 is outdated. Please Backup and Restore to Ubuntu 22.04 or Debian 12.${NC}\n"
+}
+
+pass_message() {
+  echo -ne "${GREEN}You are running $osname $fullrelno, which is supported.${NC}\n"
 }
 
 if [[ "$osname" == "debian" ]]; then
+  fullrelno=$relno
   if [[ "$relno" -ne 11 && "$relno" -ne 12 ]]; then
     not_supported
-    exit 1
+  else
+    pass_message
   fi
 elif [[ "$osname" == "ubuntu" ]]; then
-  if [[ "$fullrelno" != "22.04" ]]; then
+  version=$fullrelno
+  if [[ "$fullrelno" == "20.04" ]]; then
+    needs_updated
+  elif [[ "$fullrelno" == "22.04" ]]; then
+    pass_message
+  else
     not_supported
-    exit 1
   fi
 else
   not_supported
-  exit 1
 fi
 
 if dpkg -l | grep -qi turnkey; then

@@ -274,9 +274,9 @@ def _run_url_rest_action(*, url: str, method, body: str, headers: str, instance=
 
 
 def run_url_rest_action(*, action_id: int, instance=None) -> tuple[str, int]:
-    import core.models
+    from core.models import URLAction
 
-    action = core.models.URLAction.objects.get(pk=action_id)
+    action = URLAction.objects.get(pk=action_id)
     method = action.rest_method
     url = action.pattern
     body = action.rest_body

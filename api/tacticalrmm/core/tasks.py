@@ -450,7 +450,7 @@ def sync_mesh_perms_task(self):
             trmm_agents_meshnodeids = [
                 f"node//{i.hex_mesh_node_id}"
                 for i in Agent.objects.only("mesh_node_id")
-                if i.mesh_node_id
+                if i.mesh_node_id and i.hex_mesh_node_id != "error"
             ]
 
             mesh_users_dict = {}

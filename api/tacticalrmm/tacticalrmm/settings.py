@@ -232,9 +232,11 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
-    "ee.reporting",
     "ee.sso",
 ]
+
+if not DEMO:
+    INSTALLED_APPS += ("ee.reporting",)
 
 CHANNEL_LAYERS = {
     "default": {

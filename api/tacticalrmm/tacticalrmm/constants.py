@@ -472,6 +472,16 @@ DEMO_NOT_ALLOWED = [
     {"name": "bulk_run_checks", "methods": ["GET"]},
     {"name": "OpenAICodeCompletion", "methods": ["POST"]},
     {"name": "wol", "methods": ["POST"]},
+    {"name": "Shutdown", "methods": ["POST"]},
+    {"name": "RunTestURLAction", "methods": ["POST"]},
+    {"name": "TestRunServerScript", "methods": ["POST"]},
+    {"name": "DeleteActiveLoginSession", "methods": ["DELETE"]},
+    {"name": "GetDeleteActiveLoginSessionsPerUser", "methods": ["DELETE"]},
+    {"name": "GetAddSSOProvider", "methods": ["POST"]},
+    {"name": "GetUpdateDeleteSSOProvider", "methods": ["PUT", "DELETE"]},
+    {"name": "DisconnectSSOAccount", "methods": ["DELETE"]},
+    {"name": "GetAccessToken", "methods": ["POST"]},
+    {"name": "GetUpdateSSOSettings", "methods": ["POST"]},
 ]
 
 CONFIG_MGMT_CMDS = (

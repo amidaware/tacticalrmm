@@ -273,27 +273,19 @@ fi
 """
 
 ping_success_output = """
-Pinging 8.8.8.8 with 32 bytes of data:
-Reply from 8.8.8.8: bytes=32 time=28ms TTL=116
-Reply from 8.8.8.8: bytes=32 time=26ms TTL=116
-Reply from 8.8.8.8: bytes=32 time=29ms TTL=116
-Reply from 8.8.8.8: bytes=32 time=23ms TTL=116
+556 bytes from 8.8.8.8: icmp_seq=0 time=2.1953ms
+556 bytes from 8.8.8.8: icmp_seq=1 time=726.1µs
+556 bytes from 8.8.8.8: icmp_seq=2 time=504.4µs
 
-Ping statistics for 8.8.8.8:
-    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
-Approximate round trip times in milli-seconds:
-    Minimum = 23ms, Maximum = 29ms, Average = 26ms
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 504.4µs/1.141934ms/2.1953ms/750.321µs
 """
 
 ping_fail_output = """
-Pinging 10.42.33.2 with 32 bytes of data:
-Request timed out.
-Request timed out.
-Request timed out.
-Request timed out.
-
-Ping statistics for 10.42.33.2:
-Packets: Sent = 4, Received = 0, Lost = 4 (100% loss),
+--- 10.42.33.2 ping statistics ---
+3 packets transmitted, 0 packets received, 100% packet loss
+round-trip min/avg/max/stddev = 0s/0s/0s/0s
 """
 
 spooler_stdout = """

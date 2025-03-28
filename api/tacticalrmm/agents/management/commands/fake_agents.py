@@ -2,6 +2,7 @@ import datetime as dt
 import json
 import random
 import string
+from statistics import mean
 
 from django.conf import settings
 from django.core.management import call_command
@@ -512,6 +513,9 @@ class Command(BaseCommand):
                 13,
                 34,
             ]
+            check_result3.more_info = (
+                f"Average CPU Load: {int(mean(check_result3.history))}%"
+            )
             check_result3.save()
 
             for i in range(30):
@@ -538,6 +542,9 @@ class Command(BaseCommand):
             check_result4.status = CheckStatus.PASSING
             check_result4.last_run = django_now
             check_result4.history = [34, 34, 35, 36, 34, 34, 34, 34, 34, 34]
+            check_result4.more_info = (
+                f"Average Memory Usage: {int(mean(check_result4.history))}%"
+            )
             check_result4.save()
 
             for i in range(30):

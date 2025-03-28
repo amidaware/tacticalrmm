@@ -13,6 +13,7 @@ from contextlib import suppress
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer, JsonWebsocketConsumer
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import F
 from django.utils import timezone as djangotime
@@ -97,7 +98,11 @@ class DashInfo(AsyncJsonWebsocketConsumer):
                 "total_workstation_offline_count": offline_workstation_agents_count,
                 "total_server_count": total_server_agents_count,
                 "total_workstation_count": total_workstation_agents_count,
-                "days_until_cert_expires": days_until_cert_expires(),
+                "days_until_cert_expires": (
+                    days_until_cert_expires()
+                    if not getattr(settings, "DEMO", False)
+                    else 100
+                ),
             },
         }
 

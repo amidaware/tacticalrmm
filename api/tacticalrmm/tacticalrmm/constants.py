@@ -482,6 +482,9 @@ DEMO_NOT_ALLOWED = [
     {"name": "DisconnectSSOAccount", "methods": ["DELETE"]},
     {"name": "GetAccessToken", "methods": ["POST"]},
     {"name": "GetUpdateSSOSettings", "methods": ["POST"]},
+    {"name": "ping", "methods": ["GET"]},
+    {"name": "GetAddAPIKeys", "methods": ["POST"]},
+    {"name": "GetUpdateDeleteAPIKey", "methods": ["PUT", "DELETE"]},
 ]
 
 CONFIG_MGMT_CMDS = (

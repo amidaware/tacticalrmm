@@ -12,6 +12,7 @@ class ListAgentSerializer(serializers.ModelSerializer[Agent]):
 
 class DetailAgentSerializer(serializers.ModelSerializer[Agent]):
     status = serializers.ReadOnlyField()
+    hex_mesh_node_id = serializers.ReadOnlyField()
 
     class Meta:
         model = Agent
@@ -33,6 +34,7 @@ class DetailAgentSerializer(serializers.ModelSerializer[Agent]):
             "monitoring_type",
             "description",
             "mesh_node_id",
+            "hex_mesh_node_id",
             "overdue_email_alert",
             "overdue_text_alert",
             "overdue_dashboard_alert",

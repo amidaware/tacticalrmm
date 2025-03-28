@@ -28,7 +28,6 @@ urlpatterns = [
     path("v2/login/", LoginViewV2.as_view()),
     path("logout/", knox_views.LogoutView.as_view()),
     path("logoutall/", knox_views.LogoutAllView.as_view()),
-    path("api/v3/", include("apiv3.urls")),
     path("clients/", include("clients.urls")),
     path("agents/", include("agents.urls")),
     path("checks/", include("checks.urls")),
@@ -42,8 +41,13 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
-    path("reporting/", include("ee.reporting.urls")),
 ]
+
+if not getattr(settings, "DEMO", False):
+    urlpatterns += (
+        path("api/v3/", include("apiv3.urls")),
+        path("reporting/", include("ee.reporting.urls")),
+    )
 
 if not getattr(settings, "TRMM_DISABLE_SSO", False):
     urlpatterns += (

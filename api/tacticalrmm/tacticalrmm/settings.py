@@ -23,7 +23,7 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.20.2-dev"
+TRMM_VERSION = "1.0.1-dev"
 
 # https://github.com/amidaware/tacticalrmm-web
 WEB_VERSION = "0.101.53"
@@ -232,9 +232,11 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
-    "ee.reporting",
     "ee.sso",
 ]
+
+if not DEMO:
+    INSTALLED_APPS += ("ee.reporting",)
 
 CHANNEL_LAYERS = {
     "default": {

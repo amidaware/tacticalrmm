@@ -20,11 +20,15 @@ urlpatterns = [
     path("urlaction/run/test/", views.RunTestURLAction.as_view()),
     path("smstest/", views.TwilioSMSTest.as_view()),
     path("clearcache/", views.clear_cache),
-    path("status/", views.status),  # TODO deprecated
-    path("v2/status/", views.status_v2),
     path("openai/generate/", views.OpenAICodeCompletion.as_view()),
     path("webtermperms/", views.webterm_perms),
 ]
+
+if not getattr(settings, "DEMO", False):
+    urlpatterns += (
+        path("status/", views.status),  # TODO deprecated
+        path("v2/status/", views.status_v2),
+    )
 
 
 if not (
@@ -32,6 +36,4 @@ if not (
     or getattr(settings, "TRMM_DISABLE_SERVER_SCRIPTS", False)
     or getattr(settings, "DEMO", False)
 ):
-    urlpatterns += [
-        path("serverscript/test/", views.TestRunServerScript.as_view()),
-    ]
+    urlpatterns += (path("serverscript/test/", views.TestRunServerScript.as_view()),)

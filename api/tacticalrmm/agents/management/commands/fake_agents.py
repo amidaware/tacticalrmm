@@ -41,6 +41,7 @@ from tacticalrmm.demo_data import (
     disks,
     disks_linux_deb,
     disks_linux_pi,
+    disks_mac,
     ping_fail_output,
     ping_success_output,
     restart_nla_ps1,
@@ -48,9 +49,8 @@ from tacticalrmm.demo_data import (
     spooler_stdout,
     temp_dir_stdout,
     wmi_deb,
-    wmi_pi,
     wmi_mac,
-    disks_mac,
+    wmi_pi,
 )
 from winupdate.models import WinUpdate, WinUpdatePolicy
 

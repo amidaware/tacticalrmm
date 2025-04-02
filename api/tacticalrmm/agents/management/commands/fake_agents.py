@@ -17,6 +17,7 @@ from checks.models import Check, CheckHistory, CheckResult
 from clients.models import Client, Site
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
+from core.models import CoreSettings
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
     AgentHistoryType,
@@ -95,6 +96,10 @@ class Command(BaseCommand):
         call_command("initial_db_setup")
         call_command("load_chocos")
         call_command("create_installer_user")
+
+        core = CoreSettings.objects.first()
+        core.mesh_company_name = "My Company Inc."
+        core.save(update_fields=["mesh_company_name"])
 
         # policies
         check_policy = Policy()

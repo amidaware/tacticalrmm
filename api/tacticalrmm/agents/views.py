@@ -320,12 +320,64 @@ class AgentProcesses(APIView):
         return Response(f"Process with PID: {pid} was ended successfully")
 
 
+class WebVNC(APIView):
+    permission_classes = [IsAuthenticated, MeshPerms]
+
+    def get(self, request, agent_id, port):
+        from urllib.parse import urlparse
+
+        from core.mesh_utils import MeshSync
+
+        agent = get_object_or_404(
+            Agent.objects.select_related("site__client").defer(*AGENT_DEFER),
+            agent_id=agent_id,
+        )
+        if agent.hex_mesh_node_id == "error":
+            return notify_error("Missing mesh node id")
+
+        core = get_core_settings()
+
+        uri = get_mesh_ws_url()
+        ms = MeshSync(uri)
+
+        payload = {
+            "action": "getcookie",
+            "name": None,
+            "nodeid": f"node//{agent.hex_mesh_node_id}",
+            "tag": "novnc",
+            "tcpaddr": None,
+            "tcpport": int(port),
+        }
+        cookie_ret = ms.mesh_action(payload=payload, wait=True)
+
+        vnc_url = (
+            core.mesh_site
+            + "/novnc/vnc.html?ws=wss%3A%2F%2F"
+            + urlparse(core.mesh_site).netloc
+            + "%2F"
+            + "meshrelay.ashx%3Fauth%3D"
+            + cookie_ret["cookie"]  # type: ignore
+            + f"&show_dot=1&l=en&name={agent.hostname}"
+        )
+
+        ret = {
+            "hostname": agent.hostname,
+            "vnc": vnc_url,
+            "client": agent.client.name,
+            "site": agent.site.name,
+        }
+        return Response(ret)
+
+
 class AgentMeshCentral(APIView):
     permission_classes = [IsAuthenticated, MeshPerms]
 
     # get mesh urls
     def get(self, request, agent_id):
-        agent = get_object_or_404(Agent, agent_id=agent_id)
+        agent = get_object_or_404(
+            Agent.objects.select_related("site__client").defer(*AGENT_DEFER),
+            agent_id=agent_id,
+        )
         core = get_core_settings()
 
         user = (

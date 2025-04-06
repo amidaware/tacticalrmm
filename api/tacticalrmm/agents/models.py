@@ -460,7 +460,10 @@ class Agent(BaseAuditModel):
 
     @property
     def hex_mesh_node_id(self) -> str:
-        return _b64_to_hex(self.mesh_node_id)
+        try:
+            return _b64_to_hex(self.mesh_node_id)
+        except Exception:
+            return "error"
 
     @classmethod
     def online_agents(cls, min_version: str = "") -> "List[Agent]":

@@ -2,6 +2,7 @@ import datetime as dt
 import json
 import random
 import string
+from statistics import mean
 
 from django.conf import settings
 from django.core.management import call_command
@@ -16,6 +17,7 @@ from checks.models import Check, CheckHistory, CheckResult
 from clients.models import Client, Site
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
+from core.models import CoreSettings
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
     AgentHistoryType,
@@ -40,6 +42,7 @@ from tacticalrmm.demo_data import (
     disks,
     disks_linux_deb,
     disks_linux_pi,
+    disks_mac,
     ping_fail_output,
     ping_success_output,
     restart_nla_ps1,
@@ -47,9 +50,8 @@ from tacticalrmm.demo_data import (
     spooler_stdout,
     temp_dir_stdout,
     wmi_deb,
-    wmi_pi,
     wmi_mac,
-    disks_mac,
+    wmi_pi,
 )
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
@@ -94,6 +96,10 @@ class Command(BaseCommand):
         call_command("initial_db_setup")
         call_command("load_chocos")
         call_command("create_installer_user")
+
+        core = CoreSettings.objects.first()
+        core.mesh_company_name = "My Company Inc."
+        core.save(update_fields=["mesh_company_name"])
 
         # policies
         check_policy = Policy()
@@ -512,6 +518,9 @@ class Command(BaseCommand):
                 13,
                 34,
             ]
+            check_result3.more_info = (
+                f"Average CPU Load: {int(mean(check_result3.history))}%"
+            )
             check_result3.save()
 
             for i in range(30):
@@ -538,6 +547,9 @@ class Command(BaseCommand):
             check_result4.status = CheckStatus.PASSING
             check_result4.last_run = django_now
             check_result4.history = [34, 34, 35, 36, 34, 34, 34, 34, 34, 34]
+            check_result4.more_info = (
+                f"Average Memory Usage: {int(mean(check_result4.history))}%"
+            )
             check_result4.save()
 
             for i in range(30):

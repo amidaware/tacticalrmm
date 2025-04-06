@@ -329,8 +329,21 @@ class TaskRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, agentid):
-        agent = get_object_or_404(Agent.objects.defer(*AGENT_DEFER), agent_id=agentid)
-        task = get_object_or_404(AutomatedTask, pk=pk)
+        agent = get_object_or_404(
+            Agent.objects.select_related("policy", "site").defer(*AGENT_DEFER),
+            agent_id=agentid,
+        )
+        task = get_object_or_404(
+            AutomatedTask.objects.select_related("agent", "policy"), pk=pk
+        )
+
+        if task.agent:
+            if task.agent.agent_id != agent.agent_id:
+                return notify_error("")
+        elif task.policy:
+            if pk not in [t.pk for t in agent.get_tasks_with_policies()]:
+                return notify_error("")
+
         return Response(TaskGOGetSerializer(task, context={"agent": agent}).data)
 
     def patch(self, request, pk, agentid):

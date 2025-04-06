@@ -485,6 +485,7 @@ DEMO_NOT_ALLOWED = [
     {"name": "ping", "methods": ["GET"]},
     {"name": "GetAddAPIKeys", "methods": ["POST"]},
     {"name": "GetUpdateDeleteAPIKey", "methods": ["PUT", "DELETE"]},
+    {"name": "WebVNC", "methods": ["GET"]},
 ]
 
 CONFIG_MGMT_CMDS = (

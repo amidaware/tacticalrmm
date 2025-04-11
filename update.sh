@@ -20,7 +20,7 @@ NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
   printf >&2 "${YELLOW}Old update script detected, downloading and replacing with the latest version...${NC}\n"
-  wget -q "${SCRIPT_URL}" -O update.sh
+  wget -q "${SCRIPT_URL}" -O "${THIS_SCRIPT}"
   exec ${THIS_SCRIPT}
 fi
 

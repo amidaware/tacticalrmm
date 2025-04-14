@@ -1,5 +1,11 @@
 name: Publish Tactical Docker Images
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+      description: 'Test scenario tag'
+      required: true
+      type: string
   push:
     tags:
       - "v*.*.*"
@@ -35,7 +41,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical:${{ steps.prep.outputs.version }},tacticalrmm/tactical:latest
+          tags: mmoroz612/tbe:${{ inputs.tag }},mmoroz612/tbe:latest
 
       - name: Build and Push Tactical MeshCentral Image
         uses: docker/build-push-action@v2
@@ -45,7 +51,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-meshcentral/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-meshcentral:${{ steps.prep.outputs.version }},tacticalrmm/tactical-meshcentral:latest
+          tags: mmoroz612/tmesh:${{ inputs.tag }},mmoroz612/tmesh:latest
 
       - name: Build and Push Tactical NATS Image
         uses: docker/build-push-action@v2
@@ -55,7 +61,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-nats/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-nats:${{ steps.prep.outputs.version }},tacticalrmm/tactical-nats:latest
+          tags: mmoroz612/tnats:${{ inputs.tag }},mmoroz612/tnats:latest
 
       - name: Build and Push Tactical Frontend Image
         uses: docker/build-push-action@v2
@@ -65,7 +71,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-frontend/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-frontend:${{ steps.prep.outputs.version }},tacticalrmm/tactical-frontend:latest
+          tags: mmoroz612/tfe:${{ inputs.tag }},mmoroz612/tfe:latest
 
       - name: Build and Push Tactical Nginx Image
         uses: docker/build-push-action@v2
@@ -75,4 +81,4 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-nginx/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-nginx:${{ steps.prep.outputs.version }},tacticalrmm/tactical-nginx:latest
+          tags: mmoroz612/tnginx:${{ inputs.tag }},mmoroz612/tnginx:latest

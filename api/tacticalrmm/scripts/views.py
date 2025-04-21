@@ -177,7 +177,8 @@ class TestScript(APIView):
         AuditLog.audit_test_script_run(
             username=request.user.username,
             agent=agent,
-            script_body=script_body,
+            before_value=data,
+            after_value=r,
             debug_info={"ip": request._client_ip},
         )
 

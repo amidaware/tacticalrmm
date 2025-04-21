@@ -162,12 +162,11 @@ class AuditLog(models.Model):
     @staticmethod
     def audit_test_script_run(
         username: str,
-        script_body: str,
+        before_value: dict[str, Any],
+        after_value: dict[Any, Any] | str,
         agent: Optional["Agent"],
-        debug_info: Dict[Any, Any] = {},
+        debug_info: dict[Any, Any] = {},
     ) -> None:
-
-        debug_info["script_body"] = script_body
 
         AuditLog.objects.create(
             agent=agent.hostname if agent else "Tactical RMM Server",
@@ -177,6 +176,8 @@ class AuditLog(models.Model):
             action=AuditActionType.EXEC_SCRIPT,
             message=f'{username} tested a script on {agent.hostname if agent else "Tactical RMM Server"}',
             debug_info=debug_info,
+            before_value=before_value,
+            after_value=after_value,
         )
 
     @staticmethod

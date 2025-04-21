@@ -220,6 +220,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.openid_connect",
     "allauth.headless",
     "apiv3",
+    "apiv4",
     "clients",
     "agents",
     "checks",

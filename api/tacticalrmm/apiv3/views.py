@@ -44,6 +44,7 @@ from tacticalrmm.constants import (
     DebugLogType,
     GoArch,
     MeshAgentIdent,
+    PAAction,
     PAStatus,
     TaskRunStatus,
 )
@@ -547,12 +548,18 @@ class Installer(APIView):
         return Response("ok")
 
 
+# TODO deprecated, moved to v4 endpoint
 class ChocoResult(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
         action = get_object_or_404(PendingAction, pk=pk)
+        if not action.agent.pendingactions.filter(
+            action_type=PAAction.CHOCO_INSTALL, status=PAStatus.PENDING
+        ):
+            return notify_error("")
+
         results: str = request.data["results"]
 
         software_name = action.details["name"].lower()

@@ -370,6 +370,7 @@ POLICY_CHECK_FIELDS_TO_COPY = [
     "ip",
     "script",
     "script_args",
+    "success_return_codes",
     "info_return_codes",
     "warning_return_codes",
     "timeout",

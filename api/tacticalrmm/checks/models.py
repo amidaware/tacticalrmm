@@ -117,6 +117,12 @@ class Check(BaseAuditModel):
         blank=True,
         default=list,
     )
+    success_return_codes = ArrayField(
+        models.PositiveIntegerField(),
+        null=True,
+        blank=True,
+        default=list,
+    )
     timeout = models.PositiveIntegerField(null=True, blank=True)
     # win service checks
     svc_name = models.CharField(max_length=255, null=True, blank=True)
@@ -427,6 +433,8 @@ class CheckResult(models.Model):
             elif data["retcode"] in check.warning_return_codes:
                 self.alert_severity = AlertSeverity.WARNING
                 self.status = CheckStatus.FAILING
+            elif data["retcode"] in check.success_return_codes:
+                self.status = CheckStatus.PASSING
             elif data["retcode"] != 0:
                 self.status = CheckStatus.FAILING
                 self.alert_severity = AlertSeverity.ERROR

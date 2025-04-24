@@ -296,6 +296,7 @@ ONLINE_AGENTS = (
     "overdue_time",
     "offline_time",
     "version",
+    "plat",
 )
 
 FIELDS_TRIGGER_TASK_UPDATE_AGENT = [

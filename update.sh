@@ -408,7 +408,7 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; t
   python3.11 -m venv env
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
-  pip install --no-cache-dir --upgrade pip
+  pip install --no-cache-dir pip==25.1
   pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
   pip install --no-cache-dir -r requirements.txt
 else

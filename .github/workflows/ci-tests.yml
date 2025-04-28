@@ -45,7 +45,7 @@ jobs:
           SETTINGS_FILE="tacticalrmm/settings.py"
           SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
           WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-          pip install --upgrade pip
+          pip install pip==25.1
           pip install setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
           pip install -r requirements.txt -r requirements-test.txt
 

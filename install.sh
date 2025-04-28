@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="87"
+SCRIPT_VERSION="88"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
@@ -564,7 +564,7 @@ cd /rmm/api
 python3.11 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
-pip install --no-cache-dir --upgrade pip
+pip install --no-cache-dir pip==25.1
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate

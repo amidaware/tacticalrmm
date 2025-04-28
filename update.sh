@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="155"
+SCRIPT_VERSION="156"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -20,7 +20,7 @@ NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
   printf >&2 "${YELLOW}Old update script detected, downloading and replacing with the latest version...${NC}\n"
-  wget -q "${SCRIPT_URL}" -O update.sh
+  wget -q "${SCRIPT_URL}" -O "${THIS_SCRIPT}"
   exec ${THIS_SCRIPT}
 fi
 
@@ -408,7 +408,7 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; t
   python3.11 -m venv env
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
-  pip install --no-cache-dir --upgrade pip
+  pip install --no-cache-dir pip==25.1
   pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
   pip install --no-cache-dir -r requirements.txt
 else

@@ -296,6 +296,7 @@ ONLINE_AGENTS = (
     "overdue_time",
     "offline_time",
     "version",
+    "plat",
 )
 
 FIELDS_TRIGGER_TASK_UPDATE_AGENT = [
@@ -370,6 +371,7 @@ POLICY_CHECK_FIELDS_TO_COPY = [
     "ip",
     "script",
     "script_args",
+    "success_return_codes",
     "info_return_codes",
     "warning_return_codes",
     "timeout",

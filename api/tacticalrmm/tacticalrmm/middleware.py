@@ -22,6 +22,7 @@ def get_debug_info() -> Dict[str, Any]:
 
 EXCLUDE_PATHS = (
     "/api/v3",
+    "/api/v4",
     "/logs/audit",
     f"/{settings.ADMIN_URL}",
     "/logout",
@@ -33,7 +34,7 @@ EXCLUDE_PATHS = (
 )
 
 DEMO_EXCLUDE_PATHS = (
-    "/api/v3",
+    "/api/v4",
     "/api/schema",
 )
 

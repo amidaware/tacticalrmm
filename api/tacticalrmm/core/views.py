@@ -511,19 +511,28 @@ class TestRunServerScript(APIView):
             shell=request.data["shell"],
         )
 
-        AuditLog.audit_test_script_run(
-            username=request.user.username,
-            agent=None,
-            script_body=code,
-            debug_info={"ip": request._client_ip},
-        )
-
         ret = {
             "stdout": stdout,
             "stderr": stderr,
             "execution_time": f"{execution_time:.4f}",
             "retcode": retcode,
         }
+
+        audit_before = {
+            "body": code,
+            "args": request.data["args"],
+            "env_vars": request.data["env_vars"],
+            "timeout": request.data["timeout"],
+            "shell": request.data["shell"],
+        }
+
+        AuditLog.audit_test_script_run(
+            username=request.user.username,
+            before_value=audit_before,
+            after_value=ret,
+            agent=None,
+            debug_info={"ip": request._client_ip},
+        )
 
         return Response(ret)
 

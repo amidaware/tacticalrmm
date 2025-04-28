@@ -33,8 +33,8 @@ sqlparse==0.5.1
 tldextract==5.1.3
 twilio==8.13.0
 urllib3==2.3.0
-uvicorn[standard]==0.34.0
-uWSGI==2.0.28
+uvicorn[standard]==0.34.2
+uWSGI==2.0.29
 validators==0.24.0
 vine==5.1.0
 websockets==13.1

@@ -52,6 +52,9 @@ def check_agent_update_schedule_task() -> None:
         return
     # scheduled task that installs updates on agents if enabled
     for agent in Agent.online_agents(min_version="1.3.0"):
+        if agent.is_posix:
+            continue
+
         agent.delete_superseded_updates()
         install = False
         patch_policy = agent.get_patch_policy()

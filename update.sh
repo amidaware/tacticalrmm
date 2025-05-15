@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="156"
+SCRIPT_VERSION="157"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -590,6 +590,51 @@ sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
 echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null
 sudo chown www-data:www-data -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
+
+# disable compression if set to fix some mesh issues
+mesh_cfg='/meshcentral/meshcentral-data/config.json'
+
+check_jq_filter='
+( .settings // {} ) |
+to_entries |
+map(
+    select((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression"))
+) |
+all(.value == false)
+'
+
+apply_jq_filter='
+.settings |= (
+    with_entries(
+        if ((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression")) then
+            .value = false
+        else
+            .
+        end
+    )
+)
+'
+
+if ! which jq >/dev/null; then
+  echo "installing jq"
+  sudo apt-get install -y jq >/dev/null
+fi
+
+if which jq >/dev/null; then
+  if ! jq -e "$check_jq_filter" "$mesh_cfg" >/dev/null; then
+    echo "Disabling mesh compression"
+    # backup to homedir first
+    cp "$mesh_cfg" ~/meshcfg-$(date "+%Y%m%dT%H%M%S").bak
+    mesh_tmp=$(mktemp)
+    if jq "$apply_jq_filter" "$mesh_cfg" >"$mesh_tmp"; then
+      if [ -s "$mesh_tmp" ]; then
+        mv "$mesh_tmp" "$mesh_cfg"
+        sudo systemctl restart meshcentral
+      fi
+    fi
+    rm -f "$mesh_tmp"
+  fi
+fi
 
 for i in nats nats-api rmm daphne celery celerybeat nginx; do
   printf >&2 "${GREEN}Starting ${i} service${NC}\n"

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="88"
+SCRIPT_VERSION="89"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
-sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
+sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
 sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y openssl
@@ -453,9 +453,9 @@ meshcfg="$(
     "allowHighQualityDesktop": true,
     "tlsOffload": "127.0.0.1",
     "agentCoreDump": false,
-    "compression": true,
-    "wsCompression": true,
-    "agentWsCompression": true,
+    "compression": false,
+    "wsCompression": false,
+    "agentWsCompression": false,
     "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 },
     "postgres": {
       "user": "${MESHPGUSER}",

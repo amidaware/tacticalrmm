@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="63"
+SCRIPT_VERSION="64"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
-sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
+sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -358,8 +358,6 @@ rm -rf ${nats_tmp}
 
 print_green 'Restoring MeshCentral'
 
-sudo apt install -y jq
-
 MESH_VER=$(grep "^MESH_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 sudo tar -xzf $tmp_dir/meshcentral/mesh.tar.gz -C /
 sudo chown ${USER}:${USER} -R /meshcentral
@@ -667,6 +665,50 @@ for i in celery.service celerybeat.service rmm.service daphne.service nats-api.s
   sudo systemctl start ${i}
 done
 sleep 5
+
+# disable compression if set to fix some mesh issues
+mesh_cfg='/meshcentral/meshcentral-data/config.json'
+
+check_jq_filter='
+( .settings // {} ) |
+to_entries |
+map(
+    select((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression"))
+) |
+all(.value == false)
+'
+
+apply_jq_filter='
+.settings |= (
+    with_entries(
+        if ((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression")) then
+            .value = false
+        else
+            .
+        end
+    )
+)
+'
+
+if ! which jq >/dev/null; then
+  echo "installing jq"
+  sudo apt-get install -y jq >/dev/null
+fi
+
+if which jq >/dev/null; then
+  if ! jq -e "$check_jq_filter" "$mesh_cfg" >/dev/null; then
+    echo "Disabling mesh compression"
+    # backup to homedir first
+    cp "$mesh_cfg" ~/meshcfg-$(date "+%Y%m%dT%H%M%S").bak
+    mesh_tmp=$(mktemp)
+    if jq "$apply_jq_filter" "$mesh_cfg" >"$mesh_tmp"; then
+      if [ -s "$mesh_tmp" ]; then
+        mv "$mesh_tmp" "$mesh_cfg"
+      fi
+    fi
+    rm -f "$mesh_tmp"
+  fi
+fi
 
 print_green 'Starting meshcentral'
 sudo systemctl enable meshcentral

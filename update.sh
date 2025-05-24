@@ -229,6 +229,41 @@ fi
 
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 256;/g' $nginxdefaultconf
 
+CHECK_NGINX_SITESENABLED=$(grep "sites-enabled" $nginxdefaultconf)
+if ! [[ $CHECK_NGINX_SITESENABLED ]]; then
+  printf >&2 "${GREEN}Fixing nginx config${NC}\n"
+  nginxconf="$(
+    cat <<EOF
+worker_rlimit_nofile 1000000;
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+        worker_connections 4096;
+}
+
+http {
+        sendfile on;
+        tcp_nopush on;
+        types_hash_max_size 2048;
+        server_names_hash_bucket_size 256;
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+        gzip on;
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+}
+EOF
+  )"
+  echo "${nginxconf}" | sudo tee $nginxdefaultconf >/dev/null
+fi
+
 if ! sudo nginx -t >/dev/null 2>&1; then
   sudo nginx -t
   echo -ne "\n"

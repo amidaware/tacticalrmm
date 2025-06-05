@@ -33,6 +33,7 @@ from core.models import CoreSettings
 from core.utils import get_core_settings, get_mesh_ws_url, make_alpha_numeric
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
+from ee.reporting.tasks import prune_report_history_task
 from tacticalrmm.celery import app
 from tacticalrmm.constants import (
     AGENT_DEFER,
@@ -122,6 +123,8 @@ def core_maintenance_tasks() -> None:
     if core.clear_faults_days > 0:
         clear_faults_task.delay(core.clear_faults_days)
 
+    if core.report_history_prune_days > 0:
+        prune_report_history_task.delay(core.report_history_prune_days)
 
 @app.task
 def resolve_pending_actions() -> None:

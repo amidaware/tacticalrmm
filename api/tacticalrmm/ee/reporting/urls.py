@@ -36,4 +36,11 @@ urlpatterns = [
     # serving assets
     path("assets/<path:path>", views.NginxRedirect.as_view()),
     path("queryschema/", views.QuerySchema.as_view()),
+    # report schedules
+    path("schedules/", views.GetAddReportSchedule.as_view()),
+    path("schedules/<int:pk>/", views.GetEditDeleteReportSchedule.as_view()), 
+    # report history   
+    path("history/", views.GetReportHistory.as_view()),
+    path("history/<int:pk>/", views.DeleteReportHistory.as_view()), 
+    path("history/<int:pk>/run/", views.RunReportHistory.as_view()), 
 ]

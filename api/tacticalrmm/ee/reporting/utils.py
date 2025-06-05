@@ -35,10 +35,10 @@ from weasyprint.text.fonts import FontConfiguration
 from . import custom_filters
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
-from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
+from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate, ReportHistory
 
 if TYPE_CHECKING:
-    from accounts import User
+    from accounts.models import User
 
 RE_ASSET_URL = re.compile(
     r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))"
@@ -660,6 +660,10 @@ def generate_chart(
     elif format == "image":
         return cast(str, fig.to_image(format="svg").decode("utf-8"))
 
+
+def create_report_history(*, template: "ReportTemplate", report_data: str,  error_data: Optional[str], user: str) -> "ReportHistory":
+    return ReportHistory.objects.create(report_template=template, report_data=report_data, error_data=error_data, run_by=user)
+    
 
 # import report functions
 def _import_base_template(

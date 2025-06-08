@@ -108,9 +108,14 @@ class DashInfo(AsyncJsonWebsocketConsumer):
 
     async def send_dash_info(self):
         while self.connected:
-            c = await self.get_dashboard_info()
-            await self.send_json(c)
-            await asyncio.sleep(30)
+            try:
+                c = await self.get_dashboard_info()
+            except Exception as e:
+                logger.error(e)
+            else:
+                await self.send_json(c)
+            finally:
+                await asyncio.sleep(30)
 
 
 class TerminalConsumer(JsonWebsocketConsumer):

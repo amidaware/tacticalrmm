@@ -122,3 +122,89 @@ def should_run_monthly_task(task, agent, current_time) -> bool:
         return (current_hour == run_hour) and (current_minute == run_minute)
 
     return False
+
+
+# new schedule functions
+LAST_DAY_OF_MONTH = 32
+LAST_WEEK_OF_MONTH = 5
+
+def should_run_weekly(*, run_time, weekdays, current_time, timezone) -> bool:
+
+    tz = ZoneInfo(timezone)
+    current_time_tz = current_time.astimezone(tz)
+
+    current_hour = current_time_tz.hour
+    current_minute = current_time_tz.minute
+
+    run_hour = run_time.hour
+    run_minute = run_time.minute
+
+    if current_time_tz.weekday() in weekdays:
+        return (current_hour == run_hour) and (current_minute == run_minute)
+
+    return False
+
+
+def should_run_monthly_dow(*, run_time, weekdays, weeks, months, current_time, timezone) -> bool:
+    tz = ZoneInfo(timezone)
+    current_time_tz = current_time.astimezone(tz)
+
+    current_hour = current_time_tz.hour
+    current_minute = current_time_tz.minute
+
+    run_hour = run_time.hour
+    run_minute = run_time.minute
+
+    weekday = current_time_tz.weekday()
+    month = current_time_tz.month
+    day = current_time_tz.day
+    year = current_time_tz.year
+
+    if weekday not in weekdays:
+        return False
+
+    if month not in months:
+        return False
+
+    # fist week: 1-7, 2nd week: 8-14, 3rd week: 15-21, 4th week: 22-28, last week: 29-end
+    # TODO fix last week
+    week_num = (day - 1) // 7 + 1
+    total_days = calendar.monthrange(year, month)[1]
+    last_week_num = (total_days - 1) // 7 + 1
+
+    if week_num == last_week_num:
+        week = LAST_WEEK_OF_MONTH
+
+    if week not in weeks:
+        return False
+
+    return (current_hour == run_hour) and (current_minute == run_minute)
+
+
+def should_run_monthly(*, run_time, days, months, current_time, timezone) -> bool:
+
+    tz = ZoneInfo(timezone)
+    current_time_tz = current_time.astimezone(tz)
+
+    current_month = current_time_tz.month
+    current_day = current_time_tz.day
+    current_hour = current_time_tz.hour
+    current_minute = current_time_tz.minute
+
+    run_hour = run_time.hour
+    run_minute = run_time.minute
+
+    if current_month not in months:
+        return False
+
+    last_day_of_month = calendar.monthrange(current_time_tz.year, current_month)[
+        1
+    ]
+    if current_day == last_day_of_month:
+        if LAST_DAY_OF_MONTH in days:
+            return (current_hour == run_hour) and (current_minute == run_minute)
+
+    if current_day in days:
+        return (current_hour == run_hour) and (current_minute == run_minute)
+
+    return False

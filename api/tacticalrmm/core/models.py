@@ -3,6 +3,9 @@ from contextlib import suppress
 from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import formatdate
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from email.mime.text import MIMEText
 from typing import TYPE_CHECKING, List, Optional, cast
 
 import requests
@@ -67,6 +70,7 @@ class CoreSettings(BaseAuditModel):
     agent_history_prune_days = models.PositiveIntegerField(default=60)
     debug_log_prune_days = models.PositiveIntegerField(default=30)
     audit_log_prune_days = models.PositiveIntegerField(default=0)
+    report_history_prune_days = models.PositiveIntegerField(default=60)
     agent_debug_level = models.CharField(
         max_length=20, choices=DebugLogLevel.choices, default=DebugLogLevel.INFO
     )
@@ -235,7 +239,10 @@ class CoreSettings(BaseAuditModel):
         self,
         subject: str,
         body: str,
+        attachment: Optional[bytes] = None,
+        attachment_filename: Optional[str] = None,
         alert_template: "Optional[AlertTemplate]" = None,
+        override_recipients: Optional[List[str]] = [],
         test: bool = False,
     ) -> tuple[str, bool]:
         if test and not self.email_is_configured:
@@ -251,15 +258,18 @@ class CoreSettings(BaseAuditModel):
             from_address = self.smtp_from_email
 
         # override email recipients if alert_template is passed and is set
-        if alert_template and alert_template.email_recipients:
+        if override_recipients:
+            email_recipients = ", ".join(override_recipients)
+        elif alert_template and alert_template.email_recipients:
             email_recipients = ", ".join(alert_template.email_recipients)
         elif self.email_alert_recipients:
-            email_recipients = ", ".join(cast(List[str], self.email_alert_recipients))
+            email_recipients = ", ".join(self.email_alert_recipients)
         else:
             return "There needs to be at least one email recipient configured", False
 
         try:
-            msg = EmailMessage()
+            msg = MIMEMultipart()
+
             msg["Subject"] = subject
             msg["Date"] = formatdate(localtime=True)
 
@@ -271,7 +281,17 @@ class CoreSettings(BaseAuditModel):
                 msg["From"] = from_address
 
             msg["To"] = email_recipients
-            msg.set_content(body)
+            content = MIMEText(body, "plain")
+            msg.attach(content)
+
+            if attachment:
+                part = MIMEApplication(attachment, _subtype="pdf")
+                part.add_header(
+                    "Content-Disposition",
+                    "attachment",
+                    filename=f"{attachment_filename}.pdf"
+                )
+                msg.attach(part)
 
             with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
                 if self.smtp_requires_auth:
@@ -495,3 +515,54 @@ class URLAction(BaseAuditModel):
         from .serializers import URLActionSerializer
 
         return URLActionSerializer(action).data
+
+class ScheduleType(models.TextChoices):
+    WEEKLY = "weekly", "Weekly"
+    MONTHLY = "monthly", "Monthly"
+
+class MonthlyType(models.TextChoices):
+    WEEKS = "weeks", "Weeks"
+    DAYS = "days", "Days"
+
+class Schedule(BaseAuditModel):
+    name = models.CharField(max_length=255)
+    run_time = models.TimeField()
+    run_time_weekdays = ArrayField(
+        base_field=models.PositiveSmallIntegerField(),
+        size=7,
+        blank=True,
+        null=True,
+        default=list,
+    )
+
+    monthly_months_of_year = ArrayField(
+        base_field=models.PositiveSmallIntegerField(),
+        size=12,
+        blank=True,
+        null=True,
+        default=list,
+    )
+
+    # 1-31 days. last day of month is 32
+    monthly_days_of_month = ArrayField(
+        base_field=models.PositiveIntegerField(),
+        size=32,
+        blank=True,
+        null=True,
+        default=list,
+    )
+
+    # 1st-4th weeks of month. Last week of month is 5
+    monthly_weeks_of_month = ArrayField(
+        base_field=models.PositiveSmallIntegerField(),
+        size=6,
+        blank=True,
+        null=True,
+        default=list,
+    )
+    schedule_type = models.CharField(
+        max_length=15, choices=ScheduleType.choices, default=ScheduleType.WEEKLY
+    )
+    monthly_type = models.CharField(
+        max_length=15, choices=MonthlyType.choices, default=MonthlyType.DAYS
+    )

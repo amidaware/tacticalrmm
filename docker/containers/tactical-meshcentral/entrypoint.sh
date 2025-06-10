@@ -4,10 +4,13 @@ set -e
 
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
-: "${MONGODB_USER:=mongouser}"
-: "${MONGODB_PASSWORD:=mongopass}"
-: "${MONGODB_HOST:=tactical-mongodb}"
-: "${MONGODB_PORT:=27017}"
+: "${POSTGRES_USER:=pguser}"
+: "${POSTGRES_PASS:=pgpass}"
+: "${POSTGRES_HOST:=trmm-postgres}"
+: "${POSTGRES_PORT:=5432}"
+: "${POSTGRES_DB:=meshcentral}"
+: "${POSTGRES_SSL:=false}"
+: "${NODE_TLS_REJECT_UNAUTHORIZED:=1}"
 : "${NGINX_HOST_IP:=172.20.0.20}"
 : "${NGINX_HOST_PORT:=4443}"
 : "${MESH_COMPRESSION_ENABLED:=false}"
@@ -29,7 +32,16 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     cat <<EOF
 {
   "settings": {
-    "mongodb": "${encoded_uri}",
+    "postgres": {
+      "host": "${POSTGRES_HOST}",
+      "user": "${POSTGRES_USER}",
+      "port": ${POSTGRES_PORT},
+      "password": "${POSTGRES_PASS}",
+      "database": "${POSTGRES_DB}",
+      "ssl": {
+        "require": ${POSTGRES_SSL}
+      }
+    },
     "cert": "${MESH_HOST}",
     "tlsOffload": "${NGINX_HOST_IP}",
     "redirPort": 8080,

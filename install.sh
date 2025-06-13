@@ -518,7 +518,7 @@ if [[ "$insecure" = true ]]; then
   echo "TRMM_INSECURE = True" | tee --append $local_settings >/dev/null
 fi
 
-if [[ "$byocert" = true ]]; then
+if [[ "$byocert" = true ]] || [[ "$insecure" = true ]]; then
   owncerts="$(
     cat <<EOF
 CERT_FILE = "${CERT_PUB_KEY}"

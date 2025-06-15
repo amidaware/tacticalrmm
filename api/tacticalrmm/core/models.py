@@ -70,7 +70,7 @@ class CoreSettings(BaseAuditModel):
     agent_history_prune_days = models.PositiveIntegerField(default=60)
     debug_log_prune_days = models.PositiveIntegerField(default=30)
     audit_log_prune_days = models.PositiveIntegerField(default=0)
-    report_history_prune_days = models.PositiveIntegerField(default=60)
+    report_history_prune_days = models.PositiveIntegerField(default=0)
     agent_debug_level = models.CharField(
         max_length=20, choices=DebugLogLevel.choices, default=DebugLogLevel.INFO
     )
@@ -517,6 +517,7 @@ class URLAction(BaseAuditModel):
         return URLActionSerializer(action).data
 
 class ScheduleType(models.TextChoices):
+    DAILY = "Daily", "Daily"
     WEEKLY = "weekly", "Weekly"
     MONTHLY = "monthly", "Monthly"
 

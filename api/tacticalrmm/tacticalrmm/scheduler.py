@@ -128,6 +128,20 @@ def should_run_monthly_task(task, agent, current_time) -> bool:
 LAST_DAY_OF_MONTH = 32
 LAST_WEEK_OF_MONTH = 5
 
+def should_run_daily(*, run_time, current_time, timezone) -> bool:
+
+    tz = ZoneInfo(timezone)
+    current_time_tz = current_time.astimezone(tz)
+
+    current_hour = current_time_tz.hour
+    current_minute = current_time_tz.minute
+
+    run_hour = run_time.hour
+    run_minute = run_time.minute
+
+    return (current_hour == run_hour) and (current_minute == run_minute)
+
+
 def should_run_weekly(*, run_time, weekdays, current_time, timezone) -> bool:
 
     tz = ZoneInfo(timezone)

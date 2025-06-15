@@ -4,7 +4,7 @@ from typing import Optional, List
 from tacticalrmm.logger import logger
 
 from tacticalrmm.celery import app
-from tacticalrmm.scheduler import should_run_weekly, should_run_monthly, should_run_monthly_dow
+from tacticalrmm.scheduler import should_run_daily, should_run_weekly, should_run_monthly, should_run_monthly_dow
 from .models import ReportSchedule
 from .utils import generate_html, generate_pdf, normalize_asset_url, create_report_history
 from core.models import ScheduleType, MonthlyType
@@ -42,6 +42,10 @@ def scheduled_reports_runner():
                 f"Report Schedule for template: {schedule.report_template.name} already executed too recently, skipping."
             )
             continue
+
+        elif schedule.schedule_type == ScheduleType.DAILY:
+            run = should_run_daily(run_time=schedule.run_time, current_time=now, timezone=tz)
+
 
         elif schedule.schedule_type == ScheduleType.WEEKLY:
             run = should_run_weekly(run_time=schedule.run_time, weekdays=schedule.run_time_weekdays, current_time=now, timezone=tz)

@@ -39,7 +39,7 @@ from tacticalrmm.permissions import (
     _has_perm_on_site,
 )
 
-from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
+from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction, Schedule
 from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
@@ -49,6 +49,7 @@ from .permissions import (
     ServerMaintPerms,
     URLActionPerms,
     WebTerminalPerms,
+    SchedulePerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -488,7 +489,45 @@ class RunTestURLAction(APIView):
 
         return Response({"url": replaced_url, "result": result, "body": replaced_body})
 
+class ScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedule
+        fields = "__all__"
 
+class GetAddSchedule(APIView):
+    permission_classes = [IsAuthenticated, SchedulePerms]
+
+    def get(self, request):
+        schedules = Schedule.objects.all()
+        return Response(ScheduleSerializer(schedules, many=True).data)
+
+    def post(self, request):
+        serializer = ScheduleSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+
+class UpdateDeleteSchedule(APIView):
+    permission_classes = [IsAuthenticated, SchedulePerms]
+
+    def put(self, request, pk):
+        schedule = get_object_or_404(Schedule, pk=pk)
+
+        serializer = ScheduleSerializer(
+            instance=schedule, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        schedule = get_object_or_404(Schedule, pk=pk).delete()
+
+        return Response(pk)
+    
 class TestRunServerScript(APIView):
     permission_classes = [IsAuthenticated, RunServerScriptPerms]
 

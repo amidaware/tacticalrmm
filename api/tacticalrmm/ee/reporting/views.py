@@ -35,11 +35,12 @@ from rest_framework.serializers import (
     ModelSerializer,
     Serializer,
     ValidationError,
+    ReadOnlyField
 )
 from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
-from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
+from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate, ReportHistory, ReportSchedule
 from .permissions import GenerateReportPerms, ReportingPerms
 from .storage import report_assets_fs
 from .utils import (
@@ -51,6 +52,7 @@ from .utils import (
     generate_pdf,
     normalize_asset_url,
     prep_variables_for_template,
+    create_report_history,
 )
 
 
@@ -139,12 +141,12 @@ class GenerateReport(APIView):
             )
 
             html_report = normalize_asset_url(html_report, format)
+            create_report_history(template=template, report_data=html_report, user=request.user.username, error_data=None)
 
             if format != "pdf":
                 return Response(html_report)
             else:
                 pdf_bytes = generate_pdf(html=html_report)
-
                 return FileResponse(
                     ContentFile(pdf_bytes),
                     content_type="application/pdf",
@@ -318,6 +320,143 @@ class ImportReportTemplate(APIView):
             transaction.set_rollback(True)
             return notify_error(str(e))
 
+
+class ReportScheduleSerializer(ModelSerializer):
+    report_template_name = ReadOnlyField(source="report_template.name")
+    schedule_name = ReadOnlyField(source="schedule.name")
+    class Meta:
+        model = ReportSchedule
+        fields = [
+            "id",
+            "name",
+            "enabled",
+            "report_template",
+            "report_template_name",
+            "format",
+            "schedule",
+            "schedule_name",
+            "email_recipients",
+            "dependencies",
+            "no_email",
+            "last_run"
+        ]
+
+
+class GetAddReportSchedule(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+    queryset = ReportSchedule.objects.all()
+    serializer_class = ReportScheduleSerializer
+
+    def get(self, request: Request) -> Response:
+        schedules = ReportSchedule.objects.all()
+        return Response(ReportScheduleSerializer(schedules, many=True).data)
+
+    def post(self, request: Request) -> Response:
+        serializer = ReportScheduleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = serializer.save()
+
+        return Response(ReportScheduleSerializer(response).data)
+
+
+class GetEditDeleteReportSchedule(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+    queryset = ReportSchedule.objects.all()
+    serializer_class = ReportScheduleSerializer
+
+    def get(self, request: Request, pk: int) -> Response:
+        schedule = get_object_or_404(ReportSchedule, pk=pk)
+
+        return Response(ReportScheduleSerializer(schedule).data)
+
+    def put(self, request: Request, pk: int) -> Response:
+        schedule = get_object_or_404(ReportSchedule, pk=pk)
+
+        serializer = ReportScheduleSerializer(
+            instance=schedule, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        response = serializer.save()
+
+        return Response(ReportScheduleSerializer(response).data)
+
+    def delete(self, request: Request, pk: int) -> Response:
+        get_object_or_404(ReportSchedule, pk=pk).delete()
+
+        return Response()
+    
+
+class ReportHistorySerializer(ModelSerializer):
+    report_template_name = ReadOnlyField(source="report_template.name")
+    report_template_type = ReadOnlyField(source="report_template.type")
+
+    class Meta:
+        model = ReportHistory
+        fields = [
+            "id",
+            "report_template",
+            "report_template_name",
+            "report_template_type",
+            "run_by",
+            "date_created",
+        ]
+
+
+class GetReportHistory(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+    queryset = ReportHistory.objects.all()
+    serializer_class = ReportHistorySerializer
+
+    def get(self, request: Request) -> Response:
+        history = ReportHistory.objects.all()
+        return Response(ReportHistorySerializer(history, many=True).data)
+
+
+class DeleteReportHistory(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+    queryset = ReportHistory.objects.all()
+    serializer_class = ReportHistorySerializer
+
+    def delete(self, request: Request, pk: int) -> Response:
+        get_object_or_404(ReportHistory, pk=pk).delete()
+
+        return Response()
+    
+
+class RunReportHistory(APIView):
+    permission_classes = [IsAuthenticated, GenerateReportPerms]
+
+    def post(self, request, pk: int) -> Response:
+        history = get_object_or_404(ReportHistory, pk=pk)
+
+        format = request.data["format"]
+
+        if format not in ("pdf", "html", "plaintext"):
+            return notify_error("Report format is incorrect.")
+
+        try:
+
+            html_report = normalize_asset_url(history.report_data, format)
+
+            if format != "pdf":
+                return Response(html_report)
+            else:
+                pdf_bytes = generate_pdf(html=html_report)
+
+                return FileResponse(
+                    ContentFile(pdf_bytes),
+                    content_type="application/pdf",
+                    filename=f"{history.report_template.name}_{history.date_created}.pdf",
+                )
+
+        except TemplateError as error:
+            if hasattr(error, "lineno"):
+                return notify_error(f"Line {error.lineno}: {error.message}")
+            else:
+                return notify_error(str(error))
+        except Exception as error:
+            return notify_error(str(error))
+        
 
 class GetAllowedValues(APIView):
     permission_classes = [IsAuthenticated, GenerateReportPerms]

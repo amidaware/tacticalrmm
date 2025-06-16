@@ -39,6 +39,7 @@ urlpatterns = [
     # report schedules
     path("schedules/", views.GetAddReportSchedule.as_view()),
     path("schedules/<int:pk>/", views.GetEditDeleteReportSchedule.as_view()), 
+    path("schedules/<int:pk>/run/", views.RunReportSchedule.as_view()), 
     # report history   
     path("history/", views.GetReportHistory.as_view()),
     path("history/<int:pk>/", views.DeleteReportHistory.as_view()), 

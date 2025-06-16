@@ -52,7 +52,8 @@ from .utils import (
     generate_pdf,
     normalize_asset_url,
     prep_variables_for_template,
-    create_report_history,
+    run_report,
+    run_scheduled_report
 )
 
 
@@ -127,39 +128,20 @@ class GenerateReport(APIView):
         if format not in ("pdf", "html", "plaintext"):
             return notify_error("Report format is incorrect.")
 
-        try:
-            html_report, _ = generate_html(
-                template=template.template_md,
-                template_type=template.type,
-                css=template.template_css or "",
-                html_template=(
-                    template.template_html.id if template.template_html else None
-                ),
-                variables=template.template_variables,
-                dependencies=request.data["dependencies"],
-                user=request.user,
+        report, error, _ = run_report(template=template, dependencies=request.data["dependencies"], format=format, user=request.user)
+
+        if error:
+            return notify_error(error)
+        
+        if format != "pdf":
+            return Response(report)
+        else:
+            return FileResponse(
+                ContentFile(report),
+                content_type="application/pdf",
+                filename=f"{template.name}.pdf",
             )
 
-            html_report = normalize_asset_url(html_report, format)
-            create_report_history(template=template, report_data=html_report, user=request.user.username, error_data=None)
-
-            if format != "pdf":
-                return Response(html_report)
-            else:
-                pdf_bytes = generate_pdf(html=html_report)
-                return FileResponse(
-                    ContentFile(pdf_bytes),
-                    content_type="application/pdf",
-                    filename=f"{template.name}.pdf",
-                )
-
-        except TemplateError as error:
-            if hasattr(error, "lineno"):
-                return notify_error(f"Line {error.lineno}: {error.message}")
-            else:
-                return notify_error(str(error))
-        except Exception as error:
-            return notify_error(str(error))
 
 
 class GenerateReportPreview(APIView):
@@ -187,7 +169,10 @@ class GenerateReportPreview(APIView):
 
     def post(self, request: Request) -> Union[FileResponse, Response]:
         try:
-            report_data = self._parse_and_validate_request_data(request.data)
+            serializer = self.InputSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            report_data = serializer.validated_data
+
             html_report, variables = generate_html(
                 template=report_data["template_md"],
                 template_type=report_data["type"],
@@ -207,11 +192,6 @@ class GenerateReportPreview(APIView):
             return self._handle_template_error(error)
         except Exception as error:
             return notify_error(str(error))
-
-    def _parse_and_validate_request_data(self, data: Dict[str, Any]) -> Any:
-        serializer = self.InputSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        return serializer.validated_data
 
     def _process_debug_response(
         self, html_report: str, variables: Dict[str, Any]
@@ -384,8 +364,22 @@ class GetEditDeleteReportSchedule(APIView):
         get_object_or_404(ReportSchedule, pk=pk).delete()
 
         return Response()
-    
 
+
+class RunReportSchedule(APIView):
+    permission_classes = [IsAuthenticated, ReportingPerms]
+
+    def post(self, request: Request, pk: int) -> Response:
+        schedule = get_object_or_404(ReportSchedule, pk=pk)
+
+        _, error = run_scheduled_report(schedule=schedule, user=request.user)
+
+        if error:
+            return notify_error(error)
+        
+        return Response()
+        
+    
 class ReportHistorySerializer(ModelSerializer):
     report_template_name = ReadOnlyField(source="report_template.name")
     report_template_type = ReadOnlyField(source="report_template.type")

@@ -39,7 +39,14 @@ from tacticalrmm.permissions import (
     _has_perm_on_site,
 )
 
-from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction, Schedule
+from .models import (
+    CodeSignToken,
+    CoreSettings,
+    CustomField,
+    GlobalKVStore,
+    URLAction,
+    Schedule,
+)
 from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
@@ -489,10 +496,12 @@ class RunTestURLAction(APIView):
 
         return Response({"url": replaced_url, "result": result, "body": replaced_body})
 
+
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
         fields = "__all__"
+
 
 class GetAddSchedule(APIView):
     permission_classes = [IsAuthenticated, SchedulePerms]
@@ -527,7 +536,8 @@ class UpdateDeleteSchedule(APIView):
         schedule = get_object_or_404(Schedule, pk=pk).delete()
 
         return Response(pk)
-    
+
+
 class TestRunServerScript(APIView):
     permission_classes = [IsAuthenticated, RunServerScriptPerms]
 

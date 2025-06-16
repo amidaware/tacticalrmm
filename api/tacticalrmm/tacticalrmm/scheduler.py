@@ -128,6 +128,7 @@ def should_run_monthly_task(task, agent, current_time) -> bool:
 LAST_DAY_OF_MONTH = 32
 LAST_WEEK_OF_MONTH = 5
 
+
 def should_run_daily(*, run_time, current_time, timezone) -> bool:
 
     tz = ZoneInfo(timezone)
@@ -159,7 +160,9 @@ def should_run_weekly(*, run_time, weekdays, current_time, timezone) -> bool:
     return False
 
 
-def should_run_monthly_dow(*, run_time, weekdays, weeks, months, current_time, timezone) -> bool:
+def should_run_monthly_dow(
+    *, run_time, weekdays, weeks, months, current_time, timezone
+) -> bool:
     tz = ZoneInfo(timezone)
     current_time_tz = current_time.astimezone(tz)
 
@@ -211,9 +214,7 @@ def should_run_monthly(*, run_time, days, months, current_time, timezone) -> boo
     if current_month not in months:
         return False
 
-    last_day_of_month = calendar.monthrange(current_time_tz.year, current_month)[
-        1
-    ]
+    last_day_of_month = calendar.monthrange(current_time_tz.year, current_month)[1]
     if current_day == last_day_of_month:
         if LAST_DAY_OF_MONTH in days:
             return (current_hour == run_hour) and (current_minute == run_minute)

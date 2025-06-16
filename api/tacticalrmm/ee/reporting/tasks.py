@@ -88,6 +88,7 @@ def scheduled_reports_runner():
             )
 
         if run:
+            print("RUNNNNNINGGGGGGG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             schedule.locked_at = djangotime.now()
             schedule.save(update_fields=["locked_at"])
             run_scheduled_report(schedule=schedule)

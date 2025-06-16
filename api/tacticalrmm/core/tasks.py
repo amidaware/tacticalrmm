@@ -126,6 +126,7 @@ def core_maintenance_tasks() -> None:
     if core.report_history_prune_days > 0:
         prune_report_history_task.delay(core.report_history_prune_days)
 
+
 @app.task
 def resolve_pending_actions() -> None:
     # change agent update pending status to completed if agent has just updated

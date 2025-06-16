@@ -285,7 +285,7 @@ class CoreSettings(BaseAuditModel):
                 part.add_header(
                     "Content-Disposition",
                     "attachment",
-                    filename=f"{attachment_filename}.pdf"
+                    filename=f"{attachment_filename}.pdf",
                 )
                 msg.attach(part)
 
@@ -512,14 +512,17 @@ class URLAction(BaseAuditModel):
 
         return URLActionSerializer(action).data
 
+
 class ScheduleType(models.TextChoices):
-    DAILY = "Daily", "Daily"
+    DAILY = "daily", "Daily"
     WEEKLY = "weekly", "Weekly"
     MONTHLY = "monthly", "Monthly"
+
 
 class MonthlyType(models.TextChoices):
     WEEKS = "weeks", "Weeks"
     DAYS = "days", "Days"
+
 
 class Schedule(BaseAuditModel):
     name = models.CharField(max_length=255)

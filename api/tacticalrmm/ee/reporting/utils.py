@@ -732,7 +732,7 @@ def run_report(
         pass
 
     history = create_report_history(
-        template=template, report_data="", error_data=error_text, user=user.username
+        template=template, report_data="", error_data=error_text, user=user.username if user else "system"
     )
     return None, error_text, history
 

@@ -35,17 +35,19 @@ def scheduled_reports_runner():
         "report_template", "schedule"
     ).filter(enabled=True)
 
+    run_list = []
+
     for report in reports:
         schedule = report.schedule
 
         run = False
 
         if report.locked_at and report.locked_at > now - djangotime.timedelta(
-            hours=1
+            seconds=55
         ):
             # prevent race
             logger.error(
-                f"Report Schedule for template: {schedule.report_template.name} already executed too recently, skipping."
+                f"Report Schedule for template: {report.report_template.name} already executed too recently, skipping."
             )
             continue
 
@@ -90,7 +92,10 @@ def scheduled_reports_runner():
         if run:
             report.locked_at = djangotime.now()
             report.save(update_fields=["locked_at"])
-            run_scheduled_report(schedule=report)
+            run_list.append(report)
+    
+    for report in run_list:
+        run_scheduled_report(schedule=report)
 
 
 @app.task

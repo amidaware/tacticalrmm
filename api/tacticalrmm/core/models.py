@@ -1,8 +1,6 @@
 import smtplib
 from contextlib import suppress
-from email.headerregistry import Address
-from email.message import EmailMessage
-from email.utils import formatdate
+from email.utils import formatdate, formataddr
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
@@ -274,9 +272,7 @@ class CoreSettings(BaseAuditModel):
             msg["Date"] = formatdate(localtime=True)
 
             if self.smtp_from_name:
-                msg["From"] = Address(
-                    display_name=self.smtp_from_name, addr_spec=from_address
-                )
+                msg["From"] = formataddr((self.smtp_from_name, from_address))
             else:
                 msg["From"] = from_address
 

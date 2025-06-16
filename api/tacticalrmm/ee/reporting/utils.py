@@ -38,7 +38,14 @@ from django.conf import settings
 from . import custom_filters
 from .constants import REPORTING_MODELS
 from .markdown.config import Markdown
-from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate, ReportHistory, ReportSchedule
+from .models import (
+    ReportAsset,
+    ReportDataQuery,
+    ReportHTMLTemplate,
+    ReportTemplate,
+    ReportHistory,
+    ReportSchedule,
+)
 import ee.reporting.tasks
 
 if TYPE_CHECKING:
@@ -665,11 +672,28 @@ def generate_chart(
         return cast(str, fig.to_image(format="svg").decode("utf-8"))
 
 
-def create_report_history(*, template: "ReportTemplate", report_data: str,  error_data: Optional[str], user: str) -> "ReportHistory":
-    return ReportHistory.objects.create(report_template=template, report_data=report_data, error_data=error_data, run_by=user)
-    
+def create_report_history(
+    *,
+    template: "ReportTemplate",
+    report_data: str,
+    error_data: Optional[str],
+    user: str,
+) -> "ReportHistory":
+    return ReportHistory.objects.create(
+        report_template=template,
+        report_data=report_data,
+        error_data=error_data,
+        run_by=user,
+    )
 
-def run_report(*, template: "ReportTemplate", dependencies: Dict[str, int], format: Literal["html", "pdf", "plaintext"], user: Optional["User"] = None) -> Tuple[Optional[str] | bytes, Optional[str], "ReportHistory"]:
+
+def run_report(
+    *,
+    template: "ReportTemplate",
+    dependencies: Dict[str, int],
+    format: Literal["html", "pdf", "plaintext"],
+    user: Optional["User"] = None,
+) -> Tuple[Optional[str] | bytes, Optional[str], "ReportHistory"]:
     error_text = ""
     try:
         html_report, _ = generate_html(
@@ -685,7 +709,12 @@ def run_report(*, template: "ReportTemplate", dependencies: Dict[str, int], form
         )
 
         html_report = normalize_asset_url(html_report, format)
-        history = create_report_history(template=template, report_data=html_report, user=user.username, error_data=None)
+        history = create_report_history(
+            template=template,
+            report_data=html_report,
+            user=user.username,
+            error_data=None,
+        )
 
         if format != "pdf":
             return html_report, None, history
@@ -702,27 +731,45 @@ def run_report(*, template: "ReportTemplate", dependencies: Dict[str, int], form
         error_text = str(error)
         pass
 
-    history = create_report_history(template=template, report_data="", error_data=error_text, user=user.username)
+    history = create_report_history(
+        template=template, report_data="", error_data=error_text, user=user.username
+    )
     return None, error_text, history
-    
 
-def run_scheduled_report(*, schedule: "ReportSchedule", user: Optional["User"] = None,
+
+def run_scheduled_report(
+    *,
+    schedule: "ReportSchedule",
+    user: Optional["User"] = None,
 ) -> Tuple["ReportHistory", Optional[str]]:
     format = schedule.format
-    template=schedule.report_template
-    
-    report, error, history = run_report(template=template, dependencies=schedule.dependencies, format=schedule.format, user=user)
+    template = schedule.report_template
+
+    report, error, history = run_report(
+        template=template,
+        dependencies=schedule.dependencies,
+        format=schedule.format,
+        user=user,
+    )
 
     schedule.last_run = djangotime.now()
     schedule.save(update_fields=["last_run"])
 
     if not schedule.no_email:
         if schedule.format == "pdf":
-            ee.reporting.tasks.email_report.delay(template_name=template.name, recipients=schedule.email_recipients, attachment=report)
+            ee.reporting.tasks.email_report.delay(
+                template_name=template.name,
+                recipients=schedule.email_recipients,
+                attachment=report,
+            )
         else:
             # build history report link
             report_link = f"{settings.CORS_ORIGIN_WHITELIST[0]}/reports/history/{history.id}/?format={format}"
-            ee.reporting.tasks.email_report.delay(template_name=template.name, report_link=report_link, recipients=schedule.email_recipients)
+            ee.reporting.tasks.email_report.delay(
+                template_name=template.name,
+                report_link=report_link,
+                recipients=schedule.email_recipients,
+            )
 
     return history, error
 

@@ -35,12 +35,19 @@ from rest_framework.serializers import (
     ModelSerializer,
     Serializer,
     ValidationError,
-    ReadOnlyField
+    ReadOnlyField,
 )
 from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
-from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate, ReportHistory, ReportSchedule
+from .models import (
+    ReportAsset,
+    ReportDataQuery,
+    ReportHTMLTemplate,
+    ReportTemplate,
+    ReportHistory,
+    ReportSchedule,
+)
 from .permissions import GenerateReportPerms, ReportingPerms
 from .storage import report_assets_fs
 from .utils import (
@@ -53,7 +60,7 @@ from .utils import (
     normalize_asset_url,
     prep_variables_for_template,
     run_report,
-    run_scheduled_report
+    run_scheduled_report,
 )
 
 
@@ -128,11 +135,16 @@ class GenerateReport(APIView):
         if format not in ("pdf", "html", "plaintext"):
             return notify_error("Report format is incorrect.")
 
-        report, error, _ = run_report(template=template, dependencies=request.data["dependencies"], format=format, user=request.user)
+        report, error, _ = run_report(
+            template=template,
+            dependencies=request.data["dependencies"],
+            format=format,
+            user=request.user,
+        )
 
         if error:
             return notify_error(error)
-        
+
         if format != "pdf":
             return Response(report)
         else:
@@ -141,7 +153,6 @@ class GenerateReport(APIView):
                 content_type="application/pdf",
                 filename=f"{template.name}.pdf",
             )
-
 
 
 class GenerateReportPreview(APIView):
@@ -304,6 +315,7 @@ class ImportReportTemplate(APIView):
 class ReportScheduleSerializer(ModelSerializer):
     report_template_name = ReadOnlyField(source="report_template.name")
     schedule_name = ReadOnlyField(source="schedule.name")
+
     class Meta:
         model = ReportSchedule
         fields = [
@@ -318,7 +330,7 @@ class ReportScheduleSerializer(ModelSerializer):
             "email_recipients",
             "dependencies",
             "no_email",
-            "last_run"
+            "last_run",
         ]
 
 
@@ -376,10 +388,10 @@ class RunReportSchedule(APIView):
 
         if error:
             return notify_error(error)
-        
+
         return Response()
-        
-    
+
+
 class ReportHistorySerializer(ModelSerializer):
     report_template_name = ReadOnlyField(source="report_template.name")
     report_template_type = ReadOnlyField(source="report_template.type")
@@ -415,7 +427,7 @@ class DeleteReportHistory(APIView):
         get_object_or_404(ReportHistory, pk=pk).delete()
 
         return Response()
-    
+
 
 class RunReportHistory(APIView):
     permission_classes = [IsAuthenticated, GenerateReportPerms]
@@ -450,7 +462,7 @@ class RunReportHistory(APIView):
                 return notify_error(str(error))
         except Exception as error:
             return notify_error(str(error))
-        
+
 
 class GetAllowedValues(APIView):
     permission_classes = [IsAuthenticated, GenerateReportPerms]

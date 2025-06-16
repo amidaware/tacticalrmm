@@ -119,10 +119,7 @@ class ReportHistory(BaseAuditModel):
         related_name="reporttemplate_history",
         on_delete=models.CASCADE,
     )
-    run_by = models.CharField(
-        max_length=255,
-        default="system"
-    )
+    run_by = models.CharField(max_length=255, default="system")
     report_data = models.TextField()
     error_data = models.TextField(null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)

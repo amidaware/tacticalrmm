@@ -29,7 +29,7 @@ def prune_report_history_task(older_than_days: int) -> str:
 @app.task
 def scheduled_reports_runner():
     now = djangotime.now()
-    tz = get_default_timezone
+    tz = get_default_timezone()
 
     reports = ReportSchedule.objects.select_related(
         "report_template", "schedule"
@@ -40,7 +40,7 @@ def scheduled_reports_runner():
 
         run = False
 
-        if schedule.locked_at and schedule.locked_at > now - djangotime.timedelta(
+        if report.locked_at and report.locked_at > now - djangotime.timedelta(
             hours=1
         ):
             # prevent race
@@ -88,10 +88,9 @@ def scheduled_reports_runner():
             )
 
         if run:
-            print("RUNNNNNINGGGGGGG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            schedule.locked_at = djangotime.now()
-            schedule.save(update_fields=["locked_at"])
-            run_scheduled_report(schedule=schedule)
+            report.locked_at = djangotime.now()
+            report.save(update_fields=["locked_at"])
+            run_scheduled_report(schedule=report)
 
 
 @app.task

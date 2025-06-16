@@ -131,8 +131,7 @@ LAST_WEEK_OF_MONTH = 5
 
 def should_run_daily(*, run_time, current_time, timezone) -> bool:
 
-    tz = ZoneInfo(timezone)
-    current_time_tz = current_time.astimezone(tz)
+    current_time_tz = current_time.astimezone(timezone)
 
     current_hour = current_time_tz.hour
     current_minute = current_time_tz.minute
@@ -145,8 +144,7 @@ def should_run_daily(*, run_time, current_time, timezone) -> bool:
 
 def should_run_weekly(*, run_time, weekdays, current_time, timezone) -> bool:
 
-    tz = ZoneInfo(timezone)
-    current_time_tz = current_time.astimezone(tz)
+    current_time_tz = current_time.astimezone(timezone)
 
     current_hour = current_time_tz.hour
     current_minute = current_time_tz.minute
@@ -163,8 +161,7 @@ def should_run_weekly(*, run_time, weekdays, current_time, timezone) -> bool:
 def should_run_monthly_dow(
     *, run_time, weekdays, weeks, months, current_time, timezone
 ) -> bool:
-    tz = ZoneInfo(timezone)
-    current_time_tz = current_time.astimezone(tz)
+    current_time_tz = current_time.astimezone(timezone)
 
     current_hour = current_time_tz.hour
     current_minute = current_time_tz.minute
@@ -200,8 +197,7 @@ def should_run_monthly_dow(
 
 def should_run_monthly(*, run_time, days, months, current_time, timezone) -> bool:
 
-    tz = ZoneInfo(timezone)
-    current_time_tz = current_time.astimezone(tz)
+    current_time_tz = current_time.astimezone(timezone)
 
     current_month = current_time_tz.month
     current_day = current_time_tz.day

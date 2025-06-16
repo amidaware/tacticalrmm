@@ -33,7 +33,7 @@ def scheduled_reports_runner():
 
         if (
             schedule.locked_at
-            and schedule.locked_at > now - djangotime.timedelta(seconds=55)
+            and schedule.locked_at > now - djangotime.timedelta(hours=1)
         ):
             # prevent race
             logger.error(
@@ -54,6 +54,8 @@ def scheduled_reports_runner():
             run = should_run_monthly_dow(run_time=schedule.run_time, weekdays=schedule.run_time_weekdays, weeks=schedule.monthly_weeks_of_month, months=schedule.monthly_months_of_year, current_time=schedule.run_time, timezone=tz)
 
         if run:
+            schedule.locked_at = djangotime.now()
+            schedule.save(update_fields=["locked_at"])
             run_scheduled_report(schedule=schedule)
 
 

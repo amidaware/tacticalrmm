@@ -25,6 +25,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 from django.apps import apps
+from django.utils import timezone as djangotime
 from jinja2 import Environment, FunctionLoader
 from rest_framework.serializers import ValidationError
 from tacticalrmm.logger import logger
@@ -711,6 +712,9 @@ def run_scheduled_report(*, schedule: "ReportSchedule", user: Optional["User"] =
     template=schedule.report_template
     
     report, error, history = run_report(template=template, dependencies=schedule.dependencies, format=schedule.format, user=user)
+
+    schedule.last_run = djangotime.now()
+    schedule.save(update_fields=["last_run"])
 
     if not schedule.no_email:
         if schedule.format == "pdf":

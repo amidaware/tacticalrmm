@@ -93,7 +93,7 @@ def scheduled_reports_runner():
             report.locked_at = djangotime.now()
             report.save(update_fields=["locked_at"])
             run_list.append(report)
-    
+
     for report in run_list:
         run_scheduled_report(schedule=report)
 

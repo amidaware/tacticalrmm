@@ -712,7 +712,7 @@ def run_report(
         history = create_report_history(
             template=template,
             report_data=html_report,
-            user=user.username,
+            user=user.username if user else "system",
             error_data=None,
         )
 

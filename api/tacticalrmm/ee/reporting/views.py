@@ -404,6 +404,7 @@ class ReportHistorySerializer(ModelSerializer):
             "report_template_name",
             "report_template_type",
             "run_by",
+            "error_data",
             "date_created",
         ]
 

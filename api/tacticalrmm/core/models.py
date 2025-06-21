@@ -1,9 +1,8 @@
 import smtplib
 from contextlib import suppress
-from email.utils import formatdate, formataddr
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
-from email.mime.text import MIMEText
+from email.headerregistry import Address
+from email.message import EmailMessage
+from email.utils import formatdate
 from typing import TYPE_CHECKING, List, Optional, cast
 
 import requests
@@ -266,28 +265,28 @@ class CoreSettings(BaseAuditModel):
             return "There needs to be at least one email recipient configured", False
 
         try:
-            msg = MIMEMultipart()
+            msg = EmailMessage()
 
             msg["Subject"] = subject
             msg["Date"] = formatdate(localtime=True)
 
             if self.smtp_from_name:
-                msg["From"] = formataddr((self.smtp_from_name, from_address))
+                msg["From"] = Address(
+                    display_name=self.smtp_from_name, addr_spec=from_address
+                )
             else:
                 msg["From"] = from_address
 
             msg["To"] = email_recipients
-            content = MIMEText(body, "plain")
-            msg.attach(content)
+            msg.set_content(body)
 
             if attachment:
-                part = MIMEApplication(attachment, _subtype="pdf")
-                part.add_header(
-                    "Content-Disposition",
-                    "attachment",
+                msg.add_attachment(
+                    attachment,
+                    maintype="application",
+                    subtype="pdf",
                     filename=f"{attachment_filename}.pdf",
                 )
-                msg.attach(part)
 
             with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
                 if self.smtp_requires_auth:

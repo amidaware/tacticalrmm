@@ -62,6 +62,7 @@ from .utils import (
     run_report,
     run_scheduled_report,
 )
+import ee.reporting.tasks
 
 
 def path_exists(value: str) -> None:
@@ -155,6 +156,49 @@ class GenerateReport(APIView):
             )
 
 
+class EmailReport(APIView):
+    permission_classes = [IsAuthenticated, GenerateReportPerms]
+
+    def post(self, request: Request, pk: int) -> Response:
+        template = get_object_or_404(ReportTemplate, pk=pk)
+
+        format = request.data["format"]
+
+        if format not in ("pdf", "html", "plaintext"):
+            return notify_error("Report format is incorrect.")
+
+        report, error, history = run_report(
+            template=template,
+            dependencies=request.data["dependencies"],
+            format=format,
+            user=request.user,
+        )
+
+        if error:
+            return notify_error(error)
+
+        if format == "pdf":
+            ee.reporting.tasks.email_report.delay(
+                template_name=template.name,
+                recipients=request.data["email_recipients"],
+                attachment=report,
+                subject=request.data["email_settings"]["subject"] or None,
+                body=request.data["email_settings"]["body"] or None,
+                attachment_name = request.data["email_settings"]["attachment_name"] or None,
+            )
+        else:
+            # build history report link
+            report_link = f"{djangosettings.CORS_ORIGIN_WHITELIST[0]}/reports/history/{history.id}/?format={format}"
+            ee.reporting.tasks.email_report.delay(
+                template_name=template.name,
+                report_link=report_link,
+                recipients=request.data["email_recipients"],
+                subject=request.data["email_settings"]["subject"] or None,
+                body=request.data["email_settings"]["body"] or None,
+            )
+
+        return Response()
+        
 class GenerateReportPreview(APIView):
     permission_classes = [IsAuthenticated, GenerateReportPerms]
 

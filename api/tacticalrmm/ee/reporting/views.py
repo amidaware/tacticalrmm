@@ -331,6 +331,7 @@ class ReportScheduleSerializer(ModelSerializer):
             "dependencies",
             "no_email",
             "last_run",
+            "email_settings"
         ]
 
 

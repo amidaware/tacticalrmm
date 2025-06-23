@@ -72,7 +72,7 @@ def scheduled_reports_runner():
                 run_time=schedule.run_time,
                 days=schedule.monthly_days_of_month,
                 months=schedule.monthly_months_of_year,
-                current_time=schedule.run_time,
+                current_time=now,
                 timezone=tz,
             )
 
@@ -85,7 +85,7 @@ def scheduled_reports_runner():
                 weekdays=schedule.run_time_weekdays,
                 weeks=schedule.monthly_weeks_of_month,
                 months=schedule.monthly_months_of_year,
-                current_time=schedule.run_time,
+                current_time=now,
                 timezone=tz,
             )
 
@@ -102,23 +102,26 @@ def scheduled_reports_runner():
 def email_report(
     template_name: str,
     recipients: List[str] = [],
+    body: Optional[str] = None,
+    subject: Optional[str] = None,
+    attachment_name: Optional[str] = None,
     report_link: Optional[str] = None,
     attachment: Optional[bytes] = None,
 ):
     core = get_core_settings()
 
-    subject = f"Scheduled Report: {template_name}"
+    new_subject = subject or f"Scheduled Report: {template_name}"
 
     # html report
     if report_link:
-        body = f"Follow the link to view your report\n\n{report_link}"
+        new_body = f"{body or 'Follow the link to view your report'}\n\n{report_link}"
     else:
-        body = "You PDF report is attached"
+        new_body = body or "You PDF report is attached"
 
     core.send_mail(
-        subject=subject,
-        body=body,
+        subject=new_subject,
+        body=new_body,
         attachment=attachment,
-        attachment_filename=template_name,
+        attachment_filename=attachment_name or template_name,
         override_recipients=recipients,
     )

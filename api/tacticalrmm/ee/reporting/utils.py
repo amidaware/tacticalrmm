@@ -766,7 +766,7 @@ def run_scheduled_report(
                 attachment=report,
                 subject=schedule.email_settings["subject"] or None,
                 body=schedule.email_settings["body"] or None,
-                attachment_name = schedule.email_settings["attachment_name"] or None,
+                attachment_name=schedule.email_settings["attachment_name"] or None,
             )
         else:
             # build history report link

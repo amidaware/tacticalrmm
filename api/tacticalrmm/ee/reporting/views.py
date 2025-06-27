@@ -184,7 +184,8 @@ class EmailReport(APIView):
                 attachment=report,
                 subject=request.data["email_settings"]["subject"] or None,
                 body=request.data["email_settings"]["body"] or None,
-                attachment_name = request.data["email_settings"]["attachment_name"] or None,
+                attachment_name=request.data["email_settings"]["attachment_name"]
+                or None,
             )
         else:
             # build history report link
@@ -198,7 +199,8 @@ class EmailReport(APIView):
             )
 
         return Response()
-        
+
+
 class GenerateReportPreview(APIView):
     permission_classes = [IsAuthenticated, GenerateReportPerms]
 
@@ -375,7 +377,7 @@ class ReportScheduleSerializer(ModelSerializer):
             "dependencies",
             "no_email",
             "last_run",
-            "email_settings"
+            "email_settings",
         ]
 
 

@@ -6,6 +6,7 @@ import psutil
 import requests
 from cryptography import x509
 from django.conf import settings
+from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -44,8 +45,8 @@ from .models import (
     CoreSettings,
     CustomField,
     GlobalKVStore,
-    URLAction,
     Schedule,
+    URLAction,
 )
 from .permissions import (
     CodeSignPerms,
@@ -53,10 +54,10 @@ from .permissions import (
     CustomFieldPerms,
     GlobalKeyStorePerms,
     RunServerScriptPerms,
+    SchedulePerms,
     ServerMaintPerms,
     URLActionPerms,
     WebTerminalPerms,
-    SchedulePerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -533,7 +534,12 @@ class UpdateDeleteSchedule(APIView):
         return Response(serializer.data)
 
     def delete(self, request, pk):
-        schedule = get_object_or_404(Schedule, pk=pk).delete()
+        schedule = get_object_or_404(Schedule, pk=pk)
+
+        try:
+            schedule.delete()
+        except IntegrityError:
+            return notify_error("This schedule is currently in use.")
 
         return Response(pk)
 

@@ -105,7 +105,7 @@ class ReportSchedule(BaseAuditModel):
         blank=True,
         default=list,
     )
-    no_email = models.BooleanField(default=False)
+    send_report_email = models.BooleanField(default=True)
     last_run = models.DateTimeField(null=True, blank=True)
     locked_at = models.DateTimeField(null=True, blank=True)
     email_settings = models.JSONField(default=dict)

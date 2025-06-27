@@ -758,7 +758,7 @@ def run_scheduled_report(
     schedule.last_run = djangotime.now()
     schedule.save(update_fields=["last_run"])
 
-    if not schedule.no_email:
+    if schedule.send_report_email:
         if schedule.format == "pdf":
             ee.reporting.tasks.email_report.delay(
                 template_name=template.name,

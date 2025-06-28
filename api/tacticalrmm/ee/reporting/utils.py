@@ -764,9 +764,9 @@ def run_scheduled_report(
                 template_name=template.name,
                 recipients=schedule.email_recipients,
                 attachment=report,
-                subject=schedule.email_settings["subject"] or None,
-                body=schedule.email_settings["body"] or None,
-                attachment_name=schedule.email_settings["attachment_name"] or None,
+                subject=schedule.email_settings.get("subject"),
+                body=schedule.email_settings.get("body"),
+                attachment_name=schedule.email_settings.get("attachment_name"),
             )
         else:
             # build history report link
@@ -775,8 +775,8 @@ def run_scheduled_report(
                 template_name=template.name,
                 report_link=report_link,
                 recipients=schedule.email_recipients,
-                subject=schedule.email_settings["subject"] or None,
-                body=schedule.email_settings["body"] or None,
+                subject=schedule.email_settings.get("subject"),
+                body=schedule.email_settings.get("body"),
             )
 
     return history, error

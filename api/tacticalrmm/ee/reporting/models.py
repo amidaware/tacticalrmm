@@ -51,7 +51,7 @@ class ReportHTMLTemplate(BaseAuditModel):
         return self.name
 
 
-class ReportAsset(BaseAuditModel):
+class ReportAsset(models.Model):
     id = models.UUIDField(
         primary_key=True, unique=True, default=uuid.uuid4, editable=False
     )

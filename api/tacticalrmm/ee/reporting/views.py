@@ -177,15 +177,18 @@ class EmailReport(APIView):
         if error:
             return notify_error(error)
 
+        subject = request.data["email_settings"].get("subject")
+        body = request.data["email_settings"].get("body")
+        attachment_name = request.data["email_settings"].get("attachment_name")
+
         if format == "pdf":
             ee.reporting.tasks.email_report.delay(
                 template_name=template.name,
                 recipients=request.data["email_recipients"],
                 attachment=report,
-                subject=request.data["email_settings"]["subject"] or None,
-                body=request.data["email_settings"]["body"] or None,
-                attachment_name=request.data["email_settings"]["attachment_name"]
-                or None,
+                subject=subject,
+                body=body,
+                attachment_name=attachment_name,
             )
         else:
             # build history report link
@@ -194,8 +197,8 @@ class EmailReport(APIView):
                 template_name=template.name,
                 report_link=report_link,
                 recipients=request.data["email_recipients"],
-                subject=request.data["email_settings"]["subject"] or None,
-                body=request.data["email_settings"]["body"] or None,
+                subject=subject,
+                body=body,
             )
 
         return Response()

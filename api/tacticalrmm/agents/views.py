@@ -12,6 +12,13 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.utils.dateparse import parse_datetime
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiParameter,
+    OpenApiResponse,
+)
+from drf_spectacular.types import OpenApiTypes
 from meshctrl.utils import get_login_token
 from packaging import version as pyver
 from rest_framework import serializers
@@ -88,6 +95,50 @@ from .tasks import (
 )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get all agents",
+        description="Retrieve a list of all agents with optional filtering by monitoring type, site, or client. By default returns detailed agent information unless detail=false is specified.",
+        parameters=[
+            OpenApiParameter(
+                name="monitoring_type",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Filter agents by monitoring type",
+                enum=["server", "workstation"],
+            ),
+            OpenApiParameter(
+                name="site",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description="Filter agents by site ID",
+            ),
+            OpenApiParameter(
+                name="client",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description="Filter agents by client ID",
+            ),
+            OpenApiParameter(
+                name="detail",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description="Include detailed agent information (default: true)",
+                default=True,
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=AgentTableSerializer(many=True),
+                description="List of agents successfully retrieved",
+            ),
+            400: OpenApiResponse(description="Invalid monitoring type or parameters"),
+            401: OpenApiResponse(description="Authentication required"),
+            403: OpenApiResponse(description="Insufficient permissions"),
+        },
+        tags=["Agents"],
+    )
+)
 class GetAgents(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 

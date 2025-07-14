@@ -569,6 +569,19 @@ class NewAgent(APIView):
             )
 
         reload_nats()
+
+        # create agent install audit record
+        AuditLog.objects.create(
+            username=request.user,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.AGENT_INSTALL,
+            message=f"{request.user} installed new agent {agent.hostname}",
+            after_value=Agent.serialize(agent),
+            debug_info={"ip": request._client_ip},
+        )
+
         ret = {"pk": agent.pk, "token": token.key}
 
         if agent.plat == AgentPlat.WINDOWS:

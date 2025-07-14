@@ -31,7 +31,7 @@ class SiteSerializer(ModelSerializer):
     client_name = ReadOnlyField(source="client.name")
     custom_fields = SiteCustomFieldSerializer(many=True, read_only=True)
     maintenance_mode = ReadOnlyField()
-    agent_count = ReadOnlyField()
+    agent_count = ReadOnlyField(source="live_agent_count")
 
     class Meta:
         model = Site
@@ -94,11 +94,11 @@ class ClientSerializer(ModelSerializer):
     sites = SerializerMethodField()
     custom_fields = ClientCustomFieldSerializer(many=True, read_only=True)
     maintenance_mode = ReadOnlyField()
-    agent_count = ReadOnlyField()
+    agent_count = ReadOnlyField(source="live_agent_count")
 
     def get_sites(self, obj):
         return SiteSerializer(
-            obj.filtered_sites,
+            obj.sites,
             many=True,
         ).data
 
@@ -116,6 +116,7 @@ class ClientSerializer(ModelSerializer):
             "agent_count",
             "maintenance_mode",
             "failing_checks",
+            "live_agent_count"
         )
 
     def validate(self, val):

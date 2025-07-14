@@ -41,7 +41,6 @@ class AgentSerializer(serializers.ModelSerializer):
     graphics = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
     timezone = serializers.ReadOnlyField()
-    all_timezones = serializers.SerializerMethodField()
     client = serializers.ReadOnlyField(source="client.name")
     site_name = serializers.ReadOnlyField(source="site.name")
     custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
@@ -79,9 +78,6 @@ class AgentSerializer(serializers.ModelSerializer):
 
         return policies
 
-    def get_all_timezones(self, obj):
-        return ALL_TIMEZONES
-
     class Meta:
         model = Agent
         exclude = ["id"]
@@ -91,7 +87,9 @@ class AgentTableSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField()
     checks = serializers.SerializerMethodField()
     client_name = serializers.ReadOnlyField(source="site.client.name")
+    client = serializers.ReadOnlyField(source="client.id")
     site_name = serializers.ReadOnlyField(source="site.name")
+    site = serializers.ReadOnlyField(source="site.id")
     logged_username = serializers.SerializerMethodField()
     italic = serializers.SerializerMethodField()
     policy = serializers.ReadOnlyField(source="policy.id")
@@ -153,7 +151,9 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "agent_id",
             "alert_template",
             "hostname",
+            "site",
             "site_name",
+            "client",
             "client_name",
             "monitoring_type",
             "description",
@@ -208,7 +208,7 @@ class AgentNoteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Note
-        fields = ("pk", "entry_time", "agent", "user", "note", "username", "agent_id")
+        fields = ("id", "entry_time", "agent", "user", "note", "username", "agent_id")
         extra_kwargs = {"agent": {"write_only": True}, "user": {"write_only": True}}
 
 

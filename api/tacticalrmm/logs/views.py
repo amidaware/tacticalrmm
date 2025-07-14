@@ -43,26 +43,26 @@ class GetAuditLogs(APIView):
         userFilter = Q()
         timeFilter = Q()
 
-        if "agentFilter" in request.data:
+        if request.data["agentFilter"]:
             agentFilter = Q(agent_id__in=request.data["agentFilter"])
 
-        elif "clientFilter" in request.data:
+        elif request.data["clientFilter"]:
             clients = Client.objects.filter(pk__in=request.data["clientFilter"])
             agents = Agent.objects.filter(site__client__in=clients).values_list(
                 "agent_id"
             )
             clientFilter = Q(agent_id__in=agents)
 
-        if "userFilter" in request.data:
+        if request.data["userFilter"]:
             userFilter = Q(username__in=request.data["userFilter"])
 
-        if "actionFilter" in request.data:
+        if request.data["actionFilter"]:
             actionFilter = Q(action__in=request.data["actionFilter"])
 
-        if "objectFilter" in request.data:
+        if request.data["objectFilter"]:
             objectFilter = Q(object_type__in=request.data["objectFilter"])
 
-        if "timeFilter" in request.data:
+        if request.data["timeFilter"]:
             timeFilter = Q(
                 entry_time__lte=djangotime.make_aware(dt.today()),
                 entry_time__gt=djangotime.make_aware(dt.today())
@@ -133,7 +133,7 @@ class PendingActions(APIView):
                 return notify_error(r)
 
         action.delete()
-        return Response(f"{action.agent.hostname}: {action.description} was cancelled")
+        return Response()
 
 
 class GetDebugLog(APIView):
@@ -144,13 +144,13 @@ class GetDebugLog(APIView):
         logTypeFilter = Q()
         logLevelFilter = Q()
 
-        if "logTypeFilter" in request.data:
+        if request.data["logTypeFilter"]:
             logTypeFilter = Q(log_type=request.data["logTypeFilter"])
 
         if "logLevelFilter" in request.data:
-            logLevelFilter = Q(log_level=request.data["logLevelFilter"])
+            logLevelFilter = Q(log_level__in=request.data["logLevelFilter"])
 
-        if "agentFilter" in request.data:
+        if request.data["agentFilter"]:
             agentFilter = Q(agent__agent_id=request.data["agentFilter"])
 
         debug_logs = (

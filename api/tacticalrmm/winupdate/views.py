@@ -39,7 +39,7 @@ class ScanWindowsUpdates(APIView):
 
         agent.delete_superseded_updates()
         asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
-        return Response(f"A Windows update scan will be performed on {agent.hostname}")
+        return Response()
 
 
 class InstallWindowsUpdates(APIView):
@@ -55,7 +55,7 @@ class InstallWindowsUpdates(APIView):
             "guids": agent.get_approved_update_guids(),
         }
         asyncio.run(agent.nats_cmd(nats_data, wait=False))
-        return Response(f"Approved patches will now be installed on {agent.hostname}")
+        return Response()
 
 
 class EditWindowsUpdates(APIView):
@@ -72,5 +72,6 @@ class EditWindowsUpdates(APIView):
             instance=update, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(f"Windows update {update.kb} was changed to {update.action}")
+        update = serializer.save()
+        ctx = {"default_tz": get_default_timezone()}
+        return Response(WinUpdateSerializer(update, context=ctx).data)

@@ -187,58 +187,59 @@ class DeleteActiveLoginSession(APIView):
 
         return Response("ok")
 
+class UserSerializerSSO(ModelSerializer):
+    social_accounts = SerializerMethodField()
+
+    def get_social_accounts(self, obj):
+        accounts = SocialAccount.objects.filter(user_id=obj.pk)
+
+        if accounts:
+            social_accounts = []
+            for account in accounts:
+                try:
+                    provider_account = account.get_provider_account()
+                    display = provider_account.to_str()
+                except SocialApp.DoesNotExist:
+                    display = "Orphaned Provider"
+                except Exception:
+                    display = "Unknown"
+
+                social_accounts.append(
+                    {
+                        "uid": account.uid,
+                        "provider": account.provider,
+                        "display": display,
+                        "last_login": account.last_login,
+                        "date_joined": account.date_joined,
+                        "extra_data": account.extra_data,
+                    }
+                )
+
+            return social_accounts
+
+        return []
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "is_active",
+            "last_login",
+            "last_login_ip",
+            "role",
+            "block_dashboard_login",
+            "date_format",
+            "social_accounts",
+        ]
+
 
 class GetAddUsers(APIView):
     permission_classes = [IsAuthenticated, AccountsPerms]
 
-    class UserSerializerSSO(ModelSerializer):
-        social_accounts = SerializerMethodField()
-
-        def get_social_accounts(self, obj):
-            accounts = SocialAccount.objects.filter(user_id=obj.pk)
-
-            if accounts:
-                social_accounts = []
-                for account in accounts:
-                    try:
-                        provider_account = account.get_provider_account()
-                        display = provider_account.to_str()
-                    except SocialApp.DoesNotExist:
-                        display = "Orphaned Provider"
-                    except Exception:
-                        display = "Unknown"
-
-                    social_accounts.append(
-                        {
-                            "uid": account.uid,
-                            "provider": account.provider,
-                            "display": display,
-                            "last_login": account.last_login,
-                            "date_joined": account.date_joined,
-                            "extra_data": account.extra_data,
-                        }
-                    )
-
-                return social_accounts
-
-            return []
-
-        class Meta:
-            model = User
-            fields = [
-                "id",
-                "username",
-                "first_name",
-                "last_name",
-                "email",
-                "is_active",
-                "last_login",
-                "last_login_ip",
-                "role",
-                "block_dashboard_login",
-                "date_format",
-                "social_accounts",
-            ]
 
     def get(self, request):
         search = request.GET.get("search", None)
@@ -250,7 +251,7 @@ class GetAddUsers(APIView):
         else:
             users = User.objects.filter(agent=None, is_installer_user=False)
 
-        return Response(self.UserSerializerSSO(users, many=True).data)
+        return Response(UserSerializerSSO(users, many=True).data)
 
     def post(self, request):
         # add new user
@@ -281,7 +282,7 @@ class GetAddUsers(APIView):
 
         user.save()
         sync_mesh_perms_task.delay()
-        return Response(user.username)
+        return Response(UserSerializerSSO(user.refresh_from_db()).data)
 
 
 class GetUpdateDeleteUser(APIView):
@@ -300,10 +301,10 @@ class GetUpdateDeleteUser(APIView):
 
         serializer = UserSerializer(instance=user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
         sync_mesh_perms_task.delay()
 
-        return Response("ok")
+        return Response(UserSerializerSSO(user).data)
 
     def delete(self, request, pk):
         user = get_object_or_404(User, pk=pk)
@@ -312,7 +313,7 @@ class GetUpdateDeleteUser(APIView):
 
         user.delete()
         sync_mesh_perms_task.delay()
-        return Response("ok")
+        return Response()
 
 
 class UserActions(APIView):
@@ -327,7 +328,7 @@ class UserActions(APIView):
         user.set_password(request.data["password"])
         user.save()
 
-        return Response("ok")
+        return Response()
 
     # reset two factor token
     def put(self, request):
@@ -338,9 +339,7 @@ class UserActions(APIView):
         user.totp_key = ""
         user.save()
 
-        return Response(
-            f"{user.username}'s Two-Factor key was reset. Have them sign in again to setup"
-        )
+        return Response()
 
 
 class TOTPSetup(GenericPermsViewMixin, APIView):
@@ -362,8 +361,8 @@ class UserUI(GenericPermsViewMixin, APIView):
             instance=request.user, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response("ok")
+        user = serializer.save()
+        return Response(UserUISerializer(user).data)
 
 
 class GetAddRoles(APIView):
@@ -376,8 +375,8 @@ class GetAddRoles(APIView):
     def post(self, request):
         serializer = RoleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response("Role was added")
+        role = serializer.save()
+        return Response(RoleSerializer(role).data)
 
 
 class GetUpdateDeleteRole(APIView):
@@ -391,15 +390,15 @@ class GetUpdateDeleteRole(APIView):
         role = get_object_or_404(Role, pk=pk)
         serializer = RoleSerializer(instance=role, data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        role = serializer.save()
         sync_mesh_perms_task.delay()
-        return Response("Role was edited")
+        return Response(RoleSerializer(role).data)
 
     def delete(self, request, pk):
         role = get_object_or_404(Role, pk=pk)
         role.delete()
         sync_mesh_perms_task.delay()
-        return Response("Role was removed")
+        return Response()
 
 
 class GetAddAPIKeys(APIView):
@@ -416,8 +415,8 @@ class GetAddAPIKeys(APIView):
         request.data["key"] = get_random_string(length=32).upper()
         serializer = APIKeySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response("The API Key was added")
+        key = serializer.save()
+        return Response(APIKeySerializer(key).data)
 
 
 class GetUpdateDeleteAPIKey(APIView):
@@ -432,13 +431,13 @@ class GetUpdateDeleteAPIKey(APIView):
 
         serializer = APIKeySerializer(instance=apikey, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response("The API Key was edited")
+        key = serializer.save()
+        return Response(APIKeySerializer(key).data)
 
     def delete(self, request, pk):
         apikey = get_object_or_404(APIKey, pk=pk)
         apikey.delete()
-        return Response("The API Key was deleted")
+        return Response()
 
 
 class ResetPass(APIView):
@@ -448,7 +447,7 @@ class ResetPass(APIView):
         user = request.user
         user.set_password(request.data["password"])
         user.save()
-        return Response("Password was reset.")
+        return Response()
 
 
 class Reset2FA(APIView):
@@ -458,4 +457,4 @@ class Reset2FA(APIView):
         user = request.user
         user.totp_key = ""
         user.save()
-        return Response("2FA was reset. Log out and back in to setup.")
+        return Response()

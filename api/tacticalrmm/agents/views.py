@@ -284,7 +284,7 @@ class GetUpdateDeleteAgent(APIView):
 
         s = self.InputSerializer(instance=agent, data=request.data, partial=True)
         s.is_valid(raise_exception=True)
-        s.save()
+        agent = s.save()
 
         if "winupdatepolicy" in request.data.keys():
             policy = agent.winupdatepolicy.get()  # type: ignore
@@ -316,7 +316,7 @@ class GetUpdateDeleteAgent(APIView):
                     serializer.save()
 
         sync_mesh_perms_task.delay()
-        return Response("The agent was updated successfully")
+        return Response(AgentSerializer(agent).data)
 
     # uninstall agent
     def delete(self, request, agent_id):
@@ -612,7 +612,7 @@ class Shutdown(APIView):
         if r != "ok":
             return notify_error("Unable to contact the agent")
 
-        return Response("ok")
+        return Response()
 
 
 class Reboot(APIView):
@@ -625,7 +625,7 @@ class Reboot(APIView):
         if r != "ok":
             return notify_error("Unable to contact the agent")
 
-        return Response("ok")
+        return Response()
 
     # reboot later
     def patch(self, request, agent_id):
@@ -1034,8 +1034,8 @@ class GetAddNotes(APIView):
 
         serializer = AgentNoteSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response("Note added!")
+        note = serializer.save()
+        return Response(AgentNoteSerializer(note).data)
 
 
 class GetEditDeleteNote(APIView):
@@ -1057,8 +1057,8 @@ class GetEditDeleteNote(APIView):
 
         serializer = AgentNoteSerializer(instance=note, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response("Note edited!")
+        note = serializer.save()
+        return Response(AgentNoteSerializer(note).data)
 
     def delete(self, request, pk):
         note = get_object_or_404(Note, pk=pk)
@@ -1067,7 +1067,7 @@ class GetEditDeleteNote(APIView):
             raise PermissionDenied()
 
         note.delete()
-        return Response("Note was deleted!")
+        return Response()
 
 
 @api_view(["POST"])
@@ -1223,7 +1223,7 @@ def agent_maintenance(request):
 @permission_classes([IsAuthenticated, RecoverAgentPerms])
 def bulk_agent_recovery(request):
     bulk_recover_agents_task.delay()
-    return Response("Agents will now be recovered")
+    return Response()
 
 
 class WMI(APIView):
@@ -1234,7 +1234,7 @@ class WMI(APIView):
         r = asyncio.run(agent.nats_cmd({"func": "sysinfo"}, timeout=20))
         if r != "ok":
             return notify_error("Unable to contact the agent")
-        return Response("Agent WMI data refreshed successfully")
+        return Response()
 
 
 class AgentHistoryView(APIView):
@@ -1357,7 +1357,7 @@ def wol(request, agent_id):
         asyncio.run(wake_on_lan(uri=uri, mesh_node_id=agent.mesh_node_id))
     except Exception as e:
         return notify_error(str(e))
-    return Response(f"Wake-on-LAN sent to {agent.hostname}")
+    return Response()
 
 
 @api_view(["GET"])

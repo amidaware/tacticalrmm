@@ -55,8 +55,6 @@ class GetAddClients(APIView):
                             )
                         )
                     )
-                    .annotate(agent_count=Count("agents")),
-                    to_attr="filtered_sites",
                 ),
             )
             .annotate(
@@ -66,7 +64,6 @@ class GetAddClients(APIView):
                     )
                 )
             )
-            .annotate(agent_count=Count("sites__agents"))
         )
         return Response(ClientSerializer(clients, many=True).data)
 
@@ -109,7 +106,7 @@ class GetAddClients(APIView):
         if request.user.role and request.user.role.can_view_clients.exists():
             request.user.role.can_view_clients.add(client)
 
-        return Response(f"{client.name} was added")
+        return Response(ClientSerializer(client).data)
 
 
 class GetUpdateDeleteClient(APIView):
@@ -144,7 +141,7 @@ class GetUpdateDeleteClient(APIView):
             data=request.data["client"], instance=client, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        client = serializer.save()
 
         # update custom fields
         if "custom_fields" in request.data.keys():
@@ -166,7 +163,7 @@ class GetUpdateDeleteClient(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
-        return Response("{client} was updated")
+        return Response(ClientSerializer(client).data)
 
     def delete(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
@@ -187,7 +184,7 @@ class GetUpdateDeleteClient(APIView):
             )
 
         client.delete()
-        return Response(f"{client.name} was deleted")
+        return Response()
 
 
 class GetAddSites(APIView):
@@ -219,7 +216,7 @@ class GetAddSites(APIView):
         if request.user.role and request.user.role.can_view_sites.exists():
             request.user.role.can_view_sites.add(site)
 
-        return Response(f"Site {site.name} was added!")
+        return Response(SiteSerializer(site).data)
 
 
 class GetUpdateDeleteSite(APIView):
@@ -242,7 +239,7 @@ class GetUpdateDeleteSite(APIView):
             instance=site, data=request.data["site"], partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        site = serializer.save()
 
         # update custom field
         if "custom_fields" in request.data.keys():
@@ -262,7 +259,7 @@ class GetUpdateDeleteSite(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
-        return Response("Site was edited")
+        return Response(SiteSerializer(site).data)
 
     def delete(self, request, pk):
         site = get_object_or_404(Site, pk=pk)
@@ -283,9 +280,11 @@ class GetUpdateDeleteSite(APIView):
             return notify_error(
                 "There needs to be a site specified to move the agents to"
             )
+        
+        site_return = SiteSerializer(site).data
 
         site.delete()
-        return Response(f"{site.name} was deleted")
+        return Response(site_return)
 
 
 class AgentDeployment(APIView):

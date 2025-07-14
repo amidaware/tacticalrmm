@@ -32,7 +32,7 @@ from core.utils import (
     token_is_valid,
 )
 from logs.models import AuditLog
-from tacticalrmm.constants import AuditActionType, PAStatus
+from tacticalrmm.constants import AuditActionType, PAStatus, ALL_TIMEZONES
 from tacticalrmm.helpers import get_certs, notify_error
 from tacticalrmm.logger import logger
 from tacticalrmm.permissions import (
@@ -157,6 +157,7 @@ def dashboard_info(request):
             "web_terminal_enabled": core_settings.web_terminal_enabled,
             "block_local_user_logon": core_settings.block_local_user_logon,
             "sso_enabled": core_settings.sso_enabled,
+            "timezone_options": ALL_TIMEZONES
         }
     )
 

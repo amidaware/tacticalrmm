@@ -1,7 +1,6 @@
 import pytest
 from datetime import time, datetime
 from zoneinfo import ZoneInfo
-import time_machine
 
 from tacticalrmm.scheduler import (
     should_run_daily,

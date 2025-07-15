@@ -9,9 +9,7 @@ from tacticalrmm.scheduler import (
     should_run_monthly,
     should_run_monthly_dow,
 )
-from .models import ReportSchedule
-from .utils import run_scheduled_report
-from core.models import ScheduleType, MonthlyType
+
 from tacticalrmm.utils import get_default_timezone, get_core_settings
 
 
@@ -28,6 +26,9 @@ def prune_report_history_task(older_than_days: int) -> str:
 
 @app.task
 def scheduled_reports_runner():
+    from .models import ReportSchedule
+    from core.models import ScheduleType, MonthlyType
+    from .utils import run_scheduled_report
     now = djangotime.now()
     tz = get_default_timezone()
 

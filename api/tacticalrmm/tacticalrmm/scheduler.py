@@ -180,14 +180,15 @@ def should_run_monthly_dow(
     if month not in months:
         return False
 
-    # fist week: 1-7, 2nd week: 8-14, 3rd week: 15-21, 4th week: 22-28, last week: 29-end
-    # TODO fix last week
+    # first week: 1-7, 2nd week: 8-14, 3rd week: 15-21, 4th week: 22-28, last week: 29-end
     week_num = (day - 1) // 7 + 1
     total_days = calendar.monthrange(year, month)[1]
     last_week_num = (total_days - 1) // 7 + 1
 
     if week_num == last_week_num:
         week = LAST_WEEK_OF_MONTH
+    else:
+        week = week_num
 
     if week not in weeks:
         return False

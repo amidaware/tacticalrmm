@@ -53,7 +53,7 @@ def scheduled_reports_runner():
 
         elif schedule.schedule_type == ScheduleType.DAILY:
             run = should_run_daily(
-                run_time=schedule.run_time, current_time=now, timezone=tz
+                run_time=schedule.run_time, current_time=now, timezone=report.timezone or tz
             )
 
         elif schedule.schedule_type == ScheduleType.WEEKLY:
@@ -61,7 +61,7 @@ def scheduled_reports_runner():
                 run_time=schedule.run_time,
                 weekdays=schedule.run_time_weekdays,
                 current_time=now,
-                timezone=tz,
+                timezone=report.timezone or tz,
             )
 
         elif (
@@ -73,7 +73,7 @@ def scheduled_reports_runner():
                 days=schedule.monthly_days_of_month,
                 months=schedule.monthly_months_of_year,
                 current_time=now,
-                timezone=tz,
+                timezone=report.timezone or tz,
             )
 
         elif (
@@ -86,7 +86,7 @@ def scheduled_reports_runner():
                 weeks=schedule.monthly_weeks_of_month,
                 months=schedule.monthly_months_of_year,
                 current_time=now,
-                timezone=tz,
+                timezone=report.timezone or tz,
             )
 
         if run:

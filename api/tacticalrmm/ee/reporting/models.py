@@ -109,6 +109,7 @@ class ReportSchedule(BaseAuditModel):
     last_run = models.DateTimeField(null=True, blank=True)
     locked_at = models.DateTimeField(null=True, blank=True)
     email_settings = models.JSONField(default=dict)
+    timezone = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.name

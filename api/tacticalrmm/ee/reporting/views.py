@@ -381,7 +381,7 @@ class ReportScheduleSerializer(ModelSerializer):
             "send_report_email",
             "last_run",
             "email_settings",
-            "timezone"
+            "timezone",
         ]
 
 

@@ -29,6 +29,7 @@ def scheduled_reports_runner():
     from .models import ReportSchedule
     from core.models import ScheduleType, MonthlyType
     from .utils import run_scheduled_report
+
     now = djangotime.now()
     tz = get_default_timezone()
 
@@ -54,7 +55,9 @@ def scheduled_reports_runner():
 
         elif schedule.schedule_type == ScheduleType.DAILY:
             run = should_run_daily(
-                run_time=schedule.run_time, current_time=now, timezone=report.timezone or tz
+                run_time=schedule.run_time,
+                current_time=now,
+                timezone=report.timezone or tz,
             )
 
         elif schedule.schedule_type == ScheduleType.WEEKLY:

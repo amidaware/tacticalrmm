@@ -7,6 +7,7 @@ from model_bakery import baker
 from ..models import ReportSchedule, ReportHistory, ReportTemplate
 from core.models import Schedule
 
+
 @pytest.fixture
 def authenticated_client():
     client = APIClient()
@@ -14,9 +15,11 @@ def authenticated_client():
     client.force_authenticate(user=user)
     return client
 
+
 @pytest.fixture
 def unauthenticated_client():
     return APIClient()
+
 
 @pytest.fixture
 def unauthorized_client():
@@ -24,6 +27,7 @@ def unauthorized_client():
     user = baker.make("accounts.User", is_superuser=False)
     client.force_authenticate(user=user)
     return client
+
 
 @pytest.fixture
 def report_schedule():
@@ -33,6 +37,7 @@ def report_schedule():
 @pytest.fixture
 def report_history():
     return baker.make(ReportHistory)
+
 
 # report schedule views
 @pytest.mark.django_db
@@ -89,22 +94,34 @@ class TestReportScheduleViews:
 @pytest.mark.django_db
 class TestRunReportScheduleView:
     @patch("ee.reporting.views.run_scheduled_report", return_value=(None, None))
-    def test_run_schedule_success(self, mock_run, authenticated_client, report_schedule):
+    def test_run_schedule_success(
+        self, mock_run, authenticated_client, report_schedule
+    ):
         url = f"/reporting/schedules/{report_schedule.id}/run/"
         response = authenticated_client.post(url)
 
         assert response.status_code == status.HTTP_200_OK
-        mock_run.assert_called_once_with(schedule=report_schedule, user=authenticated_client.handler._force_user)
+        mock_run.assert_called_once_with(
+            schedule=report_schedule, user=authenticated_client.handler._force_user
+        )
 
-    @patch("ee.reporting.views.run_scheduled_report", return_value=(None, "Something went wrong"))
-    def test_run_schedule_with_error(self, mock_run, authenticated_client, report_schedule):
+    @patch(
+        "ee.reporting.views.run_scheduled_report",
+        return_value=(None, "Something went wrong"),
+    )
+    def test_run_schedule_with_error(
+        self, mock_run, authenticated_client, report_schedule
+    ):
         url = f"/reporting/schedules/{report_schedule.id}/run/"
         response = authenticated_client.post(url)
 
         assert response.status_code == 400
         assert response.data == "Something went wrong"
 
-        mock_run.assert_called_once_with(schedule=report_schedule, user=authenticated_client.handler._force_user)
+        mock_run.assert_called_once_with(
+            schedule=report_schedule, user=authenticated_client.handler._force_user
+        )
+
 
 @pytest.mark.django_db
 class TestReportHistoryViews:
@@ -128,7 +145,9 @@ class TestReportHistoryViews:
 class TestRunReportHistoryView:
     @patch("ee.reporting.views.generate_pdf", return_value=b"pdf_content")
     @patch("ee.reporting.views.normalize_asset_url", return_value="<html></html>")
-    def test_run_history_as_pdf(self, mock_normalize, mock_pdf, authenticated_client, report_history):
+    def test_run_history_as_pdf(
+        self, mock_normalize, mock_pdf, authenticated_client, report_history
+    ):
         url = f"/reporting/history/{report_history.id}/run/"
         payload = {"format": "pdf"}
         response = authenticated_client.post(url, payload, format="json")
@@ -140,7 +159,9 @@ class TestRunReportHistoryView:
         mock_pdf.assert_called_once_with(html="<html></html>")
 
     @patch("ee.reporting.views.normalize_asset_url", return_value="<html></html>")
-    def test_run_history_as_html(self, mock_normalize, authenticated_client, report_history):
+    def test_run_history_as_html(
+        self, mock_normalize, authenticated_client, report_history
+    ):
         url = f"/reporting/history/{report_history.id}/run/"
         payload = {"format": "html"}
         response = authenticated_client.post(url, payload, format="json")
@@ -164,7 +185,7 @@ class TestReportSchedulesViewsUnauthorized:
 
     def get_detail_url(self, pk):
         return f"/reporting/schedules/{pk}/"
-    
+
     def get_run_url(self, pk):
         return f"/reporting/schedules/{pk}/run/"
 
@@ -187,14 +208,16 @@ class TestReportSchedulesViewsUnauthorized:
             ("unauthorized_client", status.HTTP_403_FORBIDDEN),
         ],
     )
-    def test_schedule_detail_permissions(self, request, client_fixture, expected_status, report_schedule):
+    def test_schedule_detail_permissions(
+        self, request, client_fixture, expected_status, report_schedule
+    ):
         client = request.getfixturevalue(client_fixture)
         url = self.get_detail_url(report_schedule.pk)
-        
+
         get_response = client.get(url)
         put_response = client.put(url, {}, format="json")
         delete_response = client.delete(url)
-        
+
         assert get_response.status_code == expected_status
         assert put_response.status_code == expected_status
         assert delete_response.status_code == expected_status
@@ -206,7 +229,9 @@ class TestReportSchedulesViewsUnauthorized:
             ("unauthorized_client", status.HTTP_403_FORBIDDEN),
         ],
     )
-    def test_run_schedule_permissions(self, request, client_fixture, expected_status, report_schedule):
+    def test_run_schedule_permissions(
+        self, request, client_fixture, expected_status, report_schedule
+    ):
         client = request.getfixturevalue(client_fixture)
         url = self.get_run_url(report_schedule.pk)
         response = client.post(url)
@@ -216,10 +241,10 @@ class TestReportSchedulesViewsUnauthorized:
 @pytest.mark.django_db
 class TestReportHistoryViewsUnauthorized:
     LIST_URL = "/reporting/history/"
-    
+
     def get_detail_url(self, pk):
         return f"/reporting/history/{pk}/"
-    
+
     def get_run_url(self, pk):
         return f"/reporting/history/{pk}/run/"
 
@@ -234,7 +259,7 @@ class TestReportHistoryViewsUnauthorized:
         client = request.getfixturevalue(client_fixture)
         response = client.get(self.LIST_URL)
         assert response.status_code == expected_status
-    
+
     @pytest.mark.parametrize(
         "client_fixture, expected_status",
         [
@@ -242,7 +267,9 @@ class TestReportHistoryViewsUnauthorized:
             ("unauthorized_client", status.HTTP_403_FORBIDDEN),
         ],
     )
-    def test_history_delete_permissions(self, request, client_fixture, expected_status, report_history):
+    def test_history_delete_permissions(
+        self, request, client_fixture, expected_status, report_history
+    ):
         client = request.getfixturevalue(client_fixture)
         url = self.get_detail_url(report_history.pk)
         response = client.delete(url)
@@ -255,7 +282,9 @@ class TestReportHistoryViewsUnauthorized:
             ("unauthorized_client", status.HTTP_403_FORBIDDEN),
         ],
     )
-    def test_run_history_permissions(self, request, client_fixture, expected_status, report_history):
+    def test_run_history_permissions(
+        self, request, client_fixture, expected_status, report_history
+    ):
         client = request.getfixturevalue(client_fixture)
         url = self.get_run_url(report_history.pk)
         payload = {"format": "pdf"}

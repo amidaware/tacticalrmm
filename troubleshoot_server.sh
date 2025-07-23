@@ -2,416 +2,243 @@
 
 # Tactical RMM install troubleshooting script
 # Contributed by https://github.com/dinger1986
-# v1.1 1/21/2022 update to include all services
-# v 1.2 6/24/2023 changed to add date, easier readability and ipv4 addresses only for checks
-# v 1.3 6/24/2024 Adding resolvconf helper
-# v 1.4 3/12/2025 Removed Mongo Check and added OS Check and Warning for Ubuntu 20.04
+# v1.1  1/21/2022  update to include all services
+# v1.2  6/24/2023  changed to add date, easier readability and ipv4 addresses only for checks
+# v1.3  6/24/2024  Adding resolvconf helper
+# v1.4  3/12/2025 Removed Mongo Check and added OS Check and Warning for Ubuntu 20.04
+# v1.5  3/12/2025 Switching to auto-detect Tactical RMM domains from config files
+# v1.6 thru v1.9  7/18/2025 Added dynamic logging and fixed regex warnings. Cleaning header and sudo check.
 
-# This script asks for the 3 subdomains, checks they exist, checks they resolve locally and remotely (using google dns for remote),
-# checks services are running, checks ports are opened. The only part that will make the script stop is if the sub domains dont exist, theres literally no point in going further if thats the case
+# This script is designed to help troubleshoot Tactical RMM installations.
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-memTotal=$(grep -i memtotal /proc/meminfo | awk '{print $2}')
-if [[ $memTotal -lt 3627528 ]]; then
-  echo -ne "${RED}ERROR: A minimum of 4GB of RAM is required.${NC}\n"
+# --- Require sudo/root -------------------------------------------
+if [ "$EUID" -ne 0 ]; then
+  echo -e "\e[31mERROR: This script must be run as root (use sudo)\e[0m" >&2
   exit 1
 fi
 
-osname=$(lsb_release -si)
-osname=${osname^}
-osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
-fullrel=$(lsb_release -sd)
-codename=$(lsb_release -sc)
+# ——— Color setup (only if running on a TTY) ——————————————————————————————
+if [ -t 1 ]; then
+  GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
+else
+  GREEN=''; YELLOW=''; RED=''; NC=''
+fi
+
+# ——— Dynamic log file setup ——————————————————————————————————————————————
+LOGFILE="troubleshootinglog_$(date '+%Y-%m-%d-%H-%M-%S').log"
+# console gets the raw (colored) output; logfile gets ANSI codes stripped
+exec > >(tee >(sed -r 's/\x1B\[[0-9;]*[mK]//g' >>"$LOGFILE")) 2>&1
+
+# ——— Timestamp header ——————————————————————————————————————————————
+now=$(date)
+echo -e "-------------- $now --------------"
+
+# pure-ERE IPv4 matcher (for all subsequent greps)
+IPV4='([0-9]{1,3}\.){3}[0-9]{1,3}'
+
+# ——— Minimum RAM check ——————————————————————————————————————————————
+memTotal=$(grep -i MemTotal /proc/meminfo | awk '{print $2}')
+if [[ $memTotal -lt 3627528 ]]; then
+  echo -e "${RED}ERROR: A minimum of 4GB of RAM is required.${NC}"
+  exit 1
+fi
+
+# ——— OS support check ——————————————————————————————————————————————
+osname=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
 relno=$(lsb_release -sr | cut -d. -f1)
 fullrelno=$(lsb_release -sr)
 
 not_supported() {
-  echo -ne "${RED}ERROR: Only Debian 11, Debian 12 and Ubuntu 22.04 are now supported.${NC}\n"
+  echo -e "${RED}ERROR: Only Debian 11, Debian 12 and Ubuntu 22.04 are supported.${NC}"
   exit 1
 }
-
 needs_updated() {
-  echo -ne "${YELLOW}WARNING: Ubuntu 20.04 is outdated. Please Backup and Restore to Ubuntu 22.04 or Debian 12.${NC}\n"
+  echo -e "${YELLOW}WARNING: Ubuntu 20.04 is outdated. Please migrate to Ubuntu 22.04 or Debian 12.${NC}"
 }
-
 pass_message() {
-  echo -ne "${GREEN}You are running $osname $fullrelno, which is supported.${NC}\n"
+  echo -e "${GREEN}You are running $osname $fullrelno, which is supported.${NC}"
 }
 
 if [[ "$osname" == "debian" ]]; then
-  fullrelno=$relno
-  if [[ "$relno" -ne 11 && "$relno" -ne 12 ]]; then
-    not_supported
-  else
-    pass_message
-  fi
+  [[ "$relno" -ne 11 && "$relno" -ne 12 ]] && not_supported || pass_message
 elif [[ "$osname" == "ubuntu" ]]; then
-  version=$fullrelno
-  if [[ "$fullrelno" == "20.04" ]]; then
-    needs_updated
-  elif [[ "$fullrelno" == "22.04" ]]; then
-    pass_message
-  else
-    not_supported
-  fi
+  [[ "$fullrelno" == "20.04" ]] && needs_updated
+  [[ "$fullrelno" == "22.04" ]] && pass_message || not_supported
 else
   not_supported
 fi
 
+# ——— Unsupported environments —————————————————————————————————————————
 if dpkg -l | grep -qi turnkey; then
-  echo -ne "${RED}Turnkey linux is not supported. Please use the official debian/ubuntu ISO.${NC}\n"
+  echo -e "${RED}Turnkey Linux is not supported. Use official Debian/Ubuntu ISO.${NC}"
+  exit 1
+fi
+if pgrep -f webmin >/dev/null; then
+  echo -e "${RED}Webmin detected. Please use a clean Debian/Ubuntu install.${NC}"
   exit 1
 fi
 
-if ps aux | grep -v grep | grep -qi webmin; then
-  echo -ne "${RED}Webmin running, should not be installed. Please use the official debian/ubuntu ISO.${NC}\n"
+# ——— resolvconf helper check —————————————————————————————————————————————
+command -v resolvconf >/dev/null || {
+  echo -e "${RED}Error: resolvconf not found.${NC}"
+  echo -e "${YELLOW}Install with: sudo apt install resolvconf${NC}"
   exit 1
-fi
-
-# Function to check if a resolvconf is installed
-command_exists() {
-    command -v "$1" &> /dev/null
 }
 
-# Check if resolvconf command is available
-if ! command_exists resolvconf; then
-    echo -e "${RED}Error: resolvconf command not found.${NC}"
-    echo -e "${YELLOW}Please install it using: ${NC}sudo apt install resolvconf"
-    exit 1
-fi
-
-# Set date at the top of the troubleshooting script
-now=$(date)
-echo -e -------------- $now -------------- | tee -a checklog.log
-
-osname=$(lsb_release -si)
-osname=${osname^}
-osname=$(echo "$osname" | tr '[A-Z]' '[a-z]')
-relno=$(lsb_release -sr | cut -d. -f1)
-
-# Resolve Locally used DNS server
+# ——— Local DNS resolver detection —————————————————————————————————————
 resolvestatus=$(systemctl is-active systemd-resolved.service)
 if [[ "$osname" == "debian" && "$relno" == 12 ]]; then
-	locdns=$(resolvconf -l | tail -n +1 | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-
-elif [ $resolvestatus = active ]; then
-	locdns=$(resolvectl | tail -n +1 | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+  locdns=$(resolvconf -l | grep -m1 -Eo "$IPV4")
+elif [[ "$resolvestatus" == "active" ]]; then
+  locdns=$(resolvectl | grep -m1 -Eo "$IPV4")
 else
-	while ! [[ $resolveconf ]]; do
-		resolveconf=$(sudo systemctl status systemd-resolved.service | grep "Active: active (running)")
-		sudo systemctl start systemd-resolved.service
-		echo -ne "DNS Resolver not ready yet...${NC}\n"
-		sleep 3
-	done
-	locdns=$(resolvectl | tail -n +1 | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-	sudo systemctl stop systemd-resolved.service
+  until systemctl is-active --quiet systemd-resolved.service; do
+    echo "Waiting for systemd-resolved..."
+    systemctl start systemd-resolved.service
+    sleep 3
+  done
+  locdns=$(resolvectl | grep -m1 -Eo "$IPV4")
+  systemctl stop systemd-resolved.service
 fi
 
-while [[ $rmmdomain != *[.]*[.]* ]]; do
-	echo -e "${YELLOW}Enter the subdomain for the backend (e.g. api.example.com)${NC}: "
-	read rmmdomain
+# ——— Auto-detect Tactical RMM domains ————————————————————————————————————
+echo -e ""
+echo -e "${YELLOW}---------- Detecting Tactical RMM domains from installed config... ----------${NC}"
+
+SETTINGS_FILE="/rmm/api/tacticalrmm/tacticalrmm/local_settings.py"
+MESH_CONFIG="/meshcentral/meshcentral-data/config.json"
+
+# RMM Backend (api.example.com)
+rmmdomain=$(
+  grep -E "^ALLOWED_HOSTS\s*=" "$SETTINGS_FILE" 2>/dev/null \
+  | grep -Eo "'[^']+'" \
+  | tr -d "'" \
+  | head -1
+)
+
+# Frontend (rmm.example.com)
+frontenddomain=$(
+  grep -A 3 "CORS_ORIGIN_WHITELIST" "$SETTINGS_FILE" 2>/dev/null \
+  | grep -Eo 'https://[^"]+' \
+  | cut -d/ -f3 \
+  | head -1
+)
+
+# MeshCentral (mesh.example.com)
+meshdomain=$(
+  grep -E '"Cert"\s*:\s*"' "$MESH_CONFIG" 2>/dev/null \
+  | head -1 \
+  | cut -d'"' -f4
+)
+
+# Base domain (example.com)
+domain=""
+if [[ -n "$rmmdomain" ]]; then
+  domain=$(echo "$rmmdomain" | cut -d. -f2-)
+fi
+
+echo -e "
+${GREEN}Detected Values:${NC}
+  RMM Backend (API)   : ${rmmdomain:-${RED}Not Found${NC}}
+  Frontend (Web GUI)  : ${frontenddomain:-${RED}Not Found${NC}}
+  MeshCentral         : ${meshdomain:-${RED}Not Found${NC}}
+  Base Domain         : ${domain:-${RED}Not Found${NC}}
+"
+
+if [[ -z "$rmmdomain" || -z "$frontenddomain" || -z "$meshdomain" || -z "$domain" ]]; then
+  echo -e "${RED}ERROR: Could not auto-detect all required domains. Please verify your config files.${NC}"
+  exit 1
+fi
+
+# ——— Connectivity & DNS resolution checks —————————————————————————————————
+echo -e ""
+echo -e "${YELLOW}---------- Checking IPs and reachability... ----------${NC}"
+for svc in "api:$rmmdomain" "frontend:$frontenddomain" "mesh:$meshdomain"; do
+  IFS=: read -r name host <<< "$svc"
+
+  locip=$(dig @"$locdns" +short "$host" | grep -m1 -Eo "$IPV4")
+  remip=$(dig @8.8.8.8 +short "$host" | grep -m1 -Eo "$IPV4")
+
+  if [[ -z "$locip" || -z "$remip" ]]; then
+    echo -e "${RED}ERROR: DNS lookup failed for $host (Local='$locip', Remote='$remip')${NC}"
+  elif [[ "$locip" == "$remip" ]]; then
+    echo -e "${GREEN}Success [$name] $host ? Local: $locip, Remote: $remip${NC}"
+  else
+    echo -e "${RED}Mismatch [$name] $host ? Local: $locip, Remote: $remip${NC}"
+    echo -e "${RED}Agents may require non-public DNS to reach $host${NC}"
+  fi
+  echo
 done
 
-if ping -c 1 $rmmdomain &>/dev/null; then
-	echo -e ${GREEN} Verified $rmmdomain | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	echo -e ${RED} $rmmdomain doesnt exist please create it or check for a typo | tee -a checklog.log
-	printf >&2 "\n\n"
-	printf >&2 "You will have a log file called checklog.log in the directory you ran this script from\n\n"
-	printf >&2 "\n\n"
-	exit
-fi
-
-while [[ $frontenddomain != *[.]*[.]* ]]; do
-	echo -e "${YELLOW}Enter the subdomain for the frontend (e.g. rmm.example.com)${NC}: "
-	read frontenddomain
+# ——— Service status checks —————————————————————————————————————————————
+echo -e ""
+echo -e "${YELLOW}---------- Checking system services... ----------${NC}"
+services=(rmm daphne celery celerybeat nginx nats nats-api meshcentral postgresql redis-server)
+for s in "${services[@]}"; do
+  if systemctl is-active --quiet "$s"; then
+    echo -e "${GREEN}Service $s is running${NC}"
+  else
+    echo -e "${RED}Service $s is NOT running${NC}"
+  fi
+  echo
 done
 
-if ping -c 1 $frontenddomain &>/dev/null; then
-	echo -e ${GREEN} Verified $frontenddomain | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	echo -e ${RED} $frontenddomain doesnt exist please create it or check for a typo | tee -a checklog.log
-	printf >&2 "\n\n"
-	printf >&2 "You will have a log file called checklog.log in the directory you ran this script from\n\n"
-	printf >&2 "\n\n"
-	exit
-fi
-
-while [[ $meshdomain != *[.]*[.]* ]]; do
-	echo -e "${YELLOW}Enter the subdomain for meshcentral (e.g. mesh.example.com)${NC}: "
-	read meshdomain
-done
-
-if ping -c 1 $meshdomain &>/dev/null; then
-	echo -e ${GREEN} Verified $meshdomain | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	echo -e ${RED} $meshdomain doesnt exist please create it or check for a typo | tee -a checklog.log
-	printf >&2 "\n\n" | tee -a checklog.log
-	printf >&2 "You will have a log file called checklog.log in the directory you ran this script from\n\n"
-	printf >&2 "\n\n"
-	exit
-fi
-
-while [[ $domain != *[.]* ]]; do
-	echo -e "${YELLOW}Enter yourdomain used for letsencrypt (e.g. example.com)${NC}: "
-	read domain
-done
-
-echo -e ${YELLOW} Checking IPs | tee -a checklog.log
-printf >&2 "\n\n"
-
-# Check rmmdomain IPs
-locapiip=$(dig @"$locdns" +short $rmmdomain | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-remapiip=$(dig @8.8.8.8 +short $rmmdomain | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-
-if [ "$locapiip" = "$remapiip" ]; then
-	echo -e ${GREEN} Success $rmmdomain is Locally Resolved: "$locapiip" Remotely Resolved: "$remapiip" | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	echo -e ${RED} Locally Resolved: "$locapiip" Remotely Resolved: "$remapiip" | tee -a checklog.log
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} Your Local and Remote IP for $rmmdomain all agents will require non-public DNS to find TRMM server | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# Check Frontenddomain IPs
-locrmmip=$(dig @"$locdns" +short $frontenddomain | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-remrmmip=$(dig @8.8.8.8 +short $frontenddomain | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-
-if [ "$locrmmip" = "$remrmmip" ]; then
-	echo -e ${GREEN} Success $frontenddomain is Locally Resolved: "$locrmmip" Remotely Resolved: "$remrmmip" | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	echo -e ${RED} Locally Resolved: "$locrmmip" Remotely Resolved: "$remrmmip" | tee -a checklog.log
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} echo Your Local and Remote IP for $frontenddomain all agents will require non-public DNS to find TRMM server | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# Check meshdomain IPs
-locmeship=$(dig @"$locdns" +short $meshdomain | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-remmeship=$(dig @8.8.8.8 +short $meshdomain | grep -m 1 -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-
-if [ "$locmeship" = "$remmeship" ]; then
-	echo -e ${GREEN} Success $meshdomain is Locally Resolved: "$locmeship" Remotely Resolved: "$remmeship" | tee -a checklog.log
-	printf >&2 "\n\n" | tee -a checklog.log
-else
-	echo -e ${RED} Locally Resolved: "$locmeship" Remotely Resolved: "$remmeship" | tee -a checklog.log
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} Your Local and Remote IP for $meshdomain all agents will require non-public DNS to find TRMM server | tee -a checklog.log
-	printf >&2 "\n\n" | tee -a checklog.log
-
-fi
-
-echo -e ${YELLOW} Checking Services | tee -a checklog.log
-printf >&2 "\n\n"
-
-# Check if services are running
-rmmstatus=$(systemctl is-active rmm)
-daphnestatus=$(systemctl is-active daphne)
-celerystatus=$(systemctl is-active celery)
-celerybeatstatus=$(systemctl is-active celerybeat)
-nginxstatus=$(systemctl is-active nginx)
-natsstatus=$(systemctl is-active nats)
-natsapistatus=$(systemctl is-active nats-api)
-meshcentralstatus=$(systemctl is-active meshcentral)
-postgresqlstatus=$(systemctl is-active postgresql)
-redisserverstatus=$(systemctl is-active redis-server)
-
-# RMM Service
-if [ $rmmstatus = active ]; then
-	echo -e ${GREEN} Success RMM Service is Running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'RMM Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# daphne Service
-if [ $daphnestatus = active ]; then
-	echo -e ${GREEN} Success daphne Service is Running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'daphne Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# celery Service
-if [ $celerystatus = active ]; then
-	echo -e ${GREEN} Success celery Service is Running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'celery Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# celerybeat Service
-if [ $celerybeatstatus = active ]; then
-	echo -e ${GREEN} Success celerybeat Service is Running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'celerybeat Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# nginx Service
-if [ $nginxstatus = active ]; then
-	echo -e ${GREEN} Success nginx Service is Running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'nginx Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# nats Service
-if [ $natsstatus = active ]; then
-	echo -e ${GREEN} Success nats Service is running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'nats Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# nats-api Service
-if [ $natsapistatus = active ]; then
-	echo -e ${GREEN} Success nats-api Service is running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'nats-api Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# meshcentral Service
-if [ $meshcentralstatus = active ]; then
-	echo -e ${GREEN} Success meshcentral Service is running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'meshcentral Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# postgresql Service
-if [ $postgresqlstatus = active ]; then
-	echo -e ${GREEN} Success postgresql Service is running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'postgresql Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-# redis-server Service
-if [ $redisserverstatus = active ]; then
-	echo -e ${GREEN} Success redis-server Service is running | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'redis-server Service isnt running (Tactical wont work without this)' | tee -a checklog.log
-	printf >&2 "\n\n"
-
-fi
-
-echo -e ${YELLOW} Checking Open Ports | tee -a checklog.log
-printf >&2 "\n\n"
-
-#Get WAN IP
+# ——— WAN IP & port check —————————————————————————————————————————————
 wanip=$(dig @resolver4.opendns.com myip.opendns.com +short)
+echo -e "${GREEN}Detected WAN IP: $wanip${NC}"
 
-echo -e ${GREEN} WAN IP is $wanip | tee -a checklog.log
-printf >&2 "\n\n"
-
-if ! which nc >/dev/null; then
-	echo "netcat is not installed, installing now"
-	sudo apt-get install netcat -y
+if ! command -v nc &>/dev/null; then
+  echo "Installing netcat..."
+  apt-get update && apt-get install -y netcat
 fi
 
-#Check if HTTPs Port is open
-if (nc -zv $wanip 443 2>&1 >/dev/null); then
-	echo -e ${GREEN} 'HTTPs Port is open' | tee -a checklog.log
-	printf >&2 "\n\n"
+if nc -zv "$wanip" 443 &>/dev/null; then
+  echo -e "${GREEN}Port 443 is open${NC}"
 else
-	echo -e ${RED} 'HTTPs port is closed (you may want this if running locally only)' | tee -a checklog.log
-	printf >&2 "\n\n"
+  echo -e "${RED}Port 443 is closed (check firewall/NAT)${NC}"
 fi
 
-echo -e ${YELLOW} Checking For Proxy | tee -a checklog.log
-printf >&2 "\n\n"
-echo -e ${YELLOW} ......this might take a while!!
-printf >&2 "\n\n"
+# ——— Proxy detection ————————————————————————————————————————————————
+echo -e ""
+echo -e "${YELLOW}---------- Checking for proxy via certificate... ----------${NC}"
+proxyext=$(openssl s_client -showcerts -servername "$rmmdomain" -connect "$rmmdomain":443 </dev/null 2>/dev/null \
+           | openssl x509 -noout -text)
+proxyint=$(openssl s_client -showcerts -connect 127.0.0.1:443 </dev/null 2>/dev/null \
+           | openssl x509 -noout -text)
 
-# Detect Proxy via cert
-proxyext=$(openssl s_client -showcerts -servername $remapiip -connect $remapiip:443 2>/dev/null | openssl x509 -inform pem -noout -text)
-proxyint=$(openssl s_client -showcerts -servername 127.0.0.1 -connect 127.0.0.1:443 2>/dev/null | openssl x509 -inform pem -noout -text)
-
-if [[ $proxyext == $proxyint ]]; then
-	echo -e ${GREEN} No Proxy detected using Certificate | tee -a checklog.log
-	printf >&2 "\n\n"
+if [[ "$proxyext" == "$proxyint" ]]; then
+  echo -e "${GREEN}No proxy detected (certificate match)${NC}"
 else
-	echo -e ${RED} Proxy detected using Certificate | tee -a checklog.log
-	printf >&2 "\n\n"
+  echo -e "${RED}Proxy detected (certificate mismatch)${NC}"
 fi
 
-# Detect Proxy via IP
-if [ $wanip != $remrmmip ]; then
-	echo -e ${RED} Proxy detected using IP | tee -a checklog.log
-	printf >&2 "\n\n"
+if [[ "$wanip" == "$remip" ]]; then
+  echo -e "${GREEN}No proxy detected (WAN IP match)${NC}"
 else
-	echo -e ${GREEN} No Proxy detected using IP | tee -a checklog.log
-	printf >&2 "\n\n"
+  echo -e "${RED}Proxy detected (WAN IP mismatch)${NC}"
 fi
 
-echo -e ${YELLOW} Checking SSL Certificate is up to date | tee -a checklog.log
-printf >&2 "\n\n"
-
-#SSL Certificate check
-cert=$(sudo certbot certificates)
-
+# ——— SSL certificate check —————————————————————————————————————————————
+echo -e ""
+echo -e "${YELLOW}---------- Checking SSL certificate for $domain... ----------${NC}"
+cert=$(certbot certificates 2>/dev/null)
 if [[ "$cert" != *"INVALID"* ]]; then
-	echo -e ${GREEN} SSL Certificate for $domain is fine | tee -a checklog.log
-	printf >&2 "\n\n"
-
+  echo -e "${GREEN}SSL certificate for $domain is valid${NC}"
 else
-	echo -e ${RED} SSL Certificate has expired or doesnt exist for $domain | tee -a checklog.log
-	printf >&2 "\n\n"
+  echo -e "${RED}SSL certificate for $domain is INVALID or missing${NC}"
 fi
 
-# Get List of Certbot Certificates
-sudo certbot certificates | tee -a checklog.log
+certbot certificates
 
-echo -e ${YELLOW} Getting summary output of logs | tee -a checklog.log
+# ——— Tail recent logs ————————————————————————————————————————————————
+echo -e ""
+echo -e "${YELLOW}---------- Showing recent Django logs... ----------${NC}"
+tail -n 60 /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log
+echo
+echo -e ""
+echo -e "${YELLOW}---------- Showing recent error logs... ----------${NC}"
+tail -n 60 /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log
+echo
 
-tail /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | tee -a checklog.log
-printf >&2 "\n\n"
-tail /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log | tee -a checklog.log
-printf >&2 "\n\n"
-
-printf >&2 "\n\n"
-echo -e ${YELLOW}
-printf >&2 "You will have a log file called checklog.log in the directory you ran this script from\n\n"
-echo -e ${NC}
+# ——— Final message ————————————————————————————————————————————————
+echo -e "${YELLOW}Log saved to ${LOGFILE}${NC}"

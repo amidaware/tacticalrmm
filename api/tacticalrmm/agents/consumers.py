@@ -5,6 +5,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import get_object_or_404
 from tacticalrmm.constants import AGENT_DEFER, AgentHistoryType
 from tacticalrmm.permissions import _has_perm_on_agent
+import asyncio, contextlib
 
 
 class SendCMD(AsyncJsonWebsocketConsumer):
@@ -80,3 +81,93 @@ class SendCMD(AsyncJsonWebsocketConsumer):
         return self._has_perm("can_send_cmd") and _has_perm_on_agent(
             self.user, agent_id
         )
+
+class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stream_task = None
+        self.stop_evt = None
+
+    async def connect(self):
+        self.user = self.scope["user"]
+
+        if isinstance(self.user, AnonymousUser):
+            await self.close()
+            return
+
+        self.agent_id = self.scope["url_route"]["kwargs"]["agent_id"]
+        self.group_name = f"agent_cmd_{self.agent_id}"
+
+        has_permission = await self.has_perm(self.agent_id)
+        if not has_permission:
+            await self.close()
+            return
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        # ensure the background NATS task is stopped
+        if self.stream_task and not self.stream_task.done():
+            if self.stop_evt:
+                self.stop_evt.set()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self.stream_task
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive_json(self, content, **kwargs):
+        agent = await self.get_agent(self.agent_id)
+        try:
+            cmd = content["cmd"]
+            shell = content.get("shell") or "cmd"
+            custom_shell = content.get("custom_shell")
+            run_as_user = bool(content.get("run_as_user", False))
+            timeout = int(content.get("timeout", 30))
+        except (KeyError, ValueError, TypeError):
+            await self.send_json({"error": "Invalid command payload"})
+            return
+        
+        shell = custom_shell if shell == "custom" and custom_shell else shell
+
+        data = {
+            "func": "rawcmd",
+            "timeout": timeout,
+            "stream": True,
+            "payload": {"command": cmd, "shell": shell},
+            "run_as_user": run_as_user,
+        }
+
+        # cancel any previous stream for this socket before starting a new one
+        if self.stream_task and not self.stream_task.done():
+            if self.stop_evt:
+                self.stop_evt.set()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self.stream_task
+
+        self.stop_evt = asyncio.Event()
+        self.stream_task = asyncio.create_task(
+            agent.nats_stream_cmd(data, timeout=timeout + 2, stop_evt=self.stop_evt)
+        )
+    
+    async def stream_output(self, event):
+        # pass through anything we got (output/done/exit_code)
+        await self.send_json({k: v for k, v in event.items() if k in ("output","done","exit_code")})    
+
+    @database_sync_to_async
+    def has_perm(self, agent_id: str) -> bool:
+        return self._has_perm("can_send_cmd") and _has_perm_on_agent(
+            self.user, agent_id
+        )
+
+    @database_sync_to_async
+    def get_agent(self, agent_id: str):
+        return get_object_or_404(Agent, agent_id=agent_id)
+
+    def _has_perm(self, perm: str) -> bool:
+        if self.user.is_superuser or (
+            self.user.role and getattr(self.user.role, "is_superuser")
+        ):
+            return True
+        elif not self.user.role:
+            return False
+        return self.user.role and getattr(self.user.role, perm)

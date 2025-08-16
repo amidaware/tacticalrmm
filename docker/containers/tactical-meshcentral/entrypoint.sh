@@ -55,8 +55,8 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
   },
   "domains": {
     "": {
-      "title": "SCNPLUS",
-      "title2": "SCNPLUS",
+      "title": "SCNPLUS RMM",
+      "title2": "SCNPLUS RMM",
       "newAccounts": false,
       "mstsc": true,
       "geoLocation": true,

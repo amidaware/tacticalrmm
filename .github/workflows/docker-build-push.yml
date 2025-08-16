@@ -1,4 +1,4 @@
-name: Publish Tactical Docker Images
+name: build-scnplus-docker-images
 on:
   push:
     tags:

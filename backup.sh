@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="33"
+SCRIPT_VERSION="40"
+SCRIPT_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/scnplusrmm/master/backup.sh'
 
 export DEBIAN_FRONTEND=noninteractive
 

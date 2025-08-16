@@ -1,4 +1,4 @@
-name: Tests CI
+name: SCNPLUS CI Tests
 
 on:
   push:

@@ -25,14 +25,14 @@ AUTH_USER_MODEL = "accounts.User"
 # latest release
 SCNPLUS_VERSION = "1.0.0"
 
-# https://github.com/scnplus/scnplus-web
+# https://github.com/ahmetkarakayaoffical/scnplusrmm-web
 WEB_VERSION = "0.101.55"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
 APP_VER = "0.0.200"
 
-# https://github.com/scnplus/scnplus-agent
+# https://github.com/ahmetkarakayaoffical/scnplusrmm-agent
 LATEST_AGENT_VER = "2.9.1"
 
 MESH_VER = "1.1.32"
@@ -194,7 +194,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "SCNPLUS API",
     "DESCRIPTION": "Advanced remote monitoring and management solution",
     "VERSION": SCNPLUS_VERSION,
-    "AUTHENTICATION_WHITELIST": ["scnplus.auth.APIAuthentication"],
+    "AUTHENTICATION_WHITELIST": ["tacticalrmm.auth.APIAuthentication"],
 }
 
 

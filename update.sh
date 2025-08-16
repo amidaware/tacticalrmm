@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="157"
-SCRIPT_URL='https://raw.githubusercontent.com/scnplus/tacticalrmm/master/update.sh'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/scnplus/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
+SCRIPT_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/scnplusrmm/master/update.sh'
+LATEST_SETTINGS_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/scnplusrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -383,7 +383,7 @@ git pull
 if [[ ! -d ${SCRIPTS_DIR} ]]; then
   sudo mkdir -p ${SCRIPTS_DIR}
   sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
-  git clone https://github.com/scnplus/community-scripts.git ${SCRIPTS_DIR}/
+  git clone https://github.com/ahmetkarakayaoffical/scnplus-community-scripts.git ${SCRIPTS_DIR}/
   cd ${SCRIPTS_DIR}
   git config user.email "admin@example.com"
   git config user.name "Bob"

@@ -2439,6 +2439,6 @@
         "autodelay": false,
         "start_type": "Automatic",
         "description": "Tactical RMM Agent",
-        "display_name": "Tactical RMM Agent"
+        "display_name": "SCNPLUS Agent"
     }
 ]

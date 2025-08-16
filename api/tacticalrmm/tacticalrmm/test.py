@@ -10,8 +10,8 @@ from accounts.models import User
 from agents.models import Agent
 from automation.models import Policy
 from core.models import CoreSettings
-from tacticalrmm.constants import CustomFieldModel, CustomFieldType
-from tacticalrmm.helpers import make_random_password
+from scnplus.constants import CustomFieldModel, CustomFieldType
+from scnplus.helpers import make_random_password
 
 if TYPE_CHECKING:
     from checks.models import Check
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 TEST_CACHE = {
     "default": {
-        "BACKEND": "tacticalrmm.cache.TacticalDummyCache",
+        "BACKEND": "scnplus.cache.SCNPLUSDummyCache",
     }
 }
 

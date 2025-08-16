@@ -33,8 +33,8 @@ function check_tactical_ready {
   done
 }
 
-# tactical-init
-if [ "$1" = 'tactical-init' ]; then
+# scnplus-init
+if [ "$1" = 'scnplus-init' ]; then
 
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
@@ -158,29 +158,29 @@ EOF
 
   # create install ready file
   echo "Creating install ready file"
-  su -c "echo 'tactical-init' > ${TACTICAL_READY_FILE}" "${TACTICAL_USER}"
+  su -c "echo 'scnplus-init' > ${TACTICAL_READY_FILE}" "${TACTICAL_USER}"
 
 fi
 
 # backend container
-if [ "$1" = 'tactical-backend' ]; then
+if [ "$1" = 'scnplus-backend' ]; then
   check_tactical_ready
   uwsgi ${TACTICAL_DIR}/api/app.ini
 fi
 
-if [ "$1" = 'tactical-celery' ]; then
+if [ "$1" = 'scnplus-celery' ]; then
   check_tactical_ready
   celery -A tacticalrmm worker --autoscale=20,2 -l info
 fi
 
-if [ "$1" = 'tactical-celerybeat' ]; then
+if [ "$1" = 'scnplus-celerybeat' ]; then
   check_tactical_ready
   test -f "${TACTICAL_DIR}/api/celerybeat.pid" && rm "${TACTICAL_DIR}/api/celerybeat.pid"
   celery -A tacticalrmm beat -l info
 fi
 
 # websocket container
-if [ "$1" = 'tactical-websockets' ]; then
+if [ "$1" = 'scnplus-websockets' ]; then
   check_tactical_ready
 
   export DJANGO_SETTINGS_MODULE=tacticalrmm.settings

@@ -4,8 +4,8 @@ from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from autotasks.models import TaskResult
-from tacticalrmm.constants import CustomFieldModel, CustomFieldType, TaskStatus
-from tacticalrmm.test import TacticalTestCase
+from scnplus.constants import CustomFieldModel, CustomFieldType, TaskStatus
+from scnplus.test import SCNPLUSTestCase
 
 
 class TestAPIv3(TacticalTestCase):

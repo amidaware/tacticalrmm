@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from rest_framework.response import Response
 
-from tacticalrmm.test import TacticalTestCase
+from scnplus.test import SCNPLUSTestCase
 
 
 class TestAgentInstalls(TacticalTestCase):

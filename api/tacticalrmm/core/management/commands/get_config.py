@@ -3,8 +3,8 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from tacticalrmm.util_settings import get_backend_url, get_root_domain, get_webdomain
-from tacticalrmm.utils import get_certs
+from scnplus.util_settings import get_backend_url, get_root_domain, get_webdomain
+from scnplus.utils import get_certs
 
 
 class Command(BaseCommand):

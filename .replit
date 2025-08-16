@@ -1,4 +1,8 @@
 modules = ["python-3.12", "bash", "go-1.21"]
+run = "aa"
 
 [nix]
 channel = "stable-25_05"
+
+[deployment]
+run = ["sh", "-c", "aa"]

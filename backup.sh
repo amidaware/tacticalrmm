@@ -20,7 +20,7 @@ if [[ $* == *--schedule* ]]; then
         echo -ne "${RED}Error: Passwordless sudo is required for scheduling.${NC}\n"
         exit 1
     fi
-    
+
     (
         crontab -l 2>/dev/null
         echo "0 0 * * * /rmm/backup.sh --auto > /dev/null 2>&1"

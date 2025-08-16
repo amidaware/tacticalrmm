@@ -365,18 +365,6 @@ printf >&2 "\n\n"
 echo -e ${YELLOW} ......this might take a while!!
 printf >&2 "\n\n"
 
-# Detect Proxy via cert
-proxyext=$(openssl s_client -showcerts -servername $remapiip -connect $remapiip:443 2>/dev/null | openssl x509 -inform pem -noout -text)
-proxyint=$(openssl s_client -showcerts -servername 127.0.0.1 -connect 127.0.0.1:443 2>/dev/null | openssl x509 -inform pem -noout -text)
-
-if [[ $proxyext == $proxyint ]]; then
-	echo -e ${GREEN} No Proxy detected using Certificate | tee -a checklog.log
-	printf >&2 "\n\n"
-else
-	echo -e ${RED} Proxy detected using Certificate | tee -a checklog.log
-	printf >&2 "\n\n"
-fi
-
 # Detect Proxy via IP
 if [ $wanip != $remrmmip ]; then
 	echo -e ${RED} Proxy detected using IP | tee -a checklog.log

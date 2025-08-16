@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="157"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
+SCRIPT_URL='https://raw.githubusercontent.com/scnplus/tacticalrmm/master/update.sh'
+LATEST_SETTINGS_URL='https://raw.githubusercontent.com/scnplus/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -383,7 +383,7 @@ git pull
 if [[ ! -d ${SCRIPTS_DIR} ]]; then
   sudo mkdir -p ${SCRIPTS_DIR}
   sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
-  git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+  git clone https://github.com/scnplus/community-scripts.git ${SCRIPTS_DIR}/
   cd ${SCRIPTS_DIR}
   git config user.email "admin@example.com"
   git config user.name "Bob"
@@ -535,7 +535,7 @@ server {
     error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
-    
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
@@ -543,7 +543,7 @@ server {
     ssl_stapling on;
     ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
-    
+
     location /static/ {
         root /rmm/api/tacticalrmm;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";

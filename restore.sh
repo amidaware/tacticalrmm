@@ -325,7 +325,7 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+git clone https://github.com/scnplus/scnplus.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -333,7 +333,7 @@ git checkout master
 
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
-git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+git clone https://github.com/scnplus/community-scripts.git ${SCRIPTS_DIR}/
 cd ${SCRIPTS_DIR}
 git config user.email "admin@example.com"
 git config user.name "Bob"

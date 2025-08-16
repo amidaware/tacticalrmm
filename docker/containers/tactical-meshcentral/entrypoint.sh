@@ -55,8 +55,8 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
   },
   "domains": {
     "": {
-      "title": "Tactical RMM",
-      "title2": "TacticalRMM",
+      "title": "SCNPLUS",
+      "title2": "SCNPLUS",
       "newAccounts": false,
       "mstsc": true,
       "geoLocation": true,
@@ -82,11 +82,11 @@ fi
 node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email example@example.com
 node node_modules/meshcentral --adminaccount ${MESH_USER}
 
-if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
+if [ ! -f "${SCNPLUS_DIR}/tmp/mesh_token" ]; then
   mesh_token=$(node node_modules/meshcentral --logintokenkey)
 
   if [[ ${#mesh_token} -eq 160 ]]; then
-    echo ${mesh_token} >/opt/tactical/tmp/mesh_token
+    echo ${mesh_token} >/opt/scnplus/tmp/mesh_token
   else
     echo "Failed to generate mesh token. Fix the error and restart the mesh container"
   fi

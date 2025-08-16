@@ -4,7 +4,7 @@ from contextlib import suppress
 from datetime import timedelta
 from pathlib import Path
 
-from tacticalrmm.util_settings import get_backend_url, get_root_domain, get_webdomain
+from scnplus.util_settings import get_backend_url, get_root_domain, get_webdomain
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

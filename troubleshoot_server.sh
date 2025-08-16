@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Tactical RMM install troubleshooting script
+# SCNPLUS install troubleshooting script
 # Contributed by https://github.com/dinger1986
 # v1.1 1/21/2022 update to include all services
 # v 1.2 6/24/2023 changed to add date, easier readability and ipv4 addresses only for checks
@@ -177,7 +177,7 @@ if [ "$locapiip" = "$remapiip" ]; then
 else
 	echo -e ${RED} Locally Resolved: "$locapiip" Remotely Resolved: "$remapiip" | tee -a checklog.log
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} Your Local and Remote IP for $rmmdomain all agents will require non-public DNS to find TRMM server | tee -a checklog.log
+	echo -e ${RED} Your Local and Remote IP for $rmmdomain all agents will require non-public DNS to find SCNPLUS server | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -233,7 +233,7 @@ if [ $rmmstatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'RMM Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'RMM Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -244,7 +244,7 @@ if [ $daphnestatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'daphne Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'daphne Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -255,7 +255,7 @@ if [ $celerystatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'celery Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'celery Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -266,7 +266,7 @@ if [ $celerybeatstatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'celerybeat Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'celerybeat Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -277,7 +277,7 @@ if [ $nginxstatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'nginx Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'nginx Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -288,7 +288,7 @@ if [ $natsstatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'nats Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'nats Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -299,7 +299,7 @@ if [ $natsapistatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'nats-api Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'nats-api Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -310,7 +310,7 @@ if [ $meshcentralstatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'meshcentral Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'meshcentral Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -321,7 +321,7 @@ if [ $postgresqlstatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'postgresql Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'postgresql Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi
@@ -332,7 +332,7 @@ if [ $redisserverstatus = active ]; then
 	printf >&2 "\n\n"
 else
 	printf >&2 "\n\n" | tee -a checklog.log
-	echo -e ${RED} 'redis-server Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	echo -e ${RED} 'redis-server Service isnt running (SCNPLUS wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi

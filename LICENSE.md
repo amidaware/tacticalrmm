@@ -24,9 +24,9 @@ This license does not allow the functionality of the Licensed Software (whether 
 * as part of a SaaS service or product;
 * as part of the provision of a managed hosting service or product;
 * the offering of installation and/or configuration services;
-* the offer for sale, distribution or sale of any service or product (whether or not branded as Tactical RMM).
+* the offer for sale, distribution or sale of any service or product (whether or not branded as SCNPLUS).
 
-The prior written approval of AmidaWare LLC must be obtained for all commercial use and/or for-profit service use of the (i) Licensed Software (whether in whole or in part), (ii) a modified version of the Licensed Software and/or (iii) a derivative work.
+The prior written approval of SCNPLUS LLC must be obtained for all commercial use and/or for-profit service use of the (i) Licensed Software (whether in whole or in part), (ii) a modified version of the Licensed Software and/or (iii) a derivative work.
 
 The terms of this license apply to all copies of the Licensed Software (including modified versions) and derivative works.
 

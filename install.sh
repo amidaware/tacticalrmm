@@ -155,7 +155,7 @@ while [[ $rmmdomain != *[.]*[.]* ]]; do
 done
 
 while [[ $frontenddomain != *[.]*[.]* ]]; do
-  echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. rmm.example.com)${NC}: "
+  echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. scnplus.example.com)${NC}: "
   read frontenddomain
 done
 
@@ -168,7 +168,7 @@ echo -ne "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC
 read rootdomain
 
 while [[ $letsemail != *[@]*[.]* ]]; do
-  echo -ne "${YELLOW}Enter a valid email address for django and meshcentral${NC}: "
+  echo -ne "${YELLOW}Enter a valid email address for SCNPLUS and meshcentral${NC}: "
   read letsemail
 done
 

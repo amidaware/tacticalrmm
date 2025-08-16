@@ -8,13 +8,13 @@ from tacticalrmm.util_settings import get_backend_url, get_root_domain, get_webd
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SCRIPTS_DIR = "/opt/trmm-community-scripts"
+SCRIPTS_DIR = "/opt/scnplus-community-scripts"
 
 DOCKER_BUILD = False
 
-LOG_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/log")
+LOG_DIR = os.path.join(BASE_DIR, "scnplus/private/log")
 
-EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
+EXE_DIR = os.path.join(BASE_DIR, "scnplus/private/exe")
 
 LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 
@@ -23,16 +23,16 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "1.2.1-dev"
+SCNPLUS_VERSION = "1.0.0"
 
-# https://github.com/amidaware/tacticalrmm-web
+# https://github.com/scnplus/scnplus-web
 WEB_VERSION = "0.101.55"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
 APP_VER = "0.0.200"
 
-# https://github.com/amidaware/rmmagent
+# https://github.com/scnplus/scnplus-agent
 LATEST_AGENT_VER = "2.9.1"
 
 MESH_VER = "1.1.32"
@@ -88,7 +88,7 @@ PIP_VER = "47"
 SETUPTOOLS_VER = "79.0.1"
 WHEEL_VER = "0.45.1"
 
-AGENT_BASE_URL = "https://agents.tacticalrmm.com"
+AGENT_BASE_URL = "https://agents.scnplus.com"
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
@@ -191,10 +191,10 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Tactical RMM API",
-    "DESCRIPTION": "Simple and Fast remote monitoring and management tool",
-    "VERSION": TRMM_VERSION,
-    "AUTHENTICATION_WHITELIST": ["tacticalrmm.auth.APIAuthentication"],
+    "TITLE": "SCNPLUS API",
+    "DESCRIPTION": "Advanced remote monitoring and management solution",
+    "VERSION": SCNPLUS_VERSION,
+    "AUTHENTICATION_WHITELIST": ["scnplus.auth.APIAuthentication"],
 }
 
 

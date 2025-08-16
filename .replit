@@ -1,0 +1,4 @@
+modules = ["python-3.12", "bash", "go-1.21"]
+
+[nix]
+channel = "stable-25_05"

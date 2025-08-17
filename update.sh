@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="157"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
+SCRIPT_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/scnplusrmm/master/update.sh'
+LATEST_SETTINGS_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/scnplusrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -11,8 +11,8 @@ THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.11.8'
-SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+SETTINGS_FILE='/rmm/api/scnplusrmm/scnplusrmm/settings.py'
+local_settings='/rmm/api/scnplusrmm/scnplusrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -383,7 +383,7 @@ git pull
 if [[ ! -d ${SCRIPTS_DIR} ]]; then
   sudo mkdir -p ${SCRIPTS_DIR}
   sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
-  git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+  git clone https://github.com/ahmetkarakayaoffical/scnplus-community-scripts.git ${SCRIPTS_DIR}/
   cd ${SCRIPTS_DIR}
   git config user.email "admin@example.com"
   git config user.name "Bob"
@@ -442,30 +442,30 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; t
   cd /rmm/api
   python3.11 -m venv env
   source /rmm/api/env/bin/activate
-  cd /rmm/api/tacticalrmm
+  cd /rmm/api/scnplusrmm
   pip install --no-cache-dir pip==25.1
   pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
   pip install --no-cache-dir -r requirements.txt
 else
   source /rmm/api/env/bin/activate
-  cd /rmm/api/tacticalrmm
+  cd /rmm/api/scnplusrmm
   pip install -r requirements.txt
 fi
 
-if [ ! -d /opt/tactical/reporting/assets ]; then
-  sudo mkdir -p /opt/tactical/reporting/assets
+if [ ! -d /opt/scnplus/reporting/assets ]; then
+  sudo mkdir -p /opt/scnplus/reporting/assets
 fi
 
-if [ ! -d /opt/tactical/reporting/schemas ]; then
-  sudo mkdir /opt/tactical/reporting/schemas
+if [ ! -d /opt/scnplus/reporting/schemas ]; then
+  sudo mkdir /opt/scnplus/reporting/schemas
 fi
 
 sed -i '/^REDIS_HOST/d' $local_settings
 
-sudo chown -R ${USER}:${USER} /opt/tactical
+sudo chown -R ${USER}:${USER} /opt/scnplus
 
 python manage.py pre_update_tasks
-celery -A tacticalrmm purge -f
+celery -A scnplusrmm purge -f
 printf >&2 "${GREEN}Running database migrations (this might take a long time)...${NC}\n"
 python manage.py migrate
 python manage.py generate_json_schemas
@@ -509,8 +509,8 @@ if ! grep -q "location /assets/" $rmmconf; then
     cat <<EOF
 server_tokens off;
 
-upstream tacticalrmm {
-    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+upstream scnplusrmm {
+    server unix:////rmm/api/scnplusrmm/scnplusrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -531,11 +531,11 @@ server {
     listen [::]:443 ssl;
     server_name ${API};
     client_max_body_size 300M;
-    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
-    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    access_log /rmm/api/scnplusrmm/scnplusrmm/private/log/access.log combined if=\$ignore_ua;
+    error_log /rmm/api/scnplusrmm/scnplusrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
-    
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
@@ -543,22 +543,22 @@ server {
     ssl_stapling on;
     ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
-    
+
     location /static/ {
-        root /rmm/api/tacticalrmm;
+        root /rmm/api/scnplusrmm;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
-        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+        alias /rmm/api/scnplusrmm/scnplusrmm/private/;
     }
 
     location /assets/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
-        alias /opt/tactical/reporting/assets/;
+        alias /opt/scnplus/reporting/assets/;
     }
 
     location ~ ^/ws/ {
@@ -588,7 +588,7 @@ server {
     }
 
     location / {
-        uwsgi_pass  tacticalrmm;
+        uwsgi_pass  scnplusrmm;
         include     /etc/nginx/uwsgi_params;
         uwsgi_read_timeout 300s;
         uwsgi_ignore_client_abort on;

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="33"
+SCRIPT_VERSION="40"
+SCRIPT_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/scnplusrmm/master/backup.sh'
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -20,7 +21,7 @@ if [[ $* == *--schedule* ]]; then
         echo -ne "${RED}Error: Passwordless sudo is required for scheduling.${NC}\n"
         exit 1
     fi
-    
+
     (
         crontab -l 2>/dev/null
         echo "0 0 * * * /rmm/backup.sh --auto > /dev/null 2>&1"
@@ -105,7 +106,7 @@ if [ -d /opt/tactical ]; then
     sudo tar -czvf ${tmp_dir}/opt/opt-tactical.tar.gz -C /opt/tactical .
 fi
 
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+local_settings='/rmm/api/scnplusrmm/scnplusrmm/local_settings.py'
 
 if grep -q CERT_FILE "$local_settings"; then
     mkdir -p ${tmp_dir}/certs/custom

@@ -1,0 +1,20 @@
+modules = ["python-3.12", "bash", "go-1.21"]
+run = "aa"
+
+[nix]
+channel = "stable-25_05"
+
+[deployment]
+run = ["sh", "-c", "aa"]
+
+[workflows]
+runButton = "Run SCNPLUS"
+
+[[workflows.workflow]]
+name = "Run SCNPLUS"
+author = 46525244
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd api/scnplusrmm && python manage.py runserver 0.0.0.0:5000"

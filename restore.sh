@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="64"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
+SCRIPT_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/scnplusrmm/master/restore.sh'
 
 sudo apt update
 sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
@@ -325,7 +325,7 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+git clone https://github.com/ahmetkarakayaoffical/scnplusrmm.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -333,7 +333,7 @@ git checkout master
 
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
-git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+git clone https://github.com/ahmetkarakayaoffical/scnplus-community-scripts.git ${SCRIPTS_DIR}/
 cd ${SCRIPTS_DIR}
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -484,10 +484,10 @@ WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 cd /rmm/api
 python3.11 -m venv env
 source /rmm/api/env/bin/activate
-cd /rmm/api/tacticalrmm
+cd /rmm/api/scnplusrmm
 pip install --no-cache-dir pip==25.1
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
-pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
+pip install --no-cache-dir -r /rmm/api/scnplusrmm/requirements.txt
 python manage.py migrate
 python manage.py generate_json_schemas
 python manage.py collectstatic --no-input
@@ -529,8 +529,8 @@ if ! grep -q "location /assets/" $tmp_dir/nginx/rmm.conf; then
     cat <<EOF
 server_tokens off;
 
-upstream tacticalrmm {
-    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+upstream scnplusrmm {
+    server unix:////rmm/api/scnplusrmm/scnplusrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -551,8 +551,8 @@ server {
     listen [::]:443 ssl;
     server_name ${API};
     client_max_body_size 300M;
-    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
-    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    access_log /rmm/api/scnplusrmm/scnplusrmm/private/log/access.log combined if=\$ignore_ua;
+    error_log /rmm/api/scnplusrmm/scnplusrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
     
@@ -565,20 +565,20 @@ server {
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
-        root /rmm/api/tacticalrmm;
+        root /rmm/api/scnplusrmm;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
-        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+        alias /rmm/api/scnplusrmm/scnplusrmm/private/;
     }
 
     location /assets/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
-        alias /opt/tactical/reporting/assets/;
+        alias /opt/scnplus/reporting/assets/;
     }
 
     location ~ ^/ws/ {
@@ -608,7 +608,7 @@ server {
     }
 
     location / {
-        uwsgi_pass  tacticalrmm;
+        uwsgi_pass  scnplusrmm;
         include     /etc/nginx/uwsgi_params;
         uwsgi_read_timeout 300s;
         uwsgi_ignore_client_abort on;

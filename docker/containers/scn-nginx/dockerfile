@@ -1,0 +1,22 @@
+FROM nginxinc/nginx-unprivileged:stable-alpine
+
+ENV SCN_DIR /opt/scn
+
+USER root
+
+RUN deluser --remove-home nginx \
+  && addgroup -S nginx -g 1000 \
+  && adduser -S -G nginx -u 1000 nginx
+
+RUN apk add --no-cache openssl bash
+
+RUN chown -R nginx:nginx /etc/nginx
+
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
+
+COPY docker/containers/scn-nginx/entrypoint.sh /docker-entrypoint.d/
+RUN chmod +x /docker-entrypoint.d/entrypoint.sh
+
+USER nginx
+
+EXPOSE 4443 8080

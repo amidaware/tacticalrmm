@@ -65,7 +65,7 @@ if [ -d /meshcentral/meshcentral-coredumps ]; then
 fi
 
 dt_now=$(date '+%Y_%m_%d__%H_%M_%S')
-tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
+tmp_dir=$(mktemp -d -t scnrmm-XXXXXXXXXXXXXXXXXXXXX)
 sysd="/etc/systemd/system"
 
 mkdir -p ${tmp_dir}/meshcentral/mongo
@@ -77,10 +77,10 @@ mkdir ${tmp_dir}/rmm
 mkdir ${tmp_dir}/confd
 mkdir ${tmp_dir}/opt
 
-POSTGRES_USER=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config dbuser)
-POSTGRES_PW=$(/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py get_config dbpw)
+POSTGRES_USER=$(/rmm/api/env/bin/python /rmm/api/scnrmm/manage.py get_config dbuser)
+POSTGRES_PW=$(/rmm/api/env/bin/python /rmm/api/scnrmm/manage.py get_config dbpw)
 
-pg_dump --no-privileges --no-owner --dbname=postgresql://"${POSTGRES_USER}":"${POSTGRES_PW}"@localhost:5432/tacticalrmm | gzip -9 >${tmp_dir}/postgres/db-${dt_now}.psql.gz
+pg_dump --no-privileges --no-owner --dbname=postgresql://"${POSTGRES_USER}":"${POSTGRES_PW}"@localhost:5432/scnrmm | gzip -9 >${tmp_dir}/postgres/db-${dt_now}.psql.gz
 
 node /meshcentral/node_modules/meshcentral --dbexport # for import to postgres
 
@@ -105,7 +105,7 @@ if [ -d /opt/tactical ]; then
     sudo tar -czvf ${tmp_dir}/opt/opt-tactical.tar.gz -C /opt/tactical .
 fi
 
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+local_settings='/rmm/api/scnrmm/scnrmm/local_settings.py'
 
 if grep -q CERT_FILE "$local_settings"; then
     mkdir -p ${tmp_dir}/certs/custom

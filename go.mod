@@ -1,4 +1,4 @@
-module github.com/amidaware/tacticalrmm
+module github.com/ahmetkarakayaoffical/SCNRMM
 
 go 1.23.8
 

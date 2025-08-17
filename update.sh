@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="157"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
+SCRIPT_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/SCNRMM/master/update.sh'
+LATEST_SETTINGS_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/SCNRMM/master/api/scnrmm/scnrmm/settings.py'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 THIS_SCRIPT=$(readlink -f "$0")
 
-SCRIPTS_DIR='/opt/trmm-community-scripts'
+SCRIPTS_DIR='/opt/scrmm-community-scripts'
 PYTHON_VER='3.11.8'
-SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+SETTINGS_FILE='/rmm/api/scnrmm/scnrmm/settings.py'
+local_settings='/rmm/api/scnrmm/scnrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -51,11 +51,11 @@ fi
 TMP_SETTINGS=$(mktemp -p "" "rmmsettings_XXXXXXXXXX")
 curl -s -L "${LATEST_SETTINGS_URL}" >${TMP_SETTINGS}
 
-LATEST_TRMM_VER=$(grep "^TRMM_VERSION" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
-CURRENT_TRMM_VER=$(grep "^TRMM_VERSION" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+LATEST_scrmm_VER=$(grep "^scrmm_VERSION" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
+CURRENT_scrmm_VER=$(grep "^scrmm_VERSION" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-if [[ "${CURRENT_TRMM_VER}" == "${LATEST_TRMM_VER}" ]] && ! [[ "$force" = true ]]; then
-  printf >&2 "${GREEN}Already on latest version. Current version: ${CURRENT_TRMM_VER} Latest version: ${LATEST_TRMM_VER}${NC}\n"
+if [[ "${CURRENT_scrmm_VER}" == "${LATEST_scrmm_VER}" ]] && ! [[ "$force" = true ]]; then
+  printf >&2 "${GREEN}Already on latest version. Current version: ${CURRENT_scrmm_VER} Latest version: ${LATEST_scrmm_VER}${NC}\n"
   rm -f $TMP_SETTINGS
   exit 0
 fi
@@ -88,7 +88,7 @@ After=network.target
 [Service]
 PrivateTmp=true
 Type=simple
-ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecStart=/usr/local/bin/nats-server -c /rmm/api/scnrmm/nats-rmm.conf
 ExecReload=/usr/bin/kill -s HUP \$MAINPID
 ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
 User=${USER}
@@ -129,10 +129,10 @@ Type=simple
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
-ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
-ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
+ExecStartPre=rm -f /rmm/api/scnrmm/beat.pid
+ExecStartPre=rm -f /rmm/api/scnrmm/celerybeat-schedule
 Restart=always
 RestartSec=10s
 
@@ -157,9 +157,9 @@ After=network.target
 [Service]
 User=${USER}
 Group=www-data
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' tacticalrmm.asgi:application
+ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' scnrmm.asgi:application
 ExecStartPre=rm -f /rmm/daphne.sock
 ExecStartPre=rm -f /rmm/daphne.sock.lock
 Restart=always
@@ -442,30 +442,30 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; t
   cd /rmm/api
   python3.11 -m venv env
   source /rmm/api/env/bin/activate
-  cd /rmm/api/tacticalrmm
+  cd /rmm/api/scnrmm
   pip install --no-cache-dir pip==25.1
   pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
   pip install --no-cache-dir -r requirements.txt
 else
   source /rmm/api/env/bin/activate
-  cd /rmm/api/tacticalrmm
+  cd /rmm/api/scnrmm
   pip install -r requirements.txt
 fi
 
-if [ ! -d /opt/tactical/reporting/assets ]; then
-  sudo mkdir -p /opt/tactical/reporting/assets
+if [ ! -d /opt/scn/reporting/assets ]; then
+  sudo mkdir -p /opt/scn/reporting/assets
 fi
 
-if [ ! -d /opt/tactical/reporting/schemas ]; then
-  sudo mkdir /opt/tactical/reporting/schemas
+if [ ! -d /opt/scn/reporting/schemas ]; then
+  sudo mkdir /opt/scn/reporting/schemas
 fi
 
 sed -i '/^REDIS_HOST/d' $local_settings
 
-sudo chown -R ${USER}:${USER} /opt/tactical
+sudo chown -R ${USER}:${USER} /opt/scn
 
 python manage.py pre_update_tasks
-celery -A tacticalrmm purge -f
+celery -A scnrmm purge -f
 printf >&2 "${GREEN}Running database migrations (this might take a long time)...${NC}\n"
 python manage.py migrate
 python manage.py generate_json_schemas
@@ -509,8 +509,8 @@ if ! grep -q "location /assets/" $rmmconf; then
     cat <<EOF
 server_tokens off;
 
-upstream tacticalrmm {
-    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+upstream scnrmm {
+    server unix:////rmm/api/scnrmm/scnrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -531,8 +531,8 @@ server {
     listen [::]:443 ssl;
     server_name ${API};
     client_max_body_size 300M;
-    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
-    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    access_log /rmm/api/scnrmm/scnrmm/private/log/access.log combined if=\$ignore_ua;
+    error_log /rmm/api/scnrmm/scnrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
     
@@ -545,20 +545,20 @@ server {
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
-        root /rmm/api/tacticalrmm;
+        root /rmm/api/scnrmm;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
-        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+        alias /rmm/api/scnrmm/scnrmm/private/;
     }
 
     location /assets/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
-        alias /opt/tactical/reporting/assets/;
+        alias /opt/scn/reporting/assets/;
     }
 
     location ~ ^/ws/ {
@@ -588,7 +588,7 @@ server {
     }
 
     location / {
-        uwsgi_pass  tacticalrmm;
+        uwsgi_pass  scnrmm;
         include     /etc/nginx/uwsgi_params;
         uwsgi_read_timeout 300s;
         uwsgi_ignore_client_abort on;
@@ -618,7 +618,7 @@ if [ ! -d /var/www/rmm ]; then
   sudo mkdir -p /var/www/rmm
 fi
 
-webtar="trmm-web-v${WEB_VERSION}.tar.gz"
+webtar="scrmm-web-v${WEB_VERSION}.tar.gz"
 wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo rm -rf /var/www/rmm/dist
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm

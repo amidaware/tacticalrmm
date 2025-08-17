@@ -1,10 +1,10 @@
 [Unit]
-Description=TacticalRMM Nats Api
+Description=scnRMM Nats Api
 After=nats.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/nats-api -config {{ backend_dir }}/api/tacticalrmm/nats-api.conf
+ExecStart=/usr/local/bin/nats-api -config {{ backend_dir }}/api/scnrmm/nats-api.conf
 User={{ user }}
 Group={{ user }}
 Restart=always

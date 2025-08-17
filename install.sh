@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="89"
-SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/ahmetkarakayaoffical/SCNRMM/master/install.sh"
 
 sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
 sudo apt install -y software-properties-common
@@ -14,10 +14,10 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-SCRIPTS_DIR='/opt/trmm-community-scripts'
+SCRIPTS_DIR='/opt/scrmm-community-scripts'
 PYTHON_VER='3.11.8'
-SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+SETTINGS_FILE='/rmm/api/scnrmm/scnrmm/settings.py'
+local_settings='/rmm/api/scnrmm/scnrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -41,8 +41,8 @@ if [[ "$virt_type" == "lxc" ]]; then
   exit 1
 fi
 
-if [ -d /rmm/api/tacticalrmm ]; then
-  echo -ne "${RED}ERROR: Existing trmm installation found. The install script must be run on a clean server.${NC}\n"
+if [ -d /rmm/api/scnrmm ]; then
+  echo -ne "${RED}ERROR: Existing scrmm installation found. The install script must be run on a clean server.${NC}\n"
   exit 1
 fi
 
@@ -231,7 +231,7 @@ fi
 
 if [[ "$insecure" = true ]]; then
   print_green 'Generating self-signed cert'
-  certdir='/etc/ssl/tactical'
+  certdir='/etc/ssl/scn'
   sudo mkdir -p $certdir
   sudo chown ${USER}:${USER} $certdir
   sudo chmod 770 $certdir
@@ -354,15 +354,15 @@ until pg_isready >/dev/null; do
   sleep 3
 done
 
-print_green 'Creating database for trmm'
+print_green 'Creating database for scrmm'
 
-sudo -iu postgres psql -c "CREATE DATABASE tacticalrmm"
+sudo -iu postgres psql -c "CREATE DATABASE scnrmm"
 sudo -iu postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
-sudo -iu postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
+sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE scnrmm TO ${pgusername}"
+sudo -iu postgres psql -c "ALTER DATABASE scnrmm OWNER TO ${pgusername}"
 sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
 
 print_green 'Creating database for meshcentral'
@@ -382,7 +382,7 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+git clone https://github.com/ahmetkarakayaoffical/SCNRMM.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -390,7 +390,7 @@ git checkout master
 
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
-git clone https://github.com/amidaware/community-scripts.git ${SCRIPTS_DIR}/
+git clone https://github.com/ahmetkarakayaoffical/scnrmmcommunity-scripts.git ${SCRIPTS_DIR}/
 cd ${SCRIPTS_DIR}
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -466,8 +466,8 @@ meshcfg="$(
   },
   "domains": {
     "": {
-      "title": "Tactical RMM",
-      "title2": "Tactical RMM",
+      "title": "SCN RMM",
+      "title2": "SCN RMM",
       "newAccounts": false,
       "certUrl": "https://${meshdomain}:443/",
       "geoLocation": true,
@@ -499,7 +499,7 @@ CORS_ORIGIN_WHITELIST = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tacticalrmm',
+        'NAME': 'scnrmm',
         'USER': '${pgusername}',
         'PASSWORD': '${pgpw}',
         'HOST': 'localhost',
@@ -515,7 +515,7 @@ EOF
 echo "${localvars}" >$local_settings
 
 if [[ "$insecure" = true ]]; then
-  echo "TRMM_INSECURE = True" | tee --append $local_settings >/dev/null
+  echo "scrmm_INSECURE = True" | tee --append $local_settings >/dev/null
 fi
 
 if [[ "$byocert" = true ]] || [[ "$insecure" = true ]]; then
@@ -556,17 +556,17 @@ fi
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-sudo mkdir -p /opt/tactical/reporting/assets
-sudo mkdir -p /opt/tactical/reporting/schemas
-sudo chown -R ${USER}:${USER} /opt/tactical
+sudo mkdir -p /opt/scn/reporting/assets
+sudo mkdir -p /opt/scn/reporting/schemas
+sudo chown -R ${USER}:${USER} /opt/scn
 
 cd /rmm/api
 python3.11 -m venv env
 source /rmm/api/env/bin/activate
-cd /rmm/api/tacticalrmm
+cd /rmm/api/scnrmm
 pip install --no-cache-dir pip==25.1
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
-pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
+pip install --no-cache-dir -r /rmm/api/scnrmm/requirements.txt
 python manage.py migrate
 python manage.py generate_json_schemas
 python manage.py collectstatic --no-input
@@ -594,13 +594,13 @@ read -n 1 -s -r -p "Press any key to continue..."
 rmmservice="$(
   cat <<EOF
 [Unit]
-Description=tacticalrmm uwsgi daemon
+Description=scnrmm uwsgi daemon
 After=network.target postgresql.service
 
 [Service]
 User=${USER}
 Group=www-data
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/uwsgi --ini app.ini
 Restart=always
@@ -621,9 +621,9 @@ After=network.target
 [Service]
 User=${USER}
 Group=www-data
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' tacticalrmm.asgi:application
+ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' scnrmm.asgi:application
 ExecStartPre=rm -f /rmm/daphne.sock
 ExecStartPre=rm -f /rmm/daphne.sock.lock
 Restart=always
@@ -644,7 +644,7 @@ After=network.target
 [Service]
 PrivateTmp=true
 Type=simple
-ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecStart=/usr/local/bin/nats-server -c /rmm/api/scnrmm/nats-rmm.conf
 ExecReload=/usr/bin/kill -s HUP \$MAINPID
 ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
 User=${USER}
@@ -662,7 +662,7 @@ echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service >/dev/null
 natsapi="$(
   cat <<EOF
 [Unit]
-Description=TacticalRMM Nats Api v1
+Description=scnrmm Nats Api v1
 After=nats.service
 
 [Service]
@@ -683,8 +683,8 @@ nginxrmm="$(
   cat <<EOF
 server_tokens off;
 
-upstream tacticalrmm {
-    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+upstream scnrmm {
+    server unix:////rmm/api/scnrmm/scnrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -705,8 +705,8 @@ server {
     listen [::]:443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
-    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
-    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    access_log /rmm/api/scnrmm/scnrmm/private/log/access.log combined if=\$ignore_ua;
+    error_log /rmm/api/scnrmm/scnrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
     
@@ -719,20 +719,20 @@ server {
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
-        root /rmm/api/tacticalrmm;
+        root /rmm/api/scnrmm;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+        alias /rmm/api/scnrmm/scnrmm/private/;
     }
 
     location /assets/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /opt/tactical/reporting/assets/;
+        alias /opt/scn/reporting/assets/;
     }
 
     location ~ ^/ws/ {
@@ -762,7 +762,7 @@ server {
     }
 
     location / {
-        uwsgi_pass  tacticalrmm;
+        uwsgi_pass  scnrmm;
         include     /etc/nginx/uwsgi_params;
         uwsgi_read_timeout 300s;
         uwsgi_ignore_client_abort on;
@@ -833,7 +833,7 @@ Type=forking
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
 ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
@@ -852,17 +852,17 @@ CELERYD_NODES="w1"
 
 CELERY_BIN="/rmm/api/env/bin/celery"
 
-CELERY_APP="tacticalrmm"
+CELERY_APP="scnrmm"
 
 CELERYD_MULTI="multi"
 
 CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"
 
-CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
+CELERYD_PID_FILE="/rmm/api/scnrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
 CELERYD_LOG_LEVEL="ERROR"
 
-CELERYBEAT_PID_FILE="/rmm/api/tacticalrmm/beat.pid"
+CELERYBEAT_PID_FILE="/rmm/api/scnrmm/beat.pid"
 CELERYBEAT_LOG_FILE="/var/log/celery/beat.log"
 EOF
 )"
@@ -879,10 +879,10 @@ Type=simple
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
-ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
-ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
+ExecStartPre=rm -f /rmm/api/scnrmm/beat.pid
+ExecStartPre=rm -f /rmm/api/scnrmm/celerybeat-schedule
 Restart=always
 RestartSec=10s
 
@@ -928,7 +928,7 @@ fi
 
 print_green 'Installing the frontend'
 
-webtar="trmm-web-v${WEB_VERSION}.tar.gz"
+webtar="scrmm-web-v${WEB_VERSION}.tar.gz"
 wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo mkdir -p /var/www/rmm
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
@@ -1035,15 +1035,15 @@ while ! [[ $CHECK_MESH_READY2 ]]; do
   sleep 5
 done
 
-node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
+node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name scnrmm
 sleep 1
 
 sudo systemctl enable nats.service
-cd /rmm/api/tacticalrmm
+cd /rmm/api/scnrmm
 source /rmm/api/env/bin/activate
 python manage.py initial_db_setup
 python manage.py reload_nats
-python manage.py sync_mesh_with_trmm
+python manage.py sync_mesh_with_scrmm
 deactivate
 sudo systemctl start nats.service
 

@@ -2,7 +2,7 @@ import random
 
 from django.conf import settings
 
-from tacticalrmm.structs import AgentCheckInConfig
+from scnplusrmm.structs import AgentCheckInConfig
 
 
 def get_agent_config() -> AgentCheckInConfig:

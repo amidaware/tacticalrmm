@@ -3,7 +3,7 @@
 from django.db import migrations, transaction
 from django.db.utils import IntegrityError
 
-from tacticalrmm.constants import CheckType
+from scnplusrmm.constants import CheckType
 
 
 def migrate_check_results(apps, schema_editor):

@@ -1,6 +1,6 @@
 from rest_framework import permissions
 
-from tacticalrmm.permissions import _has_perm, _has_perm_on_client, _has_perm_on_site
+from scnplusrmm.permissions import _has_perm, _has_perm_on_client, _has_perm_on_site
 
 
 class ClientsPerms(permissions.BasePermission):

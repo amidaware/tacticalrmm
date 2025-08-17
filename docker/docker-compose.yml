@@ -27,7 +27,7 @@ services:
     image: postgres:13-alpine
     restart: always
     environment:
-      POSTGRES_DB: tacticalrmm
+      POSTGRES_DB: scnplusrmm
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
     volumes:

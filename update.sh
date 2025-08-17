@@ -11,8 +11,8 @@ THIS_SCRIPT=$(readlink -f "$0")
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.11.8'
-SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+SETTINGS_FILE='/rmm/api/scnplusrmm/scnplusrmm/settings.py'
+local_settings='/rmm/api/scnplusrmm/scnplusrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}

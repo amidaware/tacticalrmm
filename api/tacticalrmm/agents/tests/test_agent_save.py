@@ -3,8 +3,8 @@ from unittest.mock import patch
 from model_bakery import baker
 
 from agents.models import Agent
-from tacticalrmm.constants import AgentMonType
-from tacticalrmm.test import TacticalTestCase
+from scnplusrmm.constants import AgentMonType
+from scnplusrmm.test import TacticalTestCase
 
 
 class AgentSaveTestCase(TacticalTestCase):

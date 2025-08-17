@@ -16,8 +16,8 @@ NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
 PYTHON_VER='3.11.8'
-SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+SETTINGS_FILE='/rmm/api/scnplusrmm/scnplusrmm/settings.py'
+local_settings='/rmm/api/scnplusrmm/scnplusrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -354,15 +354,15 @@ until pg_isready >/dev/null; do
   sleep 3
 done
 
-print_green 'Creating database for trmm'
+print_green 'Creating database for scnplus'
 
-sudo -iu postgres psql -c "CREATE DATABASE tacticalrmm"
+sudo -iu postgres psql -c "CREATE DATABASE scnplusrmm"
 sudo -iu postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
-sudo -iu postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
+sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE scnplusrmm TO ${pgusername}"
+sudo -iu postgres psql -c "ALTER DATABASE scnplusrmm OWNER TO ${pgusername}"
 sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
 
 print_green 'Creating database for meshcentral'

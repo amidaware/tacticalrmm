@@ -44,9 +44,9 @@ Demo database resets every hour. A lot of features are disabled for obvious reas
 ## Sponsorship Features
 
 - Mac and Linux Agents
-- Windows [Code Signed](https://docs.tacticalrmm.com/code_signing/) Agents
-- Fully Customizable [Reporting](https://docs.tacticalrmm.com/ee/reporting/reporting_overview/) Module
-- [Single Sign-On](https://docs.tacticalrmm.com/ee/sso/sso/) (SSO)
+- Windows [Code Signed](https://docs.scnplus.com/code_signing/) Agents
+- Fully Customizable [Reporting](https://docs.scnplus.com/ee/reporting/reporting_overview/) Module
+- [Single Sign-On](https://docs.scnplus.com/ee/sso/sso/) (SSO)
 
 ## Installation / Backup / Restore / Usage
 

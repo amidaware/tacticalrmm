@@ -76,7 +76,7 @@ INSTALL_DENO_VERSION = "v1.44.4"
 INSTALL_DENO_URL = ""
 # Default permissions for Deno
 # Space separated list of permissions as listed in the documentation.
-# https://docs.deno.com/runtime/manual/basics/permissions#permissions
+# https://docs.deno.runtime/manual/basics/permissions#permissions
 # Examples:
 #   DENO_DEFAULT_PERMISSIONS = "--allow-sys --allow-net --allow-env"
 #   DENO_DEFAULT_PERMISSIONS = "--allow-all"
@@ -92,7 +92,7 @@ AGENT_BASE_URL = "https://agents.scnplus.com"
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
-ASGI_APPLICATION = "tacticalrmm.asgi.application"
+ASGI_APPLICATION = "scnplus.asgi.application"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -102,7 +102,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "scnplus/static/")]
 
 REST_KNOX = {
     "TOKEN_TTL": timedelta(hours=5),
@@ -146,7 +146,7 @@ if "GHACTIONS" in os.environ:
     SECRET_KEY = "abcdefghijklmnoptravis123456789"
     ALLOWED_HOSTS = ["api.example.com"]
     ADMIN_URL = "abc123456/"
-    CORS_ORIGIN_WHITELIST = ["https://rmm.example.com"]
+    CORS_ORIGIN_WHITELIST = ["https://scnplus.example.com"]
     MESH_USERNAME = "pipeline"
     MESH_SITE = "https://example.com"
     MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
@@ -185,7 +185,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",
-        "tacticalrmm.auth.APIAuthentication",
+        "scnplus.auth.APIAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
@@ -194,7 +194,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "SCNPLUS API",
     "DESCRIPTION": "Advanced remote monitoring and management solution",
     "VERSION": SCNPLUS_VERSION,
-    "AUTHENTICATION_WHITELIST": ["tacticalrmm.auth.APIAuthentication"],
+    "AUTHENTICATION_WHITELIST": ["scnplus.auth.APIAuthentication"],
 }
 
 
@@ -258,7 +258,7 @@ warnings.simplefilter("ignore", CacheKeyWarning)
 
 CACHES = {
     "default": {
-        "BACKEND": "tacticalrmm.cache.TacticalRedisCache",
+        "BACKEND": "scnplus.cache.TacticalRedisCache",
         "LOCATION": f"redis://{REDIS_HOST}:6379",
         "OPTIONS": {
             "parser_class": "redis.connection._HiredisParser",
@@ -271,11 +271,11 @@ CACHES = {
 MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    "tacticalrmm.middleware.LogIPMiddleware",
+    "scnplus.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "tacticalrmm.middleware.AuditMiddleware",
+    "scnplus.middleware.AuditMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "ee.sso.middleware.SSOIconMiddleware",
 ]
@@ -300,10 +300,10 @@ if ADMIN_ENABLED:
     )
 
 if DEMO:
-    MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
+    MIDDLEWARE += ("scnplus.middleware.DemoMiddleware",)
 
 
-ROOT_URLCONF = "tacticalrmm.urls"
+ROOT_URLCONF = "scnplus.urls"
 
 
 TEMPLATES = [
@@ -322,7 +322,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "tacticalrmm.wsgi.application"
+WSGI_APPLICATION = "scnplus.wsgi.application"
 
 AUTH_PASSWORD_VALIDATORS = [
     {

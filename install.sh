@@ -583,11 +583,11 @@ printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 echo -ne "Username: "
 read djangousername
-python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
+python manage.py createsuperuser --username ${ djangousername} --email ${letsemail}
 python manage.py create_installer_user
 RANDBASE=$(python manage.py generate_totp)
 cls
-python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
+python manage.py generate_barcode ${RANDBASE} ${ djangousername} ${frontenddomain}
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
@@ -600,7 +600,7 @@ After=network.target postgresql.service
 [Service]
 User=${USER}
 Group=www-data
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnplusrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/uwsgi --ini app.ini
 Restart=always
@@ -621,7 +621,7 @@ After=network.target
 [Service]
 User=${USER}
 Group=www-data
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnplusrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' tacticalrmm.asgi:application
 ExecStartPre=rm -f /rmm/daphne.sock
@@ -709,7 +709,7 @@ server {
     error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
-    
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
@@ -717,7 +717,7 @@ server {
     ssl_stapling on;
     ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
-    
+
     location /static/ {
         root /rmm/api/tacticalrmm;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
@@ -833,7 +833,7 @@ Type=forking
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnplusrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
 ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
@@ -879,15 +879,14 @@ Type=simple
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnplusrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
 ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
 ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
 Restart=always
 RestartSec=10s
 
-[Install]
-WantedBy=multi-user.target
+[Install] WantedBy=multi-user.target
 EOF
 )"
 echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null
@@ -954,7 +953,7 @@ server {
     listen [::]:443 ssl;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
-    
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;

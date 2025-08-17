@@ -465,7 +465,7 @@ sed -i '/^REDIS_HOST/d' $local_settings
 sudo chown -R ${USER}:${USER} /opt/scnplus
 
 python manage.py pre_update_tasks
-celery -A tacticalrmm purge -f
+celery -A scnplusrmm purge -f
 printf >&2 "${GREEN}Running database migrations (this might take a long time)...${NC}\n"
 python manage.py migrate
 python manage.py generate_json_schemas

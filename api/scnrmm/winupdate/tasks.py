@@ -18,7 +18,7 @@ from scnrmm.constants import AGENT_STATUS_ONLINE, DebugLogType
 def auto_approve_updates_task() -> None:
     # scheduled task that checks and approves updates daily
 
-    if getattr(settings, "TRMM_DISABLE_APPROVE_UPDATES_TASK", False):
+    if getattr(settings, "SCN_DISABLE_APPROVE_UPDATES_TASK", False):
         return
 
     agents = Agent.objects.only(
@@ -48,7 +48,7 @@ def auto_approve_updates_task() -> None:
 @app.task
 def check_agent_update_schedule_task() -> None:
 
-    if getattr(settings, "TRMM_DISABLE_WINUPDATES_INSTALL_TASK", False):
+    if getattr(settings, "SCN_DISABLE_WINUPDATES_INSTALL_TASK", False):
         return
     # scheduled task that installs updates on agents if enabled
     for agent in Agent.online_agents(min_version="1.3.0"):

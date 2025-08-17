@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="64"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
+SCRIPT_URL='https://raw.githubusercontent.com/ahmetkarakayaoffical/SCNRMM/master/restore.sh'
 
 sudo apt update
 sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
@@ -12,10 +12,10 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-SCRIPTS_DIR='/opt/trmm-community-scripts'
+SCRIPTS_DIR='/opt/scrmm-community-scripts'
 PYTHON_VER='3.11.8'
-SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+SETTINGS_FILE='/rmm/api/scnrmmrmm/scnrmmrmm/settings.py'
+local_settings='/rmm/api/scnrmmrmm/scnrmmrmm/local_settings.py'
 
 TMP_FILE=$(mktemp -p "" "rmmrestore_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" >${TMP_FILE}
@@ -38,8 +38,8 @@ if [[ "$virt_type" == "lxc" ]]; then
   exit 1
 fi
 
-if [ -d /rmm/api/tacticalrmm ]; then
-  echo -ne "${RED}ERROR: Existing trmm installation found. The restore script must be run on a clean server, please re-read the docs.${NC}\n"
+if [ -d /rmm/api/scnrmmrmm ]; then
+  echo -ne "${RED}ERROR: Existing scrmm installation found. The restore script must be run on a clean server, please re-read the docs.${NC}\n"
   exit 1
 fi
 
@@ -126,7 +126,7 @@ print_green() {
 }
 
 print_green 'Unpacking backup'
-tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
+tmp_dir=$(mktemp -d -t scnrmmrmm-XXXXXXXXXXXXXXXXXXXXX)
 
 tar -xf ${1} -C $tmp_dir
 
@@ -231,7 +231,7 @@ if [ -d "${tmp_dir}/certs/custom" ]; then
   cp -p ${tmp_dir}/certs/custom/cert $CERT_FILE
   cp -p ${tmp_dir}/certs/custom/key $KEY_FILE
 elif [ -d "${tmp_dir}/certs/selfsigned" ]; then
-  certdir='/etc/ssl/tactical'
+  certdir='/etc/ssl/scnrmm'
   sudo mkdir -p $certdir
   sudo chown ${USER}:${USER} $certdir
   sudo chmod 770 $certdir
@@ -240,14 +240,14 @@ elif [ -d "${tmp_dir}/certs/selfsigned" ]; then
 fi
 
 print_green 'Restoring assets'
-if [ -f "$tmp_dir/opt/opt-tactical.tar.gz" ]; then
-  sudo mkdir -p /opt/tactical
-  sudo tar -xzf $tmp_dir/opt/opt-tactical.tar.gz -C /opt/tactical
-  sudo chown ${USER}:${USER} -R /opt/tactical
+if [ -f "$tmp_dir/opt/opt-scnrmm.tar.gz" ]; then
+  sudo mkdir -p /opt/scnrmm
+  sudo tar -xzf $tmp_dir/opt/opt-scnrmm.tar.gz -C /opt/scnrmm
+  sudo chown ${USER}:${USER} -R /opt/scnrmm
 else
-  sudo mkdir -p /opt/tactical/reporting/assets
-  sudo mkdir -p /opt/tactical/reporting/schemas
-  sudo chown -R ${USER}:${USER} /opt/tactical
+  sudo mkdir -p /opt/scnrmm/reporting/assets
+  sudo mkdir -p /opt/scnrmm/reporting/schemas
+  sudo chown -R ${USER}:${USER} /opt/scnrmm
 fi
 
 print_green 'Restoring celery configs'
@@ -273,9 +273,9 @@ After=network.target
 [Service]
 User=${USER}
 Group=www-data
-WorkingDirectory=/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/scnrmmrmm
 Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' tacticalrmm.asgi:application
+ExecStart=/rmm/api/env/bin/uvicorn --uds /rmm/daphne.sock --forwarded-allow-ips='*' scnrmmrmm.asgi:application
 ExecStartPre=rm -f /rmm/daphne.sock
 ExecStartPre=rm -f /rmm/daphne.sock.lock
 Restart=always
@@ -325,7 +325,7 @@ sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/amidaware/tacticalrmm.git /rmm/
+git clone https://github.com/amidaware/scnrmmrmm.git /rmm/
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -387,7 +387,7 @@ sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESH_POSTGR
 if [ "$FROM_MONGO" = true ]; then
   print_green 'Converting mesh mongo to postgres'
 
-  # https://github.com/amidaware/trmm-awesome/blob/main/scripts/migrate-mesh-to-postgres.sh
+  # https://github.com/amidaware/scrmm-awesome/blob/main/scripts/migrate-mesh-to-postgres.sh
   mesh_data='/meshcentral/meshcentral-data'
   if [[ ! -f "${mesh_data}/meshcentral.db.json" ]]; then
     echo -ne "${RED}ERROR: meshcentral.db.json was not found${NC}\n"
@@ -436,7 +436,7 @@ fi
 
 print_green 'Restoring the backend'
 
-cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
+cp $tmp_dir/rmm/local_settings.py /rmm/api/scnrmmrmm/scnrmmrmm/
 
 if [ "$arch" = "x86_64" ]; then
   natsapi='nats-api'
@@ -448,22 +448,22 @@ sudo cp /rmm/natsapi/bin/${natsapi} /usr/local/bin/nats-api
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
-print_green 'Restoring the trmm database'
+print_green 'Restoring the scrmm database'
 
 pgusername=$(grep -w USER $local_settings | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 pgpw=$(grep -w PASSWORD $local_settings | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
 
-sudo -iu postgres psql -c "CREATE DATABASE tacticalrmm"
+sudo -iu postgres psql -c "CREATE DATABASE scnrmmrmm"
 sudo -iu postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
 sudo -iu postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
-sudo -iu postgres psql -c "ALTER DATABASE tacticalrmm OWNER TO ${pgusername}"
+sudo -iu postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE scnrmmrmm TO ${pgusername}"
+sudo -iu postgres psql -c "ALTER DATABASE scnrmmrmm OWNER TO ${pgusername}"
 sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${pgusername}"
 
 gzip -d $tmp_dir/postgres/db*.psql.gz
-PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql
+PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d scnrmmrmm -f $tmp_dir/postgres/db*.psql
 
 # for weasyprint
 if [[ "$osname" == "debian" ]]; then
@@ -484,10 +484,10 @@ WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 cd /rmm/api
 python3.11 -m venv env
 source /rmm/api/env/bin/activate
-cd /rmm/api/tacticalrmm
+cd /rmm/api/scnrmmrmm
 pip install --no-cache-dir pip==25.1
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
-pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
+pip install --no-cache-dir -r /rmm/api/scnrmmrmm/requirements.txt
 python manage.py migrate
 python manage.py generate_json_schemas
 python manage.py collectstatic --no-input
@@ -529,8 +529,8 @@ if ! grep -q "location /assets/" $tmp_dir/nginx/rmm.conf; then
     cat <<EOF
 server_tokens off;
 
-upstream tacticalrmm {
-    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+upstream scnrmmrmm {
+    server unix:////rmm/api/scnrmmrmm/scnrmmrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -551,8 +551,8 @@ server {
     listen [::]:443 ssl;
     server_name ${API};
     client_max_body_size 300M;
-    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
-    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    access_log /rmm/api/scnrmmrmm/scnrmmrmm/private/log/access.log combined if=\$ignore_ua;
+    error_log /rmm/api/scnrmmrmm/scnrmmrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
     
@@ -565,20 +565,20 @@ server {
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
-        root /rmm/api/tacticalrmm;
+        root /rmm/api/scnrmmrmm;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
-        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+        alias /rmm/api/scnrmmrmm/scnrmmrmm/private/;
     }
 
     location /assets/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${FRONTEND}";
-        alias /opt/tactical/reporting/assets/;
+        alias /opt/scnrmm/reporting/assets/;
     }
 
     location ~ ^/ws/ {
@@ -608,7 +608,7 @@ server {
     }
 
     location / {
-        uwsgi_pass  tacticalrmm;
+        uwsgi_pass  scnrmmrmm;
         include     /etc/nginx/uwsgi_params;
         uwsgi_read_timeout 300s;
         uwsgi_ignore_client_abort on;
@@ -634,7 +634,7 @@ sudo systemctl start nats.service
 
 print_green 'Restoring the frontend'
 
-webtar="trmm-web-v${WEB_VERSION}.tar.gz"
+webtar="scrmm-web-v${WEB_VERSION}.tar.gz"
 wget -q ${WEBTAR_URL} -O /tmp/${webtar}
 sudo mkdir -p /var/www/rmm
 sudo tar -xzf /tmp/${webtar} -C /var/www/rmm

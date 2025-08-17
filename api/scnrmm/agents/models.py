@@ -192,7 +192,7 @@ class Agent(BaseAuditModel):
             return "not supported"
 
         url = get_agent_url(goarch=self.goarch, plat=self.plat, token=token)
-        bin = f"tacticalagent-v{ver}-{self.plat}-{self.goarch}.exe"
+        bin = f"scnagent-v{ver}-{self.plat}-{self.goarch}.exe"
 
         if not force:
             if self.pendingactions.filter(  # type: ignore
@@ -893,13 +893,13 @@ class Agent(BaseAuditModel):
         """
         if mode == "tacagent":
             if self.plat == AgentPlat.LINUX:
-                cmd = "systemctl restart tacticalagent.service"
+                cmd = "systemctl restart scnagent.service"
                 shell = 3
             elif self.plat == AgentPlat.DARWIN:
-                cmd = "launchctl kickstart -k system/tacticalagent"
+                cmd = "launchctl kickstart -k system/scnagent"
                 shell = 3
             else:
-                cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
+                cmd = "net stop scnrmm & taskkill /F /IM scnrmm.exe & net start scnrmm"
                 shell = 1
 
             asyncio.run(

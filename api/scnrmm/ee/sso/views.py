@@ -1,7 +1,7 @@
 """
 Copyright (c) 2024-present Amidaware Inc.
 This file is subject to the EE License Agreement.
-For details, see: https://license.tacticalrmm.com/ee
+For details, see: https://license.scnrmm.com/ee
 """
 
 import re
@@ -244,7 +244,7 @@ class GetUpdateSSOSettings(APIView):
             core_settings.save(update_fields=["block_local_user_logon", "sso_enabled"])
         except ValidationError:
             return Response(
-                "This feature requires a Tier 1 or higher sponsorship: https://docs.tacticalrmm.com/sponsor",
+                "This feature requires a Tier 1 or higher sponsorship: https://docs.scnrmm.com/sponsor",
                 status=status.HTTP_423_LOCKED,
             )
 

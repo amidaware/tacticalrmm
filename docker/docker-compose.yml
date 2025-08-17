@@ -14,7 +14,7 @@ networks:
 
 # docker managed persistent volumes
 volumes:
-  tactical_data: null
+  scn_data: null
   postgres_data: null
   mongo_data: null
   mesh_data: null
@@ -22,12 +22,12 @@ volumes:
 
 services:
   # postgres database for api service
-  tactical-postgres:
-    container_name: trmm-postgres
+  scn-postgres:
+    container_name: scn-postgres
     image: postgres:13-alpine
     restart: always
     environment:
-      POSTGRES_DB: tacticalrmm
+      POSTGRES_DB: scn
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
     volumes:
@@ -36,8 +36,8 @@ services:
       - api-db
 
   # redis container for celery tasks
-  tactical-redis:
-    container_name: trmm-redis
+  scn-redis:
+    container_name: scn-redis
     image: redis:6.0-alpine
     user: 1000:1000
     command: redis-server
@@ -48,11 +48,11 @@ services:
       - redis
 
   # used to initialize the docker environment
-  tactical-init:
-    container_name: trmm-init
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  scn-init:
+    container_name: scn-init
+    image: ${IMAGE_REPO}scn:${VERSION}
     restart: on-failure
-    command: ["tactical-init"]
+    command: ["scn-init"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
@@ -60,35 +60,35 @@ services:
       API_HOST: ${API_HOST}
       MESH_USER: ${MESH_USER}
       MESH_HOST: ${MESH_HOST}
-      TRMM_USER: ${TRMM_USER}
-      TRMM_PASS: ${TRMM_PASS}
-      TRMM_DISABLE_WEB_TERMINAL: ${TRMM_DISABLE_WEB_TERMINAL}
-      TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
-      TRMM_DISABLE_SSO: ${TRMM_DISABLE_SSO}
+      scn_USER: ${scn_USER}
+      scn_PASS: ${scn_PASS}
+      scn_DISABLE_WEB_TERMINAL: ${scn_DISABLE_WEB_TERMINAL}
+      scn_DISABLE_SERVER_SCRIPTS: ${scn_DISABLE_SERVER_SCRIPTS}
+      scn_DISABLE_SSO: ${scn_DISABLE_SSO}
     depends_on:
-      - tactical-postgres
-      - tactical-meshcentral
-      - tactical-redis
+      - scn-postgres
+      - scn-meshcentral
+      - scn-redis
     networks:
       - api-db
       - proxy
       - redis
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
       - mesh_data:/meshcentral-data
       - mongo_data:/mongo/data/db
       - redis_data:/redis/data
 
   # nats
-  tactical-nats:
-    container_name: trmm-nats
-    image: ${IMAGE_REPO}tactical-nats:${VERSION}
+  scn-nats:
+    container_name: scn-nats
+    image: ${IMAGE_REPO}scn-nats:${VERSION}
     user: 1000:1000
     restart: always
     environment:
       API_HOST: ${API_HOST}
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
     networks:
       api-db: null
       proxy:
@@ -96,9 +96,9 @@ services:
           - ${API_HOST}
 
   # meshcentral container
-  tactical-meshcentral:
-    container_name: trmm-meshcentral
-    image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
+  scn-meshcentral:
+    container_name: scn-meshcentral
+    image: ${IMAGE_REPO}scn-meshcentral:${VERSION}
     user: 1000:1000
     restart: always
     environment:
@@ -114,14 +114,14 @@ services:
           - ${MESH_HOST}
       mesh-db: null
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
       - mesh_data:/home/node/app/meshcentral-data
     depends_on:
-      - tactical-mongodb
+      - scn-mongodb
 
   # mongodb container for meshcentral
-  tactical-mongodb:
-    container_name: trmm-mongodb
+  scn-mongodb:
+    container_name: scn-mongodb
     image: mongo:4.4
     user: 1000:1000
     restart: always
@@ -135,55 +135,55 @@ services:
       - mongo_data:/data/db
 
   # container that hosts vue frontend
-  tactical-frontend:
-    container_name: trmm-frontend
-    image: ${IMAGE_REPO}tactical-frontend:${VERSION}
+  scn-frontend:
+    container_name: scn-frontend
+    image: ${IMAGE_REPO}scn-frontend:${VERSION}
     user: 1000:1000
     restart: always
     networks:
       - proxy
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
     environment:
       API_HOST: ${API_HOST}
 
   # container for django backend
-  tactical-backend:
-    container_name: trmm-backend
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  scn-backend:
+    container_name: scn-backend
+    image: ${IMAGE_REPO}scn:${VERSION}
     user: 1000:1000
-    command: ["tactical-backend"]
+    command: ["scn-backend"]
     restart: always
     networks:
       - proxy
       - api-db
       - redis
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
     depends_on:
-      - tactical-postgres
+      - scn-postgres
 
   # container for django websockets connections
-  tactical-websockets:
-    container_name: trmm-websockets
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  scn-websockets:
+    container_name: scn-websockets
+    image: ${IMAGE_REPO}scn:${VERSION}
     user: 1000:1000
-    command: ["tactical-websockets"]
+    command: ["scn-websockets"]
     restart: always
     networks:
       - proxy
       - api-db
       - redis
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
     depends_on:
-      - tactical-postgres
-      - tactical-backend
+      - scn-postgres
+      - scn-backend
 
-  # container for tactical reverse proxy
-  tactical-nginx:
-    container_name: trmm-nginx
-    image: ${IMAGE_REPO}tactical-nginx:${VERSION}
+  # container for scn reverse proxy
+  scn-nginx:
+    container_name: scn-nginx
+    image: ${IMAGE_REPO}scn-nginx:${VERSION}
     user: 1000:1000
     restart: always
     environment:
@@ -196,41 +196,41 @@ services:
       proxy:
         ipv4_address: 172.20.0.20
     ports:
-      - "${TRMM_HTTP_PORT-80}:8080"
-      - "${TRMM_HTTPS_PORT-443}:4443"
+      - "${scn_HTTP_PORT-80}:8080"
+      - "${scn_HTTPS_PORT-443}:4443"
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
 
   # container for celery worker service
-  tactical-celery:
-    container_name: trmm-celery
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  scn-celery:
+    container_name: scn-celery
+    image: ${IMAGE_REPO}scn:${VERSION}
     user: 1000:1000
-    command: ["tactical-celery"]
+    command: ["scn-celery"]
     restart: always
     networks:
       - redis
       - proxy
       - api-db
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
     depends_on:
-      - tactical-postgres
-      - tactical-redis
+      - scn-postgres
+      - scn-redis
 
   # container for celery beat service
-  tactical-celerybeat:
-    container_name: trmm-celerybeat
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  scn-celerybeat:
+    container_name: scn-celerybeat
+    image: ${IMAGE_REPO}scn:${VERSION}
     user: 1000:1000
-    command: ["tactical-celerybeat"]
+    command: ["scn-celerybeat"]
     restart: always
     networks:
       - proxy
       - redis
       - api-db
     volumes:
-      - tactical_data:/opt/tactical
+      - scn_data:/opt/scn
     depends_on:
-      - tactical-postgres
-      - tactical-redis
+      - scn-postgres
+      - scn-redis

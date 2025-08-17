@@ -585,7 +585,7 @@ class Reboot(APIView):
         if date_is_in_past(datetime_obj=obj, agent_tz=agent.timezone):
             return notify_error("Date cannot be set in the past")
 
-        task_name = "TacticalRMM_SchedReboot_" + "".join(
+        task_name = "scnRMM_SchedReboot_" + "".join(
             random.choice(string.ascii_letters) for _ in range(10)
         )
 
@@ -645,7 +645,7 @@ def install_agent(request):
         )
 
     # TODO rework this ghetto validation hack
-    # https://github.com/amidaware/tacticalrmm/issues/1461
+    # https://github.com/amidaware/scnrmm/issues/1461
     try:
         int(request.data["expires"])
     except ValueError:
@@ -664,10 +664,10 @@ def install_agent(request):
 
     if request.data["installMethod"] in {"bash", "mac"} and not is_valid:
         return notify_error(
-            "Linux/Mac agents require code signing. Please see https://docs.tacticalrmm.com/code_signing/ for more info."
+            "Linux/Mac agents require code signing. Please see https://docs.scnrmm.com/code_signing/ for more info."
         )
 
-    inno = f"tacticalagent-v{version}-{plat}-{goarch}"
+    inno = f"scnagent-v{version}-{plat}-{goarch}"
     if plat == AgentPlat.WINDOWS:
         inno += ".exe"
 
@@ -736,7 +736,7 @@ def install_agent(request):
                 "-n",
                 "5",
                 "&&",
-                r'"C:\Program Files\TacticalAgent\tacticalrmm.exe"',
+                r'"C:\Program Files\scnAgent\scnrmm.exe"',
             ] + install_flags
 
             if int(request.data["rdp"]):

@@ -96,7 +96,7 @@ def remove_orphaned_win_tasks(self) -> str:
 
         AgentTup = namedtuple("AgentTup", ["agent_id", "task_names"])
         items: "list[AgentTup]" = []
-        exclude_tasks = ("TacticalRMM_SchedReboot",)
+        exclude_tasks = ("scnRMM_SchedReboot",)
 
         for agent in _get_agent_qs():
             if not agent.is_posix and agent.status == AGENT_STATUS_ONLINE:
@@ -124,7 +124,7 @@ def remove_orphaned_win_tasks(self) -> str:
                     # skip system tasks or any pending reboots
                     continue
 
-                if name.startswith("TacticalRMM_") and name not in names:
+                if name.startswith("scnRMM_") and name not in names:
                     nats_data = {
                         "func": "delschedtask",
                         "schedtaskpayload": {"name": name},

@@ -4,9 +4,9 @@
 #
 set -e
 
-function check_tactical_ready {
+function check_scn_ready {
   sleep 15
-  until [ -f "${TACTICAL_READY_FILE}" ]; do
+  until [ -f "${scn_READY_FILE}" ]; do
     echo "waiting for init container to finish install or update..."
     sleep 10
   done
@@ -33,9 +33,9 @@ EOF
 
 echo "${nginx_config}" > /etc/nginx/conf.d/default.conf
 
-check_tactical_ready
+check_scn_ready
 
-URL_PATH="${TACTICAL_DIR}/tmp/web_tar_url"
+URL_PATH="${scn_DIR}/tmp/web_tar_url"
 AGENT_BASE=$(grep -o 'AGENT_BASE_URL.*' /tmp/settings.py | cut -d'"' -f 2)
 WEB_VERSION=$(grep -o 'WEB_VERSION.*' /tmp/settings.py | cut -d'"' -f 2)
 

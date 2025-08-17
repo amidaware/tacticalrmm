@@ -7,7 +7,7 @@ from agents.models import Agent
 from clients.models import Site
 from core.utils import get_core_settings
 from scnrmm.constants import AgentMonType, TaskSyncStatus
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import scnTestCase
 from winupdate.models import WinUpdatePolicy
 
 from .serializers import (
@@ -18,7 +18,7 @@ from .serializers import (
 )
 
 
-class TestPolicyViews(TacticalTestCase):
+class TestPolicyViews(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -387,7 +387,7 @@ class TestPolicyViews(TacticalTestCase):
         self.check_not_authenticated("delete", url)
 
 
-class TestPolicyTasks(TacticalTestCase):
+class TestPolicyTasks(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()

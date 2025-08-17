@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
     def handle(self, *args: tuple[Any, Any], **kwargs: dict[str, Any]) -> None:
         webtar = f"trmm-web-v{settings.WEB_VERSION}.tar.gz"
-        url = f"https://github.com/amidaware/tacticalrmm-web/releases/download/v{settings.WEB_VERSION}/{webtar}"
+        url = f"https://github.com/ahmetkarakayaoffical/scnrmm-web/releases/download/v{settings.WEB_VERSION}/{webtar}"
 
         t: "Optional[CodeSignToken]" = CodeSignToken.objects.first()
         if not t or not t.token:

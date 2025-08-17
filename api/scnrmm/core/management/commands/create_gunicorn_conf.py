@@ -13,36 +13,36 @@ class Command(BaseCommand):
         cpu_count = multiprocessing.cpu_count()
 
         # worker processes
-        workers = getattr(settings, "TRMM_GUNICORN_WORKERS", cpu_count * 2 + 1)
-        threads = getattr(settings, "TRMM_GUNICORN_THREADS", cpu_count * 2)
-        worker_class = getattr(settings, "TRMM_GUNICORN_WORKER_CLASS", "gthread")
-        max_requests = getattr(settings, "TRMM_GUNICORN_MAX_REQUESTS", 50)
-        max_requests_jitter = getattr(settings, "TRMM_GUNICORN_MAX_REQUESTS_JITTER", 8)
-        worker_connections = getattr(settings, "TRMM_GUNICORN_WORKER_CONNS", 1000)
-        timeout = getattr(settings, "TRMM_GUNICORN_TIMEOUT", 300)
-        graceful_timeout = getattr(settings, "TRMM_GUNICORN_GRACEFUL_TIMEOUT", 300)
+        workers = getattr(settings, "scn_GUNICORN_WORKERS", cpu_count * 2 + 1)
+        threads = getattr(settings, "scn_GUNICORN_THREADS", cpu_count * 2)
+        worker_class = getattr(settings, "scn_GUNICORN_WORKER_CLASS", "gthread")
+        max_requests = getattr(settings, "scn_GUNICORN_MAX_REQUESTS", 50)
+        max_requests_jitter = getattr(settings, "scn_GUNICORN_MAX_REQUESTS_JITTER", 8)
+        worker_connections = getattr(settings, "scn_GUNICORN_WORKER_CONNS", 1000)
+        timeout = getattr(settings, "scn_GUNICORN_TIMEOUT", 300)
+        graceful_timeout = getattr(settings, "scn_GUNICORN_GRACEFUL_TIMEOUT", 300)
 
         # socket
-        backlog = getattr(settings, "TRMM_GUNICORN_BACKLOG", 2048)
+        backlog = getattr(settings, "scn_GUNICORN_BACKLOG", 2048)
         if getattr(settings, "DOCKER_BUILD", False):
             bind = "0.0.0.0:8080"
         else:
-            bind = f"unix:{settings.BASE_DIR / 'tacticalrmm.sock'}"
+            bind = f"unix:{settings.BASE_DIR / 'scnrmm.sock'}"
 
         # security
-        limit_request_line = getattr(settings, "TRMM_GUNICORN_LIMIT_REQUEST_LINE", 0)
+        limit_request_line = getattr(settings, "scn_GUNICORN_LIMIT_REQUEST_LINE", 0)
         limit_request_fields = getattr(
-            settings, "TRMM_GUNICORN_LIMIT_REQUEST_FIELDS", 500
+            settings, "scn_GUNICORN_LIMIT_REQUEST_FIELDS", 500
         )
         limit_request_field_size = getattr(
-            settings, "TRMM_GUNICORN_LIMIT_REQUEST_FIELD_SIZE", 0
+            settings, "scn_GUNICORN_LIMIT_REQUEST_FIELD_SIZE", 0
         )
 
         # server
-        preload_app = getattr(settings, "TRMM_GUNICORN_PRELOAD_APP", True)
+        preload_app = getattr(settings, "scn_GUNICORN_PRELOAD_APP", True)
 
         # log
-        loglevel = getattr(settings, "TRMM_GUNICORN_LOGLEVEL", "info")
+        loglevel = getattr(settings, "scn_GUNICORN_LOGLEVEL", "info")
 
         cfg = [
             f"bind = '{bind}'",

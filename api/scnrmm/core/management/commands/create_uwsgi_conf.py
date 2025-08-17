@@ -43,11 +43,11 @@ class Command(BaseCommand):
             socket = "0.0.0.0:8080"
         else:
             home = str(settings.BASE_DIR.parents[0] / "env")
-            socket = str(settings.BASE_DIR / "tacticalrmm.sock")
+            socket = str(settings.BASE_DIR / "scnrmm.sock")
 
         config["uwsgi"] = {
             "chdir": str(settings.BASE_DIR),
-            "module": "tacticalrmm.wsgi",
+            "module": "scnrmm.wsgi",
             "home": home,
             "master": str(getattr(settings, "UWSGI_MASTER", True)).lower(),
             "enable-threads": str(

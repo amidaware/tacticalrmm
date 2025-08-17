@@ -12,14 +12,14 @@ from scnrmm.constants import (
     EvtLogFailWhen,
     EvtLogTypes,
 )
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import scnTestCase
 
 from .serializers import CheckSerializer
 
 base_url = "/checks"
 
 
-class TestCheckViews(TacticalTestCase):
+class TestCheckViews(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -318,7 +318,7 @@ class TestCheckViews(TacticalTestCase):
         self.check_not_authenticated("patch", url)
 
 
-class TestCheckTasks(TacticalTestCase):
+class TestCheckTasks(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -897,7 +897,7 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(check_result.status, CheckStatus.PASSING)
 
 
-class TestCheckPermissions(TacticalTestCase):
+class TestCheckPermissions(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.setup_client()

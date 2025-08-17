@@ -6,10 +6,10 @@ from model_bakery import baker, seq
 from accounts.models import APIKey, User
 from accounts.serializers import APIKeySerializer
 from scnrmm.constants import AgentDblClick, AgentTableTabs, ClientTreeSort
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import scnTestCase
 
 
-class TestAccounts(TacticalTestCase):
+class TestAccounts(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.setup_client()
@@ -84,7 +84,7 @@ class TestAccounts(TacticalTestCase):
     #     self.assertIn("token", r.data.keys())
 
 
-class TestGetAddUsers(TacticalTestCase):
+class TestGetAddUsers(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -131,7 +131,7 @@ class TestGetAddUsers(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
 
-class GetUpdateDeleteUser(TacticalTestCase):
+class GetUpdateDeleteUser(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -218,7 +218,7 @@ class GetUpdateDeleteUser(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
 
 
-class TestUserAction(TacticalTestCase):
+class TestUserAction(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -298,7 +298,7 @@ class TestUserAction(TacticalTestCase):
         self.check_not_authenticated("patch", url)
 
 
-class TestUserReset(TacticalTestCase):
+class TestUserReset(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -319,7 +319,7 @@ class TestUserReset(TacticalTestCase):
         self.check_not_authenticated("put", url)
 
 
-class TestAPIKeyViews(TacticalTestCase):
+class TestAPIKeyViews(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.authenticate()
@@ -381,7 +381,7 @@ class TestAPIKeyViews(TacticalTestCase):
         self.check_not_authenticated("delete", url)
 
 
-class TestTOTPSetup(TacticalTestCase):
+class TestTOTPSetup(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -408,7 +408,7 @@ class TestTOTPSetup(TacticalTestCase):
         self.assertEqual(r.data, False)
 
 
-class TestAPIAuthentication(TacticalTestCase):
+class TestAPIAuthentication(scnTestCase):
     def setUp(self):
         # create User and associate to API Key
         self.user = User.objects.create(username="api_user", is_superuser=True)

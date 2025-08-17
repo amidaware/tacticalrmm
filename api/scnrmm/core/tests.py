@@ -21,7 +21,7 @@ from scnrmm.constants import (  # PAAction,; PAStatus,
     MeshAgentIdent,
 )
 from scnrmm.helpers import get_nats_hosts, get_nats_url
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import scnTestCase
 
 from .consumers import DashInfo
 from .models import CustomField, GlobalKVStore, URLAction
@@ -29,7 +29,7 @@ from .serializers import CustomFieldSerializer, KeyStoreSerializer, URLActionSer
 from .tasks import core_maintenance_tasks  # , resolve_pending_actions
 
 
-class TestCodeSign(TacticalTestCase):
+class TestCodeSign(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.authenticate()
@@ -57,7 +57,7 @@ class TestCodeSign(TacticalTestCase):
         self.check_not_authenticated("delete", self.url)
 
 
-class TestConsumers(TacticalTestCase):
+class TestConsumers(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.authenticate()
@@ -78,7 +78,7 @@ class TestConsumers(TacticalTestCase):
         await communicator.disconnect()
 
 
-class TestCoreTasks(TacticalTestCase):
+class TestCoreTasks(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.authenticate()
@@ -170,7 +170,7 @@ class TestCoreTasks(TacticalTestCase):
 
         self.check_not_authenticated("put", url)
 
-    @patch("tacticalrmm.utils.reload_nats")
+    @patch("scnrmm.utils.reload_nats")
     @patch("autotasks.tasks.remove_orphaned_win_tasks.delay")
     def test_ui_maintenance_actions(self, remove_orphaned_win_tasks, reload_nats):
         url = "/core/servermaintenance/"
@@ -481,7 +481,7 @@ class TestCoreTasks(TacticalTestCase):
     #     self.assertEqual(old, 20)
 
 
-class TestCoreMgmtCommands(TacticalTestCase):
+class TestCoreMgmtCommands(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
 
@@ -490,7 +490,7 @@ class TestCoreMgmtCommands(TacticalTestCase):
             call_command("get_config", cmd)
 
 
-class TestNatsUrls(TacticalTestCase):
+class TestNatsUrls(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
 
@@ -522,7 +522,7 @@ class TestNatsUrls(TacticalTestCase):
         self.assertEqual(get_nats_hosts(), ("0.0.0.0", "0.0.0.0", "api.example.com"))
 
 
-class TestMeshWSUrl(TacticalTestCase):
+class TestMeshWSUrl(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
 
@@ -542,11 +542,11 @@ class TestMeshWSUrl(TacticalTestCase):
         )
 
     @patch("core.utils.get_auth_token")
-    @override_settings(DOCKER_BUILD=True, MESH_WS_URL="ws://tactical-meshcentral:4443")
+    @override_settings(DOCKER_BUILD=True, MESH_WS_URL="ws://scn-meshcentral:4443")
     def test_docker_install(self, mock_token):
         mock_token.return_value = "abc123"
         self.assertEqual(
-            get_mesh_ws_url(), "ws://tactical-meshcentral:4443/control.ashx?auth=abc123"
+            get_mesh_ws_url(), "ws://scn-meshcentral:4443/control.ashx?auth=abc123"
         )
 
     @patch("core.utils.get_auth_token")
@@ -564,13 +564,13 @@ class TestMeshWSUrl(TacticalTestCase):
         )
 
 
-class TestCorePermissions(TacticalTestCase):
+class TestCorePermissions(scnTestCase):
     def setUp(self):
         self.setup_client()
         self.setup_coresettings()
 
 
-class TestCoreUtils(TacticalTestCase):
+class TestCoreUtils(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
 
@@ -598,7 +598,7 @@ class TestCoreUtils(TacticalTestCase):
         )
 
     @override_settings(DOCKER_BUILD=True)
-    @override_settings(MESH_WS_URL="ws://tactical-meshcentral:4443")
+    @override_settings(MESH_WS_URL="ws://scn-meshcentral:4443")
     def test_get_meshagent_url_docker(self):
         r = get_meshagent_url(
             ident=MeshAgentIdent.DARWIN_UNIVERSAL,
@@ -608,7 +608,7 @@ class TestCoreUtils(TacticalTestCase):
         )
         self.assertEqual(
             r,
-            "http://tactical-meshcentral:4443/meshagents?id=abc123&installflags=2&meshinstall=10005",
+            "http://scn-meshcentral:4443/meshagents?id=abc123&installflags=2&meshinstall=10005",
         )
 
         r = get_meshagent_url(
@@ -619,7 +619,7 @@ class TestCoreUtils(TacticalTestCase):
         )
         self.assertEqual(
             r,
-            "http://tactical-meshcentral:4443/meshagents?id=4&meshid=abc123&installflags=0",
+            "http://scn-meshcentral:4443/meshagents?id=4&meshid=abc123&installflags=0",
         )
 
     @override_settings(USE_EXTERNAL_MESH=True)

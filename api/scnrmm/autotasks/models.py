@@ -46,7 +46,7 @@ from scnrmm.utils import (
 
 def generate_task_name() -> str:
     chars = string.ascii_letters
-    return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
+    return "scnRMM_" + "".join(random.choice(chars) for i in range(35))
 
 
 def default_task_supported_platforms() -> list[str]:

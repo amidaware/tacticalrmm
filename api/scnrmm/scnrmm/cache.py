@@ -4,7 +4,7 @@ from django.core.cache.backends.dummy import DummyCache
 from django.core.cache.backends.redis import RedisCache
 
 
-class TacticalRedisCache(RedisCache):
+class scnRedisCache(RedisCache):
     def delete_many_pattern(self, pattern: str, version: Optional[int] = None) -> None:
         keys = self._cache.get_client().keys(f":{version or 1}:{pattern}")
 
@@ -16,6 +16,6 @@ class TacticalRedisCache(RedisCache):
         return self._cache.get_client().keys(f":{version or 1}:*")
 
 
-class TacticalDummyCache(DummyCache):
+class scnDummyCache(DummyCache):
     def delete_many_pattern(self, pattern: str, version: Optional[int] = None) -> None:
         return None

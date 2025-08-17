@@ -7,10 +7,10 @@ from celery import Celery
 from celery.schedules import crontab
 from django.conf import settings
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "scnrmm.settings")
 
 redis_host = f"redis://{settings.REDIS_HOST}"
-app = Celery("tacticalrmm", backend=redis_host, broker=redis_host)
+app = Celery("scnrmm", backend=redis_host, broker=redis_host)
 app.accept_content = ["application/json"]
 app.result_serializer = "json"
 app.task_serializer = "json"

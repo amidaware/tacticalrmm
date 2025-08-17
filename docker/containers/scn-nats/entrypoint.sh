@@ -6,15 +6,15 @@ set -e
 : "${NATS_CONFIG_CHECK_INTERVAL:=1}"
 
 if [ "${DEV}" = 1 ]; then
-  NATS_CONFIG=/workspace/api/tacticalrmm/nats-rmm.conf
-  NATS_API_CONFIG=/workspace/api/tacticalrmm/nats-api.conf
+  NATS_CONFIG=/workspace/api/scnrmm/nats-rmm.conf
+  NATS_API_CONFIG=/workspace/api/scnrmm/nats-api.conf
 else
-  NATS_CONFIG="${TACTICAL_DIR}/api/nats-rmm.conf"
-  NATS_API_CONFIG="${TACTICAL_DIR}/api/nats-api.conf"
+  NATS_CONFIG="${scn_DIR}/api/nats-rmm.conf"
+  NATS_API_CONFIG="${scn_DIR}/api/nats-api.conf"
 fi
 
 sleep 15
-until [ -f "${TACTICAL_READY_FILE}" ]; do
+until [ -f "${scn_READY_FILE}" ]; do
   echo "waiting for init container to finish install or update..."
   sleep 10
 done

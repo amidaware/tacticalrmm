@@ -36,13 +36,13 @@ agentType='agentTypeChange'
 proxy=''
 
 agentBinPath='/usr/local/bin'
-binName='tacticalagent'
+binName='scnagent'
 agentBin="${agentBinPath}/${binName}"
-agentConf='/etc/tacticalagent'
-agentSvcName='tacticalagent.service'
+agentConf='/etc/scnagent'
+agentSvcName='scnagent.service'
 agentSysD="/etc/systemd/system/${agentSvcName}"
-agentDir='/opt/tacticalagent'
-meshDir='/opt/tacticalmesh'
+agentDir='/opt/scnagent'
+meshDir='/opt/scnmesh'
 meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
 meshSysD="/lib/systemd/system/${meshSvcName}"
@@ -159,10 +159,10 @@ done
 
 RemoveOldAgent
 
-echo "Downloading tactical agent..."
+echo "Downloading scn agent..."
 wget -q -O ${agentBin} "${agentDL}"
 if [ $? -ne 0 ]; then
-    echo "ERROR: Unable to download tactical agent"
+    echo "ERROR: Unable to download scn agent"
     exit 1
 fi
 chmod +x ${agentBin}
@@ -207,10 +207,10 @@ fi
 
 eval ${INSTALL_CMD}
 
-tacticalsvc="$(
+scnsvc="$(
     cat <<EOF
 [Unit]
-Description=Tactical RMM Linux Agent
+Description=scn RMM Linux Agent
 
 [Service]
 Type=simple
@@ -226,7 +226,7 @@ KillMode=process
 WantedBy=multi-user.target
 EOF
 )"
-echo "${tacticalsvc}" | tee ${agentSysD} >/dev/null
+echo "${scnsvc}" | tee ${agentSysD} >/dev/null
 
 systemctl daemon-reload
 systemctl enable ${agentSvcName}

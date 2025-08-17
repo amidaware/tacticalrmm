@@ -8,7 +8,7 @@ from scnrmm.constants import AGENT_DEFER
 
 
 class Command(BaseCommand):
-    help = "Restarts the tactical and meshagent services"
+    help = "Restarts the scn and meshagent services"
 
     def handle(self, *args, **kwargs) -> None:
         agents = Agent.objects.defer(*AGENT_DEFER)
@@ -17,7 +17,7 @@ class Command(BaseCommand):
         for agent in agents:
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Restarting Tactical Agent Service on {agent.hostname}"
+                    f"Restarting scn Agent Service on {agent.hostname}"
                 )
             )
             agent.recover("tacagent", uri, wait=False)

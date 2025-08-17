@@ -1,7 +1,7 @@
 ---
 - hosts: "{{ target }}"
   vars:
-    ansible_user: tactical
+    ansible_user: scn
     fullchain_src: /path/to/fullchain.pem
     privkey_src: /path/to/privkey.pem
     api: "api.example.com"

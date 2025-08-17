@@ -1,7 +1,7 @@
 FROM nats:2.11.2-alpine
 
-ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
+ENV SCN_DIR /opt/scn
+ENV SCN_READY_FILE ${SCN_DIR}/tmp/scn.ready
 
 RUN apk add --no-cache supervisor bash
 

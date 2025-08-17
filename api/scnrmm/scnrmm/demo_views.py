@@ -4,9 +4,9 @@ import random
 from django.conf import settings
 from rest_framework.response import Response
 
-SVC_FILE = settings.BASE_DIR.joinpath("tacticalrmm/test_data/winsvcs.json")
-PROCS_FILE = settings.BASE_DIR.joinpath("tacticalrmm/test_data/procs.json")
-EVT_LOG_FILE = settings.BASE_DIR.joinpath("tacticalrmm/test_data/appeventlog.json")
+SVC_FILE = settings.BASE_DIR.joinpath("scnrmm/test_data/winsvcs.json")
+PROCS_FILE = settings.BASE_DIR.joinpath("scnrmm/test_data/procs.json")
+EVT_LOG_FILE = settings.BASE_DIR.joinpath("scnrmm/test_data/appeventlog.json")
 
 
 def demo_get_services():

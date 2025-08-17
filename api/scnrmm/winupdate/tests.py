@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from model_bakery import baker
 
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import ScnTestCase
 
 from .models import WinUpdate
 from .serializers import WinUpdateSerializer
@@ -11,7 +11,7 @@ from .serializers import WinUpdateSerializer
 base_url = "/winupdate"
 
 
-class TestWinUpdateViews(TacticalTestCase):
+class TestWinUpdateViews(ScnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -72,7 +72,7 @@ class TestWinUpdateViews(TacticalTestCase):
         self.check_not_authenticated("put", url)
 
 
-class TestWinUpdatePermissions(TacticalTestCase):
+class TestWinUpdatePermissions(ScnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.setup_client()
@@ -151,7 +151,7 @@ class TestWinUpdatePermissions(TacticalTestCase):
         self.check_not_authorized("put", url)
 
 
-class WinupdateTasks(TacticalTestCase):
+class WinupdateTasks(ScnTestCase):
     def setUp(self):
         self.setup_coresettings()
 

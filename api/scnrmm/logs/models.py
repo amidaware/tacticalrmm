@@ -150,12 +150,12 @@ class AuditLog(models.Model):
         debug_info: Dict[Any, Any] = {},
     ) -> None:
         AuditLog.objects.create(
-            agent=agent.hostname if agent else "Tactical RMM Server",
+            agent=agent.hostname if agent else "scn RMM Server",
             agent_id=agent.agent_id if agent else "N/A",
             username=username,
             object_type=AuditObjType.AGENT,
             action=AuditActionType.EXEC_SCRIPT,
-            message=f'{username} ran script: "{script}" on {agent.hostname if agent else "Tactical RMM Server"}',
+            message=f'{username} ran script: "{script}" on {agent.hostname if agent else "scn RMM Server"}',
             debug_info=debug_info,
         )
 
@@ -169,12 +169,12 @@ class AuditLog(models.Model):
     ) -> None:
 
         AuditLog.objects.create(
-            agent=agent.hostname if agent else "Tactical RMM Server",
+            agent=agent.hostname if agent else "scn RMM Server",
             agent_id=agent.agent_id if agent else "N/A",
             username=username,
             object_type=AuditObjType.AGENT,
             action=AuditActionType.EXEC_SCRIPT,
-            message=f'{username} tested a script on {agent.hostname if agent else "Tactical RMM Server"}',
+            message=f'{username} tested a script on {agent.hostname if agent else "scn RMM Server"}',
             debug_info=debug_info,
             before_value=before_value,
             after_value=after_value,

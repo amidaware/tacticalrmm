@@ -9,7 +9,7 @@ from scnrmm.constants import (
     ScriptShell,
     ScriptType,
 )
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import SCNTestCase
 
 from .models import Script, ScriptSnippet
 from .serializers import (
@@ -19,7 +19,7 @@ from .serializers import (
 )
 
 
-class TestScriptViews(TacticalTestCase):
+class TestScriptViews(SCNTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.authenticate()
@@ -570,7 +570,7 @@ class TestScriptViews(TacticalTestCase):
         )
 
 
-class TestScriptSnippetViews(TacticalTestCase):
+class TestScriptSnippetViews(SCNTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.authenticate()

@@ -1,5 +1,5 @@
 """
-WSGI config for tacticalrmm project.
+WSGI config for scnrmm project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "scnrmm.settings")
 
 application = get_wsgi_application()

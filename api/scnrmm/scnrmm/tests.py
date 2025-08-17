@@ -12,12 +12,12 @@ from scnrmm.constants import (
     POLICY_CHECK_FIELDS_TO_COPY,
     POLICY_TASK_FIELDS_TO_COPY,
 )
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import scnTestCase
 
 from .utils import bitdays_to_string, generate_winagent_exe, get_bit_days, reload_nats
 
 
-class TestUtils(TacticalTestCase):
+class TestUtils(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
 

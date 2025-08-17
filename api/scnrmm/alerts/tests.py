@@ -16,7 +16,7 @@ from scnrmm.constants import (
     CheckStatus,
     URLActionType,
 )
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import scnTestCase
 
 from .models import Alert, AlertTemplate
 from .serializers import (
@@ -28,7 +28,7 @@ from .serializers import (
 base_url = "/alerts"
 
 
-class TestAlertsViews(TacticalTestCase):
+class TestAlertsViews(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -378,7 +378,7 @@ class TestAlertsViews(TacticalTestCase):
         )
 
 
-class TestAlertTasks(TacticalTestCase):
+class TestAlertTasks(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -1545,7 +1545,7 @@ class TestAlertTasks(TacticalTestCase):
         self.assertEqual(Alert.objects.count(), 31)
 
 
-class TestAlertPermissions(TacticalTestCase):
+class TestAlertPermissions(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.setup_client()

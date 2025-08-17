@@ -4,7 +4,7 @@ from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from scnrmm.constants import TaskType
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import scnTestCase
 
 from autotasks.models import AutomatedTask, TaskResult, TaskSyncStatus
 from autotasks.serializers import TaskSerializer
@@ -13,7 +13,7 @@ from autotasks.tasks import create_win_task_schedule, run_win_task
 base_url = "/tasks"
 
 
-class TestAutotaskViews(TacticalTestCase):
+class TestAutotaskViews(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -377,7 +377,7 @@ class TestAutotaskViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
 
-class TestAutoTaskCeleryTasks(TacticalTestCase):
+class TestAutoTaskCeleryTasks(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -675,7 +675,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         )
 
 
-class TestTaskPermissions(TacticalTestCase):
+class TestTaskPermissions(scnTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.setup_client()

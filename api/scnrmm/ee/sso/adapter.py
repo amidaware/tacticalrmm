@@ -1,7 +1,7 @@
 """
 Copyright (c) 2024-present Amidaware Inc.
 This file is subject to the EE License Agreement.
-For details, see: https://license.tacticalrmm.com/ee
+For details, see: https://license.scnrmm.com/ee
 """
 
 import pyotp
@@ -16,7 +16,7 @@ from scnrmm.logger import logger
 from scnrmm.utils import get_core_settings
 
 
-class TacticalSocialAdapter(DefaultSocialAccountAdapter):
+class scnSocialAdapter(DefaultSocialAccountAdapter):
 
     def populate_user(self, request, sociallogin, data):
         user = super().populate_user(request, sociallogin, data)

@@ -1,7 +1,7 @@
 """
 Copyright (c) 2023-present Amidaware Inc.
 This file is subject to the EE License Agreement.
-For details, see: https://license.tacticalrmm.com/ee
+For details, see: https://license.scnrmm.com/ee
 """
 
 from django.conf import settings as djangosettings
@@ -16,7 +16,7 @@ class Settings:
         return getattr(
             self.settings,
             "REPORTING_ASSETS_BASE_PATH",
-            "/opt/tactical/reporting/assets",
+            "/opt/scn/reporting/assets",
         )
 
     @property

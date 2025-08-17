@@ -116,7 +116,7 @@ def rand_range(min: int, max: int) -> float:
 def setup_nats_options() -> dict[str, Any]:
     opts = {
         "servers": get_nats_url(),
-        "user": "tacticalrmm",
+        "user": "scnrmm",
         "name": "trmm-django",
         "password": settings.SECRET_KEY,
         "connect_timeout": 3,

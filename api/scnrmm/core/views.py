@@ -150,7 +150,7 @@ def email_test(request):
     core = get_core_settings()
 
     msg, ok = core.send_mail(
-        subject="Test from Tactical RMM", body="This is a test message", test=True
+        subject="Test from scn RMM", body="This is a test message", test=True
     )
     if not ok:
         return notify_error(msg)
@@ -560,7 +560,7 @@ class TwilioSMSTest(APIView):
                 "All fields are required, including at least 1 recipient"
             )
 
-        msg, ok = core.send_sms("TacticalRMM Test SMS", test=True)
+        msg, ok = core.send_sms("scnRMM Test SMS", test=True)
         if not ok:
             return notify_error(msg)
 

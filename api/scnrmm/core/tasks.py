@@ -467,7 +467,7 @@ def sync_mesh_perms_task(self):
                 rand_str2 = make_random_password(len=5)
                 # for trmm users whos usernames are emails
                 email_prefix = make_alpha_numeric(user.username)
-                email = f"{email_prefix}.{rand_str1}@tacticalrmm-do-not-change-{rand_str2}.local"
+                email = f"{email_prefix}.{rand_str1}@scnrmm-do-not-change-{rand_str2}.local"
                 mesh_users_dict[user.mesh_user_id] = {
                     "_id": user.mesh_user_id,
                     "username": user.mesh_username,

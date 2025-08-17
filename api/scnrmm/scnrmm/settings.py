@@ -8,13 +8,13 @@ from scnrmm.util_settings import get_backend_url, get_root_domain, get_webdomain
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SCRIPTS_DIR = "/opt/trmm-community-scripts"
+SCRIPTS_DIR = "/opt/scn-community-scripts"
 
 DOCKER_BUILD = False
 
-LOG_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/log")
+LOG_DIR = os.path.join(BASE_DIR, "scnrmm/private/log")
 
-EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
+EXE_DIR = os.path.join(BASE_DIR, "scnrmm/private/exe")
 
 LINUX_AGENT_SCRIPT = BASE_DIR / "core" / "agent_linux.sh"
 
@@ -23,16 +23,16 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "1.2.1-dev"
+scn_VERSION = "1.2.1-dev"
 
-# https://github.com/amidaware/tacticalrmm-web
+# https://github.com/ahmetkarakayaoffical/scnrmm-web
 WEB_VERSION = "0.101.55"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
 APP_VER = "0.0.200"
 
-# https://github.com/amidaware/rmmagent
+# https://github.com/ahmetkarakayaoffical/scnrmmagent
 LATEST_AGENT_VER = "2.9.1"
 
 MESH_VER = "1.1.32"
@@ -88,11 +88,11 @@ PIP_VER = "47"
 SETUPTOOLS_VER = "79.0.1"
 WHEEL_VER = "0.45.1"
 
-AGENT_BASE_URL = "https://agents.tacticalrmm.com"
+AGENT_BASE_URL = "https://agents.scnrmm.com"
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
-ASGI_APPLICATION = "tacticalrmm.asgi.application"
+ASGI_APPLICATION = "scnrmm.asgi.application"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -102,7 +102,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "scnrmm/static/")]
 
 REST_KNOX = {
     "TOKEN_TTL": timedelta(hours=5),
@@ -116,10 +116,10 @@ ADMIN_ENABLED = False
 HOSTED = False
 SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
-TRMM_LOG_LEVEL = "ERROR"
-TRMM_LOG_TO = "file"
-TRMM_PROTO = "https"
-TRMM_BACKEND_PORT = None
+scn_LOG_LEVEL = "ERROR"
+scn_LOG_TO = "file"
+scn_PROTO = "https"
+scn_BACKEND_PORT = None
 
 if not DOCKER_BUILD:
     ALLOWED_HOSTS = []
@@ -154,7 +154,7 @@ if "GHACTIONS" in os.environ:
 
 if not DOCKER_BUILD:
 
-    TRMM_ROOT_DOMAIN = get_root_domain(ALLOWED_HOSTS[0])
+    scn_ROOT_DOMAIN = get_root_domain(ALLOWED_HOSTS[0])
     frontend_domain = get_webdomain(CORS_ORIGIN_WHITELIST[0]).split(":")[0]
 
     ALLOWED_HOSTS.append(frontend_domain)
@@ -162,10 +162,10 @@ if not DOCKER_BUILD:
     if DEBUG:
         ALLOWED_HOSTS.append("*")
 
-    backend_url = get_backend_url(ALLOWED_HOSTS[0], TRMM_PROTO, TRMM_BACKEND_PORT)
+    backend_url = get_backend_url(ALLOWED_HOSTS[0], scn_PROTO, scn_BACKEND_PORT)
 
-    SESSION_COOKIE_DOMAIN = TRMM_ROOT_DOMAIN
-    CSRF_COOKIE_DOMAIN = TRMM_ROOT_DOMAIN
+    SESSION_COOKIE_DOMAIN = scn_ROOT_DOMAIN
+    CSRF_COOKIE_DOMAIN = scn_ROOT_DOMAIN
     CSRF_TRUSTED_ORIGINS = [CORS_ORIGIN_WHITELIST[0], backend_url]
     HEADLESS_FRONTEND_URLS = {
         "socialaccount_login_error": f"{CORS_ORIGIN_WHITELIST[0]}/account/provider/callback"
@@ -185,16 +185,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",
-        "tacticalrmm.auth.APIAuthentication",
+        "scnrmm.auth.APIAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Tactical RMM API",
+    "TITLE": "scn RMM API",
     "DESCRIPTION": "Simple and Fast remote monitoring and management tool",
-    "VERSION": TRMM_VERSION,
-    "AUTHENTICATION_WHITELIST": ["tacticalrmm.auth.APIAuthentication"],
+    "VERSION": scn_VERSION,
+    "AUTHENTICATION_WHITELIST": ["scnrmm.auth.APIAuthentication"],
 }
 
 
@@ -258,7 +258,7 @@ warnings.simplefilter("ignore", CacheKeyWarning)
 
 CACHES = {
     "default": {
-        "BACKEND": "tacticalrmm.cache.TacticalRedisCache",
+        "BACKEND": "scnrmm.cache.scnRedisCache",
         "LOCATION": f"redis://{REDIS_HOST}:6379",
         "OPTIONS": {
             "parser_class": "redis.connection._HiredisParser",
@@ -271,11 +271,11 @@ CACHES = {
 MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    "tacticalrmm.middleware.LogIPMiddleware",
+    "scnrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "tacticalrmm.middleware.AuditMiddleware",
+    "scnrmm.middleware.AuditMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "ee.sso.middleware.SSOIconMiddleware",
 ]
@@ -300,10 +300,10 @@ if ADMIN_ENABLED:
     )
 
 if DEMO:
-    MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
+    MIDDLEWARE += ("scnrmm.middleware.DemoMiddleware",)
 
 
-ROOT_URLCONF = "tacticalrmm.urls"
+ROOT_URLCONF = "scnrmm.urls"
 
 
 TEMPLATES = [
@@ -322,7 +322,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "tacticalrmm.wsgi.application"
+WSGI_APPLICATION = "scnrmm.wsgi.application"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -341,10 +341,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 def get_log_level() -> str:
-    if "TRMM_LOG_LEVEL" in os.environ:
-        return os.getenv("TRMM_LOG_LEVEL")  # type: ignore
+    if "scn_LOG_LEVEL" in os.environ:
+        return os.getenv("scn_LOG_LEVEL")  # type: ignore
 
-    return TRMM_LOG_LEVEL
+    return scn_LOG_LEVEL
 
 
 def configure_logging_handler():
@@ -353,14 +353,14 @@ def configure_logging_handler():
         "formatter": "verbose",
     }
 
-    log_to = os.getenv("TRMM_LOG_TO", TRMM_LOG_TO)
+    log_to = os.getenv("scn_LOG_TO", scn_LOG_TO)
 
     if log_to == "stdout":
         cfg["class"] = "logging.StreamHandler"
         cfg["stream"] = sys.stdout
     else:
         cfg["class"] = "logging.FileHandler"
-        cfg["filename"] = os.path.join(LOG_DIR, "trmm_debug.log")
+        cfg["filename"] = os.path.join(LOG_DIR, "scn_debug.log")
 
     return cfg
 
@@ -381,10 +381,10 @@ LOGGING = {
             "filename": os.path.join(LOG_DIR, "django_debug.log"),
             "formatter": "verbose",
         },
-        "trmm": configure_logging_handler(),
+        "scn": configure_logging_handler(),
     },
     "loggers": {
         "django.request": {"handlers": ["file"], "level": "ERROR", "propagate": True},
-        "trmm": {"handlers": ["trmm"], "level": get_log_level(), "propagate": False},
+        "scn": {"handlers": ["scn"], "level": get_log_level(), "propagate": False},
     },
 }

@@ -63,7 +63,7 @@ def generate_winagent_exe(
     from agents.utils import get_agent_url
 
     inno = (
-        f"tacticalagent-v{settings.LATEST_AGENT_VER}-{AgentPlat.WINDOWS}-{goarch}.exe"
+        f"scnagent-v{settings.LATEST_AGENT_VER}-{AgentPlat.WINDOWS}-{goarch}.exe"
     )
 
     codetoken, _ = token_is_valid()
@@ -178,7 +178,7 @@ def convert_to_iso_duration(string: str) -> str:
 def reload_nats() -> None:
     users = [
         {
-            "user": "tacticalrmm",
+            "user": "scnrmm",
             "password": settings.SECRET_KEY,
             "permissions": {"publish": ">", "subscribe": ">"},
         }
@@ -279,7 +279,7 @@ KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(  # noqa
 
 
 def get_latest_trmm_ver() -> str:
-    url = "https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py"
+    url = "https://raw.githubusercontent.com/amidaware/scnrmm/master/api/scnrmm/scnrmm/settings.py"
     try:
         r = requests.get(url, timeout=5)
     except:

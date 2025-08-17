@@ -13,10 +13,11 @@ $apilink = $downloadlink.split('/')
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$serviceName = 'tacticalrmm'
+$serviceName = 'scnrmm'
 If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
-    write-host ('Tactical RMM Is Already Installed')
-} Else {
+    write-host ('scn RMM Is Already Installed')
+}
+Else {
     $OutPath = $env:TMP
     $output = $innosetup
 
@@ -34,13 +35,12 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
         $installArgs += "--ping"
     }
 
-    Try
-    {
+    Try {
         $DefenderStatus = Get-MpComputerStatus | select  AntivirusEnabled
         if ($DefenderStatus -match "True") {
-            Add-MpPreference -ExclusionPath 'C:\Program Files\TacticalAgent\*'
+            Add-MpPreference -ExclusionPath 'C:\Program Files\scnAgent\*'
             Add-MpPreference -ExclusionPath 'C:\Program Files\Mesh Agent\*'
-            Add-MpPreference -ExclusionPath 'C:\ProgramData\TacticalRMM\*'
+            Add-MpPreference -ExclusionPath 'C:\ProgramData\scnRMM\*'
         }
     }
     Catch {
@@ -49,33 +49,31 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
     
     $X = 0
     do {
-      Write-Output "Waiting for network"
-      Start-Sleep -s 5
-      $X += 1      
+        Write-Output "Waiting for network"
+        Start-Sleep -s 5
+        $X += 1      
     } until(($connectresult = Test-NetConnection $apilink[2] -Port 443 | ? { $_.TcpTestSucceeded }) -or $X -eq 3)
     
-    if ($connectresult.TcpTestSucceeded -eq $true){
-        Try
-        {  
+    if ($connectresult.TcpTestSucceeded -eq $true) {
+        Try {  
             Invoke-WebRequest -Uri $downloadlink -OutFile $OutPath\$output
             Start-Process -FilePath $OutPath\$output -ArgumentList ('/VERYSILENT /SUPPRESSMSGBOXES') -Wait
             write-host ('Extracting...')
             Start-Sleep -s 5
-            Start-Process -FilePath "C:\Program Files\TacticalAgent\tacticalrmm.exe" -ArgumentList $installArgs -Wait
+            Start-Process -FilePath "C:\Program Files\scnAgent\scnrmm.exe" -ArgumentList $installArgs -Wait
             exit 0
         }
-        Catch
-        {
+        Catch {
             $ErrorMessage = $_.Exception.Message
             $FailedItem = $_.Exception.ItemName
             Write-Error -Message "$ErrorMessage $FailedItem"
             exit 1
         }
-        Finally
-        {
+        Finally {
             Remove-Item -Path $OutPath\$output
         }
-    } else {
+    }
+    else {
         Write-Output "Unable to connect to server"
     }
 }

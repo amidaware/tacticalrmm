@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 
 from scnrmm.constants import CustomFieldModel, CustomFieldType
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import scnTestCase
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .serializers import ClientSerializer, DeploymentSerializer, SiteSerializer
@@ -15,7 +15,7 @@ from .serializers import ClientSerializer, DeploymentSerializer, SiteSerializer
 base_url = "/clients"
 
 
-class TestClientViews(TacticalTestCase):
+class TestClientViews(scnTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -437,7 +437,7 @@ class TestClientViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
-    @patch("tacticalrmm.utils.generate_winagent_exe", return_value=Response("ok"))
+    @patch("scnrmm.utils.generate_winagent_exe", return_value=Response("ok"))
     def test_generate_deployment(self, post):
         url = "/clients/asdkj234kasdasjd-asdkj234-asdk34-sad/deploy/"
 
@@ -462,7 +462,7 @@ class TestClientViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
 
-class TestClientPermissions(TacticalTestCase):
+class TestClientPermissions(scnTestCase):
     def setUp(self):
         self.setup_client()
         self.setup_coresettings()

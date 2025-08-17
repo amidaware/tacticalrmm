@@ -3,12 +3,12 @@ from unittest.mock import patch
 from model_bakery import baker
 
 from agents.models import Agent
-from scnrmm.test import TacticalTestCase
+from scnrmm.test import SCNTestCase
 
 base_url = "/services"
 
 
-class TestServiceViews(TacticalTestCase):
+class TestServiceViews(SCNTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -191,7 +191,7 @@ class TestServiceViews(TacticalTestCase):
         self.check_not_authenticated("put", url)
 
 
-class TestServicePermissions(TacticalTestCase):
+class TestServicePermissions(SCNTestCase):
     def setUp(self):
         self.setup_coresettings()
         self.setup_client()

@@ -37,14 +37,14 @@ function ask_questions {
 
   while [[ -z "$USERNAME" ]]
   do
-  echo -ne "Set username for mesh and tactical login: "
+  echo -ne "Set username for mesh and scn login: "
   read USERNAME
   done
   echo "USERNAME is set to ${USERNAME}"
 
   while [[ -z "$PASSWORD" ]]
   do
-  echo -ne "Set password for mesh and tactical password: "
+  echo -ne "Set password for mesh and scn password: "
   read PASSWORD
   done
   echo "PASSWORD is set"
@@ -149,14 +149,14 @@ function initiate_letsencrypt {
 FIRST_ARG="$1"
 
 # defaults
-DOCKER_REPO="tacticalrmm/"
-REPO="amidaware"
+DOCKER_REPO="SCNRMM/"
+REPO="ahmetkarakayaoffical"
 BRANCH="master"
 VERSION="latest"
 
 # file locations
-INSTALL_DIR=/opt/tactical
-ENV_FILE=/opt/tactical/.env
+INSTALL_DIR=/opt/scn
+ENV_FILE=/opt/scn/.env
 
 # check prerequisites
 command -v docker >/dev/null 2>&1 || { echo >&2 "Docker must be installed. Exiting..."; exit 1; }
@@ -322,20 +322,20 @@ key="$1"
     shift # past value
     ;;
 
-    # tactical user arg
-    --tactical-user)
+    # scn user arg
+    --scn-user)
     [[ -z "$MODE" ]] && echo >&2 "Missing install first argument. Exiting..."; exit 1; 
-    [[ "$MODE" != "install" ]] && echo >&2 "--tactical-user option only valid for install. Exiting..."; exit 1;
+    [[ "$MODE" != "install" ]] && echo >&2 "--scn-user option only valid for install. Exiting..."; exit 1;
 
     shift # past argument
     USERNAME="$key"
     shift # past value
     ;;
 
-    # tactical password arg
-    --tactical-password)
+    # scn password arg
+    --scn-password)
     [[ -z "$MODE" ]] && echo >&2 "Missing install first argument. Exiting..."; exit 1; 
-    [[ "$MODE" != "install" ]] && echo >&2 "--tactical-password option only valid for install. Exiting..."; exit 1;
+    [[ "$MODE" != "install" ]] && echo >&2 "--scn-password option only valid for install. Exiting..."; exit 1;
 
     shift # past argument
     PASSWORD="$key"
@@ -371,7 +371,7 @@ if [[ "$MODE" == "install" ]]; then
 
   # pull docker-compose.yml file
   echo "Downloading docker-compose.yml from branch ${BRANCH}"
-  COMPOSE_FILE="https://raw.githubusercontent.com/${REPO}/tacticalrmm/${BRANCH}/docker/docker-compose.yml"
+  COMPOSE_FILE="https://raw.githubusercontent.com/${REPO}/scnrmm/${BRANCH}/docker/docker-compose.yml"
   if ! curl -sS "${COMPOSE_FILE}"; then
     echo >&2 "Failed to download installation package ${COMPOSE_FILE}"
     exit 1

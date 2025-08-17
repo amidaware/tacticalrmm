@@ -57,7 +57,7 @@ class CheckIn(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    # called once during tacticalagent windows service startup
+    # called once during scnagent windows service startup
     def post(self, request):
         agent = get_object_or_404(
             Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]

@@ -3,12 +3,12 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-temp="/tmp/tactical"
+temp="/tmp/scn"
 
 args="$*"
 version="latest"
 branch="master"
-repo="amidaware"
+repo="ahmetkarakayaoffical"
 
 branchRegex=" --branch ([^ ]+)"
 if [[ " ${args}" =~ ${branchRegex} ]]; then
@@ -22,7 +22,7 @@ fi
 
 echo "repo=${repo}"
 echo "branch=${branch}"
-tactical_cli="https://raw.githubusercontent.com/${repo}/tacticalrmm/${branch}/docker/tactical-cli"
+scn_cli="https://raw.githubusercontent.com/${repo}/tacticalrmm/${branch}/docker/tactical-cli"
 
 versionRegex=" --version ([^ ]+)"
 if [[ " ${args}" =~ ${versionRegex} ]]; then
@@ -37,8 +37,8 @@ fi
 
 cd "${temp}"
 echo "Downloading tactical-cli from branch ${branch}"
-if ! curl -sS "${tactical_cli}"; then
-  echo >&2 "Failed to download installation package ${tactical_cli}"
+if ! curl -sS "${scn_cli}"; then
+  echo >&2 "Failed to download installation package ${scn_cli}"
   exit 1
 fi
 

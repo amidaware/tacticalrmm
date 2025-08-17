@@ -196,14 +196,14 @@
   ansible.builtin.shell:
     executable: /bin/bash
     cmd: |
-      psql -c "CREATE DATABASE tacticalrmm"
+      psql -c "CREATE DATABASE scnrmm"
       psql -c "CREATE USER {{ db_user }} WITH PASSWORD '{{ db_passwd }}'"
       psql -c "ALTER ROLE {{ db_user }} SET client_encoding TO 'utf8'"
       psql -c "ALTER ROLE {{ db_user }} SET default_transaction_isolation TO 'read committed'"
       psql -c "ALTER ROLE {{ db_user }} SET timezone TO 'UTC'"
       psql -c "ALTER ROLE {{ db_user }} CREATEDB"
-      psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO {{ db_user }}"
-      psql -c "ALTER DATABASE tacticalrmm OWNER TO {{ db_user }}"
+      psql -c "GRANT ALL PRIVILEGES ON DATABASE scnrmm TO {{ db_user }}"
+      psql -c "ALTER DATABASE scnrmm OWNER TO {{ db_user }}"
       psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO {{ db_user }}"
 
 - name: setup mesh database
@@ -240,7 +240,7 @@
 - name: create opt dir
   become: yes
   ansible.builtin.file:
-    path: "{{ opt_tactical }}"
+    path: "{{ opt_scn }}"
     state: directory
     owner: "{{ user }}"
     group: "{{ user }}"
@@ -505,7 +505,7 @@
   tags: pip
   ansible.builtin.pip:
     virtualenv: "{{ backend_dir }}/api/env"
-    chdir: "{{ backend_dir }}/api/tacticalrmm"
+    chdir: "{{ backend_dir }}/api/scnrmm"
     requirements: "{{ item }}"
   with_items:
     - requirements.txt
@@ -524,7 +524,7 @@
 - name: setup django
   tags: django
   ansible.builtin.shell:
-    chdir: "{{ backend_dir }}/api/tacticalrmm"
+    chdir: "{{ backend_dir }}/api/scnrmm"
     executable: /bin/bash
     cmd: |
       source ../env/bin/activate
@@ -658,12 +658,12 @@
     chdir: "{{ mesh_dir }}"
     executable: /bin/bash
     cmd: |
-      node node_modules/meshcentral/meshctrl.js --url wss://{{ mesh }}:443 --loginuser {{ mesh_user }} --loginpass {{ mesh_password }} AddDeviceGroup --name TacticalRMM
+      node node_modules/meshcentral/meshctrl.js --url wss://{{ mesh }}:443 --loginuser {{ mesh_user }} --loginpass {{ mesh_password }} AddDeviceGroup --name scnRMM
 
 - name: finish up django
   tags: mesh_user
   ansible.builtin.shell:
-    chdir: "{{ backend_dir }}/api/tacticalrmm"
+    chdir: "{{ backend_dir }}/api/scnrmm"
     executable: /bin/bash
     cmd: |
       source ../env/bin/activate

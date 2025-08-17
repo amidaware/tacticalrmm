@@ -6,15 +6,15 @@ set -e
 : "${APP_PORT:=8080}"
 : "${API_PORT:=8080}"
 : "${NGINX_RESOLVER:=127.0.0.11}"
-: "${BACKEND_SERVICE:=tactical-backend}"
-: "${FRONTEND_SERVICE:=tactical-frontend}"
-: "${MESH_SERVICE:=tactical-meshcentral}"
-: "${WEBSOCKETS_SERVICE:=tactical-websockets}"
-: "${NATS_SERVICE:=tactical-nats}"
+: "${BACKEND_SERVICE:=scn-backend}"
+: "${FRONTEND_SERVICE:=scn-frontend}"
+: "${MESH_SERVICE:=scn-meshcentral}"
+: "${WEBSOCKETS_SERVICE:=scn-websockets}"
+: "${NATS_SERVICE:=scn-nats}"
 : "${DEV:=0}"
 
-: "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
-: "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
+: "${CERT_PRIV_PATH:=${scn_DIR}/certs/privkey.pem}"
+: "${CERT_PUB_PATH:=${scn_DIR}/certs/fullchain.pem}"
 
 # remove default config
 rm -f /etc/nginx/conf.d/default.conf
@@ -57,7 +57,7 @@ if [[ $DEV -eq 1 ]]; then
 
     STATIC_ASSETS="
     location /static/ {
-        root /workspace/api/tacticalrmm;
+        root /workspace/api/scnrmm;
         add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
     }
 "
@@ -72,7 +72,7 @@ else
 
     STATIC_ASSETS="
     location /static/ {
-        root ${TACTICAL_DIR}/api/;
+        root ${scn_DIR}/api/;
         add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
     }
 "
@@ -95,7 +95,7 @@ server  {
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
-        alias ${TACTICAL_DIR}/api/tacticalrmm/private/;
+        alias ${scn_DIR}/api/scnrmm/private/;
     }
 
     location ~ ^/ws/ {
@@ -116,7 +116,7 @@ server  {
     location /assets/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
-        alias /opt/tactical/reporting/assets/;
+        alias /opt/scn/reporting/assets/;
     }
 
     location ~ ^/natsws {

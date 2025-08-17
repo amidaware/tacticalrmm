@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 TEST_CACHE = {
     "default": {
-        "BACKEND": "tacticalrmm.cache.TacticalDummyCache",
+        "BACKEND": "scnrmm.cache.scnDummyCache",
     }
 }
 
@@ -47,7 +47,7 @@ TEST_CACHE = {
         ]
     },
 )
-class TacticalTestCase(TestCase):
+class scnTestCase(TestCase):
     client: APIClient
 
     def authenticate(self) -> None:

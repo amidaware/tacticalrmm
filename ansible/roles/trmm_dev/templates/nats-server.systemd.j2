@@ -5,7 +5,7 @@ After=network.target
 [Service]
 PrivateTmp=true
 Type=simple
-ExecStart=/usr/local/bin/nats-server -c {{ backend_dir }}/api/tacticalrmm/nats-rmm.conf
+ExecStart=/usr/local/bin/nats-server -c {{ backend_dir }}/api/scnrmm/nats-rmm.conf
 ExecReload=/usr/bin/kill -s HUP $MAINPID
 ExecStop=/usr/bin/kill -s SIGINT $MAINPID
 User={{ user }}

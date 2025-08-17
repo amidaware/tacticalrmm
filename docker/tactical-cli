@@ -149,7 +149,7 @@ function initiate_letsencrypt {
 FIRST_ARG="$1"
 
 # defaults
-DOCKER_REPO="tacticalrmm/"
+DOCKER_REPO="scnplusrmm/"
 REPO="amidaware"
 BRANCH="master"
 VERSION="latest"

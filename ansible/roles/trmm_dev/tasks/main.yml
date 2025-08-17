@@ -481,21 +481,21 @@
 - name: setup virtual env
   tags: pip
   ansible.builtin.shell:
-    chdir: "{{ backend_dir }}/api"
+    chdir: "{{ backend_dir }}/api/tacticalrmm"
     cmd: python3.11 -m venv env
     executable: /bin/bash
 
 - name: update pip
   tags: pip
   ansible.builtin.pip:
-    virtualenv: "{{ backend_dir }}/api/env"
+    virtualenv: "{{ backend_dir }}/api/tacticalrmm/env"
     name: pip
     version: "25.1"
 
 - name: install setuptools and wheel
   tags: pip
   ansible.builtin.pip:
-    virtualenv: "{{ backend_dir }}/api/env"
+    virtualenv: "{{ backend_dir }}/api/tacticalrmm/env"
     name: "{{ item }}"
   with_items:
     - "setuptools=={{ setuptools_ver.stdout }}"
@@ -504,7 +504,7 @@
 - name: install python packages
   tags: pip
   ansible.builtin.pip:
-    virtualenv: "{{ backend_dir }}/api/env"
+    virtualenv: "{{ backend_dir }}/api/tacticalrmm/env"
     chdir: "{{ backend_dir }}/api/tacticalrmm"
     requirements: "{{ item }}"
   with_items:
@@ -516,7 +516,7 @@
   tags: django
   ansible.builtin.template:
     src: local_settings.j2
-    dest: "{{ local_settings_file }}"
+    dest: "/rmm/api/scnplusrmm/scnplusrmm/local_settings.py"
     mode: "0644"
     owner: "{{ user }}"
     group: "{{ user }}"
@@ -524,7 +524,7 @@
 - name: setup django
   tags: django
   ansible.builtin.shell:
-    chdir: "{{ backend_dir }}/api/tacticalrmm"
+    chdir: "{{ backend_dir }}/api/scnplusrmm"
     executable: /bin/bash
     cmd: |
       source ../env/bin/activate
@@ -663,7 +663,7 @@
 - name: finish up django
   tags: mesh_user
   ansible.builtin.shell:
-    chdir: "{{ backend_dir }}/api/tacticalrmm"
+    chdir: "{{ backend_dir }}/api/scnplusrmm"
     executable: /bin/bash
     cmd: |
       source ../env/bin/activate

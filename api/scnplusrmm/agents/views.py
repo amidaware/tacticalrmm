@@ -645,7 +645,7 @@ def install_agent(request):
         )
 
     # TODO rework this ghetto validation hack
-    # https://github.com/amidaware/tacticalrmm/issues/1461
+    # https://github.com/ahmetkarakayaoffical/scnplusrmm/issues/1461
     try:
         int(request.data["expires"])
     except ValueError:

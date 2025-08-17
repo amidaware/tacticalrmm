@@ -556,17 +556,17 @@ fi
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-sudo mkdir -p /opt/tactical/reporting/assets
-sudo mkdir -p /opt/tactical/reporting/schemas
-sudo chown -R ${USER}:${USER} /opt/tactical
+sudo mkdir -p /opt/scnplus/reporting/assets
+sudo mkdir -p /opt/scnplus/reporting/schemas
+sudo chown -R ${USER}:${USER} /opt/scnplus
 
 cd /rmm/api
 python3.11 -m venv env
 source /rmm/api/env/bin/activate
-cd /rmm/api/tacticalrmm
+cd /rmm/api/scnplusrmm
 pip install --no-cache-dir pip==25.1
 pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
-pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
+pip install --no-cache-dir -r /rmm/api/scnplusrmm/requirements.txt
 python manage.py migrate
 python manage.py generate_json_schemas
 python manage.py collectstatic --no-input
@@ -662,7 +662,7 @@ echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service >/dev/null
 natsapi="$(
   cat <<EOF
 [Unit]
-Description=TacticalRMM Nats Api v1
+Description=SCNPLUS Nats Api v1
 After=nats.service
 
 [Service]
@@ -683,8 +683,8 @@ nginxrmm="$(
   cat <<EOF
 server_tokens off;
 
-upstream tacticalrmm {
-    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+upstream scnplusrmm {
+    server unix:////rmm/api/scnplusrmm/scnplusrmm.sock;
 }
 
 map \$http_user_agent \$ignore_ua {
@@ -705,8 +705,8 @@ server {
     listen [::]:443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
-    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
-    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    access_log /rmm/api/scnplusrmm/scnplusrmm/private/log/access.log combined if=\$ignore_ua;
+    error_log /rmm/api/scnplusrmm/scnplusrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
 
@@ -719,20 +719,20 @@ server {
     add_header X-Content-Type-Options nosniff;
 
     location /static/ {
-        root /rmm/api/tacticalrmm;
+        root /rmm/api/scnplusrmm;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
+        alias /rmm/api/scnplusrmm/scnplusrmm/private/;
     }
 
     location /assets/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /opt/tactical/reporting/assets/;
+        alias /opt/scnplus/reporting/assets/;
     }
 
     location ~ ^/ws/ {
@@ -1034,11 +1034,11 @@ while ! [[ $CHECK_MESH_READY2 ]]; do
   sleep 5
 done
 
-node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
+node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name SCNPLUS
 sleep 1
 
 sudo systemctl enable nats.service
-cd /rmm/api/tacticalrmm
+cd /rmm/api/scnplusrmm
 source /rmm/api/env/bin/activate
 python manage.py initial_db_setup
 python manage.py reload_nats

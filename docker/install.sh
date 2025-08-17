@@ -3,12 +3,12 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-temp="/tmp/tactical"
+temp="/tmp/scnplus"
 
 args="$*"
 version="latest"
 branch="master"
-repo="amidaware"
+repo="ahmetkarakayaoffical"
 
 branchRegex=" --branch ([^ ]+)"
 if [[ " ${args}" =~ ${branchRegex} ]]; then
@@ -22,7 +22,7 @@ fi
 
 echo "repo=${repo}"
 echo "branch=${branch}"
-tactical_cli="https://raw.githubusercontent.com/${repo}/tacticalrmm/${branch}/docker/tactical-cli"
+scnplus_cli="https://raw.githubusercontent.com/${repo}/scnplusrmm/${branch}/docker/scnplus-cli"
 
 versionRegex=" --version ([^ ]+)"
 if [[ " ${args}" =~ ${versionRegex} ]]; then
@@ -36,14 +36,14 @@ if ! mkdir "${temp}"; then
 fi
 
 cd "${temp}"
-echo "Downloading tactical-cli from branch ${branch}"
-if ! curl -sS "${tactical_cli}"; then
-  echo >&2 "Failed to download installation package ${tactical_cli}"
+echo "Downloading scnplus-cli from branch ${branch}"
+if ! curl -sS "${scnplus_cli}"; then
+  echo >&2 "Failed to download installation package ${scnplus_cli}"
   exit 1
 fi
 
-chmod +x tactical-cli
-tactical-cli ${args} --version "${version}" 2>&1 | tee -a ~/install.log
+chmod +x scnplus-cli
+scnplus-cli ${args} --version "${version}" 2>&1 | tee -a ~/install.log
 
 cd ~
 if ! rm -rf "${temp}"; then

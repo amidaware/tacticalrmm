@@ -6,3 +6,15 @@ channel = "stable-25_05"
 
 [deployment]
 run = ["sh", "-c", "aa"]
+
+[workflows]
+runButton = "Run SCNPLUS"
+
+[[workflows.workflow]]
+name = "Run SCNPLUS"
+author = 46525244
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd api/scnplusrmm && python manage.py runserver 0.0.0.0:5000"

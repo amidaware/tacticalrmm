@@ -106,7 +106,7 @@ if [ -d /opt/tactical ]; then
     sudo tar -czvf ${tmp_dir}/opt/opt-tactical.tar.gz -C /opt/tactical .
 fi
 
-local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
+local_settings='/rmm/api/scnplusrmm/scnplusrmm/local_settings.py'
 
 if grep -q CERT_FILE "$local_settings"; then
     mkdir -p ${tmp_dir}/certs/custom

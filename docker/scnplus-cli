@@ -1,0 +1,7 @@
+FIRST_ARG="$1"
+
+# defaults
+DOCKER_REPO="scnplusrmm/"
+REPO="ahmetkarakayaoffical"
+BRANCH="master"
+VERSION="latest"

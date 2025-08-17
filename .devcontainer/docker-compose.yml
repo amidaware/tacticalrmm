@@ -9,23 +9,23 @@ services:
     build:
       context: ..
       dockerfile: .devcontainer/api.dockerfile
-    command: [ "tactical-api" ]
+    command: [ "scnplus-api" ]
     environment:
       API_PORT: ${API_PORT}
     ports:
       - "8000:${API_PORT}"
     volumes:
-      - tactical-data-dev:/opt/tactical
+      - scnplus-data-dev:/opt/scnplus
       - ..:/workspace:cached
     networks:
       dev:
         aliases:
-          - tactical-backend
+          - scnplus-backend
 
   # nats
   nats-dev:
     container_name: trmm-nats-dev
-    image: ${IMAGE_REPO}tactical-nats:${VERSION}
+    image: ${IMAGE_REPO}scnplus-nats:${VERSION}
     restart: always
     user: 1000:1000
     environment:
@@ -35,18 +35,18 @@ services:
     ports:
       - "${NATS_PORTS}"
     volumes:
-      - tactical-data-dev:/opt/tactical
+      - scnplus-data-dev:/opt/scnplus
       - ..:/workspace:cached
     networks:
       dev:
         aliases:
           - ${API_HOST}
-          - tactical-nats
+          - scnplus-nats
 
   # meshcentral container
   meshcentral-dev:
     container_name: trmm-meshcentral-dev
-    image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
+    image: ${IMAGE_REPO}scnplus-meshcentral:${VERSION}
     restart: always
     user: 1000:1000
     environment:
@@ -59,10 +59,10 @@ services:
     networks:
       dev:
         aliases:
-          - tactical-meshcentral
+          - scnplus-meshcentral
           - ${MESH_HOST}
     volumes:
-      - tactical-data-dev:/opt/tactical
+      - scnplus-data-dev:/opt/scnplus
       - mesh-data-dev:/home/node/app/meshcentral-data
     depends_on:
       - mongodb-dev
@@ -80,7 +80,7 @@ services:
     networks:
       dev:
         aliases:
-          - tactical-mongodb
+          - scnplus-mongodb
     volumes:
       - mongo-dev-data:/data/db
 
@@ -98,7 +98,7 @@ services:
     networks:
       dev:
         aliases:
-          - tactical-postgres
+          - scnplus-postgres
 
   # redis container for celery tasks
   redis-dev:
@@ -112,7 +112,7 @@ services:
     networks:
       dev:
         aliases:
-          - tactical-redis
+          - scnplus-redis
 
   init-dev:
     container_name: trmm-init-dev
@@ -137,7 +137,7 @@ services:
     networks:
       - dev
     volumes:
-      - tactical-data-dev:/opt/tactical
+      - scnplus-data-dev:/opt/scnplus
       - mesh-data-dev:/meshcentral-data
       - redis-data-dev:/redis/data
       - mongo-dev-data:/mongo/data/db
@@ -153,7 +153,7 @@ services:
     networks:
       - dev
     volumes:
-      - tactical-data-dev:/opt/tactical
+      - scnplus-data-dev:/opt/scnplus
       - ..:/workspace:cached
     depends_on:
       - postgres-dev
@@ -169,7 +169,7 @@ services:
     networks:
       - dev
     volumes:
-      - tactical-data-dev:/opt/tactical
+      - scnplus-data-dev:/opt/scnplus
       - ..:/workspace:cached
     depends_on:
       - postgres-dev
@@ -185,9 +185,9 @@ services:
     networks:
       dev:
         aliases:
-          - tactical-websockets
+          - scnplus-websockets
     volumes:
-      - tactical-data-dev:/opt/tactical
+      - scnplus-data-dev:/opt/scnplus
       - ..:/workspace:cached
     depends_on:
       - postgres-dev
@@ -196,7 +196,7 @@ services:
   # container for tactical reverse proxy
   nginx-dev:
     container_name: trmm-nginx-dev
-    image: ${IMAGE_REPO}tactical-nginx:${VERSION}
+    image: ${IMAGE_REPO}scnplus-nginx:${VERSION}
     restart: always
     user: 1000:1000
     environment:
@@ -215,11 +215,11 @@ services:
       - "80:8080"
       - "443:4443"
     volumes:
-      - tactical-data-dev:/opt/tactical
+      - scnplus-data-dev:/opt/scnplus
       - ..:/workspace:cached
 
 volumes:
-  tactical-data-dev: null
+  scnplus-data-dev: null
   postgres-data-dev: null
   mongo-dev-data: null
   mesh-data-dev: null

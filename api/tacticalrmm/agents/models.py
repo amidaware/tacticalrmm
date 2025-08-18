@@ -893,6 +893,7 @@ class Agent(BaseAuditModel):
         data: dict,
         timeout: int = 30,
         stop_evt: asyncio.Event | None = None,
+        output_subject: str = "",
     ) -> None:
         """
         Publish a command to the agent's NATS subject and stream back line-by-line output.
@@ -950,7 +951,7 @@ class Agent(BaseAuditModel):
             await nc.flush()
     
             # Subscribe to the agent's output stream
-            sub = await nc.subscribe(self.agent_id + ".output", cb=message_handler)
+            sub = await nc.subscribe(output_subject, cb=message_handler)
     
         except Exception as e:
             logger.exception("NATS publish/subscribe failed for agent %s", self.agent_id)

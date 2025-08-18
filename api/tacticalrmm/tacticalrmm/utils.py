@@ -193,8 +193,8 @@ def reload_nats() -> None:
                     "user": agent.agent_id,
                     "password": agent.user.auth_token.key,
                     "permissions": {
-                        "publish": {"allow": agent.agent_id},
-                        "subscribe": {"allow": agent.agent_id},
+                    "publish": {"allow": [f"{agent.agent_id}", f"{agent.agent_id}.cmdoutput.>"]},
+                    "subscribe": {"allow": [f"{agent.agent_id}", f"{agent.agent_id}.cmdoutput.>"]},
                         "allow_responses": {
                             "expires": getattr(
                                 settings, "NATS_ALLOW_RESPONSE_EXPIRATION", "1435m"

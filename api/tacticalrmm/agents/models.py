@@ -902,25 +902,28 @@ class Agent(BaseAuditModel):
           - Properly cancel pending waiter after asyncio.wait (2)
           - Structured logging instead of print (4)
           - Accept non-string payloads (dict with {line, done, exit_code}) (5)
+          - Include cmd_id in WebSocket messages for frontend filtering (6)
         """
         opts = setup_nats_options()
         channel_layer = get_channel_layer()
         group = f"agent_cmd_{self.agent_id}"
-    
+        cmd_id = data.get("payload", {}).get("cmd_id", "")
+
         try:
             nc = await nats.connect(**opts)
         except Exception as e:
             logger.exception("NATS connect failed for agent %s", self.agent_id)
             await channel_layer.group_send(group, {
                 "type": "stream_output",
+                "cmd_id": cmd_id,
                 "output": f"[ERROR] Could not connect to NATS: {e}"
             })
             return
-    
+
         async def message_handler(msg):
             try:
                 obj = msgpack.loads(msg.data)
-                payload: dict[str, object] = {}
+                payload: dict[str, object] = {"cmd_id": cmd_id}
                 if isinstance(obj, str):
                     payload["output"] = obj
                 elif isinstance(obj, dict):
@@ -931,32 +934,25 @@ class Agent(BaseAuditModel):
                     if "exit_code" in obj:
                         payload["exit_code"] = obj["exit_code"]
                 else:
-                    # Fallback: stringify unknown types
                     payload["output"] = str(obj)
-    
-                if payload:
-                    await channel_layer.group_send(group, {"type": "stream_output", **payload})
-    
+                await channel_layer.group_send(group, {"type": "stream_output", **payload})
             except Exception as e:
                 logger.exception("Error handling NATS message for agent %s", self.agent_id)
                 await channel_layer.group_send(group, {
                     "type": "stream_output",
+                    "cmd_id": cmd_id,
                     "output": f"[ERROR] {e}"
                 })
-    
         sub = None
         try:
-            # Send the command (non-blocking)
             await nc.publish(self.agent_id, msgpack.dumps(data))
             await nc.flush()
-    
-            # Subscribe to the agent's output stream
             sub = await nc.subscribe(output_subject, cb=message_handler)
-    
         except Exception as e:
             logger.exception("NATS publish/subscribe failed for agent %s", self.agent_id)
             await channel_layer.group_send(group, {
                 "type": "stream_output",
+                "cmd_id": cmd_id,
                 "output": f"[ERROR] NATS publish/subscribe failed: {e}"
             })
             try:
@@ -977,15 +973,12 @@ class Agent(BaseAuditModel):
                 )
                 for p in pending:
                     p.cancel()
-                    # best-effort cancellation; no need to await
         finally:
-            # unsubscribe and close (guarded)
             try:
                 if sub is not None:
                     await sub.unsubscribe()
             except Exception:
                 logger.debug("NATS unsubscribe failed for agent %s", self.agent_id, exc_info=True)
-    
             try:
                 await nc.close()
             except Exception:

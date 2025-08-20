@@ -93,6 +93,7 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         self.stop_evt = None
         self.agent_id = None
         self.group_name = None
+        self.cmd_id = None
 
     async def connect(self):
         self.user = self.scope["user"]
@@ -113,15 +114,17 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Only stop if this connection owns the active stream
-        if active_streams.get(self.agent_id) == (self.stop_evt, self.stream_task):
-            active_streams.pop(self.agent_id, None)
-
-            if self.stream_task and not self.stream_task.done():
-                if self.stop_evt:
-                    self.stop_evt.set()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await self.stream_task
+        if self.agent_id in active_streams:
+            cmd_streams = active_streams[self.agent_id]
+            if self.cmd_id in cmd_streams:
+                stop_evt, stream_task = cmd_streams.pop(self.cmd_id, (None, None))
+                if stop_evt:
+                    stop_evt.set()
+                if stream_task and not stream_task.done():
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await stream_task
+            if not cmd_streams:
+                active_streams.pop(self.agent_id)
 
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
@@ -139,8 +142,12 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
 
         shell = custom_shell if shell == "custom" and custom_shell else shell
 
-        # Generate a unique subject for this command
-        cmd_id = uuid.uuid4().hex
+        cmd_id = content.get("cmd_id")
+        if not cmd_id:
+            cmd_id = uuid.uuid4().hex
+
+        self.cmd_id = cmd_id
+        await self.send_json({"cmd_id": cmd_id})
         subject_output = f"{self.agent_id}.cmdoutput.{cmd_id}"
 
         data = {
@@ -151,39 +158,31 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             "run_as_user": run_as_user,
         }
 
-        # cancel any previous stream for this socket before starting a new one
-        prev = active_streams.get(self.agent_id)
-        if prev:
-            prev_evt, prev_task = prev
-            if prev_evt:
-                prev_evt.set()
-            if prev_task and not prev_task.done():
-                with contextlib.suppress(asyncio.CancelledError):
-                    await prev_task
+        if self.agent_id not in active_streams:
+            active_streams[self.agent_id] = {}
 
         self.stop_evt = asyncio.Event()
         self.stream_task = asyncio.create_task(
             agent.nats_stream_cmd(data, timeout=timeout + 2, stop_evt=self.stop_evt, output_subject=subject_output)
         )
-        active_streams[self.agent_id] = (self.stop_evt, self.stream_task)
+        active_streams[self.agent_id][cmd_id] = (self.stop_evt, self.stream_task)
+
     async def stream_output(self, event):
-        # pass through anything we got (output/done/exit_code)
-        await self.send_json({k: v for k, v in event.items() if k in ("output","done","exit_code")})
+        await self.send_json({
+            k: v for k, v in event.items()
+            if k in ("output", "done", "exit_code", "cmd_id")
+        })
 
     @database_sync_to_async
     def has_perm(self, agent_id: str) -> bool:
-        return self._has_perm("can_send_cmd") and _has_perm_on_agent(
-            self.user, agent_id
-        )
+        return self._has_perm("can_send_cmd") and _has_perm_on_agent(self.user, agent_id)
 
     @database_sync_to_async
     def get_agent(self, agent_id: str):
         return get_object_or_404(Agent, agent_id=agent_id)
 
     def _has_perm(self, perm: str) -> bool:
-        if self.user.is_superuser or (
-            self.user.role and getattr(self.user.role, "is_superuser")
-        ):
+        if self.user.is_superuser or (self.user.role and getattr(self.user.role, "is_superuser")):
             return True
         elif not self.user.role:
             return False

@@ -7,9 +7,11 @@ from tacticalrmm.constants import AGENT_DEFER, AgentHistoryType
 from tacticalrmm.permissions import _has_perm_on_agent
 import asyncio, contextlib
 import uuid
+from logs.models import AuditLog
 
 # Shared across all CommandStreamConsumer instances
 active_streams = {}
+stream_buffers = {}
 
 
 class SendCMD(AsyncJsonWebsocketConsumer):
@@ -126,6 +128,12 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             if not cmd_streams:
                 active_streams.pop(self.agent_id)
 
+        # cleanup buffer
+        if self.agent_id in stream_buffers:
+            stream_buffers[self.agent_id].pop(self.cmd_id, None)
+            if not stream_buffers[self.agent_id]:
+                stream_buffers.pop(self.agent_id)
+
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive_json(self, content, **kwargs):
@@ -142,13 +150,32 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
 
         shell = custom_shell if shell == "custom" and custom_shell else shell
 
-        cmd_id = content.get("cmd_id")
-        if not cmd_id:
-            cmd_id = uuid.uuid4().hex
-
+        cmd_id = content.get("cmd_id") or uuid.uuid4().hex
         self.cmd_id = cmd_id
         await self.send_json({"cmd_id": cmd_id})
         subject_output = f"{self.agent_id}.cmdoutput.{cmd_id}"
+
+        hist = await database_sync_to_async(AgentHistory.objects.create)(
+            agent=agent,
+            type=AgentHistoryType.CMD_RUN,
+            command=cmd,
+            username=self.user.username[:50],
+        )
+
+        await database_sync_to_async(AuditLog.audit_raw_command)(
+            username=self.user.username,
+            agent=agent,
+            cmd=cmd,
+            shell=shell,
+            debug_info={"ip": self.scope.get("client")[0] if self.scope.get("client") else ""},
+        )
+
+        if self.agent_id not in stream_buffers:
+            stream_buffers[self.agent_id] = {}
+        stream_buffers[self.agent_id][cmd_id] = {
+            "lines": [],
+            "hist_id": hist.pk,
+        }
 
         data = {
             "func": "rawcmd",
@@ -168,6 +195,21 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         active_streams[self.agent_id][cmd_id] = (self.stop_evt, self.stream_task)
 
     async def stream_output(self, event):
+        cmd_id = event.get("cmd_id")
+        agent_buffers = stream_buffers.get(self.agent_id, {})
+        stream_entry = agent_buffers.get(cmd_id)
+
+        if "output" in event:
+            stream_entry["lines"].append(event["output"])
+        if event.get("done") is True:
+            full_output = "\n".join(stream_entry["lines"])
+            hist_id = stream_entry["hist_id"]
+            await database_sync_to_async(AgentHistory.objects.filter(pk=hist_id).update)(
+                results=full_output,
+            )
+            agent_buffers.pop(cmd_id, None)
+            if not agent_buffers:
+                stream_buffers.pop(self.agent_id, None)
         await self.send_json({
             k: v for k, v in event.items()
             if k in ("output", "done", "exit_code", "cmd_id")

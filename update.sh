@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="157"
+SCRIPT_VERSION="158"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -540,8 +540,6 @@ server {
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
     ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
@@ -598,6 +596,15 @@ EOF
   )"
   echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
 fi
+
+for i in rmm frontend meshcentral; do
+  conf="/etc/nginx/sites-enabled/${i}.conf"
+  if grep -q "ssl_stapling" "$conf"; then
+    # backup to homedir first
+    cp "$conf" ~/${i}.nginx.bak.v1.2.0
+    sudo sed -i '/ssl_stapling/d' "$conf"
+  fi
+done
 
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$API" | grep "$FRONTEND" | grep "$MESHDOMAIN")
 HAS_11=$(grep 127.0.1.1 /etc/hosts)

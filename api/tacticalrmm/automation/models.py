@@ -175,6 +175,7 @@ class Policy(BaseAuditModel):
 
         filtered_agents_ids |= (
             Agent.objects.exclude(block_policy_inheritance=True)
+            .exclude(id__in=excluded_agents_ids)
             .filter(
                 site_id__in=[
                     site.id
@@ -191,6 +192,7 @@ class Policy(BaseAuditModel):
         filtered_agents_ids |= (
             Agent.objects.exclude(block_policy_inheritance=True)
             .exclude(site__block_policy_inheritance=True)
+            .exclude(id__in=excluded_agents_ids)
             .filter(
                 site__client__in=explicit_clients_qs,
                 **agent_filter,

@@ -57,9 +57,7 @@ class GetAddAutoTasks(APIView):
         if task.agent:
             create_win_task_schedule.delay(pk=task.pk)
 
-        return Response(
-            "The task has been created. It will show up on the agent on next checkin"
-        )
+        return Response(TaskSerializer(task).data)
 
 
 class GetEditDeleteAutoTask(APIView):
@@ -81,9 +79,9 @@ class GetEditDeleteAutoTask(APIView):
 
         serializer = TaskSerializer(instance=task, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        task = serializer.save()
 
-        return Response("The task was updated")
+        return Response(TaskSerializer(task).data)
 
     def delete(self, request, pk):
         from autotasks.tasks import delete_win_task_schedule
@@ -99,7 +97,7 @@ class GetEditDeleteAutoTask(APIView):
             task.delete()
             remove_orphaned_win_tasks.delay()
 
-        return Response(f"{task.name} will be deleted shortly")
+        return Response()
 
 
 class RunAutoTask(APIView):
@@ -123,4 +121,4 @@ class RunAutoTask(APIView):
         # run normal task on agent
         else:
             run_win_task.delay(pk=pk)
-        return Response(f"{task.name} will now be run.")
+        return Response()

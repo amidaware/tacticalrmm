@@ -57,7 +57,7 @@ class GetAddChecks(APIView):
         serializer.is_valid(raise_exception=True)
         new_check = serializer.save()
 
-        return Response(f"{new_check.readable_desc} was added!")
+        return Response(CheckSerializer(new_check).data)
 
 
 class GetUpdateDeleteCheck(APIView):
@@ -96,7 +96,7 @@ class GetUpdateDeleteCheck(APIView):
         serializer.is_valid(raise_exception=True)
         check = serializer.save()
 
-        return Response(f"{check.readable_desc} was edited!")
+        return Response(CheckSerializer(check).data)
 
     def delete(self, request, pk):
         check = get_object_or_404(Check, pk=pk)
@@ -106,7 +106,7 @@ class GetUpdateDeleteCheck(APIView):
 
         check.delete()
 
-        return Response(f"{check.readable_desc} was deleted!")
+        return Response()
 
 
 class ResetCheck(APIView):
@@ -127,7 +127,7 @@ class ResetCheck(APIView):
         ):
             alert.resolve()
 
-        return Response("The check status was reset")
+        return Response(CheckSerializer(result.assigned_check).data)
 
 
 class ResetAllChecksStatus(APIView):
@@ -167,7 +167,7 @@ class ResetAllChecksStatus(APIView):
                 # check hasn't run yet, no check result entry
                 continue
 
-        return Response("All checks status were reset")
+        return Response()
 
 
 class GetCheckHistory(APIView):

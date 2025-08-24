@@ -43,26 +43,26 @@ class GetAuditLogs(APIView):
         userFilter = Q()
         timeFilter = Q()
 
-        if request.data["agentFilter"]:
+        if request.data.get("agentFilter", None):
             agentFilter = Q(agent_id__in=request.data["agentFilter"])
 
-        elif request.data["clientFilter"]:
+        elif request.data.get("clientFilter", None):
             clients = Client.objects.filter(pk__in=request.data["clientFilter"])
             agents = Agent.objects.filter(site__client__in=clients).values_list(
                 "agent_id"
             )
             clientFilter = Q(agent_id__in=agents)
 
-        if request.data["userFilter"]:
+        if request.data.get("userFilter", None):
             userFilter = Q(username__in=request.data["userFilter"])
 
-        if request.data["actionFilter"]:
+        if request.data.get("actionFilter", None):
             actionFilter = Q(action__in=request.data["actionFilter"])
 
-        if request.data["objectFilter"]:
+        if request.data.get("objectFilter", None):
             objectFilter = Q(object_type__in=request.data["objectFilter"])
 
-        if request.data["timeFilter"]:
+        if request.data.get("timeFilter", None):
             timeFilter = Q(
                 entry_time__lte=djangotime.make_aware(dt.today()),
                 entry_time__gt=djangotime.make_aware(dt.today())
@@ -144,13 +144,13 @@ class GetDebugLog(APIView):
         logTypeFilter = Q()
         logLevelFilter = Q()
 
-        if request.data["logTypeFilter"]:
+        if request.data.get("logTypeFilter", None):
             logTypeFilter = Q(log_type=request.data["logTypeFilter"])
 
-        if "logLevelFilter" in request.data:
+        if request.data.get("logLevelFilter", None):
             logLevelFilter = Q(log_level__in=request.data["logLevelFilter"])
 
-        if request.data["agentFilter"]:
+        if request.data.get("agentFilter", None):
             agentFilter = Q(agent__agent_id=request.data["agentFilter"])
 
         debug_logs = (

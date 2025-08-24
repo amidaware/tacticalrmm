@@ -110,7 +110,7 @@ def version(request):
     return Response(settings.APP_VER)
 
 
-@api_view()
+@api_view(["POST", "GET"])
 @permission_classes([IsAuthenticated, ServerMaintPerms])
 def clear_cache(request):
     from core.utils import clear_entire_cache

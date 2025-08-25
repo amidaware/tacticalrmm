@@ -116,8 +116,10 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        if self.agent_id in active_streams:
-            cmd_streams = active_streams[self.agent_id]
+        chan = self.channel_name
+
+        if chan in active_streams:
+            cmd_streams = active_streams[chan]
             if self.cmd_id in cmd_streams:
                 stop_evt, stream_task = cmd_streams.pop(self.cmd_id, (None, None))
                 if stop_evt:
@@ -126,13 +128,12 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
                     with contextlib.suppress(asyncio.CancelledError):
                         await stream_task
             if not cmd_streams:
-                active_streams.pop(self.agent_id)
+                active_streams.pop(chan)
 
-        # cleanup buffer
-        if self.agent_id in stream_buffers:
-            stream_buffers[self.agent_id].pop(self.cmd_id, None)
-            if not stream_buffers[self.agent_id]:
-                stream_buffers.pop(self.agent_id)
+        if chan in stream_buffers:
+            stream_buffers[chan].pop(self.cmd_id, None)
+            if not stream_buffers[chan]:
+                stream_buffers.pop(chan)
 
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
@@ -149,7 +150,6 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             return
 
         shell = custom_shell if shell == "custom" and custom_shell else shell
-
         cmd_id = content.get("cmd_id") or uuid.uuid4().hex
         self.cmd_id = cmd_id
         await self.send_json({"cmd_id": cmd_id})
@@ -170,9 +170,11 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             debug_info={"ip": self.scope.get("client")[0] if self.scope.get("client") else ""},
         )
 
-        if self.agent_id not in stream_buffers:
-            stream_buffers[self.agent_id] = {}
-        stream_buffers[self.agent_id][cmd_id] = {
+        chan = self.channel_name
+
+        if chan not in stream_buffers:
+            stream_buffers[chan] = {}
+        stream_buffers[chan][cmd_id] = {
             "lines": [],
             "hist_id": hist.pk,
         }
@@ -185,20 +187,27 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             "run_as_user": run_as_user,
         }
 
-        if self.agent_id not in active_streams:
-            active_streams[self.agent_id] = {}
+        if chan not in active_streams:
+            active_streams[chan] = {}
 
         self.stop_evt = asyncio.Event()
         self.stream_task = asyncio.create_task(
             agent.nats_stream_cmd(data, timeout=timeout + 2, stop_evt=self.stop_evt, output_subject=subject_output)
         )
-        active_streams[self.agent_id][cmd_id] = (self.stop_evt, self.stream_task)
+        active_streams[chan][cmd_id] = (self.stop_evt, self.stream_task)
 
     async def stream_output(self, event):
         cmd_id = event.get("cmd_id")
-        agent_buffers = stream_buffers.get(self.agent_id, {})
+        chan = self.channel_name
+
+        agent_buffers = stream_buffers.get(chan, {})
         stream_entry = agent_buffers.get(cmd_id)
 
+        if stream_entry is None:
+            # todo: need to check this none type
+            # if not event.get("done"):
+                # print(f"No stream buffer found for channel={chan} cmd_id={cmd_id}")
+            return
         if "output" in event:
             stream_entry["lines"].append(event["output"])
         if event.get("done") is True:
@@ -209,7 +218,7 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             )
             agent_buffers.pop(cmd_id, None)
             if not agent_buffers:
-                stream_buffers.pop(self.agent_id, None)
+                stream_buffers.pop(chan, None)
         await self.send_json({
             k: v for k, v in event.items()
             if k in ("output", "done", "exit_code", "cmd_id")

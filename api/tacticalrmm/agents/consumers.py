@@ -87,6 +87,7 @@ class SendCMD(AsyncJsonWebsocketConsumer):
             self.user, agent_id
         )
 
+
 class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -161,7 +162,9 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             agent=agent,
             cmd=cmd,
             shell=shell,
-            debug_info={"ip": self.scope.get("client")[0] if self.scope.get("client") else ""},
+            debug_info={
+                "ip": self.scope.get("client")[0] if self.scope.get("client") else ""
+            },
         )
 
         chan = self.channel_name
@@ -179,26 +182,38 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
 
         self.stop_evt = asyncio.Event()
         self.stream_task = asyncio.create_task(
-            agent.nats_stream_cmd(data, timeout=timeout + 2, stop_evt=self.stop_evt, output_subject=subject_output)
+            agent.nats_stream_cmd(
+                data,
+                timeout=timeout + 2,
+                stop_evt=self.stop_evt,
+                output_subject=subject_output,
+            )
         )
         active_streams[chan][cmd_id] = (self.stop_evt, self.stream_task)
 
     async def stream_output(self, event):
-        await self.send_json({
-            k: v for k, v in event.items()
-            if k in ("output", "done", "exit_code", "cmd_id")
-        })
+        await self.send_json(
+            {
+                k: v
+                for k, v in event.items()
+                if k in ("output", "done", "exit_code", "cmd_id")
+            }
+        )
 
     @database_sync_to_async
     def has_perm(self, agent_id: str) -> bool:
-        return self._has_perm("can_send_cmd") and _has_perm_on_agent(self.user, agent_id)
+        return self._has_perm("can_send_cmd") and _has_perm_on_agent(
+            self.user, agent_id
+        )
 
     @database_sync_to_async
     def get_agent(self, agent_id: str):
         return get_object_or_404(Agent, agent_id=agent_id)
 
     def _has_perm(self, perm: str) -> bool:
-        if self.user.is_superuser or (self.user.role and getattr(self.user.role, "is_superuser")):
+        if self.user.is_superuser or (
+            self.user.role and getattr(self.user.role, "is_superuser")
+        ):
             return True
         elif not self.user.role:
             return False

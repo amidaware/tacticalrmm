@@ -887,7 +887,7 @@ class Agent(BaseAuditModel):
             await nc.publish(self.agent_id, msgpack.dumps(data))
             await nc.flush()
             await nc.close()
-    
+
     async def nats_stream_cmd(
         self,
         data: dict,
@@ -913,11 +913,14 @@ class Agent(BaseAuditModel):
             nc = await nats.connect(**opts)
         except Exception as e:
             logger.exception("NATS connect failed for agent %s", self.agent_id)
-            await channel_layer.group_send(group, {
-                "type": "stream_output",
-                "cmd_id": cmd_id,
-                "output": f"[ERROR] Could not connect to NATS: {e}"
-            })
+            await channel_layer.group_send(
+                group,
+                {
+                    "type": "stream_output",
+                    "cmd_id": cmd_id,
+                    "output": f"[ERROR] Could not connect to NATS: {e}",
+                },
+            )
             return
 
         async def message_handler(msg):
@@ -935,26 +938,39 @@ class Agent(BaseAuditModel):
                         payload["exit_code"] = obj["exit_code"]
                 else:
                     payload["output"] = str(obj)
-                await channel_layer.group_send(group, {"type": "stream_output", **payload})
+                await channel_layer.group_send(
+                    group, {"type": "stream_output", **payload}
+                )
             except Exception as e:
-                logger.exception("Error handling NATS message for agent %s", self.agent_id)
-                await channel_layer.group_send(group, {
-                    "type": "stream_output",
-                    "cmd_id": cmd_id,
-                    "output": f"[ERROR] {e}"
-                })
+                logger.exception(
+                    "Error handling NATS message for agent %s", self.agent_id
+                )
+                await channel_layer.group_send(
+                    group,
+                    {
+                        "type": "stream_output",
+                        "cmd_id": cmd_id,
+                        "output": f"[ERROR] {e}",
+                    },
+                )
+
         sub = None
         try:
             await nc.publish(self.agent_id, msgpack.dumps(data))
             await nc.flush()
             sub = await nc.subscribe(output_subject, cb=message_handler)
         except Exception as e:
-            logger.exception("NATS publish/subscribe failed for agent %s", self.agent_id)
-            await channel_layer.group_send(group, {
-                "type": "stream_output",
-                "cmd_id": cmd_id,
-                "output": f"[ERROR] NATS publish/subscribe failed: {e}"
-            })
+            logger.exception(
+                "NATS publish/subscribe failed for agent %s", self.agent_id
+            )
+            await channel_layer.group_send(
+                group,
+                {
+                    "type": "stream_output",
+                    "cmd_id": cmd_id,
+                    "output": f"[ERROR] NATS publish/subscribe failed: {e}",
+                },
+            )
             try:
                 await nc.close()
             except Exception:
@@ -978,11 +994,15 @@ class Agent(BaseAuditModel):
                 if sub is not None:
                     await sub.unsubscribe()
             except Exception:
-                logger.debug("NATS unsubscribe failed for agent %s", self.agent_id, exc_info=True)
+                logger.debug(
+                    "NATS unsubscribe failed for agent %s", self.agent_id, exc_info=True
+                )
             try:
                 await nc.close()
             except Exception:
-                logger.debug("NATS close failed for agent %s", self.agent_id, exc_info=True)
+                logger.debug(
+                    "NATS close failed for agent %s", self.agent_id, exc_info=True
+                )
 
     def recover(self, mode: str, mesh_uri: str, wait: bool = True) -> tuple[str, bool]:
         """

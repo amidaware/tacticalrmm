@@ -8,6 +8,10 @@ from tacticalrmm.permissions import _has_perm_on_agent
 import asyncio, contextlib
 import uuid
 from logs.models import AuditLog
+from tacticalrmm.constants import (
+    AuditActionType,
+    AuditObjType,
+)
 
 # Shared across all CommandStreamConsumer instances
 active_streams = {}
@@ -150,18 +154,21 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"cmd_id": cmd_id})
         subject_output = f"{self.agent_id}.cmdoutput.{cmd_id}"
 
-        hist = await database_sync_to_async(AgentHistory.objects.create)(
+        hist = await AgentHistory.objects.acreate(
             agent=agent,
             type=AgentHistoryType.CMD_RUN,
             command=cmd,
             username=self.user.username[:50],
         )
 
-        await database_sync_to_async(AuditLog.audit_raw_command)(
+        await AuditLog.objects.acreate(
             username=self.user.username,
-            agent=agent,
-            cmd=cmd,
-            shell=shell,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.EXEC_COMMAND,
+            message=f"{self.user.username} issued {shell} command on {agent.hostname}.",
+            after_value=cmd,
             debug_info={
                 "ip": self.scope.get("client")[0] if self.scope.get("client") else ""
             },
@@ -200,15 +207,11 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
-    @database_sync_to_async
-    def has_perm(self, agent_id: str) -> bool:
-        return self._has_perm("can_send_cmd") and _has_perm_on_agent(
-            self.user, agent_id
-        )
+    async def has_perm(self, agent_id: str) -> bool:
+        return await database_sync_to_async(self._has_perm_on_agent)(agent_id)
 
-    @database_sync_to_async
-    def get_agent(self, agent_id: str):
-        return get_object_or_404(Agent, agent_id=agent_id)
+    async def get_agent(self, agent_id: str):
+        return await Agent.objects.aget(agent_id=agent_id)
 
     def _has_perm(self, perm: str) -> bool:
         if self.user.is_superuser or (
@@ -218,3 +221,8 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         elif not self.user.role:
             return False
         return getattr(self.user.role, perm, False)
+
+    def _has_perm_on_agent(self, agent_id: str) -> bool:
+        return self._has_perm("can_send_cmd") and _has_perm_on_agent(
+            self.user, agent_id
+        )

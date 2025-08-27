@@ -11,7 +11,6 @@ from logs.models import AuditLog
 
 # Shared across all CommandStreamConsumer instances
 active_streams = {}
-stream_buffers = {}
 
 
 class SendCMD(AsyncJsonWebsocketConsumer):
@@ -130,11 +129,6 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             if not cmd_streams:
                 active_streams.pop(chan)
 
-        if chan in stream_buffers:
-            stream_buffers[chan].pop(self.cmd_id, None)
-            if not stream_buffers[chan]:
-                stream_buffers.pop(chan)
-
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive_json(self, content, **kwargs):
@@ -155,7 +149,7 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"cmd_id": cmd_id})
         subject_output = f"{self.agent_id}.cmdoutput.{cmd_id}"
 
-        hist = await database_sync_to_async(AgentHistory.objects.create)(
+        await database_sync_to_async(AgentHistory.objects.create)(
             agent=agent,
             type=AgentHistoryType.CMD_RUN,
             command=cmd,
@@ -171,13 +165,8 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         )
 
         chan = self.channel_name
-
-        if chan not in stream_buffers:
-            stream_buffers[chan] = {}
-        stream_buffers[chan][cmd_id] = {
-            "lines": [],
-            "hist_id": hist.pk,
-        }
+        if chan not in active_streams:
+            active_streams[chan] = {}
 
         data = {
             "func": "rawcmd",
@@ -187,9 +176,6 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             "run_as_user": run_as_user,
         }
 
-        if chan not in active_streams:
-            active_streams[chan] = {}
-
         self.stop_evt = asyncio.Event()
         self.stream_task = asyncio.create_task(
             agent.nats_stream_cmd(data, timeout=timeout + 2, stop_evt=self.stop_evt, output_subject=subject_output)
@@ -197,28 +183,6 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         active_streams[chan][cmd_id] = (self.stop_evt, self.stream_task)
 
     async def stream_output(self, event):
-        cmd_id = event.get("cmd_id")
-        chan = self.channel_name
-
-        agent_buffers = stream_buffers.get(chan, {})
-        stream_entry = agent_buffers.get(cmd_id)
-
-        if stream_entry is None:
-            # todo: need to check this none type
-            # if not event.get("done"):
-                # print(f"No stream buffer found for channel={chan} cmd_id={cmd_id}")
-            return
-        if "output" in event:
-            stream_entry["lines"].append(event["output"])
-        if event.get("done") is True:
-            full_output = "\n".join(stream_entry["lines"])
-            hist_id = stream_entry["hist_id"]
-            await database_sync_to_async(AgentHistory.objects.filter(pk=hist_id).update)(
-                results=full_output,
-            )
-            agent_buffers.pop(cmd_id, None)
-            if not agent_buffers:
-                stream_buffers.pop(chan, None)
         await self.send_json({
             k: v for k, v in event.items()
             if k in ("output", "done", "exit_code", "cmd_id")

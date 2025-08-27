@@ -149,7 +149,7 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"cmd_id": cmd_id})
         subject_output = f"{self.agent_id}.cmdoutput.{cmd_id}"
 
-        await database_sync_to_async(AgentHistory.objects.create)(
+        hist = await database_sync_to_async(AgentHistory.objects.create)(
             agent=agent,
             type=AgentHistoryType.CMD_RUN,
             command=cmd,
@@ -174,6 +174,7 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             "stream": True,
             "payload": {"command": cmd, "shell": shell, "cmd_id": cmd_id},
             "run_as_user": run_as_user,
+            "id": hist.pk,
         }
 
         self.stop_evt = asyncio.Event()

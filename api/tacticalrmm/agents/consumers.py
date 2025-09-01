@@ -5,7 +5,8 @@ from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import get_object_or_404
 from tacticalrmm.constants import AGENT_DEFER, AgentHistoryType
 from tacticalrmm.permissions import _has_perm_on_agent
-import asyncio, contextlib
+import asyncio
+import contextlib
 import uuid
 from logs.models import AuditLog
 from tacticalrmm.constants import (

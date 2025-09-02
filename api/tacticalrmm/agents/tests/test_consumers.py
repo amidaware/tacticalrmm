@@ -72,10 +72,10 @@ class TestCommandStreamConsumer(TacticalTestCase):
 
     def test_disconnect_cleans_up_active_streams(self):
         stop_evt = asyncio.Event()
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         task = loop.create_future()
         task.set_result(None)
-
         self.consumer.cmd_id = "testcmd"
         active_streams[self.consumer.channel_name] = {"testcmd": (stop_evt, task)}
         self.consumer.channel_layer = AsyncMock()
@@ -83,6 +83,7 @@ class TestCommandStreamConsumer(TacticalTestCase):
         async_to_sync(self.consumer.disconnect)(1000)
         self.assertNotIn(self.consumer.channel_name, active_streams)
         self.consumer.channel_layer.group_discard.assert_awaited_once()
+        loop.close()
 
     @patch.object(CommandStreamConsumer, "send_json", autospec=True)
     def test_stream_output_filters_correct_keys(self, mock_send_json):

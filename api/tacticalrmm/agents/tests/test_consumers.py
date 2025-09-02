@@ -72,7 +72,8 @@ class TestCommandStreamConsumer(TacticalTestCase):
 
     def test_disconnect_cleans_up_active_streams(self):
         stop_evt = asyncio.Event()
-        task = asyncio.Future()
+        loop = asyncio.get_event_loop()
+        task = loop.create_future()
         task.set_result(None)
 
         self.consumer.cmd_id = "testcmd"

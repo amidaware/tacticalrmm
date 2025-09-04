@@ -110,13 +110,18 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             return
 
         self.agent_id = self.scope["url_route"]["kwargs"]["agent_id"]
-        self.group_name = f"agent_cmd_{self.agent_id}"
-
         has_permission = await self.has_perm(self.agent_id)
         if not has_permission:
-            await self.close()
+            await self.accept()
+            await self.send_json(
+                {
+                    "error": "You do not have permission to perform this action.",
+                    "status": 403,
+                }
+            )
+            await self.close(code=4003)
             return
-
+        self.group_name = f"agent_cmd_{self.agent_id}"
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
@@ -134,8 +139,8 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
                         await stream_task
             if not cmd_streams:
                 active_streams.pop(chan)
-
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if hasattr(self, "group_name") and self.group_name:
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive_json(self, content, **kwargs):
         agent = await self.get_agent(self.agent_id)

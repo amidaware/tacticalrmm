@@ -10,7 +10,9 @@ from logs.models import AuditLog
 from agents.consumers import CommandStreamConsumer, active_streams
 from django.contrib.auth.models import AnonymousUser
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+import pytest
+from agents.models import Agent
 
 User = get_user_model()
 
@@ -99,3 +101,166 @@ class TestCommandStreamConsumer(TacticalTestCase):
             self.consumer,
             {"cmd_id": "abc123", "output": "line", "done": True, "exit_code": 0},
         )
+
+
+@pytest.mark.django_db
+class TestNatsStreamCmd:
+    @pytest.fixture
+    def agent(self):
+        return Agent(agent_id="agent123", hostname="test-agent")
+
+    @patch("agents.models.get_channel_layer")
+    @patch("agents.models.nats.connect")
+    def test_connect_failure_sends_error(self, mock_connect, mock_layer, agent):
+        mock_connect.side_effect = Exception("boom")
+        mock_layer.return_value.group_send = AsyncMock()
+
+        async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "abc"}}, timeout=0)
+
+        mock_layer.return_value.group_send.assert_awaited_once()
+        args, _ = mock_layer.return_value.group_send.call_args
+        assert args[1]["output"].startswith("[ERROR] Could not connect")
+
+    @patch("agents.models.get_channel_layer")
+    @patch("agents.models.msgpack.loads")
+    @patch("agents.models.nats.connect")
+    def test_message_handler_str_payload(
+        self, mock_connect, mock_loads, mock_layer, agent
+    ):
+        fake_nc = AsyncMock()
+        mock_connect.return_value = fake_nc
+        mock_loads.return_value = "hello world"
+        mock_layer.return_value.group_send = AsyncMock()
+
+        async def fake_subscribe(subject, cb):
+            msg = MagicMock()
+            msg.data = b"fake"
+            await cb(msg)
+            return AsyncMock(unsubscribe=AsyncMock())
+
+        fake_nc.subscribe.side_effect = fake_subscribe
+
+        async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "abc"}}, timeout=0)
+
+        mock_layer.return_value.group_send.assert_any_await(
+            "agent_cmd_agent123",
+            {"type": "stream_output", "cmd_id": "abc", "output": "hello world"},
+        )
+
+    @patch("agents.models.get_channel_layer")
+    @patch("agents.models.msgpack.loads")
+    @patch("agents.models.nats.connect")
+    def test_message_handler_dict_payload(
+        self, mock_connect, mock_loads, mock_layer, agent
+    ):
+        fake_nc = AsyncMock()
+        mock_connect.return_value = fake_nc
+        mock_loads.return_value = {"line": "out", "done": True, "exit_code": 5}
+        mock_layer.return_value.group_send = AsyncMock()
+
+        async def fake_subscribe(subject, cb):
+            msg = MagicMock()
+            msg.data = b"fake"
+            await cb(msg)
+            return AsyncMock(unsubscribe=AsyncMock())
+
+        fake_nc.subscribe.side_effect = fake_subscribe
+
+        async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "xyz"}}, timeout=0)
+
+        mock_layer.return_value.group_send.assert_any_await(
+            "agent_cmd_agent123",
+            {
+                "type": "stream_output",
+                "cmd_id": "xyz",
+                "output": "out",
+                "done": True,
+                "exit_code": 5,
+            },
+        )
+
+    @patch("agents.models.get_channel_layer")
+    @patch("agents.models.nats.connect")
+    def test_stop_event_triggers_early_exit(self, mock_connect, mock_layer, agent):
+        fake_nc = AsyncMock()
+        mock_connect.return_value = fake_nc
+        fake_nc.subscribe.return_value = AsyncMock(unsubscribe=AsyncMock())
+        stop_evt = asyncio.Event()
+        stop_evt.set()
+
+        async_to_sync(agent.nats_stream_cmd)(
+            {"payload": {"cmd_id": "early"}}, timeout=5, stop_evt=stop_evt
+        )
+
+        fake_nc.close.assert_awaited_once()
+
+    @patch("agents.models.get_channel_layer")
+    @patch("agents.models.nats.connect")
+    def test_publish_subscribe_failure_sends_error(
+        self, mock_connect, mock_layer, agent
+    ):
+        fake_nc = AsyncMock()
+        mock_connect.return_value = fake_nc
+        fake_nc.publish.side_effect = Exception("publish failed")
+        mock_layer.return_value.group_send = AsyncMock()
+
+        async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "oops"}}, timeout=0)
+
+        mock_layer.return_value.group_send.assert_any_await(
+            "agent_cmd_agent123",
+            {
+                "type": "stream_output",
+                "cmd_id": "oops",
+                "output": "[ERROR] NATS publish/subscribe failed: publish failed",
+            },
+        )
+
+        fake_nc.close.assert_awaited_once()
+
+    @patch("agents.models.get_channel_layer")
+    @patch("agents.models.msgpack.loads")
+    @patch("agents.models.nats.connect")
+    def test_message_handler_payload_decoding_failure(
+        self, mock_connect, mock_loads, mock_layer, agent
+    ):
+        fake_nc = AsyncMock()
+        mock_connect.return_value = fake_nc
+        mock_loads.side_effect = Exception("bad data")
+        mock_layer.return_value.group_send = AsyncMock()
+
+        async def fake_subscribe(subject, cb):
+            msg = MagicMock()
+            msg.data = b"corrupt"
+            await cb(msg)
+            return AsyncMock(unsubscribe=AsyncMock())
+
+        fake_nc.subscribe.side_effect = fake_subscribe
+
+        async_to_sync(agent.nats_stream_cmd)(
+            {"payload": {"cmd_id": "err123"}}, timeout=0
+        )
+
+        mock_layer.return_value.group_send.assert_any_await(
+            "agent_cmd_agent123",
+            {
+                "type": "stream_output",
+                "cmd_id": "err123",
+                "output": "[ERROR] bad data",
+            },
+        )
+
+    @patch("agents.models.get_channel_layer")
+    @patch("agents.models.nats.connect")
+    def test_timeout_triggers_cleanup(self, mock_connect, mock_layer, agent):
+        fake_nc = AsyncMock()
+        mock_connect.return_value = fake_nc
+        sub = AsyncMock()
+        fake_nc.subscribe.return_value = sub
+        mock_layer.return_value.group_send = AsyncMock()
+
+        async_to_sync(agent.nats_stream_cmd)(
+            {"payload": {"cmd_id": "to123"}}, timeout=0
+        )
+
+        sub.unsubscribe.assert_awaited_once()
+        fake_nc.close.assert_awaited_once()

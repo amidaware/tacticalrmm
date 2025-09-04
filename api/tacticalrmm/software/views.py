@@ -7,13 +7,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from agents.models import Agent
-from logs.models import PendingAction
-from tacticalrmm.constants import PAAction
+from agents.models import Agent, AgentHistory
+from logs.models import AuditLog, PendingAction
+from tacticalrmm.constants import AgentHistoryType, PAAction
 from tacticalrmm.helpers import notify_error
 
 from .models import ChocoSoftware, InstalledSoftware
-from .permissions import SoftwarePerms
+from .permissions import SoftwarePerms, UninstallSoftwarePerms
 from .serializers import InstalledSoftwareSerializer
 
 
@@ -90,3 +90,50 @@ class GetSoftware(APIView):
             s.save(update_fields=["software"])
 
         return Response("ok")
+
+
+class UninstallSoftware(APIView):
+    permission_classes = [IsAuthenticated, UninstallSoftwarePerms]
+
+    def post(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        if agent.is_posix:
+            return notify_error(f"Not available for {agent.plat}")
+
+        name = request.data["name"]
+        uninstall_cmd = request.data["command"]
+
+        if all(i in uninstall_cmd.lower() for i in ("tacticalagent", "unins")):
+            return notify_error(
+                "The Tactical RMM Agent cannot be uninstalled from here."
+            )
+
+        data = {
+            "func": "rawcmd",
+            "timeout": request.data["timeout"],
+            "payload": {
+                "command": uninstall_cmd,
+                "shell": "cmd",
+            },
+            "run_as_user": request.data["run_as_user"],
+        }
+
+        hist = AgentHistory.objects.create(
+            agent=agent,
+            type=AgentHistoryType.CMD_RUN,
+            command=uninstall_cmd,
+            username=request.user.username[:50],
+        )
+        data["id"] = hist.pk
+
+        AuditLog.audit_raw_command(
+            username=request.user.username,
+            agent=agent,
+            cmd=uninstall_cmd,
+            shell="cmd",
+            debug_info={"ip": request._client_ip},
+        )
+
+        asyncio.run(agent.nats_cmd(data, wait=False))
+
+        return Response(f"{name} will now be uninstalled on {agent.hostname}.")

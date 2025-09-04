@@ -31,7 +31,11 @@ class TestCommandStreamConsumer(TacticalTestCase):
         )
 
         self.consumer = CommandStreamConsumer()
-        self.consumer.scope = {"user": self.user, "client": ("127.0.0.1", 12345)}
+        self.consumer.scope = {
+            "user": self.user,
+            "client": ("127.0.0.1", 12345),
+            "url_route": {"kwargs": {"agent_id": self.agent.agent_id}},
+        }
         self.consumer.user = self.user
         self.consumer.channel_name = "test_channel"
         self.consumer.channel_layer = None
@@ -101,6 +105,58 @@ class TestCommandStreamConsumer(TacticalTestCase):
             self.consumer,
             {"cmd_id": "abc123", "output": "line", "done": True, "exit_code": 0},
         )
+
+    @patch.object(CommandStreamConsumer, "accept", new_callable=AsyncMock)
+    @patch.object(CommandStreamConsumer, "has_perm", return_value=True)
+    def test_connect_authorized_user(self, mock_perm, mock_accept):
+        self.consumer.channel_layer = AsyncMock()
+        async_to_sync(self.consumer.connect)()
+        self.consumer.channel_layer.group_add.assert_called_once_with(
+            self.consumer.group_name, self.consumer.channel_name
+        )
+        mock_accept.assert_awaited_once()
+
+    @patch.object(CommandStreamConsumer, "send_json", new_callable=AsyncMock)
+    @patch.object(CommandStreamConsumer, "accept", new_callable=AsyncMock)
+    @patch.object(CommandStreamConsumer, "close", new_callable=AsyncMock)
+    @patch.object(CommandStreamConsumer, "has_perm", return_value=False)
+    def test_connect_permission_denied(
+        self, mock_perm, mock_close, mock_accept, mock_send_json
+    ):
+        async_to_sync(self.consumer.connect)()
+        mock_accept.assert_awaited_once()
+        mock_send_json.assert_awaited_once_with(
+            {
+                "error": "You do not have permission to perform this action.",
+                "status": 403,
+            }
+        )
+        mock_close.assert_awaited_once()
+
+    def test_disconnect_only_cleans_up_its_own_cmd(self):
+        stop_evt1 = asyncio.Event()
+        stop_evt2 = asyncio.Event()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        task1 = loop.create_future()
+        task1.set_result(None)
+        task2 = loop.create_future()
+        task2.set_result(None)
+
+        self.consumer.cmd_id = "cmd1"
+        active_streams[self.consumer.channel_name] = {
+            "cmd1": (stop_evt1, task1),
+            "cmd2": (stop_evt2, task2),
+        }
+
+        self.consumer.channel_layer = AsyncMock()
+        self.consumer.channel_layer.group_discard = AsyncMock()
+        async_to_sync(self.consumer.disconnect)(1000)
+        self.assertIn(self.consumer.channel_name, active_streams)
+        self.assertNotIn("cmd1", active_streams[self.consumer.channel_name])
+        self.assertIn("cmd2", active_streams[self.consumer.channel_name])
+
+        loop.close()
 
 
 @pytest.mark.django_db

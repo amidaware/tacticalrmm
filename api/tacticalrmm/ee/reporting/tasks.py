@@ -27,7 +27,7 @@ def prune_report_history_task(older_than_days: int) -> str:
 @app.task
 def scheduled_reports_runner():
     from .models import ReportSchedule
-    from core.models import ScheduleType, MonthlyType
+    from tacticalrmm.constants import ScheduleType, MonthlyType
     from .utils import run_scheduled_report
 
     now = djangotime.now()
@@ -99,7 +99,13 @@ def scheduled_reports_runner():
             run_list.append(report)
 
     for report in run_list:
-        run_scheduled_report(schedule=report)
+        try:
+            _, error = run_scheduled_report(schedule=report)
+        except Exception as e:
+            logger.error(str(e))
+        else:
+            if error:
+                logger.error(error)
 
 
 @app.task

@@ -21,6 +21,8 @@ from tacticalrmm.constants import (
     CustomFieldModel,
     CustomFieldType,
     DebugLogLevel,
+    MonthlyType,
+    ScheduleType,
     URLActionRestMethod,
     URLActionType,
 )
@@ -512,17 +514,6 @@ class URLAction(BaseAuditModel):
         return URLActionSerializer(action).data
 
 
-class ScheduleType(models.TextChoices):
-    DAILY = "daily", "Daily"
-    WEEKLY = "weekly", "Weekly"
-    MONTHLY = "monthly", "Monthly"
-
-
-class MonthlyType(models.TextChoices):
-    WEEKS = "weeks", "Weeks"
-    DAYS = "days", "Days"
-
-
 class Schedule(BaseAuditModel):
     name = models.CharField(max_length=255)
     run_time = models.TimeField()
@@ -565,3 +556,6 @@ class Schedule(BaseAuditModel):
     monthly_type = models.CharField(
         max_length=15, choices=MonthlyType.choices, default=MonthlyType.DAYS
     )
+
+    def __str__(self) -> str:
+        return self.name

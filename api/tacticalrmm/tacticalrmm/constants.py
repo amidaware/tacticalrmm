@@ -271,6 +271,17 @@ class URLActionRestMethod(models.TextChoices):
     PATCH = "patch", "Patch"
 
 
+class ScheduleType(models.TextChoices):
+    DAILY = "daily", "Daily"
+    WEEKLY = "weekly", "Weekly"
+    MONTHLY = "monthly", "Monthly"
+
+
+class MonthlyType(models.TextChoices):
+    WEEKS = "weeks", "Weeks"
+    DAYS = "days", "Days"
+
+
 # Agent db fields that are not needed for most queries, speeds up query
 AGENT_DEFER = (
     "wmi_detail",

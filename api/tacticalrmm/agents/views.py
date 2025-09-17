@@ -1363,7 +1363,7 @@ def create_registry_key(request, agent_id):
 def delete_registry_key(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
 
-    path = request.data.get("path", "").strip()
+    path = request.query_params.get("path", "").strip()
     if not path:
         return notify_error("Registry path is required")
 

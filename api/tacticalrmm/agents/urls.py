@@ -46,4 +46,7 @@ urlpatterns = [
     path("bulkrecovery/", views.bulk_agent_recovery),
     path("scripthistory/", views.ScriptRunHistory.as_view()),
     path("<agent:agent_id>/wol/", views.wol),
+    path("<agent:agent_id>/registry/", views.browse_registry, name="browse_registry"),
+    path("<agent:agent_id>/registry/create-key/", views.create_registry_key),
+    path("<agent:agent_id>/registry/delete-key/", views.delete_registry_key),
 ]

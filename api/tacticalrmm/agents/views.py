@@ -1299,3 +1299,85 @@ def wol(request, agent_id):
     except Exception as e:
         return notify_error(str(e))
     return Response(f"Wake-on-LAN sent to {agent.hostname}")
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def browse_registry(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+    path = request.query_params.get("path", "Computer").strip()
+
+    if path.lower() == "computer":
+        path = "Computer"
+
+    data = {"func": "registry_browse", "payload": {"path": path}}
+
+    # TODO: do we need history logs / audit logs ?
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(str(e))
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if "error" in r:
+        return notify_error(r["error"])
+
+    return Response(
+        {
+            "path": r.get("path", path),
+            "subkeys": r.get("subkeys", []),
+            "values": r.get("values", []),
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_registry_key(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    path = request.data.get("path", "").strip()
+    if not path:
+        return notify_error("Registry path is required")
+
+    data = {"func": "registry_create_key", "payload": {"path": path}}
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(f"NATS communication failed: {str(e)}")
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if "error" in r:
+        return notify_error(f"Registry key creation failed: {r['error']}")
+
+    return Response({"status": "success", "path": path})
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_registry_key(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    path = request.data.get("path", "").strip()
+    if not path:
+        return notify_error("Registry path is required")
+
+    data = {"func": "registry_delete_key", "payload": {"path": path}}
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(f"NATS communication failed: {str(e)}")
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if "error" in r:
+        return notify_error(f"Registry key deletion failed: {r['error']}")
+
+    return Response({"status": "success", "deleted_path": path})

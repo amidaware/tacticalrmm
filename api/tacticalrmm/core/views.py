@@ -64,6 +64,7 @@ from .serializers import (
     CoreSettingsSerializer,
     CustomFieldSerializer,
     KeyStoreSerializer,
+    ScheduleSerializer,
     URLActionSerializer,
 )
 
@@ -496,12 +497,6 @@ class RunTestURLAction(APIView):
         )
 
         return Response({"url": replaced_url, "result": result, "body": replaced_body})
-
-
-class ScheduleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Schedule
-        fields = "__all__"
 
 
 class GetAddSchedule(APIView):

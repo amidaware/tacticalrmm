@@ -22,6 +22,7 @@ urlpatterns = [
     path("clearcache/", views.clear_cache),
     path("openai/generate/", views.OpenAICodeCompletion.as_view()),
     path("webtermperms/", views.webterm_perms),
+    path("branding/", views.AddBranding.as_view())
 ]
 
 if not getattr(settings, "DEMO", False):

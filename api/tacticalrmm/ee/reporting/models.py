@@ -114,6 +114,12 @@ class ReportSchedule(BaseAuditModel):
     def __str__(self):
         return self.name
 
+    @staticmethod
+    def serialize(schedule):
+        from ee.reporting.views import ReportScheduleSerializer
+
+        return ReportScheduleSerializer(schedule).data
+
 
 class ReportHistory(BaseAuditModel):
     report_template = models.ForeignKey(

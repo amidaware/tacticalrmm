@@ -125,3 +125,9 @@ class ScheduleSerializer(serializers.ModelSerializer):
                     ret[field] = empty_states[field]
 
         return ret
+
+
+class ScheduleAuditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedule
+        fields = "__all__"

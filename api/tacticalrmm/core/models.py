@@ -559,3 +559,9 @@ class Schedule(BaseAuditModel):
 
     def __str__(self) -> str:
         return self.name
+
+    @staticmethod
+    def serialize(schedule):
+        from .serializers import ScheduleAuditSerializer
+
+        return ScheduleAuditSerializer(schedule).data

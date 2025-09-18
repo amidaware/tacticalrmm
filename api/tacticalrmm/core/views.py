@@ -787,3 +787,33 @@ class OpenAICodeCompletion(APIView):
             )
 
         return Response(response_data["choices"][0]["message"]["content"])
+
+class AddBranding(APIView):
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    class InputRequest(serializers.Serializer):
+        company_name = serializers.CharField(max_length=255, required=False)
+        primary_color = serializers.CharField(max_length=25, required=False)
+        secondary_color = serializers.CharField(max_length=25, required=False)
+        accent_color = serializers.CharField(max_length=25, required=False)
+        dark_color = serializers.CharField(max_length=25, required=False)
+        dark_page_color = serializers.CharField(max_length=25, required=False)
+        positive_color = serializers.CharField(max_length=25, required=False)
+        negative_color = serializers.CharField(max_length=25, required=False)
+        info_color = serializers.CharField(max_length=25, required=False)
+        warning_color = serializers.CharField(max_length=25, required=False)
+        favicon = serializers.CharField(required=False)
+
+    def get(self, request):
+        settings = get_core_settings()
+        return Response(settings.branding)
+
+    def post(self, request):
+        settings = get_core_settings()
+
+        self.InputRequest(data=request.data).is_valid(raise_exception=True)
+
+        settings.branding = request.data
+        settings.save(update_fields=["branding"])
+
+        return Response()

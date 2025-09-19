@@ -116,9 +116,9 @@ class ReportSchedule(BaseAuditModel):
 
     @staticmethod
     def serialize(schedule):
-        from ee.reporting.views import ReportScheduleSerializer
+        from .serializers import ReportScheduleAuditSerializer
 
-        return ReportScheduleSerializer(schedule).data
+        return ReportScheduleAuditSerializer(schedule).data
 
 
 class ReportHistory(BaseAuditModel):

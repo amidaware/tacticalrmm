@@ -532,7 +532,7 @@ class TaskResult(models.Model):
     )
 
     def __str__(self):
-        return f"{self.agent.hostname} - {self.task}"
+        return f"{self.task}"
 
     def get_or_create_alert_if_needed(
         self, alert_template: "Optional[AlertTemplate]"

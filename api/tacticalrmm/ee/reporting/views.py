@@ -33,20 +33,22 @@ from rest_framework.serializers import (
     JSONField,
     ListField,
     ModelSerializer,
+    ReadOnlyField,
     Serializer,
     ValidationError,
-    ReadOnlyField,
 )
 from rest_framework.views import APIView
+
+import ee.reporting.tasks
 from tacticalrmm.utils import notify_error
 
 from .models import (
     ReportAsset,
     ReportDataQuery,
-    ReportHTMLTemplate,
-    ReportTemplate,
     ReportHistory,
+    ReportHTMLTemplate,
     ReportSchedule,
+    ReportTemplate,
 )
 from .permissions import GenerateReportPerms, ReportingPerms
 from .storage import report_assets_fs
@@ -55,6 +57,7 @@ from .utils import (
     _import_base_template,
     _import_report_template,
     base64_encode_assets,
+    build_report_link,
     generate_html,
     generate_pdf,
     normalize_asset_url,
@@ -62,7 +65,6 @@ from .utils import (
     run_report,
     run_scheduled_report,
 )
-import ee.reporting.tasks
 
 
 def path_exists(value: str) -> None:
@@ -177,29 +179,22 @@ class EmailReport(APIView):
         if error:
             return notify_error(error)
 
-        subject = request.data["email_settings"].get("subject")
-        body = request.data["email_settings"].get("body")
-        attachment_name = request.data["email_settings"].get("attachment_name")
-
-        if format == "pdf":
-            ee.reporting.tasks.email_report.delay(
-                template_name=template.name,
-                recipients=request.data["email_recipients"],
-                attachment=report,
-                subject=subject,
-                body=body,
-                attachment_name=attachment_name,
-            )
-        else:
-            # build history report link
-            report_link = f"{djangosettings.CORS_ORIGIN_WHITELIST[0]}/reports/history/{history.id}/?format={format}"
-            ee.reporting.tasks.email_report.delay(
-                template_name=template.name,
-                report_link=report_link,
-                recipients=request.data["email_recipients"],
-                subject=subject,
-                body=body,
-            )
+        ee.reporting.tasks.email_report.delay(
+            template_name=template.name,
+            report_link=build_report_link(history.id, format),
+            recipients=request.data["email_recipients"],
+            attachment=report,
+            attachment_type=format,
+            subject=request.data["email_settings"].get("subject"),
+            body=request.data["email_settings"].get("body"),
+            attachment_name=request.data["email_settings"].get("attachment_name"),
+            attachment_extension=request.data["email_settings"].get(
+                "attachment_extension"
+            ),
+            include_report_link=request.data["email_settings"].get(
+                "include_report_link"
+            ),
+        )
 
         return Response()
 

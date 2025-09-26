@@ -25,15 +25,17 @@ from zoneinfo import ZoneInfo
 
 import yaml
 from django.apps import apps
+from django.conf import settings
 from django.utils import timezone as djangotime
 from jinja2 import Environment, FunctionLoader
+from jinja2.exceptions import TemplateError
 from rest_framework.serializers import ValidationError
-from tacticalrmm.logger import logger
-from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
-from jinja2.exceptions import TemplateError
-from django.conf import settings
+
+import ee.reporting.tasks
+from tacticalrmm.logger import logger
+from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 
 from . import custom_filters
 from .constants import REPORTING_MODELS, get_property_fields
@@ -41,12 +43,11 @@ from .markdown.config import Markdown
 from .models import (
     ReportAsset,
     ReportDataQuery,
-    ReportHTMLTemplate,
-    ReportTemplate,
     ReportHistory,
+    ReportHTMLTemplate,
     ReportSchedule,
+    ReportTemplate,
 )
-import ee.reporting.tasks
 
 if TYPE_CHECKING:
     from accounts.models import User
@@ -779,44 +780,38 @@ def run_report(
     return None, error_text, history
 
 
+def build_report_link(id: int, format: str) -> str:
+    return f"{settings.CORS_ORIGIN_WHITELIST[0]}/reports/history/{id}/?format={format}"
+
+
 def run_scheduled_report(
     *,
     schedule: "ReportSchedule",
     user: Optional["User"] = None,
 ) -> Tuple["ReportHistory", Optional[str]]:
-    format = schedule.format
-    template = schedule.report_template
 
     report, error, history = run_report(
-        template=template,
+        template=schedule.report_template,
         dependencies=schedule.dependencies,
         format=schedule.format,
         user=user,
     )
-
     schedule.last_run = djangotime.now()
     schedule.save(update_fields=["last_run"])
 
     if schedule.send_report_email:
-        if schedule.format == "pdf":
-            ee.reporting.tasks.email_report.delay(
-                template_name=template.name,
-                recipients=schedule.email_recipients,
-                attachment=report,
-                subject=schedule.email_settings.get("subject"),
-                body=schedule.email_settings.get("body"),
-                attachment_name=schedule.email_settings.get("attachment_name"),
-            )
-        else:
-            # build history report link
-            report_link = f"{settings.CORS_ORIGIN_WHITELIST[0]}/reports/history/{history.id}/?format={format}"
-            ee.reporting.tasks.email_report.delay(
-                template_name=template.name,
-                report_link=report_link,
-                recipients=schedule.email_recipients,
-                subject=schedule.email_settings.get("subject"),
-                body=schedule.email_settings.get("body"),
-            )
+        ee.reporting.tasks.email_report.delay(
+            template_name=schedule.report_template.name,
+            report_link=build_report_link(history.id, schedule.format),
+            recipients=schedule.email_recipients,
+            attachment=report,
+            attachment_type=schedule.format,
+            subject=schedule.email_settings.get("subject"),
+            body=schedule.email_settings.get("body"),
+            attachment_name=schedule.email_settings.get("attachment_name"),
+            attachment_extension=schedule.email_settings.get("attachment_extension"),
+            include_report_link=schedule.email_settings.get("include_report_link"),
+        )
 
     return history, error
 

@@ -1,4 +1,5 @@
 import smtplib
+import traceback
 from contextlib import suppress
 from email.headerregistry import Address
 from email.message import EmailMessage
@@ -26,6 +27,7 @@ from tacticalrmm.constants import (
     URLActionRestMethod,
     URLActionType,
 )
+from tacticalrmm.logger import logger
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
@@ -240,6 +242,8 @@ class CoreSettings(BaseAuditModel):
         body: str,
         attachment: Optional[bytes] = None,
         attachment_filename: Optional[str] = None,
+        attachment_type: Optional[str] = None,
+        attachment_extension: Optional[str] = None,
         alert_template: "Optional[AlertTemplate]" = None,
         override_recipients: Optional[List[str]] = [],
         test: bool = False,
@@ -283,12 +287,33 @@ class CoreSettings(BaseAuditModel):
             msg.set_content(body)
 
             if attachment:
-                msg.add_attachment(
-                    attachment,
-                    maintype="application",
-                    subtype="pdf",
-                    filename=f"{attachment_filename}.pdf",
-                )
+                match attachment_type:
+                    case "pdf":
+                        subtype = "pdf"
+                        ext = "pdf"
+                    case "html":
+                        subtype = "html"
+                        ext = "html"
+                    case "plaintext":
+                        subtype = "plain"
+                        ext = attachment_extension or "txt"
+                    case _:
+                        subtype = "plain"
+                        ext = "txt"
+
+                if attachment_type == "pdf":
+                    msg.add_attachment(
+                        attachment,
+                        maintype="application",
+                        subtype=subtype,
+                        filename=f"{attachment_filename}.{ext}",
+                    )
+                elif attachment_type in ("html", "plaintext"):
+                    msg.add_attachment(
+                        attachment,
+                        subtype=subtype,
+                        filename=f"{attachment_filename}.{ext}",
+                    )
 
             with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
                 if self.smtp_requires_auth:
@@ -313,6 +338,7 @@ class CoreSettings(BaseAuditModel):
                         server.quit()
 
         except Exception as e:
+            logger.error(traceback.format_exc())
             DebugLog.error(message=f"Sending email failed with error: {e}")
             if test:
                 return str(e), False

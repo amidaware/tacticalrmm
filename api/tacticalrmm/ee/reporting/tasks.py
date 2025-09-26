@@ -1,16 +1,16 @@
+from typing import List, Optional
+
 from django.utils import timezone as djangotime
-from typing import Optional, List
-from tacticalrmm.logger import logger
 
 from tacticalrmm.celery import app
+from tacticalrmm.logger import logger
 from tacticalrmm.scheduler import (
     should_run_daily,
-    should_run_weekly,
     should_run_monthly,
     should_run_monthly_dow,
+    should_run_weekly,
 )
-
-from tacticalrmm.utils import get_default_timezone, get_core_settings
+from tacticalrmm.utils import get_core_settings, get_default_timezone
 
 
 @app.task
@@ -26,8 +26,9 @@ def prune_report_history_task(older_than_days: int) -> str:
 
 @app.task
 def scheduled_reports_runner():
+    from tacticalrmm.constants import MonthlyType, ScheduleType
+
     from .models import ReportSchedule
-    from tacticalrmm.constants import ScheduleType, MonthlyType
     from .utils import run_scheduled_report
 
     now = djangotime.now()
@@ -117,21 +118,24 @@ def email_report(
     attachment_name: Optional[str] = None,
     report_link: Optional[str] = None,
     attachment: Optional[bytes] = None,
+    attachment_type: Optional[str] = None,
+    attachment_extension: Optional[str] = None,
+    include_report_link: Optional[bool] = False,
 ):
     core = get_core_settings()
 
     new_subject = subject or f"Scheduled Report: {template_name}"
+    new_body = body or "Your report is attached."
 
-    # html report
-    if report_link:
-        new_body = f"{body or 'Follow the link to view your report'}\n\n{report_link}"
-    else:
-        new_body = body or "You PDF report is attached"
+    if attachment_type == "html" and include_report_link:
+        new_body += f"\n\nView the report online:\n\n{report_link}"
 
     core.send_mail(
         subject=new_subject,
         body=new_body,
         attachment=attachment,
         attachment_filename=attachment_name or template_name,
+        attachment_type=attachment_type,
+        attachment_extension=attachment_extension,
         override_recipients=recipients,
     )

@@ -49,4 +49,5 @@ urlpatterns = [
     path("<agent:agent_id>/registry/", views.browse_registry, name="browse_registry"),
     path("<agent:agent_id>/registry/create-key/", views.create_registry_key),
     path("<agent:agent_id>/registry/delete-key/", views.delete_registry_key),
+    path("<agent:agent_id>/registry/rename-key/", views.rename_registry_key),
 ]

@@ -1381,3 +1381,44 @@ def delete_registry_key(request, agent_id):
         return notify_error(f"Registry key deletion failed: {r['error']}")
 
     return Response({"status": "success", "deleted_path": path})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def rename_registry_key(request, agent_id):
+
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    old_path = (request.data.get("old_path") or "").strip()
+    new_path = (request.data.get("new_path") or "").strip()
+
+    if not old_path or not new_path:
+        return notify_error("Both 'old_path' and 'new_path' are required")
+
+    if old_path == new_path:
+        return notify_error("Old and new path cannot be the same")
+
+    data = {
+        "func": "registry_rename_key",
+        "payload": {"old_path": old_path, "new_path": new_path},
+    }
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=60))  # may take longer
+    except Exception as e:
+        # logger.exception("NATS communication failed during rename_registry_key")
+        return notify_error(f"NATS communication failed: {str(e)}")
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if isinstance(r, dict) and "error" in r:
+        return notify_error(f"Registry key rename failed: {r['error']}")
+
+    return Response(
+        {
+            "status": "success",
+            "old_path": old_path,
+            "new_path": new_path,
+        }
+    )

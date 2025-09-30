@@ -53,7 +53,7 @@ not_supported() {
   exit 1
 }
 needs_updated() {
-  echo -e "${YELLOW}WARNING: Ubuntu 20.04 is outdated. Please migrate to Ubuntu 22.04 or Debian 12.${NC}"
+  echo -e "${YELLOW}WARNING: Ubuntu 20.04 is outdated. Please Backup and Restore to Ubuntu 22.04 or Debian 12.${NC}"
 }
 pass_message() {
   echo -e "${GREEN}You are running $osname $fullrelno, which is supported.${NC}"
@@ -70,7 +70,7 @@ fi
 
 # ——— Unsupported environments —————————————————————————————————————————
 if dpkg -l | grep -qi turnkey; then
-  echo -e "${RED}Turnkey Linux is not supported. Use official Debian/Ubuntu ISO.${NC}"
+  echo -e "${RED}Turnkey Linux is not supported. Please use the official debian/ubuntu ISO.${NC}"
   exit 1
 fi
 if pgrep -f webmin >/dev/null; then

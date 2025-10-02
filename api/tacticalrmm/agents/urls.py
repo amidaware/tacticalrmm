@@ -50,4 +50,8 @@ urlpatterns = [
     path("<agent:agent_id>/registry/create-key/", views.create_registry_key),
     path("<agent:agent_id>/registry/delete-key/", views.delete_registry_key),
     path("<agent:agent_id>/registry/rename-key/", views.rename_registry_key),
+    path("<agent:agent_id>/registry/create-value/", views.create_registry_value),
+    path("<agent:agent_id>/registry/delete-value/", views.delete_registry_value),
+    path("<agent:agent_id>/registry/rename-value/", views.rename_registry_value),
+    path("<agent:agent_id>/registry/modify-value/", views.modify_registry_value),
 ]

@@ -5,7 +5,7 @@ certifi==2025.8.3
 channels==4.3.1
 channels_redis==4.3.0
 cryptography==45.0.7
-Django==4.2.24
+Django==4.2.25
 django-cors-headers==4.7.0
 django-allauth[socialaccount]==65.2.0
 django-filter==25.1
@@ -16,7 +16,7 @@ meshctrl==0.1.15
 msgpack==1.1.0
 nats-py==2.11.0
 packaging==25.0
-psutil==7.0.0
+psutil==7.1.0
 psycopg[binary]==3.2.10
 pycparser==2.22
 pycryptodome==3.23.0

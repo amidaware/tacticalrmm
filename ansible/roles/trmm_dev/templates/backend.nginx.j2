@@ -6,6 +6,11 @@ server {
     ssl_certificate {{ fullchain_dest }};
     ssl_certificate_key {{ privkey_dest }};
 
+    location /assets/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "http://{{ rmm }}:8000";
+        alias {{ assets_dir }}/;
+    }
 
     location ~ ^/natsws {
         proxy_pass http://127.0.0.1:9235;

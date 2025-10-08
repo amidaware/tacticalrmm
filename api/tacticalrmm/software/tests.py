@@ -222,3 +222,25 @@ class TestSoftwarePermissions(TacticalTestCase):
             self.check_not_authorized(
                 method, f"{base_url}/{unauthorized_agent.agent_id}/"
             )
+
+    def test_uninstall_software(self):
+        agent = baker.make_recipe("agents.agent")
+        baker.make("software.InstalledSoftware", software={}, agent=agent)
+        url = f"{base_url}/{agent.agent_id}/uninstall/"
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        self.check_not_authorized("post", url)
+
+        user.role.can_manage_software = True
+        user.role.save()
+
+        # still should fail, uninstall needs send_cmd perms
+        self.check_not_authorized("post", url)
+
+        user.role.can_send_cmd = True
+        user.role.save()
+
+        # should work now
+        self.check_authorized("post", url)

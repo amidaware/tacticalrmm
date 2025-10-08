@@ -37,7 +37,7 @@ LATEST_AGENT_VER = "2.9.1"
 
 MESH_VER = "1.1.32"
 
-NATS_SERVER_VER = "2.11.2"
+NATS_SERVER_VER = "2.11.10"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
@@ -83,9 +83,9 @@ INSTALL_DENO_URL = ""
 DENO_DEFAULT_PERMISSIONS = "--allow-all"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "47"
+PIP_VER = "48"
 
-SETUPTOOLS_VER = "79.0.1"
+SETUPTOOLS_VER = "80.9.0"
 WHEEL_VER = "0.45.1"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"

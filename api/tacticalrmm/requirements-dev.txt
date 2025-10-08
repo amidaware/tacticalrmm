@@ -3,7 +3,7 @@ daphne
 Werkzeug
 django-extensions
 isort
-django-silk
+django-silk==5.4.0
 mypy
 django-stubs
 pandas-stubs

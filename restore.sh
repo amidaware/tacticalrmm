@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="64"
+SCRIPT_VERSION="65"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -560,8 +560,6 @@ server {
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
     ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
@@ -658,6 +656,13 @@ if [[ $HAS_OLD_MONGO_DEP ]]; then
 fi
 
 sudo systemctl daemon-reload
+
+for i in rmm frontend meshcentral; do
+  conf="/etc/nginx/sites-enabled/${i}.conf"
+  if grep -q "ssl_stapling" "$conf"; then
+    sudo sed -i '/ssl_stapling/d' "$conf"
+  fi
+done
 
 for i in celery.service celerybeat.service rmm.service daphne.service nats-api.service nginx; do
   sudo systemctl enable ${i}

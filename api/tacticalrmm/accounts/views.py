@@ -4,6 +4,8 @@ import pyotp
 from allauth.socialaccount.models import SocialAccount, SocialApp
 from django.conf import settings
 from django.contrib.auth import login
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -243,6 +245,12 @@ class GetAddUsers(APIView):
 
     def post(self, request):
         # add new user
+        validate_username = UnicodeUsernameValidator()
+        try:
+            validate_username(request.data["username"])
+        except ValidationError as e:
+            return notify_error(str(e))
+
         try:
             user = User.objects.create_user(  # type: ignore
                 request.data["username"],

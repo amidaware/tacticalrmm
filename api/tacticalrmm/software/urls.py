@@ -6,4 +6,5 @@ urlpatterns = [
     path("chocos/", views.chocos),
     path("", views.GetSoftware.as_view()),
     path("<agent:agent_id>/", views.GetSoftware.as_view()),
+    path("<agent:agent_id>/uninstall/", views.UninstallSoftware.as_view()),
 ]

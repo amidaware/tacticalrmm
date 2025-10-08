@@ -1306,13 +1306,16 @@ def wol(request, agent_id):
 def browse_registry(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
     path = request.query_params.get("path", "Computer").strip()
+    page = int(request.query_params.get("page", 1))
+    page_size = int(request.query_params.get("page_size", 200))
 
     if path.lower() == "computer":
         path = "Computer"
 
-    data = {"func": "registry_browse", "payload": {"path": path}}
-
-    # TODO: do we need history logs / audit logs ?
+    data = {
+        "func": "registry_browse",
+        "payload": {"path": path, "page": str(page), "page_size": str(page_size)},
+    }
     try:
         r = asyncio.run(agent.nats_cmd(data, timeout=30))
     except Exception as e:
@@ -1329,6 +1332,9 @@ def browse_registry(request, agent_id):
             "path": r.get("path", path),
             "subkeys": r.get("subkeys", []),
             "values": r.get("values", []),
+            "has_more": r.get("has_more", False),
+            "page": page,
+            "page_size": page_size,
         }
     )
 
@@ -1432,6 +1438,7 @@ def create_registry_value(request, agent_id):
     path = (request.data.get("path") or "").strip()
     val_name = request.data.get("name")
     val_type = (request.data.get("type") or "").strip().upper()
+    val_data = request.data.get("data")  # optional
 
     if not path:
         return notify_error("Registry path is required")
@@ -1444,6 +1451,7 @@ def create_registry_value(request, agent_id):
         "path": path,
         "type": val_type,
         "name": val_name,
+        "data": val_data,  # optional
     }
 
     data = {"func": "registry_create_value", "payload": payload}
@@ -1458,11 +1466,16 @@ def create_registry_value(request, agent_id):
 
     if isinstance(r, dict) and "error" in r:
         return notify_error(r["error"])
-
-    # success response from agent should include created 'name'
-    created_name = r.get("name", val_name if val_name is not None else "")
-    created_type = r.get("type", val_type if val_type is not None else "")
-    return Response({"status": "success", "name": created_name, "type": created_type})
+    return Response(
+        {
+            "status": "success",
+            "data": {
+                "name": r.get("name", val_name),
+                "type": r.get("type", val_type),
+                "data": r.get("data", val_data),
+            },
+        }
+    )
 
 
 @api_view(["DELETE"])
@@ -1583,8 +1596,10 @@ def modify_registry_value(request, agent_id):
     return Response(
         {
             "status": "success",
-            "name": r.get("name", val_name),
-            "type": r.get("type", val_type),
-            "data": r.get("data", val_data),
+            "data": {
+                "name": r.get("name", val_name),
+                "type": r.get("type", val_type),
+                "data": r.get("data", val_data),
+            },
         }
     )

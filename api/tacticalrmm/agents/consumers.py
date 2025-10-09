@@ -103,6 +103,7 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         self.cmd_id = None
 
     async def connect(self):
+        """Handle websocket connection."""
         self.user = self.scope["user"]
 
         if isinstance(self.user, AnonymousUser):
@@ -121,11 +122,12 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
             )
             await self.close(code=4003)
             return
-        self.group_name = f"agent_cmd_{self.agent_id}"
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+
+        # Don’t create a group yet, cmd_id not known
         await self.accept()
 
     async def disconnect(self, close_code):
+        """Cleanup on disconnect."""
         chan = self.channel_name
 
         if chan in active_streams:
@@ -139,7 +141,8 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
                         await stream_task
             if not cmd_streams:
                 active_streams.pop(chan)
-        if hasattr(self, "group_name") and self.group_name:
+
+        if self.group_name:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive_json(self, content, **kwargs):
@@ -157,6 +160,11 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         shell = custom_shell if shell == "custom" and custom_shell else shell
         cmd_id = content.get("cmd_id") or uuid.uuid4().hex
         self.cmd_id = cmd_id
+
+        # Create per-session group now that cmd_id is known
+        self.group_name = f"agent_cmd_{self.agent_id}_{cmd_id}"
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+
         await self.send_json({"cmd_id": cmd_id})
         subject_output = f"{self.agent_id}.cmdoutput.{cmd_id}"
 
@@ -200,6 +208,7 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
                 timeout=timeout + 2,
                 stop_evt=self.stop_evt,
                 output_subject=subject_output,
+                group=self.group_name,
             )
         )
         active_streams[chan][cmd_id] = (self.stop_evt, self.stream_task)

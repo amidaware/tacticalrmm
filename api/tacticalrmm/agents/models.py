@@ -894,6 +894,7 @@ class Agent(BaseAuditModel):
         timeout: int = 30,
         stop_evt: asyncio.Event | None = None,
         output_subject: str = "",
+        group: str = "",
     ) -> None:
         """
         Publish a command to the agent's NATS subject and stream back line-by-line output.
@@ -906,7 +907,6 @@ class Agent(BaseAuditModel):
         """
         opts = setup_nats_options()
         channel_layer = get_channel_layer()
-        group = f"agent_cmd_{self.agent_id}"
         cmd_id = data.get("payload", {}).get("cmd_id", "")
 
         try:
@@ -984,8 +984,7 @@ class Agent(BaseAuditModel):
                 waiter_stop = asyncio.create_task(stop_evt.wait())
                 waiter_sleep = asyncio.create_task(asyncio.sleep(timeout))
                 done, pending = await asyncio.wait(
-                    {waiter_stop, waiter_sleep},
-                    return_when=asyncio.FIRST_COMPLETED,
+                    {waiter_stop, waiter_sleep}, return_when=asyncio.FIRST_COMPLETED
                 )
                 for p in pending:
                     p.cancel()

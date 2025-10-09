@@ -116,7 +116,6 @@ class TestCommandStreamConsumer(TacticalTestCase):
 
         async_to_sync(self.consumer.connect)()
         mock_accept.assert_awaited_once()
-        # connect() shouldn't create a per-cmd group; it's done in receive_json()
         self.assertFalse(
             self.consumer.channel_layer.group_add.await_args_list,
             "group_add was unexpectedly awaited during connect()",
@@ -223,17 +222,10 @@ class TestNatsStreamCmd:
 
         async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "abc"}}, timeout=0)
 
-        # tolerate either awaited or sync call
-        try:
-            mock_layer.return_value.group_send.assert_any_await(
-                "agent_cmd_agent123",
-                {"type": "stream_output", "cmd_id": "abc", "output": "hello world"},
-            )
-        except AssertionError:
-            mock_layer.return_value.group_send.assert_any_call(
-                "agent_cmd_agent123",
-                {"type": "stream_output", "cmd_id": "abc", "output": "hello world"},
-            )
+        mock_layer.return_value.group_send.assert_any_call(
+            "agent_cmd_agent123",
+            {"type": "stream_output", "cmd_id": "abc", "output": "hello world"},
+        )
 
     @patch("agents.models.get_channel_layer")
     @patch("agents.models.msgpack.loads")
@@ -256,28 +248,16 @@ class TestNatsStreamCmd:
 
         async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "xyz"}}, timeout=0)
 
-        try:
-            mock_layer.return_value.group_send.assert_any_await(
-                "agent_cmd_agent123",
-                {
-                    "type": "stream_output",
-                    "cmd_id": "xyz",
-                    "output": "out",
-                    "done": True,
-                    "exit_code": 5,
-                },
-            )
-        except AssertionError:
-            mock_layer.return_value.group_send.assert_any_call(
-                "agent_cmd_agent123",
-                {
-                    "type": "stream_output",
-                    "cmd_id": "xyz",
-                    "output": "out",
-                    "done": True,
-                    "exit_code": 5,
-                },
-            )
+        mock_layer.return_value.group_send.assert_any_call(
+            "agent_cmd_agent123",
+            {
+                "type": "stream_output",
+                "cmd_id": "xyz",
+                "output": "out",
+                "done": True,
+                "exit_code": 5,
+            },
+        )
 
     @patch("agents.models.get_channel_layer")
     @patch("agents.models.nats.connect")
@@ -306,24 +286,14 @@ class TestNatsStreamCmd:
 
         async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "oops"}}, timeout=0)
 
-        try:
-            mock_layer.return_value.group_send.assert_any_await(
-                "agent_cmd_agent123",
-                {
-                    "type": "stream_output",
-                    "cmd_id": "oops",
-                    "output": "[ERROR] NATS publish/subscribe failed: publish failed",
-                },
-            )
-        except AssertionError:
-            mock_layer.return_value.group_send.assert_any_call(
-                "agent_cmd_agent123",
-                {
-                    "type": "stream_output",
-                    "cmd_id": "oops",
-                    "output": "[ERROR] NATS publish/subscribe failed: publish failed",
-                },
-            )
+        mock_layer.return_value.group_send.assert_any_call(
+            "agent_cmd_agent123",
+            {
+                "type": "stream_output",
+                "cmd_id": "oops",
+                "output": "[ERROR] NATS publish/subscribe failed: publish failed",
+            },
+        )
 
         fake_nc.close.assert_awaited_once()
 
@@ -350,24 +320,14 @@ class TestNatsStreamCmd:
             {"payload": {"cmd_id": "err123"}}, timeout=0
         )
 
-        try:
-            mock_layer.return_value.group_send.assert_any_await(
-                "agent_cmd_agent123",
-                {
-                    "type": "stream_output",
-                    "cmd_id": "err123",
-                    "output": "[ERROR] bad data",
-                },
-            )
-        except AssertionError:
-            mock_layer.return_value.group_send.assert_any_call(
-                "agent_cmd_agent123",
-                {
-                    "type": "stream_output",
-                    "cmd_id": "err123",
-                    "output": "[ERROR] bad data",
-                },
-            )
+        mock_layer.return_value.group_send.assert_any_call(
+            "agent_cmd_agent123",
+            {
+                "type": "stream_output",
+                "cmd_id": "err123",
+                "output": "[ERROR] bad data",
+            },
+        )
 
     @patch("agents.models.get_channel_layer")
     @patch("agents.models.nats.connect")

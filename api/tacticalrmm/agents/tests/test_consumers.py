@@ -1,9 +1,7 @@
 from unittest.mock import patch
 from asgiref.sync import async_to_sync
-
 from model_bakery import baker
 from django.contrib.auth import get_user_model
-
 from tacticalrmm.test import TacticalTestCase
 from agents.models import AgentHistory
 from logs.models import AuditLog
@@ -38,9 +36,9 @@ class TestCommandStreamConsumer(TacticalTestCase):
         }
         self.consumer.user = self.user
         self.consumer.channel_name = "test_channel"
-        self.consumer.channel_layer = None
         self.consumer.agent_id = self.agent.agent_id
         self.consumer.group_name = f"agent_cmd_{self.agent.agent_id}"
+        self.consumer.channel_layer = AsyncMock()
 
     @patch.object(CommandStreamConsumer, "send_json", autospec=True)
     def test_creates_agent_history_and_auditlog(self, mock_send_json):
@@ -49,6 +47,7 @@ class TestCommandStreamConsumer(TacticalTestCase):
             "shell": "cmd",
             "timeout": 5,
         }
+        self.consumer.channel_layer = AsyncMock()
 
         async_to_sync(self.consumer.receive_json)(message)
         history = AgentHistory.objects.filter(agent=self.agent).last()
@@ -110,11 +109,15 @@ class TestCommandStreamConsumer(TacticalTestCase):
     @patch.object(CommandStreamConsumer, "has_perm", return_value=True)
     def test_connect_authorized_user(self, mock_perm, mock_accept):
         self.consumer.channel_layer = AsyncMock()
+        self.consumer.channel_layer.group_add = AsyncMock()
+        self.consumer.channel_layer.group_discard = AsyncMock()
+
         async_to_sync(self.consumer.connect)()
-        self.consumer.channel_layer.group_add.assert_called_once_with(
-            self.consumer.group_name, self.consumer.channel_name
-        )
         mock_accept.assert_awaited_once()
+        self.assertFalse(
+            self.consumer.channel_layer.group_add.await_args_list,
+            "group_add was unexpectedly awaited during connect()",
+        )
 
     @patch.object(CommandStreamConsumer, "send_json", new_callable=AsyncMock)
     @patch.object(CommandStreamConsumer, "accept", new_callable=AsyncMock)

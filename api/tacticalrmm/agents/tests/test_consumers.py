@@ -223,7 +223,7 @@ class TestNatsStreamCmd:
         async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "abc"}}, timeout=0)
 
         mock_layer.return_value.group_send.assert_any_call(
-            "agent_cmd_agent123",
+            "agent_cmd_agent123_abc",
             {"type": "stream_output", "cmd_id": "abc", "output": "hello world"},
         )
 
@@ -249,7 +249,7 @@ class TestNatsStreamCmd:
         async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "xyz"}}, timeout=0)
 
         mock_layer.return_value.group_send.assert_any_call(
-            "agent_cmd_agent123",
+            "agent_cmd_agent123_xyz",
             {
                 "type": "stream_output",
                 "cmd_id": "xyz",
@@ -287,7 +287,7 @@ class TestNatsStreamCmd:
         async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "oops"}}, timeout=0)
 
         mock_layer.return_value.group_send.assert_any_call(
-            "agent_cmd_agent123",
+            "agent_cmd_agent123_oops",
             {
                 "type": "stream_output",
                 "cmd_id": "oops",
@@ -321,7 +321,7 @@ class TestNatsStreamCmd:
         )
 
         mock_layer.return_value.group_send.assert_any_call(
-            "agent_cmd_agent123",
+            "agent_cmd_agent123_err123",
             {
                 "type": "stream_output",
                 "cmd_id": "err123",

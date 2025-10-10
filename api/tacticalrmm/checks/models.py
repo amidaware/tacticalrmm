@@ -118,7 +118,7 @@ class Check(BaseAuditModel):
         default=list,
     )
     success_return_codes = ArrayField(
-        models.PositiveIntegerField(),
+        models.PositiveBigIntegerField(),
         null=True,
         blank=True,
         default=list,

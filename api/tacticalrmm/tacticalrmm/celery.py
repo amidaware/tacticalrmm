@@ -73,6 +73,10 @@ app.conf.beat_schedule = {
         "task": "core.tasks.scheduled_task_runner",
         "schedule": crontab(),
     },
+    "trmm-reports-scheduler": {
+        "task": "ee.reporting.tasks.scheduled_reports_runner",
+        "schedule": crontab(),
+    },
 }
 
 

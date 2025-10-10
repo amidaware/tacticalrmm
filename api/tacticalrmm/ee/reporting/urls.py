@@ -14,6 +14,7 @@ urlpatterns = [
     path("templates/<int:pk>/", views.GetEditDeleteReportTemplate.as_view()),
     path("templates/<int:pk>/run/", views.GenerateReport.as_view()),
     path("templates/<int:pk>/export/", views.ExportReportTemplate.as_view()),
+    path("templates/<int:pk>/email/", views.EmailReport.as_view()),
     path("templates/preview/", views.GenerateReportPreview.as_view()),
     path("templates/preview/analysis/", views.GetAllowedValues.as_view()),
     path("templates/import/", views.ImportReportTemplate.as_view()),
@@ -36,4 +37,12 @@ urlpatterns = [
     # serving assets
     path("assets/<path:path>", views.NginxRedirect.as_view()),
     path("queryschema/", views.QuerySchema.as_view()),
+    # report schedules
+    path("schedules/", views.GetAddReportSchedule.as_view()),
+    path("schedules/<int:pk>/", views.GetEditDeleteReportSchedule.as_view()),
+    path("schedules/<int:pk>/run/", views.RunReportSchedule.as_view()),
+    # report history
+    path("history/", views.GetReportHistory.as_view()),
+    path("history/<int:pk>/", views.DeleteReportHistory.as_view()),
+    path("history/<int:pk>/run/", views.RunReportHistory.as_view()),
 ]

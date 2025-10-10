@@ -175,25 +175,18 @@ class TestReportTemplateGenerateView:
         data = {"format": "html", "dependencies": {"client": 1}}
 
         with patch(
-            "ee.reporting.views.generate_html", return_value=(sample_html, None)
-        ) as mock_generate_html:
+            "ee.reporting.views.run_report", return_value=(sample_html, None, None)
+        ) as run_report:
             url = f"/reporting/templates/{report_template.id}/run/"
             response = authenticated_client.post(url, data, format="json")
 
-            assert response.status_code == status.HTTP_200_OK
             assert response.data == sample_html
+            assert response.status_code == status.HTTP_200_OK
 
-        mock_generate_html.assert_called_with(
-            template=report_template.template_md,
-            template_type=report_template.type,
-            css=report_template.template_css if report_template.template_css else "",
-            html_template=(
-                report_template.template_html.id
-                if report_template.template_html
-                else None
-            ),
-            variables=report_template.template_variables,
+        run_report.assert_called_with(
+            template=report_template,
             dependencies={"client": 1},
+            format="html",
             user=authenticated_client.handler._force_user,
         )
 

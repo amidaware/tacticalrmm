@@ -106,13 +106,13 @@ class Check(BaseAuditModel):
         default=list,
     )
     info_return_codes = ArrayField(
-        models.PositiveIntegerField(),
+        models.BigIntegerField(),
         null=True,
         blank=True,
         default=list,
     )
     warning_return_codes = ArrayField(
-        models.PositiveIntegerField(),
+        models.BigIntegerField(),
         null=True,
         blank=True,
         default=list,

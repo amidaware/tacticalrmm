@@ -167,8 +167,11 @@ class TestCommandStreamConsumer(TacticalTestCase):
 @pytest.mark.django_db
 class TestNatsStreamCmd:
     @pytest.fixture
-    def agent(self):
-        return Agent(agent_id="agent123", hostname="test-agent")
+    def agent(db):
+        agent = Agent(hostname="test-agent")
+        agent.agent_id = "agent123"
+        agent.save()
+        return agent
 
     # helper used to assert group_send was called either awaited or sync
     def _assert_group_send_called(mock_layer, expected_group, expected_payload):

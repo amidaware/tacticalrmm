@@ -31,7 +31,7 @@ tldextract==5.3.0
 twilio==8.13.0
 urllib3==2.5.0
 uvicorn[standard]==0.37.0
-uWSGI==2.0.30
+uWSGI==2.0.31
 validators==0.24.0
 vine==5.1.0
 websockets==13.1

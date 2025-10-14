@@ -168,8 +168,14 @@ class TestCommandStreamConsumer(TacticalTestCase):
 class TestNatsStreamCmd:
     @pytest.fixture
     def agent(db):
-        agent = Agent(hostname="test-agent")
-        agent.agent_id = "agent123"
+        client = baker.make("clients.Client")
+        site = baker.make("clients.Site", client=client)
+
+        agent = Agent(
+            hostname="test-agent",
+            agent_id="agent123",
+            site=site,
+        )
         agent.save()
         return agent
 

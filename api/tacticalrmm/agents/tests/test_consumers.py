@@ -229,11 +229,18 @@ class TestNatsStreamCmd:
 
         fake_nc.subscribe.side_effect = fake_subscribe
 
-        async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "abc"}}, timeout=0)
+        cmd_id = "abc"
+        group = f"agent_cmd_{agent.agent_id}_{cmd_id}"
+
+        async_to_sync(agent.nats_stream_cmd)(
+            {"payload": {"cmd_id": cmd_id}},
+            timeout=0,
+            group=group,
+        )
 
         mock_layer.return_value.group_send.assert_any_call(
-            "agent_cmd_agent123_abc",
-            {"type": "stream_output", "cmd_id": "abc", "output": "hello world"},
+            group,
+            {"type": "stream_output", "cmd_id": cmd_id, "output": "hello world"},
         )
 
     @patch("agents.models.get_channel_layer")
@@ -255,13 +262,20 @@ class TestNatsStreamCmd:
 
         fake_nc.subscribe.side_effect = fake_subscribe
 
-        async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "xyz"}}, timeout=0)
+        cmd_id = "xyz"
+        group = f"agent_cmd_{agent.agent_id}_{cmd_id}"
+
+        async_to_sync(agent.nats_stream_cmd)(
+            {"payload": {"cmd_id": cmd_id}},
+            timeout=0,
+            group=group,
+        )
 
         mock_layer.return_value.group_send.assert_any_call(
-            "agent_cmd_agent123_xyz",
+            group,
             {
                 "type": "stream_output",
-                "cmd_id": "xyz",
+                "cmd_id": cmd_id,
                 "output": "out",
                 "done": True,
                 "exit_code": 5,
@@ -293,13 +307,20 @@ class TestNatsStreamCmd:
         fake_nc.publish.side_effect = Exception("publish failed")
         mock_layer.return_value.group_send = AsyncMock()
 
-        async_to_sync(agent.nats_stream_cmd)({"payload": {"cmd_id": "oops"}}, timeout=0)
+        cmd_id = "oops"
+        group = f"agent_cmd_{agent.agent_id}_{cmd_id}"
+
+        async_to_sync(agent.nats_stream_cmd)(
+            {"payload": {"cmd_id": cmd_id}},
+            timeout=0,
+            group=group,
+        )
 
         mock_layer.return_value.group_send.assert_any_call(
-            "agent_cmd_agent123_oops",
+            group,
             {
                 "type": "stream_output",
-                "cmd_id": "oops",
+                "cmd_id": cmd_id,
                 "output": "[ERROR] NATS publish/subscribe failed: publish failed",
             },
         )
@@ -325,15 +346,20 @@ class TestNatsStreamCmd:
 
         fake_nc.subscribe.side_effect = fake_subscribe
 
+        cmd_id = "err123"
+        group = f"agent_cmd_{agent.agent_id}_{cmd_id}"
+
         async_to_sync(agent.nats_stream_cmd)(
-            {"payload": {"cmd_id": "err123"}}, timeout=0
+            {"payload": {"cmd_id": cmd_id}},
+            timeout=0,
+            group=group,
         )
 
         mock_layer.return_value.group_send.assert_any_call(
-            "agent_cmd_agent123_err123",
+            group,
             {
                 "type": "stream_output",
-                "cmd_id": "err123",
+                "cmd_id": cmd_id,
                 "output": "[ERROR] bad data",
             },
         )

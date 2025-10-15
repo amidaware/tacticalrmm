@@ -59,6 +59,8 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
       "title2": "TacticalRMM",
       "newAccounts": false,
       "mstsc": true,
+      "clipboardGet": true,
+      "clipboardSet": true,
       "geoLocation": true,
       "certUrl": "https://${NGINX_HOST_IP}:${NGINX_HOST_PORT}",
       "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]

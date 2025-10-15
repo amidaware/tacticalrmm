@@ -499,6 +499,7 @@ DEMO_NOT_ALLOWED = [
     {"name": "GetAddAPIKeys", "methods": ["POST"]},
     {"name": "GetUpdateDeleteAPIKey", "methods": ["PUT", "DELETE"]},
     {"name": "WebVNC", "methods": ["GET"]},
+    {"name": "UninstallSoftware", "methods": ["POST"]},
 ]
 
 CONFIG_MGMT_CMDS = (

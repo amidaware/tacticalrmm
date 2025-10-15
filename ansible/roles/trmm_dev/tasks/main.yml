@@ -92,6 +92,7 @@
   tags: python
   ansible.builtin.shell:
     chdir: "{{ python_tmp.path }}/Python-{{ python_ver }}"
+    executable: /bin/bash
     cmd: |
       ./configure --enable-optimizations
       make -j {{ numprocs.stdout }}
@@ -101,6 +102,7 @@
   become: yes
   ansible.builtin.shell:
     chdir: "{{ python_tmp.path }}/Python-{{ python_ver }}"
+    executable: /bin/bash
     cmd: |
       make altinstall
 
@@ -111,22 +113,66 @@
     pkg: redis
     state: present
 
-- name: create postgres repo
-  tags: postgres
+- name: create keyrings dir
   become: yes
-  ansible.builtin.copy:
-    content: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
-    dest: /etc/apt/sources.list.d/pgdg.list
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
     owner: root
     group: root
-    mode: "0644"
+    mode: "0755"
 
-- name: import postgres repo signing key
-  tags: postgres
+- name: download signing keys
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "/tmp/{{ item.name }}_signing.key"
+  with_items:
+    - {
+        url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc",
+        name: "postgresql",
+      }
+    - { url: "https://nginx.org/keys/nginx_signing.key", name: "nginx" }
+    - {
+        url: "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key",
+        name: "node",
+      }
+
+- name: install keys
   become: yes
-  ansible.builtin.apt_key:
-    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+  ansible.builtin.command:
+    cmd: "gpg --dearmor -o /etc/apt/keyrings/{{ item }}-archive-keyring.gpg /tmp/{{ item }}_signing.key"
+  args:
+    creates: "/etc/apt/keyrings/{{ item }}-archive-keyring.gpg"
+  with_items:
+    - "postgresql"
+    - "nginx"
+    - "node"
+
+- name: add repos
+  become: yes
+  apt_repository:
+    repo: "{{ item.repo }}"
     state: present
+    filename: "{{ item.filename}}.list"
+    mode: 0644
+  loop:
+    - {
+        filename: "nginx",
+        repo: "deb [signed-by=/etc/apt/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian {{ ansible_distribution_release }} nginx",
+      }
+    - {
+        filename: "pgdg",
+        repo: "deb [signed-by=/etc/apt/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main",
+      }
+    - {
+        filename: "nodesource",
+        repo: "deb [signed-by=/etc/apt/keyrings/node-archive-keyring.gpg] https://deb.nodesource.com/node_{{ node_major }}.x nodistro main",
+      }
+
+- name: update apt cache
+  become: yes
+  ansible.builtin.apt:
+    update_cache: yes
 
 - name: install postgresql
   tags: postgres
@@ -134,7 +180,6 @@
   ansible.builtin.apt:
     pkg: postgresql-15
     state: present
-    update_cache: yes
 
 - name: ensure postgres enabled and started
   tags: postgres
@@ -149,6 +194,7 @@
   become: yes
   become_user: postgres
   ansible.builtin.shell:
+    executable: /bin/bash
     cmd: |
       psql -c "CREATE DATABASE tacticalrmm"
       psql -c "CREATE USER {{ db_user }} WITH PASSWORD '{{ db_passwd }}'"
@@ -165,6 +211,7 @@
   become: yes
   become_user: postgres
   ansible.builtin.shell:
+    executable: /bin/bash
     cmd: |
       psql -c "CREATE DATABASE meshcentral"
       psql -c "CREATE USER {{ mesh_db_user }} WITH PASSWORD '{{ mesh_db_passwd }}'"
@@ -188,6 +235,30 @@
     - "{{ backend_dir }}"
     - "{{ frontend_dir }}"
     - "{{ scripts_dir }}"
+    - "{{ cert_dir }}"
+
+- name: create opt dir
+  become: yes
+  ansible.builtin.file:
+    path: "{{ opt_tactical }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0755"
+    recurse: yes
+
+- name: create assets and schemas
+  become: yes
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: "0755"
+    recurse: yes
+  loop:
+    - "{{ assets_dir }}"
+    - "{{ schema_dir }}"
 
 - name: git clone repos
   tags: git
@@ -210,7 +281,9 @@
 
 - name: get nats_server_ver
   tags: nats
-  ansible.builtin.shell: grep "^NATS_SERVER_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: grep "^NATS_SERVER_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
   register: nats_server_ver
 
 - name: Create nats tmpdir
@@ -238,26 +311,6 @@
     group: "{{ user }}"
     mode: "0755"
 
-- name: Create nodejs tmpdir
-  tags: nodejs
-  ansible.builtin.tempfile:
-    state: directory
-    suffix: nodejs
-  register: nodejs_tmp
-
-- name: download nodejs setup
-  tags: nodejs
-  ansible.builtin.get_url:
-    url: https://deb.nodesource.com/setup_18.x
-    dest: "{{ nodejs_tmp.path }}/setup_node.sh"
-    mode: "0755"
-
-- name: run node setup script
-  tags: nodejs
-  become: yes
-  ansible.builtin.command:
-    cmd: "{{ nodejs_tmp.path }}/setup_node.sh"
-
 - name: install nodejs
   tags: nodejs
   become: yes
@@ -270,17 +323,20 @@
   tags: nodejs
   become: yes
   ansible.builtin.shell:
+    executable: /bin/bash
     cmd: npm install -g npm
 
 - name: install quasar cli
   tags: quasar
   become: yes
   ansible.builtin.shell:
+    executable: /bin/bash
     cmd: npm install -g @quasar/cli
 
 - name: install frontend
   tags: quasar
   ansible.builtin.shell:
+    executable: /bin/bash
     chdir: "{{ frontend_dir }}"
     cmd: npm install
 
@@ -303,7 +359,6 @@
   with_items:
     - "{{ nats_tmp.path }}"
     - "{{ python_tmp.path }}"
-    - "{{ nodejs_tmp.path }}"
 
 - name: deploy fullchain
   tags: certs
@@ -325,30 +380,12 @@
     group: "{{ user }}"
     mode: "0440"
 
-- name: import nginx signing key
-  tags: nginx
-  become: yes
-  ansible.builtin.apt_key:
-    url: https://nginx.org/keys/nginx_signing.key
-    state: present
-
-- name: add nginx repo
-  tags: nginx
-  become: yes
-  ansible.builtin.template:
-    src: nginx.repo.j2
-    dest: /etc/apt/sources.list.d/nginx.list
-    owner: "root"
-    group: "root"
-    mode: "0644"
-
 - name: install nginx
   tags: nginx
   become: yes
   ansible.builtin.apt:
     pkg: nginx
     state: present
-    update_cache: yes
 
 - name: set nginx default conf
   tags: nginx
@@ -429,12 +466,16 @@
 
 - name: get setuptools_ver
   tags: pip
-  ansible.builtin.shell: grep "^SETUPTOOLS_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: grep "^SETUPTOOLS_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
   register: setuptools_ver
 
 - name: get wheel_ver
   tags: pip
-  ansible.builtin.shell: grep "^WHEEL_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: grep "^WHEEL_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
   register: wheel_ver
 
 - name: setup virtual env
@@ -442,13 +483,14 @@
   ansible.builtin.shell:
     chdir: "{{ backend_dir }}/api"
     cmd: python3.11 -m venv env
+    executable: /bin/bash
 
-- name: update pip to latest
+- name: update pip
   tags: pip
   ansible.builtin.pip:
     virtualenv: "{{ backend_dir }}/api/env"
     name: pip
-    state: latest
+    version: "25.1"
 
 - name: install setuptools and wheel
   tags: pip
@@ -483,9 +525,11 @@
   tags: django
   ansible.builtin.shell:
     chdir: "{{ backend_dir }}/api/tacticalrmm"
+    executable: /bin/bash
     cmd: |
-      . ../env/bin/activate
+      source ../env/bin/activate
       python manage.py migrate --no-input
+      python manage.py generate_json_schemas
       python manage.py collectstatic --no-input
       python manage.py create_natsapi_conf
       python manage.py load_chocos
@@ -509,7 +553,9 @@
 
 - name: get mesh_ver
   tags: mesh
-  ansible.builtin.shell: grep "^MESH_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: grep "^MESH_VER" {{ settings_file }} | awk -F'[= "]' '{print $5}'
   register: mesh_ver
 
 - name: create meshcentral data directory
@@ -582,6 +628,7 @@
   tags: mesh_user
   ansible.builtin.shell:
     chdir: "{{ mesh_dir }}"
+    executable: /bin/bash
     cmd: |
       node node_modules/meshcentral --createaccount {{ mesh_user }} --pass {{ mesh_password }} --email {{ github_email }}
       node node_modules/meshcentral --adminaccount {{ mesh_user }}
@@ -609,6 +656,7 @@
   tags: mesh_user
   ansible.builtin.shell:
     chdir: "{{ mesh_dir }}"
+    executable: /bin/bash
     cmd: |
       node node_modules/meshcentral/meshctrl.js --url wss://{{ mesh }}:443 --loginuser {{ mesh_user }} --loginpass {{ mesh_password }} AddDeviceGroup --name TacticalRMM
 
@@ -616,10 +664,12 @@
   tags: mesh_user
   ansible.builtin.shell:
     chdir: "{{ backend_dir }}/api/tacticalrmm"
+    executable: /bin/bash
     cmd: |
-      . ../env/bin/activate
+      source ../env/bin/activate
       python manage.py initial_db_setup
       python manage.py reload_nats
+      python manage.py sync_mesh_with_trmm
 
 - name: restart services
   tags: services

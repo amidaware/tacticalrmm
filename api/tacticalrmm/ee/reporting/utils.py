@@ -25,20 +25,32 @@ from zoneinfo import ZoneInfo
 
 import yaml
 from django.apps import apps
+from django.conf import settings
+from django.utils import timezone as djangotime
 from jinja2 import Environment, FunctionLoader
+from jinja2.exceptions import TemplateError
 from rest_framework.serializers import ValidationError
-from tacticalrmm.logger import logger
-from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
 
+import ee.reporting.tasks
+from tacticalrmm.logger import logger
+from tacticalrmm.utils import RE_DB_VALUE, get_db_value
+
 from . import custom_filters
-from .constants import REPORTING_MODELS
+from .constants import REPORTING_MODELS, get_property_fields
 from .markdown.config import Markdown
-from .models import ReportAsset, ReportDataQuery, ReportHTMLTemplate, ReportTemplate
+from .models import (
+    ReportAsset,
+    ReportDataQuery,
+    ReportHistory,
+    ReportHTMLTemplate,
+    ReportSchedule,
+    ReportTemplate,
+)
 
 if TYPE_CHECKING:
-    from accounts import User
+    from accounts.models import User
 
 RE_ASSET_URL = re.compile(
     r"(asset://([0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}))"
@@ -223,6 +235,7 @@ class AllowedOperations(Enum):
     ALL = "all"
     # custom fields
     CUSTOM_FIELDS = "custom_fields"
+    PROPERTIES = "properties"
     # presentation
     JSON = "json"
     CSV = "csv"
@@ -259,7 +272,13 @@ def build_queryset(
     csv_columns = {}
     defer = local_data_source.get("defer", None)
     columns = local_data_source.get("only", None)
-    fields_to_add = []
+    properties = local_data_source.pop("properties", None)
+    custom_fields = []
+
+    # make sure approved properties are in the list
+    if properties:
+        all_properties = get_property_fields(Model)
+        properties = [property for property in properties if property in all_properties]
 
     # create a base reporting queryset
     try:
@@ -270,6 +289,8 @@ def build_queryset(
     except Exception as e:
         logger.error(str(e))
         queryset = Model.objects.using("default")
+
+    properties_queryset = None
 
     model_name = Model.__name__.lower()
     for operation, values in local_data_source.items():
@@ -286,7 +307,7 @@ def build_queryset(
 
             if model_name in ("client", "site", "agent"):
                 fields = CustomField.objects.filter(model=model_name)
-                fields_to_add = [
+                custom_fields = [
                     field for field in values if fields.filter(name=field).exists()
                 ]
 
@@ -325,6 +346,9 @@ def build_queryset(
     if limit and not first and not get:
         queryset = queryset[:limit]
 
+    if properties:
+        properties_queryset = queryset
+
     if columns:
         # remove columns from only if defer is also present
         if defer:
@@ -349,10 +373,12 @@ def build_queryset(
         elif first:
             queryset = queryset.first()
 
-        if fields_to_add:
-            queryset = add_custom_fields(
+        if custom_fields or properties:
+            queryset = add_fields(
                 data=queryset,
-                fields_to_add=fields_to_add,
+                custom_fields=custom_fields,
+                properties=properties,
+                properties_queryset=properties_queryset,
                 model_name=model_name,
                 dict_value=True,
             )
@@ -373,9 +399,13 @@ def build_queryset(
         # add custom fields for list results
         queryset = list(queryset)
 
-        if fields_to_add:
-            queryset = add_custom_fields(
-                data=queryset, fields_to_add=fields_to_add, model_name=model_name
+        if custom_fields or properties:
+            queryset = add_fields(
+                data=queryset,
+                custom_fields=custom_fields,
+                properties=properties,
+                properties_queryset=properties_queryset,
+                model_name=model_name,
             )
 
         if isJson:
@@ -392,80 +422,101 @@ def build_queryset(
             return queryset
 
 
-def add_custom_fields(
+def add_fields(
     *,
     data: Union[Dict[str, Any], List[Dict[str, Any]]],
-    fields_to_add: List[str],
+    custom_fields: List[str],
+    properties: List[str],
+    properties_queryset,
     model_name: Literal["client", "site", "agent"],
     dict_value: bool = False,
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
-    from agents.models import AgentCustomField
-    from clients.models import ClientCustomField, SiteCustomField
-    from core.models import CustomField
+    # prep for custom fields
+    fields = []
+    if custom_fields:
+        from agents.models import AgentCustomField
+        from clients.models import ClientCustomField, SiteCustomField
+        from core.models import CustomField
 
-    model_name = model_name.lower()
-    CustomFieldModel: Union[
-        Type[AgentCustomField], Type[ClientCustomField], Type[SiteCustomField]
-    ]
-    if model_name == "agent":
-        CustomFieldModel = AgentCustomField
-    elif model_name == "client":
-        CustomFieldModel = ClientCustomField
-    else:
-        CustomFieldModel = SiteCustomField
+        CustomFieldModel: Union[
+            Type[AgentCustomField], Type[ClientCustomField], Type[SiteCustomField]
+        ]
+        if model_name == "agent":
+            CustomFieldModel = AgentCustomField
+        elif model_name == "client":
+            CustomFieldModel = ClientCustomField
+        else:
+            CustomFieldModel = SiteCustomField
 
-    custom_fields = CustomField.objects.filter(name__in=fields_to_add, model=model_name)
+        fields = CustomField.objects.filter(name__in=custom_fields, model=model_name)
+
+    prop_data = []
+    if properties:
+        prop_data = properties_queryset.only("id")
 
     if dict_value:
-        custom_field_data = list(
-            CustomFieldModel.objects.select_related("field").filter(
-                field__name__in=fields_to_add, **{f"{model_name}_id": data["id"]}
-            )
-        )
-        # hold custom field data on the returned object
-        data["custom_fields"]: Dict[str, Any] = {}
-
-        for custom_field in custom_fields:
-            find_custom_field_data = next(
-                (cf for cf in custom_field_data if cf.field_id == custom_field.id),
-                None,
+        if custom_fields:
+            custom_field_data = list(
+                CustomFieldModel.objects.select_related("field").filter(
+                    field__name__in=custom_fields, **{f"{model_name}_id": data["id"]}
+                )
             )
 
-            if find_custom_field_data is not None:
-                data["custom_fields"][custom_field.name] = find_custom_field_data.value
-            else:
-                data["custom_fields"][custom_field.name] = custom_field.default_value
+            # hold custom field data on the returned object
+            data["custom_fields"] = {}
+
+            for field in fields:
+                if custom_fields:
+                    find_custom_field_data = next(
+                        (cf for cf in custom_field_data if cf.field_id == field.id),
+                        None,
+                    )
+
+                    if find_custom_field_data is not None:
+                        data["custom_fields"][field.name] = find_custom_field_data.value
+                    else:
+                        data["custom_fields"][field.name] = field.default_value
+        if properties:
+            for prop in properties:
+                data[prop] = getattr(properties_queryset, prop, None)
 
         return data
     else:
-        ids = [row["id"] for row in data]
-        custom_field_data = list(
-            CustomFieldModel.objects.select_related("field").filter(
-                field__name__in=fields_to_add, **{f"{model_name}_id__in": ids}
+        if custom_fields:
+            ids = [row["id"] for row in data]
+            custom_field_data = list(
+                CustomFieldModel.objects.select_related("field").filter(
+                    field__name__in=custom_fields, **{f"{model_name}_id__in": ids}
+                )
             )
-        )
 
         for row in data:
-            row["custom_fields"]: Dict[str, Any] = {}
+            if custom_fields:
+                row["custom_fields"]: Dict[str, Any] = {}
 
-            for custom_field in custom_fields:
-                find_custom_field_data = next(
-                    (
-                        cf
-                        for cf in custom_field_data
-                        if cf.field_id == custom_field.id
-                        and getattr(cf, f"{model_name}_id") == row["id"]
-                    ),
-                    None,
-                )
+                for field in fields:
+                    if custom_fields:
+                        find_custom_field_data = next(
+                            (
+                                cf
+                                for cf in custom_field_data
+                                if cf.field_id == field.id
+                                and getattr(cf, f"{model_name}_id") == row["id"]
+                            ),
+                            None,
+                        )
 
-                if find_custom_field_data is not None:
-                    row["custom_fields"][
-                        custom_field.name
-                    ] = find_custom_field_data.value
-                else:
-                    row["custom_fields"][custom_field.name] = custom_field.default_value
+                        if find_custom_field_data is not None:
+                            row["custom_fields"][
+                                field.name
+                            ] = find_custom_field_data.value
+                        else:
+                            row["custom_fields"][field.name] = field.default_value
 
+            if properties:
+                model = next((item for item in prop_data if item.id == row["id"]), None)
+                for prop in properties:
+                    row[prop] = getattr(model, prop, None)
         return data
 
 
@@ -659,6 +710,110 @@ def generate_chart(
         return cast(str, fig.to_html(full_html=False, include_plotlyjs="cdn"))
     elif format == "image":
         return cast(str, fig.to_image(format="svg").decode("utf-8"))
+
+
+def create_report_history(
+    *,
+    template: "ReportTemplate",
+    report_data: str,
+    error_data: Optional[str],
+    user: str,
+) -> "ReportHistory":
+    return ReportHistory.objects.create(
+        report_template=template,
+        report_data=report_data,
+        error_data=error_data,
+        run_by=user,
+    )
+
+
+def run_report(
+    *,
+    template: "ReportTemplate",
+    dependencies: Dict[str, int],
+    format: Literal["html", "pdf", "plaintext"],
+    user: Optional["User"] = None,
+) -> Tuple[Optional[str] | bytes, Optional[str], "ReportHistory"]:
+    error_text = ""
+    try:
+        html_report, _ = generate_html(
+            template=template.template_md,
+            template_type=template.type,
+            css=template.template_css or "",
+            html_template=(
+                template.template_html.id if template.template_html else None
+            ),
+            variables=template.template_variables,
+            dependencies=dependencies,
+            user=user,
+        )
+
+        html_report = normalize_asset_url(html_report, format)
+        history = create_report_history(
+            template=template,
+            report_data=html_report,
+            user=user.username if user else "system",
+            error_data=None,
+        )
+
+        if format != "pdf":
+            return html_report, None, history
+        else:
+            pdf_bytes = generate_pdf(html=html_report)
+            return pdf_bytes, None, history
+    except TemplateError as error:
+        if hasattr(error, "lineno"):
+            error_text = f"Line {error.lineno}: {error.message}"
+        else:
+            error_text = str(error)
+        pass
+    except Exception as error:
+        error_text = str(error)
+        pass
+
+    history = create_report_history(
+        template=template,
+        report_data="",
+        error_data=error_text,
+        user=user.username if user else "system",
+    )
+    return None, error_text, history
+
+
+def build_report_link(id: int, format: str) -> str:
+    return f"{settings.CORS_ORIGIN_WHITELIST[0]}/reports/history/{id}/?format={format}"
+
+
+def run_scheduled_report(
+    *,
+    schedule: "ReportSchedule",
+    user: Optional["User"] = None,
+) -> Tuple["ReportHistory", Optional[str]]:
+
+    report, error, history = run_report(
+        template=schedule.report_template,
+        dependencies=schedule.dependencies,
+        format=schedule.format,
+        user=user,
+    )
+    schedule.last_run = djangotime.now()
+    schedule.save(update_fields=["last_run"])
+
+    if schedule.send_report_email:
+        ee.reporting.tasks.email_report.delay(
+            template_name=schedule.report_template.name,
+            report_link=build_report_link(history.id, schedule.format),
+            recipients=schedule.email_recipients,
+            attachment=report,
+            attachment_type=schedule.format,
+            subject=schedule.email_settings.get("subject"),
+            body=schedule.email_settings.get("body"),
+            attachment_name=schedule.email_settings.get("attachment_name"),
+            attachment_extension=schedule.email_settings.get("attachment_extension"),
+            include_report_link=schedule.email_settings.get("include_report_link"),
+        )
+
+    return history, error
 
 
 # import report functions

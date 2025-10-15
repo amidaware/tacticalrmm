@@ -16,3 +16,12 @@ class SoftwarePerms(permissions.BasePermission):
         return _has_perm(r, "can_manage_software") and _has_perm_on_agent(
             r.user, view.kwargs["agent_id"]
         )
+
+
+class UninstallSoftwarePerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        return (
+            _has_perm(r, "can_manage_software")
+            and _has_perm(r, "can_send_cmd")
+            and _has_perm_on_agent(r.user, view.kwargs["agent_id"])
+        )

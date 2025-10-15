@@ -1,11 +1,11 @@
 module github.com/amidaware/tacticalrmm
 
-go 1.23.8
+go 1.23.12
 
 require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
-	github.com/nats-io/nats.go v1.41.2
+	github.com/nats-io/nats.go v1.45.0
 	github.com/ugorji/go/codec v1.2.12
 	github.com/wh1te909/trmm-shared v0.0.0-20220227075846-f9f757361139
 )

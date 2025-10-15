@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="88"
+SCRIPT_VERSION="90"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
-sudo apt install -y curl wget dirmngr gnupg lsb-release ca-certificates
+sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
 sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y openssl
@@ -453,9 +453,9 @@ meshcfg="$(
     "allowHighQualityDesktop": true,
     "tlsOffload": "127.0.0.1",
     "agentCoreDump": false,
-    "compression": true,
-    "wsCompression": true,
-    "agentWsCompression": true,
+    "compression": false,
+    "wsCompression": false,
+    "agentWsCompression": false,
     "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 },
     "postgres": {
       "user": "${MESHPGUSER}",
@@ -518,7 +518,7 @@ if [[ "$insecure" = true ]]; then
   echo "TRMM_INSECURE = True" | tee --append $local_settings >/dev/null
 fi
 
-if [[ "$byocert" = true ]]; then
+if [[ "$byocert" = true ]] || [[ "$insecure" = true ]]; then
   owncerts="$(
     cat <<EOF
 CERT_FILE = "${CERT_PUB_KEY}"
@@ -714,8 +714,6 @@ server {
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
     ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
@@ -797,8 +795,6 @@ server {
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
     ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
 
     location / {
@@ -959,8 +955,6 @@ server {
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
     ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
 }
 

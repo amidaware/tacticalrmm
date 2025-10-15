@@ -15,6 +15,9 @@ class PermissionQuerySet(models.QuerySet):
         if user.is_superuser or (role and getattr(role, "is_superuser")):
             return self
 
+        if not role:
+            return self.none()
+
         can_view_clients = role.can_view_clients.all() if role else None
         can_view_sites = role.can_view_sites.all() if role else None
 

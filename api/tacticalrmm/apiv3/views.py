@@ -29,7 +29,7 @@ from core.utils import (
     get_mesh_ws_url,
     get_meshagent_url,
 )
-from logs.models import DebugLog, PendingAction
+from logs.models import DebugLog
 from software.models import InstalledSoftware
 from tacticalrmm.constants import (
     AGENT_DEFER,
@@ -44,8 +44,6 @@ from tacticalrmm.constants import (
     DebugLogType,
     GoArch,
     MeshAgentIdent,
-    PAAction,
-    PAStatus,
     TaskRunStatus,
 )
 from tacticalrmm.helpers import make_random_password, notify_error
@@ -545,44 +543,6 @@ class Installer(APIView):
                 f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
             )
 
-        return Response("ok")
-
-
-# TODO deprecated, moved to v4 endpoint
-class ChocoResult(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def patch(self, request, pk):
-        action = get_object_or_404(PendingAction, pk=pk)
-        if not action.agent.pendingactions.filter(
-            action_type=PAAction.CHOCO_INSTALL, status=PAStatus.PENDING
-        ):
-            return notify_error("")
-
-        results: str = request.data["results"]
-
-        software_name = action.details["name"].lower()
-        success = [
-            "install",
-            "of",
-            software_name,
-            "was",
-            "successful",
-            "installed",
-        ]
-        duplicate = [software_name, "already", "installed", "--force", "reinstall"]
-        installed = False
-
-        if all(x in results.lower() for x in success):
-            installed = True
-        elif all(x in results.lower() for x in duplicate):
-            installed = True
-
-        action.details["output"] = results
-        action.details["installed"] = installed
-        action.status = PAStatus.COMPLETED
-        action.save(update_fields=["details", "status"])
         return Response("ok")
 
 

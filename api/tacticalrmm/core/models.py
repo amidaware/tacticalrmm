@@ -1,4 +1,5 @@
 import smtplib
+import traceback
 from contextlib import suppress
 from email.headerregistry import Address
 from email.message import EmailMessage
@@ -21,9 +22,12 @@ from tacticalrmm.constants import (
     CustomFieldModel,
     CustomFieldType,
     DebugLogLevel,
+    MonthlyType,
+    ScheduleType,
     URLActionRestMethod,
     URLActionType,
 )
+from tacticalrmm.logger import logger
 
 if TYPE_CHECKING:
     from alerts.models import AlertTemplate
@@ -67,6 +71,7 @@ class CoreSettings(BaseAuditModel):
     agent_history_prune_days = models.PositiveIntegerField(default=60)
     debug_log_prune_days = models.PositiveIntegerField(default=30)
     audit_log_prune_days = models.PositiveIntegerField(default=0)
+    report_history_prune_days = models.PositiveIntegerField(default=0)
     agent_debug_level = models.CharField(
         max_length=20, choices=DebugLogLevel.choices, default=DebugLogLevel.INFO
     )
@@ -235,7 +240,12 @@ class CoreSettings(BaseAuditModel):
         self,
         subject: str,
         body: str,
+        attachment: Optional[bytes] = None,
+        attachment_filename: Optional[str] = None,
+        attachment_type: Optional[str] = None,
+        attachment_extension: Optional[str] = None,
         alert_template: "Optional[AlertTemplate]" = None,
+        override_recipients: Optional[List[str]] = [],
         test: bool = False,
     ) -> tuple[str, bool]:
         if test and not self.email_is_configured:
@@ -251,15 +261,18 @@ class CoreSettings(BaseAuditModel):
             from_address = self.smtp_from_email
 
         # override email recipients if alert_template is passed and is set
-        if alert_template and alert_template.email_recipients:
+        if override_recipients:
+            email_recipients = ", ".join(override_recipients)
+        elif alert_template and alert_template.email_recipients:
             email_recipients = ", ".join(alert_template.email_recipients)
         elif self.email_alert_recipients:
-            email_recipients = ", ".join(cast(List[str], self.email_alert_recipients))
+            email_recipients = ", ".join(self.email_alert_recipients)
         else:
             return "There needs to be at least one email recipient configured", False
 
         try:
             msg = EmailMessage()
+
             msg["Subject"] = subject
             msg["Date"] = formatdate(localtime=True)
 
@@ -272,6 +285,35 @@ class CoreSettings(BaseAuditModel):
 
             msg["To"] = email_recipients
             msg.set_content(body)
+
+            if attachment:
+                match attachment_type:
+                    case "pdf":
+                        subtype = "pdf"
+                        ext = "pdf"
+                    case "html":
+                        subtype = "html"
+                        ext = "html"
+                    case "plaintext":
+                        subtype = "plain"
+                        ext = attachment_extension or "txt"
+                    case _:
+                        subtype = "plain"
+                        ext = "txt"
+
+                if attachment_type == "pdf":
+                    msg.add_attachment(
+                        attachment,
+                        maintype="application",
+                        subtype=subtype,
+                        filename=f"{attachment_filename}.{ext}",
+                    )
+                elif attachment_type in ("html", "plaintext"):
+                    msg.add_attachment(
+                        attachment,
+                        subtype=subtype,
+                        filename=f"{attachment_filename}.{ext}",
+                    )
 
             with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
                 if self.smtp_requires_auth:
@@ -296,6 +338,7 @@ class CoreSettings(BaseAuditModel):
                         server.quit()
 
         except Exception as e:
+            logger.error(traceback.format_exc())
             DebugLog.error(message=f"Sending email failed with error: {e}")
             if test:
                 return str(e), False
@@ -495,3 +538,56 @@ class URLAction(BaseAuditModel):
         from .serializers import URLActionSerializer
 
         return URLActionSerializer(action).data
+
+
+class Schedule(BaseAuditModel):
+    name = models.CharField(max_length=255)
+    run_time = models.TimeField()
+    run_time_weekdays = ArrayField(
+        base_field=models.PositiveSmallIntegerField(),
+        size=7,
+        blank=True,
+        null=True,
+        default=list,
+    )
+
+    monthly_months_of_year = ArrayField(
+        base_field=models.PositiveSmallIntegerField(),
+        size=12,
+        blank=True,
+        null=True,
+        default=list,
+    )
+
+    # 1-31 days. last day of month is 32
+    monthly_days_of_month = ArrayField(
+        base_field=models.PositiveIntegerField(),
+        size=32,
+        blank=True,
+        null=True,
+        default=list,
+    )
+
+    # 1st-4th weeks of month. Last week of month is 5
+    monthly_weeks_of_month = ArrayField(
+        base_field=models.PositiveSmallIntegerField(),
+        size=6,
+        blank=True,
+        null=True,
+        default=list,
+    )
+    schedule_type = models.CharField(
+        max_length=15, choices=ScheduleType.choices, default=ScheduleType.WEEKLY
+    )
+    monthly_type = models.CharField(
+        max_length=15, choices=MonthlyType.choices, default=MonthlyType.DAYS
+    )
+
+    def __str__(self) -> str:
+        return self.name
+
+    @staticmethod
+    def serialize(schedule):
+        from .serializers import ScheduleAuditSerializer
+
+        return ScheduleAuditSerializer(schedule).data

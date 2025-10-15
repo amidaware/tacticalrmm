@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="156"
+SCRIPT_VERSION="158"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -228,6 +228,41 @@ if ! [[ $CHECK_NGINX_NOLIMIT ]]; then
 fi
 
 sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 256;/g' $nginxdefaultconf
+
+CHECK_NGINX_SITESENABLED=$(grep "sites-enabled" $nginxdefaultconf)
+if ! [[ $CHECK_NGINX_SITESENABLED ]]; then
+  printf >&2 "${GREEN}Fixing nginx config${NC}\n"
+  nginxconf="$(
+    cat <<EOF
+worker_rlimit_nofile 1000000;
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+        worker_connections 4096;
+}
+
+http {
+        sendfile on;
+        tcp_nopush on;
+        types_hash_max_size 2048;
+        server_names_hash_bucket_size 256;
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+        gzip on;
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+}
+EOF
+  )"
+  echo "${nginxconf}" | sudo tee $nginxdefaultconf >/dev/null
+fi
 
 if ! sudo nginx -t >/dev/null 2>&1; then
   sudo nginx -t
@@ -505,8 +540,6 @@ server {
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
     ssl_ecdh_curve secp384r1;
-    ssl_stapling on;
-    ssl_stapling_verify on;
     add_header X-Content-Type-Options nosniff;
     
     location /static/ {
@@ -564,6 +597,15 @@ EOF
   echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
 fi
 
+for i in rmm frontend meshcentral; do
+  conf="/etc/nginx/sites-enabled/${i}.conf"
+  if grep -q "ssl_stapling" "$conf"; then
+    # backup to homedir first
+    cp "$conf" ~/${i}.nginx.bak.v1.2.0
+    sudo sed -i '/ssl_stapling/d' "$conf"
+  fi
+done
+
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$API" | grep "$FRONTEND" | grep "$MESHDOMAIN")
 HAS_11=$(grep 127.0.1.1 /etc/hosts)
 
@@ -590,6 +632,51 @@ sudo tar -xzf /tmp/${webtar} -C /var/www/rmm
 echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dist/env-config.js >/dev/null
 sudo chown www-data:www-data -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
+
+# disable compression if set to fix some mesh issues
+mesh_cfg='/meshcentral/meshcentral-data/config.json'
+
+check_jq_filter='
+( .settings // {} ) |
+to_entries |
+map(
+    select((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression"))
+) |
+all(.value == false)
+'
+
+apply_jq_filter='
+.settings |= (
+    with_entries(
+        if ((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression")) then
+            .value = false
+        else
+            .
+        end
+    )
+)
+'
+
+if ! which jq >/dev/null; then
+  echo "installing jq"
+  sudo apt-get install -y jq >/dev/null
+fi
+
+if which jq >/dev/null; then
+  if ! jq -e "$check_jq_filter" "$mesh_cfg" >/dev/null; then
+    echo "Disabling mesh compression"
+    # backup to homedir first
+    cp "$mesh_cfg" ~/meshcfg-$(date "+%Y%m%dT%H%M%S").bak
+    mesh_tmp=$(mktemp)
+    if jq "$apply_jq_filter" "$mesh_cfg" >"$mesh_tmp"; then
+      if [ -s "$mesh_tmp" ]; then
+        mv "$mesh_tmp" "$mesh_cfg"
+        sudo systemctl restart meshcentral
+      fi
+    fi
+    rm -f "$mesh_tmp"
+  fi
+fi
 
 for i in nats nats-api rmm daphne celery celerybeat nginx; do
   printf >&2 "${GREEN}Starting ${i} service${NC}\n"

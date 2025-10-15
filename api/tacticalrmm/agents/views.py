@@ -1299,3 +1299,307 @@ def wol(request, agent_id):
     except Exception as e:
         return notify_error(str(e))
     return Response(f"Wake-on-LAN sent to {agent.hostname}")
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def browse_registry(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+    path = request.query_params.get("path", "Computer").strip()
+    page = int(request.query_params.get("page", 1))
+    page_size = int(request.query_params.get("page_size", 200))
+
+    if path.lower() == "computer":
+        path = "Computer"
+
+    data = {
+        "func": "registry_browse",
+        "payload": {"path": path, "page": str(page), "page_size": str(page_size)},
+    }
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(str(e))
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if "error" in r:
+        return notify_error(r["error"])
+
+    return Response(
+        {
+            "path": r.get("path", path),
+            "subkeys": r.get("subkeys", []),
+            "values": r.get("values", []),
+            "has_more": r.get("has_more", False),
+            "page": page,
+            "page_size": page_size,
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_registry_key(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    path = request.data.get("path", "").strip()
+    if not path:
+        return notify_error("Registry path is required")
+
+    data = {"func": "registry_create_key", "payload": {"path": path}}
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(f"NATS communication failed: {str(e)}")
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if "error" in r:
+        return notify_error(f"Registry key creation failed: {r['error']}")
+
+    return Response({"status": "success", "path": path})
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_registry_key(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    path = request.query_params.get("path", "").strip()
+    if not path:
+        return notify_error("Registry path is required")
+
+    data = {"func": "registry_delete_key", "payload": {"path": path}}
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(f"NATS communication failed: {str(e)}")
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if "error" in r:
+        return notify_error(f"Registry key deletion failed: {r['error']}")
+
+    return Response({"status": "success", "deleted_path": path})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def rename_registry_key(request, agent_id):
+
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    old_path = (request.data.get("old_path") or "").strip()
+    new_path = (request.data.get("new_path") or "").strip()
+
+    if not old_path or not new_path:
+        return notify_error("Both 'old_path' and 'new_path' are required")
+
+    if old_path == new_path:
+        return notify_error("Old and new path cannot be the same")
+
+    data = {
+        "func": "registry_rename_key",
+        "payload": {"old_path": old_path, "new_path": new_path},
+    }
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=60))  # may take longer
+    except Exception as e:
+        # logger.exception("NATS communication failed during rename_registry_key")
+        return notify_error(f"NATS communication failed: {str(e)}")
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if isinstance(r, dict) and "error" in r:
+        return notify_error(f"Registry key rename failed: {r['error']}")
+
+    return Response(
+        {
+            "status": "success",
+            "old_path": old_path,
+            "new_path": new_path,
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_registry_value(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    path = (request.data.get("path") or "").strip()
+    val_name = request.data.get("name")
+    val_type = (request.data.get("type") or "").strip().upper()
+    val_data = request.data.get("data")  # optional
+
+    if not path:
+        return notify_error("Registry path is required")
+    if not val_type:
+        return notify_error("Registry value type is required")
+    if not val_name:
+        return notify_error("Registry value name is required")
+
+    payload = {
+        "path": path,
+        "type": val_type,
+        "name": val_name,
+        "data": val_data,  # optional
+    }
+
+    data = {"func": "registry_create_value", "payload": payload}
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(str(e))
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if isinstance(r, dict) and "error" in r:
+        return notify_error(r["error"])
+    return Response(
+        {
+            "status": "success",
+            "data": {
+                "name": r.get("name", val_name),
+                "type": r.get("type", val_type),
+                "data": r.get("data", val_data),
+            },
+        }
+    )
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_registry_value(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    path = (request.query_params.get("path") or "").strip()
+    val_name = request.query_params.get("name")
+
+    if not path:
+        return notify_error("Registry path is required")
+    if not val_name:
+        return notify_error("Registry value name is required")
+
+    payload = {
+        "path": path,
+        "name": val_name,
+    }
+
+    data = {"func": "registry_delete_value", "payload": payload}
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(str(e))
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if isinstance(r, dict) and "error" in r:
+        return notify_error(r["error"])
+
+    return Response({"status": "success", "name": val_name})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def rename_registry_value(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    path = (request.data.get("path") or "").strip()
+    old_name = request.data.get("old_name")
+    new_name = request.data.get("new_name")
+
+    if not path:
+        return notify_error("Registry path is required")
+    if not old_name:
+        return notify_error("Old value name is required")
+    if not new_name:
+        return notify_error("New value name is required")
+
+    payload = {
+        "path": path,
+        "old_name": old_name,
+        "new_name": new_name,
+    }
+
+    data = {"func": "registry_rename_value", "payload": payload}
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(str(e))
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if isinstance(r, dict) and "error" in r:
+        return notify_error(r["error"])
+
+    return Response(
+        {
+            "status": "success",
+            "old_name": old_name,
+            "new_name": r.get("new_name", new_name),
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def modify_registry_value(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    path = (request.data.get("path") or "").strip()
+    val_name = request.data.get("name")
+    val_type = (request.data.get("type") or "").strip().upper()
+    val_data = request.data.get("data")
+
+    if not path:
+        return notify_error("Registry path is required")
+    if not val_name:
+        return notify_error("Registry value name is required")
+    if not val_type:
+        return notify_error("Registry value type is required")
+
+    payload = {
+        "path": path,
+        "name": val_name,
+        "type": val_type,
+        "data": val_data,
+    }
+
+    data = {"func": "registry_modify_value", "payload": payload}
+
+    try:
+        r = asyncio.run(agent.nats_cmd(data, timeout=30))
+    except Exception as e:
+        return notify_error(str(e))
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+
+    if isinstance(r, dict) and "error" in r:
+        return notify_error(r["error"])
+
+    return Response(
+        {
+            "status": "success",
+            "data": {
+                "name": r.get("name", val_name),
+                "type": r.get("type", val_type),
+                "data": r.get("data", val_data),
+            },
+        }
+    )

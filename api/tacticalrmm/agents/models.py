@@ -43,6 +43,7 @@ from tacticalrmm.constants import (
 )
 from tacticalrmm.helpers import has_script_actions, has_webhook, setup_nats_options
 from tacticalrmm.models import PermissionQuerySet
+from channels.layers import get_channel_layer
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate
@@ -886,6 +887,121 @@ class Agent(BaseAuditModel):
             await nc.publish(self.agent_id, msgpack.dumps(data))
             await nc.flush()
             await nc.close()
+
+    async def nats_stream_cmd(
+        self,
+        data: dict,
+        timeout: int = 30,
+        stop_evt: asyncio.Event | None = None,
+        output_subject: str = "",
+        group: str = "",
+    ) -> None:
+        """
+        Publish a command to the agent's NATS subject and stream back line-by-line output.
+        Improvements:
+          - Robust error handling around publish/flush/subscribe (3)
+          - Properly cancel pending waiter after asyncio.wait (2)
+          - Structured logging instead of print (4)
+          - Accept non-string payloads (dict with {line, done, exit_code}) (5)
+          - Include cmd_id in WebSocket messages for frontend filtering (6)
+        """
+        opts = setup_nats_options()
+        channel_layer = get_channel_layer()
+        cmd_id = data.get("payload", {}).get("cmd_id", "")
+
+        try:
+            nc = await nats.connect(**opts)
+        except Exception as e:
+            logger.exception("NATS connect failed for agent %s", self.agent_id)
+            await channel_layer.group_send(
+                group,
+                {
+                    "type": "stream_output",
+                    "cmd_id": cmd_id,
+                    "output": f"[ERROR] Could not connect to NATS: {e}",
+                },
+            )
+            return
+
+        async def message_handler(msg):
+            try:
+                obj = msgpack.loads(msg.data)
+                payload: dict[str, object] = {"cmd_id": cmd_id}
+                if isinstance(obj, str):
+                    payload["output"] = obj
+                elif isinstance(obj, dict):
+                    if isinstance(obj.get("line"), str):
+                        payload["output"] = obj["line"]
+                    if obj.get("done") is True:
+                        payload["done"] = True
+                    if "exit_code" in obj:
+                        payload["exit_code"] = obj["exit_code"]
+                else:
+                    payload["output"] = str(obj)
+                await channel_layer.group_send(
+                    group, {"type": "stream_output", **payload}
+                )
+            except Exception as e:
+                logger.exception(
+                    "Error handling NATS message for agent %s", self.agent_id
+                )
+                await channel_layer.group_send(
+                    group,
+                    {
+                        "type": "stream_output",
+                        "cmd_id": cmd_id,
+                        "output": f"[ERROR] {e}",
+                    },
+                )
+
+        sub = None
+        try:
+            await nc.publish(self.agent_id, msgpack.dumps(data))
+            await nc.flush()
+            sub = await nc.subscribe(output_subject, cb=message_handler)
+        except Exception as e:
+            logger.exception(
+                "NATS publish/subscribe failed for agent %s", self.agent_id
+            )
+            await channel_layer.group_send(
+                group,
+                {
+                    "type": "stream_output",
+                    "cmd_id": cmd_id,
+                    "output": f"[ERROR] NATS publish/subscribe failed: {e}",
+                },
+            )
+            try:
+                await nc.close()
+            except Exception:
+                pass
+            return
+
+        try:
+            if stop_evt is None:
+                await asyncio.sleep(timeout)
+            else:
+                waiter_stop = asyncio.create_task(stop_evt.wait())
+                waiter_sleep = asyncio.create_task(asyncio.sleep(timeout))
+                done, pending = await asyncio.wait(
+                    {waiter_stop, waiter_sleep}, return_when=asyncio.FIRST_COMPLETED
+                )
+                for p in pending:
+                    p.cancel()
+        finally:
+            try:
+                if sub is not None:
+                    await sub.unsubscribe()
+            except Exception:
+                logger.debug(
+                    "NATS unsubscribe failed for agent %s", self.agent_id, exc_info=True
+                )
+            try:
+                await nc.close()
+            except Exception:
+                logger.debug(
+                    "NATS close failed for agent %s", self.agent_id, exc_info=True
+                )
 
     def recover(self, mode: str, mesh_uri: str, wait: bool = True) -> tuple[str, bool]:
         """

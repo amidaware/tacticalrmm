@@ -21,9 +21,19 @@ if [[ $DISPLAY ]]; then
     exit 1
 fi
 
+agentSvcName='tacticalagent.service'
+agentSysD="/etc/systemd/system/${agentSvcName}"
+
+if [ -f "${agentSysD}" ]; then
+    CUSTOM_BIN_PATH=$(awk -F'=' '/ExecStart/ {print $2}' ${agentSysD} | awk '{print $1}' | xargs dirname)
+else
+    CUSTOM_BIN_PATH=""
+fi
+
 DEBUG=0
 INSECURE=0
 NOMESH=0
+UNINSTALL=0
 
 agentDL='agentDLChange'
 meshDL='meshDLChange'
@@ -35,7 +45,22 @@ siteID='siteIDChange'
 agentType='agentTypeChange'
 proxy=''
 
-agentBinPath='/usr/local/bin'
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+    -debug | --debug | debug) DEBUG=1 ;;
+    -insecure | --insecure | insecure) INSECURE=1 ;;
+    -nomesh | --nomesh | nomesh) NOMESH=1 ;;
+    -uninstall | --uninstall | uninstall) UNINSTALL=1 ;;
+    -binpath | --binpath) CUSTOM_BIN_PATH="$2"; shift ;;
+    *)
+        echo "ERROR: Unknown parameter: $1"
+        exit 1
+        ;;
+    esac
+    shift
+done
+
+agentBinPath="${CUSTOM_BIN_PATH:-/usr/local/bin}"
 binName='tacticalagent'
 agentBin="${agentBinPath}/${binName}"
 agentConf='/etc/tacticalagent'
@@ -137,27 +162,19 @@ Uninstall() {
     RemoveOldAgent
 }
 
-if [ $# -ne 0 ] && [[ $1 =~ ^(uninstall|-uninstall|--uninstall)$ ]]; then
+if [[ $UNINSTALL -eq 1 ]]; then
     Uninstall
     # Remove the current script
     rm "$0"
     exit 0
 fi
 
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-    -debug | --debug | debug) DEBUG=1 ;;
-    -insecure | --insecure | insecure) INSECURE=1 ;;
-    -nomesh | --nomesh | nomesh) NOMESH=1 ;;
-    *)
-        echo "ERROR: Unknown parameter: $1"
-        exit 1
-        ;;
-    esac
-    shift
-done
-
 RemoveOldAgent
+
+if [ ! -d "${agentBinPath}" ]; then
+    echo "Creating ${agentBinPath}"
+    mkdir -p ${agentBinPath}
+fi
 
 echo "Downloading tactical agent..."
 wget -q -O ${agentBin} "${agentDL}"
@@ -180,11 +197,6 @@ else
     sleep 2
     echo "Getting mesh node id..."
     MESH_NODE_ID=$(env XAUTHORITY=foo DISPLAY=bar ${agentBin} -m nixmeshnodeid)
-fi
-
-if [ ! -d "${agentBinPath}" ]; then
-    echo "Creating ${agentBinPath}"
-    mkdir -p ${agentBinPath}
 fi
 
 INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"

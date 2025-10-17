@@ -5,13 +5,6 @@ if [ $EUID -ne 0 ]; then
     exit 1
 fi
 
-HAS_SYSTEMD=$(ps --no-headers -o comm 1)
-if [ "${HAS_SYSTEMD}" != 'systemd' ]; then
-    echo "This install script only supports systemd"
-    echo "Please install systemd or manually create the service using your systems's service manager"
-    exit 1
-fi
-
 if [[ $DISPLAY ]]; then
     echo "ERROR: Display detected. Installer only supports running headless, i.e from ssh."
     echo "If you cannot ssh in then please run 'sudo systemctl isolate multi-user.target' to switch to a non-graphical user session and run the installer again."
@@ -19,6 +12,13 @@ if [[ $DISPLAY ]]; then
     echo "unset DISPLAY"
     echo "to unset the variable and then try running the installer again"
     exit 1
+fi
+
+if [ -f /etc/alpine-release ]; then
+    if [ ! -f /bin/bash ]; then
+	echo "Bash is not installed on this Alpine Linux box! Install it with 'apk add bash' and re-run this script!"
+	exit 1    	
+    fi
 fi
 
 DEBUG=0
@@ -47,167 +47,361 @@ meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
 meshSysD="/lib/systemd/system/${meshSvcName}"
 
-deb=(ubuntu debian raspbian kali linuxmint)
-rhe=(fedora rocky centos rhel amzn arch opensuse)
+HAS_SYSTEMD=$(ps --no-headers -o comm 1)
+if [ "${HAS_SYSTEMD}" != 'systemd' ]; then
+    # Non SystemD based systems
+    if [ -f /etc/alpine-release ]; then
+        # Alpine Linux
 
-set_locale_deb() {
-    locale-gen "en_US.UTF-8"
-    localectl set-locale LANG=en_US.UTF-8
-    . /etc/default/locale
-}
-
-set_locale_rhel() {
-    localedef -c -i en_US -f UTF-8 en_US.UTF-8 >/dev/null 2>&1
-    localectl set-locale LANG=en_US.UTF-8
-    . /etc/locale.conf
-}
-
-RemoveOldAgent() {
-    if [ -f "${agentSysD}" ]; then
-        systemctl disable ${agentSvcName}
-        systemctl stop ${agentSvcName}
-        rm -f "${agentSysD}"
-        systemctl daemon-reload
-    fi
-
-    if [ -f "${agentConf}" ]; then
-        rm -f "${agentConf}"
-    fi
-
-    if [ -f "${agentBin}" ]; then
-        rm -f "${agentBin}"
-    fi
-
-    if [ -d "${agentDir}" ]; then
-        rm -rf "${agentDir}"
-    fi
-}
-
-InstallMesh() {
-    if [ -f /etc/os-release ]; then
-        distroID=$(
-            . /etc/os-release
-            echo $ID
-        )
-        distroIDLIKE=$(
-            . /etc/os-release
-            echo $ID_LIKE
-        )
-        if [[ " ${deb[*]} " =~ " ${distroID} " ]]; then
-            set_locale_deb
-        elif [[ " ${deb[*]} " =~ " ${distroIDLIKE} " ]]; then
-            set_locale_deb
-        elif [[ " ${rhe[*]} " =~ " ${distroID} " ]]; then
-            set_locale_rhel
+	# force needed packages
+	apk update
+	apk add wget libgcc
+	
+	# adapt mesh agent binary pointers based on 
+        if [ "$(uname -m)" = "x86_64" ]; then
+            meshDL="$(echo $meshDL | sed 's/meshinstall=.*$/meshinstall=33/')"
+        elif [ "$(uname -m)" = "aarch64" ]; then
+            meshDL="$(echo $meshDL | sed 's/meshinstall=.*$/meshinstall=41/')"
         else
-            set_locale_rhel
+            # Unsupported system
+            echo "This install script only supports Alpine Linux with x86_64 and aarch64 (x86 and ARM at 64bit) architectures, i686 and armv7l (x86 and ARM at 32bit) are not fully supported."
+            exit 1
         fi
-    fi
 
-    meshTmpDir='/root/meshtemp'
-    mkdir -p $meshTmpDir
+        agentSvcName='tacticalagent'
+        agentOpenRC="/etc/init.d/${agentSvcName}"
+        meshSvcName='meshagent'
+        meshOpenRC="/etc/init.d/${meshSvcName}"
 
-    meshTmpBin="${meshTmpDir}/meshagent"
-    wget --no-check-certificate -q -O ${meshTmpBin} ${meshDL}
-    chmod +x ${meshTmpBin}
-    mkdir -p ${meshDir}
-    env LC_ALL=en_US.UTF-8 LANGUAGE=en_US XAUTHORITY=foo DISPLAY=bar ${meshTmpBin} -install --installPath=${meshDir}
-    sleep 1
-    rm -rf ${meshTmpDir}
+        RemoveOldAgent() {
+            if [ -f "${agentOpenRC}" ]; then
+        	    rc-update del ${agentSvcName}
+        	    service ${agentSvcName} stop
+        	    rm -f ${agentOpenRC}
+            fi
+        
+            if [ -f "${agentConf}" ]; then
+                rm -f "${agentConf}"
+            fi
+        
+            if [ -f "${agentBin}" ]; then
+                rm -f "${agentBin}"
+            fi
+        
+            if [ -d "${agentDir}" ]; then
+                rm -rf "${agentDir}"
+            fi
+        }
+        
+        InstallMesh() {
+        
+            meshTmpDir='/root/meshtemp'
+            mkdir -p $meshTmpDir
+        
+            meshTmpBin="${meshTmpDir}/meshagent"
+            wget --no-check-certificate -q -O ${meshTmpBin} ${meshDL}
+            chmod +x ${meshTmpBin}
+            mkdir -p ${meshDir}
+            env LANG=en_US XAUTHORITY=foo DISPLAY=bar ${meshTmpBin} -install --installPath=${meshDir}
+            sleep 1
+            rm -rf ${meshTmpDir}
+        
+        }
+        
+        RemoveMesh() {
+            if [ -f "${meshSystemBin}" ]; then
+                env XAUTHORITY=foo DISPLAY=bar ${meshSystemBin} -uninstall
+                sleep 1
+            fi
+        
+            if [ -f "${meshOpenRC}" ]; then
+                    rc-update del ${meshSvcName}
+                    service ${meshSvcName} stop
+                    rm -f ${meshOpenRC}
+            fi
+        
+            rm -rf ${meshDir}
+        
+        }
+        
+        Uninstall() {
+            RemoveMesh
+            RemoveOldAgent
+        }
+        
+        if [ $# -ne 0 ] && [[ $1 =~ ^(uninstall|-uninstall|--uninstall)$ ]]; then
+            Uninstall
+            # Remove the current script
+            rm "$0"
+            exit 0
+        fi
+        
+        while [[ "$#" -gt 0 ]]; do
+            case $1 in
+            -debug | --debug | debug) DEBUG=1 ;;
+            -insecure | --insecure | insecure) INSECURE=1 ;;
+            -nomesh | --nomesh | nomesh) NOMESH=1 ;;
+            *)
+                echo "ERROR: Unknown parameter: $1"
+                exit 1
+                ;;
+            esac
+            shift
+        done
+        
+        RemoveOldAgent
+        
+        echo "Downloading tactical agent..."
+        wget -q -O ${agentBin} "${agentDL}"
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Unable to download tactical agent"
+            exit 1
+        fi
+        chmod +x ${agentBin}
+        
+        MESH_NODE_ID=""
+        
+        if [[ $NOMESH -eq 1 ]]; then
+            echo "Skipping mesh install"
+        else
+            if [ -f "${meshSystemBin}" ]; then
+                RemoveMesh
+            fi
+            echo "Downloading and installing mesh agent..."
+            InstallMesh
+            sleep 2
+            echo "Getting mesh node id..."
+            MESH_NODE_ID=$(env XAUTHORITY=foo DISPLAY=bar ${agentBin} -m nixmeshnodeid)
+        fi
+        
+        if [ ! -d "${agentBinPath}" ]; then
+            echo "Creating ${agentBinPath}"
+            mkdir -p ${agentBinPath}
+        fi
+        
+        INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"
+        
+        if [ "${MESH_NODE_ID}" != '' ]; then
+            INSTALL_CMD+=" --meshnodeid ${MESH_NODE_ID}"
+        fi
+        
+        if [[ $DEBUG -eq 1 ]]; then
+            INSTALL_CMD+=" --log debug"
+        fi
+        
+        if [[ $INSECURE -eq 1 ]]; then
+            INSTALL_CMD+=" --insecure"
+        fi
+        
+        if [ "${proxy}" != '' ]; then
+            INSTALL_CMD+=" --proxy ${proxy}"
+        fi
+        
+        eval ${INSTALL_CMD}
+        
+        tacticalsvcalpine="$(
+    cat <<EOF
+#!/sbin/openrc-run
+
+name="TacticalRMMAgent"
+description="Tactical RMM Agent Service"
+command="/usr/local/bin/tacticalagent"
+command_args="-m svc"
+pidfile="/run/tacticalagent.pid"
+
+depend() {
+    need localmount
+    after net
 }
 
-RemoveMesh() {
-    if [ -f "${meshSystemBin}" ]; then
-        env XAUTHORITY=foo DISPLAY=bar ${meshSystemBin} -uninstall
-        sleep 1
-    fi
-
-    if [ -f "${meshSysD}" ]; then
-        systemctl stop ${meshSvcName} >/dev/null 2>&1
-        systemctl disable ${meshSvcName} >/dev/null 2>&1
-        rm -f ${meshSysD}
-    fi
-
-    rm -rf ${meshDir}
-    systemctl daemon-reload
+start() {
+    ebegin "Starting Tactical RMM Agent"
+    start-stop-daemon --start --background --make-pidfile --pidfile \${pidfile} --exec \${command} -- \${command_args}
+    eend \$?
 }
 
-Uninstall() {
-    RemoveMesh
-    RemoveOldAgent
+stop() {
+    ebegin "Stopping Tactical RMM Agent"
+    start-stop-daemon --stop --pidfile \${pidfile} --exec \${command}
+    eend \$?
 }
+EOF
+)"
 
-if [ $# -ne 0 ] && [[ $1 =~ ^(uninstall|-uninstall|--uninstall)$ ]]; then
-    Uninstall
-    # Remove the current script
-    rm "$0"
-    exit 0
-fi
-
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-    -debug | --debug | debug) DEBUG=1 ;;
-    -insecure | --insecure | insecure) INSECURE=1 ;;
-    -nomesh | --nomesh | nomesh) NOMESH=1 ;;
-    *)
-        echo "ERROR: Unknown parameter: $1"
+        echo "${tacticalsvcalpine}" | tee ${agentOpenRC} >/dev/null
+        chmod +x ${agentOpenRC}
+        rc-update add ${agentSvcName} default
+        service ${agentSvcName} start
+    else
+        # Unsupported systems
+        echo "This install script only supports Alpine Linux without systemd."
+        echo "Please install systemd or manually create the service using your systems's service manager."
         exit 1
-        ;;
-    esac
-    shift
-done
-
-RemoveOldAgent
-
-echo "Downloading tactical agent..."
-wget -q -O ${agentBin} "${agentDL}"
-if [ $? -ne 0 ]; then
-    echo "ERROR: Unable to download tactical agent"
-    exit 1
-fi
-chmod +x ${agentBin}
-
-MESH_NODE_ID=""
-
-if [[ $NOMESH -eq 1 ]]; then
-    echo "Skipping mesh install"
-else
-    if [ -f "${meshSystemBin}" ]; then
-        RemoveMesh
     fi
-    echo "Downloading and installing mesh agent..."
-    InstallMesh
-    sleep 2
-    echo "Getting mesh node id..."
-    MESH_NODE_ID=$(env XAUTHORITY=foo DISPLAY=bar ${agentBin} -m nixmeshnodeid)
-fi
+else
+    # SystemD based systems
 
-if [ ! -d "${agentBinPath}" ]; then
-    echo "Creating ${agentBinPath}"
-    mkdir -p ${agentBinPath}
-fi
-
-INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"
-
-if [ "${MESH_NODE_ID}" != '' ]; then
-    INSTALL_CMD+=" --meshnodeid ${MESH_NODE_ID}"
-fi
-
-if [[ $DEBUG -eq 1 ]]; then
-    INSTALL_CMD+=" --log debug"
-fi
-
-if [[ $INSECURE -eq 1 ]]; then
-    INSTALL_CMD+=" --insecure"
-fi
-
-if [ "${proxy}" != '' ]; then
-    INSTALL_CMD+=" --proxy ${proxy}"
-fi
-
-eval ${INSTALL_CMD}
-
-tacticalsvc="$(
+    deb=(ubuntu debian raspbian kali linuxmint)
+    rhe=(fedora rocky centos rhel amzn arch opensuse)
+    
+    set_locale_deb() {
+        locale-gen "en_US.UTF-8"
+        localectl set-locale LANG=en_US.UTF-8
+        . /etc/default/locale
+    }
+    
+    set_locale_rhel() {
+        localedef -c -i en_US -f UTF-8 en_US.UTF-8 >/dev/null 2>&1
+        localectl set-locale LANG=en_US.UTF-8
+        . /etc/locale.conf
+    }
+    
+    RemoveOldAgent() {
+        if [ -f "${agentSysD}" ]; then
+            systemctl disable ${agentSvcName}
+            systemctl stop ${agentSvcName}
+            rm -f "${agentSysD}"
+            systemctl daemon-reload
+        fi
+    
+        if [ -f "${agentConf}" ]; then
+            rm -f "${agentConf}"
+        fi
+    
+        if [ -f "${agentBin}" ]; then
+            rm -f "${agentBin}"
+        fi
+    
+        if [ -d "${agentDir}" ]; then
+            rm -rf "${agentDir}"
+        fi
+    }
+    
+    InstallMesh() {
+        if [ -f /etc/os-release ]; then
+            distroID=$(
+                . /etc/os-release
+                echo $ID
+            )
+            distroIDLIKE=$(
+                . /etc/os-release
+                echo $ID_LIKE
+            )
+            if [[ " ${deb[*]} " =~ " ${distroID} " ]]; then
+                set_locale_deb
+            elif [[ " ${deb[*]} " =~ " ${distroIDLIKE} " ]]; then
+                set_locale_deb
+            elif [[ " ${rhe[*]} " =~ " ${distroID} " ]]; then
+                set_locale_rhel
+            else
+                set_locale_rhel
+            fi
+        fi
+    
+        meshTmpDir='/root/meshtemp'
+        mkdir -p $meshTmpDir
+    
+        meshTmpBin="${meshTmpDir}/meshagent"
+        wget --no-check-certificate -q -O ${meshTmpBin} ${meshDL}
+        chmod +x ${meshTmpBin}
+        mkdir -p ${meshDir}
+        env LC_ALL=en_US.UTF-8 LANGUAGE=en_US XAUTHORITY=foo DISPLAY=bar ${meshTmpBin} -install --installPath=${meshDir}
+        sleep 1
+        rm -rf ${meshTmpDir}
+    }
+    
+    RemoveMesh() {
+        if [ -f "${meshSystemBin}" ]; then
+            env XAUTHORITY=foo DISPLAY=bar ${meshSystemBin} -uninstall
+            sleep 1
+        fi
+    
+        if [ -f "${meshSysD}" ]; then
+            systemctl stop ${meshSvcName} >/dev/null 2>&1
+            systemctl disable ${meshSvcName} >/dev/null 2>&1
+            rm -f ${meshSysD}
+        fi
+    
+        rm -rf ${meshDir}
+        systemctl daemon-reload
+    }
+    
+    Uninstall() {
+        RemoveMesh
+        RemoveOldAgent
+    }
+    
+    if [ $# -ne 0 ] && [[ $1 =~ ^(uninstall|-uninstall|--uninstall)$ ]]; then
+        Uninstall
+        # Remove the current script
+        rm "$0"
+        exit 0
+    fi
+    
+    while [[ "$#" -gt 0 ]]; do
+        case $1 in
+        -debug | --debug | debug) DEBUG=1 ;;
+        -insecure | --insecure | insecure) INSECURE=1 ;;
+        -nomesh | --nomesh | nomesh) NOMESH=1 ;;
+        *)
+            echo "ERROR: Unknown parameter: $1"
+            exit 1
+            ;;
+        esac
+        shift
+    done
+    
+    RemoveOldAgent
+    
+    echo "Downloading tactical agent..."
+    wget -q -O ${agentBin} "${agentDL}"
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Unable to download tactical agent"
+        exit 1
+    fi
+    chmod +x ${agentBin}
+    
+    MESH_NODE_ID=""
+    
+    if [[ $NOMESH -eq 1 ]]; then
+        echo "Skipping mesh install"
+    else
+        if [ -f "${meshSystemBin}" ]; then
+            RemoveMesh
+        fi
+        echo "Downloading and installing mesh agent..."
+        InstallMesh
+        sleep 2
+        echo "Getting mesh node id..."
+        MESH_NODE_ID=$(env XAUTHORITY=foo DISPLAY=bar ${agentBin} -m nixmeshnodeid)
+    fi
+    
+    if [ ! -d "${agentBinPath}" ]; then
+        echo "Creating ${agentBinPath}"
+        mkdir -p ${agentBinPath}
+    fi
+    
+    INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"
+    
+    if [ "${MESH_NODE_ID}" != '' ]; then
+        INSTALL_CMD+=" --meshnodeid ${MESH_NODE_ID}"
+    fi
+    
+    if [[ $DEBUG -eq 1 ]]; then
+        INSTALL_CMD+=" --log debug"
+    fi
+    
+    if [[ $INSECURE -eq 1 ]]; then
+        INSTALL_CMD+=" --insecure"
+    fi
+    
+    if [ "${proxy}" != '' ]; then
+        INSTALL_CMD+=" --proxy ${proxy}"
+    fi
+    
+    eval ${INSTALL_CMD}
+    
+    tacticalsvc="$(
     cat <<EOF
 [Unit]
 Description=Tactical RMM Linux Agent
@@ -226,8 +420,10 @@ KillMode=process
 WantedBy=multi-user.target
 EOF
 )"
-echo "${tacticalsvc}" | tee ${agentSysD} >/dev/null
+    echo "${tacticalsvc}" | tee ${agentSysD} >/dev/null
+    
+    systemctl daemon-reload
+    systemctl enable ${agentSvcName}
+    systemctl start ${agentSvcName}
 
-systemctl daemon-reload
-systemctl enable ${agentSvcName}
-systemctl start ${agentSvcName}
+fi

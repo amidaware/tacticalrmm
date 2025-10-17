@@ -15,15 +15,15 @@ networks:
 # docker managed persistent volumes
 volumes:
   tactical_data: null
-  postgres_data: null
-  mongo_data: null
+  tactical_db: null
   mesh_data: null
+  mesh_db: null
   redis_data: null
 
 services:
   # postgres database for api service
-  tactical-postgres:
-    container_name: trmm-postgres
+  tactical-db:
+    container_name: trmm-db
     image: postgres:13-alpine
     restart: always
     environment:
@@ -31,9 +31,25 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - tactical_db:/var/lib/postgresql/data
     networks:
       - api-db
+
+  # postgres database for meshcentral service
+  tactical-mesh-db:
+    container_name: trmm-mesh-db
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: meshcentral
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASS}
+    volumes:
+      - mesh_db:/var/lib/postgresql/data
+    networks:
+      - mesh-db
+    ports:
+      - "5555:5432"
 
   # redis container for celery tasks
   tactical-redis:
@@ -66,7 +82,7 @@ services:
       TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
       TRMM_DISABLE_SSO: ${TRMM_DISABLE_SSO}
     depends_on:
-      - tactical-postgres
+      - tactical-db
       - tactical-meshcentral
       - tactical-redis
     networks:
@@ -76,7 +92,7 @@ services:
     volumes:
       - tactical_data:/opt/tactical
       - mesh_data:/meshcentral-data
-      - mongo_data:/mongo/data/db
+      - mesh_db:/meshcentral-db
       - redis_data:/redis/data
 
   # nats
@@ -105,8 +121,10 @@ services:
       MESH_HOST: ${MESH_HOST}
       MESH_USER: ${MESH_USER}
       MESH_PASS: ${MESH_PASS}
-      MONGODB_USER: ${MONGODB_USER}
-      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASS: ${POSTGRES_PASS}
+      POSTGRES_HOST: tactical-mesh-db
+      POSTGRES_PORT: 5555
       MESH_PERSISTENT_CONFIG: ${MESH_PERSISTENT_CONFIG}
     networks:
       proxy:
@@ -117,22 +135,7 @@ services:
       - tactical_data:/opt/tactical
       - mesh_data:/home/node/app/meshcentral-data
     depends_on:
-      - tactical-mongodb
-
-  # mongodb container for meshcentral
-  tactical-mongodb:
-    container_name: trmm-mongodb
-    image: mongo:4.4
-    user: 1000:1000
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-      MONGO_INITDB_DATABASE: meshcentral
-    networks:
-      - mesh-db
-    volumes:
-      - mongo_data:/data/db
+      - tactical-mesh-db
 
   # container that hosts vue frontend
   tactical-frontend:
@@ -161,7 +164,7 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
+      - tactical-db
 
   # container for django websockets connections
   tactical-websockets:
@@ -177,7 +180,7 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
+      - tactical-db
       - tactical-backend
 
   # container for tactical reverse proxy
@@ -215,7 +218,7 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
+      - tactical-db
       - tactical-redis
 
   # container for celery beat service
@@ -232,5 +235,5 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
+      - tactical-db
       - tactical-redis

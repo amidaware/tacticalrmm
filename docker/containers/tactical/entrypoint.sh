@@ -4,7 +4,7 @@ set -e
 
 : "${TRMM_USER:=tactical}"
 : "${TRMM_PASS:=tactical}"
-: "${POSTGRES_HOST:=tactical-postgres}"
+: "${POSTGRES_HOST:=tactical-db}"
 : "${POSTGRES_PORT:=5432}"
 : "${POSTGRES_USER:=tactical}"
 : "${POSTGRES_PASS:=tactical}"

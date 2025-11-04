@@ -237,7 +237,7 @@ INSTALLED_APPS = [
 ]
 
 if not DEMO:
-    INSTALLED_APPS += ("ee.reporting",)
+    INSTALLED_APPS += ("ee.reporting", "ee.whitelabel")
 
 CHANNEL_LAYERS = {
     "default": {

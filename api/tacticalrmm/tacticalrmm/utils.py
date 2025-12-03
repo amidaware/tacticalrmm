@@ -1,12 +1,15 @@
 import json
 import os
 import re
+import shutil
 import socket
 import subprocess
+import tarfile
 import tempfile
 import time
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, List, Literal, Optional, Union
+import urllib
 from zoneinfo import ZoneInfo
 
 import requests
@@ -20,9 +23,11 @@ from knox.auth import TokenAuthentication
 from rest_framework.response import Response
 
 from agents.models import Agent
+from core.models import CodeSignToken
 from core.utils import get_core_settings, token_is_valid
 from logs.models import DebugLog
 from tacticalrmm.celery import app as celery_app
+from tacticalrmm.logger import logger
 from tacticalrmm.constants import (
     MONTH_DAYS,
     MONTHS,
@@ -487,4 +492,77 @@ def localhost_port_is_open(port):
             s.connect(("127.0.0.1", port))
         return True
     except (socket.timeout, ConnectionRefusedError):
+        return False
+
+def get_webtar_url():
+    webtar = f"trmm-web-v{settings.WEB_VERSION}.tar.gz"
+    url = f"https://github.com/amidaware/tacticalrmm-web/releases/download/v{settings.WEB_VERSION}/{webtar}"
+
+    t: "Optional[CodeSignToken]" = CodeSignToken.objects.first()
+    if not t or not t.token:
+        return url
+
+    core = get_core_settings()
+
+    if t.is_valid:
+        return settings.WEBTAR_DL_URL
+    else:
+        return url
+
+
+def download_and_extract_webtar() -> bool:
+    try:
+        url = get_webtar_url()
+
+        if not url:
+            logger.warning("get_webtar_url returned empty URL")
+            return False
+
+        if url.startswith("https://github.com"):
+            return False
+
+        core = get_core_settings()
+        payload = {
+            "token": core.code_sign_token.token,
+            "webver": settings.WEB_VERSION,
+            "api": settings.ALLOWED_HOSTS[0],
+            **core.branding.get("custom_branding", {}),
+        }
+
+        response = requests.post(url, stream=True, json=payload)
+
+        if response.status_code != 200:
+            return False
+
+        server_checksum = response.headers.get("X-File-Checksum")
+        if not server_checksum:
+            return False
+
+        sha256_hasher = hashlib.sha256()
+        downloaded_bytes = 0
+
+        with open(OUTPUT_FILENAME, "wb") as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+                    sha256_hasher.update(chunk)
+                    downloaded_bytes += len(chunk)
+
+        local_checksum = sha256_hasher.hexdigest()
+
+        if server_checksum != local_checksum:
+            return False
+
+        try:
+            with tarfile.open(tmp_file_path, "r:gz") as tar:
+                tar.extractall(extract_base)
+        finally:
+            try:
+                os.unlink(tmp_file_path)
+            except OSError:
+                pass
+
+        return True
+
+    except Exception as e:
         return False

@@ -9,8 +9,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import serializers
 
+from tacticalrmm.helpers import notify_error
 from core.permissions import CoreSettingsPerms
 from core.utils import get_core_settings
+from tacticalrmm.utils import download_and_extract_webtar
 
 
 class AddBranding(APIView):
@@ -41,4 +43,11 @@ class AddBranding(APIView):
         settings.branding = request.data
         settings.save(update_fields=["branding"])
 
-        return Response()
+        if settings.DOCKER_BUILD:
+            return Response()
+        else:
+            result = download_and_extract_webtar()
+            if not result:
+                return notify_error("Failed to download and extract webtar")
+            else:
+                return Response()

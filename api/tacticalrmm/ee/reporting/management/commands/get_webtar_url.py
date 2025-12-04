@@ -4,13 +4,11 @@ This file is subject to the EE License Agreement.
 For details, see: https://license.tacticalrmm.com/ee
 """
 
-import urllib.parse
-from typing import Any, Optional
+from typing import Any
 
-from core.models import CodeSignToken
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from tacticalrmm.utils import get_webtar_url
+
 
 class Command(BaseCommand):
     help = "Get webtar url"

@@ -1,7 +1,6 @@
 import json
 import os
 import re
-import shutil
 import socket
 import subprocess
 import tarfile
@@ -9,7 +8,6 @@ import tempfile
 import time
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, List, Literal, Optional, Union
-import urllib
 from zoneinfo import ZoneInfo
 
 import requests
@@ -494,6 +492,7 @@ def localhost_port_is_open(port):
     except (socket.timeout, ConnectionRefusedError):
         return False
 
+
 def get_webtar_url():
     webtar = f"trmm-web-v{settings.WEB_VERSION}.tar.gz"
     url = f"https://github.com/amidaware/tacticalrmm-web/releases/download/v{settings.WEB_VERSION}/{webtar}"
@@ -501,8 +500,6 @@ def get_webtar_url():
     t: "Optional[CodeSignToken]" = CodeSignToken.objects.first()
     if not t or not t.token:
         return url
-
-    core = get_core_settings()
 
     if t.is_valid:
         return settings.WEBTAR_DL_URL

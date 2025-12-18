@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import serializers
+from django.conf import settings
 
 from tacticalrmm.helpers import notify_error
 from core.permissions import CoreSettingsPerms
@@ -50,18 +51,20 @@ class AddBranding(APIView):
             max_length=25, required=False, allow_blank=True
         )
         favicon = serializers.CharField(required=False, allow_blank=True)
+        toolbar_color: serializers.CharField(max_length=25, required=False, allow_blank=True)
+        toolbar_text_color: serializers.CharField(max_length=25, required=False, allow_blank=True)
 
     def get(self, request):
         settings = get_core_settings()
         return Response(settings.branding)
 
     def post(self, request):
-        settings = get_core_settings()
+        core = get_core_settings()
 
         self.InputRequest(data=request.data).is_valid(raise_exception=True)
 
-        settings.branding = request.data
-        settings.save(update_fields=["branding"])
+        core.branding = request.data
+        core.save(update_fields=["branding"])
 
         if settings.DOCKER_BUILD:
             return Response()

@@ -1,6 +1,11 @@
+from django.core.cache import cache
 from rest_framework import serializers
 
-from tacticalrmm.constants import AGENT_STATUS_ONLINE, ALL_TIMEZONES
+from tacticalrmm.constants import (
+    AGENT_CHECKS_CACHE_PREFIX,
+    AGENT_STATUS_ONLINE,
+    ALL_TIMEZONES,
+)
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
@@ -79,16 +84,15 @@ class AgentSerializer(serializers.ModelSerializer):
 
 class AgentTableSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField()
-    checks = serializers.ReadOnlyField()
-    client_name = serializers.ReadOnlyField(source="client.name")
+    checks = serializers.SerializerMethodField()
+    client_name = serializers.ReadOnlyField(source="site.client.name")
     site_name = serializers.ReadOnlyField(source="site.name")
     logged_username = serializers.SerializerMethodField()
     italic = serializers.SerializerMethodField()
     policy = serializers.ReadOnlyField(source="policy.id")
     alert_template = serializers.SerializerMethodField()
-    last_seen = serializers.ReadOnlyField()
-    pending_actions_count = serializers.ReadOnlyField()
-    has_patches_pending = serializers.ReadOnlyField()
+    pending_actions_count = serializers.SerializerMethodField()
+    has_patches_pending = serializers.SerializerMethodField()
     cpu_model = serializers.ReadOnlyField()
     graphics = serializers.ReadOnlyField()
     local_ips = serializers.ReadOnlyField()
@@ -96,6 +100,25 @@ class AgentTableSerializer(serializers.ModelSerializer):
     physical_disks = serializers.ReadOnlyField()
     serial_number = serializers.ReadOnlyField()
     custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
+
+    def get_has_patches_pending(self, obj) -> bool:
+        return getattr(obj, "has_patches_pending", False)
+
+    def get_checks(self, obj) -> dict:
+        data = cache.get(f"{AGENT_CHECKS_CACHE_PREFIX}{obj.pk}")
+        if data is None:
+            return {
+                "total": 0,
+                "passing": 0,
+                "failing": 0,
+                "warning": 0,
+                "info": 0,
+                "has_failing_checks": False,
+            }
+        return data
+
+    def get_pending_actions_count(self, obj) -> int:
+        return getattr(obj, "_pending_actions_count", 0)
 
     def get_alert_template(self, obj):
         if not obj.alert_template:
@@ -157,7 +180,6 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "custom_fields",
             "serial_number",
         ]
-        depth = 2
 
 
 class AgentHostnameSerializer(serializers.ModelSerializer):

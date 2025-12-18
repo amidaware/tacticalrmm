@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import nats
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Prefetch
 from django.db.utils import DatabaseError
@@ -16,6 +17,7 @@ from accounts.models import User
 from accounts.utils import is_superuser
 from agents.models import Agent
 from agents.tasks import clear_faults_task, prune_agent_history
+from agents.utils import calculate_agent_checks
 from alerts.models import Alert
 from alerts.tasks import prune_resolved_alerts
 from autotasks.models import AutomatedTask, TaskResult
@@ -31,11 +33,12 @@ from core.mesh_utils import (
 )
 from core.models import CoreSettings
 from core.utils import get_core_settings, get_mesh_ws_url, make_alpha_numeric
+from ee.reporting.tasks import prune_report_history_task
 from logs.models import PendingAction
 from logs.tasks import prune_audit_log, prune_debug_log
-from ee.reporting.tasks import prune_report_history_task
 from tacticalrmm.celery import app
 from tacticalrmm.constants import (
+    AGENT_CHECKS_CACHE_PREFIX,
     AGENT_DEFER,
     AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
@@ -416,6 +419,10 @@ def cache_db_fields_task() -> None:
         agents = qs.filter(site__client=client)
         client.failing_checks = _get_failing_data(agents)
         client.save(update_fields=["failing_checks"])
+
+    for agent in qs.iterator(chunk_size=100):
+        data = calculate_agent_checks(agent)
+        cache.set(f"{AGENT_CHECKS_CACHE_PREFIX}{agent.pk}", data, 86400)
 
 
 @app.task(bind=True)

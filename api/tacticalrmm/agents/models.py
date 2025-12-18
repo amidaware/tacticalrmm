@@ -19,8 +19,7 @@ from nats.errors import TimeoutError
 from packaging import version as pyver
 from packaging.version import Version as LooseVersion
 
-from agents.utils import get_agent_url
-from checks.models import CheckResult
+from agents.utils import calculate_agent_checks, get_agent_url
 from core.models import TZ_CHOICES
 from core.utils import _b64_to_hex, get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog, PendingAction
@@ -33,9 +32,6 @@ from tacticalrmm.constants import (
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
-    AlertSeverity,
-    CheckStatus,
-    CheckType,
     CustomFieldType,
     DebugLogType,
     GoArch,
@@ -242,47 +238,7 @@ class Agent(BaseAuditModel):
 
     @property
     def checks(self) -> Dict[str, Any]:
-        total, passing, failing, warning, info = 0, 0, 0, 0, 0
-
-        for check in self.get_checks_with_policies(exclude_overridden=True):
-            total += 1
-            if (
-                not hasattr(check.check_result, "status")
-                or isinstance(check.check_result, CheckResult)
-                and check.check_result.status == CheckStatus.PASSING
-            ):
-                passing += 1
-            elif (
-                isinstance(check.check_result, CheckResult)
-                and check.check_result.status == CheckStatus.FAILING
-            ):
-                alert_severity = (
-                    check.check_result.alert_severity
-                    if check.check_type
-                    in (
-                        CheckType.MEMORY,
-                        CheckType.CPU_LOAD,
-                        CheckType.DISK_SPACE,
-                        CheckType.SCRIPT,
-                    )
-                    else check.alert_severity
-                )
-                if alert_severity == AlertSeverity.ERROR:
-                    failing += 1
-                elif alert_severity == AlertSeverity.WARNING:
-                    warning += 1
-                elif alert_severity == AlertSeverity.INFO:
-                    info += 1
-
-        ret = {
-            "total": total,
-            "passing": passing,
-            "failing": failing,
-            "warning": warning,
-            "info": info,
-            "has_failing_checks": failing > 0 or warning > 0,
-        }
-        return ret
+        return calculate_agent_checks(self)
 
     @property
     def pending_actions_count(self) -> int:

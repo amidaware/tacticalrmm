@@ -7,7 +7,7 @@ from io import StringIO
 from pathlib import Path
 
 from django.conf import settings
-from django.db.models import Exists, OuterRef, Prefetch, Q
+from django.db.models import Count, Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -36,7 +36,6 @@ from tacticalrmm.constants import (
     AGENT_DEFER,
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
-    AGENT_TABLE_DEFER,
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
@@ -44,6 +43,7 @@ from tacticalrmm.constants import (
     DebugLogType,
     EvtLogNames,
     PAAction,
+    PAStatus,
 )
 from tacticalrmm.helpers import date_is_in_past, notify_error
 from tacticalrmm.permissions import (
@@ -92,8 +92,6 @@ class GetAgents(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
     def get(self, request):
-        from checks.models import Check, CheckResult
-
         monitoring_type_filter = Q()
         client_site_filter = Q()
 
@@ -119,24 +117,12 @@ class GetAgents(APIView):
                 Agent.objects.filter_by_role(request.user)  # type: ignore
                 .filter(monitoring_type_filter)
                 .filter(client_site_filter)
-                .defer(*AGENT_TABLE_DEFER)
                 .select_related(
-                    "site__server_policy",
-                    "site__workstation_policy",
-                    "site__client__server_policy",
-                    "site__client__workstation_policy",
+                    "site__client",
                     "policy",
                     "alert_template",
                 )
                 .prefetch_related(
-                    Prefetch(
-                        "agentchecks",
-                        queryset=Check.objects.select_related("script"),
-                    ),
-                    Prefetch(
-                        "checkresults",
-                        queryset=CheckResult.objects.select_related("assigned_check"),
-                    ),
                     Prefetch(
                         "custom_fields",
                         queryset=AgentCustomField.objects.select_related("field"),
@@ -148,6 +134,17 @@ class GetAgents(APIView):
                             agent_id=OuterRef("pk"), action="approve", installed=False
                         )
                     ),
+                    _pending_actions_count=Count(
+                        "pendingactions",
+                        filter=Q(pendingactions__status=PAStatus.PENDING),
+                    ),
+                )
+                .defer(
+                    "services",
+                    "created_by",
+                    "created_time",
+                    "modified_by",
+                    "modified_time",
                 )
             )
             serializer = AgentTableSerializer(agents, many=True)

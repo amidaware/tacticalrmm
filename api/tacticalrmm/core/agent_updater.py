@@ -51,15 +51,29 @@ def handle_agent_update(channel: str, message: bytes) -> None:
                 
             print(f"Received NATS configuration update notification for {data.get('agent_count')} agents", flush=True)
             logger.info(f"Received NATS configuration update notification for {data.get('agent_count')} agents")
-            
+
             # Import here to avoid circular import
+            from django.db import connection
             from tacticalrmm.utils import reload_nats
             
-            # Call reload_nats to update this service's configuration
-            # Don't publish again to avoid loops
-            print("Calling reload_nats(publish=False)...", flush=True)
-            reload_nats(publish=False)
-            print("Successfully reloaded NATS configuration", flush=True)
+            # Close any existing database connection before accessing DB
+            # This ensures we get a fresh connection for each message
+            print("Closing old database connection for listener thread...", flush=True)
+            connection.close()
+            print("Closed old database connection for listener thread", flush=True)
+            
+            try:
+                # Call reload_nats to update this service's configuration
+                # Django will create fresh connection if needed
+                # Don't publish again to avoid loops
+                print("Calling reload_nats(publish=False)...", flush=True)
+                reload_nats(publish=False)
+                print("Successfully reloaded NATS configuration", flush=True)
+            finally:
+                # Always close connection after use to prevent leaks in thread
+                print("Closing database connection after reload_nats...", flush=True)
+                connection.close()
+                print("Closed database connection after reload_nats", flush=True)
             
     except Exception as e:
         error_msg = f"Error handling agent update: {str(e)}"

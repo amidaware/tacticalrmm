@@ -53,6 +53,8 @@ class AddBranding(APIView):
         favicon = serializers.CharField(required=False, allow_blank=True)
         toolbar_color: serializers.CharField(max_length=25, required=False, allow_blank=True)
         toolbar_text_color: serializers.CharField(max_length=25, required=False, allow_blank=True)
+        light_page_color: serializers.CharField(max_length=25, required=False, allow_blank=True)
+        light_color: serializers.CharField(max_length=25, required=False, allow_blank=True)
 
     def get(self, request):
         settings = get_core_settings()

@@ -15,6 +15,9 @@ from tacticalrmm.constants import (
     AuditObjType,
 )
 from tacticalrmm.permissions import _has_perm_on_agent
+from tacticalrmm.helpers import setup_nats_options
+import nats
+import msgpack
 
 # Shared across all CommandStreamConsumer instances
 active_streams = {}

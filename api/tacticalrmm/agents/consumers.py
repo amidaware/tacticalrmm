@@ -194,3 +194,228 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         return self._has_perm("can_send_cmd") and _has_perm_on_agent(
             self.user, agent_id
         )
+
+
+class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.agent_id = None
+        self.session_id = None
+        self.group_name = None
+        self.killed = False
+        self.started = False
+        self.message_id = 0
+
+        # NATS (reused per WS session)
+        self.nc = None
+        self.sub = None
+        self.nats_lock = asyncio.Lock()
+
+    async def connect(self):
+        self.user = self.scope["user"]
+        if isinstance(self.user, AnonymousUser):
+            await self.close()
+            return
+
+        self.agent_id = self.scope["url_route"]["kwargs"]["agent_id"]
+        self.session_id = self.scope["url_route"]["kwargs"]["session_id"]
+
+        if not await self.has_perm(self.agent_id):
+            await self.accept()
+            await self.send_json({"error": "Permission denied", "status": 403})
+            await self.close(code=4003)
+            return
+
+        self.group_name = f"terminal_{self.agent_id}_{self.session_id}"
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if self.group_name:
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+        # send kill only if we didn't already send it from explicit "kill" action
+        if not self.killed:
+            with contextlib.suppress(Exception):
+                await self._send_kill()
+
+        # unsubscribe + close nats connection
+        with contextlib.suppress(Exception):
+            if self.sub is not None:
+                await self.sub.unsubscribe()
+                self.sub = None
+
+        with contextlib.suppress(Exception):
+            if self.nc is not None and not self.nc.is_closed:
+                await self.nc.close()
+                self.nc = None
+
+    async def receive_json(self, content):
+        action = content.get("action")
+        # log incoming payload
+        print(f"[TerminalStreamConsumer] Received action: {action}, payload: {content}")
+
+        if action == "start":
+            await self._start_terminal(content)
+        elif action == "input":
+            await self._send_input(content.get("data", ""))
+        elif action == "resize":
+            await self._send_resize(content.get("rows"), content.get("cols"))
+        elif action == "kill":
+            self.killed = True
+            with contextlib.suppress(Exception):
+                await self._send_kill()
+        else:
+            await self.send_json({"error": f"Unknown action: {action}"})
+
+    async def stream_output(self, event):
+        await self.send_json(
+            {
+                "action": "trmmcli.output",
+                "data": {
+                    "output": event.get("output", ""),
+                    "session_id": event.get("session_id", ""),
+                    "exit_code": event.get("exit_code", None),
+                    "done": event.get("done", False),
+                    "messageId": event.get("messageId", ""),
+                },
+            }
+        )
+
+    async def _ensure_nats(self):
+        if self.nc is not None and not self.nc.is_closed:
+            return
+        opts = setup_nats_options()
+        self.nc = await nats.connect(**opts)
+
+    async def _nats_publish(self, payload: dict):
+        # serialize writes on this connection
+        async with self.nats_lock:
+            try:
+                await self._ensure_nats()
+                await self.nc.publish(self.agent_id, msgpack.dumps(payload))
+            except Exception as e:
+                logger.exception("Terminal NATS publish failed: %s", e)
+                # reset so next call reconnects
+                with contextlib.suppress(Exception):
+                    if self.nc and not self.nc.is_closed:
+                        await self.nc.close()
+                self.nc = None
+                raise
+
+    async def _start_terminal(self, content):
+        if self.started:
+            return
+        self.started = True
+
+        shell = content.get("shell", "/bin/bash")
+        subject_output = f"{self.agent_id}.terminal.{self.session_id}"
+
+        await self._ensure_nats()
+
+        async def message_handler(msg):
+            try:
+                try:
+                    obj = msgpack.loads(msg.data)
+                except Exception:
+                    obj = msg.data
+
+                payload: dict[str, object] = {"session_id": self.session_id}
+
+                if isinstance(obj, dict):
+                    out = obj.get("output")
+                    if isinstance(out, (bytes, bytearray)):
+                        payload["output"] = out.decode("utf-8", errors="ignore")
+                    elif isinstance(out, str):
+                        payload["output"] = out
+
+                    if obj.get("done") is True:
+                        payload["done"] = True
+                    if "exit_code" in obj:
+                        payload["exit_code"] = obj["exit_code"]
+
+                elif isinstance(obj, (bytes, bytearray)):
+                    payload["output"] = obj.decode("utf-8", errors="ignore")
+
+                elif isinstance(obj, str):
+                    payload["output"] = obj
+
+                else:
+                    payload["output"] = str(obj)
+
+                self.message_id += 1
+                payload["messageId"] = str(self.message_id)
+                await self.channel_layer.group_send(
+                    self.group_name, {"type": "stream_output", **payload}
+                )
+
+            except Exception as e:
+                logger.exception(
+                    "Error handling terminal NATS message for agent %s", self.agent_id
+                )
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        "type": "stream_output",
+                        "session_id": self.session_id,
+                        "output": f"[ERROR] Failed to process agent output: {e}",
+                    },
+                )
+
+        # subscribe first so we don't miss the initial prompt
+        self.sub = await self.nc.subscribe(subject_output, cb=message_handler)
+
+        await self._nats_publish(
+            {
+                "func": "terminal_start",
+                "payload": {"session_id": self.session_id, "shell": shell},
+            }
+        )
+
+    async def _send_input(self, value):
+        await self._nats_publish(
+            {
+                "func": "terminal_input",
+                "payload": {"session_id": self.session_id, "data": value},
+            }
+        )
+
+    async def _send_resize(self, rows, cols):
+        await self._nats_publish(
+            {
+                "func": "terminal_resize",
+                "payload": {
+                    "session_id": self.session_id,
+                    "rows": str(rows),
+                    "cols": str(cols),
+                },
+            }
+        )
+
+    async def _send_kill(self):
+        await self._nats_publish(
+            {
+                "func": "terminal_kill",
+                "payload": {"session_id": self.session_id},
+            }
+        )
+
+    async def has_perm(self, agent_id: str) -> bool:
+        return await database_sync_to_async(self._has_perm_on_agent)(agent_id)
+
+    async def get_agent(self, agent_id: str):
+        return await Agent.objects.aget(agent_id=agent_id)
+
+    def _has_perm_on_agent(self, agent_id: str) -> bool:
+        return self._has_perm("can_send_cmd") and _has_perm_on_agent(
+            self.user, agent_id
+        )
+
+    def _has_perm(self, perm: str) -> bool:
+        if self.user.is_superuser or (
+            self.user.role and getattr(self.user.role, "is_superuser")
+        ):
+            return True
+        elif not self.user.role:
+            return False
+        return getattr(self.user.role, perm, False)

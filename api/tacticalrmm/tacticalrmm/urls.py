@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.urls import include, path, register_converter
 from knox import views as knox_views
-
+from agents.consumers import TerminalStreamConsumer
 from accounts.views import CheckCredsV2, LoginViewV2
 from agents.consumers import CommandStreamConsumer
 
@@ -81,6 +81,11 @@ if getattr(settings, "SWAGGER_ENABLED", False):
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
+    path("ws/agent/<str:agent_id>/cmd/", CommandStreamConsumer.as_asgi()),
+    path(
+        "ws/agent/<str:agent_id>/terminal/<str:session_id>/",
+        TerminalStreamConsumer.as_asgi(),
+    ),
 ]
 
 if not getattr(settings, "DEMO", False):

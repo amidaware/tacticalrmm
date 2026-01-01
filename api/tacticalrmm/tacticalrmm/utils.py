@@ -197,6 +197,7 @@ def reload_nats() -> None:
                             "allow": [
                                 f"{agent.agent_id}",
                                 f"{agent.agent_id}.cmdoutput.>",
+                                f"{agent.agent_id}.terminal.>",
                             ]
                         },
                         "subscribe": {"allow": [f"{agent.agent_id}"]},

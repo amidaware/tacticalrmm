@@ -8,6 +8,7 @@
 # v1.4  3/12/2025 Removed Mongo Check and added OS Check and Warning for Ubuntu 20.04
 # v1.5  3/12/2025 Switching to auto-detect Tactical RMM domains from config files
 # v1.6 thru v1.9  7/18/2025 Added dynamic logging and fixed regex warnings. Cleaning header and sudo check.
+# v1.10 1/13/2026 Fixing SSL certificate check so it only checks corresponding cert if there are multiple certs.
 
 # This script is designed to help troubleshoot Tactical RMM installations.
 
@@ -218,14 +219,42 @@ else
   echo -e "${RED}Proxy detected (WAN IP mismatch)${NC}"
 fi
 
-# ——— SSL certificate check —————————————————————————————————————————————
+# ——— SSL certificate check (domain-specific) ————————————————————————————
 echo -e ""
 echo -e "${YELLOW}---------- Checking SSL certificate for $domain... ----------${NC}"
-cert=$(certbot certificates 2>/dev/null)
-if [[ "$cert" != *"INVALID"* ]]; then
-  echo -e "${GREEN}SSL certificate for $domain is valid${NC}"
+
+LIVE_DIR="/etc/letsencrypt/live/$domain"
+CERT_PEM="$LIVE_DIR/fullchain.pem"
+
+# helper: check cert file validity with openssl
+check_cert_file() {
+  local pem="$1"
+  local grace_days="${2:-7}"  # warn if expiring within N days
+  local grace_sec=$((grace_days * 86400))
+
+  if openssl x509 -in "$pem" -noout >/dev/null 2>&1; then
+    if openssl x509 -in "$pem" -noout -checkend "$grace_sec" >/dev/null 2>&1; then
+      exp=$(openssl x509 -in "$pem" -noout -enddate | cut -d= -f2)
+      echo -e "${GREEN}SSL certificate for $domain is valid (expires: $exp).${NC}"
+      return 0
+    else
+      exp=$(openssl x509 -in "$pem" -noout -enddate | cut -d= -f2)
+      echo -e "${RED}SSL certificate for $domain is expiring soon or expired (expires: $exp).${NC}"
+      return 1
+    fi
+  else
+    echo -e "${RED}SSL certificate file exists but could not be parsed: $pem${NC}"
+    return 2
+  fi
+}
+
+if [[ -f "$CERT_PEM" ]]; then
+  # Prefer the on-disk cert for EXACT domain
+  check_cert_file "$CERT_PEM" 7
 else
-  echo -e "${RED}SSL certificate for $domain is INVALID or missing${NC}"
+  echo -e "${RED}No cert file found at $CERT_PEM${NC}"
+  echo -e "${YELLOW}Falling back to certbot inventory for troubleshooting...${NC}"
+  certbot certificates 2>/dev/null || true
 fi
 
 certbot certificates

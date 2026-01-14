@@ -1,0 +1,168 @@
+name: TacticalRMM Release
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+  pull-requests: write
+  attestations: write
+  id-token: write
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to Release (e.g., v1.2.3)"
+        required: true
+        type: string
+
+env:
+  REGISTRY: "ghcr.io"
+  ORGANISATION: ${{ github.repository_owner }}
+  REPOSITORY: ${{ github.event.repository.name }}
+  BINARY_NAME: nats-api
+
+# =============================================================================
+# JOBS
+# =============================================================================
+
+jobs:
+  build_client:
+    name: "Build Go Client (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            go_os: darwin
+            go_arch: [arm64, amd64]
+            artifact_name: nats-api-mac-universal
+          - os: windows-latest
+            go_os: windows
+            go_arch: amd64
+            artifact_name: nats-api-windows-amd64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Prepare Build tools
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Compile nats-api for ${{ matrix.go_os }}
+        run: |
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            rm -rf ./build_target
+            mkdir -p ./build_target
+            architectures=($(echo '${{ toJSON(matrix.go_arch) }}' | jq -r '.[]'))
+            for arch in "${architectures[@]}"; do
+              echo "Building for ${{ matrix.go_os }}/${arch}"
+              env CGO_ENABLED=0 GOOS=${{ matrix.go_os }} GOARCH=${arch} go build -ldflags "-s -w" -o ./build_target/nats-api-${arch} .
+            done
+            ls -la ./build_target
+            echo "Create ${{ matrix.artifact_name }}"
+            mkdir -p ./artifacts
+            arch0=${architectures[0]}
+            arch1=${architectures[1]}
+            lipo -create ./build_target/nats-api-${arch0} ./build_target/nats-api-${arch1} -output ./artifacts/${{ env.BINARY_NAME }}
+            lipo -info ./artifacts/${{ env.BINARY_NAME }}
+            ls -la ./artifacts
+            rm -rf ./build_target
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            mkdir -p ./artifacts
+            env CGO_ENABLED=0 GOOS=${{ matrix.go_os }} GOARCH=${{ matrix.go_arch }} go build -ldflags "-s -w" -o ./artifacts/${{ env.BINARY_NAME }}.exe .
+            ls -la ./artifacts
+          fi
+
+      - name: Sign MacOS package
+        if: runner.os == 'macOS'
+        uses: ./.github/steps/sign-macos-package
+        with:
+          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
+          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
+          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
+          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+          binary_name: ${{ env.BINARY_NAME }}
+
+      - name: Upload client artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+
+  release:
+    name: "Create Release"
+    needs: [build_client]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      inputs.version != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+        continue-on-error: true
+
+      - name: Prepare release artifacts
+        run: |
+          set -e
+          mkdir -p final-artifacts/clients
+
+          # macOS
+          if [ -d "release-artifacts/nats-api-mac-universal" ]; then
+            tar -czf "final-artifacts/clients/nats-api-macos-universal.tar.gz" \
+              -C "release-artifacts/nats-api-mac-universal" nats-api
+          fi
+          # Windows
+          if [ -d "release-artifacts/nats-api-windows-amd64" ]; then
+            (cd "release-artifacts/nats-api-windows-amd64" && \
+              zip "${GITHUB_WORKSPACE}/final-artifacts/clients/nats-api-windows-amd64.zip" nats-api.exe)
+          fi
+
+          ls -lh final-artifacts/clients/
+
+      - name: Generate release header
+        run: |
+          cat > RELEASE_HEADER.md <<EOF
+          ## TacticalRMM NATS API
+          - **macOS** (Universal): \`nats-api-macos-universal.tar.gz\`
+          - **Windows** (amd64): \`nats-api-windows-amd64.zip\`
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "${{ inputs.version }}"
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body_path: RELEASE_HEADER.md
+          files: |
+            final-artifacts/clients/*

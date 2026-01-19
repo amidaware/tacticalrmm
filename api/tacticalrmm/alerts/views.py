@@ -114,9 +114,9 @@ class GetAddAlerts(APIView):
     def post(self, request):
         serializer = AlertSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        alert = serializer.save()
 
-        return Response("ok")
+        return Response(AlertSerializer(alert).data)
 
 
 class GetUpdateDeleteAlert(APIView):
@@ -164,14 +164,14 @@ class GetUpdateDeleteAlert(APIView):
 
         serializer = AlertSerializer(instance=alert, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        alert = serializer.save()
 
-        return Response("ok")
+        return Response(AlertSerializer(alert).data)
 
     def delete(self, request, pk):
         Alert.objects.get(pk=pk).delete()
 
-        return Response("ok")
+        return Response()
 
 
 class BulkAlerts(APIView):
@@ -187,7 +187,7 @@ class BulkAlerts(APIView):
                 snoozed=False,
                 snooze_until=None,
             )
-            return Response("ok")
+            return Response()
         elif request.data["bulk_action"] == "snooze":
             if "snooze_days" in request.data.keys():
                 Alert.objects.filter_by_role(request.user).filter(
@@ -197,7 +197,7 @@ class BulkAlerts(APIView):
                     snooze_until=djangotime.now()
                     + djangotime.timedelta(days=int(request.data["snooze_days"])),
                 )
-                return Response("ok")
+                return Response()
 
         return notify_error("The request was invalid")
 
@@ -212,12 +212,12 @@ class GetAddAlertTemplates(APIView):
     def post(self, request):
         serializer = AlertTemplateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        alert_template = serializer.save()
 
         # cache alert_template value on agents
         cache_agents_alert_template.delay()
 
-        return Response("ok")
+        return Response(AlertTemplateSerializer(alert_template).data)
 
 
 class GetUpdateDeleteAlertTemplate(APIView):
@@ -235,12 +235,12 @@ class GetUpdateDeleteAlertTemplate(APIView):
             instance=alert_template, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        alert_template = serializer.save()
 
         # cache alert_template value on agents
         cache_agents_alert_template.delay()
 
-        return Response("ok")
+        return Response(AlertTemplateSerializer(alert_template).data)
 
     def delete(self, request, pk):
         get_object_or_404(AlertTemplate, pk=pk).delete()
@@ -248,7 +248,7 @@ class GetUpdateDeleteAlertTemplate(APIView):
         # cache alert_template value on agents
         cache_agents_alert_template.delay()
 
-        return Response("ok")
+        return Response()
 
 
 class RelatedAlertTemplate(APIView):

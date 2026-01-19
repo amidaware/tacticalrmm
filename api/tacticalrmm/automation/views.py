@@ -57,7 +57,7 @@ class GetAddPolicies(APIView):
                 if not task.assigned_check:
                     task.create_policy_task(policy=policy)
 
-        return Response("ok")
+        return Response(PolicySerializer(policy).data)
 
 
 class GetUpdateDeletePolicy(APIView):
@@ -73,14 +73,14 @@ class GetUpdateDeletePolicy(APIView):
 
         serializer = PolicySerializer(instance=policy, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        policy = serializer.save()
 
-        return Response("ok")
+        return Response(PolicySerializer(policy).data)
 
     def delete(self, request, pk):
         get_object_or_404(Policy, pk=pk).delete()
 
-        return Response("ok")
+        return Response()
 
 
 class PolicyAutoTask(APIView):
@@ -96,7 +96,7 @@ class PolicyAutoTask(APIView):
         from .tasks import run_win_policy_autotasks_task
 
         run_win_policy_autotasks_task.delay(task=task)
-        return Response("Affected agent tasks will run shortly")
+        return Response()
 
 
 class PolicyCheck(APIView):
@@ -157,9 +157,9 @@ class UpdatePatchPolicy(APIView):
         serializer = WinUpdatePolicySerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.policy = policy
-        serializer.save()
+        winupdatepolicy = serializer.save()
 
-        return Response("ok")
+        return Response(WinUpdatePolicySerializer(winupdatepolicy).data)
 
     # update patch policy
     def put(self, request, pk):
@@ -169,15 +169,15 @@ class UpdatePatchPolicy(APIView):
             instance=policy, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        winupdatepolicy = serializer.save()
 
-        return Response("ok")
+        return Response(WinUpdatePolicySerializer(winupdatepolicy).data)
 
     # delete patch policy
     def delete(self, request, pk):
         get_object_or_404(WinUpdatePolicy, pk=pk).delete()
 
-        return Response("ok")
+        return Response()
 
 
 class ResetPatchPolicy(APIView):
@@ -233,4 +233,4 @@ class ResetPatchPolicy(APIView):
                 ]
             )
 
-        return Response("The patch policy on the affected agents has been reset.")
+        return Response()

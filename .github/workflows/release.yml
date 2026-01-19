@@ -101,6 +101,18 @@ jobs:
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
           binary_name: ${{ env.BINARY_NAME }}
 
+      - name: Sign Windows package
+        if: runner.os == 'Windows'
+        uses: ./.github/steps/sign-windows-package
+        with:
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          signing_endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          code_signing_account_name: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT_NAME }}
+          certificate_profile_name: ${{ secrets.AZURE_CERTIFICATE_PROFILE_NAME }}
+          binary_path: artifacts/${{ env.BINARY_NAME }}.exe
+
       - name: Upload client artifact
         uses: actions/upload-artifact@v4
         with:

@@ -594,7 +594,7 @@ class TaskResult(models.Model):
     def send_resolved_email(self):
         CORE = get_core_settings()
 
-        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Resolved"
         body = (
             subject
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
@@ -604,7 +604,7 @@ class TaskResult(models.Model):
 
     def send_resolved_sms(self):
         CORE = get_core_settings()
-        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Resolved"
         body = (
             subject
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"

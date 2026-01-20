@@ -48,7 +48,7 @@ class GetAddScripts(APIView):
 
         # obj.hash_script_body()
 
-        return Response(f"{obj.name} was added!")
+        return Response(ScriptSerializer(obj).data)
 
 
 class GetUpdateDeleteScript(APIView):
@@ -84,7 +84,7 @@ class GetUpdateDeleteScript(APIView):
                     clear_entire_cache()
                     break
 
-        return Response(f"{obj.name} was edited!")
+        return Response(ScriptSerializer(obj).data)
 
     def delete(self, request, pk):
         script = get_object_or_404(Script, pk=pk)
@@ -94,7 +94,7 @@ class GetUpdateDeleteScript(APIView):
             return notify_error("Community scripts cannot be deleted")
 
         script.delete()
-        return Response(f"{script.name} was deleted!")
+        return Response()
 
 
 class GetAddScriptSnippets(APIView):
@@ -107,9 +107,9 @@ class GetAddScriptSnippets(APIView):
     def post(self, request):
         serializer = ScriptSnippetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        snippet = serializer.save()
 
-        return Response("Script snippet was saved successfully")
+        return Response(ScriptSnippetSerializer(snippet).data)
 
 
 class GetUpdateDeleteScriptSnippet(APIView):
@@ -126,15 +126,15 @@ class GetUpdateDeleteScriptSnippet(APIView):
             instance=snippet, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        snippet = serializer.save()
 
-        return Response("Script snippet was saved successfully")
+        return Response(ScriptSnippetSerializer(snippet).data)
 
     def delete(self, request, pk):
         snippet = get_object_or_404(ScriptSnippet, pk=pk)
         snippet.delete()
 
-        return Response("Script snippet was deleted successfully")
+        return Response()
 
 
 class TestScript(APIView):

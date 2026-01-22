@@ -136,12 +136,12 @@ if [[ $* == *--auto* ]]; then
     week_day=$(date +"%u")
 
     if [ "$month_day" -eq 10 ]; then
-        tar -cf /rmmbackups/monthly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+        sudo tar -cf /rmmbackups/monthly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
     else
         if [ "$week_day" -eq 5 ]; then
-            tar -cf /rmmbackups/weekly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+            sudo tar -cf /rmmbackups/weekly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
         else
-            tar -cf /rmmbackups/daily/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+            sudo tar -cf /rmmbackups/daily/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
         fi
     fi
 

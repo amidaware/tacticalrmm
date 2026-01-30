@@ -131,6 +131,10 @@ def make_random_password(*, len: int) -> str:
 
 
 def days_until_cert_expires() -> int:
+    # If SSL termination is handled by a proxy, return a high value to disable warnings
+    if getattr(settings, "CERT_BEHIND_PROXY", False):
+        return 999
+
     cert_file, _ = get_certs()
     cert_bytes = Path(cert_file).read_bytes()
 

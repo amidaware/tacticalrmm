@@ -17,7 +17,9 @@ class AgentPerms(permissions.BasePermission):
                 r.user, view.kwargs["agent_id"]
             )
         else:
-            if r.path == "/agents/maintenance/bulk/":
+            if r.path in ("/agents/maintenance/bulk/", "/agents/v2/"):
+                return _has_perm(r, "can_list_agents")
+            elif "agent_id" not in view.kwargs.keys():
                 return _has_perm(r, "can_edit_agent")
             else:
                 return _has_perm(r, "can_edit_agent") and _has_perm_on_agent(

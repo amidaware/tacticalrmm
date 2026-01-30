@@ -8,6 +8,7 @@ from . import views
 
 urlpatterns = [
     # agent views
+    path("v2/", views.GetAgentsV2.as_view()),
     path("", views.GetAgents.as_view()),
     path("<agent:agent_id>/", views.GetUpdateDeleteAgent.as_view()),
     path("<agent:agent_id>/cmd/", views.send_raw_cmd),

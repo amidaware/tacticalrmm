@@ -148,6 +148,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         fields = [
+            "id",
             "agent_id",
             "alert_template",
             "hostname",

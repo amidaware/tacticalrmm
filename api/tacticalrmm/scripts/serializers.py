@@ -34,6 +34,7 @@ class ScriptSerializer(ModelSerializer):
             "id",
             "name",
             "description",
+            "script_type",
             "shell",
             "args",
             "category",

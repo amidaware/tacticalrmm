@@ -1,5 +1,7 @@
 from datetime import datetime as dt
+from typing import Any
 
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -117,6 +119,77 @@ class GetAddAlerts(APIView):
         alert = serializer.save()
 
         return Response(AlertSerializer(alert).data)
+
+
+class GetAlertsV2(APIView):
+    permission_classes = [IsAuthenticated, AlertPerms]
+
+    def patch(self, request):
+        pagination = request.data.get("pagination", {})
+        
+        sort_by = pagination.get("sortBy", "alert_time")
+        descending = pagination.get("descending", True)
+        order_by = f"-{sort_by}" if descending else f"{sort_by}"
+
+        clientFilter = Q()
+        severityFilter = Q()
+        timeFilter = Q()
+        resolvedFilter = Q()
+        snoozedFilter = Q()
+
+        if "snoozedFilter" in request.data.keys():
+            if not request.data["snoozedFilter"]:
+                snoozedFilter = Q(snoozed=request.data["snoozedFilter"])
+
+        if "resolvedFilter" in request.data.keys():
+            if not request.data["resolvedFilter"]:
+                resolvedFilter = Q(resolved=request.data["resolvedFilter"])
+
+        if "clientFilter" in request.data.keys() and request.data["clientFilter"]:
+            from agents.models import Agent
+            from clients.models import Client
+
+            clients = Client.objects.filter(
+                pk__in=request.data["clientFilter"]
+            ).values_list("id")
+            agents = Agent.objects.filter(site__client_id__in=clients).values_list(
+                "id"
+            )
+            clientFilter = Q(agent__in=agents)
+
+        if "severityFilter" in request.data.keys() and request.data["severityFilter"]:
+            severityFilter = Q(severity__in=request.data["severityFilter"])
+
+        if "timeFilter" in request.data.keys() and request.data["timeFilter"]:
+            timeFilter = Q(
+                alert_time__lte=djangotime.make_aware(dt.today()),
+                alert_time__gt=djangotime.make_aware(dt.today())
+                - djangotime.timedelta(days=int(request.data["timeFilter"])),
+            )
+
+        alerts = (
+            Alert.objects.filter_by_role(request.user)  # type: ignore
+            .filter(clientFilter)
+            .filter(severityFilter)
+            .filter(resolvedFilter)
+            .filter(snoozedFilter)
+            .filter(timeFilter)
+            .order_by(order_by)
+        )
+
+        rows_per_page = pagination.get("rowsPerPage", 50)
+        page = pagination.get("page", 1)
+        
+        paginator = Paginator(alerts, rows_per_page)
+        
+        return Response(
+            {
+                "alerts": AlertSerializer(
+                    paginator.get_page(page), many=True
+                ).data,
+                "total": paginator.count,
+            }
+        )
 
 
 class GetUpdateDeleteAlert(APIView):

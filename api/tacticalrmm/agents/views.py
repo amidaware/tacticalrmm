@@ -7,6 +7,7 @@ from io import StringIO
 from pathlib import Path
 
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.db.models import Count, Exists, OuterRef, Prefetch, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -173,6 +174,149 @@ class GetAgents(APIView):
         return Response(serializer.data)
 
 
+class GetAgentsV2(APIView):
+    permission_classes = [IsAuthenticated, AgentPerms]
+
+    def patch(self, request):
+        pagination = request.data.get("pagination", {})
+
+        sort_by = pagination.get("sortBy", "hostname")
+        descending = pagination.get("descending", False)
+        order_by = f"-{sort_by}" if descending else f"{sort_by}"
+
+        monitoring_type_filter = Q()
+        client_site_filter = Q()
+        search_filter = Q()
+
+        # Filter by monitoring type (server/workstation)
+        monitoring_type = request.data.get("monitoringType")
+        if monitoring_type and monitoring_type in AgentMonType.values:
+            monitoring_type_filter = Q(monitoring_type=monitoring_type)
+
+        # Filter by client or site
+        site_id = request.data.get("siteId")
+        client_id = request.data.get("clientId")
+        if site_id:
+            client_site_filter = Q(site_id=site_id)
+        elif client_id:
+            client_site_filter = Q(site__client_id=client_id)
+
+        # Text search across multiple fields
+        search_text = request.data.get("search", "").strip()
+        if search_text:
+            search_filter = (
+                Q(hostname__icontains=search_text) |
+                Q(description__icontains=search_text) |
+                Q(site__client__name__icontains=search_text) |
+                Q(site__name__icontains=search_text) |
+                Q(operating_system__icontains=search_text) |
+                Q(public_ip__icontains=search_text) |
+                Q(local_ips__icontains=search_text)
+            )
+
+        agents = (
+            Agent.objects.filter_by_role(request.user)  # type: ignore
+            .filter(monitoring_type_filter)
+            .filter(client_site_filter)
+            .filter(search_filter)
+            .select_related(
+                "site__client",
+                "policy",
+                "alert_template",
+            )
+            .prefetch_related(
+                Prefetch(
+                    "custom_fields",
+                    queryset=AgentCustomField.objects.select_related("field"),
+                ),
+            )
+            .annotate(
+                has_patches_pending=Exists(
+                    WinUpdate.objects.filter(
+                        agent_id=OuterRef("pk"), action="approve", installed=False
+                    )
+                ),
+                _pending_actions_count=Count(
+                    "pendingactions",
+                    filter=Q(pendingactions__status=PAStatus.PENDING),
+                ),
+            )
+            .defer(
+                "services",
+                "created_by",
+                "created_time",
+                "modified_by",
+                "modified_time",
+            )
+        )
+
+        # Apply advanced filters after annotation (OR logic)
+        # These include status/availability and condition filters
+        advanced_filter = Q()
+
+        # Status/availability filters
+        status = request.data.get("status")
+        if status == "online":
+            advanced_filter |= Q(
+                last_seen__gte=djangotime.now() - dt.timedelta(minutes=6)
+            )
+        elif status == "offline":
+            # Offline but not overdue
+            advanced_filter |= Q(
+                last_seen__lt=djangotime.now() - dt.timedelta(minutes=6),
+                last_seen__gte=djangotime.now() - dt.timedelta(minutes=30)
+            )
+        elif status == "overdue":
+            advanced_filter |= Q(
+                last_seen__lt=djangotime.now() - dt.timedelta(minutes=30)
+            )
+        elif status == "offline_30days":
+            # Offline for more than 30 days
+            advanced_filter |= Q(
+                last_seen__lt=djangotime.now() - dt.timedelta(days=30)
+            )
+
+        # Condition filters
+        if request.data.get("patchesPending"):
+            advanced_filter |= Q(has_patches_pending=True)
+
+        if request.data.get("actionsPending"):
+            advanced_filter |= Q(_pending_actions_count__gt=0)
+
+        if request.data.get("rebootNeeded"):
+            advanced_filter |= Q(needs_reboot=True)
+
+        if request.data.get("checksFailing"):
+            from checks.models import CheckResult
+            advanced_filter |= Q(
+                Exists(
+                    CheckResult.objects.filter(
+                        agent_id=OuterRef("pk"),
+                        status__in=["failing", "warning"],
+                    )
+                )
+            )
+
+        if advanced_filter:
+            agents = agents.filter(advanced_filter)
+
+        agents = agents.order_by(order_by)
+
+        rows_per_page = pagination.get("rowsPerPage", 50)
+        page = pagination.get("page", 1)
+
+        paginator = Paginator(agents, rows_per_page)
+
+        return Response(
+            {
+                "agents": AgentTableSerializer(
+                    paginator.get_page(page), many=True
+                ).data,
+                "total": paginator.count,
+            }
+        )
+
+
 class GetUpdateDeleteAgent(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
@@ -316,7 +460,7 @@ class GetUpdateDeleteAgent(APIView):
                     serializer.save()
 
         sync_mesh_perms_task.delay()
-        return Response(AgentSerializer(agent).data)
+        return Response(AgentTableSerializer(agent).data)
 
     # uninstall agent
     def delete(self, request, agent_id):
@@ -342,7 +486,7 @@ class GetUpdateDeleteAgent(APIView):
                 log_type=DebugLogType.AGENT_ISSUES,
             )
         sync_mesh_perms_task.delay()
-        return Response(f"{name} will now be uninstalled.")
+        return Response()
 
 
 class AgentProcesses(APIView):

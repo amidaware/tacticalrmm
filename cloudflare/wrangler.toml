@@ -1,0 +1,88 @@
+# Y12.AI Cloudflare Containers Configuration
+# https://developers.cloudflare.com/containers/
+
+name = "y12-ai"
+compatibility_date = "2024-01-01"
+
+# Main application container
+[[containers]]
+name = "y12-backend"
+image = "y12ai/y12-backend:latest"
+port = 8000
+memory = "512MB"
+cpu = 1
+
+[containers.env]
+DJANGO_SETTINGS_MODULE = "tacticalrmm.settings"
+DATABASE_URL = "${DATABASE_URL}"
+REDIS_URL = "${REDIS_URL}"
+SECRET_KEY = "${SECRET_KEY}"
+ALLOWED_HOSTS = "${ALLOWED_HOSTS}"
+CORS_ORIGIN_WHITELIST = "${CORS_ORIGIN_WHITELIST}"
+
+# Frontend container
+[[containers]]
+name = "y12-frontend"
+image = "y12ai/y12-frontend:latest"
+port = 80
+memory = "256MB"
+cpu = 0.5
+
+[containers.env]
+API_HOST = "${API_HOST}"
+
+# NATS container for agent communication
+[[containers]]
+name = "y12-nats"
+image = "y12ai/y12-nats:latest"
+port = 4222
+memory = "256MB"
+cpu = 0.5
+
+[containers.env]
+API_HOST = "${API_HOST}"
+
+# Celery worker
+[[containers]]
+name = "y12-celery"
+image = "y12ai/y12-backend:latest"
+command = ["tactical-celery"]
+memory = "512MB"
+cpu = 1
+
+[containers.env]
+DATABASE_URL = "${DATABASE_URL}"
+REDIS_URL = "${REDIS_URL}"
+
+# WebSocket handler
+[[containers]]
+name = "y12-websockets"
+image = "y12ai/y12-backend:latest"
+command = ["tactical-websockets"]
+port = 8001
+memory = "256MB"
+cpu = 0.5
+
+[containers.env]
+DATABASE_URL = "${DATABASE_URL}"
+REDIS_URL = "${REDIS_URL}"
+
+# Routes
+[[routes]]
+pattern = "y12.ai/*"
+container = "y12-frontend"
+
+[[routes]]
+pattern = "api.y12.ai/*"
+container = "y12-backend"
+
+[[routes]]
+pattern = "ws.y12.ai/*"
+container = "y12-websockets"
+
+# Secrets (set via wrangler secret put)
+# DATABASE_URL - PostgreSQL connection string (use Neon, Supabase, or Cloudflare Hyperdrive)
+# REDIS_URL - Redis connection string (use Upstash)
+# SECRET_KEY - Django secret key
+# ALLOWED_HOSTS - Comma-separated list of allowed hosts
+# CORS_ORIGIN_WHITELIST - CORS origins

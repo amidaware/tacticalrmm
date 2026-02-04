@@ -448,7 +448,7 @@ meshcfg="$(
     "aliasPort": 443,
     "redirPort": 800,
     "allowLoginToken": true,
-    "allowFraming": true,
+    "allowedFramingOrigins": ["https://${frontenddomain}"],
     "agentPing": 35,
     "allowHighQualityDesktop": true,
     "tlsOffload": "127.0.0.1",

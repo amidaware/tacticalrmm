@@ -663,6 +663,7 @@ if ! which jq >/dev/null; then
 fi
 
 if which jq >/dev/null; then
+  mesh_config_changed=false
   if ! jq -e "$check_jq_filter" "$mesh_cfg" >/dev/null; then
     echo "Disabling mesh compression"
     # backup to homedir first
@@ -671,10 +672,32 @@ if which jq >/dev/null; then
     if jq "$apply_jq_filter" "$mesh_cfg" >"$mesh_tmp"; then
       if [ -s "$mesh_tmp" ]; then
         mv "$mesh_tmp" "$mesh_cfg"
-        sudo systemctl restart meshcentral
+        mesh_config_changed=true
       fi
     fi
     rm -f "$mesh_tmp"
+  fi
+
+  # Migrate allowFraming to allowedFramingOrigins for clickjacking protection
+  if [ -f "$mesh_cfg" ] && [ -n "$FRONTEND" ]; then
+    has_allow_framing=$(jq -r '.settings | to_entries | map(.key | ascii_downcase) | index("allowframing") // "none"' "$mesh_cfg" 2>/dev/null)
+    has_allowed_origins=$(jq -r '.settings | to_entries | map(.key | ascii_downcase) | index("allowedframingorigins") // "none"' "$mesh_cfg" 2>/dev/null)
+    if [[ "$has_allow_framing" != "none" ]] && [[ "$has_allowed_origins" == "none" ]]; then
+      echo "Migrating MeshCentral config: replacing allowFraming with allowedFramingOrigins for clickjacking protection"
+      cp "$mesh_cfg" ~/meshcfg-framing-$(date "+%Y%m%dT%H%M%S").bak
+      mesh_tmp=$(mktemp)
+      if jq --arg frontend "$FRONTEND" '.settings |= ((to_entries | map(select((.key | ascii_downcase) != "allowframing")) | from_entries) + {"allowedFramingOrigins": ["https://\($frontend)"]})' "$mesh_cfg" >"$mesh_tmp" 2>/dev/null && [ -s "$mesh_tmp" ]; then
+        mv "$mesh_tmp" "$mesh_cfg"
+        mesh_config_changed=true
+      else
+        printf >&2 "${YELLOW}Warning: Could not migrate allowFraming to allowedFramingOrigins. Backup saved to ~/meshcfg-framing-*.bak${NC}\n"
+        rm -f "$mesh_tmp"
+      fi
+    fi
+  fi
+
+  if [[ "$mesh_config_changed" == "true" ]]; then
+    sudo systemctl restart meshcentral
   fi
 fi
 

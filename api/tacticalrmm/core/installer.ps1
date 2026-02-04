@@ -13,9 +13,9 @@ $apilink = $downloadlink.split('/')
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$serviceName = 'tacticalrmm'
+$serviceName = 'y12agent'
 If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
-    write-host ('Tactical RMM Is Already Installed')
+    write-host ('Y12.AI Agent Is Already Installed')
 } Else {
     $OutPath = $env:TMP
     $output = $innosetup
@@ -38,9 +38,9 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
     {
         $DefenderStatus = Get-MpComputerStatus | select  AntivirusEnabled
         if ($DefenderStatus -match "True") {
-            Add-MpPreference -ExclusionPath 'C:\Program Files\TacticalAgent\*'
+            Add-MpPreference -ExclusionPath 'C:\Program Files\Y12Agent\*'
             Add-MpPreference -ExclusionPath 'C:\Program Files\Mesh Agent\*'
-            Add-MpPreference -ExclusionPath 'C:\ProgramData\TacticalRMM\*'
+            Add-MpPreference -ExclusionPath 'C:\ProgramData\Y12AI\*'
         }
     }
     Catch {
@@ -61,7 +61,7 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
             Start-Process -FilePath $OutPath\$output -ArgumentList ('/VERYSILENT /SUPPRESSMSGBOXES') -Wait
             write-host ('Extracting...')
             Start-Sleep -s 5
-            Start-Process -FilePath "C:\Program Files\TacticalAgent\tacticalrmm.exe" -ArgumentList $installArgs -Wait
+            Start-Process -FilePath "C:\Program Files\Y12Agent\y12agent.exe" -ArgumentList $installArgs -Wait
             exit 0
         }
         Catch

@@ -22,8 +22,8 @@ volumes:
 
 services:
   # postgres database for api service
-  tactical-postgres:
-    container_name: trmm-postgres
+  y12-postgres:
+    container_name: y12-postgres
     image: postgres:13-alpine
     restart: always
     environment:
@@ -36,8 +36,8 @@ services:
       - api-db
 
   # redis container for celery tasks
-  tactical-redis:
-    container_name: trmm-redis
+  y12-redis:
+    container_name: y12-redis
     image: redis:6.0-alpine
     user: 1000:1000
     command: redis-server
@@ -48,9 +48,9 @@ services:
       - redis
 
   # used to initialize the docker environment
-  tactical-init:
-    container_name: trmm-init
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  y12-init:
+    container_name: y12-init
+    image: ${IMAGE_REPO}y12:${VERSION}
     restart: on-failure
     command: ["tactical-init"]
     environment:
@@ -68,9 +68,9 @@ services:
       TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
       TRMM_DISABLE_SSO: ${TRMM_DISABLE_SSO}
     depends_on:
-      - tactical-postgres
-      - tactical-meshcentral
-      - tactical-redis
+      - y12-postgres
+      - y12-meshcentral
+      - y12-redis
     networks:
       - api-db
       - proxy
@@ -82,9 +82,9 @@ services:
       - redis_data:/redis/data
 
   # nats
-  tactical-nats:
-    container_name: trmm-nats
-    image: ${IMAGE_REPO}tactical-nats:${VERSION}
+  y12-nats:
+    container_name: y12-nats
+    image: ${IMAGE_REPO}y12-nats:${VERSION}
     user: 1000:1000
     restart: always
     environment:
@@ -98,9 +98,9 @@ services:
           - ${API_HOST}
 
   # meshcentral container
-  tactical-meshcentral:
-    container_name: trmm-meshcentral
-    image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
+  y12-meshcentral:
+    container_name: y12-meshcentral
+    image: ${IMAGE_REPO}y12-meshcentral:${VERSION}
     user: 1000:1000
     restart: always
     environment:
@@ -119,11 +119,11 @@ services:
       - tactical_data:/opt/tactical
       - mesh_data:/home/node/app/meshcentral-data
     depends_on:
-      - tactical-mongodb
+      - y12-mongodb
 
   # mongodb container for meshcentral
-  tactical-mongodb:
-    container_name: trmm-mongodb
+  y12-mongodb:
+    container_name: y12-mongodb
     image: mongo:4.4
     user: 1000:1000
     restart: always
@@ -137,9 +137,9 @@ services:
       - mongo_data:/data/db
 
   # container that hosts vue frontend
-  tactical-frontend:
-    container_name: trmm-frontend
-    image: ${IMAGE_REPO}tactical-frontend:${VERSION}
+  y12-frontend:
+    container_name: y12-frontend
+    image: ${IMAGE_REPO}y12-frontend:${VERSION}
     user: 1000:1000
     restart: always
     networks:
@@ -150,9 +150,9 @@ services:
       API_HOST: ${API_HOST}
 
   # container for django backend
-  tactical-backend:
-    container_name: trmm-backend
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  y12-backend:
+    container_name: y12-backend
+    image: ${IMAGE_REPO}y12:${VERSION}
     user: 1000:1000
     command: ["tactical-backend"]
     restart: always
@@ -163,12 +163,12 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
+      - y12-postgres
 
   # container for django websockets connections
-  tactical-websockets:
-    container_name: trmm-websockets
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  y12-websockets:
+    container_name: y12-websockets
+    image: ${IMAGE_REPO}y12:${VERSION}
     user: 1000:1000
     command: ["tactical-websockets"]
     restart: always
@@ -179,13 +179,13 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
-      - tactical-backend
+      - y12-postgres
+      - y12-backend
 
-  # container for tactical reverse proxy
-  tactical-nginx:
-    container_name: trmm-nginx
-    image: ${IMAGE_REPO}tactical-nginx:${VERSION}
+  # container for Y12.AI reverse proxy
+  y12-nginx:
+    container_name: y12-nginx
+    image: ${IMAGE_REPO}y12-nginx:${VERSION}
     user: 1000:1000
     restart: always
     environment:
@@ -204,9 +204,9 @@ services:
       - tactical_data:/opt/tactical
 
   # container for celery worker service
-  tactical-celery:
-    container_name: trmm-celery
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  y12-celery:
+    container_name: y12-celery
+    image: ${IMAGE_REPO}y12:${VERSION}
     user: 1000:1000
     command: ["tactical-celery"]
     restart: always
@@ -217,13 +217,13 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
-      - tactical-redis
+      - y12-postgres
+      - y12-redis
 
   # container for celery beat service
-  tactical-celerybeat:
-    container_name: trmm-celerybeat
-    image: ${IMAGE_REPO}tactical:${VERSION}
+  y12-celerybeat:
+    container_name: y12-celerybeat
+    image: ${IMAGE_REPO}y12:${VERSION}
     user: 1000:1000
     command: ["tactical-celerybeat"]
     restart: always
@@ -234,5 +234,5 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
-      - tactical-postgres
-      - tactical-redis
+      - y12-postgres
+      - y12-redis

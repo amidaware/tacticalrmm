@@ -1,4 +1,4 @@
-module github.com/amidaware/tacticalrmm
+module github.com/y12ai/y12-rmm
 
 go 1.23.12
 

@@ -1,7 +1,6 @@
 """
-Copyright (c) 2024-present Amidaware Inc.
-This file is subject to the EE License Agreement.
-For details, see: https://license.tacticalrmm.com/ee
+Copyright (c) 2024-present Y12.AI Inc.
+Y12.AI - Intelligent Remote Monitoring and Management
 """
 
 import re
@@ -244,7 +243,7 @@ class GetUpdateSSOSettings(APIView):
             core_settings.save(update_fields=["block_local_user_logon", "sso_enabled"])
         except ValidationError:
             return Response(
-                "This feature requires a Tier 1 or higher sponsorship: https://docs.tacticalrmm.com/sponsor",
+                "This feature requires a Y12.AI Enterprise license",
                 status=status.HTTP_423_LOCKED,
             )
 

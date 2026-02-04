@@ -191,8 +191,8 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Tactical RMM API",
-    "DESCRIPTION": "Simple and Fast remote monitoring and management tool",
+    "TITLE": "Y12.AI API",
+    "DESCRIPTION": "Y12.AI - Intelligent Remote Monitoring and Management",
     "VERSION": TRMM_VERSION,
     "AUTHENTICATION_WHITELIST": ["tacticalrmm.auth.APIAuthentication"],
 }
@@ -218,6 +218,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.openid_connect",
+    "allauth.socialaccount.providers.google",
     "allauth.headless",
     "apiv3",
     "apiv4",

@@ -36,13 +36,13 @@ agentType='agentTypeChange'
 proxy=''
 
 agentBinPath='/usr/local/bin'
-binName='tacticalagent'
+binName='y12agent'
 agentBin="${agentBinPath}/${binName}"
-agentConf='/etc/tacticalagent'
-agentSvcName='tacticalagent.service'
+agentConf='/etc/y12agent'
+agentSvcName='y12agent.service'
 agentSysD="/etc/systemd/system/${agentSvcName}"
-agentDir='/opt/tacticalagent'
-meshDir='/opt/tacticalmesh'
+agentDir='/opt/y12agent'
+meshDir='/opt/y12mesh'
 meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
 meshSysD="/lib/systemd/system/${meshSvcName}"
@@ -159,10 +159,10 @@ done
 
 RemoveOldAgent
 
-echo "Downloading tactical agent..."
+echo "Downloading Y12.AI agent..."
 wget -q -O ${agentBin} "${agentDL}"
 if [ $? -ne 0 ]; then
-    echo "ERROR: Unable to download tactical agent"
+    echo "ERROR: Unable to download Y12.AI agent"
     exit 1
 fi
 chmod +x ${agentBin}
@@ -207,10 +207,10 @@ fi
 
 eval ${INSTALL_CMD}
 
-tacticalsvc="$(
+y12svc="$(
     cat <<EOF
 [Unit]
-Description=Tactical RMM Linux Agent
+Description=Y12.AI Linux Agent
 
 [Service]
 Type=simple
@@ -226,7 +226,7 @@ KillMode=process
 WantedBy=multi-user.target
 EOF
 )"
-echo "${tacticalsvc}" | tee ${agentSysD} >/dev/null
+echo "${y12svc}" | tee ${agentSysD} >/dev/null
 
 systemctl daemon-reload
 systemctl enable ${agentSvcName}

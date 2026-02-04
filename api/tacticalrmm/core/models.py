@@ -80,7 +80,7 @@ class CoreSettings(BaseAuditModel):
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_device_group = models.CharField(
-        max_length=255, null=True, blank=True, default="TacticalRMM"
+        max_length=255, null=True, blank=True, default="Y12.AI"
     )
     mesh_company_name = models.CharField(max_length=255, null=True, blank=True)
     sync_mesh_with_trmm = models.BooleanField(default=True)

@@ -466,8 +466,8 @@ meshcfg="$(
   },
   "domains": {
     "": {
-      "title": "Tactical RMM",
-      "title2": "Tactical RMM",
+      "title": "Y12.AI",
+      "title2": "Y12.AI",
       "newAccounts": false,
       "certUrl": "https://${meshdomain}:443/",
       "geoLocation": true,
@@ -662,7 +662,7 @@ echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service >/dev/null
 natsapi="$(
   cat <<EOF
 [Unit]
-Description=TacticalRMM Nats Api v1
+Description=Y12.AI Nats Api v1
 After=nats.service
 
 [Service]
@@ -1029,7 +1029,7 @@ while ! [[ $CHECK_MESH_READY2 ]]; do
   sleep 5
 done
 
-node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
+node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name Y12.AI
 sleep 1
 
 sudo systemctl enable nats.service

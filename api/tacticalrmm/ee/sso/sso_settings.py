@@ -23,12 +23,16 @@ SOCIALACCOUNT_PROVIDERS = {
             "access_type": "online",
         },
         "OAUTH_PKCE_ENABLED": True,
+        "APP": {
+            "client_id": "416218053988-7442gmek0v3hv74s6ts88gcf2kr6a8ar.apps.googleusercontent.com",
+            "secret": "",  # Add your Google OAuth client secret here
+            "key": "",
+        },
     },
 }
 
 SESSION_COOKIE_SECURE = True
 CORS_ALLOW_CREDENTIALS = True
 
-# Google OAuth Settings (configure these in local_settings.py or environment variables)
-# GOOGLE_CLIENT_ID = "your-google-client-id.apps.googleusercontent.com"
-# GOOGLE_CLIENT_SECRET = "your-google-client-secret"
+# Y12.AI Domain Configuration
+Y12_DOMAIN = "y12.ai"

@@ -1,0 +1,10 @@
+# Sudoers file for Tactical RMM fail2ban integration
+# Install to: /etc/sudoers.d/tacticalrmm-fail2ban
+# Allows the tactical user to manage fail2ban without a password
+
+tactical ALL=(ALL) NOPASSWD: /usr/bin/fail2ban-client
+tactical ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+tactical ALL=(ALL) NOPASSWD: /usr/bin/apt-get install -y fail2ban
+tactical ALL=(ALL) NOPASSWD: /bin/systemctl enable fail2ban
+tactical ALL=(ALL) NOPASSWD: /bin/systemctl start fail2ban
+tactical ALL=(ALL) NOPASSWD: /bin/systemctl status fail2ban

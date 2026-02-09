@@ -233,6 +233,7 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
+    "firewall",
     "ee.sso",
 ]
 
@@ -276,6 +277,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
+    "firewall.middleware.FirewallMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "ee.sso.middleware.SSOIconMiddleware",
 ]

@@ -210,6 +210,10 @@ class Role(BaseAuditModel):
     can_view_reports = models.BooleanField(default=False)
     can_manage_reports = models.BooleanField(default=False)
 
+    # firewall
+    can_view_firewall = models.BooleanField(default=False)
+    can_manage_firewall = models.BooleanField(default=False)
+
     def __str__(self):
         return self.name
 

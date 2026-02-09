@@ -17,6 +17,16 @@ logger = logging.getLogger("trmm")
 AGENT_API_PREFIXES = ("/api/v3/", "/api/v4/")
 ALWAYS_ALLOWED_PATHS = ("/", "")
 
+# Paths that must never be blocked regardless of firewall settings.
+# .well-known is used by Let's Encrypt HTTP-01 challenges (TRMM defaults to
+# DNS-01 but operators may switch).  /core/status and /core/v2/status are the
+# unauthenticated monitoring endpoints.
+BYPASS_PREFIXES = (
+    "/.well-known/",
+    "/core/status/",
+    "/core/v2/status/",
+)
+
 
 class FirewallMiddleware:
     """Application-level firewall middleware.
@@ -53,8 +63,12 @@ class FirewallMiddleware:
         if fw_settings.api_bypass and request.path.startswith(AGENT_API_PREFIXES):
             return self.get_response(request)
 
-        # Always allow root path
+        # Always allow root path and critical infrastructure paths
         if request.path in ALWAYS_ALLOWED_PATHS:
+            return self.get_response(request)
+
+        # Never block Let's Encrypt ACME challenges or monitoring endpoints
+        if request.path.startswith(BYPASS_PREFIXES):
             return self.get_response(request)
 
         # IP firewall check

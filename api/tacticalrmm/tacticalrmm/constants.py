@@ -510,6 +510,12 @@ DEMO_NOT_ALLOWED = [
     {"name": "delete_registry_value", "methods": ["DELETE"]},
     {"name": "rename_registry_value", "methods": ["POST"]},
     {"name": "modify_registry_value", "methods": ["POST"]},
+    # firewall / fail2ban
+    {"name": "GetEditFirewallSettings", "methods": ["PUT"]},
+    {"name": "fail2ban_unban_ip", "methods": ["POST"]},
+    {"name": "fail2ban_unban_all", "methods": ["POST"]},
+    {"name": "fail2ban_start", "methods": ["POST"]},
+    {"name": "fail2ban_install", "methods": ["POST"]},
 ]
 
 CONFIG_MGMT_CMDS = (

@@ -44,6 +44,24 @@ COMMON_COUNTRIES = [
 ]
 
 IP_RE = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
+# fail2ban jail names: alphanumeric, hyphens, underscores only
+JAIL_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+
+
+def _validate_ip_strict(ip: str) -> bool:
+    """Validate that a string is a real IPv4/IPv6 address (not just regex)."""
+    import ipaddress as _ipaddress
+
+    try:
+        _ipaddress.ip_address(ip)
+        return True
+    except ValueError:
+        return False
+
+
+def _validate_jail_name(jail: str) -> bool:
+    """Validate jail name is safe for subprocess arguments."""
+    return bool(JAIL_NAME_RE.match(jail))
 
 
 # ==================== Firewall Settings ====================
@@ -170,8 +188,11 @@ class GetFirewallLogs(APIView):
     permission_classes = [IsAuthenticated, FirewallPerms]
 
     def get(self, request):
-        limit = int(request.query_params.get("limit", 100))
-        limit = min(limit, 500)
+        try:
+            limit = int(request.query_params.get("limit", 100))
+        except (ValueError, TypeError):
+            limit = 100
+        limit = max(1, min(limit, 500))
         logs = FirewallLog.objects.all()[:limit]
         return Response(FirewallLogSerializer(logs, many=True).data)
 
@@ -237,6 +258,9 @@ def geoip_lookup(request):
     ip = request.data.get("ip", "").strip()
     if not ip:
         return notify_error("IP address is required")
+
+    if not _validate_ip_strict(ip):
+        return notify_error("Invalid IP address format")
 
     from .middleware import FirewallMiddleware
 
@@ -394,8 +418,11 @@ def fail2ban_unban_ip(request):
     if not ip or not jail:
         return notify_error("Both IP and jail name are required")
 
-    if not IP_RE.match(ip):
+    if not _validate_ip_strict(ip):
         return notify_error("Invalid IP address format")
+
+    if not _validate_jail_name(jail):
+        return notify_error("Invalid jail name (alphanumeric, hyphens, underscores only)")
 
     success, stdout, stderr = _run_fail2ban_command(["set", jail, "unbanip", ip])
     if success:
@@ -418,6 +445,9 @@ def fail2ban_unban_all(request):
     if not jail:
         return notify_error("Jail name is required")
 
+    if not _validate_jail_name(jail):
+        return notify_error("Invalid jail name (alphanumeric, hyphens, underscores only)")
+
     success, stdout, stderr = _run_fail2ban_command(["set", jail, "unbanip", "--all"])
     if success:
         logger.info(
@@ -438,7 +468,7 @@ def fail2ban_check_ip(request):
     if not ip:
         return notify_error("IP address is required")
 
-    if not IP_RE.match(ip):
+    if not _validate_ip_strict(ip):
         return notify_error("Invalid IP address format")
 
     # Get list of jails first

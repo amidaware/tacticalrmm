@@ -55,7 +55,11 @@ class FirewallMiddleware:
         if not client_ip:
             return self.get_response(request)
 
-        # Staff bypass
+        # Staff bypass - only works for session-authenticated users (web UI).
+        # DRF token auth (API keys) is resolved at the view layer, after
+        # middleware, so token-authenticated admins are still subject to
+        # IP/GeoIP rules.  This is intentional: API keys should be scoped
+        # by network policy, not silently exempted.
         if fw_settings.staff_bypass and self._is_staff(request):
             return self.get_response(request)
 
@@ -173,6 +177,16 @@ class FirewallMiddleware:
 
         Returns (country_code, country_name) or ("", "") on failure.
         """
+        import ipaddress as _ipaddress
+
+        # Validate ip_address is a real IP before interpolating into a URL
+        # to prevent SSRF via spoofed X-Forwarded-For or user input.
+        try:
+            _ipaddress.ip_address(ip_address)
+        except (ValueError, TypeError):
+            logger.warning("GeoIP lookup rejected non-IP value: %s", ip_address)
+            return "", ""
+
         try:
             response = http_requests.get(
                 f"http://ip-api.com/json/{ip_address}",
@@ -187,6 +201,10 @@ class FirewallMiddleware:
             logger.warning("GeoIP lookup failed for %s: %s", ip_address, e)
 
         return "", ""
+
+    # Maximum number of log entries to keep (prevents unbounded DB growth from
+    # flood attacks). When exceeded, the oldest 10% are pruned.
+    MAX_LOG_ENTRIES = 10000
 
     @staticmethod
     def _log_block(fw_settings, client_ip, reason, country_code, country_name, request):
@@ -203,6 +221,15 @@ class FirewallMiddleware:
             request_method=request.method,
             user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000],
         )
+
+        # Prune old entries if the table has grown too large
+        count = FirewallLog.objects.count()
+        if count > FirewallMiddleware.MAX_LOG_ENTRIES:
+            cutoff_id = (
+                FirewallLog.objects.order_by("-timestamp")
+                .values_list("id", flat=True)[FirewallMiddleware.MAX_LOG_ENTRIES - 1]
+            )
+            FirewallLog.objects.filter(id__lt=cutoff_id).delete()
 
     @staticmethod
     def _blocked_response(reason):

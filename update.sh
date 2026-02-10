@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="158"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
+SCRIPT_URL='https://raw.githubusercontent.com/staticgroup/tacticalrmm/develop/update.sh'
+LATEST_SETTINGS_URL='https://raw.githubusercontent.com/staticgroup/tacticalrmm/develop/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -373,11 +373,11 @@ fi
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
-git fetch
-git checkout master
-git reset --hard FETCH_HEAD
+git remote set-url origin https://github.com/staticgroup/tacticalrmm.git 2>/dev/null || true
+git fetch origin develop
+git checkout develop
+git reset --hard origin/develop
 git clean -df
-git pull
 
 # update from community-scripts repo
 if [[ ! -d ${SCRIPTS_DIR} ]]; then
@@ -436,6 +436,14 @@ nats_api='/usr/local/bin/nats-api'
 sudo cp /rmm/natsapi/bin/${natsapi} $nats_api
 sudo chown ${USER}:${USER} $nats_api
 sudo chmod +x $nats_api
+
+# install fail2ban sudoers file for firewall management
+fail2ban_sudoers='/etc/sudoers.d/tacticalrmm-fail2ban'
+if [ -f /rmm/deploy/tacticalrmm-fail2ban-sudoers ]; then
+  sudo cp /rmm/deploy/tacticalrmm-fail2ban-sudoers ${fail2ban_sudoers}
+  sudo chmod 440 ${fail2ban_sudoers}
+  sudo chown root:root ${fail2ban_sudoers}
+fi
 
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/api/env

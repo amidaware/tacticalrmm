@@ -502,7 +502,18 @@ class Agent(BaseAuditModel):
 
     def get_tasks_with_policies(self) -> "List[AutomatedTask]":
         tasks = list(self.autotasks.all()) + self.get_tasks_from_policies()
+        if getattr(settings, "OPENFRAME_MODE", False):
+            tasks += self.get_tasks_from_openframe_schedules()
         return self.add_task_results(tasks)
+
+    def get_tasks_from_openframe_schedules(self) -> "List[AutomatedTask]":
+        tasks: "List[AutomatedTask]" = []
+        for schedule in self.openframe_script_schedules.select_related("managed_task"):
+            task = schedule.managed_task
+            if task and task.enabled:
+                if self.plat in (task.task_supported_platforms or []):
+                    tasks.append(task)
+        return tasks
 
     def add_task_results(self, tasks: "List[AutomatedTask]") -> "List[AutomatedTask]":
         results = self.taskresults.all()  # type: ignore

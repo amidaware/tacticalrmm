@@ -7,15 +7,28 @@
 
 set -e
 
-BASE_URL="http://localhost:8000"
+BASE_URL="http://tactical-nginx-0.tactical-nginx.integrated-tools.svc.cluster.local:8000"
 USERNAME="tactical"
 PASSWORD="tactical"
 
 # Colors
+RED='\033[0;31m'
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# Globals set by do_curl
+CURL_BODY=""
+CURL_HTTP_CODE=""
+
+do_curl() {
+  local tmpfile
+  tmpfile=$(mktemp)
+  CURL_HTTP_CODE=$(curl -s -o "$tmpfile" -w "%{http_code}" "$@")
+  CURL_BODY=$(cat "$tmpfile")
+  rm -f "$tmpfile"
+}
 
 log_request() {
   local method="$1"
@@ -29,9 +42,24 @@ log_request() {
 }
 
 log_response() {
-  local response="$1"
-  echo -e "    ${GREEN}Response:${NC}"
-  echo "$response" | jq '.' 2>/dev/null || echo "    $response"
+  local body="$1"
+  local code="${2:-$CURL_HTTP_CODE}"
+  if [ "$code" -ge 400 ] 2>/dev/null; then
+    echo -e "    ${RED}HTTP ${code}${NC}"
+  else
+    echo -e "    ${GREEN}HTTP ${code}${NC}"
+  fi
+  if [ -n "$body" ]; then
+    echo "$body" | jq '.' 2>/dev/null || echo "    $body"
+  else
+    echo "    (empty body)"
+  fi
+}
+
+jq_field() {
+  local json="$1"
+  local field="$2"
+  echo "$json" | jq -r "${field} // empty" 2>/dev/null
 }
 
 echo "============================================"
@@ -47,15 +75,15 @@ echo ">>> 1. Getting auth token..."
 LOGIN_BODY="{\"username\": \"${USERNAME}\", \"password\": \"${PASSWORD}\"}"
 log_request "POST" "${BASE_URL}/v2/login/" "$LOGIN_BODY"
 
-TOKEN_RESPONSE=$(curl -s -X POST "${BASE_URL}/v2/login/" \
+do_curl -X POST "${BASE_URL}/v2/login/" \
   -H "Content-Type: application/json" \
-  -d "${LOGIN_BODY}")
+  -d "${LOGIN_BODY}"
 
-TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.token // empty')
+TOKEN=$(jq_field "$CURL_BODY" '.token')
 
-if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+if [ -z "$TOKEN" ]; then
   echo "    Failed to get token."
-  log_response "$TOKEN_RESPONSE"
+  log_response "$CURL_BODY"
   TOKEN="${TRMM_TOKEN:-}"
   if [ -z "$TOKEN" ]; then
     echo "    No token available. Exiting."
@@ -73,8 +101,9 @@ echo ""
 echo ">>> 2. Getting agents..."
 log_request "GET" "${BASE_URL}/agents/"
 
-AGENTS_RESPONSE=$(curl -s -X GET "${BASE_URL}/agents/" -H "${AUTH}")
-AGENT_COUNT=$(echo "$AGENTS_RESPONSE" | jq 'length')
+do_curl -X GET "${BASE_URL}/agents/" -H "${AUTH}"
+AGENTS_RESPONSE="$CURL_BODY"
+AGENT_COUNT=$(echo "$AGENTS_RESPONSE" | jq 'length' 2>/dev/null || echo 0)
 echo "    Found ${AGENT_COUNT} agents"
 
 if [ "$AGENT_COUNT" -eq 0 ]; then
@@ -92,8 +121,9 @@ echo ""
 echo ">>> 3. Getting scripts..."
 log_request "GET" "${BASE_URL}/scripts/"
 
-SCRIPTS_RESPONSE=$(curl -s -X GET "${BASE_URL}/scripts/" -H "${AUTH}")
-SCRIPT_COUNT=$(echo "$SCRIPTS_RESPONSE" | jq 'length')
+do_curl -X GET "${BASE_URL}/scripts/" -H "${AUTH}"
+SCRIPTS_RESPONSE="$CURL_BODY"
+SCRIPT_COUNT=$(echo "$SCRIPTS_RESPONSE" | jq 'length' 2>/dev/null || echo 0)
 echo "    Found ${SCRIPT_COUNT} scripts"
 
 if [ "$SCRIPT_COUNT" -eq 0 ]; then
@@ -137,16 +167,22 @@ EOF
 
 log_request "POST" "${BASE_URL}/script-schedules/" "$CREATE_BODY"
 
-CREATE_RESPONSE=$(curl -s -X POST "${BASE_URL}/script-schedules/" \
+do_curl -X POST "${BASE_URL}/script-schedules/" \
   -H "${AUTH}" \
   -H "Content-Type: application/json" \
-  -d "${CREATE_BODY}")
+  -d "${CREATE_BODY}"
+CREATE_RESPONSE="$CURL_BODY"
 
-SCHEDULE_ID=$(echo "$CREATE_RESPONSE" | jq '.id')
-TASK_ID=$(echo "$CREATE_RESPONSE" | jq '.managed_task_id')
+SCHEDULE_ID=$(jq_field "$CREATE_RESPONSE" '.id')
+TASK_ID=$(jq_field "$CREATE_RESPONSE" '.managed_task_id')
 
 echo "    Created schedule id=${SCHEDULE_ID}, managed_task_id=${TASK_ID}"
 log_response "$CREATE_RESPONSE"
+
+if [ -z "$SCHEDULE_ID" ]; then
+  echo -e "    ${RED}ERROR: Failed to create run-once schedule. Cannot continue.${NC}"
+  exit 1
+fi
 
 # -----------------------------------------------------------------
 # 5. Create a daily schedule
@@ -180,14 +216,20 @@ EOF
 
 log_request "POST" "${BASE_URL}/script-schedules/" "$DAILY_BODY"
 
-DAILY_RESPONSE=$(curl -s -X POST "${BASE_URL}/script-schedules/" \
+do_curl -X POST "${BASE_URL}/script-schedules/" \
   -H "${AUTH}" \
   -H "Content-Type: application/json" \
-  -d "${DAILY_BODY}")
+  -d "${DAILY_BODY}"
+DAILY_RESPONSE="$CURL_BODY"
 
-DAILY_ID=$(echo "$DAILY_RESPONSE" | jq '.id')
+DAILY_ID=$(jq_field "$DAILY_RESPONSE" '.id')
 echo "    Created daily schedule id=${DAILY_ID}"
 log_response "$DAILY_RESPONSE"
+
+if [ -z "$DAILY_ID" ]; then
+  echo -e "    ${RED}ERROR: Failed to create daily schedule. Cannot continue.${NC}"
+  exit 1
+fi
 
 # -----------------------------------------------------------------
 # 6. Assign agents to the run-once schedule
@@ -200,12 +242,12 @@ ASSIGN_BODY="{\"agents\": ${AGENT_IDS}}"
 if [ "$AGENT_COUNT" -gt 0 ]; then
   log_request "POST" "${BASE_URL}/script-schedules/${SCHEDULE_ID}/agents/" "$ASSIGN_BODY"
 
-  ASSIGN_RESPONSE=$(curl -s -X POST "${BASE_URL}/script-schedules/${SCHEDULE_ID}/agents/" \
+  do_curl -X POST "${BASE_URL}/script-schedules/${SCHEDULE_ID}/agents/" \
     -H "${AUTH}" \
     -H "Content-Type: application/json" \
-    -d "${ASSIGN_BODY}")
+    -d "${ASSIGN_BODY}"
 
-  log_response "$ASSIGN_RESPONSE"
+  log_response "$CURL_BODY"
 else
   echo "    Skipped — no agents"
 fi
@@ -219,12 +261,12 @@ echo ">>> 7. Assigning agents to daily schedule ${DAILY_ID}..."
 if [ "$AGENT_COUNT" -gt 0 ]; then
   log_request "POST" "${BASE_URL}/script-schedules/${DAILY_ID}/agents/" "$ASSIGN_BODY"
 
-  ASSIGN_DAILY=$(curl -s -X POST "${BASE_URL}/script-schedules/${DAILY_ID}/agents/" \
+  do_curl -X POST "${BASE_URL}/script-schedules/${DAILY_ID}/agents/" \
     -H "${AUTH}" \
     -H "Content-Type: application/json" \
-    -d "${ASSIGN_BODY}")
+    -d "${ASSIGN_BODY}"
 
-  log_response "$ASSIGN_DAILY"
+  log_response "$CURL_BODY"
 else
   echo "    Skipped — no agents"
 fi
@@ -236,8 +278,8 @@ echo ""
 echo ">>> 8. List all schedules..."
 log_request "GET" "${BASE_URL}/script-schedules/"
 
-LIST_RESPONSE=$(curl -s -X GET "${BASE_URL}/script-schedules/" -H "${AUTH}")
-log_response "$LIST_RESPONSE"
+do_curl -X GET "${BASE_URL}/script-schedules/" -H "${AUTH}"
+log_response "$CURL_BODY"
 
 # -----------------------------------------------------------------
 # 9. GET: Schedule detail
@@ -246,8 +288,8 @@ echo ""
 echo ">>> 9. Schedule detail..."
 log_request "GET" "${BASE_URL}/script-schedules/${SCHEDULE_ID}/"
 
-DETAIL_RESPONSE=$(curl -s -X GET "${BASE_URL}/script-schedules/${SCHEDULE_ID}/" -H "${AUTH}")
-log_response "$DETAIL_RESPONSE"
+do_curl -X GET "${BASE_URL}/script-schedules/${SCHEDULE_ID}/" -H "${AUTH}"
+log_response "$CURL_BODY"
 
 # -----------------------------------------------------------------
 # 10. GET: Agents of schedule
@@ -256,8 +298,8 @@ echo ""
 echo ">>> 10. Agents of schedule..."
 log_request "GET" "${BASE_URL}/script-schedules/${SCHEDULE_ID}/agents/"
 
-AGENTS_OF_SCHED=$(curl -s -X GET "${BASE_URL}/script-schedules/${SCHEDULE_ID}/agents/" -H "${AUTH}")
-log_response "$AGENTS_OF_SCHED"
+do_curl -X GET "${BASE_URL}/script-schedules/${SCHEDULE_ID}/agents/" -H "${AUTH}"
+log_response "$CURL_BODY"
 
 # -----------------------------------------------------------------
 # 11. GET: Execution history
@@ -266,8 +308,8 @@ echo ""
 echo ">>> 11. Execution history..."
 log_request "GET" "${BASE_URL}/script-schedules/${SCHEDULE_ID}/history/?limit=10"
 
-HISTORY=$(curl -s -X GET "${BASE_URL}/script-schedules/${SCHEDULE_ID}/history/?limit=10" -H "${AUTH}")
-log_response "$HISTORY"
+do_curl -X GET "${BASE_URL}/script-schedules/${SCHEDULE_ID}/history/?limit=10" -H "${AUTH}"
+log_response "$CURL_BODY"
 
 # -----------------------------------------------------------------
 # 12. GET: Schedules for script (reverse lookup)
@@ -276,8 +318,8 @@ echo ""
 echo ">>> 12. Schedules for script (reverse lookup)..."
 log_request "GET" "${BASE_URL}/scripts/${SCRIPT_ID}/schedules/"
 
-SCRIPT_SCHEDS=$(curl -s -X GET "${BASE_URL}/scripts/${SCRIPT_ID}/schedules/" -H "${AUTH}")
-log_response "$SCRIPT_SCHEDS"
+do_curl -X GET "${BASE_URL}/scripts/${SCRIPT_ID}/schedules/" -H "${AUTH}"
+log_response "$CURL_BODY"
 
 # -----------------------------------------------------------------
 # 13. GET: Schedules for agent (reverse lookup)
@@ -288,8 +330,8 @@ if [ "$AGENT_COUNT" -gt 0 ]; then
   echo ">>> 13. Schedules for agent (reverse lookup)..."
   log_request "GET" "${BASE_URL}/agents/${FIRST_AGENT}/script-schedules/"
 
-  AGENT_SCHEDS=$(curl -s -X GET "${BASE_URL}/agents/${FIRST_AGENT}/script-schedules/" -H "${AUTH}")
-  log_response "$AGENT_SCHEDS"
+  do_curl -X GET "${BASE_URL}/agents/${FIRST_AGENT}/script-schedules/" -H "${AUTH}"
+  log_response "$CURL_BODY"
 fi
 
 # -----------------------------------------------------------------
@@ -301,8 +343,9 @@ if [ "$AGENT_COUNT" -gt 0 ]; then
   echo ">>> 14. Standard tasks endpoint for agent..."
   log_request "GET" "${BASE_URL}/agents/${FIRST_AGENT}/tasks/"
 
-  STANDARD_TASKS=$(curl -s -X GET "${BASE_URL}/agents/${FIRST_AGENT}/tasks/" -H "${AUTH}")
-  TASK_COUNT=$(echo "$STANDARD_TASKS" | jq 'length')
+  do_curl -X GET "${BASE_URL}/agents/${FIRST_AGENT}/tasks/" -H "${AUTH}"
+  STANDARD_TASKS="$CURL_BODY"
+  TASK_COUNT=$(echo "$STANDARD_TASKS" | jq 'length' 2>/dev/null || echo 0)
   echo "    Total tasks: ${TASK_COUNT}"
 
   # Show only our schedule-created tasks (agent=null)
@@ -314,7 +357,7 @@ fi
 # 15. PUT: Update schedule name
 # -----------------------------------------------------------------
 echo ""
-echo ">>> 14. Update schedule (rename + change timeout)..."
+echo ">>> 15. Update schedule (rename + change timeout)..."
 
 UPDATE_BODY=$(cat <<EOF
 {
@@ -337,12 +380,12 @@ EOF
 
 log_request "PUT" "${BASE_URL}/script-schedules/${SCHEDULE_ID}/" "$UPDATE_BODY"
 
-UPDATE_RESPONSE=$(curl -s -X PUT "${BASE_URL}/script-schedules/${SCHEDULE_ID}/" \
+do_curl -X PUT "${BASE_URL}/script-schedules/${SCHEDULE_ID}/" \
   -H "${AUTH}" \
   -H "Content-Type: application/json" \
-  -d "${UPDATE_BODY}")
+  -d "${UPDATE_BODY}"
 
-log_response "$UPDATE_RESPONSE"
+log_response "$CURL_BODY"
 
 # -----------------------------------------------------------------
 # 16. DELETE: Clean up old schedules
@@ -350,10 +393,12 @@ log_response "$UPDATE_RESPONSE"
 echo ""
 echo ">>> 16. Cleaning up created schedules..."
 log_request "DELETE" "${BASE_URL}/script-schedules/${SCHEDULE_ID}/"
-curl -s -o /dev/null -w "    HTTP %{http_code}\n" -X DELETE "${BASE_URL}/script-schedules/${SCHEDULE_ID}/" -H "${AUTH}"
+do_curl -X DELETE "${BASE_URL}/script-schedules/${SCHEDULE_ID}/" -H "${AUTH}"
+log_response "$CURL_BODY"
 
 log_request "DELETE" "${BASE_URL}/script-schedules/${DAILY_ID}/"
-curl -s -o /dev/null -w "    HTTP %{http_code}\n" -X DELETE "${BASE_URL}/script-schedules/${DAILY_ID}/" -H "${AUTH}"
+do_curl -X DELETE "${BASE_URL}/script-schedules/${DAILY_ID}/" -H "${AUTH}"
+log_response "$CURL_BODY"
 
 echo "    Cleaned up."
 

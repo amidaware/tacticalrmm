@@ -120,6 +120,7 @@ class Agent(BaseAuditModel):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    default_shell = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.hostname
@@ -235,6 +236,18 @@ class Agent(BaseAuditModel):
                 return AGENT_STATUS_ONLINE
         else:
             return AGENT_STATUS_OFFLINE
+
+    @property
+    def effective_default_shell(self) -> str:
+        """
+        Returns the shell that should be used when starting
+        the Real-Time Interactive Terminal.
+        """
+        value = (self.default_shell or "").strip().lower()
+        if value:
+            return value
+
+        return "cmd" if self.plat == AgentPlat.WINDOWS else "bash"
 
     @property
     def checks(self) -> Dict[str, Any]:

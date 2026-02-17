@@ -169,6 +169,27 @@ class GetUpdateDeleteAgent(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
     class InputSerializer(serializers.ModelSerializer):
+        def validate_default_shell(self, value):
+            if value in (None, ""):
+                return None
+
+            v = str(value).strip().lower()
+            agent = self.instance
+
+            if agent.plat == AgentPlat.WINDOWS:
+                if v not in {"cmd", "powershell"}:
+                    raise serializers.ValidationError(
+                        "Invalid default shell for Windows agent. Use 'cmd' or 'powershell'."
+                    )
+
+            elif agent.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}:
+                if v != "bash":
+                    raise serializers.ValidationError(
+                        "Invalid default shell for linux agent. Use 'bash'."
+                    )
+
+            return v
+
         class Meta:
             model = Agent
             fields = [
@@ -185,6 +206,7 @@ class GetUpdateDeleteAgent(APIView):
                 "check_interval",
                 "time_zone",
                 "site",
+                "default_shell",
             ]
 
     # get agent details

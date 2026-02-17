@@ -41,6 +41,7 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
+    path("script-schedules/", include("scriptschedules.urls")),
 ]
 
 if not getattr(settings, "DEMO", False):

@@ -3,6 +3,7 @@ from django.urls import path
 from autotasks.views import GetAddAutoTasks
 from checks.views import GetAddChecks
 from logs.views import PendingActions
+from scriptschedules.views import openframe_schedules_for_agent
 
 from . import views
 
@@ -45,4 +46,6 @@ urlpatterns = [
     path("bulkrecovery/", views.bulk_agent_recovery),
     path("scripthistory/", views.ScriptRunHistory.as_view()),
     path("<agent:agent_id>/wol/", views.wol),
+    # Openframe: script schedules assigned to this agent
+    path("<agent:agent_id>/script-schedules/", openframe_schedules_for_agent),
 ]

@@ -20,6 +20,7 @@ yarn-error.log*
 *.pid
 __pycache__/
 env/
+venv/
 local_settings.py
 db.sqlite3
 api/tacticalrmm/static

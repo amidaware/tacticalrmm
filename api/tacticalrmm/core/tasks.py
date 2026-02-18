@@ -218,8 +218,11 @@ def sync_scheduled_tasks(self) -> str:
             ):
                 # create a list of tasks to be synced so we can run them asynchronously
                 for task in agent.get_tasks_with_policies():
-                    # TODO can we just use agent??
-                    agent_obj: "Agent" = agent if task.policy else task.agent
+                    if getattr(settings, "OPENFRAME_MODE", False):
+                        agent_obj: "Agent" = agent
+                    else:
+                        # TODO can we just use agent??
+                        agent_obj: "Agent" = agent if task.policy else task.agent
 
                     # onboarding tasks require agent >= 2.6.0
                     if task.task_type == TaskType.ONBOARDING and pyver.parse(

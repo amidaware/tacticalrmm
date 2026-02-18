@@ -81,6 +81,7 @@ from .serializers import (
     AgentNoteSerializer,
     AgentSerializer,
     AgentTableSerializer,
+    AgentTerminalDefaultsSerializer,
 )
 from .tasks import (
     bulk_recover_agents_task,
@@ -1575,3 +1576,16 @@ def modify_registry_value(request, agent_id):
             },
         }
     )
+
+
+class AgentTerminalDefaults(APIView):
+    permission_classes = [IsAuthenticated, AgentPerms]
+
+    def get(self, request, agent_id):
+        agent = get_object_or_404(
+            Agent.objects.filter_by_role(request.user).only(
+                "agent_id", "hostname", "plat", "default_shell"
+            ),
+            agent_id=agent_id,
+        )
+        return Response(AgentTerminalDefaultsSerializer(agent).data)

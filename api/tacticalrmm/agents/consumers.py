@@ -7,7 +7,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
 from packaging import version as pyver
 
-from agents.models import Agent, AgentHistory
+from agents.models import Agent, AgentHistory, AgentPlat
 from logs.models import AuditLog
 from tacticalrmm.constants import (
     AgentHistoryType,
@@ -311,7 +311,16 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
             return
         self.started = True
 
-        shell = content.get("shell", "/bin/bash")
+        agent = await Agent.objects.aget(agent_id=self.agent_id)
+        requested_shell = (content.get("shell") or "").strip().lower()
+        shell = requested_shell or agent.effective_default_shell
+        if agent.plat == AgentPlat.WINDOWS and shell not in {"cmd", "powershell"}:
+            shell = "cmd"
+        elif agent.plat in {AgentPlat.LINUX, AgentPlat.DARWIN} and shell != "bash":
+            shell = "bash"
+        if agent.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}:
+            shell = "/bin/bash"
+
         subject_output = f"{self.agent_id}.terminal.{self.session_id}"
 
         await self._ensure_nats()

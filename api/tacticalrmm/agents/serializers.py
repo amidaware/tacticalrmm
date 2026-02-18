@@ -49,6 +49,10 @@ class AgentSerializer(serializers.ModelSerializer):
     applied_policies = serializers.SerializerMethodField()
     effective_patch_policy = serializers.SerializerMethodField()
     alert_template = serializers.SerializerMethodField()
+    effective_default_shell = serializers.SerializerMethodField()
+
+    def get_effective_default_shell(self, obj):
+        return obj.effective_default_shell
 
     def get_alert_template(self, obj):
         from alerts.serializers import AlertTemplateSerializer
@@ -219,3 +223,20 @@ class AgentAuditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         exclude = ["disks", "services", "wmi_detail"]
+
+
+class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
+    effective_default_shell = serializers.SerializerMethodField()
+
+    def get_effective_default_shell(self, obj):
+        return obj.effective_default_shell
+
+    class Meta:
+        model = Agent
+        fields = (
+            "agent_id",
+            "hostname",
+            "plat",
+            "default_shell",
+            "effective_default_shell",
+        )

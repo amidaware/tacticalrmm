@@ -3,8 +3,9 @@ from typing import Set
 
 from django.db import models
 
+from agents.models import Agent
 from autotasks.models import AutomatedTask, TaskResult
-from tacticalrmm.constants import TaskSyncStatus
+from tacticalrmm.constants import AgentPlat, TaskSyncStatus
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +60,19 @@ class OpenframeScriptSchedule(models.Model):
         to_create = current_agent_ids - existing_agent_ids
         created = 0
         if to_create:
+            plat_by_id = dict(
+                Agent.objects.filter(pk__in=to_create).values_list("pk", "plat")
+            )
             objs = TaskResult.objects.bulk_create(
                 [
                     TaskResult(
                         agent_id=aid,
                         task=task,
-                        sync_status=TaskSyncStatus.SYNCED,
+                        sync_status=(
+                            TaskSyncStatus.INITIAL
+                            if plat_by_id.get(aid) == AgentPlat.WINDOWS
+                            else TaskSyncStatus.SYNCED
+                        ),
                     )
                     for aid in to_create
                 ],

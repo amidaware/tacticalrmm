@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from agents.models import Agent
 from autotasks.models import AutomatedTask, TaskResult
-from tacticalrmm.constants import TaskType
+from tacticalrmm.constants import FIELDS_TRIGGER_TASK_UPDATE_AGENT, AgentPlat, TaskSyncStatus, TaskType
 
 from .models import OpenframeScriptSchedule
 
@@ -332,4 +332,14 @@ class OpenframeScriptScheduleCreateSerializer(serializers.Serializer):
             if field in validated_data:
                 setattr(task, field, validated_data[field])
         task.save()
+
+        // TODO: should be here?
+        if set(validated_data) & set(FIELDS_TRIGGER_TASK_UPDATE_AGENT):
+            TaskResult.objects.filter(
+                task=task,
+                agent__plat=AgentPlat.WINDOWS,
+            ).exclude(
+                sync_status=TaskSyncStatus.INITIAL,
+            ).update(sync_status=TaskSyncStatus.NOT_SYNCED)
+
         return instance

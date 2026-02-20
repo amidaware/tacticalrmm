@@ -333,7 +333,6 @@ class OpenframeScriptScheduleCreateSerializer(serializers.Serializer):
                 setattr(task, field, validated_data[field])
         task.save()
 
-        // TODO: should be here?
         if set(validated_data) & set(FIELDS_TRIGGER_TASK_UPDATE_AGENT):
             TaskResult.objects.filter(
                 task=task,

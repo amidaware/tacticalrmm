@@ -115,6 +115,8 @@ class PolicyOverviewSerializer(ModelSerializer):
 
 class PolicyCheckStatusSerializer(ModelSerializer):
     hostname = ReadOnlyField(source="agent.hostname")
+    client = ReadOnlyField(source="agent.site.client.name")
+    site = ReadOnlyField(source="agent.site.name")
 
     class Meta:
         model = CheckResult
@@ -123,6 +125,8 @@ class PolicyCheckStatusSerializer(ModelSerializer):
 
 class PolicyTaskStatusSerializer(ModelSerializer):
     hostname = ReadOnlyField(source="agent.hostname")
+    client = ReadOnlyField(source="agent.site.client.name")
+    site = ReadOnlyField(source="agent.site.name")
 
     class Meta:
         model = TaskResult

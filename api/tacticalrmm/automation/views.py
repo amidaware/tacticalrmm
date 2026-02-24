@@ -57,7 +57,7 @@ class GetAddPolicies(APIView):
                 if not task.assigned_check:
                     task.create_policy_task(policy=policy)
 
-        return Response(PolicySerializer(policy).data)
+        return Response(PolicyTableSerializer(policy).data)
 
 
 class GetUpdateDeletePolicy(APIView):
@@ -75,7 +75,7 @@ class GetUpdateDeletePolicy(APIView):
         serializer.is_valid(raise_exception=True)
         policy = serializer.save()
 
-        return Response(PolicySerializer(policy).data)
+        return Response(PolicyTableSerializer(policy).data)
 
     def delete(self, request, pk):
         get_object_or_404(Policy, pk=pk).delete()
@@ -88,7 +88,9 @@ class PolicyAutoTask(APIView):
 
     # get status of all tasks
     def get(self, request, task):
-        tasks = TaskResult.objects.filter(task=task)
+        tasks = TaskResult.objects.filter(task=task).select_related(
+            "agent", "agent__site", "agent__site__client"
+        )
         return Response(PolicyTaskStatusSerializer(tasks, many=True).data)
 
     # bulk run win tasks associated with policy
@@ -103,7 +105,9 @@ class PolicyCheck(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
 
     def get(self, request, check):
-        checks = CheckResult.objects.filter(assigned_check=check)
+        checks = CheckResult.objects.filter(assigned_check=check).select_related(
+            "agent", "agent__site", "agent__site__client"
+        )
         return Response(PolicyCheckStatusSerializer(checks, many=True).data)
 
 

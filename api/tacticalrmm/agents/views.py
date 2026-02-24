@@ -98,6 +98,39 @@ from .tasks import (
 )
 from .utils import get_validated_agent, send_nats_command
 
+# Allowlist for safe order_by; frontend may send serializer/column names.
+AGENT_TABLE_ORDER_FIELDS = frozenset({
+    "id",
+    "agent_id",
+    "hostname",
+    "description",
+    "plat",
+    "monitoring_type",
+    "last_seen",
+    "boot_time",
+    "needs_reboot",
+    "logged_in_username",
+    "site__name",
+    "site__client__name",
+    "has_patches_pending",  # annotated
+    "_pending_actions_count",  # annotated
+    "_checks_failing_count",  # annotated: count of failing+warning check results
+})
+# Map frontend sortBy (serializer/column names) to DB/annotation field for ordering.
+AGENT_TABLE_SORT_ALIASES = {
+    "client_name": "site__client__name",
+    "site_name": "site__name",
+    "status": "last_seen",
+    "mon-type": "monitoring_type",
+    "checks-status": "_checks_failing_count",
+    "checks": "_checks_failing_count",
+    "user": "logged_in_username",
+    "logged_username": "logged_in_username",
+    "patchespending": "has_patches_pending",
+    "pendingactions": "_pending_actions_count",
+    "needsreboot": "needs_reboot",
+}
+
 
 class GetAgents(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
@@ -182,18 +215,21 @@ class GetAgentsV2(APIView):
 
         sort_by = pagination.get("sortBy", "hostname")
         descending = pagination.get("descending", False)
-        order_by = f"-{sort_by}" if descending else f"{sort_by}"
+        order_field = AGENT_TABLE_SORT_ALIASES.get(
+            sort_by, sort_by if sort_by in AGENT_TABLE_ORDER_FIELDS else "hostname"
+        )
+        order_by = f"-{order_field}" if descending else order_field
 
         monitoring_type_filter = Q()
         client_site_filter = Q()
         search_filter = Q()
 
-        # Filter by monitoring type (server/workstation)
+        # filter by monitoring type
         monitoring_type = request.data.get("monitoringType")
         if monitoring_type and monitoring_type in AgentMonType.values:
             monitoring_type_filter = Q(monitoring_type=monitoring_type)
 
-        # Filter by client or site
+        # filter by client or site
         site_id = request.data.get("siteId")
         client_id = request.data.get("clientId")
         if site_id:
@@ -201,7 +237,7 @@ class GetAgentsV2(APIView):
         elif client_id:
             client_site_filter = Q(site__client_id=client_id)
 
-        # Text search across multiple fields
+        # text search across multiple fields
         search_text = request.data.get("search", "").strip()
         if search_text:
             search_filter = (
@@ -210,8 +246,7 @@ class GetAgentsV2(APIView):
                 Q(site__client__name__icontains=search_text) |
                 Q(site__name__icontains=search_text) |
                 Q(operating_system__icontains=search_text) |
-                Q(public_ip__icontains=search_text) |
-                Q(local_ips__icontains=search_text)
+                Q(public_ip__icontains=search_text)
             )
 
         agents = (
@@ -240,43 +275,38 @@ class GetAgentsV2(APIView):
                     "pendingactions",
                     filter=Q(pendingactions__status=PAStatus.PENDING),
                 ),
+                _checks_failing_count=Count(
+                    "checkresults",
+                    filter=Q(checkresults__status__in=["failing", "warning"]),
+                ),
             )
-            .defer(
-                "services",
-                "created_by",
-                "created_time",
-                "modified_by",
-                "modified_time",
-            )
+            .defer(*AGENT_DEFER)
         )
 
-        # Apply advanced filters after annotation (OR logic)
-        # These include status/availability and condition filters
         advanced_filter = Q()
+        availability_filter = None
 
-        # Status/availability filters
+        # availability filters (one of online / offline / overdue / offline_30days)
         status = request.data.get("status")
         if status == "online":
-            advanced_filter |= Q(
+            availability_filter = Q(
                 last_seen__gte=djangotime.now() - dt.timedelta(minutes=6)
             )
         elif status == "offline":
-            # Offline but not overdue
-            advanced_filter |= Q(
+            availability_filter = Q(
                 last_seen__lt=djangotime.now() - dt.timedelta(minutes=6),
                 last_seen__gte=djangotime.now() - dt.timedelta(minutes=30)
             )
         elif status == "overdue":
-            advanced_filter |= Q(
+            availability_filter = Q(
                 last_seen__lt=djangotime.now() - dt.timedelta(minutes=30)
             )
         elif status == "offline_30days":
-            # Offline for more than 30 days
-            advanced_filter |= Q(
+            availability_filter = Q(
                 last_seen__lt=djangotime.now() - dt.timedelta(days=30)
             )
 
-        # Condition filters
+        # condition filters (OR among themselves)
         if request.data.get("patchesPending"):
             advanced_filter |= Q(has_patches_pending=True)
 
@@ -297,7 +327,12 @@ class GetAgentsV2(APIView):
                 )
             )
 
-        if advanced_filter:
+        # AND availability to condition filters when both are present
+        if availability_filter is not None and advanced_filter:
+            agents = agents.filter(availability_filter).filter(advanced_filter)
+        elif availability_filter is not None:
+            agents = agents.filter(availability_filter)
+        elif advanced_filter:
             agents = agents.filter(advanced_filter)
 
         agents = agents.order_by(order_by)

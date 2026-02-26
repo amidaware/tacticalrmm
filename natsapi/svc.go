@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"os"
 	"reflect"
 	"runtime"
 	"time"
@@ -111,6 +112,21 @@ func Svc(logger *logrus.Logger, cfg string) {
 							logger.Errorln(err)
 						}
 					}
+
+				if os.Getenv("OPENFRAME_MODE") == "true" {
+					var tz agentTimezone
+					tzDec := codec.NewDecoderBytes(msg.Data, &mh)
+					if tzDec.Decode(&tz) == nil && tz.Timezone != "" {
+						stmt = `
+						UPDATE agents_agent SET time_zone=$1
+						WHERE agents_agent.agent_id=$2;`
+						logger.Debugln("Updating timezone agent=", tz.Agentid, "timezone=", tz.Timezone)
+						_, err = db.Exec(stmt, tz.Timezone, tz.Agentid)
+						if err != nil {
+							logger.Errorf("Error update timezone agent=%s: %v", tz.Agentid, err)
+						}
+					}
+				}
 				}
 			}()
 

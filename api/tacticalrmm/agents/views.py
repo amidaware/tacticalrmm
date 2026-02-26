@@ -226,7 +226,11 @@ class GetUpdateDeleteAgent(APIView):
     def put(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
-        s = self.InputSerializer(instance=agent, data=request.data, partial=True)
+        data = request.data.copy()
+        if getattr(settings, "OPENFRAME_MODE", False):
+            data.pop("time_zone", None)
+
+        s = self.InputSerializer(instance=agent, data=data, partial=True)
         s.is_valid(raise_exception=True)
         s.save()
 

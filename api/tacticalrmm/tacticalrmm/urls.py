@@ -59,6 +59,8 @@ if not getattr(settings, "TRMM_DISABLE_SSO", False):
 if getattr(settings, "BETA_API_ENABLED", False):
     urlpatterns += (path("beta/v1/", include("beta.v1.urls")),)
 
+urlpatterns += (path("v2/", include("v2.urls")),)
+
 if getattr(settings, "ADMIN_ENABLED", False):
     from django.contrib import admin
 

@@ -325,7 +325,7 @@ class AgentDeployment(APIView):
             "rdp": request.data["rdp"],
         }
 
-        Deployment(
+        deployment = Deployment.objects.create(
             site=site,
             expiry=expires,
             mon_type=request.data["agenttype"],
@@ -333,8 +333,8 @@ class AgentDeployment(APIView):
             auth_token=obj,
             token_key=token,
             install_flags=flags,
-        ).save()
-        return Response("The deployment was added successfully")
+        )
+        return Response(DeploymentSerializer(deployment).data)
 
     def delete(self, request, pk):
         d = get_object_or_404(Deployment, pk=pk)
@@ -346,7 +346,7 @@ class AgentDeployment(APIView):
             d.auth_token.delete()
 
         d.delete()
-        return Response("The deployment was deleted")
+        return Response()
 
 
 class GenerateAgent(APIView):

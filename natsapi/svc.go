@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -113,7 +114,7 @@ func Svc(logger *logrus.Logger, cfg string) {
 						}
 					}
 
-				if os.Getenv("OPENFRAME_MODE") == "true" {
+				if strings.EqualFold(os.Getenv("OPENFRAME_MODE"), "true") {
 					var tz agentTimezone
 					tzDec := codec.NewDecoderBytes(msg.Data, &mh)
 					if tzDec.Decode(&tz) == nil && tz.Timezone != "" {

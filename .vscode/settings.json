@@ -1,7 +1,7 @@
 {
-  "python.defaultInterpreterPath": "api/env/bin/python",
+  "python.defaultInterpreterPath": "api/tacticalrmm/env/bin/python",
   "python.languageServer": "Pylance",
-  "python.analysis.extraPaths": ["api/tacticalrmm", "api/env"],
+  "python.analysis.extraPaths": ["api/tacticalrmm", "api/tacticalrmm/env"],
   "python.analysis.diagnosticSeverityOverrides": {
     "reportUnusedImport": "error",
     "reportDuplicateImport": "error",

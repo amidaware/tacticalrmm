@@ -98,39 +98,6 @@ from .tasks import (
 )
 from .utils import get_validated_agent, send_nats_command
 
-# Allowlist for safe order_by; frontend may send serializer/column names.
-AGENT_TABLE_ORDER_FIELDS = frozenset({
-    "id",
-    "agent_id",
-    "hostname",
-    "description",
-    "plat",
-    "monitoring_type",
-    "last_seen",
-    "boot_time",
-    "needs_reboot",
-    "logged_in_username",
-    "site__name",
-    "site__client__name",
-    "has_patches_pending",  # annotated
-    "_pending_actions_count",  # annotated
-    "_checks_failing_count",  # annotated: count of failing+warning check results
-})
-# Map frontend sortBy (serializer/column names) to DB/annotation field for ordering.
-AGENT_TABLE_SORT_ALIASES = {
-    "client_name": "site__client__name",
-    "site_name": "site__name",
-    "status": "last_seen",
-    "mon-type": "monitoring_type",
-    "checks-status": "_checks_failing_count",
-    "checks": "_checks_failing_count",
-    "user": "logged_in_username",
-    "logged_username": "logged_in_username",
-    "patchespending": "has_patches_pending",
-    "pendingactions": "_pending_actions_count",
-    "needsreboot": "needs_reboot",
-}
-
 
 class GetAgents(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
@@ -207,6 +174,40 @@ class GetAgents(APIView):
         return Response(serializer.data)
 
 
+# allowlist for safe order_by; frontend may send serializer/column names.
+AGENT_TABLE_ORDER_FIELDS = ({
+    "id",
+    "agent_id",
+    "hostname",
+    "description",
+    "plat",
+    "monitoring_type",
+    "last_seen",
+    "boot_time",
+    "needs_reboot",
+    "logged_in_username",
+    "site__name",
+    "site__client__name",
+    "has_patches_pending",  # annotated
+    "_pending_actions_count",  # annotated
+    "_checks_failing_count",  # annotated: count of failing+warning check results
+})
+
+# map frontend sortBy (serializer/column names) to DB/annotation field for ordering.
+AGENT_TABLE_SORT_ALIASES = {
+    "client_name": "site__client__name",
+    "site_name": "site__name",
+    "status": "last_seen",
+    "mon-type": "monitoring_type",
+    "checks-status": "_checks_failing_count",
+    "checks": "_checks_failing_count",
+    "user": "logged_in_username",
+    "logged_username": "logged_in_username",
+    "patchespending": "has_patches_pending",
+    "pendingactions": "_pending_actions_count",
+    "needsreboot": "needs_reboot",
+}
+
 class GetAgentsV2(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
@@ -246,7 +247,9 @@ class GetAgentsV2(APIView):
                 Q(site__client__name__icontains=search_text) |
                 Q(site__name__icontains=search_text) |
                 Q(operating_system__icontains=search_text) |
-                Q(public_ip__icontains=search_text)
+                Q(public_ip__icontains=search_text) |
+                Q(logged_in_username__icontains=search_text) |
+                Q(last_logged_in_user__icontains=search_text)
             )
 
         agents = (

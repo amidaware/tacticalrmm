@@ -253,7 +253,7 @@ def reload_nats(*, publish: bool = True) -> None:
     
     # Build the configuration
     config = {
-        "authorization": {"users": users},
+        "authorization": {"users": users, "timeout": 30},
         "max_payload": 67108864,
         "host": nats_std_host,
         "port": nats_std_port,  # internal only

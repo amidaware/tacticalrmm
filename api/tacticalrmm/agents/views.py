@@ -170,26 +170,54 @@ class GetUpdateDeleteAgent(APIView):
     permission_classes = [IsAuthenticated, AgentPerms]
 
     class InputSerializer(serializers.ModelSerializer):
-        def validate_default_shell(self, value):
-            if value in (None, ""):
-                return None
-
-            v = str(value).strip().lower()
+        def validate(self, attrs):
             agent = self.instance
 
+            # use incoming value if present, else existing
+            shell = attrs.get("default_shell", getattr(agent, "default_shell", None))
+            custom = attrs.get(
+                "default_shell_custom", getattr(agent, "default_shell_custom", "")
+            )
+
+            shell = (shell or "").strip().lower()
+            custom = (custom or "").strip()
+
+            if shell in ("", "none", "null"):
+                shell = Agent.SHELL_USE_GLOBAL
+                attrs["default_shell"] = Agent.SHELL_USE_GLOBAL
+
             if agent.plat == AgentPlat.WINDOWS:
-                if v not in {"cmd", "powershell"}:
-                    raise serializers.ValidationError(
-                        "Invalid default shell for Windows agent. Use 'cmd' or 'powershell'."
-                    )
-
+                allowed = {
+                    Agent.SHELL_USE_GLOBAL,
+                    Agent.SHELL_CMD,
+                    Agent.SHELL_POWERSHELL,
+                    Agent.SHELL_CUSTOM,
+                }
+                msg = "Invalid default shell for Windows agent. Use global default, 'cmd', 'powershell' or 'custom'."
             elif agent.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}:
-                if v != "bash":
-                    raise serializers.ValidationError(
-                        "Invalid default shell for linux agent. Use 'bash'."
-                    )
+                allowed = {
+                    Agent.SHELL_USE_GLOBAL,
+                    Agent.SHELL_BASH,
+                    Agent.SHELL_CUSTOM,
+                }
+                msg = "Invalid default shell for linux/mac agent. Use global default, 'bash' or 'custom'."
+            else:
+                allowed = {Agent.SHELL_USE_GLOBAL}
+                msg = "Invalid default shell for this agent OS."
 
-            return v
+            if shell not in allowed:
+                raise serializers.ValidationError({"default_shell": msg})
+
+            # custom path required when custom
+            if shell == Agent.SHELL_CUSTOM and not custom:
+                raise serializers.ValidationError(
+                    {"default_shell_custom": "Custom shell path must be provided."}
+                )
+
+            # persist normalized value back
+            attrs["default_shell"] = shell
+
+            return attrs
 
         class Meta:
             model = Agent
@@ -208,6 +236,7 @@ class GetUpdateDeleteAgent(APIView):
                 "time_zone",
                 "site",
                 "default_shell",
+                "default_shell_custom",
             ]
 
     # get agent details

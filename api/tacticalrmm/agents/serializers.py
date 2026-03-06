@@ -5,6 +5,7 @@ from tacticalrmm.constants import (
     AGENT_CHECKS_CACHE_PREFIX,
     AGENT_STATUS_ONLINE,
     ALL_TIMEZONES,
+    AgentPlat,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
 
@@ -80,6 +81,22 @@ class AgentSerializer(serializers.ModelSerializer):
 
     def get_all_timezones(self, obj):
         return ALL_TIMEZONES
+
+    def validate(self, attrs):
+        default_shell = attrs.get(
+            "default_shell", getattr(self.instance, "default_shell", None)
+        )
+        custom_path = attrs.get(
+            "default_shell_custom", getattr(self.instance, "default_shell_custom", "")
+        )
+
+        if default_shell == Agent.SHELL_CUSTOM:
+            if not custom_path or not custom_path.strip():
+                raise serializers.ValidationError(
+                    {"default_shell_custom": "Custom shell path must be provided."}
+                )
+
+        return attrs
 
     class Meta:
         model = Agent

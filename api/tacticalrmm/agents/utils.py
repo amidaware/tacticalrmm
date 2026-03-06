@@ -2,6 +2,7 @@ import asyncio
 import urllib.parse
 from io import StringIO
 from pathlib import Path
+import re
 
 from django.conf import settings
 from django.http import FileResponse
@@ -159,3 +160,19 @@ def calculate_agent_checks(agent) -> dict:
         "has_failing_checks": failing > 0 or warning > 0,
     }
     return ret
+
+
+WINDOWS_TOKENS = {"cmd", "powershell"}
+LINUX_TOKENS = {"bash"}
+DARWIN_TOKENS = {"bash"}
+
+
+def is_windows_path(s: str) -> bool:
+    s = (s or "").strip()
+    # drive path (C:\...) or UNC path (\\server\share\...)
+    return bool(re.match(r"^(?:[a-zA-Z]:\\|\\\\)", s))
+
+
+def is_posix_abs_path(s: str) -> bool:
+    s = (s or "").strip()
+    return s.startswith("/")

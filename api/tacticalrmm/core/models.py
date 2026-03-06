@@ -121,6 +121,73 @@ class CoreSettings(BaseAuditModel):
     block_local_user_logon = models.BooleanField(default=False)
     sso_enabled = models.BooleanField(default=False)
 
+    SHELL_CMD = "cmd"
+    SHELL_POWERSHELL = "powershell"
+    SHELL_BASH = "bash"
+    SHELL_CUSTOM = "custom"
+
+    WINDOWS_SHELL_CHOICES = (
+        (SHELL_CMD, "cmd"),
+        (SHELL_POWERSHELL, "powershell"),
+        (SHELL_CUSTOM, "custom"),
+    )
+
+    LINUX_SHELL_CHOICES = (
+        (SHELL_BASH, "bash"),
+        (SHELL_CUSTOM, "custom"),
+    )
+
+    DARWIN_SHELL_CHOICES = (
+        (SHELL_BASH, "bash"),
+        (SHELL_CUSTOM, "custom"),
+    )
+
+    default_shell_windows = models.CharField(
+        max_length=32, choices=WINDOWS_SHELL_CHOICES, default=SHELL_CMD
+    )
+    default_shell_windows_custom = models.CharField(
+        max_length=512, blank=True, default=""
+    )
+
+    default_shell_linux = models.CharField(
+        max_length=32, choices=LINUX_SHELL_CHOICES, default=SHELL_BASH
+    )
+    default_shell_linux_custom = models.CharField(
+        max_length=512, blank=True, default=""
+    )
+
+    default_shell_darwin = models.CharField(
+        max_length=32,
+        choices=DARWIN_SHELL_CHOICES,
+        default=SHELL_BASH,
+    )
+    default_shell_darwin_custom = models.CharField(
+        max_length=512, blank=True, default=""
+    )
+
+    def clean(self) -> None:
+        super().clean()
+
+        def require_custom(selection: str, custom_path: str, field_name: str) -> None:
+            if selection == self.SHELL_CUSTOM and not (custom_path or "").strip():
+                raise ValidationError({field_name: "Custom shell path is required."})
+
+        require_custom(
+            self.default_shell_windows,
+            self.default_shell_windows_custom,
+            "default_shell_windows_custom",
+        )
+        require_custom(
+            self.default_shell_linux,
+            self.default_shell_linux_custom,
+            "default_shell_linux_custom",
+        )
+        require_custom(
+            self.default_shell_darwin,
+            self.default_shell_darwin_custom,
+            "default_shell_darwin_custom",
+        )
+
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template
 
@@ -150,6 +217,7 @@ class CoreSettings(BaseAuditModel):
                 if not valid:
                     raise ValidationError("")
 
+        self.full_clean()
         super().save(*args, **kwargs)
 
         if old_settings:

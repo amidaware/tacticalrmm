@@ -1,7 +1,15 @@
 import asyncio
 import contextlib
 import uuid
+import re
 
+from agents.utils import (
+    WINDOWS_TOKENS,
+    LINUX_TOKENS,
+    DARWIN_TOKENS,
+    is_windows_path,
+    is_posix_abs_path,
+)
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
@@ -312,17 +320,42 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         self.started = True
 
         agent = await Agent.objects.aget(agent_id=self.agent_id)
-        requested_shell = (content.get("shell") or "").strip().lower()
-        shell = requested_shell or agent.effective_default_shell
-        if agent.plat == AgentPlat.WINDOWS and shell not in {"cmd", "powershell"}:
+
+        requested_shell_raw = (content.get("shell") or "").strip()
+        effective_raw = (agent.effective_default_shell or "").strip()
+
+        # FE override has precedence
+        shell = requested_shell_raw or effective_raw
+        shell_lc = shell.lower()
+
+        if agent.plat == AgentPlat.WINDOWS:
+            if shell_lc in WINDOWS_TOKENS:
+                shell = shell_lc
+            elif is_windows_path(shell):
+                pass
+            else:
+                shell = "cmd"
+
+        elif agent.plat == AgentPlat.LINUX:
+            if shell_lc in LINUX_TOKENS:
+                shell = shell_lc
+            elif is_posix_abs_path(shell):
+                pass
+            else:
+                shell = "bash"
+
+        elif agent.plat == AgentPlat.DARWIN:
+            if shell_lc in DARWIN_TOKENS:
+                shell = shell_lc
+            elif is_posix_abs_path(shell):
+                pass
+            else:
+                shell = "bash"
+
+        else:
             shell = "cmd"
-        elif agent.plat in {AgentPlat.LINUX, AgentPlat.DARWIN} and shell != "bash":
-            shell = "bash"
-        if agent.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}:
-            shell = "/bin/bash"
 
         subject_output = f"{self.agent_id}.terminal.{self.session_id}"
-
         await self._ensure_nats()
 
         async def message_handler(msg):
@@ -348,17 +381,17 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
 
                 elif isinstance(obj, (bytes, bytearray)):
                     payload["output"] = obj.decode("utf-8", errors="ignore")
-
                 elif isinstance(obj, str):
                     payload["output"] = obj
-
                 else:
                     payload["output"] = str(obj)
 
                 self.message_id += 1
                 payload["messageId"] = str(self.message_id)
+
                 await self.channel_layer.group_send(
-                    self.group_name, {"type": "stream_output", **payload}
+                    self.group_name,
+                    {"type": "stream_output", **payload},
                 )
 
             except Exception as e:
@@ -380,7 +413,10 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         await self._nats_publish(
             {
                 "func": "terminal_start",
-                "payload": {"session_id": self.session_id, "shell": shell},
+                "payload": {
+                    "session_id": self.session_id,
+                    "shell": shell,
+                },
             }
         )
 

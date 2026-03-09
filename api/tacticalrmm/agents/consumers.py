@@ -1,8 +1,7 @@
 import asyncio
 import contextlib
 import uuid
-import re
-
+import logging
 from agents.utils import (
     WINDOWS_TOKENS,
     LINUX_TOKENS,
@@ -29,6 +28,7 @@ import msgpack
 
 # Shared across all CommandStreamConsumer instances
 active_streams = {}
+logger = logging.getLogger("trmm")
 
 
 class CommandStreamConsumer(AsyncJsonWebsocketConsumer):

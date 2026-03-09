@@ -5,7 +5,6 @@ from tacticalrmm.constants import (
     AGENT_CHECKS_CACHE_PREFIX,
     AGENT_STATUS_ONLINE,
     ALL_TIMEZONES,
-    AgentPlat,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
 

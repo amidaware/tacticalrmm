@@ -18,6 +18,7 @@ from django.utils import timezone as djangotime
 from nats.errors import TimeoutError
 from packaging import version as pyver
 from packaging.version import Version as LooseVersion
+from django.core.exceptions import ValidationError
 
 from agents.utils import (
     calculate_agent_checks,

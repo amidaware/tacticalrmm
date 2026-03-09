@@ -188,6 +188,12 @@ REST_FRAMEWORK = {
         "tacticalrmm.auth.APIAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_RATES": {
+        "check_creds_min": "50/minute",
+        "login_min": "50/minute",
+        "check_creds_day": "1000/day",
+        "login_day": "1000/day",
+    },
 }
 
 SPECTACULAR_SETTINGS = {

@@ -537,3 +537,7 @@ CONFIG_MGMT_CMDS = (
 )
 
 ALL_TIMEZONES = sorted(zoneinfo.available_timezones())
+
+WINDOWS_TOKENS = {"cmd", "powershell"}
+LINUX_TOKENS = {"bash"}
+DARWIN_TOKENS = {"bash"}

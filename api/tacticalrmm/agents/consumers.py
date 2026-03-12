@@ -3,9 +3,6 @@ import contextlib
 import uuid
 import logging
 from agents.utils import (
-    WINDOWS_TOKENS,
-    LINUX_TOKENS,
-    DARWIN_TOKENS,
     is_windows_path,
     is_posix_abs_path,
 )
@@ -20,6 +17,9 @@ from tacticalrmm.constants import (
     AgentHistoryType,
     AuditActionType,
     AuditObjType,
+    WINDOWS_TOKENS,
+    LINUX_TOKENS,
+    DARWIN_TOKENS,
 )
 from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.helpers import setup_nats_options

@@ -23,9 +23,6 @@ from django.core.exceptions import ValidationError
 from agents.utils import (
     calculate_agent_checks,
     get_agent_url,
-    WINDOWS_TOKENS,
-    LINUX_TOKENS,
-    DARWIN_TOKENS,
     is_windows_path,
     is_posix_abs_path,
 )
@@ -46,6 +43,9 @@ from tacticalrmm.constants import (
     GoArch,
     PAAction,
     PAStatus,
+    WINDOWS_TOKENS,
+    LINUX_TOKENS,
+    DARWIN_TOKENS,
 )
 from tacticalrmm.helpers import has_script_actions, has_webhook, setup_nats_options
 from tacticalrmm.models import PermissionQuerySet

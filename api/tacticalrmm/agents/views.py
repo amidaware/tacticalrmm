@@ -44,6 +44,10 @@ from tacticalrmm.constants import (
     EvtLogNames,
     PAAction,
     PAStatus,
+    AgentTerminalShellChoices,
+    AGENT_WINDOWS_SHELL_TOKENS,
+    AGENT_LINUX_SHELL_TOKENS,
+    AGENT_DARWIN_SHELL_TOKENS,
 )
 from tacticalrmm.helpers import date_is_in_past, notify_error
 from tacticalrmm.permissions import (
@@ -172,8 +176,6 @@ class GetUpdateDeleteAgent(APIView):
     class InputSerializer(serializers.ModelSerializer):
         def validate(self, attrs):
             agent = self.instance
-
-            # use incoming value if present, else existing
             shell = attrs.get("default_shell", getattr(agent, "default_shell", None))
             custom = attrs.get(
                 "default_shell_custom", getattr(agent, "default_shell_custom", "")
@@ -183,40 +185,40 @@ class GetUpdateDeleteAgent(APIView):
             custom = (custom or "").strip()
 
             if shell in ("", "none", "null"):
-                shell = Agent.SHELL_USE_GLOBAL
-                attrs["default_shell"] = Agent.SHELL_USE_GLOBAL
+                shell = AgentTerminalShellChoices.USE_GLOBAL
+                attrs["default_shell"] = AgentTerminalShellChoices.USE_GLOBAL
 
             if agent.plat == AgentPlat.WINDOWS:
-                allowed = {
-                    Agent.SHELL_USE_GLOBAL,
-                    Agent.SHELL_CMD,
-                    Agent.SHELL_POWERSHELL,
-                    Agent.SHELL_CUSTOM,
-                }
-                msg = "Invalid default shell for Windows agent. Use global default, 'cmd', 'powershell' or 'custom'."
-            elif agent.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}:
-                allowed = {
-                    Agent.SHELL_USE_GLOBAL,
-                    Agent.SHELL_BASH,
-                    Agent.SHELL_CUSTOM,
-                }
-                msg = "Invalid default shell for linux/mac agent. Use global default, 'bash' or 'custom'."
+                allowed = AGENT_WINDOWS_SHELL_TOKENS
+                msg = (
+                    "Invalid default shell for Windows agent. "
+                    "Use global default, 'cmd', 'powershell' or 'custom'."
+                )
+            elif agent.plat == AgentPlat.LINUX:
+                allowed = AGENT_LINUX_SHELL_TOKENS
+                msg = (
+                    "Invalid default shell for Linux agent. "
+                    "Use global default, 'bash' or 'custom'."
+                )
+            elif agent.plat == AgentPlat.DARWIN:
+                allowed = AGENT_DARWIN_SHELL_TOKENS
+                msg = (
+                    "Invalid default shell for macOS agent. "
+                    "Use global default, 'bash' or 'custom'."
+                )
             else:
-                allowed = {Agent.SHELL_USE_GLOBAL}
+                allowed = {AgentTerminalShellChoices.USE_GLOBAL}
                 msg = "Invalid default shell for this agent OS."
 
             if shell not in allowed:
                 raise serializers.ValidationError({"default_shell": msg})
 
-            # custom path required when custom
-            if shell == Agent.SHELL_CUSTOM and not custom:
+            if shell == AgentTerminalShellChoices.CUSTOM and not custom:
                 raise serializers.ValidationError(
                     {"default_shell_custom": "Custom shell path must be provided."}
                 )
 
-            # persist normalized value back
             attrs["default_shell"] = shell
-
             return attrs
 
         class Meta:

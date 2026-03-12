@@ -18,7 +18,6 @@ from django.utils import timezone as djangotime
 from nats.errors import TimeoutError
 from packaging import version as pyver
 from packaging.version import Version as LooseVersion
-from django.core.exceptions import ValidationError
 
 from agents.utils import (
     calculate_agent_checks,
@@ -46,6 +45,8 @@ from tacticalrmm.constants import (
     WINDOWS_TOKENS,
     LINUX_TOKENS,
     DARWIN_TOKENS,
+    AgentTerminalShellChoices,
+    TerminalShellChoices,
 )
 from tacticalrmm.helpers import has_script_actions, has_webhook, setup_nats_options
 from tacticalrmm.models import PermissionQuerySet
@@ -129,24 +130,11 @@ class Agent(BaseAuditModel):
         blank=True,
         on_delete=models.SET_NULL,
     )
-    SHELL_USE_GLOBAL = "use_global"
-    SHELL_CMD = "cmd"
-    SHELL_POWERSHELL = "powershell"
-    SHELL_BASH = "bash"
-    SHELL_CUSTOM = "custom"
-
-    SHELL_CHOICES = (
-        (SHELL_USE_GLOBAL, "Use global default"),
-        (SHELL_CMD, "cmd"),
-        (SHELL_POWERSHELL, "powershell"),
-        (SHELL_BASH, "bash"),
-        (SHELL_CUSTOM, "custom"),
-    )
 
     default_shell = models.CharField(
         max_length=32,
-        choices=SHELL_CHOICES,
-        default=SHELL_USE_GLOBAL,
+        choices=AgentTerminalShellChoices.choices,
+        default=AgentTerminalShellChoices.USE_GLOBAL,
     )
 
     default_shell_custom = models.CharField(
@@ -154,44 +142,6 @@ class Agent(BaseAuditModel):
         blank=True,
         default="",
     )
-
-    def clean(self):
-        super().clean()
-
-        # If custom selected, path must be provided
-        if self.default_shell == self.SHELL_CUSTOM:
-            if not self.default_shell_custom.strip():
-                raise ValidationError(
-                    {"default_shell_custom": "Custom shell path must be provided."}
-                )
-
-        # Prevent invalid shell for OS
-        if self.plat == AgentPlat.WINDOWS:
-            allowed = {
-                self.SHELL_USE_GLOBAL,
-                self.SHELL_CMD,
-                self.SHELL_POWERSHELL,
-                self.SHELL_CUSTOM,
-            }
-        elif self.plat == AgentPlat.LINUX:
-            allowed = {
-                self.SHELL_USE_GLOBAL,
-                self.SHELL_BASH,
-                self.SHELL_CUSTOM,
-            }
-        elif self.plat == AgentPlat.DARWIN:
-            allowed = {
-                self.SHELL_USE_GLOBAL,
-                self.SHELL_BASH,
-                self.SHELL_CUSTOM,
-            }
-        else:
-            allowed = {self.SHELL_USE_GLOBAL}
-
-        if self.default_shell not in allowed:
-            raise ValidationError(
-                {"default_shell": "Selected shell is not valid for this OS."}
-            )
 
     def __str__(self) -> str:
         return self.hostname
@@ -214,10 +164,6 @@ class Agent(BaseAuditModel):
                 self._processing_set_alert_template = True
                 self.set_alert_template()
                 self._processing_set_alert_template = False
-
-        # validate final state (skip unique checks for performance)
-        if not self._processing_set_alert_template:
-            self.full_clean(validate_unique=False)
 
         super().save(*args, **kwargs)
 
@@ -328,16 +274,18 @@ class Agent(BaseAuditModel):
             return (v or "").strip()
 
         # Agent override
-        if self.default_shell == self.SHELL_CUSTOM:
+        if self.default_shell == AgentTerminalShellChoices.CUSTOM:
             v = clean(self.default_shell_custom)
-            # defensive: should always be present due to model clean()
             if self.plat == AgentPlat.WINDOWS:
                 return v if (v and is_windows_path(v)) else "cmd"
             if self.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}:
                 return v if (v and is_posix_abs_path(v)) else "bash"
             return "cmd"
 
-        if self.default_shell and self.default_shell != self.SHELL_USE_GLOBAL:
+        if (
+            self.default_shell
+            and self.default_shell != AgentTerminalShellChoices.USE_GLOBAL
+        ):
             # token override only (cmd/powershell/bash)
             shell = clean(self.default_shell).lower()
             if self.plat == AgentPlat.WINDOWS:
@@ -358,21 +306,21 @@ class Agent(BaseAuditModel):
             return "cmd" if self.plat == AgentPlat.WINDOWS else "bash"
 
         if self.plat == AgentPlat.WINDOWS:
-            if core.default_shell_windows == "custom":
+            if core.default_shell_windows == TerminalShellChoices.CUSTOM:
                 v = clean(core.default_shell_windows_custom)
                 return v if (v and is_windows_path(v)) else "cmd"
             shell = clean(core.default_shell_windows).lower()
             return shell if shell in WINDOWS_TOKENS else "cmd"
 
         if self.plat == AgentPlat.LINUX:
-            if core.default_shell_linux == "custom":
+            if core.default_shell_linux == TerminalShellChoices.CUSTOM:
                 v = clean(core.default_shell_linux_custom)
                 return v if (v and is_posix_abs_path(v)) else "bash"
             shell = clean(core.default_shell_linux).lower()
             return shell if shell in LINUX_TOKENS else "bash"
 
         if self.plat == AgentPlat.DARWIN:
-            if core.default_shell_darwin == "custom":
+            if core.default_shell_darwin == TerminalShellChoices.CUSTOM:
                 v = clean(core.default_shell_darwin_custom)
                 return v if (v and is_posix_abs_path(v)) else "bash"
             shell = clean(core.default_shell_darwin).lower()

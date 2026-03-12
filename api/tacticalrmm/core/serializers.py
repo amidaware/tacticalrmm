@@ -1,7 +1,10 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from tacticalrmm.constants import ALL_TIMEZONES
+from tacticalrmm.constants import (
+    ALL_TIMEZONES,
+    TerminalShellChoices,
+)
 
 from .models import (
     CodeSignToken,
@@ -49,7 +52,7 @@ class CoreSettingsSerializer(HostedCoreMixin, serializers.ModelSerializer):
             selection = get_value(selection_key)
             custom_path = (get_value(custom_key) or "").strip()
 
-            if selection == CoreSettings.SHELL_CUSTOM and not custom_path:
+            if selection == TerminalShellChoices.CUSTOM and not custom_path:
                 raise serializers.ValidationError(
                     {custom_key: "Custom shell path is required."}
                 )

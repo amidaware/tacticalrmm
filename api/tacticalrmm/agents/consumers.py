@@ -455,7 +455,7 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         return await Agent.objects.aget(agent_id=agent_id)
 
     def _has_perm_on_agent(self, agent_id: str) -> bool:
-        return self._has_perm("can_send_cmd") and _has_perm_on_agent(
+        return self._has_perm("can_use_terminal") and _has_perm_on_agent(
             self.user, agent_id
         )
 

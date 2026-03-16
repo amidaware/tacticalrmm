@@ -164,10 +164,32 @@ def calculate_agent_checks(agent) -> dict:
 
 def is_windows_path(s: str) -> bool:
     s = (s or "").strip()
-    # drive path (C:\...) or UNC path (\\server\share\...)
-    return bool(re.match(r"^(?:[a-zA-Z]:\\|\\\\)", s))
+
+    if not s:
+        return False
+
+    # reject quotes / newlines / command chaining
+    if any(x in s for x in ('"', "'", "\n", "\r", "&", "|", ";")):
+        return False
+
+    # drive path (C:\...) or UNC path (\\server\share)
+    if not re.match(r"^(?:[a-zA-Z]:\\|\\\\)", s):
+        return False
+
+    # require .exe extension for custom shells
+    if not s.lower().endswith(".exe"):
+        return False
+
+    return True
 
 
 def is_posix_abs_path(s: str) -> bool:
     s = (s or "").strip()
+
+    if not s:
+        return False
+
+    if any(x in s for x in ('"', "'", "\n", "\r", "&", "|", ";")):
+        return False
+
     return s.startswith("/")

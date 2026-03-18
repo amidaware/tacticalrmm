@@ -68,6 +68,8 @@ else
 
         include         uwsgi_params;
         uwsgi_pass      \$api;
+        uwsgi_read_timeout 300s;
+        uwsgi_ignore_client_abort on;
 "
 
     STATIC_ASSETS="

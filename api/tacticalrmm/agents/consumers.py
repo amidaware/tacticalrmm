@@ -207,6 +207,10 @@ class CommandStreamConsumer(AsyncJsonWebsocketConsumer):
         )
 
 
+class InvalidTerminalShellError(Exception):
+    pass
+
+
 class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -317,108 +321,121 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
     async def _start_terminal(self, content):
         if self.started:
             return
-        self.started = True
 
         agent = await Agent.objects.aget(agent_id=self.agent_id)
 
         requested_shell_raw = (content.get("shell") or "").strip()
         effective_raw = (agent.effective_default_shell or "").strip()
 
-        # FE override has precedence
-        shell = requested_shell_raw or effective_raw
-        shell_lc = shell.lower()
-
-        if agent.plat == AgentPlat.WINDOWS:
-            if shell_lc in WINDOWS_TOKENS:
-                shell = shell_lc
-            elif is_windows_path(shell):
-                pass
+        try:
+            if requested_shell_raw:
+                shell = self._resolve_explicit_shell(requested_shell_raw, agent.plat)
+                shell_source = "frontend"
             else:
-                shell = "cmd"
+                shell = self._resolve_default_shell(effective_raw, agent.plat)
+                shell_source = "default"
 
-        elif agent.plat == AgentPlat.LINUX:
-            if shell_lc in LINUX_TOKENS:
-                shell = shell_lc
-            elif is_posix_abs_path(shell):
-                pass
-            else:
-                shell = "bash"
+            logger.info(
+                "Starting terminal for agent=%s session=%s shell=%s source=%s",
+                self.agent_id,
+                self.session_id,
+                shell,
+                shell_source,
+            )
 
-        elif agent.plat == AgentPlat.DARWIN:
-            if shell_lc in DARWIN_TOKENS:
-                shell = shell_lc
-            elif is_posix_abs_path(shell):
-                pass
-            else:
-                shell = "bash"
+            subject_output = f"{self.agent_id}.terminal.{self.session_id}"
+            await self._ensure_nats()
 
-        else:
-            shell = "cmd"
-
-        subject_output = f"{self.agent_id}.terminal.{self.session_id}"
-        await self._ensure_nats()
-
-        async def message_handler(msg):
-            try:
+            async def message_handler(msg):
                 try:
-                    obj = msgpack.loads(msg.data)
-                except Exception:
-                    obj = msg.data
+                    try:
+                        obj = msgpack.loads(msg.data)
+                    except Exception:
+                        obj = msg.data
 
-                payload: dict[str, object] = {"session_id": self.session_id}
+                    payload: dict[str, object] = {"session_id": self.session_id}
 
-                if isinstance(obj, dict):
-                    out = obj.get("output")
-                    if isinstance(out, (bytes, bytearray)):
-                        payload["output"] = out.decode("utf-8", errors="ignore")
-                    elif isinstance(out, str):
-                        payload["output"] = out
+                    if isinstance(obj, dict):
+                        out = obj.get("output")
+                        if isinstance(out, (bytes, bytearray)):
+                            payload["output"] = out.decode("utf-8", errors="ignore")
+                        elif isinstance(out, str):
+                            payload["output"] = out
 
-                    if obj.get("done") is True:
-                        payload["done"] = True
-                    if "exit_code" in obj:
-                        payload["exit_code"] = obj["exit_code"]
+                        if obj.get("done") is True:
+                            payload["done"] = True
+                        if "exit_code" in obj:
+                            payload["exit_code"] = obj["exit_code"]
 
-                elif isinstance(obj, (bytes, bytearray)):
-                    payload["output"] = obj.decode("utf-8", errors="ignore")
-                elif isinstance(obj, str):
-                    payload["output"] = obj
-                else:
-                    payload["output"] = str(obj)
+                    elif isinstance(obj, (bytes, bytearray)):
+                        payload["output"] = obj.decode("utf-8", errors="ignore")
+                    elif isinstance(obj, str):
+                        payload["output"] = obj
+                    else:
+                        payload["output"] = str(obj)
 
-                self.message_id += 1
-                payload["messageId"] = str(self.message_id)
+                    self.message_id += 1
+                    payload["messageId"] = str(self.message_id)
 
-                await self.channel_layer.group_send(
-                    self.group_name,
-                    {"type": "stream_output", **payload},
-                )
+                    await self.channel_layer.group_send(
+                        self.group_name,
+                        {"type": "stream_output", **payload},
+                    )
 
-            except Exception as e:
-                logger.exception(
-                    "Error handling terminal NATS message for agent %s", self.agent_id
-                )
-                await self.channel_layer.group_send(
-                    self.group_name,
-                    {
-                        "type": "stream_output",
+                except Exception as e:
+                    logger.exception(
+                        "Error handling terminal NATS message for agent %s",
+                        self.agent_id,
+                    )
+                    await self.channel_layer.group_send(
+                        self.group_name,
+                        {
+                            "type": "stream_output",
+                            "session_id": self.session_id,
+                            "output": f"[ERROR] Failed to process agent output: {e}",
+                        },
+                    )
+
+            # subscribe first so we don't miss the initial prompt
+            self.sub = await self.nc.subscribe(subject_output, cb=message_handler)
+
+            await self._nats_publish(
+                {
+                    "func": "terminal_start",
+                    "payload": {
                         "session_id": self.session_id,
-                        "output": f"[ERROR] Failed to process agent output: {e}",
+                        "shell": shell,
                     },
-                )
+                }
+            )
 
-        # subscribe first so we don't miss the initial prompt
-        self.sub = await self.nc.subscribe(subject_output, cb=message_handler)
+            self.started = True
 
-        await self._nats_publish(
-            {
-                "func": "terminal_start",
-                "payload": {
-                    "session_id": self.session_id,
-                    "shell": shell,
-                },
-            }
-        )
+        except InvalidTerminalShellError as e:
+            logger.warning(
+                "Rejected terminal start for agent=%s session=%s shell=%r: %s",
+                self.agent_id,
+                self.session_id,
+                requested_shell_raw,
+                e,
+            )
+            self.started = False
+            await self._send_terminal_error(str(e), code="invalid_shell")
+            return
+
+        except Exception as e:
+            logger.exception(
+                "Failed to start terminal for agent=%s session=%s: %s",
+                self.agent_id,
+                self.session_id,
+                e,
+            )
+            self.started = False
+            await self._send_terminal_error(
+                "Failed to start terminal session.",
+                code="terminal_start_failed",
+            )
+            return
 
     async def _send_input(self, value):
         await self._nats_publish(
@@ -445,6 +462,75 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
             {
                 "func": "terminal_kill",
                 "payload": {"session_id": self.session_id},
+            }
+        )
+
+    def _resolve_explicit_shell(self, shell: str, plat: str) -> str:
+        shell = (shell or "").strip()
+        shell_lc = shell.lower()
+
+        if plat == AgentPlat.WINDOWS:
+            if shell_lc in WINDOWS_TOKENS:
+                return shell_lc
+            if is_windows_path(shell):
+                return shell
+            raise InvalidTerminalShellError(
+                "Invalid shell. Use 'cmd', 'powershell', or an absolute Windows .exe path."
+            )
+
+        if plat == AgentPlat.LINUX:
+            if shell_lc in LINUX_TOKENS:
+                return shell_lc
+            if is_posix_abs_path(shell):
+                return shell
+            raise InvalidTerminalShellError(
+                "Invalid shell. Use a supported shell or an absolute POSIX path."
+            )
+
+        if plat == AgentPlat.DARWIN:
+            if shell_lc in DARWIN_TOKENS:
+                return shell_lc
+            if is_posix_abs_path(shell):
+                return shell
+            raise InvalidTerminalShellError(
+                "Invalid shell. Use a supported shell or an absolute POSIX path."
+            )
+
+        raise InvalidTerminalShellError("Unsupported agent platform.")
+
+    def _resolve_default_shell(self, shell: str, plat: str) -> str:
+        shell = (shell or "").strip()
+        shell_lc = shell.lower()
+
+        if plat == AgentPlat.WINDOWS:
+            if shell_lc in WINDOWS_TOKENS:
+                return shell_lc
+            if is_windows_path(shell):
+                return shell
+            return "cmd"
+
+        if plat == AgentPlat.LINUX:
+            if shell_lc in LINUX_TOKENS:
+                return shell_lc
+            if is_posix_abs_path(shell):
+                return shell
+            return "bash"
+
+        if plat == AgentPlat.DARWIN:
+            if shell_lc in DARWIN_TOKENS:
+                return shell_lc
+            if is_posix_abs_path(shell):
+                return shell
+            return "bash"
+
+        return "cmd"
+
+    async def _send_terminal_error(self, message: str, code: str = "invalid_shell"):
+        await self.send_json(
+            {
+                "action": "terminal_error",
+                "error": message,
+                "code": code,
             }
         )
 

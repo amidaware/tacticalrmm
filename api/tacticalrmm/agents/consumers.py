@@ -25,6 +25,7 @@ from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.helpers import setup_nats_options
 import nats
 import msgpack
+import os
 
 # Shared across all CommandStreamConsumer instances
 active_streams = {}
@@ -364,6 +365,7 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
 
                         if obj.get("done") is True:
                             payload["done"] = True
+                            self.started = False
                         if "exit_code" in obj:
                             payload["exit_code"] = obj["exit_code"]
 
@@ -438,6 +440,11 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
             return
 
     async def _send_input(self, value):
+        if not self.started:
+            return
+        if not value:
+            return
+
         await self._nats_publish(
             {
                 "func": "terminal_input",
@@ -446,6 +453,12 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def _send_resize(self, rows, cols):
+        if not self.started:
+            return
+
+        if not rows or not cols:
+            return
+
         await self._nats_publish(
             {
                 "func": "terminal_resize",
@@ -472,8 +485,15 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         if plat == AgentPlat.WINDOWS:
             if shell_lc in WINDOWS_TOKENS:
                 return shell_lc
+
             if is_windows_path(shell):
-                return shell
+                if os.path.isfile(shell):
+                    return shell
+
+                raise InvalidTerminalShellError(
+                    "Invalid shell. The specified Windows executable path does not exist."
+                )
+
             raise InvalidTerminalShellError(
                 "Invalid shell. Use 'cmd', 'powershell', or an absolute Windows .exe path."
             )
@@ -481,19 +501,33 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         if plat == AgentPlat.LINUX:
             if shell_lc in LINUX_TOKENS:
                 return shell_lc
+
             if is_posix_abs_path(shell):
-                return shell
+                if os.path.isfile(shell) and os.access(shell, os.X_OK):
+                    return shell
+
+                raise InvalidTerminalShellError(
+                    "Invalid shell. The specified path does not exist or is not executable."
+                )
+
             raise InvalidTerminalShellError(
-                "Invalid shell. Use a supported shell or an absolute POSIX path."
+                "Invalid shell. Use a supported shell (e.g. bash) or an absolute executable path."
             )
 
         if plat == AgentPlat.DARWIN:
             if shell_lc in DARWIN_TOKENS:
                 return shell_lc
+
             if is_posix_abs_path(shell):
-                return shell
+                if os.path.isfile(shell) and os.access(shell, os.X_OK):
+                    return shell
+
+                raise InvalidTerminalShellError(
+                    "Invalid shell. The specified path does not exist or is not executable."
+                )
+
             raise InvalidTerminalShellError(
-                "Invalid shell. Use a supported shell or an absolute POSIX path."
+                "Invalid shell. Use a supported shell (e.g. zsh, bash) or an absolute executable path."
             )
 
         raise InvalidTerminalShellError("Unsupported agent platform.")

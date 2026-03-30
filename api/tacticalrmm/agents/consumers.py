@@ -485,15 +485,8 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         if plat == AgentPlat.WINDOWS:
             if shell_lc in WINDOWS_TOKENS:
                 return shell_lc
-
             if is_windows_path(shell):
-                if os.path.isfile(shell):
-                    return shell
-
-                raise InvalidTerminalShellError(
-                    "Invalid shell. The specified Windows executable path does not exist."
-                )
-
+                return shell
             raise InvalidTerminalShellError(
                 "Invalid shell. Use 'cmd', 'powershell', or an absolute Windows .exe path."
             )
@@ -501,15 +494,12 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         if plat == AgentPlat.LINUX:
             if shell_lc in LINUX_TOKENS:
                 return shell_lc
-
             if is_posix_abs_path(shell):
                 if os.path.isfile(shell) and os.access(shell, os.X_OK):
                     return shell
-
                 raise InvalidTerminalShellError(
                     "Invalid shell. The specified path does not exist or is not executable."
                 )
-
             raise InvalidTerminalShellError(
                 "Invalid shell. Use a supported shell (e.g. bash) or an absolute executable path."
             )
@@ -517,15 +507,12 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         if plat == AgentPlat.DARWIN:
             if shell_lc in DARWIN_TOKENS:
                 return shell_lc
-
             if is_posix_abs_path(shell):
                 if os.path.isfile(shell) and os.access(shell, os.X_OK):
                     return shell
-
                 raise InvalidTerminalShellError(
                     "Invalid shell. The specified path does not exist or is not executable."
                 )
-
             raise InvalidTerminalShellError(
                 "Invalid shell. Use a supported shell (e.g. zsh, bash) or an absolute executable path."
             )

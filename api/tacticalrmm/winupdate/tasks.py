@@ -57,16 +57,13 @@ def check_agent_update_schedule_task() -> None:
 
         agent.delete_superseded_updates()
         install = False
-        patch_policy = agent.get_patch_policy()
+        updates_to_install = agent.get_approved_update_guids()
 
-        # check if auto approval is enabled
-        if (
-            patch_policy.critical == "approve"
-            or patch_policy.important == "approve"
-            or patch_policy.moderate == "approve"
-            or patch_policy.low == "approve"
-            or patch_policy.other == "approve"
-        ):
+        # check if agent has approved update to install
+        if updates_to_install:
+
+            patch_policy = agent.get_patch_policy()
+
             # get current time in agent local time
             timezone = ZoneInfo(agent.timezone)
             agent_localtime_now = dt.datetime.now(timezone)
@@ -117,7 +114,7 @@ def check_agent_update_schedule_task() -> None:
                 )
                 nats_data = {
                     "func": "installwinupdates",
-                    "guids": agent.get_approved_update_guids(),
+                    "guids": updates_to_install,
                 }
                 asyncio.run(agent.nats_cmd(nats_data, wait=False))
                 agent.patches_last_installed = djangotime.now()

@@ -602,3 +602,8 @@ AGENT_DARWIN_SHELL_TOKENS = {
     AgentTerminalShellChoices.BASH,
     AgentTerminalShellChoices.CUSTOM,
 }
+
+
+class TerminalModeChoices(models.TextChoices):
+    NEW = "new", "Use new terminal"
+    LEGACY = "legacy", "Use legacy terminal"

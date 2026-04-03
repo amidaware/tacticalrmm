@@ -73,6 +73,8 @@ if [ "$1" = 'tactical-init' ]; then
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
   BASE_DOMAIN=$(echo "import tldextract; no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=()); extracted = no_fetch_extract('${API_HOST}'); print(f'{extracted.domain}.{extracted.suffix}')" | python)
+  : "${SESSION_COOKIE_DOMAIN:=$BASE_DOMAIN}"
+  : "${CSRF_COOKIE_DOMAIN:=$BASE_DOMAIN}"
 
   localvars="$(
     cat <<EOF
@@ -96,8 +98,8 @@ ADMIN_URL = '${ADMINURL}/'
 
 CORS_ORIGIN_WHITELIST = ['https://${APP_HOST}']
 
-SESSION_COOKIE_DOMAIN = '${BASE_DOMAIN}'
-CSRF_COOKIE_DOMAIN = '${BASE_DOMAIN}'
+SESSION_COOKIE_DOMAIN='${SESSION_COOKIE_DOMAIN}'
+CSRF_COOKIE_DOMAIN='${CSRF_COOKIE_DOMAIN}'
 CSRF_TRUSTED_ORIGINS = ['https://${API_HOST}', 'https://${APP_HOST}']
 
 HEADLESS_FRONTEND_URLS = {'socialaccount_login_error': 'https://${APP_HOST}/account/provider/callback'}

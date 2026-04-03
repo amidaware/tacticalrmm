@@ -81,16 +81,15 @@ if getattr(settings, "SWAGGER_ENABLED", False):
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
-    path("ws/agent/<str:agent_id>/cmd/", CommandStreamConsumer.as_asgi()),
-    path(
-        "ws/agent/<str:agent_id>/terminal/<str:session_id>/",
-        TerminalStreamConsumer.as_asgi(),
-    ),
 ]
 
 if not getattr(settings, "DEMO", False):
     ws_urlpatterns += [
         path("ws/agent/<str:agent_id>/cmd/", CommandStreamConsumer.as_asgi()),
+        path(
+            "ws/agent/<str:agent_id>/terminal/<str:session_id>/",
+            TerminalStreamConsumer.as_asgi(),
+        ),
     ]
 
 if not (

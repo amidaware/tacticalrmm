@@ -233,6 +233,14 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
             await self.close()
             return
 
+        if not self.user.is_authenticated:
+            await self.close(4401)
+            return
+
+        if self.user.block_dashboard_login:
+            await self.close()
+            return
+
         self.agent_id = self.scope["url_route"]["kwargs"]["agent_id"]
         self.session_id = self.scope["url_route"]["kwargs"]["session_id"]
 

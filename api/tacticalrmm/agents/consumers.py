@@ -221,6 +221,7 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         self.killed = False
         self.started = False
         self.message_id = 0
+        self._start_lock = asyncio.Lock()
 
         # NATS (reused per WS session)
         self.nc = None
@@ -328,8 +329,11 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
                 raise
 
     async def _start_terminal(self, content):
-        if self.started:
-            return
+        # prevent double start race
+        async with self._start_lock:
+            if self.started:
+                return
+            self.started = True
 
         agent = await Agent.objects.aget(agent_id=self.agent_id)
 
@@ -418,8 +422,6 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
                     },
                 }
             )
-
-            self.started = True
 
         except InvalidTerminalShellError as e:
             logger.warning(

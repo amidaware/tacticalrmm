@@ -3,21 +3,17 @@ import contextlib
 import logging
 import os
 import uuid
-import validators
 
 import msgpack
 import nats
+import validators
+from agents.models import Agent, AgentHistory, AgentPlat
+from agents.utils import is_posix_abs_path, is_windows_path
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
-from packaging import version as pyver
-
-from agents.models import Agent, AgentHistory, AgentPlat
-from agents.utils import (
-    is_posix_abs_path,
-    is_windows_path,
-)
 from logs.models import AuditLog
+from packaging import version as pyver
 from tacticalrmm.constants import (
     DARWIN_TOKENS,
     LINUX_TOKENS,
@@ -373,19 +369,39 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
                         obj = msg.data
 
                     payload: dict[str, object] = {"session_id": self.session_id}
+                    decoded_output = None
+                    exit_code = None
+                    done = False
 
                     if isinstance(obj, dict):
                         out = obj.get("output")
                         if isinstance(out, (bytes, bytearray)):
-                            payload["output"] = out.decode("utf-8", errors="ignore")
+                            decoded_output = out.decode("utf-8", errors="ignore")
+                            payload["output"] = decoded_output
                         elif isinstance(out, str):
-                            payload["output"] = out
+                            decoded_output = out
+                            payload["output"] = decoded_output
 
-                        if obj.get("done") is True:
+                        done = obj.get("done") is True
+                        if done:
                             payload["done"] = True
                             self.started = False
+
                         if "exit_code" in obj:
-                            payload["exit_code"] = obj["exit_code"]
+                            exit_code = obj["exit_code"]
+                            payload["exit_code"] = exit_code
+
+                        if (
+                            done
+                            and exit_code == 1
+                            and isinstance(decoded_output, str)
+                            and decoded_output.startswith("[ERROR] ")
+                        ):
+                            await self._send_terminal_error(
+                                decoded_output.removeprefix("[ERROR] ").strip(),
+                                code="terminal_start_failed",
+                            )
+                            return
 
                     elif isinstance(obj, (bytes, bytearray)):
                         payload["output"] = obj.decode("utf-8", errors="ignore")
@@ -511,26 +527,18 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
             if shell_lc in LINUX_TOKENS:
                 return shell_lc
             if is_posix_abs_path(shell):
-                if os.path.isfile(shell) and os.access(shell, os.X_OK):
-                    return shell
-                raise InvalidTerminalShellError(
-                    "Invalid shell. The specified path does not exist or is not executable."
-                )
+                return shell
             raise InvalidTerminalShellError(
-                "Invalid shell. Use a supported shell (e.g. bash) or an absolute executable path."
+                "Invalid shell. Use a supported shell (e.g. bash) or an absolute POSIX path."
             )
 
         if plat == AgentPlat.DARWIN:
             if shell_lc in DARWIN_TOKENS:
                 return shell_lc
             if is_posix_abs_path(shell):
-                if os.path.isfile(shell) and os.access(shell, os.X_OK):
-                    return shell
-                raise InvalidTerminalShellError(
-                    "Invalid shell. The specified path does not exist or is not executable."
-                )
+                return shell
             raise InvalidTerminalShellError(
-                "Invalid shell. Use a supported shell (e.g. zsh, bash) or an absolute executable path."
+                "Invalid shell. Use a supported shell (e.g. zsh, bash) or an absolute POSIX path."
             )
 
         raise InvalidTerminalShellError("Unsupported agent platform.")

@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import logging
-import os
 import uuid
 
 import msgpack

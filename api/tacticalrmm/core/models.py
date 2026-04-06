@@ -21,15 +21,15 @@ from tacticalrmm.constants import (
     CORESETTINGS_CACHE_KEY,
     CustomFieldModel,
     CustomFieldType,
+    DarwinTerminalShellChoices,
     DebugLogLevel,
+    LinuxTerminalShellChoices,
     MonthlyType,
     ScheduleType,
+    TerminalModeChoices,
     URLActionRestMethod,
     URLActionType,
-    DarwinTerminalShellChoices,
-    LinuxTerminalShellChoices,
     WindowsTerminalShellChoices,
-    TerminalModeChoices,
 )
 from tacticalrmm.logger import logger
 

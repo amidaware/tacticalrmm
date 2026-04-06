@@ -22,8 +22,8 @@ from packaging.version import Version as LooseVersion
 from agents.utils import (
     calculate_agent_checks,
     get_agent_url,
-    is_windows_path,
     is_posix_abs_path,
+    is_windows_path,
 )
 from core.models import TZ_CHOICES
 from core.utils import _b64_to_hex, get_core_settings, send_command_with_mesh
@@ -33,19 +33,19 @@ from tacticalrmm.constants import (
     AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
     AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
+    DARWIN_TOKENS,
+    LINUX_TOKENS,
     ONLINE_AGENTS,
+    WINDOWS_TOKENS,
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
+    AgentTerminalShellChoices,
     CustomFieldType,
     DebugLogType,
     GoArch,
     PAAction,
     PAStatus,
-    WINDOWS_TOKENS,
-    LINUX_TOKENS,
-    DARWIN_TOKENS,
-    AgentTerminalShellChoices,
     TerminalShellChoices,
 )
 from tacticalrmm.helpers import has_script_actions, has_webhook, setup_nats_options

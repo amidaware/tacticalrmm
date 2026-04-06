@@ -1,31 +1,32 @@
 import asyncio
 import contextlib
-import uuid
 import logging
-from agents.utils import (
-    is_windows_path,
-    is_posix_abs_path,
-)
+import os
+import uuid
+
+import msgpack
+import nats
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
 from packaging import version as pyver
 
 from agents.models import Agent, AgentHistory, AgentPlat
+from agents.utils import (
+    is_posix_abs_path,
+    is_windows_path,
+)
 from logs.models import AuditLog
 from tacticalrmm.constants import (
+    DARWIN_TOKENS,
+    LINUX_TOKENS,
+    WINDOWS_TOKENS,
     AgentHistoryType,
     AuditActionType,
     AuditObjType,
-    WINDOWS_TOKENS,
-    LINUX_TOKENS,
-    DARWIN_TOKENS,
 )
-from tacticalrmm.permissions import _has_perm_on_agent
 from tacticalrmm.helpers import setup_nats_options
-import nats
-import msgpack
-import os
+from tacticalrmm.permissions import _has_perm_on_agent
 
 # Shared across all CommandStreamConsumer instances
 active_streams = {}

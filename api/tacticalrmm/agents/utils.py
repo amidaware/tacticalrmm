@@ -1,8 +1,8 @@
 import asyncio
+import re
 import urllib.parse
 from io import StringIO
 from pathlib import Path
-import re
 
 from django.conf import settings
 from django.http import FileResponse

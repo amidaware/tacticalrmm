@@ -3,13 +3,13 @@ from rest_framework import serializers
 
 from tacticalrmm.constants import (
     AGENT_CHECKS_CACHE_PREFIX,
-    AGENT_STATUS_ONLINE,
-    ALL_TIMEZONES,
-    AgentTerminalShellChoices,
-    AGENT_WINDOWS_SHELL_TOKENS,
-    AGENT_LINUX_SHELL_TOKENS,
     AGENT_DARWIN_SHELL_TOKENS,
+    AGENT_LINUX_SHELL_TOKENS,
+    AGENT_STATUS_ONLINE,
+    AGENT_WINDOWS_SHELL_TOKENS,
+    ALL_TIMEZONES,
     AgentPlat,
+    AgentTerminalShellChoices,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
 

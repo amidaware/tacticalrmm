@@ -33,21 +33,21 @@ from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import bulk_command_task, bulk_script_task
 from tacticalrmm.constants import (
+    AGENT_DARWIN_SHELL_TOKENS,
     AGENT_DEFER,
+    AGENT_LINUX_SHELL_TOKENS,
     AGENT_STATUS_OFFLINE,
     AGENT_STATUS_ONLINE,
+    AGENT_WINDOWS_SHELL_TOKENS,
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
+    AgentTerminalShellChoices,
     CustomFieldModel,
     DebugLogType,
     EvtLogNames,
     PAAction,
     PAStatus,
-    AgentTerminalShellChoices,
-    AGENT_WINDOWS_SHELL_TOKENS,
-    AGENT_LINUX_SHELL_TOKENS,
-    AGENT_DARWIN_SHELL_TOKENS,
 )
 from tacticalrmm.helpers import date_is_in_past, notify_error
 from tacticalrmm.permissions import (

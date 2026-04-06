@@ -1,10 +1,9 @@
 from django.conf import settings
 from django.urls import include, path, register_converter
 from knox import views as knox_views
-from agents.consumers import TerminalStreamConsumer
-from accounts.views import CheckCredsV2, LoginViewV2
-from agents.consumers import CommandStreamConsumer
 
+from accounts.views import CheckCredsV2, LoginViewV2
+from agents.consumers import CommandStreamConsumer, TerminalStreamConsumer
 from core.consumers import DashInfo, TerminalConsumer
 from core.views import home
 from ee.sso.urls import allauth_urls

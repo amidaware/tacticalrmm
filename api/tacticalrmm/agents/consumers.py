@@ -3,6 +3,7 @@ import contextlib
 import logging
 import os
 import uuid
+import validators
 
 import msgpack
 import nats
@@ -245,6 +246,10 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
 
         self.agent_id = self.scope["url_route"]["kwargs"]["agent_id"]
         self.session_id = self.scope["url_route"]["kwargs"]["session_id"]
+
+        if not validators.uuid(self.session_id):
+            await self.close()
+            return
 
         if not await self.has_perm(self.agent_id):
             await self.accept()

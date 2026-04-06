@@ -280,7 +280,11 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content):
         action = content.get("action")
         # log incoming payload
-        print(f"[TerminalStreamConsumer] Received action: {action}, payload: {content}")
+        logger.debug(
+            "[TerminalStreamConsumer] Received action=%s payload=%s",
+            action,
+            content,
+        )
 
         if action == "start":
             await self._start_terminal(content)

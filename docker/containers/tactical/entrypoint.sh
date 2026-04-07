@@ -133,8 +133,8 @@ copy_custom_code() {
   rm -f "${TACTICAL_DIR}/api/tacticalrmm/local_settings.py"
   rm -f "${TACTICAL_DIR}/api/app.ini"
 
-  envsubst "${vars}" < "${CUSTOM_CODE_DIR}/local_settings.py" > "${TACTICAL_DIR}/api/tacticalrmm/local_settings.py"
-  envsubst "${vars}" < "${CUSTOM_CODE_DIR}/app.ini"           > "${TACTICAL_DIR}/api/app.ini"
+  envsubst "${vars}" < "${CUSTOM_CODE_DIR}/local_settings.py.template" > "${TACTICAL_DIR}/api/tacticalrmm/local_settings.py"
+  envsubst "${vars}" < "${CUSTOM_CODE_DIR}/app.ini.template"           > "${TACTICAL_DIR}/api/app.ini"
 
   # Guard: a zero-byte settings file causes a cryptic ImportError; fail loudly instead.
   [ -s "${TACTICAL_DIR}/api/tacticalrmm/local_settings.py" ] || \

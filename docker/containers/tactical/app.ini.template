@@ -1,0 +1,25 @@
+[uwsgi]
+chdir = ${TACTICAL_DIR}/api
+module = tacticalrmm.wsgi:application
+home = ${VIRTUAL_ENV}
+master = true
+enable-threads = true
+socket = 0.0.0.0:${TACTICAL_BACKEND_PORT}
+harakiri = 300
+chmod-socket = 660
+buffer-size = 65535
+vacuum = true
+die-on-term = true
+max-requests = 500
+max-requests-jitter = 50
+disable-logging = true
+worker-reload-mercy = 30
+cheaper-algo = busyness
+cheaper = 4
+cheaper-initial = 4
+workers = 40
+cheaper-step = 1
+cheaper-overload = 3
+cheaper-busyness-min = 5
+cheaper-busyness-max = 10
+protocol = http

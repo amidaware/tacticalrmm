@@ -68,8 +68,8 @@ RUN apt-get update && \
 
 # Config templates — change during config work, before app code.
 # Docker COPY creates parent directories automatically; no explicit mkdir needed.
-COPY docker/containers/tactical/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
-COPY docker/containers/tactical/app.ini ${CUSTOM_CODE_DIR}/app.ini
+COPY docker/containers/tactical/local_settings.py.template ${CUSTOM_CODE_DIR}/local_settings.py.template
+COPY docker/containers/tactical/app.ini.template ${CUSTOM_CODE_DIR}/app.ini.template
 
 # App code — changes every commit; keep last to preserve all cache above
 COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api

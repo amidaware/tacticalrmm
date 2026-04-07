@@ -209,9 +209,9 @@ jobs:
           azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
           azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
           azure_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          signing_endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing_endpoint: ${{ secrets.SIGNING_ENDPOINT }}
           code_signing_account_name: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT_NAME }}
-          certificate_profile_name: ${{ secrets.AZURE_CERTIFICATE_PROFILE_NAME }}
+          certificate_profile_name: ${{ secrets.CERTIFICATE_PROFILE_NAME }}
           binary_path: artifacts/nats-api.exe
 
       - name: Upload client artifact

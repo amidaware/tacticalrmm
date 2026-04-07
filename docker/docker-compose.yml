@@ -47,40 +47,6 @@ services:
     networks:
       - redis
 
-  # used to initialize the docker environment
-  tactical-init:
-    container_name: trmm-init
-    image: ${IMAGE_REPO}tactical:${VERSION}
-    restart: on-failure
-    command: ["tactical-init"]
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASS: ${POSTGRES_PASS}
-      APP_HOST: ${APP_HOST}
-      API_HOST: ${API_HOST}
-      CSRF_COOKIE_DOMAIN: ${CSRF_COOKIE_DOMAIN}
-      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN}
-      MESH_USER: ${MESH_USER}
-      MESH_HOST: ${MESH_HOST}
-      TRMM_USER: ${TRMM_USER}
-      TRMM_PASS: ${TRMM_PASS}
-      TRMM_DISABLE_WEB_TERMINAL: ${TRMM_DISABLE_WEB_TERMINAL}
-      TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
-      TRMM_DISABLE_SSO: ${TRMM_DISABLE_SSO}
-    depends_on:
-      - tactical-postgres
-      - tactical-meshcentral
-      - tactical-redis
-    networks:
-      - api-db
-      - proxy
-      - redis
-    volumes:
-      - tactical_data:/opt/tactical
-      - mesh_data:/meshcentral-data
-      - mongo_data:/mongo/data/db
-      - redis_data:/redis/data
-
   # nats
   tactical-nats:
     container_name: trmm-nats
@@ -156,6 +122,19 @@ services:
     user: 1000:1000
     command: ["tactical-backend"]
     restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASS: ${POSTGRES_PASS}
+      POSTGRES_DB: tacticalrmm
+      APP_HOST: ${APP_HOST}
+      API_HOST: ${API_HOST}
+      CSRF_COOKIE_DOMAIN: ${CSRF_COOKIE_DOMAIN}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN}
+      TRMM_USER: ${TRMM_USER}
+      TRMM_PASS: ${TRMM_PASS}
+      TRMM_DISABLE_WEB_TERMINAL: ${TRMM_DISABLE_WEB_TERMINAL}
+      TRMM_DISABLE_SERVER_SCRIPTS: ${TRMM_DISABLE_SERVER_SCRIPTS}
+      TRMM_DISABLE_SSO: ${TRMM_DISABLE_SSO}
     networks:
       - proxy
       - api-db
@@ -164,6 +143,7 @@ services:
       - tactical_data:/opt/tactical
     depends_on:
       - tactical-postgres
+      - tactical-redis
 
   # container for django websockets connections
   tactical-websockets:

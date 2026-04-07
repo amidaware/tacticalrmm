@@ -3,8 +3,8 @@ FROM python:3.11.8-slim AS CREATE_VENV_STAGE
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# TACTICAL_TMP_DIR is used below for requirements.txt path; TACTICAL_DIR is runtime-only
 ENV VIRTUAL_ENV=/opt/venv
-ENV TACTICAL_DIR=/opt/tactical
 ENV TACTICAL_TMP_DIR=/tmp/tactical
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
@@ -23,6 +23,8 @@ RUN apt-get update && \
 # pulls community scripts from git repo
 FROM python:3.11.8-slim AS GET_SCRIPTS_STAGE
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
     git clone --depth 1 https://github.com/flamingo-stack/tacticalrmm-scripts.git /community-scripts && \
@@ -30,6 +32,8 @@ RUN apt-get update && \
 
 # runtime image
 FROM python:3.11.8-slim
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 ENV VIRTUAL_ENV=/opt/venv
 ENV TACTICAL_DIR=/opt/tactical
@@ -40,17 +44,13 @@ ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 ENV CUSTOM_CODE_DIR=/tmp/custom_code_dir
 ENV PYTHONUNBUFFERED=1
 
-# copy from build stages and build context (least-to-most-frequently-changing for cache efficiency)
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
+
+# Stable layers first — only invalidated by upstream image or dep changes
 COPY --from=CREATE_VENV_STAGE ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 COPY --from=GET_SCRIPTS_STAGE /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
-COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
 
-# custom config templates
-RUN mkdir -p ${CUSTOM_CODE_DIR}
-COPY docker/containers/tactical/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
-COPY docker/containers/tactical/app.ini ${CUSTOM_CODE_DIR}/app.ini
-
-# install runtime deps
+# Runtime deps — slow layer; must come before frequently-changing COPYs
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     rsync \
@@ -63,10 +63,21 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
     useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}" && \
-    chown -R ${TACTICAL_USER}:${TACTICAL_USER} ${CUSTOM_CODE_DIR} ${TACTICAL_TMP_DIR} && \
-    chmod -R 755 ${CUSTOM_CODE_DIR} ${TACTICAL_TMP_DIR}
+    mkdir -p "${TACTICAL_DIR}/api" && \
+    chown -R "${TACTICAL_USER}:${TACTICAL_USER}" "${TACTICAL_DIR}"
 
-SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
+# Config templates — change during config work, before app code.
+# Docker COPY creates parent directories automatically; no explicit mkdir needed.
+COPY docker/containers/tactical/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
+COPY docker/containers/tactical/app.ini ${CUSTOM_CODE_DIR}/app.ini
+
+# App code — changes every commit; keep last to preserve all cache above
+COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
+
+# Set ownership now that all files are in place.
+# Omit chmod: COPY already produces 644 files and 755 dirs (umask 022).
+# chmod -R 755 would incorrectly mark source files and templates as executable.
+RUN chown -R ${TACTICAL_USER}:${TACTICAL_USER} ${CUSTOM_CODE_DIR} ${TACTICAL_TMP_DIR}
 
 COPY docker/containers/tactical/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

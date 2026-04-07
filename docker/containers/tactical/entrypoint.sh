@@ -2,6 +2,10 @@
 
 set -e
 
+# ---------------------------------------------------------------------------
+# Environment variable defaults
+# ---------------------------------------------------------------------------
+: "${VIRTUAL_ENV:=/opt/venv}"
 : "${TRMM_USER:=tactical}"
 : "${TRMM_PASS:=tactical}"
 : "${POSTGRES_HOST:=tactical-postgres}"
@@ -9,170 +13,251 @@ set -e
 : "${POSTGRES_USER:=tactical}"
 : "${POSTGRES_PASS:=tactical}"
 : "${POSTGRES_DB:=tacticalrmm}"
-: "${MESH_SERVICE:=tactical-meshcentral}"
-: "${MESH_WS_URL:=ws://${MESH_SERVICE}:4443}"
-: "${MESH_USER:=meshcentral}"
-: "${MESH_PASS:=meshcentralpass}"
-: "${MESH_HOST:=tactical-meshcentral}"
 : "${API_HOST:=tactical-backend}"
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
-: "${SKIP_UWSGI_CONFIG:=0}"
+: "${TACTICAL_BACKEND_PORT:=8080}"
+: "${DEBUG:=False}"
+: "${OPENFRAME_MODE:=True}"
+: "${TRMM_PROTO:=https}"
 : "${TRMM_DISABLE_WEB_TERMINAL:=False}"
 : "${TRMM_DISABLE_SERVER_SCRIPTS:=False}"
 : "${TRMM_DISABLE_SSO:=False}"
-
+: "${TRMM_DISABLE_2FA:=True}"
+: "${SWAGGER_ENABLED:=False}"
+: "${BETA_API_ENABLED:=False}"
+: "${CELERY_AUTOSCALE:=20,2}"
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
 : "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
+: "${NATS_CONNECT_HOST:=tactical-nats}"
+: "${NATS_CONFIG:=${TACTICAL_DIR}/api/nats-rmm.conf}"
+: "${NATS_API_CONFIG:=${TACTICAL_DIR}/api/nats-api.conf}"
+: "${SESSION_COOKIE_DOMAIN:=}"
+: "${CSRF_COOKIE_DOMAIN:=}"
+: "${SESSION_COOKIE_SECURE:=True}"
+: "${CSRF_COOKIE_SECURE:=True}"
+: "${ALLOWED_HOSTS:=${API_HOST},${APP_HOST},tactical-backend}"
+: "${CORS_ALLOWED_ORIGINS:=${TRMM_PROTO}://${APP_HOST}}"
+: "${CSRF_TRUSTED_ORIGINS:=${TRMM_PROTO}://${API_HOST},${TRMM_PROTO}://${APP_HOST}}"
 
-function check_tactical_ready {
-  sleep 15
-  until [ -f "${TACTICAL_READY_FILE}" ]; do
-    echo "waiting for init container to finish install or update..."
-    sleep 10
-  done
+# ---------------------------------------------------------------------------
+# Helper: format comma-separated values as Python list items
+#   "a,b,c" → "'a','b','c'"
+# ---------------------------------------------------------------------------
+to_python_list() {
+  echo "$1" | tr ',' '\n' | sed "s/^[[:space:]]*//;s/[[:space:]]*$//;s/.*/'&'/" | paste -sd, -
 }
 
-# tactical-init
-if [ "$1" = 'tactical-init' ]; then
-
-  test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
-
-  # copy container data to volume
-  rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
-
-  mkdir -p /meshcentral-data
-  mkdir -p ${TACTICAL_DIR}/tmp
-  mkdir -p ${TACTICAL_DIR}/certs
-  mkdir -p ${TACTICAL_DIR}/reporting
-  mkdir -p ${TACTICAL_DIR}/reporting/assets
-  mkdir -p /mongo/data/db
-  mkdir -p /redis/data
-  touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
-  touch ${TACTICAL_DIR}/tmp/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}
-  touch ${TACTICAL_DIR}/certs/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}/certs
-  touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
-  touch /redis/data/.initialized && chown -R 1000:1000 /redis/data
-  touch ${TACTICAL_DIR}/reporting && chown -R 1000:1000 ${TACTICAL_DIR}/reporting
-  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
-  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
-  touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
-
-  until (echo >/dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &>/dev/null; do
-    echo "waiting for postgresql container to be ready..."
-    sleep 5
-  done
-
-  until (echo >/dev/tcp/"${MESH_SERVICE}"/4443) &>/dev/null; do
-    echo "waiting for meshcentral container to be ready..."
-    sleep 5
-  done
-
-  # configure django settings
-  MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
-  ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
-  DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-  BASE_DOMAIN=$(echo "import tldextract; no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=()); extracted = no_fetch_extract('${API_HOST}'); print(f'{extracted.domain}.{extracted.suffix}')" | python)
-  : "${SESSION_COOKIE_DOMAIN:=$BASE_DOMAIN}"
-  : "${CSRF_COOKIE_DOMAIN:=$BASE_DOMAIN}"
-
-  localvars="$(
-    cat <<EOF
-SECRET_KEY = '${DJANGO_SEKRET}'
-
-DEBUG = False
-
-DOCKER_BUILD = True
-
-CERT_FILE = '${CERT_PUB_PATH}'
-KEY_FILE = '${CERT_PRIV_PATH}'
-
-EXE_DIR = '/opt/tactical/api/tacticalrmm/private/exe'
-LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'
-
-SCRIPTS_DIR = '/opt/tactical/community-scripts'
-
-ALLOWED_HOSTS = ['${API_HOST}', '${APP_HOST}', 'tactical-backend']
-
-ADMIN_URL = '${ADMINURL}/'
-
-CORS_ORIGIN_WHITELIST = ['https://${APP_HOST}']
-
-SESSION_COOKIE_DOMAIN='${SESSION_COOKIE_DOMAIN}'
-CSRF_COOKIE_DOMAIN='${CSRF_COOKIE_DOMAIN}'
-CSRF_TRUSTED_ORIGINS = ['https://${API_HOST}', 'https://${APP_HOST}']
-
-HEADLESS_FRONTEND_URLS = {'socialaccount_login_error': 'https://${APP_HOST}/account/provider/callback'}
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': '${POSTGRES_DB}',
-        'USER': '${POSTGRES_USER}',
-        'PASSWORD': '${POSTGRES_PASS}',
-        'HOST': '${POSTGRES_HOST}',
-        'PORT': '${POSTGRES_PORT}',
-    }
+# ---------------------------------------------------------------------------
+# create_directories — set up the tactical directory tree
+# ---------------------------------------------------------------------------
+create_directories() {
+  echo "Creating directories"
+  mkdir -p "${TACTICAL_DIR}/api/tacticalrmm"
+  mkdir -p "${TACTICAL_DIR}/api/tacticalrmm/private/exe"
+  mkdir -p "${TACTICAL_DIR}/api/tacticalrmm/private/log"
+  mkdir -p "${TACTICAL_DIR}/tmp"
+  mkdir -p "${TACTICAL_DIR}/certs"
+  mkdir -p "${TACTICAL_DIR}/reporting/assets"
+  mkdir -p "${TACTICAL_DIR}/logs"
+  touch "${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log"
 }
 
-MESH_USERNAME = '${MESH_USER}'
-MESH_SITE = 'https://${MESH_HOST}'
-MESH_TOKEN_KEY = '${MESH_TOKEN}'
-REDIS_HOST    = '${REDIS_HOST}'
-MESH_WS_URL = '${MESH_WS_URL}'
-ADMIN_ENABLED = False
-TRMM_DISABLE_WEB_TERMINAL = ${TRMM_DISABLE_WEB_TERMINAL}
-TRMM_DISABLE_SERVER_SCRIPTS = ${TRMM_DISABLE_SERVER_SCRIPTS}
-TRMM_DISABLE_SSO = ${TRMM_DISABLE_SSO}
-EOF
-  )"
+# ---------------------------------------------------------------------------
+# copy_custom_code — envsubst config templates into place
+# ---------------------------------------------------------------------------
+copy_custom_code() {
+  echo "Processing config templates"
 
-  echo "${localvars}" >${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
+  # Export all vars needed by envsubst
+  export DJANGO_SEKRET ADMINURL DEBUG TRMM_PROTO TACTICAL_DIR VIRTUAL_ENV
+  export POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD="${POSTGRES_PASS}" POSTGRES_HOST POSTGRES_PORT
+  export REDIS_HOST
+  export NATS_CONNECT_HOST
+  export APP_HOST API_HOST
+  export TRMM_DISABLE_WEB_TERMINAL TRMM_DISABLE_SERVER_SCRIPTS TRMM_DISABLE_SSO TRMM_DISABLE_2FA
+  export OPENFRAME_MODE SWAGGER_ENABLED BETA_API_ENABLED
+  export CERT_PUB_PATH CERT_PRIV_PATH
+  export SESSION_COOKIE_DOMAIN CSRF_COOKIE_DOMAIN SESSION_COOKIE_SECURE CSRF_COOKIE_SECURE
+  export TACTICAL_BACKEND_PORT
 
-  # run migrations and init scripts
+  # Format list-valued vars as Python list items
+  export ALLOWED_HOSTS
+  export CORS_ALLOWED_ORIGINS
+  export CSRF_TRUSTED_ORIGINS
+
+  # Explicit variable list to avoid clobbering Python {var} in f-strings
+  local vars='$DJANGO_SEKRET $ADMINURL $DEBUG $TRMM_PROTO $TACTICAL_DIR $VIRTUAL_ENV'
+  vars+=' $POSTGRES_DB $POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_HOST $POSTGRES_PORT'
+  vars+=' $REDIS_HOST $NATS_CONNECT_HOST'
+  vars+=' $APP_HOST $API_HOST'
+  vars+=' $TRMM_DISABLE_WEB_TERMINAL $TRMM_DISABLE_SERVER_SCRIPTS $TRMM_DISABLE_SSO $TRMM_DISABLE_2FA'
+  vars+=' $OPENFRAME_MODE $SWAGGER_ENABLED $BETA_API_ENABLED'
+  vars+=' $CERT_PUB_PATH $CERT_PRIV_PATH'
+  vars+=' $ALLOWED_HOSTS $CORS_ALLOWED_ORIGINS $CSRF_TRUSTED_ORIGINS'
+  vars+=' $SESSION_COOKIE_DOMAIN $CSRF_COOKIE_DOMAIN $SESSION_COOKIE_SECURE $CSRF_COOKIE_SECURE'
+  vars+=' $TACTICAL_BACKEND_PORT'
+
+  rm -f "${TACTICAL_DIR}/api/tacticalrmm/local_settings.py"
+  rm -f "${TACTICAL_DIR}/api/app.ini"
+
+  envsubst "${vars}" < "${CUSTOM_CODE_DIR}/local_settings.py" > "${TACTICAL_DIR}/api/tacticalrmm/local_settings.py"
+  envsubst "${vars}" < "${CUSTOM_CODE_DIR}/app.ini"           > "${TACTICAL_DIR}/api/app.ini"
+}
+
+# ---------------------------------------------------------------------------
+# run_migrations — Django management commands
+# ---------------------------------------------------------------------------
+run_migrations() {
+  echo "Running migrations and init scripts"
+
+  # reload_nats and create_natsapi_conf write to NATS_CONFIG / NATS_API_CONFIG;
+  # set correct paths so tactical-nats finds the files on the shared volume
+  export NATS_CONFIG NATS_API_CONFIG
+
   python manage.py pre_update_tasks
   python manage.py migrate --no-input
   python manage.py generate_json_schemas
-  python manage.py get_webtar_url >${TACTICAL_DIR}/tmp/web_tar_url
+  python manage.py get_webtar_url > "${TACTICAL_DIR}/tmp/web_tar_url"
   python manage.py collectstatic --no-input
   python manage.py initial_db_setup
-  python manage.py initial_mesh_setup
   python manage.py load_chocos
   python manage.py load_community_scripts
   python manage.py reload_nats
   python manage.py create_natsapi_conf
-
-  if [ "$SKIP_UWSGI_CONFIG" = 0 ]; then
-    python manage.py create_uwsgi_conf
-  fi
-
   python manage.py create_installer_user
   python manage.py clear_redis_celery_locks
   python manage.py post_update_tasks
+}
 
-  # create super user
+# ---------------------------------------------------------------------------
+# create_superuser_and_api_key
+# ---------------------------------------------------------------------------
+create_superuser_and_api_key() {
   echo "Creating dashboard user if it doesn't exist"
-  echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
+  local totp_clear=""
+  if [ "${TRMM_DISABLE_2FA}" = "True" ]; then
+    totp_clear="user.totp_key = ''; "
+  fi
+  echo "from accounts.models import User, Role; \
+user = User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') \
+  if not User.objects.filter(username='${TRMM_USER}').exists() \
+  else User.objects.get(username='${TRMM_USER}'); \
+${totp_clear}\
+role = Role.objects.create(name='Default Admin', is_superuser=True, can_manage_api_keys=True) \
+  if not Role.objects.filter(name='Default Admin').exists() \
+  else Role.objects.get(name='Default Admin'); \
+user.role = role; user.save();" | python manage.py shell
 
-  # chown everything to tactical user
-  echo "Updating permissions on files"
-  chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
+  echo "Creating default organization and API key"
+  echo "from accounts.models import User, APIKey; \
+from clients.models import Client, Site; \
+from django.utils.crypto import get_random_string; \
+user = User.objects.get(username='${TRMM_USER}'); \
+client = Client.objects.create(name='Default Organization', created_by=user) \
+  if not Client.objects.exists() else Client.objects.first(); \
+site = Site.objects.create(client=client, name='Default Site', created_by=user) \
+  if not Site.objects.filter(client=client).exists() \
+  else Site.objects.filter(client=client).first(); \
+api_key = APIKey.objects.create(name='Default', key=get_random_string(length=32).upper(), user=user) \
+  if not APIKey.objects.filter(user=user).exists() \
+  else APIKey.objects.filter(user=user).first(); \
+print(f'{api_key.key}')" | python manage.py shell > "${TACTICAL_DIR}/api_key.txt"
+}
 
-  # create install ready file
-  echo "Creating install ready file"
-  su -c "echo 'tactical-init' > ${TACTICAL_READY_FILE}" "${TACTICAL_USER}"
+# ---------------------------------------------------------------------------
+# set_ready_status — file-based readiness signal
+# ---------------------------------------------------------------------------
+set_ready_status() {
+  local service_name=$1
+  echo "Setting ready status for ${service_name}"
+  mkdir -p "$(dirname "${TACTICAL_READY_FILE}")"
+  echo "${service_name}" > "${TACTICAL_READY_FILE}"
+}
 
-fi
+# ---------------------------------------------------------------------------
+# check_tactical_ready — wait for the init ready file
+# ---------------------------------------------------------------------------
+check_tactical_ready() {
+  sleep 15
+  until [ -f "${TACTICAL_READY_FILE}" ]; do
+    echo "Waiting for init to finish..."
+    sleep 10
+  done
+}
 
-# backend container
+# ---------------------------------------------------------------------------
+# tactical_init — master initialization
+# ---------------------------------------------------------------------------
+tactical_init() {
+  local role=$1
+
+  # Copy source to working directory
+  rsync -a --no-perms --no-owner --delete \
+    --exclude "tmp/*" --exclude "certs/*" --exclude "api/tacticalrmm/private/*" \
+    "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
+
+  create_directories
+
+  # Persist secret values across restarts so Django's SECRET_KEY never changes
+  local sekret_file="${TACTICAL_DIR}/tmp/.django_sekret"
+  local adminurl_file="${TACTICAL_DIR}/tmp/.adminurl"
+  if [ -f "${sekret_file}" ]; then
+    DJANGO_SEKRET=$(cat "${sekret_file}")
+  else
+    DJANGO_SEKRET=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 80 | head -n 1)
+    echo "${DJANGO_SEKRET}" > "${sekret_file}"
+  fi
+  if [ -f "${adminurl_file}" ]; then
+    ADMINURL=$(cat "${adminurl_file}")
+  else
+    ADMINURL=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 70 | head -n 1)
+    echo "${ADMINURL}" > "${adminurl_file}"
+  fi
+  export DJANGO_SEKRET ADMINURL
+
+  # Format list-valued env vars as Python literals
+  export ALLOWED_HOSTS=$(to_python_list "${ALLOWED_HOSTS}")
+  export CORS_ALLOWED_ORIGINS=$(to_python_list "${CORS_ALLOWED_ORIGINS}")
+  export CSRF_TRUSTED_ORIGINS=$(to_python_list "${CSRF_TRUSTED_ORIGINS}")
+
+  copy_custom_code
+
+  if [ "${role}" = "backend" ]; then
+    run_migrations
+    create_superuser_and_api_key
+  fi
+
+  # Set ownership
+  chown -R "${TACTICAL_USER}:${TACTICAL_USER}" "${TACTICAL_DIR}"
+
+  set_ready_status "init"
+}
+
+# ===========================================================================
+# Entrypoint dispatch
+# ===========================================================================
+
 if [ "$1" = 'tactical-backend' ]; then
-  check_tactical_ready
-  uwsgi ${TACTICAL_DIR}/api/app.ini
+  # Wait for postgres
+  until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &>/dev/null; do
+    echo "Waiting for PostgreSQL..."
+    sleep 5
+  done
+
+  # Wait for redis (clear_redis_celery_locks runs during migrations)
+  until (echo > /dev/tcp/"${REDIS_HOST}"/6379) &>/dev/null; do
+    echo "Waiting for Redis..."
+    sleep 5
+  done
+
+  tactical_init "backend"
+  uwsgi "${TACTICAL_DIR}/api/app.ini"
 fi
 
 if [ "$1" = 'tactical-celery' ]; then
   check_tactical_ready
-  celery -A tacticalrmm worker --autoscale=20,2 -l info
+  celery -A tacticalrmm worker --autoscale="${CELERY_AUTOSCALE}" -l info
 fi
 
 if [ "$1" = 'tactical-celerybeat' ]; then
@@ -181,11 +266,8 @@ if [ "$1" = 'tactical-celerybeat' ]; then
   celery -A tacticalrmm beat -l info
 fi
 
-# websocket container
 if [ "$1" = 'tactical-websockets' ]; then
   check_tactical_ready
-
   export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
-
   uvicorn --host 0.0.0.0 --port 8383 --forwarded-allow-ips='*' tacticalrmm.asgi:application
 fi

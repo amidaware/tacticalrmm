@@ -3,12 +3,11 @@ FROM python:3.11.8-slim AS CREATE_VENV_STAGE
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# # set env variables
-ENV VIRTUAL_ENV /opt/venv
-ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_TMP_DIR /tmp/tactical
+ENV VIRTUAL_ENV=/opt/venv
+ENV TACTICAL_DIR=/opt/tactical
+ENV TACTICAL_TMP_DIR=/tmp/tactical
 RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
@@ -18,48 +17,62 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc libc6-dev && \
     pip install pip==25.1 && \
     pip install --no-cache-dir setuptools wheel && \
-    pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt
+    pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt && \
+    rm -rf /var/lib/apt/lists/*
 
 # pulls community scripts from git repo
 FROM python:3.11.8-slim AS GET_SCRIPTS_STAGE
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
-    git clone https://github.com/amidaware/community-scripts.git /community-scripts
+    git clone --depth 1 https://github.com/flamingo-stack/tacticalrmm-scripts.git /community-scripts && \
+    rm -rf /var/lib/apt/lists/*
 
 # runtime image
 FROM python:3.11.8-slim
 
-# set env variables
-ENV VIRTUAL_ENV /opt/venv
-ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_TMP_DIR /tmp/tactical
-ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
-ENV TACTICAL_USER tactical
-ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
+ENV VIRTUAL_ENV=/opt/venv
+ENV TACTICAL_DIR=/opt/tactical
+ENV TACTICAL_TMP_DIR=/tmp/tactical
+ENV TACTICAL_READY_FILE=${TACTICAL_DIR}/tmp/tactical.ready
+ENV TACTICAL_USER=tactical
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
+ENV CUSTOM_CODE_DIR=/tmp/custom_code_dir
+ENV PYTHONUNBUFFERED=1
 
-# copy files from repo
-COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
-COPY --from=GET_SCRIPTS_STAGE /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
-
-# copy go install from build stage
+# copy from build stages and build context (least-to-most-frequently-changing for cache efficiency)
 COPY --from=CREATE_VENV_STAGE ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=GET_SCRIPTS_STAGE /community-scripts ${TACTICAL_TMP_DIR}/community-scripts
+COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
 
-# install deps
+# custom config templates
+RUN mkdir -p ${CUSTOM_CODE_DIR}
+COPY docker/containers/tactical/local_settings.py ${CUSTOM_CODE_DIR}/local_settings.py
+COPY docker/containers/tactical/app.ini ${CUSTOM_CODE_DIR}/app.ini
+
+# install runtime deps
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends rsync weasyprint && \
+    apt-get install -y --no-install-recommends \
+    rsync \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libcairo2 \
+    fonts-dejavu-core \
+    gettext-base \
+    curl && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
-    useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}"
+    useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}" && \
+    chown -R ${TACTICAL_USER}:${TACTICAL_USER} ${CUSTOM_CODE_DIR} ${TACTICAL_TMP_DIR} && \
+    chmod -R 755 ${CUSTOM_CODE_DIR} ${TACTICAL_TMP_DIR}
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-# docker init
-COPY docker/containers/tactical/entrypoint.sh /
+COPY docker/containers/tactical/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 WORKDIR ${TACTICAL_DIR}/api
 
-EXPOSE 8080 4443 8383
+EXPOSE 8080 8383

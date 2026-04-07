@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
 : "${DEV:=0}"
 : "${NATS_CONFIG_CHECK_INTERVAL:=1}"
@@ -23,14 +23,14 @@ config_watcher="$(cat << EOF
 while true; do
     sleep ${NATS_CONFIG_CHECK_INTERVAL};
     if [[ ! -z \${NATS_CHECK} ]]; then
-        NATS_RELOAD=\$(date -r '${NATS_CONFIG}')
+        NATS_RELOAD=\$(stat -c %Y '${NATS_CONFIG}')
         if [[ \$NATS_RELOAD == \$NATS_CHECK ]]; then
             :
         else
             nats-server --signal reload;
-            NATS_CHECK=\$(date -r '${NATS_CONFIG}');
+            NATS_CHECK=\$(stat -c %Y '${NATS_CONFIG}');
         fi
-    else NATS_CHECK=\$(date -r '${NATS_CONFIG}');
+    else NATS_CHECK=\$(stat -c %Y '${NATS_CONFIG}');
     fi
 done
 
@@ -75,4 +75,4 @@ EOF
 echo "${supervisor_config}" > /etc/supervisor/conf.d/supervisor.conf
 
 # run supervised processes
-/usr/bin/supervisord -c /etc/supervisor/conf.d/supervisor.conf
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisor.conf

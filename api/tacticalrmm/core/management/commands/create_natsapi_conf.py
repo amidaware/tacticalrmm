@@ -33,5 +33,6 @@ class Command(BaseCommand):
         conf = os.environ.get("NATS_API_CONFIG", os.path.join(settings.BASE_DIR, "nats-api.conf"))
         with open(conf, "w") as f:
             json.dump(config, f)
+        os.chmod(conf, 0o600)
 
         self.stdout.write("Configuration for nats-api created successfully")

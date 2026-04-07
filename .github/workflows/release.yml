@@ -14,7 +14,7 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
     paths:
       - 'api/**'
       - 'docker/**'

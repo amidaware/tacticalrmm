@@ -1,0 +1,133 @@
+name: TacticalRMM Test
+
+# =============================================================================
+# WORKFLOW CONFIGURATION
+# =============================================================================
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+  pull-requests: write
+  attestations: write
+  id-token: write
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'docker/**'
+      - 'natsapi/**'
+      - 'go.mod'
+      - 'go.sum'
+      - 'main.go'
+      - '.github/**'
+
+concurrency:
+  group: pr-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: "ghcr.io"
+  ORGANISATION: ${{ github.repository_owner }}
+  REPOSITORY: ${{ github.event.repository.name }}
+
+
+# =============================================================================
+# JOBS
+# =============================================================================
+
+jobs:
+  changes:
+    name: Changes
+    uses: ./.github/workflows/changes.yml
+    if: |
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft
+
+  matrix:
+    name: Matrix
+    uses: ./.github/workflows/matrix.yml
+    if: |
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft
+
+
+  test:
+    name: "Build: ${{ matrix.name }}"
+    needs: [changes, matrix]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
+    steps:
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          fetch-depth: 1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        if: steps.should_run.outputs.run == 'true'
+
+      - name: Generate metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=${{ needs.changes.outputs.test_commit_sha }}
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
+            org.opencontainers.image.description=TacticalRMM - Remote Monitoring & Management
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and push image
+        id: docker_build
+        uses: docker/build-push-action@v6
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          context: ${{ matrix.context || matrix.path }}
+          file: ${{ matrix.path }}/dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+          provenance: false
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+
+  all-checks:
+    name: "All Checks"
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: exit 1
+      - run: echo "All checks passed"

@@ -1,0 +1,38 @@
+name: Generate Matrix
+
+on:
+  workflow_call:
+    outputs:
+      images_matrix:
+        description: "Images Matrix configuration for all components"
+        value: ${{ jobs.matrix.outputs.images_matrix }}
+
+jobs:
+  matrix:
+    name: Generate matrix
+    runs-on: ubuntu-latest
+    outputs:
+      images_matrix: ${{ steps.matrix.outputs.images_matrix }}
+    steps:
+      - name: Define Matrix
+        id: matrix
+        run: |
+          images_matrix_json='[
+            {
+              "name": "tactical",
+              "path": "./docker/containers/tactical",
+              "context": "."
+            },
+            {
+              "name": "tactical-nats",
+              "path": "./docker/containers/tactical-nats",
+              "context": "."
+            }
+          ]'
+
+          # Write the matrix to the output
+          {
+            echo 'images_matrix<<EOF'
+            echo "$images_matrix_json"
+            echo EOF
+          } >> $GITHUB_OUTPUT

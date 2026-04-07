@@ -5,6 +5,13 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Environment variable defaults
 # ---------------------------------------------------------------------------
+# Dockerfile ENV values listed here as fallbacks so the script is safe to run
+# and test outside of a Docker container (e.g. in CI or locally).
+: "${TACTICAL_DIR:=/opt/tactical}"
+: "${TACTICAL_TMP_DIR:=/tmp/tactical}"
+: "${TACTICAL_USER:=tactical}"
+: "${CUSTOM_CODE_DIR:=/tmp/custom_code_dir}"
+: "${TACTICAL_READY_FILE:=${TACTICAL_DIR}/tmp/tactical.ready}"
 : "${VIRTUAL_ENV:=/opt/venv}"
 : "${TRMM_USER:=tactical}"
 : "${TRMM_PASS:=tactical}"
@@ -85,9 +92,15 @@ copy_custom_code() {
   export SESSION_COOKIE_SECURE CSRF_COOKIE_SECURE
   export TACTICAL_BACKEND_PORT
 
-  # Format list-valued vars as Python list items
+  # Format list-valued vars as Python list items.
+  # Assignment before export keeps set -e effective: `export X=$(cmd)` masks
+  # cmd's failure because bash exempts export-as-assignment from immediate exit,
+  # while `X=$(cmd); export X` aborts immediately if cmd returns non-zero.
+  ALLOWED_HOSTS=$(to_python_list "${ALLOWED_HOSTS}")
   export ALLOWED_HOSTS
+  CORS_ALLOWED_ORIGINS=$(to_python_list "${CORS_ALLOWED_ORIGINS}")
   export CORS_ALLOWED_ORIGINS
+  CSRF_TRUSTED_ORIGINS=$(to_python_list "${CSRF_TRUSTED_ORIGINS}")
   export CSRF_TRUSTED_ORIGINS
 
   # Convert cookie domain values to valid Python literals.
@@ -182,6 +195,8 @@ role = Role.objects.create(name='Default Admin', is_superuser=True, can_manage_a
 user.role = role; user.save();" | python manage.py shell --skip-checks
 
   echo "Creating default organization and API key"
+  # Written 0600: the key is a credential; world-readable (default 0644) is wrong.
+  (umask 0177
   echo "import os; from accounts.models import User, APIKey; \
 from clients.models import Client, Site; \
 from django.utils.crypto import get_random_string; \
@@ -195,6 +210,7 @@ api_key = APIKey.objects.create(name='Default', key=get_random_string(length=32)
   if not APIKey.objects.filter(user=user).exists() \
   else APIKey.objects.filter(user=user).first(); \
 print(f'{api_key.key}')" | python manage.py shell --skip-checks > "${TACTICAL_DIR}/api_key.txt"
+  )
 }
 
 # ---------------------------------------------------------------------------
@@ -232,13 +248,20 @@ tactical_init() {
   local role=$1
 
   # Copy source to working directory.
-  # Exclude celerybeat-schedule* so Celery Beat's timing state survives restarts;
-  # without this, --delete removes it and beat re-runs tasks that already ran.
+  # Preserve directories that hold persistent runtime state across restarts:
+  #   tmp/*                    — secrets, ready file, web_tar_url
+  #   certs/*                  — TLS certificates
+  #   api/tacticalrmm/private/ — agent executables, Django logs
+  #   api/celerybeat-schedule* — Celery Beat timing state (file-based scheduler)
+  #   reporting/*              — user-uploaded custom report assets
+  #   logs/*                   — application logs
   rsync -a --no-perms --no-owner --delete \
     --exclude "tmp/*" \
     --exclude "certs/*" \
     --exclude "api/tacticalrmm/private/*" \
     --exclude "api/celerybeat-schedule*" \
+    --exclude "reporting/*" \
+    --exclude "logs/*" \
     "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
   create_directories
@@ -261,11 +284,6 @@ tactical_init() {
   fi
   export DJANGO_SEKRET ADMINURL
 
-  # Format list-valued env vars as Python literals
-  export ALLOWED_HOSTS=$(to_python_list "${ALLOWED_HOSTS}")
-  export CORS_ALLOWED_ORIGINS=$(to_python_list "${CORS_ALLOWED_ORIGINS}")
-  export CSRF_TRUSTED_ORIGINS=$(to_python_list "${CSRF_TRUSTED_ORIGINS}")
-
   copy_custom_code
 
   if [ "${role}" = "backend" ]; then
@@ -285,14 +303,26 @@ tactical_init() {
 
 if [ "${1:-}" = 'tactical-backend' ]; then
   # Wait for postgres
+  pg_attempts=0; pg_max=60  # 60 × 5 s = 5 minutes
   until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &>/dev/null; do
-    echo "Waiting for PostgreSQL..."
+    pg_attempts=$((pg_attempts + 1))
+    if [ "${pg_attempts}" -ge "${pg_max}" ]; then
+      echo "ERROR: timed out after $((pg_max * 5))s waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}"
+      exit 1
+    fi
+    echo "Waiting for PostgreSQL... (${pg_attempts}/${pg_max})"
     sleep 5
   done
 
   # Wait for redis (clear_redis_celery_locks runs during migrations)
+  redis_attempts=0; redis_max=60  # 60 × 5 s = 5 minutes
   until (echo > /dev/tcp/"${REDIS_HOST}"/"${REDIS_PORT}") &>/dev/null; do
-    echo "Waiting for Redis..."
+    redis_attempts=$((redis_attempts + 1))
+    if [ "${redis_attempts}" -ge "${redis_max}" ]; then
+      echo "ERROR: timed out after $((redis_max * 5))s waiting for Redis at ${REDIS_HOST}:${REDIS_PORT}"
+      exit 1
+    fi
+    echo "Waiting for Redis... (${redis_attempts}/${redis_max})"
     sleep 5
   done
 
@@ -307,7 +337,9 @@ fi
 
 if [ "${1:-}" = 'tactical-celerybeat' ]; then
   check_tactical_ready
-  test -f "${TACTICAL_DIR}/api/celerybeat.pid" && rm "${TACTICAL_DIR}/api/celerybeat.pid"
+  # rm -f is idiomatic for "remove if exists": unlike `test -f && rm`, it always
+  # returns 0 so set -e does not abort when the file is absent on first start.
+  rm -f "${TACTICAL_DIR}/api/celerybeat.pid"
   exec celery -A tacticalrmm beat -l info
 fi
 

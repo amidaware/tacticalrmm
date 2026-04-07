@@ -1,0 +1,52 @@
+name: Generate Changes
+
+on:
+  workflow_call:
+    outputs:
+      tactical:
+        value: ${{ jobs.changes.outputs.tactical }}
+      tactical-nats:
+        value: ${{ jobs.changes.outputs.tactical-nats }}
+      timestamp:
+        value: ${{ jobs.changes.outputs.timestamp }}
+      timestamp_tag:
+        value: ${{ jobs.changes.outputs.timestamp_tag }}
+      commit_sha:
+        value: ${{ jobs.changes.outputs.commit_sha }}
+      test_commit_sha:
+        value: ${{ jobs.changes.outputs.test_commit_sha }}
+
+jobs:
+  changes:
+    name: Changes check
+    runs-on: ubuntu-latest
+    outputs:
+      tactical: ${{ steps.filter.outputs.tactical }}
+      tactical-nats: ${{ steps.filter.outputs.tactical-nats }}
+      timestamp: ${{ steps.setup_env.outputs.timestamp }}
+      timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
+      commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
+      test_commit_sha: ${{ steps.setup_env.outputs.test_commit_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up environment
+        id: setup_env
+        run: |
+          echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "timestamp_tag=$(date +%d%m%Y%H%M)" >> $GITHUB_OUTPUT
+          echo "commit_sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "test_commit_sha=test-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            tactical:
+              - 'api/**'
+              - 'docker/containers/tactical/**'
+            tactical-nats:
+              - 'docker/containers/tactical-nats/**'
+              - 'natsapi/bin/**'

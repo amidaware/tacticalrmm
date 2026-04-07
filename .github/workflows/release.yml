@@ -1,5 +1,9 @@
 name: TacticalRMM Release
 
+# =============================================================================
+# WORKFLOW CONFIGURATION
+# =============================================================================
+
 permissions:
   contents: write
   packages: write
@@ -11,8 +15,13 @@ permissions:
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "**/*.md"
+    paths:
+      - 'api/**'
+      - 'docker/**'
+      - 'natsapi/**'
+      - 'go.mod'
+      - 'go.sum'
+      - 'main.go'
   workflow_dispatch:
     inputs:
       version:
@@ -24,19 +33,111 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  BINARY_NAME: nats-api
 
 # =============================================================================
 # JOBS
 # =============================================================================
 
 jobs:
+  changes:
+    name: Detect Changes
+    uses: ./.github/workflows/changes.yml
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push'
+
+  matrix:
+    name: Generate Matrix
+    uses: ./.github/workflows/matrix.yml
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push'
+
+
+  build:
+    name: "Build: ${{ matrix.name }}"
+    needs: [changes, matrix]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
+    steps:
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          fetch-depth: 1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        if: steps.should_run.outputs.run == 'true'
+
+      - name: Generate metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
+          labels: |
+            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
+            org.opencontainers.image.description=TacticalRMM - Remote Monitoring & Management
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and push image
+        id: docker_build
+        uses: docker/build-push-action@v6
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          context: ${{ matrix.context || matrix.path }}
+          file: ${{ matrix.path }}/dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: false
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Cleanup old container versions
+        if: steps.docker_build.outcome == 'success'
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        continue-on-error: true
+        with:
+          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
+          delete-ghost-images: true
+          delete-tags: '.*'
+          exclude-tags: '^(?:[0-9]+\.[0-9]+\.[0-9]+|latest|test-.*)$'
+          use-regex: true
+
+
   build_client:
     name: "Build Go Client (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
     if: |
-      github.event_name == 'push' ||
-      github.event_name == 'workflow_dispatch'
+      github.event_name == 'workflow_dispatch' &&
+      inputs.version != ''
     defaults:
       run:
         shell: bash
@@ -79,13 +180,13 @@ jobs:
             mkdir -p ./artifacts
             arch0=${architectures[0]}
             arch1=${architectures[1]}
-            lipo -create ./build_target/nats-api-${arch0} ./build_target/nats-api-${arch1} -output ./artifacts/${{ env.BINARY_NAME }}
-            lipo -info ./artifacts/${{ env.BINARY_NAME }}
+            lipo -create ./build_target/nats-api-${arch0} ./build_target/nats-api-${arch1} -output ./artifacts/nats-api
+            lipo -info ./artifacts/nats-api
             ls -la ./artifacts
             rm -rf ./build_target
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             mkdir -p ./artifacts
-            env CGO_ENABLED=0 GOOS=${{ matrix.go_os }} GOARCH=${{ matrix.go_arch }} go build -ldflags "-s -w" -o ./artifacts/${{ env.BINARY_NAME }}.exe .
+            env CGO_ENABLED=0 GOOS=${{ matrix.go_os }} GOARCH=${{ matrix.go_arch }} go build -ldflags "-s -w" -o ./artifacts/nats-api.exe .
             ls -la ./artifacts
           fi
 
@@ -99,7 +200,7 @@ jobs:
           apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: ${{ env.BINARY_NAME }}
+          binary_name: nats-api
 
       - name: Sign Windows package
         if: runner.os == 'Windows'
@@ -111,7 +212,7 @@ jobs:
           signing_endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
           code_signing_account_name: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT_NAME }}
           certificate_profile_name: ${{ secrets.AZURE_CERTIFICATE_PROFILE_NAME }}
-          binary_path: artifacts/${{ env.BINARY_NAME }}.exe
+          binary_path: artifacts/nats-api.exe
 
       - name: Upload client artifact
         uses: actions/upload-artifact@v4
@@ -126,7 +227,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [build_client]
+    needs: [changes, matrix, build, build_client]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' &&
@@ -161,10 +262,16 @@ jobs:
 
       - name: Generate release header
         run: |
+          IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
+
           cat > RELEASE_HEADER.md <<EOF
-          ## TacticalRMM NATS API
+          ## Docker Images
+          $IMAGES
+
+          ## NATS API Clients
           - **macOS** (Universal): \`nats-api-macos-universal.tar.gz\`
           - **Windows** (amd64): \`nats-api-windows-amd64.zip\`
+          ---
           EOF
 
       - name: Create Release

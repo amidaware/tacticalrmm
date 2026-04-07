@@ -14,8 +14,15 @@ else
 fi
 
 sleep 15
+nats_attempts=0
+nats_max=60  # 60 × 10 s = 10 minutes
 until [ -f "${TACTICAL_READY_FILE}" ]; do
-  echo "waiting for init container to finish install or update..."
+  nats_attempts=$((nats_attempts + 1))
+  if [ "${nats_attempts}" -ge "${nats_max}" ]; then
+    echo "ERROR: timed out after $((nats_max * 10))s waiting for tactical-backend to finish init"
+    exit 1
+  fi
+  echo "Waiting for tactical-backend init... (${nats_attempts}/${nats_max})"
   sleep 10
 done
 

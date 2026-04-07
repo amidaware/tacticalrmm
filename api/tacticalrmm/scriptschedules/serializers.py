@@ -2,10 +2,14 @@ from rest_framework import serializers
 
 from agents.models import Agent
 from autotasks.models import AutomatedTask, TaskResult
-from tacticalrmm.constants import FIELDS_TRIGGER_TASK_UPDATE_AGENT, AgentPlat, TaskSyncStatus, TaskType
+from tacticalrmm.constants import (
+    FIELDS_TRIGGER_TASK_UPDATE_AGENT,
+    AgentPlat,
+    TaskSyncStatus,
+    TaskType,
+)
 
 from .models import OpenframeScriptSchedule
-
 
 # =============================================================================
 # Agent serializers
@@ -339,6 +343,8 @@ class OpenframeScriptScheduleCreateSerializer(serializers.Serializer):
                 agent__plat=AgentPlat.WINDOWS,
             ).exclude(
                 sync_status=TaskSyncStatus.INITIAL,
-            ).update(sync_status=TaskSyncStatus.NOT_SYNCED)
+            ).update(
+                sync_status=TaskSyncStatus.NOT_SYNCED
+            )
 
         return instance

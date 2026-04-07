@@ -30,7 +30,9 @@ class Command(BaseCommand):
             "dbname": db["NAME"],
             "sslmode": ssl,
         }
-        conf = os.environ.get("NATS_API_CONFIG", os.path.join(settings.BASE_DIR, "nats-api.conf"))
+        conf = os.environ.get(
+            "NATS_API_CONFIG", os.path.join(settings.BASE_DIR, "nats-api.conf")
+        )
         with open(conf, "w") as f:
             json.dump(config, f)
         os.chmod(conf, 0o600)

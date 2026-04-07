@@ -56,6 +56,67 @@ jobs:
 
 
   test:
+    name: "Lint & Test"
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: pipeline
+          POSTGRES_USER: pipeline
+          POSTGRES_PASSWORD: pipeline123456
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11.8"
+          check-latest: true
+
+      - name: Install redis
+        run: |
+          sudo apt update
+          sudo apt install -y redis
+          redis-server --version
+
+      - name: Install requirements
+        working-directory: api/tacticalrmm
+        run: |
+          python --version
+          SETTINGS_FILE="tacticalrmm/settings.py"
+          SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+          WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+          pip install --upgrade pip
+          pip install setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
+          pip install -r requirements.txt -r requirements-test.txt
+
+      - name: Codestyle black
+        working-directory: api
+        run: black --exclude migrations/ --check --diff tacticalrmm
+
+      - name: Lint with flake8
+        working-directory: api/tacticalrmm
+        run: flake8 --config .flake8 .
+
+      - name: Run django tests
+        env:
+          GHACTIONS: "yes"
+        working-directory: api/tacticalrmm
+        run: pytest
+
+
+build:
     name: "Build: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
@@ -124,7 +185,7 @@ jobs:
 
   all-checks:
     name: "All Checks"
-    needs: [test]
+    needs: [test, build]
     runs-on: ubuntu-latest
     if: always()
     steps:

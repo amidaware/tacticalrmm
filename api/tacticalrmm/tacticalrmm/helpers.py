@@ -27,6 +27,7 @@ def get_certs():
     # For local development with localhost, return empty strings
     return "", ""
 
+
 def notify_error(msg: str) -> Response:
     return Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
@@ -49,6 +50,7 @@ def get_nats_ports() -> tuple[int, int]:
     nats_websocket_port = getattr(settings, "NATS_WEBSOCKET_PORT", 9235)
 
     return nats_standard_port, nats_websocket_port
+
 
 def get_nats_internal_protocol() -> str:
     return "nats"
@@ -89,6 +91,7 @@ def get_nats_hosts() -> tuple[str, str, str]:
         connect_host = settings.NATS_CONNECT_HOST
 
     return std_bind_host, ws_bind_host, connect_host
+
 
 def get_nats_url() -> str:
     _, _, connect_host = get_nats_hosts()
@@ -140,6 +143,7 @@ def days_until_cert_expires() -> int:
     delta = cert.not_valid_after_utc - djangotime.now()
 
     return delta.days
+
 
 def has_webhook(
     alert_templ: AlertTemplate | None, instance: Literal["agent", "check", "task"]

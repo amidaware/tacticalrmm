@@ -11,14 +11,22 @@ from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
 from zoneinfo import ZoneInfo
 
 import requests
-from channels.auth import AuthMiddlewareStack  # noqa: Required dependency for WebSockets
-from channels.db import database_sync_to_async  # noqa: Required dependency for async DB access
+from channels.auth import (
+    AuthMiddlewareStack,
+)  # noqa: Required dependency for WebSockets
+from channels.db import (
+    database_sync_to_async,
+)  # noqa: Required dependency for async DB access
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.http import FileResponse
-from knox.auth import TokenAuthentication  # noqa: Required dependency for authentication
-from rest_framework.response import Response  # noqa: Required dependency for API responses
+from knox.auth import (
+    TokenAuthentication,
+)  # noqa: Required dependency for authentication
+from rest_framework.response import (
+    Response,
+)  # noqa: Required dependency for API responses
 
 from agents.models import Agent  # type: ignore # Agent model has dynamically added properties
 from core.utils import get_core_settings, token_is_valid
@@ -184,15 +192,15 @@ def reload_nats(*, publish: bool = True) -> None:
     """
     print("==== RELOAD_NATS FUNCTION STARTED ====", flush=True)
     print(f"Called with publish={publish}", flush=True)
-    
+
     logger = logging.getLogger(__name__)
     logger.info(f"reload_nats called with publish={publish}")
-    
+
     # List to track agent IDs for notifications
     agent_ids = []
-    
+
     print("Building NATS user configuration...", flush=True)
-    
+
     # Default tactical user
     users = [
         {
@@ -201,16 +209,16 @@ def reload_nats(*, publish: bool = True) -> None:
             "permissions": {"publish": ">", "subscribe": ">"},
         }
     ]
-    
+
     print("Getting all agents from database...", flush=True)
-    
+
     # Get all agents
     agents = Agent.objects.prefetch_related("user").only(
         "pk", "agent_id"
-    )  # type:ignore
-    
+    )  # type: ignore
+
     print(f"Found {agents.count()} agents", flush=True)
-    
+
     # Add each agent to the users list
     for agent in agents:
         agent_ids.append(agent.agent_id)
@@ -231,7 +239,9 @@ def reload_nats(*, publish: bool = True) -> None:
                     },
                 }
             )
-            print(f"Successfully added agent {agent.agent_id} to NATS users", flush=True)
+            print(
+                f"Successfully added agent {agent.agent_id} to NATS users", flush=True
+            )
         except Exception as e:
             error_msg = f"Error processing agent {agent.agent_id}: {str(e)}"
             print(f"ERROR: {error_msg}", flush=True)
@@ -242,7 +252,7 @@ def reload_nats(*, publish: bool = True) -> None:
             )
 
     print("Getting NATS configuration details...", flush=True)
-    
+
     # Get NATS configuration details
     cert_file, key_file = get_certs()
     nats_std_host, nats_ws_host, _ = get_nats_hosts()
@@ -250,7 +260,7 @@ def reload_nats(*, publish: bool = True) -> None:
 
     print(f"NATS std host: {nats_std_host}, port: {nats_std_port}", flush=True)
     print(f"NATS websocket host: {nats_ws_host}, port: {nats_ws_port}", flush=True)
-    
+
     # Build the configuration
     config = {
         "authorization": {"users": users, "timeout": 30},
@@ -288,9 +298,11 @@ def reload_nats(*, publish: bool = True) -> None:
         config["websocket"]["compression"] = True
 
     # Get NATS configuration path from environment variable, or use default
-    conf = os.environ.get("NATS_CONFIG", os.path.join(settings.BASE_DIR, "nats-rmm.conf"))
+    conf = os.environ.get(
+        "NATS_CONFIG", os.path.join(settings.BASE_DIR, "nats-rmm.conf")
+    )
     print(f"Using NATS configuration file: {conf}", flush=True)
-    
+
     # Write the configuration to disk
     print(f"Writing configuration to {conf}", flush=True)
     try:
@@ -305,20 +317,19 @@ def reload_nats(*, publish: bool = True) -> None:
     # Check if nats-server binary exists
     nats_server_path = "/usr/local/bin/nats-server"
     if os.path.exists(nats_server_path):
-        print(f"Found nats-server at {nats_server_path}, preparing to signal reload", flush=True)
-        
+        print(
+            f"Found nats-server at {nats_server_path}, preparing to signal reload",
+            flush=True,
+        )
+
         # Variable to store nats-server PID
         nats_server_pid = None
-        
+
         # Try to get nats-server PID using ps command
         try:
             # Using ps command to find nats-server PID
-            ps_result = subprocess.run(
-                ["ps", "-ef"],
-                capture_output=True, 
-                text=True
-            )
-            
+            ps_result = subprocess.run(["ps", "-ef"], capture_output=True, text=True)
+
             # Parse ps output to find nats-server processes
             for line in ps_result.stdout.splitlines():
                 if "nats-server" in line and "grep" not in line:
@@ -327,12 +338,14 @@ def reload_nats(*, publish: bool = True) -> None:
                         nats_server_pid = parts[1]
                         print(f"Found NATS server PID: {nats_server_pid}", flush=True)
                         break
-            
+
             if not nats_server_pid:
-                print("Could not determine NATS server PID, reload may fail", flush=True)
+                print(
+                    "Could not determine NATS server PID, reload may fail", flush=True
+                )
         except Exception as e:
             print(f"Error finding NATS server PID: {str(e)}", flush=True)
-        
+
         time.sleep(0.5)
         try:
             # Use the PID with the reload signal if available
@@ -346,22 +359,24 @@ def reload_nats(*, publish: bool = True) -> None:
                 result = subprocess.run(
                     [nats_server_path, "--signal", "reload"], capture_output=True
                 )
-            
+
             print(f"NATS server reload stdout: {result.stdout.decode()}", flush=True)
             print(f"NATS server reload stderr: {result.stderr.decode()}", flush=True)
             print(f"NATS server reload exit code: {result.returncode}", flush=True)
-            
+
             if result.returncode == 0:
                 logger.info("NATS server reloaded successfully")
             else:
-                logger.warning(f"NATS server reload returned non-zero exit code: {result.returncode}")
+                logger.warning(
+                    f"NATS server reload returned non-zero exit code: {result.returncode}"
+                )
         except Exception as e:
             error_msg = f"Error reloading NATS server: {str(e)}"
             print(f"ERROR: {error_msg}", flush=True)
             logger.error(error_msg)
     else:
         print(f"nats-server not found at {nats_server_path}", flush=True)
-    
+
     # Check if nats-api binary exists
     nats_api_path = "/usr/local/bin/nats-api"
     if os.path.exists(nats_api_path):
@@ -369,56 +384,62 @@ def reload_nats(*, publish: bool = True) -> None:
         # Note: The help output doesn't show a --signal option for nats-api
         # If you want to reload nats-api, you may need to investigate its proper reload mechanism
         # For now, commented out the potentially incorrect reload command
-        print("Skipping NATS API reload - check documentation for proper reload mechanism", flush=True)
+        print(
+            "Skipping NATS API reload - check documentation for proper reload mechanism",
+            flush=True,
+        )
         logger.info("NATS API reload skipped - please verify correct reload mechanism")
     else:
         print(f"nats-api not found at {nats_api_path}", flush=True)
-    
-    
+
     # Publish notification to Redis pubsub channel if requested
     if publish:
         print("Publishing notification to Redis...", flush=True)
         try:
             # Get the unique service ID to include in the notification
             from core.agent_updater import get_service_id, get_redis_client
-            
+
             service_id = get_service_id()
             print(f"Using service ID: {service_id}", flush=True)
-            
+
             # Create notification
             notification = {
                 "type": "nats_config_update",
                 "timestamp": time.time(),
                 "source_id": service_id,  # Include source ID to prevent loops
-                "agent_count": len(agent_ids)
+                "agent_count": len(agent_ids),
             }
-            
+
             print(f"Created notification: {notification}", flush=True)
-            
+
             # Get Redis client
             print("Getting Redis client...", flush=True)
             redis_client = get_redis_client()
-            
+
             # Publish to Redis
             print("Publishing to 'agent_updates' channel...", flush=True)
             result = redis_client.publish("agent_updates", json.dumps(notification))
-            
+
             if result > 0:
-                success_msg = f"Published NATS update notification to {result} subscribers"
+                success_msg = (
+                    f"Published NATS update notification to {result} subscribers"
+                )
                 print(success_msg, flush=True)
                 logger.info(success_msg)
             else:
-                warning_msg = "Published NATS update notification but no subscribers received it"
+                warning_msg = (
+                    "Published NATS update notification but no subscribers received it"
+                )
                 print(f"WARNING: {warning_msg}", flush=True)
                 logger.warning(warning_msg)
-                
+
         except Exception as e:
             error_msg = f"Failed to publish NATS update notification: {str(e)}"
             print(f"ERROR: {error_msg}", flush=True)
             logger.error(error_msg)
     else:
         print("Skipping Redis publication (publish=False)", flush=True)
-        
+
     print("==== RELOAD_NATS FUNCTION COMPLETED ====", flush=True)
 
 
@@ -558,7 +579,7 @@ def get_db_value(
 
 
 def replace_arg_db_values(
-    string: str, instance=None, shell: str = None, quotes=True  # type:ignore
+    string: str, instance=None, shell: str = None, quotes=True  # type: ignore
 ) -> Union[str, None]:
     # resolve the value
     value = get_db_value(string=string, instance=instance)

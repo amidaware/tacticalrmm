@@ -26,6 +26,7 @@ class ScriptCursorPagination(CursorPagination):
         if link is None:
             return None
         from urllib.parse import urlparse, parse_qs
+
         cursor = parse_qs(urlparse(link).query).get("cursor", [None])[0]
         return cursor
 
@@ -34,6 +35,7 @@ class ScriptCursorPagination(CursorPagination):
         if link is None:
             return None
         from urllib.parse import urlparse, parse_qs
+
         cursor = parse_qs(urlparse(link).query).get("cursor", [None])[0]
         return cursor
 
@@ -43,11 +45,15 @@ class ScriptFiltersView(APIView):
 
     def get(self, request):
         requested = request.query_params.get("fields", "")
-        fields = {f.strip() for f in requested.split(",") if f.strip()} & FILTERABLE_FIELDS
+        fields = {
+            f.strip() for f in requested.split(",") if f.strip()
+        } & FILTERABLE_FIELDS
 
         if not fields:
             return Response(
-                {"fields": f"This field is required. Allowed values: {sorted(FILTERABLE_FIELDS)}"},
+                {
+                    "fields": f"This field is required. Allowed values: {sorted(FILTERABLE_FIELDS)}"
+                },
                 status=400,
             )
 
@@ -58,6 +64,7 @@ class ScriptFiltersView(APIView):
         for field in fields:
             if field == "supported_platforms":
                 from django.db.models.expressions import RawSQL
+
                 values = (
                     queryset.annotate(
                         platform=RawSQL("unnest(supported_platforms)", [])

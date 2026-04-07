@@ -1,10 +1,6 @@
 import datetime
-import logging
-import os
 
-import pyotp
 from allauth.socialaccount.models import SocialAccount, SocialApp
-from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -38,7 +34,6 @@ from .permissions import (
 from .serializers import (
     APIKeySerializer,
     RoleSerializer,
-    TOTPSetupSerializer,
     UserSerializer,
     UserUISerializer,
 )

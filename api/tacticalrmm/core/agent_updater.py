@@ -7,12 +7,12 @@ notifications via Redis pub/sub and reload the NATS configuration accordingly.
 
 import json
 import logging
+import os
 import threading
 import time
 import uuid
+
 import redis
-import os
-import sys
 
 logger = logging.getLogger(__name__)
 

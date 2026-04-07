@@ -4,7 +4,7 @@ from typing import Set
 from django.db import models
 
 from agents.models import Agent
-from autotasks.models import AutomatedTask, TaskResult
+from autotasks.models import TaskResult
 from tacticalrmm.constants import AgentPlat, TaskSyncStatus
 
 logger = logging.getLogger(__name__)

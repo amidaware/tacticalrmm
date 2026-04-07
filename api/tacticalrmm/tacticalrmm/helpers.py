@@ -42,16 +42,6 @@ def get_nats_ports() -> tuple[int, int]:
     return nats_standard_port, nats_websocket_port
 
 
-def get_nats_ports() -> tuple[int, int]:
-    """
-    Returns: tuple[nats_standard_port: int, nats_websocket_port: int]
-    """
-    nats_standard_port = getattr(settings, "NATS_STANDARD_PORT", 4222)
-    nats_websocket_port = getattr(settings, "NATS_WEBSOCKET_PORT", 9235)
-
-    return nats_standard_port, nats_websocket_port
-
-
 def get_nats_internal_protocol() -> str:
     return "nats"
 
@@ -170,20 +160,6 @@ def is_month_in_bitmask(month: int, bitmask: int) -> bool:
     month_bit = MONTHS.get(month_name)
 
     return month_bit & bitmask  # type: ignore
-
-
-def has_webhook(
-    alert_templ: AlertTemplate | None, instance: Literal["agent", "check", "task"]
-) -> bool:
-    return bool(
-        alert_templ
-        and (alert_templ.action_rest or alert_templ.resolved_action_rest)
-        and (
-            (instance == "agent" and alert_templ.agent_script_actions)
-            or (instance == "check" and alert_templ.check_script_actions)
-            or (instance == "task" and alert_templ.task_script_actions)
-        )
-    )
 
 
 def has_script_actions(

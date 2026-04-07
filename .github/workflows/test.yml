@@ -116,7 +116,7 @@ jobs:
         run: pytest
 
 
-build:
+  build:
     name: "Build: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest

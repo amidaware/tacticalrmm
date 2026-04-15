@@ -438,6 +438,10 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
             # subscribe first so we don't miss the initial prompt
             self.sub = await self.nc.subscribe(subject_output, cb=message_handler)
 
+            run_as_user = bool(content.get("run_as_user", False))
+            if agent.plat != AgentPlat.WINDOWS:
+                run_as_user = False
+
             await self._nats_publish(
                 {
                     "func": "terminal_start",
@@ -445,6 +449,7 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
                         "session_id": self.session_id,
                         "shell": shell,
                     },
+                    "run_as_user": run_as_user,
                 }
             )
 

@@ -1,0 +1,49 @@
+{{- if (index .Values "tactical-frontend").enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-frontend
+spec:
+  replicas: 1
+  revisionHistoryLimit: {{ (index .Values "tactical-frontend").revisionHistoryLimit }}
+
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-frontend
+  template:
+    metadata:
+      labels:
+        {{- include "tacticalrmm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tactical-frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+
+      containers:
+        - name: tactical-frontend
+          image: "{{ (index .Values "tactical-frontend").image.registry }}/{{ (index .Values "tactical-frontend").image.repository }}:{{ (index .Values "tactical-frontend").image.tag }}"
+          ports:
+            - containerPort: 4443
+              name: http
+
+          envFrom:
+            - configMapRef:
+                name: tactical-frontend
+
+          resources:
+            {{- toYaml (index .Values "tactical-frontend").resources | nindent 12 }}
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+{{- end }}

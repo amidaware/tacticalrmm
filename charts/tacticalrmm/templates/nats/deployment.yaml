@@ -1,0 +1,99 @@
+{{- if (index .Values "tactical-nats").enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-nats
+spec:
+  replicas: 1
+  revisionHistoryLimit: {{ (index .Values "tactical-nats").revisionHistoryLimit }}
+
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-nats
+  template:
+    metadata:
+      labels:
+        {{- include "tacticalrmm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tactical-nats
+
+    spec:
+      {{- if .Values.tactical.priorityClass.enabled }}
+      priorityClassName: tactical-priority
+      {{- end }}
+
+      # bootstrap-nats-config regenerates nats-rmm.conf from the database on
+      # every pod start. The volume is an emptyDir (no persistent state): the
+      # source of truth is Postgres and `nats-api -bootstrap` rebuilds the
+      # config deterministically. On first boot it:
+      #   1. Waits for Postgres TCP (agents_agent query needs it).
+      #   2. Waits for tactical-backend TCP 8000 — Django's startupProbe only
+      #      returns 200 after migrations complete, so reaching this port
+      #      proves the tables exist.
+      #   3. Runs `nats-api -bootstrap` which queries agents_agent +
+      #      accounts_user + authtoken_token and writes the config.
+      # Uses the tactical-nats image because it carries the nats-api binary.
+      # The main container's entrypoint just waits for $NATS_CONFIG to appear
+      # and then execs supervisord — no bootstrap logic there. Ongoing reloads
+      # arrive as NATS messages on trmm.nats.reload and are handled inside the
+      # nats-api daemon (see natsapi/svc.go).
+      initContainers:
+        - name: bootstrap-nats-config
+          image: "{{ (index .Values "tactical-nats").image.registry }}/{{ (index .Values "tactical-nats").image.repository }}:{{ (index .Values "tactical-nats").image.tag }}"
+          command: ['sh', '-c', '
+            set -e;
+            echo "Waiting for PostgreSQL at $POSTGRES_HOST:$POSTGRES_PORT..." &&
+            until nc -z $POSTGRES_HOST $POSTGRES_PORT; do sleep 2; done &&
+            echo "PostgreSQL is ready!" &&
+            echo "Waiting for tactical-backend migrations (TCP 8000)..." &&
+            until nc -z tactical-backend-0.tactical-backend.{{ .Release.Namespace }}.svc.cluster.local 8000; do sleep 2; done &&
+            echo "Backend is ready!" &&
+            echo "Generating nats-rmm.conf from database..." &&
+            /usr/local/bin/nats-api -bootstrap -out "$NATS_CONFIG" &&
+            echo "Bootstrap complete"
+            ']
+          envFrom:
+            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+          env:
+            {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: nats-data
+              mountPath: /opt/tactical
+
+      containers:
+        - name: tactical-nats
+          image: "{{ (index .Values "tactical-nats").image.registry }}/{{ (index .Values "tactical-nats").image.repository }}:{{ (index .Values "tactical-nats").image.tag }}"
+          ports:
+            - containerPort: 4222
+              name: nats
+            - containerPort: 9235
+              name: websocket
+
+          envFrom:
+            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+          env:
+            {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
+
+          resources:
+            {{- toYaml (index .Values "tactical-nats").resources | nindent 12 }}
+
+          livenessProbe:
+            tcpSocket:
+              port: 4222
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 4222
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: nats-data
+              mountPath: /opt/tactical
+      volumes:
+        - name: nats-data
+          emptyDir: {}
+{{- end }}

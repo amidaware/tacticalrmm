@@ -1,0 +1,14 @@
+{{- if (index .Values "tactical-meshcentral").enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-meshcentral
+spec:
+  selector:
+    {{- include "tacticalrmm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: tactical-meshcentral
+  ports:
+  - port: 4430
+    targetPort: 4430
+    protocol: TCP
+{{- end }}

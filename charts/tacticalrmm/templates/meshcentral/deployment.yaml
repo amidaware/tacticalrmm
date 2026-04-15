@@ -1,0 +1,69 @@
+{{- if (index .Values "tactical-meshcentral").enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-meshcentral
+spec:
+  replicas: 1
+  revisionHistoryLimit: {{ (index .Values "tactical-meshcentral").revisionHistoryLimit }}
+
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-meshcentral
+  template:
+    metadata:
+      labels:
+        {{- include "tacticalrmm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tactical-meshcentral
+
+    spec:
+      initContainers:
+        - name: wait-for-mongodb
+          image: "{{ .Values.tactical.initImage.registry }}/{{ .Values.tactical.initImage.repository }}:{{ .Values.tactical.initImage.tag }}"
+          command: ['sh', '-c', '
+            echo "Waiting for MongoDB..." &&
+            until nc -z tactical-mongodb 27017; do sleep 2; done &&
+            echo "MongoDB is ready!"
+            ']
+
+      containers:
+        - name: tactical-meshcentral
+          image: "{{ (index .Values "tactical-meshcentral").image.registry }}/{{ (index .Values "tactical-meshcentral").image.repository }}:{{ (index .Values "tactical-meshcentral").image.tag }}"
+          ports:
+            - containerPort: 4430
+              name: http
+          envFrom:
+            - configMapRef:
+                name: tactical-backend
+          resources:
+            {{- toYaml (index .Values "tactical-meshcentral").resources | nindent 12 }}
+
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: meshcentral-data
+              mountPath: /opt/tactical
+      volumes:
+        - name: meshcentral-data
+          emptyDir: {}
+{{- end }}

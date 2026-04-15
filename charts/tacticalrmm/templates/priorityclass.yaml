@@ -1,0 +1,9 @@
+{{- if .Values.tactical.priorityClass.enabled }}
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: tactical-backend
+value: {{ .Values.tactical.priorityClass.value }}
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+{{- end }}

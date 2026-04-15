@@ -412,16 +412,20 @@
     enabled: yes
     state: restarted
 
-- name: set natsapi fact
-  ansible.builtin.set_fact:
-    natsapi: "{{ 'nats-api' if ansible_architecture == 'x86_64' else 'nats-api-arm64' }}"
+- name: build nats-api from source
+  tags: nats-api
+  ansible.builtin.shell: |
+    CGO_ENABLED=0 GOOS=linux GOARCH={{ goarch }} \
+      /usr/local/go/bin/go build -trimpath -ldflags "-s -w" -o /tmp/nats-api ./cmd/nats-api
+  args:
+    chdir: "{{ backend_dir }}/natsapi"
 
-- name: copy nats-api bin
+- name: install nats-api bin
   tags: nats-api
   become: yes
   ansible.builtin.copy:
     remote_src: yes
-    src: "{{ backend_dir }}/natsapi/bin/{{ natsapi }}"
+    src: /tmp/nats-api
     dest: /usr/local/bin/nats-api
     owner: "{{ user }}"
     group: "{{ user }}"

@@ -37,11 +37,12 @@ nginxdefaultconf='/etc/nginx/nginx.conf'
 
 grep -q -e 'worker_rlimit_nofile' "${nginxdefaultconf}" || sed -i -e '/worker_processes.*/a\' -e 'worker_rlimit_nofile 1000000;' "${nginxdefaultconf}"
 
-if [[ $DEV -eq 1 ]]; then
-    API_NGINX="
+API_NGINX="
         #Using variable to disable start checks
         set \$api http://${BACKEND_SERVICE}:${API_PORT};
         proxy_pass \$api;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
         proxy_http_version  1.1;
         proxy_cache_bypass  \$http_upgrade;
 
@@ -53,8 +54,10 @@ if [[ $DEV -eq 1 ]]; then
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host  \$host;
         proxy_set_header X-Forwarded-Port  \$server_port;
+        proxy_set_header Authorization     \$http_authorization;
 "
 
+if [[ $DEV -eq 1 ]]; then
     STATIC_ASSETS="
     location /static/ {
         root /workspace/api/tacticalrmm;
@@ -62,13 +65,6 @@ if [[ $DEV -eq 1 ]]; then
     }
 "
 else
-    API_NGINX="
-        #Using variable to disable start checks
-        set \$api ${BACKEND_SERVICE}:${API_PORT};
-
-        include         uwsgi_params;
-        uwsgi_pass      \$api;
-"
 
     STATIC_ASSETS="
     location /static/ {
@@ -80,6 +76,19 @@ fi
 
 nginx_config="$(
     cat <<EOF
+# nginx status for health checks
+server {
+    listen 8081;
+    server_name _;
+
+    access_log off;
+
+    location /nginx_status {
+        stub_status on;
+        allow all;
+    }
+}
+
 # backend config
 server  {
     resolver ${NGINX_RESOLVER} valid=30s;
@@ -110,7 +119,10 @@ server  {
         proxy_set_header   Host \$host;
         proxy_set_header   X-Real-IP \$remote_addr;
         proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Host \$server_name;
+        proxy_set_header   X-Forwarded-Proto \$scheme;
+        proxy_set_header   X-Forwarded-Host \$host;
+        proxy_set_header   X-Forwarded-Port \$server_port;
+        proxy_set_header   Origin \$http_origin;
     }
 
     location /assets/ {
@@ -127,9 +139,10 @@ server  {
         proxy_set_header Host \$host;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header X-Forwarded-Host \$host:\$server_port;
+        proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Origin \$http_origin;
     }
 
     client_max_body_size 300M;
@@ -174,18 +187,20 @@ server  {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host  \$host;
         proxy_set_header X-Forwarded-Port  \$server_port;
+        proxy_set_header Origin            \$http_origin;
+        proxy_redirect off;
     }
 
     listen 4443 ssl;
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
-    
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
     ssl_ecdh_curve secp384r1;
     add_header X-Content-Type-Options nosniff;
-    
+
 }
 
 server {

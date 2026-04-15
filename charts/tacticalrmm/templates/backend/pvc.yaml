@@ -1,0 +1,15 @@
+{{- if .Values.tactical.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tactical-backend
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.tactical.backend.persistence.storageClass }}
+  storageClassName: {{ .Values.tactical.backend.persistence.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.tactical.backend.persistence.size }}
+{{- end }}

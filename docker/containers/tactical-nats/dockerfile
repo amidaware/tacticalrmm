@@ -1,18 +1,45 @@
+# Build nats-api from source. BuildKit injects TARGETOS/TARGETARCH
+# automatically, so a single `docker buildx build --platform linux/amd64,linux/arm64`
+# produces a correct binary for each target without a prebuilt bin/ directory.
+#
+# Build context is the repo root. CI invokes this as:
+#   docker buildx build -f docker/containers/tactical-nats/Dockerfile .
+# (See .github/workflows/matrix.yml — path: ./docker/containers/tactical-nats,
+# context: ".".)
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+
+ARG TARGETOS
+ARG TARGETARCH
+
+WORKDIR /src
+
+# Module files first so `go mod download` is cached independently of source.
+COPY natsapi/go.mod natsapi/go.sum ./
+RUN go mod download
+
+# Copy the rest of the natsapi module (library .go files + cmd/nats-api/).
+COPY natsapi/ ./
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -trimpath -ldflags "-s -w" -o /out/nats-api ./cmd/nats-api
+
 FROM nats:2.12.3-alpine
 
 ENV TACTICAL_DIR=/opt/tactical
 ENV TACTICAL_READY_FILE=${TACTICAL_DIR}/tmp/tactical.ready
 
+# bash for entrypoint scripting (including /dev/tcp for the Postgres wait),
+# supervisor to run nats-server + nats-api side by side. No redis-cli: the
+# NATS config transport is now NATS itself (see natsapi/svc.go).
 RUN apk add --no-cache supervisor bash
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-COPY natsapi/bin/nats-api /usr/local/bin/
+COPY --from=build /out/nats-api /usr/local/bin/nats-api
 RUN chmod +x /usr/local/bin/nats-api && \
     mkdir -p /var/log/supervisor /etc/supervisor/conf.d && \
-    touch /usr/local/bin/config_watcher.sh /etc/supervisor/conf.d/supervisor.conf && \
+    touch /etc/supervisor/conf.d/supervisor.conf && \
     chown 1000:1000 /var/log/supervisor \
-                    /usr/local/bin/config_watcher.sh \
                     /etc/supervisor/conf.d/supervisor.conf
 
 COPY docker/containers/tactical-nats/entrypoint.sh /
@@ -22,4 +49,8 @@ ENTRYPOINT [ "/entrypoint.sh" ]
 
 USER 1000
 
-EXPOSE 4222 9235
+# 4222: NATS client, 9235: NATS websocket.
+# 9189 is documented for the optional nats-api Prometheus /metrics endpoint,
+# which is gated on METRICS_LISTEN (e.g. METRICS_LISTEN=:9189). Unset by
+# default, so the extra listener is opt-in.
+EXPOSE 4222 9235 9189

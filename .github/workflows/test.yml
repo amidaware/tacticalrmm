@@ -20,10 +20,8 @@ on:
       - 'api/**'
       - 'docker/**'
       - 'natsapi/**'
-      - 'go.mod'
-      - 'go.sum'
-      - 'main.go'
       - '.github/**'
+      - 'charts/**'
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
@@ -174,7 +172,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           context: ${{ matrix.context || matrix.path }}
-          file: ${{ matrix.path }}/dockerfile
+          file: ${{ matrix.path }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: false
           provenance: false
@@ -183,9 +181,35 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
 
+  test_helm:
+    name: "Test Helm Chart"
+    needs: [matrix, changes]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft &&
+      contains(needs.changes.outputs.helm, 'true')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Install helm-unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v0.4.1
+
+      - name: Test Chart
+        run: |
+          helm template app ./charts/tacticalrmm
+          helm unittest ./charts/tacticalrmm
+
+
   all-checks:
     name: "All Checks"
-    needs: [test, build]
+    needs: [test, build, test_helm]
     runs-on: ubuntu-latest
     if: always()
     steps:

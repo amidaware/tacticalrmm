@@ -118,7 +118,7 @@ postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-arch
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
 
-DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
+SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
@@ -484,7 +484,7 @@ npm install
 
 localvars="$(
   cat <<EOF
-SECRET_KEY = "${DJANGO_SEKRET}"
+SECRET_KEY = "${SECRET_KEY}"
 
 DEBUG = False
 

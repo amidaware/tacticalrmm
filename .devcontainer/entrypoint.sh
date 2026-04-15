@@ -48,13 +48,13 @@ function django_setup {
   # configure django settings
   MESH_TOKEN="$(cat ${TACTICAL_DIR}/tmp/mesh_token)"
 
-  DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
+  SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 
   BASE_DOMAIN=$(echo "import tldextract; no_fetch_extract = tldextract.TLDExtract(suffix_list_urls=()); extracted = no_fetch_extract('${API_HOST}'); print(f'{extracted.domain}.{extracted.suffix}')" | python)
 
   localvars="$(
     cat <<EOF
-SECRET_KEY = '${DJANGO_SEKRET}'
+SECRET_KEY = '${SECRET_KEY}'
 
 DEBUG = True
 

@@ -81,7 +81,7 @@ copy_custom_code() {
   echo "Processing config templates"
 
   # Export all vars needed by envsubst
-  export DJANGO_SEKRET ADMINURL DEBUG TRMM_PROTO TACTICAL_DIR VIRTUAL_ENV
+  export SECRET_KEY ADMINURL DEBUG TRMM_PROTO TACTICAL_DIR VIRTUAL_ENV
   export POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD POSTGRES_HOST POSTGRES_PORT
   export REDIS_HOST
   export NATS_CONNECT_HOST
@@ -119,7 +119,7 @@ copy_custom_code() {
   fi
 
   # Explicit variable list to avoid clobbering Python {var} in f-strings
-  local vars='$DJANGO_SEKRET $ADMINURL $DEBUG $TRMM_PROTO $TACTICAL_DIR $VIRTUAL_ENV'
+  local vars='$SECRET_KEY $ADMINURL $DEBUG $TRMM_PROTO $TACTICAL_DIR $VIRTUAL_ENV'
   vars+=' $POSTGRES_DB $POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_HOST $POSTGRES_PORT'
   vars+=' $REDIS_HOST $NATS_CONNECT_HOST'
   vars+=' $APP_HOST $API_HOST'
@@ -242,6 +242,31 @@ check_tactical_ready() {
 }
 
 # ---------------------------------------------------------------------------
+# worker_init — lightweight initialization for worker containers (celery,
+#               celerybeat, websockets) that do not share the backend PVC.
+#               Requires SECRET_KEY and ADMINURL to be set as env vars.
+# ---------------------------------------------------------------------------
+worker_init() {
+  local role=$1
+
+  if [ -z "${SECRET_KEY:-}" ] || [ -z "${ADMINURL:-}" ]; then
+    echo "ERROR: worker_init requires SECRET_KEY and ADMINURL env vars"
+    exit 1
+  fi
+
+  # Copy source to working directory (emptyDir is always fresh, no --delete needed)
+  rsync -a --no-perms --no-owner \
+    "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
+
+  create_directories
+
+  export SECRET_KEY ADMINURL
+  copy_custom_code
+
+  set_ready_status "${role}"
+}
+
+# ---------------------------------------------------------------------------
 # tactical_init — master initialization
 # ---------------------------------------------------------------------------
 tactical_init() {
@@ -267,22 +292,28 @@ tactical_init() {
   create_directories
 
   # Persist secret values across restarts so Django's SECRET_KEY never changes.
+  # When running in Kubernetes, SECRET_KEY and ADMINURL are injected as env
+  # vars from a K8s Secret — skip file-based generation in that case.
   # Written with mode 0600 (owner-read-only) to protect the key at rest.
-  local sekret_file="${TACTICAL_DIR}/tmp/.django_sekret"
-  local adminurl_file="${TACTICAL_DIR}/tmp/.adminurl"
-  if [ -f "${sekret_file}" ]; then
-    DJANGO_SEKRET=$(cat "${sekret_file}")
-  else
-    DJANGO_SEKRET=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 80 | head -n 1)
-    (umask 0177; echo "${DJANGO_SEKRET}" > "${sekret_file}")
+  if [ -z "${SECRET_KEY:-}" ]; then
+    local sekret_file="${TACTICAL_DIR}/tmp/.django_sekret"
+    if [ -f "${sekret_file}" ]; then
+      SECRET_KEY=$(cat "${sekret_file}")
+    else
+      SECRET_KEY=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 80 | head -n 1)
+      (umask 0177; echo "${SECRET_KEY}" > "${sekret_file}")
+    fi
   fi
-  if [ -f "${adminurl_file}" ]; then
-    ADMINURL=$(cat "${adminurl_file}")
-  else
-    ADMINURL=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 70 | head -n 1)
-    (umask 0177; echo "${ADMINURL}" > "${adminurl_file}")
+  if [ -z "${ADMINURL:-}" ]; then
+    local adminurl_file="${TACTICAL_DIR}/tmp/.adminurl"
+    if [ -f "${adminurl_file}" ]; then
+      ADMINURL=$(cat "${adminurl_file}")
+    else
+      ADMINURL=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 70 | head -n 1)
+      (umask 0177; echo "${ADMINURL}" > "${adminurl_file}")
+    fi
   fi
-  export DJANGO_SEKRET ADMINURL
+  export SECRET_KEY ADMINURL
 
   copy_custom_code
 
@@ -302,41 +333,17 @@ tactical_init() {
 # ===========================================================================
 
 if [ "${1:-}" = 'tactical-backend' ]; then
-  # Wait for postgres
-  pg_attempts=0; pg_max=60  # 60 × 5 s = 5 minutes
-  until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &>/dev/null; do
-    pg_attempts=$((pg_attempts + 1))
-    if [ "${pg_attempts}" -ge "${pg_max}" ]; then
-      echo "ERROR: timed out after $((pg_max * 5))s waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}"
-      exit 1
-    fi
-    echo "Waiting for PostgreSQL... (${pg_attempts}/${pg_max})"
-    sleep 5
-  done
-
-  # Wait for redis (clear_redis_celery_locks runs during migrations)
-  redis_attempts=0; redis_max=60  # 60 × 5 s = 5 minutes
-  until (echo > /dev/tcp/"${REDIS_HOST}"/"${REDIS_PORT}") &>/dev/null; do
-    redis_attempts=$((redis_attempts + 1))
-    if [ "${redis_attempts}" -ge "${redis_max}" ]; then
-      echo "ERROR: timed out after $((redis_max * 5))s waiting for Redis at ${REDIS_HOST}:${REDIS_PORT}"
-      exit 1
-    fi
-    echo "Waiting for Redis... (${redis_attempts}/${redis_max})"
-    sleep 5
-  done
-
   tactical_init "backend"
   exec uwsgi "${TACTICAL_DIR}/api/app.ini"
 fi
 
 if [ "${1:-}" = 'tactical-celery' ]; then
-  check_tactical_ready
+  worker_init "celery"
   exec celery -A tacticalrmm worker --autoscale="${CELERY_AUTOSCALE}" -l info
 fi
 
 if [ "${1:-}" = 'tactical-celerybeat' ]; then
-  check_tactical_ready
+  worker_init "celerybeat"
   # rm -f is idiomatic for "remove if exists": unlike `test -f && rm`, it always
   # returns 0 so set -e does not abort when the file is absent on first start.
   rm -f "${TACTICAL_DIR}/api/celerybeat.pid"
@@ -344,7 +351,7 @@ if [ "${1:-}" = 'tactical-celerybeat' ]; then
 fi
 
 if [ "${1:-}" = 'tactical-websockets' ]; then
-  check_tactical_ready
+  worker_init "websockets"
   export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
   exec uvicorn --host 0.0.0.0 --port 8383 --forwarded-allow-ips='*' tacticalrmm.asgi:application
 fi

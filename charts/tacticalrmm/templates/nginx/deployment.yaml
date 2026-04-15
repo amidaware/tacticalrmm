@@ -1,0 +1,64 @@
+{{- if (index .Values "tactical-nginx").enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-nginx
+spec:
+  replicas: 1
+  revisionHistoryLimit: {{ (index .Values "tactical-nginx").revisionHistoryLimit }}
+
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-nginx
+  template:
+    metadata:
+      labels:
+        {{- include "tacticalrmm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tactical-nginx
+
+    spec:
+      containers:
+        - name: tactical-nginx
+          image: "{{ (index .Values "tactical-nginx").image.registry }}/{{ (index .Values "tactical-nginx").image.repository }}:{{ (index .Values "tactical-nginx").image.tag }}"
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 443
+              name: api
+
+          envFrom:
+            - configMapRef:
+                name: tactical-nginx
+
+          resources:
+            {{- toYaml (index .Values "tactical-nginx").resources | nindent 12 }}
+
+          startupProbe:
+            httpGet:
+              path: /nginx_status
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /nginx_status
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /nginx_status
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: nginx-data
+              mountPath: /opt/tactical
+      volumes:
+        - name: nginx-data
+          emptyDir: {}
+{{- end }}

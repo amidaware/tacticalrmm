@@ -1,0 +1,19 @@
+{{- if (index .Values "tactical-nats").enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-nats
+spec:
+  selector:
+    {{- include "tacticalrmm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: tactical-nats
+  ports:
+  - name: http
+    port: 4222
+    targetPort: 4222
+    protocol: TCP
+  - name: websocket
+    port: 9235
+    targetPort: 9235
+    protocol: TCP
+{{- end }}

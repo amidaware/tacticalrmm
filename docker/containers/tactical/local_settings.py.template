@@ -1,6 +1,6 @@
 from .custom_settings import *
 
-SECRET_KEY = '${DJANGO_SEKRET}'
+SECRET_KEY = '${SECRET_KEY}'
 
 DEBUG = ${DEBUG}
 

@@ -10,5 +10,5 @@ cd ..
 
 for DOCKER_IMAGE in ${DOCKER_IMAGES}; do
   echo "Building Tactical Image: ${DOCKER_IMAGE}..."
-  docker build --pull --no-cache -t "${DOCKER_IMAGE}" -f "docker/containers/${DOCKER_IMAGE}/dockerfile" .
+  docker build --pull --no-cache -t "${DOCKER_IMAGE}" -f "docker/containers/${DOCKER_IMAGE}/Dockerfile" .
 done

@@ -184,6 +184,46 @@ def convert_to_iso_duration(string: str) -> str:
     return f"PT{tmp}"
 
 
+def _publish_nats_reload_signal(agent_count: int) -> None:
+    """
+    Publish a reload signal on the `trmm.nats.reload` NATS subject so that
+    the nats-api sidecar inside the tactical-nats container regenerates
+    nats-rmm.conf from Postgres and SIGHUPs nats-server.
+
+    Failures are non-fatal: on first boot nats-server may not be up yet, in
+    which case the signal is lost but the nats-api bootstrap has already
+    built a fresh config from the database.
+    """
+    import asyncio
+    import logging
+
+    import nats as nats_client
+
+    from tacticalrmm.helpers import setup_nats_options
+
+    logger = logging.getLogger(__name__)
+
+    async def _pub() -> None:
+        opts = setup_nats_options()
+        nc = await nats_client.connect(**opts)
+        try:
+            payload = json.dumps(
+                {"timestamp": time.time(), "agent_count": agent_count}
+            ).encode()
+            await nc.publish("trmm.nats.reload", payload)
+            await nc.flush()
+        finally:
+            await nc.close()
+
+    try:
+        asyncio.run(_pub())
+        logger.info("Published reload signal on trmm.nats.reload")
+    except Exception as e:
+        # Don't let a publish failure mask the caller's successful config
+        # write — log and move on. The next reload_nats call will retry.
+        logger.warning(f"Failed to publish trmm.nats.reload signal: {e}")
+
+
 def reload_nats(*, publish: bool = True) -> None:
     """
     Generate a new NATS config and restart NATS server.
@@ -314,6 +354,12 @@ def reload_nats(*, publish: bool = True) -> None:
         print(f"ERROR: {error_msg}", flush=True)
         logger.error(error_msg)
 
+    # (The legacy Redis-key transport for nats-rmm.conf used to live here.
+    # It's been removed: the tactical-nats container now generates the
+    # config directly from Postgres on boot and subscribes to the
+    # trmm.nats.reload NATS subject for ongoing updates. See
+    # natsapi/bootstrap.go and natsapi/svc.go.)
+
     # Check if nats-server binary exists
     nats_server_path = "/usr/local/bin/nats-server"
     if os.path.exists(nats_server_path):
@@ -437,6 +483,12 @@ def reload_nats(*, publish: bool = True) -> None:
             error_msg = f"Failed to publish NATS update notification: {str(e)}"
             print(f"ERROR: {error_msg}", flush=True)
             logger.error(error_msg)
+
+        # Also publish on the NATS subject. This is what the tactical-nats
+        # container subscribes to — the Redis publish above is kept only
+        # for in-cluster peer backends (celery, celerybeat, websockets) that
+        # want to refresh their own local nats-rmm.conf copy.
+        _publish_nats_reload_signal(len(agent_ids))
     else:
         print("Skipping Redis publication (publish=False)", flush=True)
 

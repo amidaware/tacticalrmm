@@ -1,0 +1,14 @@
+{{- if (index .Values "tactical-frontend").enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tactical-frontend
+data:
+  TRMM_PROTO: "http"
+  {{- if (index .Values "tactical-nginx").enabled }}
+  API_LOCALHOST_HOST: "tactical-nginx-0.tactical-nginx.{{ .Release.Namespace }}.svc.cluster.local:8000"
+  {{- else }}
+  API_LOCALHOST_HOST: "tactical-backend-0.tactical-nginx.{{ .Release.Namespace }}.svc.cluster.local:8000"
+  {{- end }}
+  WS_PROTO: "ws"
+{{- end }}

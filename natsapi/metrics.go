@@ -80,6 +80,17 @@ var (
 		Help:    "Wall-clock time of one reconciliation tick (hash query + optional regen + signal).",
 		Buckets: prometheus.ExponentialBuckets(0.001, 2, 12),
 	})
+
+	authCalloutTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_api_auth_callout_total",
+		Help: "Auth callout outcomes (approved|rejected|error).",
+	}, []string{"result"})
+
+	authCalloutDurationSeconds = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name:    "nats_api_auth_callout_duration_seconds",
+		Help:    "Duration of auth callout handler execution including DB query.",
+		Buckets: prometheus.ExponentialBuckets(0.0005, 2, 12),
+	})
 )
 
 // knownSubjectList is the allow-list of handler subjects we attach as
@@ -151,8 +162,11 @@ func initMetrics() {
 			jobsProcessedTotal.WithLabelValues(h, r)
 		}
 	}
-	for _, r := range []string{"ok", "config_only", "signal_error", "generate_error"} {
+	for _, r := range []string{"ok", "config_only", "signal_error", "generate_error", "auth_callout_noop"} {
 		reloadsTotal.WithLabelValues(r)
+	}
+	for _, r := range []string{"approved", "rejected", "error"} {
+		authCalloutTotal.WithLabelValues(r)
 	}
 	for _, r := range []string{"in_sync", "drift_detected", "ok", "query_error", "regen_error", "signal_error"} {
 		reconcileTotal.WithLabelValues(r)

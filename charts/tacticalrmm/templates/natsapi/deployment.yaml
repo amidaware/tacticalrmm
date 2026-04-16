@@ -1,0 +1,66 @@
+{{- if (index .Values "tactical-natsapi").enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-natsapi
+spec:
+  replicas: 1
+  revisionHistoryLimit: {{ (index .Values "tactical-natsapi").revisionHistoryLimit }}
+
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-natsapi
+  template:
+    metadata:
+      labels:
+        {{- include "tacticalrmm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tactical-natsapi
+
+    spec:
+      {{- if .Values.tactical.priorityClass.enabled }}
+      priorityClassName: tactical-priority
+      {{- end }}
+
+      containers:
+        - name: nats-api
+          image: "{{ (index .Values "tactical-natsapi").image.registry }}/{{ (index .Values "tactical-natsapi").image.repository }}:{{ (index .Values "tactical-natsapi").image.tag }}"
+          args: ["-log", "{{ (index .Values "tactical-natsapi").logLevel }}"]
+          ports:
+            - containerPort: 9189
+              name: metrics
+
+          envFrom:
+            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+          env:
+            {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
+            - name: AUTH_CALLOUT
+              value: "true"
+            - name: METRICS_LISTEN
+              value: ":9189"
+            {{- with (index .Values "tactical-natsapi").natsAuthNkeySeedSecret }}
+            - name: AUTH_ISSUER_SEED
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{- end }}
+
+          resources:
+            {{- toYaml (index .Values "tactical-natsapi").resources | nindent 12 }}
+
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 9189
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 9189
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+{{- end }}

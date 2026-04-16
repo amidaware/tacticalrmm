@@ -4,7 +4,7 @@ Components:
   Backend:     {{ if .Values.tactical.enabled }}enabled{{ else }}disabled{{ end }}
   Frontend:    {{ if (index .Values "tactical-frontend").enabled }}enabled{{ else }}disabled{{ end }}
   Nginx:       {{ if (index .Values "tactical-nginx").enabled }}enabled{{ else }}disabled{{ end }}
-  NATS:        {{ if (index .Values "tactical-nats").enabled }}enabled{{ else }}disabled{{ end }}
+  NATS API:    {{ if (index .Values "tactical-natsapi").enabled }}enabled{{ else }}disabled{{ end }}
   WebSockets:  {{ if .Values.tactical.enabled }}enabled{{ else }}disabled{{ end }}
   Celery:      {{ if .Values.tactical.enabled }}enabled{{ else }}disabled{{ end }}
   CeleryBeat:  {{ if .Values.tactical.enabled }}enabled{{ else }}disabled{{ end }}

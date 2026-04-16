@@ -89,7 +89,7 @@ func runJob(parent context.Context, logger *logrus.Logger, db *sqlx.DB, j dbJob)
 	jobsProcessedTotal.WithLabelValues(j.name, "ok").Inc()
 }
 
-func Svc(logger *logrus.Logger, cfg string) {
+func Svc(logger *logrus.Logger, cfg string, authCalloutEnabled bool) {
 	logger.Debugln("Starting Svc()")
 	db, r, err := GetConfig(cfg)
 	if err != nil {
@@ -158,6 +158,36 @@ func Svc(logger *logrus.Logger, cfg string) {
 		default:
 			jobsDroppedTotal.WithLabelValues(job.name).Inc()
 			logger.Warnf("shard %d queue full (cap=%d), dropping %s agent=%s", idx, dbShardQueueSize, job.name, job.agentID)
+		}
+	}
+
+	// Auth callout: validate agent credentials against Postgres on each
+	// new NATS connection instead of maintaining a static config file.
+	// Uses a separate NATS connection (auth-service user in AUTH account)
+	// and a separate DB pool to isolate from the telemetry path.
+	//
+	// Started BEFORE the main "tacticalrmm" connection because in auth
+	// callout mode the main connection is itself authenticated by this
+	// service. If we connected main first, it would get auth-rejected
+	// repeatedly until the callout subscription is ready.
+	var authCleanup func()
+	if authCalloutEnabled {
+		authDB, err := openDB(r, 4)
+		if err != nil {
+			logger.Fatalf("open auth callout db: %v", err)
+		}
+		validator := &dbValidator{db: authDB, secretKey: r.Key}
+		authNc, authSvc, err := StartAuthCallout(logger, r, validator)
+		if err != nil {
+			authDB.Close()
+			logger.Fatalf("start auth callout: %v", err)
+		}
+		authCleanup = func() {
+			if err := authSvc.Stop(); err != nil {
+				logger.Errorf("shutdown: stop auth callout: %v", err)
+			}
+			authNc.Close()
+			authDB.Close()
 		}
 	}
 
@@ -355,6 +385,11 @@ func Svc(logger *logrus.Logger, cfg string) {
 	// take down nats-api.
 	if _, err := nc.Subscribe(natsReloadSubject, func(msg *nats.Msg) {
 		logger.Infof("Received reload signal on %s", msg.Subject)
+		if authCalloutEnabled {
+			reloadsTotal.WithLabelValues("auth_callout_noop").Inc()
+			logger.Debug("auth callout mode: skipping config regeneration")
+			return
+		}
 		regenMu.Lock()
 		defer regenMu.Unlock()
 		if err := GenerateNatsRmmConfig(logger, db, r.Key, natsRmmConfigPath); err != nil {
@@ -385,8 +420,9 @@ func Svc(logger *logrus.Logger, cfg string) {
 
 	// Reconciliation: detect config drift and self-heal.
 	// The trmm.nats.reload subscriber is the fast path; this is the safety net.
+	// Skipped in auth callout mode — there is no config file to drift.
 	reconcileInterval := parseDurationEnv("RECONCILE_INTERVAL", 30*time.Second)
-	if reconcileInterval > 0 {
+	if !authCalloutEnabled && reconcileInterval > 0 {
 		go func() {
 			// Seed the hash so the first tick is a no-op if config is already current.
 			if h, _, err := computeConfigHash(rootCtx, db); err == nil {
@@ -441,6 +477,8 @@ func Svc(logger *logrus.Logger, cfg string) {
 				}
 			}
 		}()
+	} else if authCalloutEnabled {
+		logger.Info("reconciliation loop skipped (auth callout mode)")
 	} else {
 		logger.Info("reconciliation loop disabled (RECONCILE_INTERVAL=0)")
 	}
@@ -480,6 +518,11 @@ func Svc(logger *logrus.Logger, cfg string) {
 		logger.Warn("shutdown: worker grace expired, cancelling in-flight jobs")
 		rootCancel()
 		<-workersDone
+	}
+
+	if authCleanup != nil {
+		authCleanup()
+		logger.Info("shutdown: auth callout stopped")
 	}
 
 	for i, sdb := range shardDBs {

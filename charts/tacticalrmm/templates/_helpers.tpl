@@ -44,6 +44,6 @@ SECRET_KEY env var injected from a K8s Secret
 - name: SECRET_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.tactical.existingSecret }}
-      key: {{ .Values.tactical.existingSecretKey | default "SECRET_KEY" }}
+      name: {{ .Values.tactical.existingSecret | default "tactical-backend" }}
+      key: {{ .Values.tactical.secretKeyKey | default "SECRET_KEY" }}
 {{- end }}

@@ -17,7 +17,7 @@ tactical:
   #
   # Option 1: Use an existing K8s Secret (recommended for production).
   #   existingSecret: "my-tactical-secret"
-  #   existingSecretKey: "SECRET_KEY"
+  #   secretKeyKey: "SECRET_KEY"
   #
   # Option 2: Set the value directly (a default Secret will be created).
   #   secretKeyValue: "my-secret-key"
@@ -74,13 +74,14 @@ tactical:
         memory: 192Mi
 
 
-tactical-nats:
+tactical-natsapi:
   enabled: true
   revisionHistoryLimit: 10
+  logLevel: "INFO"
   image:
-    registry:
-    repository:
-    tag:
+    registry: ghcr.io/flamingo-stack/tacticalrmm
+    repository: tactical-natsapi
+    tag: latest
   resources:
     requests:
       cpu: 50m
@@ -88,6 +89,11 @@ tactical-nats:
     limits:
       cpu: 50m
       memory: 256Mi
+  # Secret containing the Ed25519 NKey seed for auth callout JWT signing.
+  # The NATS wrapper chart must be configured with the corresponding public key.
+  natsAuthNkeySeedSecret:
+    name: "tactical-nats-auth"
+    key: "AUTH_ISSUER_SEED"
 
 
 tactical-frontend:
@@ -139,6 +145,7 @@ tactical-meshcentral:
 
 
 redis:
+  url:
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: redis
@@ -146,7 +153,11 @@ redis:
 
 
 postgres:
+  url:
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: postgres
     tag: "13-alpine"
+
+nats:
+  url:

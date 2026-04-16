@@ -9,6 +9,8 @@ data:
   API_HOST: "tactical-backend-0.tactical-backend.{{ .Release.Namespace }}.svc.cluster.local:8000"
   WEBSOCKETS_BIND_HOST: "tactical-websockets-0.tactical-websockets.{{ .Release.Namespace }}.svc.cluster.local"
   WEBSOCKET_PORT: "8000"
-  NATS_STD_BIND_HOST: "tactical-nats.{{ .Release.Namespace }}.svc.cluster.local"
-  NATS_STANDARD_PORT: "4222"
+  {{- $natsUrl := required "nats.url is required" .Values.nats.url | trimPrefix "nats://" }}
+  {{- $natsParts := splitList ":" $natsUrl }}
+  NATS_STD_BIND_HOST: {{ index $natsParts 0 | quote }}
+  NATS_STANDARD_PORT: {{ if gt (len $natsParts) 1 }}{{ index $natsParts 1 | quote }}{{ else }}"4222"{{ end }}
 {{- end }}

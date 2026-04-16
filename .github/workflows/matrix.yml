@@ -29,6 +29,11 @@ jobs:
               "context": "."
             },
             {
+              "name": "tactical-natsapi",
+              "path": "./docker/containers/tactical-natsapi",
+              "context": "."
+            },
+            {
               "name": "tactical-frontend",
               "path": "./docker/containers/tactical-frontend",
               "context": "."

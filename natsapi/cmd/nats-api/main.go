@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strings"
 
 	"github.com/amidaware/tacticalrmm/natsapi"
 	"github.com/sirupsen/logrus"
@@ -28,6 +29,7 @@ func main() {
 	// tactical-backend PVC or a Redis-based transport.
 	bootstrap := flag.Bool("bootstrap", false, "Generate nats-rmm.conf from the database and exit")
 	out := flag.String("out", "", "Output path for bootstrap mode (defaults to $NATS_CONFIG or /opt/tactical/api/nats-rmm.conf)")
+	authCallout := flag.Bool("auth-callout", false, "Enable NATS auth callout mode (validate credentials via Postgres instead of static config)")
 	flag.Parse()
 
 	if *ver {
@@ -55,7 +57,8 @@ func main() {
 		return
 	}
 
-	natsapi.Svc(log, *cfg)
+	authCalloutEnabled := *authCallout || strings.EqualFold(os.Getenv("AUTH_CALLOUT"), "true")
+	natsapi.Svc(log, *cfg, authCalloutEnabled)
 }
 
 func setupLogging(level *string) {

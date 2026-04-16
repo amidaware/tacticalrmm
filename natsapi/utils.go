@@ -115,3 +115,15 @@ func envOrDefault(key, def string) string {
 	}
 	return def
 }
+
+func parseDurationEnv(key string, fallback time.Duration) time.Duration {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return fallback
+	}
+	return d
+}

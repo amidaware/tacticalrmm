@@ -17,6 +17,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	nats "github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/ugorji/go/codec"
 	trmm "github.com/wh1te909/trmm-shared"
@@ -359,6 +360,10 @@ func Svc(logger *logrus.Logger, cfg string) {
 			logger.Errorf("reload: regenerate nats-rmm.conf: %v", err)
 			return
 		}
+		// Update hash so the next reconciliation tick sees config as current.
+		if h, _, err := computeConfigHash(context.Background(), db); err == nil {
+			setHash(h)
+		}
 		if err := SignalNatsServerReload(logger); err != nil {
 			if errors.Is(err, ErrNatsServerNotFound) {
 				reloadsTotal.WithLabelValues("config_only").Inc()
@@ -372,6 +377,61 @@ func Svc(logger *logrus.Logger, cfg string) {
 		reloadsTotal.WithLabelValues("ok").Inc()
 	}); err != nil {
 		logger.Errorf("subscribe %s: %v", natsReloadSubject, err)
+	}
+
+	// Reconciliation: detect config drift and self-heal.
+	// The trmm.nats.reload subscriber is the fast path; this is the safety net.
+	reconcileInterval := parseDurationEnv("RECONCILE_INTERVAL", 30*time.Second)
+	if reconcileInterval > 0 {
+		go func() {
+			// Seed the hash so the first tick is a no-op if config is already current.
+			if h, _, err := computeConfigHash(rootCtx, db); err == nil {
+				setHash(h)
+			}
+
+			ticker := time.NewTicker(reconcileInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-rootCtx.Done():
+					return
+				case <-ticker.C:
+					timer := prometheus.NewTimer(reconcileDurationSeconds)
+
+					ctx, cancel := context.WithTimeout(rootCtx, dbJobTimeout)
+					hash, count, err := computeConfigHash(ctx, db)
+					cancel()
+					if err != nil {
+						reconcileTotal.WithLabelValues("query_error").Inc()
+						logger.Errorf("reconcile: hash query: %v", err)
+						timer.ObserveDuration()
+						continue
+					}
+					if hash == getHash() {
+						reconcileTotal.WithLabelValues("in_sync").Inc()
+						timer.ObserveDuration()
+						continue
+					}
+					logger.Infof("reconcile: config drift detected (%d agents), regenerating", count)
+					reconcileTotal.WithLabelValues("drift_detected").Inc()
+					if err := GenerateNatsRmmConfig(logger, db, r.Key, natsRmmConfigPath); err != nil {
+						reconcileTotal.WithLabelValues("regen_error").Inc()
+						logger.Errorf("reconcile: regenerate: %v", err)
+						timer.ObserveDuration()
+						continue
+					}
+					if err := SignalNatsServerReload(logger); err != nil && !errors.Is(err, ErrNatsServerNotFound) {
+						reconcileTotal.WithLabelValues("signal_error").Inc()
+						logger.Errorf("reconcile: SIGHUP: %v", err)
+					}
+					setHash(hash)
+					reconcileTotal.WithLabelValues("ok").Inc()
+					timer.ObserveDuration()
+				}
+			}
+		}()
+	} else {
+		logger.Info("reconciliation loop disabled (RECONCILE_INTERVAL=0)")
 	}
 
 	if err := nc.Flush(); err != nil {

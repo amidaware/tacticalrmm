@@ -224,24 +224,13 @@ def _publish_nats_reload_signal(agent_count: int) -> None:
         logger.warning(f"Failed to publish trmm.nats.reload signal: {e}")
 
 
-def reload_nats(*, publish: bool = True) -> None:
-    """
-    Generate a new NATS config and restart NATS server.
-    If publish is True, also sends a notification to the 'agent_updates' Redis channel
-    to inform other services that they should also reload their NATS configuration.
-    """
-    print("==== RELOAD_NATS FUNCTION STARTED ====", flush=True)
-    print(f"Called with publish={publish}", flush=True)
+def _is_standalone_install() -> bool:
+    """True when nats-server is co-located (bare-metal / single-server install)."""
+    return os.path.exists("/usr/local/bin/nats-server")
 
-    logger = logging.getLogger(__name__)
-    logger.info(f"reload_nats called with publish={publish}")
 
-    # List to track agent IDs for notifications
-    agent_ids = []
-
-    print("Building NATS user configuration...", flush=True)
-
-    # Default tactical user
+def _write_local_nats_config(logger: logging.Logger) -> None:
+    """Build nats-rmm.conf from the ORM and write it to local disk."""
     users = [
         {
             "user": "tacticalrmm",
@@ -250,20 +239,12 @@ def reload_nats(*, publish: bool = True) -> None:
         }
     ]
 
-    print("Getting all agents from database...", flush=True)
-
-    # Get all agents
     agents = Agent.objects.prefetch_related("user").only(
         "pk", "agent_id"
     )  # type: ignore
 
-    print(f"Found {agents.count()} agents", flush=True)
-
-    # Add each agent to the users list
     for agent in agents:
-        agent_ids.append(agent.agent_id)
         try:
-            print(f"Processing agent {agent.agent_id}", flush=True)
             users.append(
                 {
                     "user": agent.agent_id,
@@ -279,220 +260,135 @@ def reload_nats(*, publish: bool = True) -> None:
                     },
                 }
             )
-            print(
-                f"Successfully added agent {agent.agent_id} to NATS users", flush=True
-            )
-        except Exception as e:
-            error_msg = f"Error processing agent {agent.agent_id}: {str(e)}"
-            print(f"ERROR: {error_msg}", flush=True)
+        except Exception:
             DebugLog.critical(
                 agent=agent,
                 log_type=DebugLogType.AGENT_ISSUES,
                 message=f"{agent.hostname} does not have a user account, NATS will not work",
             )
 
-    print("Getting NATS configuration details...", flush=True)
-
-    # Get NATS configuration details
     cert_file, key_file = get_certs()
     nats_std_host, nats_ws_host, _ = get_nats_hosts()
     nats_std_port, nats_ws_port = get_nats_ports()
 
-    print(f"NATS std host: {nats_std_host}, port: {nats_std_port}", flush=True)
-    print(f"NATS websocket host: {nats_ws_host}, port: {nats_ws_port}", flush=True)
-
-    # Build the configuration
-    config = {
+    config: dict[str, Any] = {
         "authorization": {"users": users, "timeout": 30},
         "max_payload": 67108864,
         "host": nats_std_host,
-        "port": nats_std_port,  # internal only
+        "port": nats_std_port,
         "websocket": {
             "host": nats_ws_host,
             "port": nats_ws_port,
-            "no_tls": True,  # TLS is handled by nginx, so not needed here
+            "no_tls": True,
         },
     }
 
-    # Add TLS if needed
     if get_nats_internal_protocol() == "tls":
-        print("Adding TLS configuration", flush=True)
-        config["tls"] = {
-            "cert_file": cert_file,
-            "key_file": key_file,
-        }
+        config["tls"] = {"cert_file": cert_file, "key_file": key_file}
 
-    # Add HTTP port if configured
     if "NATS_HTTP_PORT" in os.environ:
-        http_port = int(os.getenv("NATS_HTTP_PORT"))  # type: ignore
-        print(f"Adding HTTP port from environment: {http_port}", flush=True)
-        config["http_port"] = http_port
+        config["http_port"] = int(os.getenv("NATS_HTTP_PORT"))  # type: ignore
     elif hasattr(settings, "NATS_HTTP_PORT"):
-        http_port = settings.NATS_HTTP_PORT  # type: ignore
-        print(f"Adding HTTP port from settings: {http_port}", flush=True)
-        config["http_port"] = http_port
+        config["http_port"] = settings.NATS_HTTP_PORT  # type: ignore
 
-    # Add WebSocket compression if configured
     if "NATS_WS_COMPRESSION" in os.environ or hasattr(settings, "NATS_WS_COMPRESSION"):
-        print("Enabling WebSocket compression", flush=True)
         config["websocket"]["compression"] = True
 
-    # Get NATS configuration path from environment variable, or use default
     conf = os.environ.get(
         "NATS_CONFIG", os.path.join(settings.BASE_DIR, "nats-rmm.conf")
     )
-    print(f"Using NATS configuration file: {conf}", flush=True)
-
-    # Write the configuration to disk
-    print(f"Writing configuration to {conf}", flush=True)
     try:
         with open(conf, "w") as f:
             json.dump(config, f)
-        print(f"Successfully wrote configuration to {conf}", flush=True)
+        logger.info("Wrote nats-rmm.conf to %s", conf)
     except Exception as e:
-        error_msg = f"Error writing configuration to {conf}: {str(e)}"
-        print(f"ERROR: {error_msg}", flush=True)
-        logger.error(error_msg)
+        logger.error("Error writing nats-rmm.conf to %s: %s", conf, e)
 
-    # (The legacy Redis-key transport for nats-rmm.conf used to live here.
-    # It's been removed: the tactical-nats container now generates the
-    # config directly from Postgres on boot and subscribes to the
-    # trmm.nats.reload NATS subject for ongoing updates. See
-    # natsapi/bootstrap.go and natsapi/svc.go.)
 
-    # Check if nats-server binary exists
+def _signal_local_nats_server(logger: logging.Logger) -> None:
+    """Find the local nats-server process and signal it to reload config."""
     nats_server_path = "/usr/local/bin/nats-server"
-    if os.path.exists(nats_server_path):
-        print(
-            f"Found nats-server at {nats_server_path}, preparing to signal reload",
-            flush=True,
-        )
+    nats_server_pid = None
 
-        # Variable to store nats-server PID
-        nats_server_pid = None
+    try:
+        ps_result = subprocess.run(["ps", "-ef"], capture_output=True, text=True)
+        for line in ps_result.stdout.splitlines():
+            if "nats-server" in line and "grep" not in line:
+                parts = line.split()
+                if len(parts) > 1:
+                    nats_server_pid = parts[1]
+                    break
+    except Exception as e:
+        logger.warning("Error finding nats-server PID: %s", e)
 
-        # Try to get nats-server PID using ps command
-        try:
-            # Using ps command to find nats-server PID
-            ps_result = subprocess.run(["ps", "-ef"], capture_output=True, text=True)
+    time.sleep(0.5)
+    try:
+        if nats_server_pid:
+            reload_cmd = [nats_server_path, "--signal", f"reload={nats_server_pid}"]
+        else:
+            reload_cmd = [nats_server_path, "--signal", "reload"]
 
-            # Parse ps output to find nats-server processes
-            for line in ps_result.stdout.splitlines():
-                if "nats-server" in line and "grep" not in line:
-                    parts = line.split()
-                    if len(parts) > 1:
-                        nats_server_pid = parts[1]
-                        print(f"Found NATS server PID: {nats_server_pid}", flush=True)
-                        break
+        result = subprocess.run(reload_cmd, capture_output=True)
+        if result.returncode == 0:
+            logger.info("NATS server reloaded successfully")
+        else:
+            logger.warning(
+                "NATS server reload returned non-zero exit code: %d", result.returncode
+            )
+    except Exception as e:
+        logger.error("Error reloading NATS server: %s", e)
 
-            if not nats_server_pid:
-                print(
-                    "Could not determine NATS server PID, reload may fail", flush=True
-                )
-        except Exception as e:
-            print(f"Error finding NATS server PID: {str(e)}", flush=True)
 
-        time.sleep(0.5)
-        try:
-            # Use the PID with the reload signal if available
-            if nats_server_pid:
-                reload_cmd = [nats_server_path, "--signal", f"reload={nats_server_pid}"]
-                print(f"Executing: {' '.join(reload_cmd)}", flush=True)
-                result = subprocess.run(reload_cmd, capture_output=True)
-            else:
-                # Try without PID as fallback (might not work)
-                print("Attempting reload without PID (may not work)", flush=True)
-                result = subprocess.run(
-                    [nats_server_path, "--signal", "reload"], capture_output=True
-                )
+def _publish_redis_agent_update(logger: logging.Logger, agent_count: int) -> None:
+    """Publish a nats_config_update notification to the Redis agent_updates channel."""
+    try:
+        from core.agent_updater import get_redis_client, get_service_id
 
-            print(f"NATS server reload stdout: {result.stdout.decode()}", flush=True)
-            print(f"NATS server reload stderr: {result.stderr.decode()}", flush=True)
-            print(f"NATS server reload exit code: {result.returncode}", flush=True)
+        notification = {
+            "type": "nats_config_update",
+            "timestamp": time.time(),
+            "source_id": get_service_id(),
+            "agent_count": agent_count,
+        }
 
-            if result.returncode == 0:
-                logger.info("NATS server reloaded successfully")
-            else:
-                logger.warning(
-                    f"NATS server reload returned non-zero exit code: {result.returncode}"
-                )
-        except Exception as e:
-            error_msg = f"Error reloading NATS server: {str(e)}"
-            print(f"ERROR: {error_msg}", flush=True)
-            logger.error(error_msg)
-    else:
-        print(f"nats-server not found at {nats_server_path}", flush=True)
+        redis_client = get_redis_client()
+        result = redis_client.publish("agent_updates", json.dumps(notification))
 
-    # Check if nats-api binary exists
-    nats_api_path = "/usr/local/bin/nats-api"
-    if os.path.exists(nats_api_path):
-        print(f"Found nats-api at {nats_api_path}", flush=True)
-        # Note: The help output doesn't show a --signal option for nats-api
-        # If you want to reload nats-api, you may need to investigate its proper reload mechanism
-        # For now, commented out the potentially incorrect reload command
-        print(
-            "Skipping NATS API reload - check documentation for proper reload mechanism",
-            flush=True,
-        )
-        logger.info("NATS API reload skipped - please verify correct reload mechanism")
-    else:
-        print(f"nats-api not found at {nats_api_path}", flush=True)
+        if result > 0:
+            logger.info("Published NATS update notification to %d subscribers", result)
+        else:
+            logger.warning(
+                "Published NATS update notification but no subscribers received it"
+            )
+    except Exception as e:
+        logger.error("Failed to publish NATS update notification: %s", e)
 
-    # Publish notification to Redis pubsub channel if requested
+
+def reload_nats(*, publish: bool = True) -> None:
+    """
+    Broadcast a NATS config update signal.
+
+    In Kubernetes/Docker, the tactical-nats sidecar subscribes to
+    trmm.nats.reload and regenerates nats-rmm.conf from Postgres.
+    The nats-api reconciliation loop serves as a safety net.
+
+    For standalone installs, this function also writes the config
+    locally and signals the co-located nats-server.
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("reload_nats called with publish=%s", publish)
+
+    agent_count = Agent.objects.filter(
+        user__isnull=False, user__auth_token__isnull=False
+    ).count()
+
+    if _is_standalone_install():
+        _write_local_nats_config(logger)
+        _signal_local_nats_server(logger)
+
     if publish:
-        print("Publishing notification to Redis...", flush=True)
-        try:
-            # Get the unique service ID to include in the notification
-            from core.agent_updater import get_service_id, get_redis_client
-
-            service_id = get_service_id()
-            print(f"Using service ID: {service_id}", flush=True)
-
-            # Create notification
-            notification = {
-                "type": "nats_config_update",
-                "timestamp": time.time(),
-                "source_id": service_id,  # Include source ID to prevent loops
-                "agent_count": len(agent_ids),
-            }
-
-            print(f"Created notification: {notification}", flush=True)
-
-            # Get Redis client
-            print("Getting Redis client...", flush=True)
-            redis_client = get_redis_client()
-
-            # Publish to Redis
-            print("Publishing to 'agent_updates' channel...", flush=True)
-            result = redis_client.publish("agent_updates", json.dumps(notification))
-
-            if result > 0:
-                success_msg = (
-                    f"Published NATS update notification to {result} subscribers"
-                )
-                print(success_msg, flush=True)
-                logger.info(success_msg)
-            else:
-                warning_msg = (
-                    "Published NATS update notification but no subscribers received it"
-                )
-                print(f"WARNING: {warning_msg}", flush=True)
-                logger.warning(warning_msg)
-
-        except Exception as e:
-            error_msg = f"Failed to publish NATS update notification: {str(e)}"
-            print(f"ERROR: {error_msg}", flush=True)
-            logger.error(error_msg)
-
-        # Also publish on the NATS subject. This is what the tactical-nats
-        # container subscribes to — the Redis publish above is kept only
-        # for in-cluster peer backends (celery, celerybeat, websockets) that
-        # want to refresh their own local nats-rmm.conf copy.
-        _publish_nats_reload_signal(len(agent_ids))
-    else:
-        print("Skipping Redis publication (publish=False)", flush=True)
-
-    print("==== RELOAD_NATS FUNCTION COMPLETED ====", flush=True)
+        _publish_nats_reload_signal(agent_count)
+        _publish_redis_agent_update(logger, agent_count)
 
 
 @database_sync_to_async

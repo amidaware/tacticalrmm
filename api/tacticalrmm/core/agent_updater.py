@@ -39,24 +39,16 @@ def handle_agent_update(channel: str, message: bytes) -> None:
         message: The message payload as bytes
     """
     try:
-        # Force output to console for debugging
-        print(f"RECEIVED MESSAGE: {message}", flush=True)
-
         data = json.loads(message.decode("utf-8"))
 
         if data.get("type") == "nats_config_update":
-            # Don't reload if this is the originating service
             if data.get("source_id") == _SERVICE_ID:
-                print(f"Ignoring NATS update from self (ID: {_SERVICE_ID})", flush=True)
-                logger.debug("Ignoring NATS update from self")
+                logger.debug("Ignoring NATS update from self (ID: %s)", _SERVICE_ID)
                 return
 
-            print(
-                f"Received NATS configuration update notification for {data.get('agent_count')} agents",
-                flush=True,
-            )
             logger.info(
-                f"Received NATS configuration update notification for {data.get('agent_count')} agents"
+                "Received NATS configuration update notification for %s agents",
+                data.get("agent_count"),
             )
 
             # Import here to avoid circular import
@@ -65,40 +57,25 @@ def handle_agent_update(channel: str, message: bytes) -> None:
 
             # Close any existing database connection before accessing DB
             # This ensures we get a fresh connection for each message
-            print("Closing old database connection for listener thread...", flush=True)
             connection.close()
-            print("Closed old database connection for listener thread", flush=True)
 
             try:
-                # Call reload_nats to update this service's configuration
-                # Django will create fresh connection if needed
                 # Don't publish again to avoid loops
-                print("Calling reload_nats(publish=False)...", flush=True)
                 reload_nats(publish=False)
-                print("Successfully reloaded NATS configuration", flush=True)
+                logger.debug("Successfully reloaded NATS configuration")
             finally:
                 # Always close connection after use to prevent leaks in thread
-                print("Closing database connection after reload_nats...", flush=True)
                 connection.close()
-                print("Closed database connection after reload_nats", flush=True)
 
     except Exception as e:
-        error_msg = f"Error handling agent update: {str(e)}"
-        print(f"ERROR: {error_msg}", flush=True)
-        logger.error(error_msg)
+        logger.error("Error handling agent update: %s", e)
 
 
 def get_redis_client():
     """Get a Redis client using the REDIS_HOST environment variable."""
-    # Get Redis host from environment variable
     redis_host = os.environ.get("REDIS_HOST", "127.0.0.1")
-
-    # Use default Redis port
     redis_port = 6379
-
-    print(f"Connecting to Redis at {redis_host}:{redis_port}", flush=True)
-
-    # Create and return Redis client
+    logger.debug("Connecting to Redis at %s:%d", redis_host, redis_port)
     return redis.Redis(host=redis_host, port=redis_port, db=0)
 
 
@@ -114,48 +91,36 @@ def start_listener(daemon: bool = True) -> threading.Thread:
     """
 
     def listener_thread():
-        print("===== AGENT LISTENER THREAD STARTED =====", flush=True)
-        print(f"Service ID: {_SERVICE_ID}", flush=True)
+        logger.info("Agent listener thread started (service_id=%s)", _SERVICE_ID)
 
         while True:
             try:
-                print("Starting Redis pub/sub listener for agent updates", flush=True)
                 logger.info("Starting Redis pub/sub listener for agent updates")
 
-                # Get Redis connection directly
                 redis_client = get_redis_client()
                 pubsub = redis_client.pubsub()
 
-                # Test Redis connection
                 try:
-                    ping_result = redis_client.ping()
-                    print(f"Redis ping result: {ping_result}", flush=True)
+                    redis_client.ping()
+                    logger.debug("Redis ping OK")
                 except Exception as ping_error:
-                    print(f"Redis ping failed: {str(ping_error)}", flush=True)
+                    logger.warning("Redis ping failed: %s", ping_error)
 
-                print("Subscribing to 'agent_updates' channel...", flush=True)
                 pubsub.subscribe("agent_updates")
-                print("Successfully subscribed to 'agent_updates' channel", flush=True)
+                logger.debug("Subscribed to 'agent_updates' channel")
 
-                # Process messages as they come in
-                print("Entering message processing loop...", flush=True)
                 for message in pubsub.listen():
-                    print(f"Received message type: {message['type']}", flush=True)
+                    logger.debug("Received message type: %s", message["type"])
                     if message["type"] == "message":
                         handle_agent_update(message["channel"], message["data"])
 
             except Exception as e:
-                error_msg = f"Redis subscription error: {str(e)}"
-                print(f"ERROR: {error_msg}", flush=True)
-                logger.error(error_msg)
-                print("Waiting 10 seconds before reconnecting...", flush=True)
-                time.sleep(10)  # Wait before reconnecting
+                logger.error("Redis subscription error: %s", e)
+                time.sleep(10)
 
-    print("Creating agent listener thread...", flush=True)
     thread = threading.Thread(target=listener_thread)
     thread.daemon = daemon
-    print(f"Starting thread with daemon={daemon}...", flush=True)
     thread.start()
-    print("Thread started successfully", flush=True)
+    logger.info("Agent listener thread started (daemon=%s)", daemon)
 
     return thread

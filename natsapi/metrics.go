@@ -69,6 +69,17 @@ var (
 		Name: "nats_api_reloads_total",
 		Help: "nats-rmm.conf reload outcomes (ok|config_only|signal_error|generate_error).",
 	}, []string{"result"})
+
+	reconcileTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_api_reconcile_total",
+		Help: "Config reconciliation outcomes.",
+	}, []string{"result"})
+
+	reconcileDurationSeconds = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name:    "nats_api_reconcile_duration_seconds",
+		Help:    "Wall-clock time of one reconciliation tick (hash query + optional regen + signal).",
+		Buckets: prometheus.ExponentialBuckets(0.001, 2, 12),
+	})
 )
 
 // knownSubjectList is the allow-list of handler subjects we attach as
@@ -142,6 +153,9 @@ func initMetrics() {
 	}
 	for _, r := range []string{"ok", "config_only", "signal_error", "generate_error"} {
 		reloadsTotal.WithLabelValues(r)
+	}
+	for _, r := range []string{"in_sync", "drift_detected", "ok", "query_error", "regen_error", "signal_error"} {
+		reconcileTotal.WithLabelValues(r)
 	}
 	for _, s := range shardLabels {
 		shardQueueDepth.WithLabelValues(s)

@@ -329,6 +329,15 @@ class Agent(BaseAuditModel):
         return "cmd"
 
     @property
+    def resolved_default_shell(self):
+        effective_shell = (self.effective_default_shell or "").strip().lower()
+        builtin_shells = {"cmd", "powershell", "bash"}
+        if effective_shell in builtin_shells:
+            return effective_shell
+
+        return "custom"
+
+    @property
     def checks(self) -> Dict[str, Any]:
         return calculate_agent_checks(self)
 

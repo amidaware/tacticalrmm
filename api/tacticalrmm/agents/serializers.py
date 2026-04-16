@@ -267,9 +267,13 @@ class AgentAuditSerializer(serializers.ModelSerializer):
 
 class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
     effective_default_shell = serializers.SerializerMethodField()
+    resolved_default_shell = serializers.SerializerMethodField()
 
     def get_effective_default_shell(self, obj):
         return obj.effective_default_shell
+
+    def get_resolved_default_shell(self, obj):
+        return obj.resolved_default_shell
 
     class Meta:
         model = Agent
@@ -278,5 +282,6 @@ class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
             "hostname",
             "plat",
             "default_shell",
+            "resolved_default_shell",
             "effective_default_shell",
         )

@@ -355,15 +355,19 @@ func Svc(logger *logrus.Logger, cfg string) {
 	// take down nats-api.
 	if _, err := nc.Subscribe(natsReloadSubject, func(msg *nats.Msg) {
 		logger.Infof("Received reload signal on %s", msg.Subject)
+		regenMu.Lock()
+		defer regenMu.Unlock()
 		if err := GenerateNatsRmmConfig(logger, db, r.Key, natsRmmConfigPath); err != nil {
 			reloadsTotal.WithLabelValues("generate_error").Inc()
 			logger.Errorf("reload: regenerate nats-rmm.conf: %v", err)
 			return
 		}
 		// Update hash so the next reconciliation tick sees config as current.
-		if h, _, err := computeConfigHash(context.Background(), db); err == nil {
+		hashCtx, hashCancel := context.WithTimeout(context.Background(), dbJobTimeout)
+		if h, _, err := computeConfigHash(hashCtx, db); err == nil {
 			setHash(h)
 		}
+		hashCancel()
 		if err := SignalNatsServerReload(logger); err != nil {
 			if errors.Is(err, ErrNatsServerNotFound) {
 				reloadsTotal.WithLabelValues("config_only").Inc()
@@ -414,17 +418,24 @@ func Svc(logger *logrus.Logger, cfg string) {
 					}
 					logger.Infof("reconcile: config drift detected (%d agents), regenerating", count)
 					reconcileTotal.WithLabelValues("drift_detected").Inc()
+					regenMu.Lock()
 					if err := GenerateNatsRmmConfig(logger, db, r.Key, natsRmmConfigPath); err != nil {
+						regenMu.Unlock()
 						reconcileTotal.WithLabelValues("regen_error").Inc()
 						logger.Errorf("reconcile: regenerate: %v", err)
 						timer.ObserveDuration()
 						continue
 					}
-					if err := SignalNatsServerReload(logger); err != nil && !errors.Is(err, ErrNatsServerNotFound) {
-						reconcileTotal.WithLabelValues("signal_error").Inc()
-						logger.Errorf("reconcile: SIGHUP: %v", err)
-					}
 					setHash(hash)
+					regenMu.Unlock()
+					if err := SignalNatsServerReload(logger); err != nil {
+						if !errors.Is(err, ErrNatsServerNotFound) {
+							reconcileTotal.WithLabelValues("signal_error").Inc()
+							logger.Errorf("reconcile: SIGHUP: %v", err)
+							timer.ObserveDuration()
+							continue
+						}
+					}
 					reconcileTotal.WithLabelValues("ok").Inc()
 					timer.ObserveDuration()
 				}

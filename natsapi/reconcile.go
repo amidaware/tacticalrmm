@@ -13,6 +13,12 @@ import (
 var (
 	hashMu         sync.Mutex
 	lastConfigHash string
+
+	// regenMu serializes config regeneration so the reload subscriber
+	// (fast path) and the reconciliation goroutine (safety net) cannot
+	// race each other's temp-file → rename sequence. Without this, a
+	// slow reconciliation regen could overwrite a more recent reload.
+	regenMu sync.Mutex
 )
 
 func setHash(h string) {

@@ -406,6 +406,14 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
                             )
                             return
 
+                        if isinstance(
+                            decoded_output, str
+                        ) and decoded_output.startswith("[INFO] "):
+                            await self._send_terminal_info(
+                                decoded_output.removeprefix("[INFO] ").strip(),
+                                code="terminal_fallback",
+                            )
+                            return
                     elif isinstance(obj, (bytes, bytearray)):
                         payload["output"] = obj.decode("utf-8", errors="ignore")
                     elif isinstance(obj, str):
@@ -583,6 +591,15 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
             {
                 "action": "terminal_error",
                 "error": message,
+                "code": code,
+            }
+        )
+
+    async def _send_terminal_info(self, message: str, code: str = "terminal_info"):
+        await self.send_json(
+            {
+                "action": "terminal_info",
+                "message": message,
                 "code": code,
             }
         )

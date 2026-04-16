@@ -43,6 +43,9 @@ def get_nats_ports() -> tuple[int, int]:
 
 
 def get_nats_internal_protocol() -> str:
+    if getattr(settings, "USE_NATS_STANDARD", False):
+        return "tls"
+
     return "nats"
 
 

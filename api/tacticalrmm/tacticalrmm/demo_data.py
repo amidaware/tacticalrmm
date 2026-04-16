@@ -296,7 +296,7 @@ Ping statistics for 10.42.33.2:
 Packets: Sent = 4, Received = 0, Lost = 4 (100% loss),
 """
 
-spooler_stdout = """
+spooler_stdout = r"""
 SERVICE_NAME: spooler 
     TYPE               : 110  WIN32_OWN_PROCESS  (interactive)
     STATE              : 3  STOP_PENDING 

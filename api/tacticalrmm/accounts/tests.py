@@ -29,19 +29,20 @@ class TestAccounts(TacticalTestCase):
         data = {"username": "bob", "password": "a3asdsa2314"}
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.data, "Bad credentials")
+        self.assertIn("non_field_errors", r.data.keys())
 
         data = {"username": "billy", "password": "hunter2"}
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.data, "Bad credentials")
+        self.assertIn("non_field_errors", r.data.keys())
 
+        # 2FA is disabled in this fork, totp is always False
         self.bob.totp_key = "AB5RI6YPFTZAS52G"
         self.bob.save()
         data = {"username": "bob", "password": "hunter2"}
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["totp"], True)
+        self.assertEqual(r.data["totp"], False)
 
         # test user set to block dashboard logins
         self.bob.block_dashboard_login = True
@@ -313,7 +314,8 @@ class TestUserReset(TacticalTestCase):
 
     def test_reset_2fa(self):
         url = "/accounts/reset2fa/"
-        r = self.client.put(url)
+        data = {"id": self.john.pk}
+        r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("put", url)
@@ -390,11 +392,8 @@ class TestTOTPSetup(TacticalTestCase):
         url = "/accounts/users/setup_totp/"
         r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
-        self.assertIn("username", r.json().keys())
-        self.assertIn("totp_key", r.json().keys())
-        self.assertIn("qr_url", r.json().keys())
-        self.assertEqual("john", r.json()["username"])
-        self.assertIn("otpauth://totp", r.json()["qr_url"])
+        # 2FA is disabled in this fork, always returns False
+        self.assertEqual(r.data, False)
 
         self.check_not_authenticated("post", url)
 

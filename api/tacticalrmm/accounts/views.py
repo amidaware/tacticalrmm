@@ -1,6 +1,8 @@
 import datetime
 
+import pyotp
 from allauth.socialaccount.models import SocialAccount, SocialApp
+from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -81,7 +83,7 @@ class CheckCredsV2(KnoxLoginView):
         return Response(
             {
                 "username": user.username,
-                "totp": False,  # Always return False to bypass 2FA
+                "totp": False,
                 "token": token,
                 "expiry": instance.expiry,
             }
@@ -92,31 +94,55 @@ class LoginViewV2(KnoxLoginView):
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
-        try:
-            user = User.objects.get(username=request.data.get("username"))
-            # Always clear totp_key
-            user.totp_key = ""
-            user.save(update_fields=["totp_key"])
+        valid = False
 
+        serializer = AuthTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+
+        if user.block_dashboard_login:
+            return notify_error("Bad credentials")
+
+        # block local logon if configured
+        core_settings = get_core_settings()
+        if not user.is_superuser and core_settings.block_local_user_logon:
+            return notify_error("Bad credentials")
+
+        if user.is_sso_user:
+            return notify_error("Bad credentials")
+
+        token = request.data["twofactor"]
+        totp = pyotp.TOTP(user.totp_key)
+
+        if settings.DEBUG and token == "sekret":
+            valid = True
+        elif getattr(settings, "DEMO", False):
+            valid = True
+        elif totp.verify(token, valid_window=10):
+            valid = True
+
+        if valid:
             login(request, user)
 
-            # Create a real token that will be valid for 365 days
-            instance, token = AuthToken.objects.create(
-                user=user, expiry=datetime.timedelta(days=365)
-            )
+            # save ip information
+            ipw = IpWare()
+            client_ip, _ = ipw.get_client_ip(request.META)
+            if client_ip:
+                user.last_login_ip = str(client_ip)
+                user.save()
 
-            return Response(
-                {
-                    "username": user.username,
-                    "name": None,
-                    "2fa_required": False,
-                    "totp": False,
-                    "redirect": "dashboard",
-                    "token": token,
-                    "expiry": instance.expiry,
-                }
+            AuditLog.audit_user_login_successful(
+                request.data["username"], debug_info={"ip": request._client_ip}
             )
-        except Exception:
+            response = super().post(request, format=None)
+            response.data["username"] = request.user.username
+            response.data["name"] = None
+
+            return Response(response.data)
+        else:
+            AuditLog.audit_user_failed_twofactor(
+                request.data["username"], debug_info={"ip": request._client_ip}
+            )
             return notify_error("Bad credentials")
 
 

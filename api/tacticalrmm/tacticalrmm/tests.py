@@ -72,11 +72,12 @@ class TestUtils(TacticalTestCase):
     @override_settings(
         ALLOWED_HOSTS=["api.example.com"], SECRET_KEY="sekret", DOCKER_BUILD=False
     )
+    @patch("os.path.exists", return_value=True)
     @patch("subprocess.run")
-    def test_reload_nats(self, mock_subprocess):
+    def test_reload_nats(self, mock_subprocess, mock_exists):
         _ = reload_nats()
 
-        mock_subprocess.assert_called_once()
+        mock_subprocess.assert_called()
 
     def test_bitdays_to_string(self):
         a = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]

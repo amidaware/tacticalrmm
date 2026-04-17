@@ -152,6 +152,7 @@ func loadIssuerKey() (nkeys.KeyPair, error) {
 // The returned *nats.Conn and *callout.AuthorizationService must be closed
 // by the caller during shutdown.
 func StartAuthCallout(
+	ctx context.Context,
 	logger *logrus.Logger,
 	cfg DjangoConfig,
 	validator Validator,
@@ -223,10 +224,10 @@ func StartAuthCallout(
 			return "", fmt.Errorf("empty username")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
-		result, err := validator.Validate(ctx, username, password)
+		result, err := validator.Validate(reqCtx, username, password)
 		if err != nil {
 			authCalloutTotal.WithLabelValues("error").Inc()
 			logger.Errorf("auth callout validate %s: %v", username, err)

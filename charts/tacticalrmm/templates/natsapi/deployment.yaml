@@ -56,8 +56,6 @@ spec:
             {{- end }}
           env:
             {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
-            - name: AUTH_CALLOUT
-              value: "true"
             - name: METRICS_LISTEN
               value: ":9189"
             {{- with (index .Values "tactical-natsapi").natsAuthNkeySeedSecret }}

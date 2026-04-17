@@ -111,7 +111,7 @@ class LoginViewV2(KnoxLoginView):
         if user.is_sso_user:
             return notify_error("Bad credentials")
 
-        token = request.data["twofactor"]
+        token = request.data.get("twofactor", "")
         totp = pyotp.TOTP(user.totp_key)
 
         if settings.DEBUG and token == "sekret":

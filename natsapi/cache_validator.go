@@ -2,6 +2,8 @@ package natsapi
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"sync/atomic"
@@ -9,6 +11,17 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 )
+
+// cacheKeyHMAC key is random per process — cache entries are unlinkable
+// across restarts and replicas, and the "password" input never flows
+// through a plain hash (CodeQL go/weak-sensitive-data-hashing).
+var cacheKeyHMAC = func() []byte {
+	k := make([]byte, 32)
+	if _, err := rand.Read(k); err != nil {
+		panic("cache_validator: rand.Read: " + err.Error())
+	}
+	return k
+}()
 
 // cacheValidator wraps an inner Validator with a time-bounded LRU cache.
 // Designed for the DB-backed agent auth path, where a 10K-agent reconnect
@@ -57,7 +70,7 @@ func NewCacheValidator(inner Validator) (*cacheValidator, error) {
 }
 
 func cacheKey(username, password string) string {
-	h := sha256.New()
+	h := hmac.New(sha256.New, cacheKeyHMAC)
 	h.Write([]byte(username))
 	h.Write([]byte{0})
 	h.Write([]byte(password))

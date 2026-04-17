@@ -196,4 +196,4 @@ nats:
   # See tacticalrmm/natsapi/DESIGN_LAYER3_AUTH_CALLOUT.md for the full
   # contract and the companion wrapper chart at
   # openframe-saas-tenant/manifests/integrated-tools/nats/ for an example.
-  url:
+  url: nats://nats.datasources.svc.cluster.local:4222

@@ -65,20 +65,9 @@ var (
 		Buckets: prometheus.ExponentialBuckets(0.001, 2, 12),
 	}, []string{"handler"})
 
-	reloadsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+	reloadsTotal = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "nats_api_reloads_total",
-		Help: "nats-rmm.conf reload outcomes (ok|config_only|signal_error|generate_error).",
-	}, []string{"result"})
-
-	reconcileTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "nats_api_reconcile_total",
-		Help: "Config reconciliation outcomes.",
-	}, []string{"result"})
-
-	reconcileDurationSeconds = promauto.NewHistogram(prometheus.HistogramOpts{
-		Name:    "nats_api_reconcile_duration_seconds",
-		Help:    "Wall-clock time of one reconciliation tick (hash query + optional regen + signal).",
-		Buckets: prometheus.ExponentialBuckets(0.001, 2, 12),
+		Help: "trmm.nats.reload signals received; each one purges the auth validator cache.",
 	})
 
 	authCalloutTotal = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -197,14 +186,8 @@ func initMetrics() {
 			jobsProcessedTotal.WithLabelValues(h, r)
 		}
 	}
-	for _, r := range []string{"ok", "config_only", "signal_error", "generate_error", "auth_callout_noop", "auth_cache_invalidated"} {
-		reloadsTotal.WithLabelValues(r)
-	}
 	for _, r := range []string{"approved", "rejected", "error"} {
 		authCalloutTotal.WithLabelValues(r)
-	}
-	for _, r := range []string{"in_sync", "drift_detected", "ok", "query_error", "regen_error", "signal_error"} {
-		reconcileTotal.WithLabelValues(r)
 	}
 	for _, s := range shardLabels {
 		shardQueueDepth.WithLabelValues(s)

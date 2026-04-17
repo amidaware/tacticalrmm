@@ -3,7 +3,6 @@ package natsapi
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"hash/maphash"
 	"os"
 	"os/signal"
@@ -17,15 +16,14 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	nats "github.com/nats-io/nats.go"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/ugorji/go/codec"
 	trmm "github.com/wh1te909/trmm-shared"
 )
 
 // natsReloadSubject is the NATS subject the backend publishes to when the set
-// of agents (or any other piece of nats-rmm.conf) changes. The subscriber
-// regenerates the local config file and SIGHUPs nats-server to pick it up.
+// of agents changes (token rotation, agent delete). The subscriber purges
+// the auth validator cache so the next connection re-checks Postgres.
 // Kept short and namespaced so it doesn't collide with agent subjects.
 const natsReloadSubject = "trmm.nats.reload"
 
@@ -89,17 +87,17 @@ func runJob(parent context.Context, logger *logrus.Logger, db *sqlx.DB, j dbJob)
 	jobsProcessedTotal.WithLabelValues(j.name, "ok").Inc()
 }
 
-func Svc(logger *logrus.Logger, cfg string, authCalloutEnabled bool) {
+func Svc(logger *logrus.Logger, cfg string) {
 	logger.Debugln("Starting Svc()")
 	db, r, err := GetConfig(cfg)
 	if err != nil {
 		logger.Fatalln(err)
 	}
-	// Main db only serves the reload SELECT now.
+	// Main db is only used by verifySchema at startup; the auth-callout path
+	// owns its own pool, and the check-in path owns one pool per shard.
 	db.SetMaxOpenConns(4)
 	db.SetMaxIdleConns(4)
 
-	natsRmmConfigPath := envOrDefault("NATS_CONFIG", "/opt/tactical/api/nats-rmm.conf")
 	openframeMode := strings.EqualFold(os.Getenv("OPENFRAME_MODE"), "true")
 
 	if err := verifySchema(logger, db, openframeMode); err != nil {
@@ -162,79 +160,72 @@ func Svc(logger *logrus.Logger, cfg string, authCalloutEnabled bool) {
 	}
 
 	// Auth callout: validate agent credentials against Postgres on each
-	// new NATS connection instead of maintaining a static config file.
-	// Uses a separate NATS connection (auth-service user in AUTH account)
-	// and a separate DB pool to isolate from the telemetry path.
+	// new NATS connection. Uses a separate NATS connection (auth-service
+	// user in AUTH account) and a separate DB pool to isolate from the
+	// telemetry path.
 	//
-	// Started BEFORE the main "tacticalrmm" connection because in auth
-	// callout mode the main connection is itself authenticated by this
-	// service. If we connected main first, it would get auth-rejected
-	// repeatedly until the callout subscription is ready.
-	var authCleanup func()
-	// authCache is hoisted to Svc() scope so the trmm.nats.reload subscriber
-	// can call InvalidateAll on it. Remains nil when auth callout is off.
-	var authCache *cacheValidator
-	if authCalloutEnabled {
-		authDB, err := openDB(r, envIntOrDefault("AUTH_CALLOUT_DB_MAX_CONNS", 16))
-		if err != nil {
-			logger.Fatalf("open auth callout db: %v", err)
+	// Started BEFORE the main "tacticalrmm" connection because the main
+	// connection is itself authenticated by this service. If we connected
+	// main first, it would get auth-rejected repeatedly until the callout
+	// subscription is ready.
+	authDB, err := openDB(r, envIntOrDefault("AUTH_CALLOUT_DB_MAX_CONNS", 16))
+	if err != nil {
+		logger.Fatalf("open auth callout db: %v", err)
+	}
+	dbV, err := NewDBValidator(authDB)
+	if err != nil {
+		authDB.Close()
+		logger.Fatalf("construct auth callout db validator: %v", err)
+	}
+	authCache, err := NewCacheValidator(dbV)
+	if err != nil {
+		authDB.Close()
+		logger.Fatalf("construct auth callout cache: %v", err)
+	}
+	// Chain order: cheapest in-memory checks first, DB last.
+	// NewStaticValidator returns nil when no DEVICES_* env vars are set,
+	// and NewChainValidator skips nil entries — so standalone TRMM installs
+	// (non-OpenFrame) get a two-link chain.
+	validator := NewChainValidator(
+		NewSuperuserValidator(r.Key),
+		NewStaticValidator(),
+		authCache,
+	)
+	authNc, authSvc, err := StartAuthCallout(rootCtx, logger, r, validator)
+	if err != nil {
+		authDB.Close()
+		logger.Fatalf("start auth callout: %v", err)
+	}
+	authCleanup := func() {
+		if err := authSvc.Stop(); err != nil {
+			logger.Errorf("shutdown: stop auth callout: %v", err)
 		}
-		dbV, err := NewDBValidator(authDB)
-		if err != nil {
-			authDB.Close()
-			logger.Fatalf("construct auth callout db validator: %v", err)
-		}
-		cachedDB, err := NewCacheValidator(dbV)
-		if err != nil {
-			authDB.Close()
-			logger.Fatalf("construct auth callout cache: %v", err)
-		}
-		authCache = cachedDB
-		// Chain order: cheapest in-memory checks first, DB last.
-		// NewStaticValidator returns nil when no DEVICES_* env vars are
-		// set, and NewChainValidator skips nil entries — so standalone
-		// TRMM installs (non-OpenFrame) get a two-link chain.
-		validator := NewChainValidator(
-			NewSuperuserValidator(r.Key),
-			NewStaticValidator(),
-			cachedDB,
-		)
-		authNc, authSvc, err := StartAuthCallout(logger, r, validator)
-		if err != nil {
-			authDB.Close()
-			logger.Fatalf("start auth callout: %v", err)
-		}
-		authCleanup = func() {
-			if err := authSvc.Stop(); err != nil {
-				logger.Errorf("shutdown: stop auth callout: %v", err)
-			}
-			authNc.Close()
-			authDB.Close()
-		}
+		authNc.Close()
+		authDB.Close()
+	}
 
-		// Sample sqlx.DB.Stats() into gauges every 10s. Saturation of this
-		// pool == new agent connections stalling, so surfacing it as a
-		// series is worth the cost of a ticker.
-		go func() {
-			t := time.NewTicker(10 * time.Second)
-			defer t.Stop()
-			var lastWait uint64
-			for {
-				select {
-				case <-rootCtx.Done():
-					return
-				case <-t.C:
-					s := authDB.Stats()
-					authDBOpenConnections.Set(float64(s.OpenConnections))
-					authDBInUseConnections.Set(float64(s.InUse))
-					if wc := uint64(s.WaitCount); wc > lastWait {
-						authDBWaitCountTotal.Add(float64(wc - lastWait))
-						lastWait = wc
-					}
+	// Sample sqlx.DB.Stats() into gauges every 10s. Saturation of this
+	// pool == new agent connections stalling, so surfacing it as a
+	// series is worth the cost of a ticker.
+	go func() {
+		t := time.NewTicker(10 * time.Second)
+		defer t.Stop()
+		var lastWait uint64
+		for {
+			select {
+			case <-rootCtx.Done():
+				return
+			case <-t.C:
+				s := authDB.Stats()
+				authDBOpenConnections.Set(float64(s.OpenConnections))
+				authDBInUseConnections.Set(float64(s.InUse))
+				if wc := uint64(s.WaitCount); wc > lastWait {
+					authDBWaitCountTotal.Add(float64(wc - lastWait))
+					lastWait = wc
 				}
 			}
-		}()
-	}
+		}
+	}()
 
 	// Closed by nats.ClosedHandler after Drain() completes, so we can
 	// safely close shard channels afterwards without racing a still-
@@ -426,113 +417,18 @@ func Svc(logger *logrus.Logger, cfg string, authCalloutEnabled bool) {
 		logger.Fatalf("subscribe *: %v", err)
 	}
 
-	// Reload: errors are logged but non-fatal so a failed reload does not
-	// take down nats-api.
+	// Reload: the backend publishes trmm.nats.reload after an agent delete
+	// or token rotation. Purging the validator cache makes the change take
+	// effect on the next agent connection instead of waiting for TTL.
+	// Non-fatal: a failed subscribe is logged but does not take down the
+	// service — the TTL expiry is the backstop.
 	if _, err := nc.Subscribe(natsReloadSubject, func(msg *nats.Msg) {
 		logger.Infof("Received reload signal on %s", msg.Subject)
-		if authCalloutEnabled {
-			// Layer 3 repurpose: no config file to regenerate, but the
-			// signal is still useful as a cache-invalidation trigger so
-			// an agent delete or token rotation takes effect inside one
-			// NATS round-trip rather than waiting for the TTL to expire.
-			if authCache != nil {
-				authCache.InvalidateAll()
-			}
-			reloadsTotal.WithLabelValues("auth_cache_invalidated").Inc()
-			logger.Debug("auth callout mode: invalidated validator cache")
-			return
-		}
-		regenMu.Lock()
-		defer regenMu.Unlock()
-		if err := GenerateNatsRmmConfig(logger, db, r.Key, natsRmmConfigPath); err != nil {
-			reloadsTotal.WithLabelValues("generate_error").Inc()
-			logger.Errorf("reload: regenerate nats-rmm.conf: %v", err)
-			return
-		}
-		// Update hash so the next reconciliation tick sees config as current.
-		hashCtx, hashCancel := context.WithTimeout(context.Background(), dbJobTimeout)
-		if h, _, err := computeConfigHash(hashCtx, db); err == nil {
-			setHash(h)
-		}
-		hashCancel()
-		if err := SignalNatsServerReload(logger); err != nil {
-			if errors.Is(err, ErrNatsServerNotFound) {
-				reloadsTotal.WithLabelValues("config_only").Inc()
-				logger.Warnf("reload: nats-server not running yet, config written but not reloaded")
-			} else {
-				reloadsTotal.WithLabelValues("signal_error").Inc()
-				logger.Errorf("reload: SIGHUP nats-server: %v", err)
-			}
-			return
-		}
-		reloadsTotal.WithLabelValues("ok").Inc()
+		authCache.InvalidateAll()
+		reloadsTotal.Inc()
+		logger.Debug("invalidated validator cache")
 	}); err != nil {
 		logger.Errorf("subscribe %s: %v", natsReloadSubject, err)
-	}
-
-	// Reconciliation: detect config drift and self-heal.
-	// The trmm.nats.reload subscriber is the fast path; this is the safety net.
-	// Skipped in auth callout mode — there is no config file to drift.
-	reconcileInterval := parseDurationEnv("RECONCILE_INTERVAL", 30*time.Second)
-	if !authCalloutEnabled && reconcileInterval > 0 {
-		go func() {
-			// Seed the hash so the first tick is a no-op if config is already current.
-			if h, _, err := computeConfigHash(rootCtx, db); err == nil {
-				setHash(h)
-			}
-
-			ticker := time.NewTicker(reconcileInterval)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-rootCtx.Done():
-					return
-				case <-ticker.C:
-					timer := prometheus.NewTimer(reconcileDurationSeconds)
-
-					ctx, cancel := context.WithTimeout(rootCtx, dbJobTimeout)
-					hash, count, err := computeConfigHash(ctx, db)
-					cancel()
-					if err != nil {
-						reconcileTotal.WithLabelValues("query_error").Inc()
-						logger.Errorf("reconcile: hash query: %v", err)
-						timer.ObserveDuration()
-						continue
-					}
-					if hash == getHash() {
-						reconcileTotal.WithLabelValues("in_sync").Inc()
-						timer.ObserveDuration()
-						continue
-					}
-					logger.Infof("reconcile: config drift detected (%d agents), regenerating", count)
-					reconcileTotal.WithLabelValues("drift_detected").Inc()
-					regenMu.Lock()
-					if err := GenerateNatsRmmConfig(logger, db, r.Key, natsRmmConfigPath); err != nil {
-						regenMu.Unlock()
-						reconcileTotal.WithLabelValues("regen_error").Inc()
-						logger.Errorf("reconcile: regenerate: %v", err)
-						timer.ObserveDuration()
-						continue
-					}
-					setHash(hash)
-					regenMu.Unlock()
-					if err := SignalNatsServerReload(logger); err != nil {
-						if !errors.Is(err, ErrNatsServerNotFound) {
-							reconcileTotal.WithLabelValues("signal_error").Inc()
-							logger.Errorf("reconcile: SIGHUP: %v", err)
-							timer.ObserveDuration()
-							continue
-						}
-					}
-					reconcileTotal.WithLabelValues("ok").Inc()
-					timer.ObserveDuration()
-				}
-			}
-		}()
-	} else if authCalloutEnabled {
-		logger.Info("reconciliation loop skipped (auth callout mode)")
-	} else {
-		logger.Info("reconciliation loop disabled (RECONCILE_INTERVAL=0)")
 	}
 
 	if err := nc.Flush(); err != nil {
@@ -572,10 +468,8 @@ func Svc(logger *logrus.Logger, cfg string, authCalloutEnabled bool) {
 		<-workersDone
 	}
 
-	if authCleanup != nil {
-		authCleanup()
-		logger.Info("shutdown: auth callout stopped")
-	}
+	authCleanup()
+	logger.Info("shutdown: auth callout stopped")
 
 	for i, sdb := range shardDBs {
 		if err := sdb.Close(); err != nil {

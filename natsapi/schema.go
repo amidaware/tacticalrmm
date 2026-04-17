@@ -46,11 +46,10 @@ func verifySchema(logger *logrus.Logger, db *sqlx.DB, openframeMode bool) error 
 			      FROM agents_agent WHERE FALSE`,
 		},
 		{
-			// The reload path: GenerateNatsRmmConfig runs this exact join
-			// on every trmm.nats.reload. A dropped join column would
-			// silently produce an empty user list and every agent would
-			// fail to authenticate on the next reload.
-			name: "agents_agent JOIN accounts_user JOIN authtoken_token (reload query)",
+			// The auth callout path: dbValidator.Validate runs this exact
+			// join on every agent connection (authcallout.go). A dropped
+			// join column would silently cause every agent to fail auth.
+			name: "agents_agent JOIN accounts_user JOIN authtoken_token (auth callout query)",
 			sql: `SELECT a.agent_id, a.id, u.agent_id, u.id, t.user_id, t.key
 			      FROM agents_agent a
 			      JOIN accounts_user u ON u.agent_id = a.id

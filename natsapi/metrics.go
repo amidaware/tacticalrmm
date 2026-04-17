@@ -91,6 +91,41 @@ var (
 		Help:    "Duration of auth callout handler execution including DB query.",
 		Buckets: prometheus.ExponentialBuckets(0.0005, 2, 12),
 	})
+
+	// Auth-callout DB pool stats, sampled from sqlx.DB.Stats(). The dedicated
+	// auth pool is separate from the telemetry pool; saturation here means
+	// new agent connections stall but existing telemetry keeps flowing.
+	authDBOpenConnections = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "nats_api_auth_db_open_connections",
+		Help: "Open connections in the auth callout Postgres pool (sqlx.DB.Stats OpenConnections).",
+	})
+
+	authDBInUseConnections = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "nats_api_auth_db_in_use_connections",
+		Help: "In-use connections in the auth callout Postgres pool (sqlx.DB.Stats InUse).",
+	})
+
+	authDBWaitCountTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "nats_api_auth_db_wait_count_total",
+		Help: "Cumulative count of connection waits on the auth callout Postgres pool (sqlx.DB.Stats WaitCount).",
+	})
+
+	// Cache metrics for the cacheValidator layer. Hit-rate below ~80% on a
+	// sustained load suggests either a too-short TTL or too-small size.
+	authCacheHitsTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "nats_api_auth_cache_hits_total",
+		Help: "Auth callout validator cache hits.",
+	})
+
+	authCacheMissesTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "nats_api_auth_cache_misses_total",
+		Help: "Auth callout validator cache misses (including the first lookup of a new credential).",
+	})
+
+	authCacheSize = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "nats_api_auth_cache_size",
+		Help: "Current entry count of the auth callout validator cache.",
+	})
 )
 
 // knownSubjectList is the allow-list of handler subjects we attach as
@@ -162,7 +197,7 @@ func initMetrics() {
 			jobsProcessedTotal.WithLabelValues(h, r)
 		}
 	}
-	for _, r := range []string{"ok", "config_only", "signal_error", "generate_error", "auth_callout_noop"} {
+	for _, r := range []string{"ok", "config_only", "signal_error", "generate_error", "auth_callout_noop", "auth_cache_invalidated"} {
 		reloadsTotal.WithLabelValues(r)
 	}
 	for _, r := range []string{"approved", "rejected", "error"} {

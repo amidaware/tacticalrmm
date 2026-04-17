@@ -76,6 +76,9 @@ tactical:
 
 tactical-natsapi:
   enabled: true
+  # Two replicas by default: callout is stateless, and a single pod is a
+  # hard SPOF for new agent connections during rollouts or node drains.
+  replicas: 2
   revisionHistoryLimit: 10
   logLevel: "INFO"
   image:
@@ -89,11 +92,34 @@ tactical-natsapi:
     limits:
       cpu: 50m
       memory: 256Mi
+  # Pod disruption budget — keep at least one callout pod available during
+  # voluntary disruptions (node upgrades, manual drains).
+  pdb:
+    enabled: true
+    minAvailable: 1
   # Secret containing the Ed25519 NKey seed for auth callout JWT signing.
   # The NATS wrapper chart must be configured with the corresponding public key.
   natsAuthNkeySeedSecret:
     name: "tactical-nats-auth"
     key: "AUTH_ISSUER_SEED"
+  # Secret supplying AUTH_SERVICE_PASS — the password the callout uses to
+  # connect as the "auth-service" user inside the NATS wrapper chart's
+  # AUTH account. MUST match the wrapper's nats-credentials value. Leave
+  # name empty to skip (nats-api will fail-closed at startup, per design).
+  authServicePassSecret:
+    name: "tactical-nats-auth"
+    key: "AUTH_SERVICE_PASS"
+  # Target account name for approved TRMM users (superuser + agents). Must
+  # match an account defined in the wrapper's nats-server config. Leave
+  # blank to keep nats-api's built-in default ("$G" — the global account).
+  authTargetAccount: "TRMM"
+  # Optional OpenFrame DEVICES/SYS pass-through credentials. When set, the
+  # Go staticValidator approves the DEVICES machine/service users and the
+  # SYS admin user, allowing the shared NATS broker to enable callout
+  # without breaking existing device telemetry. Leave name empty for
+  # standalone (non-OpenFrame) TRMM installs.
+  devicesPassthroughSecret:
+    name: ""
 
 
 tactical-frontend:
@@ -160,4 +186,14 @@ postgres:
     tag: "13-alpine"
 
 nats:
+  # The NATS server at this URL MUST have auth callout enabled with:
+  #   - An AUTH account containing an "auth-service" user whose password
+  #     matches tactical-natsapi.authServicePassSecret above.
+  #   - authorization.auth_callout.issuer set to the public key derived
+  #     from the AUTH_ISSUER_SEED in the tactical-nats-auth secret.
+  #   - An account matching tactical-natsapi.authTargetAccount where
+  #     approved TRMM users (tacticalrmm superuser + agents) land.
+  # See tacticalrmm/natsapi/DESIGN_LAYER3_AUTH_CALLOUT.md for the full
+  # contract and the companion wrapper chart at
+  # openframe-saas-tenant/manifests/integrated-tools/nats/ for an example.
   url:

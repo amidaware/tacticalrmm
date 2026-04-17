@@ -368,15 +368,36 @@ def reload_nats(*, publish: bool = True) -> None:
     """
     Broadcast a NATS config update signal.
 
-    In Kubernetes/Docker, the tactical-nats sidecar subscribes to
-    trmm.nats.reload and regenerates nats-rmm.conf from Postgres.
-    The nats-api reconciliation loop serves as a safety net.
+    Three modes:
 
-    For standalone installs, this function also writes the config
-    locally and signals the co-located nats-server.
+    1. Auth callout (K8s Layer 3): AUTH_CALLOUT=true in the environment.
+       nats-api validates every credential on connect against Postgres —
+       there is no static config to regenerate. The reload signal is
+       still published so nats-api can invalidate its validator cache,
+       but the heavy work (DB count, Redis publish, local file rewrite)
+       is skipped.
+
+    2. Kubernetes/Docker Compose (pre-Layer-3): the tactical-nats sidecar
+       subscribes to trmm.nats.reload and regenerates nats-rmm.conf from
+       Postgres. Redis pub/sub fans the signal across backend replicas.
+
+    3. Standalone bare-metal: nats-server is co-located with Django.
+       Write the config to local disk and SIGHUP the nats-server process.
     """
     logger = logging.getLogger(__name__)
     logger.info("reload_nats called with publish=%s", publish)
+
+    if os.environ.get("AUTH_CALLOUT", "").lower() == "true":
+        # Layer 3: nats-api owns validation. We still publish a lightweight
+        # cache-invalidation signal so a freshly-deleted agent's token
+        # stops working inside one NATS round-trip instead of waiting for
+        # the cache TTL.
+        if publish:
+            try:
+                _publish_nats_reload_signal(agent_count=0)
+            except Exception as e:
+                logger.warning("auth callout cache-invalidation publish failed: %s", e)
+        return
 
     agent_count = Agent.objects.filter(
         user__isnull=False, user__auth_token__isnull=False

@@ -11,6 +11,8 @@ require (
 )
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/nats-io/jwt/v2 v2.8.1
 	github.com/nats-io/nkeys v0.4.15
 	github.com/prometheus/client_golang v1.23.2

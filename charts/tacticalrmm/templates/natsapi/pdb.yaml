@@ -1,0 +1,12 @@
+{{- if and (index .Values "tactical-natsapi").enabled (index .Values "tactical-natsapi").pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tactical-natsapi
+spec:
+  minAvailable: {{ (index .Values "tactical-natsapi").pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-natsapi
+{{- end }}

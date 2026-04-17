@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: tactical-natsapi
 spec:
-  replicas: 1
+  replicas: {{ (index .Values "tactical-natsapi").replicas | default 2 }}
   revisionHistoryLimit: {{ (index .Values "tactical-natsapi").revisionHistoryLimit }}
 
   selector:
@@ -22,6 +22,19 @@ spec:
       priorityClassName: tactical-priority
       {{- end }}
 
+      # Spread replicas across nodes so a single-node failure can't take
+      # the whole callout service down. ScheduleAnyway (not DoNotSchedule)
+      # so a cluster with one available node still accepts the second pod
+      # — better to run co-located than not at all.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "tacticalrmm.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: tactical-natsapi
+
       containers:
         - name: nats-api
           image: "{{ (index .Values "tactical-natsapi").image.registry }}/{{ (index .Values "tactical-natsapi").image.repository }}:{{ (index .Values "tactical-natsapi").image.tag }}"
@@ -32,6 +45,15 @@ spec:
 
           envFrom:
             {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+            {{- with (index .Values "tactical-natsapi").devicesPassthroughSecret }}
+            {{- if .name }}
+            # Optional OpenFrame DEVICES/SYS pass-through credentials. When
+            # unset, the Go staticValidator is not created and the callout
+            # only handles TRMM users (superuser + agents).
+            - secretRef:
+                name: {{ .name }}
+            {{- end }}
+            {{- end }}
           env:
             {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
             - name: AUTH_CALLOUT
@@ -44,6 +66,17 @@ spec:
                 secretKeyRef:
                   name: {{ .name }}
                   key: {{ .key }}
+            {{- end }}
+            {{- with (index .Values "tactical-natsapi").authServicePassSecret }}
+            - name: AUTH_SERVICE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{- end }}
+            {{- if (index .Values "tactical-natsapi").authTargetAccount }}
+            - name: AUTH_TARGET_ACCOUNT
+              value: {{ (index .Values "tactical-natsapi").authTargetAccount | quote }}
             {{- end }}
 
           resources:

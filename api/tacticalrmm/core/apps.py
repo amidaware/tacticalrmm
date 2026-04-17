@@ -8,6 +8,14 @@ class CoreConfig(AppConfig):
     name = "core"
 
     def ready(self):
+        # Skip the Redis pub/sub listener entirely in Layer 3 auth-callout
+        # mode: nats-api owns credential validation, so reload_nats() does
+        # not need to fan out across backend replicas. Leaving the listener
+        # running would spawn a daemon thread per replica doing nothing
+        # useful on every agent add/delete.
+        if os.environ.get("AUTH_CALLOUT", "").lower() == "true":
+            return
+
         # Only start the listener in the main process, not in worker processes
         if not settings.DEBUG or os.environ.get("RUN_MAIN") == "true":
             try:

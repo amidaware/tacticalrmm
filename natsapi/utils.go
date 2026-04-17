@@ -127,3 +127,18 @@ func parseDurationEnv(key string, fallback time.Duration) time.Duration {
 	}
 	return d
 }
+
+// envIntOrDefault parses an int from env. A missing or unparseable value
+// returns the fallback — intentionally silent because these knobs are
+// operational tuning parameters, not correctness-critical.
+func envIntOrDefault(key string, fallback int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return fallback
+	}
+	return n
+}

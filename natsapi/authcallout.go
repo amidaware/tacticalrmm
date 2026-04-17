@@ -16,31 +16,71 @@ import (
 	callout "github.com/synadia-io/callout.go"
 )
 
-// Validator checks whether (username, password) is a valid credential pair
-// and returns the username on success. Implementations must be safe for
-// concurrent use from multiple goroutines.
+// jwtExpiry bounds how long an approved UserClaims JWT stays valid. Agents
+// reconnect regularly, so a day-scale cap gives Postgres-side revocation a
+// firm upper bound without churning auth callout on every session.
+const jwtExpiry = 24 * time.Hour
+
+// AuthResult is what a Validator returns on a successful credential check.
+// It carries everything the authorizer needs to build the UserClaims JWT:
+// the target account (JWT Audience), the pub/sub permissions, and the
+// optional response permission.
 //
-// The interface is deliberately narrow so a caching layer can wrap a
-// dbValidator without touching any other code.
+// Reject vs. error semantics:
+//   - (nil, nil)           → credentials did not match any known user.
+//     Reject the connection, do not log an error.
+//   - (nil, non-nil error) → the validator itself failed (DB error, etc.).
+//     Reject AND log.
+//   - (non-nil, nil)       → approve with the returned permissions.
+type AuthResult struct {
+	Account string
+	Pub     jwt.Permission
+	Sub     jwt.Permission
+	Resp    *jwt.ResponsePermission
+}
+
+// Validator checks whether (username, password) is a valid credential pair
+// and, if so, returns an AuthResult describing how the connection should be
+// authorized. Implementations must be safe for concurrent use from multiple
+// goroutines — the callout library dispatches requests concurrently.
 type Validator interface {
-	Validate(ctx context.Context, username, password string) (bool, error)
+	Validate(ctx context.Context, username, password string) (*AuthResult, error)
 }
 
-// dbValidator validates credentials against Postgres using the same join
-// that GenerateNatsRmmConfig uses to build the static config file.
+// dbValidator validates TacticalRMM agent credentials against Postgres.
+// Agents authenticate with agent_id as username and authtoken_token.key as
+// password. Approved agents land in trmmAccount with their agent_id as the
+// only allowed pub/sub subject.
+//
+// The "tacticalrmm" superuser is handled by superuserValidator — kept out
+// of this path so wrong-password attempts against the service account don't
+// wake a DB connection.
 type dbValidator struct {
-	db        *sqlx.DB
-	secretKey string
+	db              *sqlx.DB
+	trmmAccount     string
+	agentRespExpiry time.Duration
 }
 
-func (v *dbValidator) Validate(ctx context.Context, username, password string) (bool, error) {
-	// The "tacticalrmm" superuser authenticates with SECRET_KEY.
-	// No DB round-trip needed — this is the Django backend's service account.
-	if username == "tacticalrmm" {
-		return password == v.secretKey, nil
+// NewDBValidator wires a dbValidator from env vars:
+//
+//	AUTH_TARGET_ACCOUNT            — account name for TRMM users (default "$G")
+//	NATS_ALLOW_RESPONSE_EXPIRATION — Resp permission TTL for agents (default "1435m")
+func NewDBValidator(db *sqlx.DB) (*dbValidator, error) {
+	trmmAccount := envOrDefault("AUTH_TARGET_ACCOUNT", "$G")
+	respStr := envOrDefault("NATS_ALLOW_RESPONSE_EXPIRATION", "1435m")
+	respExpiry, err := time.ParseDuration(respStr)
+	if err != nil {
+		return nil, fmt.Errorf("parse NATS_ALLOW_RESPONSE_EXPIRATION %q: %w", respStr, err)
 	}
+	return &dbValidator{
+		db:              db,
+		trmmAccount:     trmmAccount,
+		agentRespExpiry: respExpiry,
+	}, nil
+}
 
-	// Agent credentials: agent_id as username, auth_token.key as password.
+func (v *dbValidator) Validate(ctx context.Context, username, password string) (*AuthResult, error) {
+	// Agent — (agent_id, auth_token.key) lookup against Postgres.
 	var exists bool
 	err := v.db.QueryRowContext(ctx, `
 		SELECT EXISTS(
@@ -51,9 +91,24 @@ func (v *dbValidator) Validate(ctx context.Context, username, password string) (
 			WHERE a.agent_id = $1 AND t.key = $2
 		)`, username, password).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("validate agent %s: %w", username, err)
+		return nil, fmt.Errorf("validate agent %s: %w", username, err)
 	}
-	return exists, nil
+	if !exists {
+		return nil, nil
+	}
+	return &AuthResult{
+		Account: v.trmmAccount,
+		Pub:     jwt.Permission{Allow: jwt.StringList{username}},
+		// _INBOX.*.* lets the agent receive replies to its own
+		// nc.Request() calls. Today's TRMM telemetry is fire-and-forget,
+		// but omitting the inbox breaks any future request/reply path
+		// silently (the request just times out).
+		Sub: jwt.Permission{Allow: jwt.StringList{username, "_INBOX.*.*"}},
+		Resp: &jwt.ResponsePermission{
+			MaxMsgs: jwt.NoLimit,
+			Expires: v.agentRespExpiry,
+		},
+	}, nil
 }
 
 // loadIssuerKey loads the Ed25519 NKey seed used to sign auth callout
@@ -91,8 +146,8 @@ func loadIssuerKey() (nkeys.KeyPair, error) {
 
 // StartAuthCallout opens a dedicated NATS connection as the "auth-service"
 // user and starts the auth callout service. It subscribes to
-// $SYS.REQ.USER.AUTH and validates every incoming connection against the
-// provided Validator.
+// $SYS.REQ.USER.AUTH and delegates every incoming credential check to the
+// provided Validator, translating AuthResult into a signed UserClaims JWT.
 //
 // The returned *nats.Conn and *callout.AuthorizationService must be closed
 // by the caller during shutdown.
@@ -101,6 +156,16 @@ func StartAuthCallout(
 	cfg DjangoConfig,
 	validator Validator,
 ) (*nats.Conn, *callout.AuthorizationService, error) {
+	// Fail-closed on a missing AUTH_TARGET_ACCOUNT. The validators default
+	// to "$G" for standalone/test use, but in a real callout deployment the
+	// target account must be set explicitly and must match an account
+	// defined in the broker's nats.conf — silent routing to "$G" would
+	// place agents in an account where the telemetry subscribers don't
+	// live, and telemetry would vanish with no error.
+	if os.Getenv("AUTH_TARGET_ACCOUNT") == "" {
+		return nil, nil, fmt.Errorf("AUTH_TARGET_ACCOUNT must be set when auth callout is enabled; it must name an account defined in the broker's nats.conf")
+	}
+
 	issuerKP, err := loadIssuerKey()
 	if err != nil {
 		return nil, nil, err
@@ -112,10 +177,17 @@ func StartAuthCallout(
 	logger.Infof("Auth callout issuer public key: %s", pubKey)
 
 	// Connect as the static "auth-service" user in the AUTH account.
-	// This user is defined in the NATS wrapper chart's config and has
-	// permission to subscribe to $SYS.REQ.USER.AUTH.
+	// This user is defined in the NATS wrapper chart's config and must be
+	// listed in the server's auth_callout.auth_users exemption so it does
+	// not recurse through the callout itself.
 	authUser := envOrDefault("AUTH_SERVICE_USER", "auth-service")
-	authPass := envOrDefault("AUTH_SERVICE_PASS", cfg.Key)
+	authPass := os.Getenv("AUTH_SERVICE_PASS")
+	if authPass == "" {
+		return nil, nil, fmt.Errorf("AUTH_SERVICE_PASS must be set when auth callout is enabled")
+	}
+	if authPass == cfg.Key {
+		logger.Warn("AUTH_SERVICE_PASS equals SECRET_KEY — compromising one compromises both; use distinct values")
+	}
 
 	authOpts := []nats.Option{
 		nats.Name("trmm-auth-callout"),
@@ -139,20 +211,6 @@ func StartAuthCallout(
 		return nil, nil, fmt.Errorf("connect auth callout: %w", err)
 	}
 
-	// The account name that authenticated users are placed into. In
-	// centralized (non-operator) auth callout mode, the nats-server uses
-	// UserClaims.Audience to resolve the target account by name. Must
-	// match an account defined in the nats-server config. Defaults to
-	// "$G" (the global account).
-	targetAccount := envOrDefault("AUTH_TARGET_ACCOUNT", "$G")
-
-	allowResponseExpires := envOrDefault("NATS_ALLOW_RESPONSE_EXPIRATION", "1435m")
-	respExpiry, err := time.ParseDuration(allowResponseExpires)
-	if err != nil {
-		authNc.Close()
-		return nil, nil, fmt.Errorf("parse NATS_ALLOW_RESPONSE_EXPIRATION %q: %w", allowResponseExpires, err)
-	}
-
 	authorizer := func(req *jwt.AuthorizationRequest) (string, error) {
 		timer := prometheus.NewTimer(authCalloutDurationSeconds)
 		defer timer.ObserveDuration()
@@ -168,38 +226,28 @@ func StartAuthCallout(
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		ok, err := validator.Validate(ctx, username, password)
+		result, err := validator.Validate(ctx, username, password)
 		if err != nil {
 			authCalloutTotal.WithLabelValues("error").Inc()
 			logger.Errorf("auth callout validate %s: %v", username, err)
 			return "", fmt.Errorf("validation error")
 		}
-		if !ok {
+		if result == nil {
 			authCalloutTotal.WithLabelValues("rejected").Inc()
 			logger.Debugf("auth callout rejected: %s", username)
 			return "", fmt.Errorf("invalid credentials for %s", username)
 		}
 
-		// Build user claims with appropriate permissions.
-		// Audience determines which nats-server account the user is placed
-		// into (centralized/non-operator mode). IssuerAccount must NOT be
-		// set in this mode — the server rejects it.
+		// Audience selects the nats-server account in centralized
+		// (non-operator) auth callout mode. IssuerAccount must NOT be set
+		// in this mode — the server rejects it.
 		uc := jwt.NewUserClaims(req.UserNkey)
-		uc.Audience = targetAccount
-
-		if username == "tacticalrmm" {
-			// Superuser: full pub/sub access.
-			uc.Pub.Allow.Add(">")
-			uc.Sub.Allow.Add(">")
-		} else {
-			// Agent: restricted to own agent_id subject.
-			uc.Pub.Allow.Add(username)
-			uc.Sub.Allow.Add(username)
-			uc.Resp = &jwt.ResponsePermission{
-				MaxMsgs: jwt.NoLimit,
-				Expires: respExpiry,
-			}
-		}
+		uc.Name = username
+		uc.Audience = result.Account
+		uc.Expires = time.Now().Add(jwtExpiry).Unix()
+		uc.Pub = result.Pub
+		uc.Sub = result.Sub
+		uc.Resp = result.Resp
 
 		token, err := uc.Encode(issuerKP)
 		if err != nil {

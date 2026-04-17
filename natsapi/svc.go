@@ -171,12 +171,34 @@ func Svc(logger *logrus.Logger, cfg string, authCalloutEnabled bool) {
 	// service. If we connected main first, it would get auth-rejected
 	// repeatedly until the callout subscription is ready.
 	var authCleanup func()
+	// authCache is hoisted to Svc() scope so the trmm.nats.reload subscriber
+	// can call InvalidateAll on it. Remains nil when auth callout is off.
+	var authCache *cacheValidator
 	if authCalloutEnabled {
-		authDB, err := openDB(r, 4)
+		authDB, err := openDB(r, envIntOrDefault("AUTH_CALLOUT_DB_MAX_CONNS", 16))
 		if err != nil {
 			logger.Fatalf("open auth callout db: %v", err)
 		}
-		validator := &dbValidator{db: authDB, secretKey: r.Key}
+		dbV, err := NewDBValidator(authDB)
+		if err != nil {
+			authDB.Close()
+			logger.Fatalf("construct auth callout db validator: %v", err)
+		}
+		cachedDB, err := NewCacheValidator(dbV)
+		if err != nil {
+			authDB.Close()
+			logger.Fatalf("construct auth callout cache: %v", err)
+		}
+		authCache = cachedDB
+		// Chain order: cheapest in-memory checks first, DB last.
+		// NewStaticValidator returns nil when no DEVICES_* env vars are
+		// set, and NewChainValidator skips nil entries — so standalone
+		// TRMM installs (non-OpenFrame) get a two-link chain.
+		validator := NewChainValidator(
+			NewSuperuserValidator(r.Key),
+			NewStaticValidator(),
+			cachedDB,
+		)
 		authNc, authSvc, err := StartAuthCallout(logger, r, validator)
 		if err != nil {
 			authDB.Close()
@@ -189,6 +211,29 @@ func Svc(logger *logrus.Logger, cfg string, authCalloutEnabled bool) {
 			authNc.Close()
 			authDB.Close()
 		}
+
+		// Sample sqlx.DB.Stats() into gauges every 10s. Saturation of this
+		// pool == new agent connections stalling, so surfacing it as a
+		// series is worth the cost of a ticker.
+		go func() {
+			t := time.NewTicker(10 * time.Second)
+			defer t.Stop()
+			var lastWait uint64
+			for {
+				select {
+				case <-rootCtx.Done():
+					return
+				case <-t.C:
+					s := authDB.Stats()
+					authDBOpenConnections.Set(float64(s.OpenConnections))
+					authDBInUseConnections.Set(float64(s.InUse))
+					if wc := uint64(s.WaitCount); wc > lastWait {
+						authDBWaitCountTotal.Add(float64(wc - lastWait))
+						lastWait = wc
+					}
+				}
+			}
+		}()
 	}
 
 	// Closed by nats.ClosedHandler after Drain() completes, so we can
@@ -386,8 +431,15 @@ func Svc(logger *logrus.Logger, cfg string, authCalloutEnabled bool) {
 	if _, err := nc.Subscribe(natsReloadSubject, func(msg *nats.Msg) {
 		logger.Infof("Received reload signal on %s", msg.Subject)
 		if authCalloutEnabled {
-			reloadsTotal.WithLabelValues("auth_callout_noop").Inc()
-			logger.Debug("auth callout mode: skipping config regeneration")
+			// Layer 3 repurpose: no config file to regenerate, but the
+			// signal is still useful as a cache-invalidation trigger so
+			// an agent delete or token rotation takes effect inside one
+			// NATS round-trip rather than waiting for the TTL to expire.
+			if authCache != nil {
+				authCache.InvalidateAll()
+			}
+			reloadsTotal.WithLabelValues("auth_cache_invalidated").Inc()
+			logger.Debug("auth callout mode: invalidated validator cache")
 			return
 		}
 		regenMu.Lock()

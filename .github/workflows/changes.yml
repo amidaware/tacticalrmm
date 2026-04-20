@@ -7,8 +7,8 @@ on:
         value: ${{ jobs.changes.outputs.tactical }}
       tactical-nats:
         value: ${{ jobs.changes.outputs.tactical-nats }}
-      tactical-natsapi:
-        value: ${{ jobs.changes.outputs.tactical-natsapi }}
+      tactical-nats-listener:
+        value: ${{ jobs.changes.outputs.tactical-nats-listener }}
       tactical-frontend:
         value: ${{ jobs.changes.outputs.tactical-frontend }}
       tactical-meshcentral:
@@ -33,7 +33,7 @@ jobs:
     outputs:
       tactical: ${{ steps.filter.outputs.tactical }}
       tactical-nats: ${{ steps.filter.outputs.tactical-nats }}
-      tactical-natsapi: ${{ steps.filter.outputs.tactical-natsapi }}
+      tactical-nats-listener: ${{ steps.filter.outputs.tactical-nats-listener }}
       tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
       tactical-meshcentral: ${{ steps.filter.outputs.tactical-meshcentral }}
       tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
@@ -65,8 +65,8 @@ jobs:
             tactical-nats:
               - 'docker/containers/tactical-nats/**'
               - 'natsapi/**'
-            tactical-natsapi:
-              - 'docker/containers/tactical-natsapi/**'
+            tactical-nats-listener:
+              - 'docker/containers/tactical-nats-listener/**'
               - 'natsapi/**'
             tactical-frontend:
               - 'docker/containers/tactical-frontend/**'

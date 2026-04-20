@@ -79,7 +79,7 @@ tactical:
         memory: 192Mi
 
 
-tactical-natsapi:
+tactical-nats-listener:
   enabled: true
   # Two replicas by default: callout is stateless, and a single pod is a
   # hard SPOF for new agent connections during rollouts or node drains.
@@ -88,7 +88,7 @@ tactical-natsapi:
   logLevel: "INFO"
   image:
     registry: ghcr.io/flamingo-stack/tacticalrmm
-    repository: tactical-natsapi
+    repository: tactical-nats-listener
     tag: latest
   resources:
     requests:
@@ -216,10 +216,10 @@ nats:
   #
   # The NATS server at this URL MUST have auth callout enabled with:
   #   - An AUTH account containing an "auth-service" user whose password
-  #     matches tactical-natsapi.authServicePassSecret above.
+  #     matches tactical-nats-listener.authServicePassSecret above.
   #   - authorization.auth_callout.issuer set to the public key derived
   #     from the AUTH_ISSUER_SEED in the tactical-nats-auth secret.
-  #   - An account matching tactical-natsapi.authTargetAccount where
+  #   - An account matching tactical-nats-listener.authTargetAccount where
   #     approved TRMM users (tacticalrmm superuser + agents) land.
   # See tacticalrmm/natsapi/DESIGN_LAYER3_AUTH_CALLOUT.md for the full
   # contract and the companion wrapper chart at

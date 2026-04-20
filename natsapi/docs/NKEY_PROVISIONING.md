@@ -1,7 +1,7 @@
 # NATS Auth Callout NKey Provisioning
 
 Layer 3 auth callout requires an Ed25519 account key pair. The **private seed**
-(`SA…`) signs every approved user JWT inside `tactical-natsapi`. The
+(`SA…`) signs every approved user JWT inside `tactical-nats-listener`. The
 **public key** (`AD…`) goes into the NATS server config as the trusted
 issuer. Leaking the seed compromises the whole NATS auth boundary, so treat
 it like a root-level secret.
@@ -20,11 +20,11 @@ Store both values, but in different places:
 
 | Value | Where it goes | Who reads it |
 |---|---|---|
-| Seed (`SA…`) | GCP Secret Manager → K8s Secret `tactical-nats-auth` key `AUTH_ISSUER_SEED` | `tactical-natsapi` pod (validator signs UserClaims JWT) |
+| Seed (`SA…`) | GCP Secret Manager → K8s Secret `tactical-nats-auth` key `AUTH_ISSUER_SEED` | `tactical-nats-listener` pod (validator signs UserClaims JWT) |
 | Public (`AD…`) | GCP Secret Manager → K8s Secret `nats-auth-callout` key `AUTH_ISSUER_PUBLIC` | `nats-server` config `authorization.auth_callout.issuer` |
 
 Also generate a random `AUTH_SERVICE_PASS` — the password
-`tactical-natsapi` uses to connect as the `auth-service` user inside the
+`tactical-nats-listener` uses to connect as the `auth-service` user inside the
 NATS `AUTH` account. Must be the same on both sides.
 
 ```bash
@@ -57,7 +57,7 @@ Two ExternalSecrets reconcile the GCP SM values into K8s Secrets:
 
 - `openframe-saas-tenant/manifests/integrated-tools/tactical-rmm/templates/external-secret-nats-auth.yaml`
   → creates `tactical-nats-auth` with the **seed** and the service password.
-  Consumed by the `tactical-natsapi` Deployment.
+  Consumed by the `tactical-nats-listener` Deployment.
 
 - `openframe-saas-tenant/manifests/integrated-tools/nats/templates/external-secret-auth-callout.yaml`
   → creates `nats-auth-callout` with the **public key** and the service
@@ -78,7 +78,7 @@ against the old key must be re-auth'd. Sequence:
 4. Rolling-restart the `nats-server` StatefulSet first. Agents
    reconnect, the server still accepts the *new* issuer — but rejects
    already-issued tokens. Brief auth-rejection window until step 5.
-5. Rolling-restart `tactical-natsapi` Deployment. New auth requests get
+5. Rolling-restart `tactical-nats-listener` Deployment. New auth requests get
    signed with the new seed.
 6. Observe `nats_api_auth_callout_total{result="rejected"}` — should
    spike during the window then return to baseline.
@@ -88,9 +88,9 @@ mode, so a seamless rotation (accept both old + new during a grace
 window) is not possible. Plan rotations for a maintenance window.
 
 Rotating `AUTH_SERVICE_PASS` has the same shape but affects only the
-`tactical-natsapi` → `nats-server` connection. Rolling-restart
+`tactical-nats-listener` → `nats-server` connection. Rolling-restart
 `nats-server` first (it needs to learn the new password), then
-`tactical-natsapi`.
+`tactical-nats-listener`.
 
 ## Seed format validation
 

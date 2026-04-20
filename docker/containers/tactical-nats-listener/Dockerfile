@@ -1,6 +1,6 @@
 # Build nats-api from source. Identical build stage to tactical-nats/Dockerfile.
 # Build context is the repo root. CI invokes this as:
-#   docker buildx build -f docker/containers/tactical-natsapi/Dockerfile .
+#   docker buildx build -f docker/containers/tactical-nats-listener/Dockerfile .
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
 
 ARG TARGETOS

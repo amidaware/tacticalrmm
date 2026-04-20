@@ -29,8 +29,8 @@ jobs:
               "context": "."
             },
             {
-              "name": "tactical-natsapi",
-              "path": "./docker/containers/tactical-natsapi",
+              "name": "tactical-nats-listener",
+              "path": "./docker/containers/tactical-nats-listener",
               "context": "."
             },
             {

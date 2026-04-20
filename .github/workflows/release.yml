@@ -152,10 +152,10 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           name: tacticalrmm
+          repository: ${{ github.repository }}/helm-charts
           tag: ${{ inputs.version || '9.9.9' }}
           path: ./charts/tacticalrmm
           registry: ${{ env.REGISTRY }}
-          repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
 

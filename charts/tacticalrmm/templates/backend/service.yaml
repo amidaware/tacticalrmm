@@ -9,7 +9,7 @@ spec:
     {{- include "tacticalrmm.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: tactical-backend
   ports:
-  - port: 8000
-    targetPort: 8000
+  - port: {{ .Values.tactical.backend.port }}
+    targetPort: {{ .Values.tactical.backend.port }}
     protocol: TCP
 {{- end }}

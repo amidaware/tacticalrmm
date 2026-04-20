@@ -24,9 +24,9 @@ services:
     image: postgres:13-alpine
     restart: always
     environment:
-      POSTGRES_DB: tacticalrmm
+      POSTGRES_DB: ${POSTGRES_DATABASE}
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -84,8 +84,8 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASS: ${POSTGRES_PASS}
-      POSTGRES_DB: tacticalrmm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
       APP_HOST: ${APP_HOST}
       API_HOST: ${API_HOST}
       CSRF_COOKIE_DOMAIN: ${CSRF_COOKIE_DOMAIN}

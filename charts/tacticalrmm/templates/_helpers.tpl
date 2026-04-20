@@ -21,29 +21,3 @@ Selector labels
 app.kubernetes.io/name: tacticalrmm
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
-
-
-{{/*
-Common envFrom block for base services (backend, nats, websockets, celery, celerybeat)
-*/}}
-{{- define "tacticalrmm.baseEnvFrom" -}}
-- configMapRef:
-    name: tactical-backend
-- configMapRef:
-    name: tactical-postgres
-- configMapRef:
-    name: tactical-redis
-- secretRef:
-    name: tactical-postgres
-{{- end }}
-
-{{/*
-SECRET_KEY env var injected from a K8s Secret
-*/}}
-{{- define "tacticalrmm.secretKeyEnv" -}}
-- name: SECRET_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.tactical.existingSecret | default "tactical-backend" }}
-      key: {{ .Values.tactical.secretKeyKey | default "SECRET_KEY" }}
-{{- end }}

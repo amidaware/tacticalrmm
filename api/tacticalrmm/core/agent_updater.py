@@ -74,7 +74,7 @@ def handle_agent_update(channel: str, message: bytes) -> None:
 def get_redis_client():
     """Get a Redis client using the REDIS_HOST environment variable."""
     redis_host = os.environ.get("REDIS_HOST", "127.0.0.1")
-    redis_port = 6379
+    redis_port = int(os.environ.get("REDIS_PORT", 6379))
     logger.debug("Connecting to Redis at %s:%d", redis_host, redis_port)
     return redis.Redis(host=redis_host, port=redis_port, db=0)
 

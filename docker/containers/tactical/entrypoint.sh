@@ -18,14 +18,12 @@ set -euo pipefail
 : "${POSTGRES_HOST:=tactical-postgres}"
 : "${POSTGRES_PORT:=5432}"
 : "${POSTGRES_USER:=tactical}"
-: "${POSTGRES_PASS:=tactical}"
-: "${POSTGRES_DB:=tacticalrmm}"
-# Honor POSTGRES_PASSWORD if passed directly (e.g. from a secrets manager),
-# otherwise fall back to POSTGRES_PASS (the name used throughout this project).
-: "${POSTGRES_PASSWORD:=${POSTGRES_PASS}}"
+: "${POSTGRES_PASSWORD:=tactical}"
+: "${POSTGRES_DATABASE:=tacticalrmm}"
 : "${API_HOST:=tactical-backend}"
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
+: "${REDIS_PORT:=6379}"
 : "${TACTICAL_BACKEND_PORT:=8080}"
 : "${DEBUG:=False}"
 : "${OPENFRAME_MODE:=True}"
@@ -40,7 +38,8 @@ set -euo pipefail
 : "${CELERY_AUTOSCALE:=20,2}"
 : "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
 : "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
-: "${NATS_CONNECT_HOST:=tactical-nats}"
+: "${NATS_HOST:=tactical-nats}"
+: "${NATS_PORT:=4222}"
 : "${NATS_CONFIG:=${TACTICAL_DIR}/api/nats-rmm.conf}"
 : "${NATS_API_CONFIG:=${TACTICAL_DIR}/api/nats-api.conf}"
 : "${SESSION_COOKIE_DOMAIN:=}"
@@ -82,9 +81,9 @@ copy_custom_code() {
 
   # Export all vars needed by envsubst
   export SECRET_KEY ADMINURL DEBUG TRMM_PROTO TACTICAL_DIR VIRTUAL_ENV
-  export POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD POSTGRES_HOST POSTGRES_PORT
-  export REDIS_HOST
-  export NATS_CONNECT_HOST
+  export POSTGRES_DATABASE POSTGRES_USER POSTGRES_PASSWORD POSTGRES_HOST POSTGRES_PORT
+  export REDIS_HOST REDIS_PORT
+  export NATS_HOST NATS_PORT
   export APP_HOST
   export TRMM_DISABLE_WEB_TERMINAL TRMM_DISABLE_SERVER_SCRIPTS TRMM_DISABLE_SSO TRMM_DISABLE_2FA TRMM_DISABLE_MESH_SYNC_TASK
   export OPENFRAME_MODE SWAGGER_ENABLED BETA_API_ENABLED
@@ -120,8 +119,8 @@ copy_custom_code() {
 
   # Explicit variable list to avoid clobbering Python {var} in f-strings
   local vars='$SECRET_KEY $ADMINURL $DEBUG $TRMM_PROTO $TACTICAL_DIR $VIRTUAL_ENV'
-  vars+=' $POSTGRES_DB $POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_HOST $POSTGRES_PORT'
-  vars+=' $REDIS_HOST $NATS_CONNECT_HOST'
+  vars+=' $POSTGRES_DATABASE $POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_HOST $POSTGRES_PORT'
+  vars+=' $REDIS_HOST $REDIS_PORT $NATS_HOST $NATS_PORT'
   vars+=' $APP_HOST'
   vars+=' $TRMM_DISABLE_WEB_TERMINAL $TRMM_DISABLE_SERVER_SCRIPTS $TRMM_DISABLE_SSO $TRMM_DISABLE_2FA $TRMM_DISABLE_MESH_SYNC_TASK'
   vars+=' $OPENFRAME_MODE $SWAGGER_ENABLED $BETA_API_ENABLED'

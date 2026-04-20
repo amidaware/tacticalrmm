@@ -4,12 +4,12 @@ kind: Service
 metadata:
   name: tactical-celerybeat
 spec:
-  clusterIP: None
   selector:
     {{- include "tacticalrmm.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: tactical-celerybeat
   ports:
-  - port: 8000
+  - name: http
+    port: 8000
     targetPort: 8000
     protocol: TCP
 {{- end }}

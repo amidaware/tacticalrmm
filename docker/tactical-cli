@@ -111,7 +111,7 @@ MESH_PASS=${PASSWORD}
 MONGODB_USER=${mongogb_user}
 MONGODB_PASSWORD=${mongodb_pass}
 POSTGRES_USER=${postgres_user}
-POSTGRES_PASS=${postgres_pass}
+POSTGRES_PASSWORD=${postgres_pass}
 EOF
 )"
   echo "${env_file}" > "$ENV_FILE"

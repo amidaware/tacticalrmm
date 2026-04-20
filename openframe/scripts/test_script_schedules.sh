@@ -7,7 +7,7 @@
 
 set -e
 
-BASE_URL="http://tactical-nginx-0.tactical-nginx.integrated-tools.svc.cluster.local:8000"
+BASE_URL="http://tactical-backend-0.tactical-backend.integrated-tools.svc.cluster.local:8000"
 USERNAME="tactical"
 PASSWORD="tactical"
 

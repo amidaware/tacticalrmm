@@ -35,7 +35,8 @@ spec:
               name: http
           envFrom:
             - configMapRef:
-                name: tactical-backend
+                name: tactical-meshcentral
+
           resources:
             {{- toYaml (index .Values "tactical-meshcentral").resources | nindent 12 }}
 

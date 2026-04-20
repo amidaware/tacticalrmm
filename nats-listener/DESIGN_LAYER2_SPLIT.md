@@ -259,7 +259,7 @@ services:
     image: tactical-nats-api:latest
     depends_on: [tactical-nats-server, tactical-postgres]
     environment:
-      NATS_CONNECT_HOST: tactical-nats-server
+      NATS_HOST: tactical-nats-server
       NATS_CONFIG: /etc/nats/nats-rmm.conf
     volumes:
       - nats-config:/etc/nats
@@ -388,7 +388,7 @@ spec:
           image: {{ .Values.tactical-nats-api.image }}
           args: ["-config", "/etc/nats-api/nats-api.conf"]
           env:
-            - name: NATS_CONNECT_HOST
+            - name: NATS_HOST
               value: tactical-nats-server.{{ .Release.Namespace }}.svc.cluster.local
             - name: NATS_CONFIG
               value: /etc/nats/nats-rmm.conf   # Write path for config

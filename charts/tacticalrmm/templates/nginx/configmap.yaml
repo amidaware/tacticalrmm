@@ -1,0 +1,14 @@
+{{- if (index .Values "tactical-nginx").enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tactical-nginx
+data:
+  RESOLVER: "kube-dns.kube-system.svc.cluster.local"
+  APP_HOST: {{ .Values.tactical.appHost | default (printf "tactical-frontend.%s.svc.cluster.local:4443" .Release.Namespace) | quote }}
+  API_HOST: "tactical-backend-0.tactical-backend.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.tactical.backend.port }}"
+  WEBSOCKETS_BIND_HOST: "tactical-websockets-0.tactical-websockets.{{ .Release.Namespace }}.svc.cluster.local"
+  WEBSOCKET_PORT: "8000"
+  NATS_STD_BIND_HOST: {{ .Values.nats.external.host | quote }}
+  NATS_PORT: {{ .Values.nats.external.port | quote }}
+{{- end }}

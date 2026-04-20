@@ -116,6 +116,7 @@ ADMIN_ENABLED = False
 HOSTED = False
 SWAGGER_ENABLED = False
 REDIS_HOST = "127.0.0.1"
+REDIS_PORT = 6379
 TRMM_LOG_LEVEL = "ERROR"
 TRMM_LOG_TO = "file"
 TRMM_PROTO = "https"
@@ -243,7 +244,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(REDIS_HOST, 6379)],
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
         },
     },
 }
@@ -259,7 +260,7 @@ warnings.simplefilter("ignore", CacheKeyWarning)
 CACHES = {
     "default": {
         "BACKEND": "tacticalrmm.cache.TacticalRedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:6379",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}",
         "OPTIONS": {
             "parser_class": "redis.connection._HiredisParser",
             "pool_class": "redis.BlockingConnectionPool",

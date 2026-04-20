@@ -90,9 +90,9 @@ services:
     image: postgres:13-alpine
     restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres-data-dev:/var/lib/postgresql/data
     networks:
@@ -121,7 +121,7 @@ services:
     command: [ "tactical-init-dev" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASS: ${POSTGRES_PASS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       APP_HOST: ${APP_HOST}
       API_HOST: ${API_HOST}
       MESH_HOST: ${MESH_HOST}
@@ -130,7 +130,7 @@ services:
       TRMM_PASS: ${TRMM_PASS}
       HTTP_PROTOCOL: ${HTTP_PROTOCOL}
       APP_PORT: ${APP_PORT}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
     depends_on:
       - postgres-dev
       - meshcentral-dev

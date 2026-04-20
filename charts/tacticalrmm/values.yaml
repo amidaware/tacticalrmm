@@ -2,15 +2,19 @@
 tactical:
   enabled: true
 
+  # -- Public hostname users reach the UI at. Threaded into Django
+  # ALLOWED_HOSTS / CORS / CSRF / HEADLESS_FRONTEND_URLS and into nginx
+  # server_name + Access-Control-Allow-Origin headers. Leave empty for
+  # internal-only use; set to your public DNS (e.g. "rmm.example.com")
+  # for real traffic — browsers reject CORS responses whose origin
+  # doesn't match the hostname they requested.
+  # Default: in-cluster frontend Service DNS.
+  appHost: ""
+
   image:
     registry: ghcr.io/flamingo-stack/tacticalrmm
     repository: tactical-backend
     tag: latest
-
-  # Path of the file the backend writes once init completes. Sibling
-  # workers (celery, celerybeat, websockets) probe its existence to stay
-  # Ready. Must match TACTICAL_READY_FILE in the container image's ENV.
-  readyFile: "/opt/tactical/tmp/tactical.ready"
 
   initImage:
     registry: ghcr.io/flamingo-stack/registry
@@ -37,6 +41,10 @@ tactical:
 
   backend:
     revisionHistoryLimit: 10
+    # Port uwsgi binds to and k8s exposes. Threaded into the backend
+    # container, Service, and every consumer that addresses the backend
+    # (API_HOST, API_LOCALHOST_HOST, TACTICAL_BACKEND_PORT).
+    port: 8000
     resources:
       requests:
         cpu: 250m
@@ -178,14 +186,9 @@ tactical-meshcentral:
 
 redis:
   enabled: false
-  # -- External Redis connection URL.
-  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
-  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
-  # tactical-datasources-urls ConfigMap it manages.
   external:
-    existingConfigMap: ""
-    urlKey: "REDIS_URL"
-    url: "redis://redis.datasources.svc.cluster.local:6379"
+    host: redis.datasources.svc.cluster.local
+    port: 6379
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: redis
@@ -194,14 +197,17 @@ redis:
 
 postgres:
   enabled: false
-  # -- External PostgreSQL connection URL.
-  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
-  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
-  # tactical-datasources-urls ConfigMap it manages.
   external:
-    existingConfigMap: ""
-    urlKey: "POSTGRES_URL"
-    url: "postgres://tacticalrmm:tacticalrmm@postgres.datasources.svc.cluster.local:5432/tacticalrmm"
+    host: postgres.datasources.svc.cluster.local
+    port: 5432
+    user: "tacticalrmm"
+    database: "tacticalrmm"
+    password: "tacticalrmm"
+    # Name of a pre-existing K8s Secret with Postgres creds. Must carry
+    # keys POSTGRES_USER, POSTGRES_DATABASE, POSTGRES_PASSWORD. When set,
+    # user/database/password above are ignored. When empty, the chart
+    # renders Secret `tactical-datasources` from those values instead.
+    existingSecret: ""
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: postgres
@@ -209,22 +215,6 @@ postgres:
 
 nats:
   enabled: false
-  # -- External NATS connection URL.
-  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
-  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
-  # tactical-datasources-urls ConfigMap it manages.
-  #
-  # The NATS server at this URL MUST have auth callout enabled with:
-  #   - An AUTH account containing an "auth-service" user whose password
-  #     matches tactical-nats-listener.authServicePassSecret above.
-  #   - authorization.auth_callout.issuer set to the public key derived
-  #     from the AUTH_ISSUER_SEED in the tactical-nats-auth secret.
-  #   - An account matching tactical-nats-listener.authTargetAccount where
-  #     approved TRMM users (tacticalrmm superuser + agents) land.
-  # See tacticalrmm/nats-listener/DESIGN_LAYER3_AUTH_CALLOUT.md for the full
-  # contract and the companion wrapper chart at
-  # openframe-saas-tenant/manifests/integrated-tools/nats/ for an example.
-  external:
-    existingConfigMap: ""
-    urlKey: "NATS_URL"
-    url: "nats://nats.datasources.svc.cluster.local:4222"
+  external: 
+    host: nats.datasources.svc.cluster.local
+    port: 4222

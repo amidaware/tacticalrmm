@@ -19,7 +19,8 @@ import (
 //  2. Otherwise, if cfg is empty, try the legacy default path
 //     /rmm/api/tacticalrmm/nats-api.conf (standalone installs).
 //  3. Otherwise, build the config from environment variables
-//     (POSTGRES_*, SECRET_KEY, NATS_CONNECT_HOST, NATS_STANDARD_PORT).
+//     (POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DATABASE, POSTGRES_HOST,
+//     POSTGRES_PORT, SECRET_KEY, NATS_HOST, NATS_PORT).
 //     This is the path used by the tactical-nats container in Docker and K8s,
 //     where we do not want the backend's PVC or Redis involved in passing a
 //     config file across pods.
@@ -81,20 +82,15 @@ func loadConfigFromEnv() (DjangoConfig, error) {
 		return r, fmt.Errorf("invalid POSTGRES_PORT: %w", err)
 	}
 
-	// POSTGRES_PASSWORD takes priority if set (secrets-manager friendly),
-	// otherwise fall back to POSTGRES_PASS (the historical name here).
 	pass := os.Getenv("POSTGRES_PASSWORD")
-	if pass == "" {
-		pass = os.Getenv("POSTGRES_PASS")
-	}
 
 	secretKey := os.Getenv("SECRET_KEY")
 	if secretKey == "" {
 		return r, fmt.Errorf("SECRET_KEY is required when running without a config file")
 	}
 
-	natsHost := envOrDefault("NATS_CONNECT_HOST", "127.0.0.1")
-	natsPort := envOrDefault("NATS_STANDARD_PORT", "4222")
+	natsHost := envOrDefault("NATS_HOST", "127.0.0.1")
+	natsPort := envOrDefault("NATS_PORT", "4222")
 
 	r = DjangoConfig{
 		Key:     secretKey,
@@ -103,7 +99,7 @@ func loadConfigFromEnv() (DjangoConfig, error) {
 		Pass:    pass,
 		Host:    envOrDefault("POSTGRES_HOST", "tactical-postgres"),
 		Port:    port,
-		DBName:  envOrDefault("POSTGRES_DB", "tacticalrmm"),
+		DBName:  envOrDefault("POSTGRES_DATABASE", "tacticalrmm"),
 		SSLMode: envOrDefault("DB_SSL", "disable"),
 	}
 	return r, nil

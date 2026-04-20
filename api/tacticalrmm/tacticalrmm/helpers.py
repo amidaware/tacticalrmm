@@ -36,7 +36,7 @@ def get_nats_ports() -> tuple[int, int]:
     """
     Returns: tuple[nats_standard_port: int, nats_websocket_port: int]
     """
-    nats_standard_port = getattr(settings, "NATS_STANDARD_PORT", 4222)
+    nats_standard_port = getattr(settings, "NATS_PORT", 4222)
     nats_websocket_port = getattr(settings, "NATS_WEBSOCKET_PORT", 9235)
 
     return nats_standard_port, nats_websocket_port
@@ -62,10 +62,10 @@ def get_nats_hosts() -> tuple[str, str, str]:
             "127.0.0.1",
         )
 
-    if "NATS_CONNECT_HOST" in os.environ:
-        connect_host = os.getenv("NATS_CONNECT_HOST")
-    elif hasattr(settings, "NATS_CONNECT_HOST"):
-        connect_host = settings.NATS_CONNECT_HOST
+    if "NATS_HOST" in os.environ:
+        connect_host = os.getenv("NATS_HOST")
+    elif hasattr(settings, "NATS_HOST"):
+        connect_host = settings.NATS_HOST
 
     # allow customizing all nats hosts
     if "NATS_STD_BIND_HOST" in os.environ:
@@ -78,10 +78,10 @@ def get_nats_hosts() -> tuple[str, str, str]:
     elif hasattr(settings, "NATS_WS_BIND_HOST"):
         ws_bind_host = settings.NATS_WS_BIND_HOST
 
-    if "NATS_CONNECT_HOST" in os.environ:
-        connect_host = os.getenv("NATS_CONNECT_HOST")
-    elif hasattr(settings, "NATS_CONNECT_HOST"):
-        connect_host = settings.NATS_CONNECT_HOST
+    if "NATS_HOST" in os.environ:
+        connect_host = os.getenv("NATS_HOST")
+    elif hasattr(settings, "NATS_HOST"):
+        connect_host = settings.NATS_HOST
 
     return std_bind_host, ws_bind_host, connect_host
 

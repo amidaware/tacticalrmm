@@ -1,0 +1,16 @@
+{{- if (index .Values "tactical-meshcentral").enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tactical-meshcentral
+data:
+  SMTP_HOST: ""
+  SMTP_PORT: ""
+  SMTP_FROM: ""
+  SMTP_USER: ""
+  SMTP_PASS: ""
+  SMTP_TLS: ""
+  WS_MASK_OVERRIDE: ""
+  NGINX_HOST_IP: "tactical-nginx.{{ .Release.Namespace }}.svc.cluster.local"
+  NGINX_HOST_PORT: "80"
+{{- end }}

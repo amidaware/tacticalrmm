@@ -576,7 +576,7 @@ def status_v2(request):
     cert = x509.load_pem_x509_certificate(cert_bytes)
     delta = cert.not_valid_after_utc - djangotime.now()
 
-    redis_url = f"redis://{settings.REDIS_HOST}"
+    redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}"
     redis_ping = False
     with suppress(Exception):
         with from_url(redis_url) as conn:
@@ -640,7 +640,7 @@ def status(request):
     cert = x509.load_pem_x509_certificate(cert_bytes)
     delta = cert.not_valid_after_utc - djangotime.now()
 
-    redis_url = f"redis://{settings.REDIS_HOST}"
+    redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}"
     redis_ping = False
     with suppress(Exception):
         with from_url(redis_url) as conn:

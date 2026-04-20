@@ -28,18 +28,15 @@ spec:
         - name: wait-for-dependencies
           image: "{{ .Values.tactical.initImage.registry }}/{{ .Values.tactical.initImage.repository }}:{{ .Values.tactical.initImage.tag }}"
           envFrom:
-            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+            - configMapRef:
+                name: tactical-backend
+            - configMapRef:
+                name: tactical-datasources
           command: ['sh', '-c', '
-            echo "Waiting for PostgreSQL..." &&
-            until nc -z $POSTGRES_HOST $POSTGRES_PORT; do sleep 2; done &&
-            echo "PostgreSQL is ready!" &&
-            echo "Waiting for Redis..." &&
-            until nc -z $REDIS_HOST $REDIS_PORT; do sleep 2; done &&
-            echo "Redis is ready!"
+            echo "PostgreSQL waiting..." && until nc -z $POSTGRES_HOST $POSTGRES_PORT; do sleep 2; done && echo "PostgreSQL ready!" &&
+            echo "Redis waiting..." && until nc -z $REDIS_HOST $REDIS_PORT; do sleep 2; done && echo "Redis ready!"
             {{- if (index .Values "tactical-nginx").enabled }} &&
-            echo "Waiting for Nginx..." &&
-            until nc -z tactical-nginx-0.tactical-nginx.{{ .Release.Namespace }}.svc.cluster.local 80; do sleep 2; done &&
-            echo "Nginx is ready!"
+            echo "Nginx waiting..." && until nc -z tactical-nginx.{{ .Release.Namespace }}.svc.cluster.local 80; do sleep 2; done && echo "Nginx ready!"
             {{- end }}
             ']
 
@@ -48,13 +45,18 @@ spec:
           image: "{{ .Values.tactical.image.registry }}/{{ .Values.tactical.image.repository }}:{{ .Values.tactical.image.tag }}"
           args: ["tactical-backend"]
           ports:
-            - containerPort: 8000
+            - containerPort: {{ .Values.tactical.backend.port }}
               name: http
 
           envFrom:
-            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
-          env:
-            {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
+            - configMapRef:
+                name: tactical-backend
+            - secretRef:
+                name: {{ .Values.tactical.existingSecret | default "tactical-backend" }}
+            - configMapRef:
+                name: tactical-datasources
+            - secretRef:
+                name: {{ .Values.postgres.external.existingSecret | default "tactical-datasources" }}
 
           resources:
             {{- toYaml .Values.tactical.backend.resources | nindent 12 }}

@@ -33,7 +33,7 @@ HEADLESS_FRONTEND_URLS = {'socialaccount_login_error': '${TRMM_PROTO}://${APP_HO
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': '${POSTGRES_DB}',
+        'NAME': '${POSTGRES_DATABASE}',
         'USER': '${POSTGRES_USER}',
         'PASSWORD': '${POSTGRES_PASSWORD}',
         'HOST': '${POSTGRES_HOST}',
@@ -52,13 +52,15 @@ USE_NATS_STANDARD = False
 NATS_PROTOCOL = 'nats'
 NATS_HTTP_PROTOCOL = 'http'
 NATS_WS_PROTOCOL = 'ws'
-NATS_CONNECT_HOST = '${NATS_CONNECT_HOST}'
+NATS_HOST = '${NATS_HOST}'
+NATS_PORT = ${NATS_PORT}
 
 CERT_FILE = '${CERT_PUB_PATH}'
 KEY_FILE = '${CERT_PRIV_PATH}'
 
 # Redis
 REDIS_HOST = '${REDIS_HOST}'
+REDIS_PORT = ${REDIS_PORT}
 
 # OpenFrame
 OPENFRAME_MODE = ${OPENFRAME_MODE}

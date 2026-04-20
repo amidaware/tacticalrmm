@@ -46,7 +46,14 @@ spec:
               name: metrics
 
           envFrom:
-            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+            - configMapRef:
+                name: tactical-backend
+            - secretRef:
+                name: {{ .Values.tactical.existingSecret | default "tactical-backend" }}
+            - configMapRef:
+                name: tactical-datasources
+            - secretRef:
+                name: {{ .Values.postgres.external.existingSecret | default "tactical-datasources" }}
             {{- with (index .Values "tactical-nats-listener").devicesPassthroughSecret }}
             {{- if .name }}
             # Optional OpenFrame DEVICES/SYS pass-through credentials. When
@@ -57,7 +64,6 @@ spec:
             {{- end }}
             {{- end }}
           env:
-            {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
             - name: METRICS_LISTEN
               value: ":9189"
             {{- with (index .Values "tactical-nats-listener").natsAuthNkeySeedSecret }}

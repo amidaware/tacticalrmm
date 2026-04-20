@@ -470,7 +470,7 @@ class TestNatsUrls(TacticalTestCase):
         self.assertEqual(get_nats_url(), "nats://127.0.0.1:4222")
 
     @override_settings(
-        NATS_STANDARD_PORT=5000,
+        NATS_PORT=5000,
         USE_NATS_STANDARD=True,
         ALLOWED_HOSTS=["api.example.com"],
     )
@@ -481,7 +481,7 @@ class TestNatsUrls(TacticalTestCase):
     def test_docker_nats(self):
         self.assertEqual(get_nats_url(), "nats://api.example.com:4222")
 
-    @patch.dict("os.environ", {"NATS_CONNECT_HOST": "172.20.4.3"})
+    @patch.dict("os.environ", {"NATS_HOST": "172.20.4.3"})
     @override_settings(ALLOWED_HOSTS=["api.example.com"])
     def test_custom_connect_host_env(self):
         self.assertEqual(get_nats_url(), "nats://172.20.4.3:4222")

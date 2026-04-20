@@ -28,17 +28,14 @@ spec:
         - name: wait-for-dependencies
           image: "{{ .Values.tactical.initImage.registry }}/{{ .Values.tactical.initImage.repository }}:{{ .Values.tactical.initImage.tag }}"
           envFrom:
-            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+            - configMapRef:
+                name: tactical-backend
+            - configMapRef:
+                name: tactical-datasources
           command: ['sh', '-c', '
-            echo "Waiting for PostgreSQL..." &&
-            until nc -z $POSTGRES_HOST $POSTGRES_PORT; do sleep 2; done &&
-            echo "PostgreSQL is ready!" &&
-            echo "Waiting for Redis..." &&
-            until nc -z $REDIS_HOST $REDIS_PORT; do sleep 2; done &&
-            echo "Redis is ready!" &&
-            echo "Waiting for Backend..." &&
-            until nc -z tactical-backend-0.tactical-backend.{{ .Release.Namespace }}.svc.cluster.local 8000; do sleep 2; done &&
-            echo "Backend is ready!"
+            echo "PostgreSQL waiting..." && until nc -z $POSTGRES_HOST $POSTGRES_PORT; do sleep 2; done && echo "PostgreSQL ready!" &&
+            echo "Redis waiting..." && until nc -z $REDIS_HOST $REDIS_PORT; do sleep 2; done && echo "Redis ready!" &&
+            echo "Backend waiting..." && until nc -z tactical-backend-0.tactical-backend.{{ .Release.Namespace }}.svc.cluster.local 8000; do sleep 2; done && echo "Backend ready!"
             ']
 
       containers:
@@ -47,26 +44,27 @@ spec:
           args: ["tactical-celerybeat"]
 
           envFrom:
-            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
-          env:
-            {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
+            - configMapRef:
+                name: tactical-backend
+            - secretRef:
+                name: {{ .Values.tactical.existingSecret | default "tactical-backend" }}
+            - configMapRef:
+                name: tactical-datasources
+            - secretRef:
+                name: {{ .Values.postgres.external.existingSecret | default "tactical-datasources" }}
 
           resources:
             {{- toYaml .Values.tactical.celerybeat.resources | nindent 12 }}
 
           livenessProbe:
             exec:
-              command:
-                - cat
-                - {{ .Values.tactical.readyFile | quote }}
+              command: ["cat", "/opt/tactical/tmp/tactical.ready"]
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 3
           readinessProbe:
             exec:
-              command:
-                - cat
-                - {{ .Values.tactical.readyFile | quote }}
+              command: ["cat", "/opt/tactical/tmp/tactical.ready"]
             initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 3

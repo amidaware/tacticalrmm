@@ -7,8 +7,8 @@ set -e
 : "${POSTGRES_HOST:=tactical-postgres}"
 : "${POSTGRES_PORT:=5432}"
 : "${POSTGRES_USER:=tactical}"
-: "${POSTGRES_PASS:=tactical}"
-: "${POSTGRES_DB:=tacticalrmm}"
+: "${POSTGRES_PASSWORD:=tactical}"
+: "${POSTGRES_DATABASE:=tacticalrmm}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
 : "${MESH_WS_URL:=ws://${MESH_SERVICE}:4443}"
 : "${MESH_USER:=meshcentral}"
@@ -82,15 +82,15 @@ HEADLESS_FRONTEND_URLS = {'socialaccount_login_error': 'https://${APP_HOST}/acco
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': '${POSTGRES_DB}',
+        'NAME': '${POSTGRES_DATABASE}',
         'USER': '${POSTGRES_USER}',
-        'PASSWORD': '${POSTGRES_PASS}',
+        'PASSWORD': '${POSTGRES_PASSWORD}',
         'HOST': '${POSTGRES_HOST}',
         'PORT': '${POSTGRES_PORT}',
     },
     'reporting': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': '${POSTGRES_DB}',
+        'NAME': '${POSTGRES_DATABASE}',
         'USER': 'reporting_user',
         'PASSWORD': 'read_password',
         'HOST': '${POSTGRES_HOST}',

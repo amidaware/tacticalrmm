@@ -688,39 +688,6 @@ class DownloadAssets(APIView):
             return notify_error(str(error))
 
 
-class MoveAssets(APIView):
-    permission_classes = [IsAuthenticated, ReportingPerms]
-
-    class InputRequest:
-        srcPaths: List[str]
-        destination: str
-
-    class InputSerializer(Serializer[InputRequest]):
-        srcPaths = ListField(required=True)
-        destination = CharField(required=True, validators=[path_exists])
-
-    def post(self, request: Request) -> Response:
-        serializer = self.InputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        paths = serializer.data["srcPaths"]
-        destination = serializer.data["destination"]
-
-        try:
-            response = {}
-            for path in paths:
-                new_path = report_assets_fs.move(source=path, destination=destination)
-
-                response["path"] = new_path
-
-            return Response(response)
-
-        except OSError as error:
-            return notify_error(str(error))
-        except SuspiciousFileOperation as error:
-            return notify_error(str(error))
-
-
 class ReportHTMLTemplateSerializer(ModelSerializer[ReportHTMLTemplate]):
     class Meta:
         model = ReportHTMLTemplate

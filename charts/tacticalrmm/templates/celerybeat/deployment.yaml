@@ -1,0 +1,80 @@
+{{- if .Values.tactical.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-celerybeat
+  labels:
+    {{- include "tacticalrmm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tactical-celerybeat
+spec:
+  replicas: 1
+  revisionHistoryLimit: {{ .Values.tactical.celerybeat.revisionHistoryLimit }}
+
+  strategy:
+    type: Recreate
+
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-celerybeat
+  template:
+    metadata:
+      labels:
+        {{- include "tacticalrmm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tactical-celerybeat
+
+    spec:
+      initContainers:
+        - name: wait-for-dependencies
+          image: "{{ .Values.tactical.initImage.registry }}/{{ .Values.tactical.initImage.repository }}:{{ .Values.tactical.initImage.tag }}"
+          envFrom:
+            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+          command: ['sh', '-c', '
+            echo "Waiting for PostgreSQL..." &&
+            until nc -z $POSTGRES_HOST $POSTGRES_PORT; do sleep 2; done &&
+            echo "PostgreSQL is ready!" &&
+            echo "Waiting for Redis..." &&
+            until nc -z $REDIS_HOST $REDIS_PORT; do sleep 2; done &&
+            echo "Redis is ready!" &&
+            echo "Waiting for Backend..." &&
+            until nc -z tactical-backend-0.tactical-backend.{{ .Release.Namespace }}.svc.cluster.local 8000; do sleep 2; done &&
+            echo "Backend is ready!"
+            ']
+
+      containers:
+        - name: tactical-base
+          image: "{{ .Values.tactical.image.registry }}/{{ .Values.tactical.image.repository }}:{{ .Values.tactical.image.tag }}"
+          args: ["tactical-celerybeat"]
+
+          envFrom:
+            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+          env:
+            {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
+
+          resources:
+            {{- toYaml .Values.tactical.celerybeat.resources | nindent 12 }}
+
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - {{ .Values.tactical.readyFile | quote }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - {{ .Values.tactical.readyFile | quote }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: celerybeat-data
+              mountPath: /opt/tactical
+      volumes:
+        - name: celerybeat-data
+          emptyDir: {}
+{{- end }}

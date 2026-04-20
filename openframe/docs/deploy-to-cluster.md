@@ -10,7 +10,7 @@ For testing Django/Python changes in the running cluster without rebuilding the 
 - Testing a new endpoint before committing
 - Debugging in the live cluster environment
 
-**Not suitable for:** migrations, new dependencies, changes to Go code (`natsapi`), Dockerfile changes.
+**Not suitable for:** migrations, new dependencies, changes to Go code (`nats-listener`), Dockerfile changes.
 
 ---
 

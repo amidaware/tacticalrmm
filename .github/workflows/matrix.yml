@@ -27,6 +27,26 @@ jobs:
               "name": "tactical-nats",
               "path": "./docker/containers/tactical-nats",
               "context": "."
+            },
+            {
+              "name": "tactical-nats-listener",
+              "path": "./docker/containers/tactical-nats-listener",
+              "context": "."
+            },
+            {
+              "name": "tactical-frontend",
+              "path": "./docker/containers/tactical-frontend",
+              "context": "."
+            },
+            {
+              "name": "tactical-meshcentral",
+              "path": "./docker/containers/tactical-meshcentral",
+              "context": "."
+            },
+            {
+              "name": "tactical-nginx",
+              "path": "./docker/containers/tactical-nginx",
+              "context": "."
             }
           ]'
 

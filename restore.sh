@@ -441,12 +441,12 @@ print_green 'Restoring the backend'
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
 
 if [ "$arch" = "x86_64" ]; then
-  natsapi='nats-api'
+  nats_listener='nats-api'
 else
-  natsapi='nats-api-arm64'
+  nats_listener='nats-api-arm64'
 fi
 
-sudo cp /rmm/natsapi/bin/${natsapi} /usr/local/bin/nats-api
+sudo cp /rmm/nats-listener/bin/${nats_listener} /usr/local/bin/nats-api
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 

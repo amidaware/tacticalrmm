@@ -1,0 +1,230 @@
+
+tactical:
+  enabled: true
+
+  image:
+    registry: ghcr.io/flamingo-stack/tacticalrmm
+    repository: tactical-backend
+    tag: latest
+
+  # Path of the file the backend writes once init completes. Sibling
+  # workers (celery, celerybeat, websockets) probe its existence to stay
+  # Ready. Must match TACTICAL_READY_FILE in the container image's ENV.
+  readyFile: "/opt/tactical/tmp/tactical.ready"
+
+  initImage:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: busybox
+    tag: "1.36.0"
+
+  # -- Django SECRET_KEY configuration. Used for session signing, CSRF tokens, and NATS authentication.
+  # Must remain stable across redeployments to avoid invalidating sessions and breaking NATS connectivity.
+  #
+  # Option 1: Use an existing K8s Secret (recommended for production).
+  #   existingSecret: "my-tactical-secret"
+  #   secretKeyKey: "SECRET_KEY"
+  #
+  # Option 2: Set the value directly (a default Secret will be created).
+  #   secretKeyValue: "my-secret-key"
+  existingSecret: ""  # Name of an existing K8s Secret containing the key. If set, secretKeyValue is ignored.
+  secretKeyKey: "SECRET_KEY"    # Key name within the existing secret to read the value from.
+  secretKeyValue: "tacticalrmm"     # Plain-text secret value. Only used when existingSecret is empty.
+
+  # -- PriorityClass for StatefulSet pods (backend, nats).
+  priorityClass:
+    enabled: false
+    value: 1000000
+
+  backend:
+    revisionHistoryLimit: 10
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1280Mi
+      limits:
+        cpu: 250m
+        memory: 1280Mi
+    persistence:
+      size: 10Gi
+      storageClass: ""
+
+  celery:
+    revisionHistoryLimit: 10
+    resources:
+      requests:
+        cpu: 150m
+        memory: 512Mi
+      limits:
+        cpu: 150m
+        memory: 512Mi
+
+  celerybeat:
+    revisionHistoryLimit: 10
+    resources:
+      requests:
+        cpu: 25m
+        memory: 192Mi
+      limits:
+        cpu: 25m
+        memory: 192Mi
+
+  websockets:
+    revisionHistoryLimit: 10
+    resources:
+      requests:
+        cpu: 50m
+        memory: 192Mi
+      limits:
+        cpu: 50m
+        memory: 192Mi
+
+
+tactical-nats-listener:
+  enabled: true
+  # Two replicas by default: callout is stateless, and a single pod is a
+  # hard SPOF for new agent connections during rollouts or node drains.
+  replicas: 2
+  revisionHistoryLimit: 10
+  logLevel: "INFO"
+  image:
+    registry: ghcr.io/flamingo-stack/tacticalrmm
+    repository: tactical-nats-listener
+    tag: latest
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 50m
+      memory: 256Mi
+  # Pod disruption budget — cap voluntary disruption at one pod at a time.
+  # Using maxUnavailable (not minAvailable) so a replicas=1 override
+  # doesn't make the pod non-evictable and block node drains.
+  pdb:
+    enabled: true
+    maxUnavailable: 1
+  # Secret containing the Ed25519 NKey seed for auth callout JWT signing.
+  # The NATS wrapper chart must be configured with the corresponding public key.
+  natsAuthNkeySeedSecret:
+    name: "tactical-nats-auth"
+    key: "AUTH_ISSUER_SEED"
+  # Secret supplying AUTH_SERVICE_PASS — the password the callout uses to
+  # connect as the "auth-service" user inside the NATS wrapper chart's
+  # AUTH account. MUST match the wrapper's nats-credentials value. Leave
+  # name empty to skip (nats-api will fail-closed at startup, per design).
+  authServicePassSecret:
+    name: "tactical-nats-auth"
+    key: "AUTH_SERVICE_PASS"
+  # Target account name for approved TRMM users (superuser + agents). Must
+  # match an account defined in the wrapper's nats-server config. Leave
+  # blank to keep nats-api's built-in default ("$G" — the global account).
+  authTargetAccount: "TRMM"
+  # Optional OpenFrame DEVICES/SYS pass-through credentials. When set, the
+  # Go staticValidator approves the DEVICES machine/service users and the
+  # SYS admin user, allowing the shared NATS broker to enable callout
+  # without breaking existing device telemetry. Leave name empty for
+  # standalone (non-OpenFrame) TRMM installs.
+  devicesPassthroughSecret:
+    name: ""
+
+
+tactical-frontend:
+  enabled: true
+  revisionHistoryLimit: 10
+  image:
+    registry: 
+    repository: 
+    tag: 
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 50m
+      memory: 64Mi
+
+
+tactical-nginx:
+  enabled: true
+  revisionHistoryLimit: 10
+  image:
+    registry: 
+    repository: 
+    tag: 
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 25m
+      memory: 32Mi
+
+
+tactical-meshcentral:
+  enabled: false
+  revisionHistoryLimit: 10
+  image:
+    registry: 
+    repository: 
+    tag: 
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+
+redis:
+  enabled: false
+  # -- External Redis connection URL.
+  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
+  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
+  # tactical-datasources-urls ConfigMap it manages.
+  external:
+    existingConfigMap: ""
+    urlKey: "REDIS_URL"
+    url: "redis://redis.datasources.svc.cluster.local:6379"
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: redis
+    tag: "6.0-alpine"
+
+
+postgres:
+  enabled: false
+  # -- External PostgreSQL connection URL.
+  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
+  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
+  # tactical-datasources-urls ConfigMap it manages.
+  external:
+    existingConfigMap: ""
+    urlKey: "POSTGRES_URL"
+    url: "postgres://tacticalrmm:tacticalrmm@postgres.datasources.svc.cluster.local:5432/tacticalrmm"
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: postgres
+    tag: "13-alpine"
+
+nats:
+  enabled: false
+  # -- External NATS connection URL.
+  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
+  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
+  # tactical-datasources-urls ConfigMap it manages.
+  #
+  # The NATS server at this URL MUST have auth callout enabled with:
+  #   - An AUTH account containing an "auth-service" user whose password
+  #     matches tactical-nats-listener.authServicePassSecret above.
+  #   - authorization.auth_callout.issuer set to the public key derived
+  #     from the AUTH_ISSUER_SEED in the tactical-nats-auth secret.
+  #   - An account matching tactical-nats-listener.authTargetAccount where
+  #     approved TRMM users (tacticalrmm superuser + agents) land.
+  # See tacticalrmm/nats-listener/DESIGN_LAYER3_AUTH_CALLOUT.md for the full
+  # contract and the companion wrapper chart at
+  # openframe-saas-tenant/manifests/integrated-tools/nats/ for an example.
+  external:
+    existingConfigMap: ""
+    urlKey: "NATS_URL"
+    url: "nats://nats.datasources.svc.cluster.local:4222"

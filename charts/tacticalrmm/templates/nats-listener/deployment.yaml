@@ -1,0 +1,99 @@
+{{- if (index .Values "tactical-nats-listener").enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tactical-nats-listener
+spec:
+  replicas: {{ (index .Values "tactical-nats-listener").replicas | default 2 }}
+  revisionHistoryLimit: {{ (index .Values "tactical-nats-listener").revisionHistoryLimit }}
+
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-nats-listener
+  template:
+    metadata:
+      labels:
+        {{- include "tacticalrmm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tactical-nats-listener
+
+    spec:
+      {{- if .Values.tactical.priorityClass.enabled }}
+      priorityClassName: tactical-priority
+      {{- end }}
+
+      # Spread replicas across nodes so a single-node failure can't take
+      # the whole callout service down. ScheduleAnyway (not DoNotSchedule)
+      # so a cluster with one available node still accepts the second pod
+      # — better to run co-located than not at all.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "tacticalrmm.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: tactical-nats-listener
+
+      containers:
+        - name: nats-api
+          image: "{{ (index .Values "tactical-nats-listener").image.registry }}/{{ (index .Values "tactical-nats-listener").image.repository }}:{{ (index .Values "tactical-nats-listener").image.tag }}"
+          args:
+            - "-log"
+            - {{ (index .Values "tactical-nats-listener").logLevel | quote }}
+          ports:
+            - containerPort: 9189
+              name: metrics
+
+          envFrom:
+            {{- include "tacticalrmm.baseEnvFrom" . | nindent 12 }}
+            {{- with (index .Values "tactical-nats-listener").devicesPassthroughSecret }}
+            {{- if .name }}
+            # Optional OpenFrame DEVICES/SYS pass-through credentials. When
+            # unset, the Go staticValidator is not created and the callout
+            # only handles TRMM users (superuser + agents).
+            - secretRef:
+                name: {{ .name }}
+            {{- end }}
+            {{- end }}
+          env:
+            {{- include "tacticalrmm.secretKeyEnv" . | nindent 12 }}
+            - name: METRICS_LISTEN
+              value: ":9189"
+            {{- with (index .Values "tactical-nats-listener").natsAuthNkeySeedSecret }}
+            - name: AUTH_ISSUER_SEED
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{- end }}
+            {{- with (index .Values "tactical-nats-listener").authServicePassSecret }}
+            - name: AUTH_SERVICE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{- end }}
+            {{- if (index .Values "tactical-nats-listener").authTargetAccount }}
+            - name: AUTH_TARGET_ACCOUNT
+              value: {{ (index .Values "tactical-nats-listener").authTargetAccount | quote }}
+            {{- end }}
+
+          resources:
+            {{- toYaml (index .Values "tactical-nats-listener").resources | nindent 12 }}
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9189
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9189
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+{{- end }}

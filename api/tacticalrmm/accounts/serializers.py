@@ -1,12 +1,8 @@
-import pyotp
-from django.conf import settings
 from rest_framework.serializers import (
     ModelSerializer,
     ReadOnlyField,
     SerializerMethodField,
 )
-
-from tacticalrmm.util_settings import get_webdomain
 
 from .models import APIKey, Role, User
 
@@ -49,23 +45,6 @@ class UserSerializer(ModelSerializer):
             "block_dashboard_login",
             "date_format",
         ]
-
-
-class TOTPSetupSerializer(ModelSerializer):
-    qr_url = SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = (
-            "username",
-            "totp_key",
-            "qr_url",
-        )
-
-    def get_qr_url(self, obj):
-        return pyotp.totp.TOTP(obj.totp_key).provisioning_uri(
-            obj.username, issuer_name=get_webdomain(settings.CORS_ORIGIN_WHITELIST[0])
-        )
 
 
 class RoleSerializer(ModelSerializer):

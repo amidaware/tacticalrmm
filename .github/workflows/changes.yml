@@ -7,6 +7,16 @@ on:
         value: ${{ jobs.changes.outputs.tactical }}
       tactical-nats:
         value: ${{ jobs.changes.outputs.tactical-nats }}
+      tactical-nats-listener:
+        value: ${{ jobs.changes.outputs.tactical-nats-listener }}
+      tactical-frontend:
+        value: ${{ jobs.changes.outputs.tactical-frontend }}
+      tactical-meshcentral:
+        value: ${{ jobs.changes.outputs.tactical-meshcentral }}
+      tactical-nginx:
+        value: ${{ jobs.changes.outputs.tactical-nginx }}
+      helm:
+        value: ${{ jobs.changes.outputs.helm }}
       timestamp:
         value: ${{ jobs.changes.outputs.timestamp }}
       timestamp_tag:
@@ -23,6 +33,11 @@ jobs:
     outputs:
       tactical: ${{ steps.filter.outputs.tactical }}
       tactical-nats: ${{ steps.filter.outputs.tactical-nats }}
+      tactical-nats-listener: ${{ steps.filter.outputs.tactical-nats-listener }}
+      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
+      tactical-meshcentral: ${{ steps.filter.outputs.tactical-meshcentral }}
+      tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
+      helm: ${{ steps.filter.outputs.helm }}
       timestamp: ${{ steps.setup_env.outputs.timestamp }}
       timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
       commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
@@ -49,4 +64,17 @@ jobs:
               - 'docker/containers/tactical/**'
             tactical-nats:
               - 'docker/containers/tactical-nats/**'
-              - 'natsapi/bin/**'
+              - 'nats-listener/**'
+            tactical-nats-listener:
+              - 'docker/containers/tactical-nats-listener/**'
+              - 'nats-listener/**'
+            tactical-frontend:
+              - 'docker/containers/tactical-frontend/**'
+              - 'api/tacticalrmm/tacticalrmm/settings.py'
+            tactical-meshcentral:
+              - 'docker/containers/tactical-meshcentral/**'
+              - 'api/tacticalrmm/tacticalrmm/settings.py'
+            tactical-nginx:
+              - 'docker/containers/tactical-nginx/**'
+            helm:
+              - 'charts/tacticalrmm/**'

@@ -72,11 +72,41 @@ class TestUtils(TacticalTestCase):
     @override_settings(
         ALLOWED_HOSTS=["api.example.com"], SECRET_KEY="sekret", DOCKER_BUILD=False
     )
+    @patch("os.path.exists", return_value=True)
     @patch("subprocess.run")
-    def test_reload_nats(self, mock_subprocess):
+    def test_reload_nats(self, mock_subprocess, mock_exists):
         _ = reload_nats()
 
-        mock_subprocess.assert_called_once()
+        mock_subprocess.assert_called()
+
+    @override_settings(ALLOWED_HOSTS=["api.example.com"], SECRET_KEY="sekret")
+    @patch.dict("os.environ", {"AUTH_CALLOUT": "true"})
+    @patch("tacticalrmm.utils._publish_redis_agent_update")
+    @patch("tacticalrmm.utils._write_local_nats_config")
+    @patch("tacticalrmm.utils._signal_local_nats_server")
+    @patch("agents.models.Agent.objects")
+    def test_reload_nats_auth_callout_skips_heavy_work(
+        self,
+        mock_agent_objects,
+        mock_signal_local,
+        mock_write_local,
+        mock_redis_publish,
+    ):
+        # In auth-callout mode reload_nats() must NOT:
+        #   - Run the Agent.objects.filter().count() query
+        #   - Write a local nats-rmm.conf
+        #   - SIGHUP a local nats-server
+        #   - Publish to Redis (cross-replica fan-out is pointless)
+        # It may publish a lightweight cache-invalidation signal on NATS;
+        # we don't mock _publish_nats_reload_signal because the test
+        # environment has no NATS server and the inner try/except
+        # swallows the error.
+        reload_nats()
+
+        mock_agent_objects.filter.assert_not_called()
+        mock_write_local.assert_not_called()
+        mock_signal_local.assert_not_called()
+        mock_redis_publish.assert_not_called()
 
     def test_bitdays_to_string(self):
         a = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]

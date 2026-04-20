@@ -1,0 +1,16 @@
+{{- if and (index .Values "tactical-nats-listener").enabled (index .Values "tactical-nats-listener").pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tactical-nats-listener
+spec:
+  # maxUnavailable (not minAvailable) so that if replicas is ever
+  # overridden to 1, node drains aren't blocked forever — minAvailable: 1
+  # with replicas: 1 makes the pod non-evictable. maxUnavailable: 1 caps
+  # disruption at one pod at a time regardless of the replica count.
+  maxUnavailable: {{ (index .Values "tactical-nats-listener").pdb.maxUnavailable | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tactical-nats-listener
+{{- end }}

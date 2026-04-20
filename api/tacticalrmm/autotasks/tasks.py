@@ -39,22 +39,6 @@ def create_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
 
 
 @app.task
-def modify_win_task(pk: int, agent_id: Optional[str] = None) -> str:
-    with suppress(
-        AutomatedTask.DoesNotExist,
-        Agent.DoesNotExist,
-    ):
-        task = AutomatedTask.objects.get(pk=pk)
-
-        if agent_id:
-            task.modify_task_on_agent(Agent.objects.get(agent_id=agent_id))
-        else:
-            task.modify_task_on_agent()
-
-    return "ok"
-
-
-@app.task
 def delete_win_task_schedule(pk: int, agent_id: Optional[str] = None) -> str:
     with suppress(
         AutomatedTask.DoesNotExist,

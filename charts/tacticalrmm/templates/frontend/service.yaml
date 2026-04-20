@@ -1,0 +1,18 @@
+{{- if (index .Values "tactical-frontend").enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-frontend
+  labels:
+    {{- include "tacticalrmm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tactical-frontend
+spec:
+  selector:
+    {{- include "tacticalrmm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: tactical-frontend
+  ports:
+  - name: http
+    port: 4443
+    targetPort: 4443
+    protocol: TCP
+{{- end }}

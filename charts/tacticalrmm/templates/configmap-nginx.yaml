@@ -1,0 +1,16 @@
+{{- if (index .Values "tactical-nginx").enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tactical-nginx
+data:
+  RESOLVER: "kube-dns.kube-system.svc.cluster.local"
+  APP_HOST: "tactical-frontend.{{ .Release.Namespace }}.svc.cluster.local:4443"
+  API_HOST: "tactical-backend-0.tactical-backend.{{ .Release.Namespace }}.svc.cluster.local:8000"
+  WEBSOCKETS_BIND_HOST: "tactical-websockets-0.tactical-websockets.{{ .Release.Namespace }}.svc.cluster.local"
+  WEBSOCKET_PORT: "8000"
+  {{- $natsUrl := required "nats.external.url is required" .Values.nats.external.url | trimPrefix "nats://" }}
+  {{- $natsParts := splitList ":" $natsUrl }}
+  NATS_STD_BIND_HOST: {{ index $natsParts 0 | quote }}
+  NATS_STANDARD_PORT: {{ if gt (len $natsParts) 1 }}{{ index $natsParts 1 | quote }}{{ else }}"4222"{{ end }}
+{{- end }}

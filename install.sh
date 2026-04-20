@@ -118,7 +118,7 @@ postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-arch
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
 
-DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
+SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
@@ -484,7 +484,7 @@ npm install
 
 localvars="$(
   cat <<EOF
-SECRET_KEY = "${DJANGO_SEKRET}"
+SECRET_KEY = "${SECRET_KEY}"
 
 DEBUG = False
 
@@ -529,12 +529,12 @@ EOF
 fi
 
 if [ "$arch" = "x86_64" ]; then
-  natsapi='nats-api'
+  nats_listener='nats-api'
 else
-  natsapi='nats-api-arm64'
+  nats_listener='nats-api-arm64'
 fi
 
-sudo cp /rmm/natsapi/bin/${natsapi} /usr/local/bin/nats-api
+sudo cp /rmm/nats-listener/bin/${nats_listener} /usr/local/bin/nats-api
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
@@ -659,7 +659,7 @@ EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service >/dev/null
 
-natsapi="$(
+nats_listener="$(
   cat <<EOF
 [Unit]
 Description=TacticalRMM Nats Api v1
@@ -677,7 +677,7 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service >/dev/null
+echo "${nats_listener}" | sudo tee /etc/systemd/system/nats-api.service >/dev/null
 
 nginxrmm="$(
   cat <<EOF

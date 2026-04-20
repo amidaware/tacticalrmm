@@ -26,7 +26,6 @@ set -euo pipefail
 : "${API_HOST:=tactical-backend}"
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
-: "${REDIS_PORT:=6379}"
 : "${TACTICAL_BACKEND_PORT:=8080}"
 : "${DEBUG:=False}"
 : "${OPENFRAME_MODE:=True}"
@@ -35,6 +34,7 @@ set -euo pipefail
 : "${TRMM_DISABLE_SERVER_SCRIPTS:=False}"
 : "${TRMM_DISABLE_SSO:=False}"
 : "${TRMM_DISABLE_2FA:=True}"
+: "${TRMM_DISABLE_MESH_SYNC_TASK:=True}"
 : "${SWAGGER_ENABLED:=False}"
 : "${BETA_API_ENABLED:=False}"
 : "${CELERY_AUTOSCALE:=20,2}"
@@ -81,12 +81,12 @@ copy_custom_code() {
   echo "Processing config templates"
 
   # Export all vars needed by envsubst
-  export DJANGO_SEKRET ADMINURL DEBUG TRMM_PROTO TACTICAL_DIR VIRTUAL_ENV
+  export SECRET_KEY ADMINURL DEBUG TRMM_PROTO TACTICAL_DIR VIRTUAL_ENV
   export POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD POSTGRES_HOST POSTGRES_PORT
   export REDIS_HOST
   export NATS_CONNECT_HOST
-  export APP_HOST API_HOST
-  export TRMM_DISABLE_WEB_TERMINAL TRMM_DISABLE_SERVER_SCRIPTS TRMM_DISABLE_SSO TRMM_DISABLE_2FA
+  export APP_HOST
+  export TRMM_DISABLE_WEB_TERMINAL TRMM_DISABLE_SERVER_SCRIPTS TRMM_DISABLE_SSO TRMM_DISABLE_2FA TRMM_DISABLE_MESH_SYNC_TASK
   export OPENFRAME_MODE SWAGGER_ENABLED BETA_API_ENABLED
   export CERT_PUB_PATH CERT_PRIV_PATH
   export SESSION_COOKIE_SECURE CSRF_COOKIE_SECURE
@@ -119,11 +119,11 @@ copy_custom_code() {
   fi
 
   # Explicit variable list to avoid clobbering Python {var} in f-strings
-  local vars='$DJANGO_SEKRET $ADMINURL $DEBUG $TRMM_PROTO $TACTICAL_DIR $VIRTUAL_ENV'
+  local vars='$SECRET_KEY $ADMINURL $DEBUG $TRMM_PROTO $TACTICAL_DIR $VIRTUAL_ENV'
   vars+=' $POSTGRES_DB $POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_HOST $POSTGRES_PORT'
   vars+=' $REDIS_HOST $NATS_CONNECT_HOST'
-  vars+=' $APP_HOST $API_HOST'
-  vars+=' $TRMM_DISABLE_WEB_TERMINAL $TRMM_DISABLE_SERVER_SCRIPTS $TRMM_DISABLE_SSO $TRMM_DISABLE_2FA'
+  vars+=' $APP_HOST'
+  vars+=' $TRMM_DISABLE_WEB_TERMINAL $TRMM_DISABLE_SERVER_SCRIPTS $TRMM_DISABLE_SSO $TRMM_DISABLE_2FA $TRMM_DISABLE_MESH_SYNC_TASK'
   vars+=' $OPENFRAME_MODE $SWAGGER_ENABLED $BETA_API_ENABLED'
   vars+=' $CERT_PUB_PATH $CERT_PRIV_PATH'
   vars+=' $ALLOWED_HOSTS $CORS_ALLOWED_ORIGINS $CSRF_TRUSTED_ORIGINS'
@@ -214,47 +214,48 @@ print(f'{api_key.key}')" | python manage.py shell --skip-checks > "${TACTICAL_DI
 }
 
 # ---------------------------------------------------------------------------
-# set_ready_status — file-based readiness signal
+# set_ready_status — signals K8s liveness/readiness probes that init is done.
+# Probes check existence only; file content is unused.
 # ---------------------------------------------------------------------------
 set_ready_status() {
-  local service_name=$1
-  echo "Setting ready status for ${service_name}"
-  mkdir -p "$(dirname "${TACTICAL_READY_FILE}")"
-  echo "${service_name}" > "${TACTICAL_READY_FILE}"
+  echo "Setting ready status"
+  touch "${TACTICAL_READY_FILE}"
 }
 
 # ---------------------------------------------------------------------------
-# check_tactical_ready — wait for the init ready file
+# worker_init — initialization for celery, celerybeat, websockets containers.
+# Unlike tactical_init, these don't share the backend PVC and don't generate
+# secrets; SECRET_KEY must be injected from a K8s Secret. ADMINURL is
+# optional (ADMIN_ENABLED=False in the settings template, so the value is
+# only used to render an unreachable URL prefix).
 # ---------------------------------------------------------------------------
-check_tactical_ready() {
-  sleep 15
-  local attempts=0
-  local max_attempts=60  # 60 × 10 s = 10 minutes
-  until [ -f "${TACTICAL_READY_FILE}" ]; do
-    attempts=$((attempts + 1))
-    if [ "${attempts}" -ge "${max_attempts}" ]; then
-      echo "ERROR: timed out after $((max_attempts * 10))s waiting for tactical-backend to finish init"
-      exit 1
-    fi
-    echo "Waiting for init to finish... (${attempts}/${max_attempts})"
-    sleep 10
-  done
+worker_init() {
+  if [ -z "${SECRET_KEY:-}" ]; then
+    echo "ERROR: worker_init requires SECRET_KEY env var"
+    exit 1
+  fi
+
+  # Copy source to working directory (emptyDir is always fresh, no --delete needed)
+  rsync -a --no-perms --no-owner \
+    "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
+
+  create_directories
+
+  export SECRET_KEY ADMINURL
+  copy_custom_code
+
+  set_ready_status
 }
 
 # ---------------------------------------------------------------------------
-# tactical_init — master initialization
+# tactical_init — backend initialization: preserves state dirs across restarts,
+#                 generates/restores SECRET_KEY + ADMINURL, runs migrations,
+#                 creates the default superuser and API key.
 # ---------------------------------------------------------------------------
 tactical_init() {
-  local role=$1
-
-  # Copy source to working directory.
-  # Preserve directories that hold persistent runtime state across restarts:
-  #   tmp/*                    — secrets, ready file, web_tar_url
-  #   certs/*                  — TLS certificates
-  #   api/tacticalrmm/private/ — agent executables, Django logs
-  #   api/celerybeat-schedule* — Celery Beat timing state (file-based scheduler)
-  #   reporting/*              — user-uploaded custom report assets
-  #   logs/*                   — application logs
+  # Copy source to working dir. --exclude flags below protect runtime state
+  # (secrets, certs, agent binaries, logs, reports, celerybeat schedule) from
+  # being wiped by --delete on restart.
   rsync -a --no-perms --no-owner --delete \
     --exclude "tmp/*" \
     --exclude "certs/*" \
@@ -267,84 +268,68 @@ tactical_init() {
   create_directories
 
   # Persist secret values across restarts so Django's SECRET_KEY never changes.
+  # When running in Kubernetes, SECRET_KEY and ADMINURL are injected as env
+  # vars from a K8s Secret — skip file-based generation in that case.
   # Written with mode 0600 (owner-read-only) to protect the key at rest.
-  local sekret_file="${TACTICAL_DIR}/tmp/.django_sekret"
-  local adminurl_file="${TACTICAL_DIR}/tmp/.adminurl"
-  if [ -f "${sekret_file}" ]; then
-    DJANGO_SEKRET=$(cat "${sekret_file}")
-  else
-    DJANGO_SEKRET=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 80 | head -n 1)
-    (umask 0177; echo "${DJANGO_SEKRET}" > "${sekret_file}")
+  if [ -z "${SECRET_KEY:-}" ]; then
+    local sekret_file="${TACTICAL_DIR}/tmp/.django_sekret"
+    if [ -f "${sekret_file}" ]; then
+      SECRET_KEY=$(cat "${sekret_file}")
+    else
+      SECRET_KEY=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 80 | head -n 1)
+      (umask 0177; echo "${SECRET_KEY}" > "${sekret_file}")
+    fi
   fi
-  if [ -f "${adminurl_file}" ]; then
-    ADMINURL=$(cat "${adminurl_file}")
-  else
-    ADMINURL=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 70 | head -n 1)
-    (umask 0177; echo "${ADMINURL}" > "${adminurl_file}")
+  if [ -z "${ADMINURL:-}" ]; then
+    local adminurl_file="${TACTICAL_DIR}/tmp/.adminurl"
+    if [ -f "${adminurl_file}" ]; then
+      ADMINURL=$(cat "${adminurl_file}")
+    else
+      ADMINURL=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 70 | head -n 1)
+      (umask 0177; echo "${ADMINURL}" > "${adminurl_file}")
+    fi
   fi
-  export DJANGO_SEKRET ADMINURL
+  export SECRET_KEY ADMINURL
 
   copy_custom_code
 
-  if [ "${role}" = "backend" ]; then
-    run_migrations
-    create_superuser_and_api_key
-  fi
+  run_migrations
+  create_superuser_and_api_key
 
   # Set ownership
   chown -R "${TACTICAL_USER}:${TACTICAL_USER}" "${TACTICAL_DIR}"
 
-  set_ready_status "init"
+  set_ready_status
 }
 
 # ===========================================================================
 # Entrypoint dispatch
 # ===========================================================================
 
-if [ "${1:-}" = 'tactical-backend' ]; then
-  # Wait for postgres
-  pg_attempts=0; pg_max=60  # 60 × 5 s = 5 minutes
-  until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &>/dev/null; do
-    pg_attempts=$((pg_attempts + 1))
-    if [ "${pg_attempts}" -ge "${pg_max}" ]; then
-      echo "ERROR: timed out after $((pg_max * 5))s waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}"
-      exit 1
-    fi
-    echo "Waiting for PostgreSQL... (${pg_attempts}/${pg_max})"
-    sleep 5
-  done
-
-  # Wait for redis (clear_redis_celery_locks runs during migrations)
-  redis_attempts=0; redis_max=60  # 60 × 5 s = 5 minutes
-  until (echo > /dev/tcp/"${REDIS_HOST}"/"${REDIS_PORT}") &>/dev/null; do
-    redis_attempts=$((redis_attempts + 1))
-    if [ "${redis_attempts}" -ge "${redis_max}" ]; then
-      echo "ERROR: timed out after $((redis_max * 5))s waiting for Redis at ${REDIS_HOST}:${REDIS_PORT}"
-      exit 1
-    fi
-    echo "Waiting for Redis... (${redis_attempts}/${redis_max})"
-    sleep 5
-  done
-
-  tactical_init "backend"
-  exec uwsgi "${TACTICAL_DIR}/api/app.ini"
-fi
-
-if [ "${1:-}" = 'tactical-celery' ]; then
-  check_tactical_ready
-  exec celery -A tacticalrmm worker --autoscale="${CELERY_AUTOSCALE}" -l info
-fi
-
-if [ "${1:-}" = 'tactical-celerybeat' ]; then
-  check_tactical_ready
-  # rm -f is idiomatic for "remove if exists": unlike `test -f && rm`, it always
-  # returns 0 so set -e does not abort when the file is absent on first start.
-  rm -f "${TACTICAL_DIR}/api/celerybeat.pid"
-  exec celery -A tacticalrmm beat -l info
-fi
-
-if [ "${1:-}" = 'tactical-websockets' ]; then
-  check_tactical_ready
-  export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
-  exec uvicorn --host 0.0.0.0 --port 8383 --forwarded-allow-ips='*' tacticalrmm.asgi:application
-fi
+case "${1:-}" in
+  tactical-backend)
+    tactical_init
+    exec uwsgi "${TACTICAL_DIR}/api/app.ini"
+    ;;
+  tactical-celery)
+    worker_init
+    exec celery -A tacticalrmm worker --autoscale="${CELERY_AUTOSCALE}" -l info
+    ;;
+  tactical-celerybeat)
+    worker_init
+    # rm -f is idiomatic for "remove if exists": unlike `test -f && rm`, it always
+    # returns 0 so set -e does not abort when the file is absent on first start.
+    rm -f "${TACTICAL_DIR}/api/celerybeat.pid"
+    exec celery -A tacticalrmm beat -l info
+    ;;
+  tactical-websockets)
+    worker_init
+    export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
+    exec uvicorn --host 0.0.0.0 --port 8383 --forwarded-allow-ips='*' tacticalrmm.asgi:application
+    ;;
+  *)
+    echo "ERROR: unknown entrypoint role: ${1:-<none>}"
+    echo "Expected one of: tactical-backend, tactical-celery, tactical-celerybeat, tactical-websockets"
+    exit 1
+    ;;
+esac

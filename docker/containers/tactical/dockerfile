@@ -58,8 +58,7 @@ RUN apt-get update && \
     libpangoft2-1.0-0 \
     libcairo2 \
     fonts-dejavu-core \
-    gettext-base \
-    curl && \
+    gettext-base && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
     useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}" && \

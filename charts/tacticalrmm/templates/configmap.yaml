@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tactical-backend
+data:
+  SMTP_HOST: ""
+  SMTP_PORT: ""
+  SMTP_FROM: ""
+  SMTP_USER: ""
+  SMTP_PASS: ""
+  SMTP_TLS: ""
+  TRMM_USER: ""
+  TRMM_PASS: ""
+  TACTICAL_BACKEND_PORT: "8000"
+  TRMM_PROTO: "http"
+  TRMM_DISABLE_WEB_TERMINAL: "False"
+  TRMM_DISABLE_SERVER_SCRIPTS: "False"
+  TRMM_DISABLE_SSO: "False"
+  TRMM_DISABLE_2FA: "True"
+  TRMM_DISABLE_MESH_SYNC_TASK: "True"
+  OPENFRAME_MODE: "True"
+  NODE_ENV: ""
+  WS_PROTO: "ws"
+  WS_MASK_OVERRIDE: ""
+  TACTICAL_DIR: "/opt/tactical"
+  TACTICAL_TMP_DIR: "/tmp/tactical"
+  API_HOST: "tactical-backend-0.tactical-backend.{{ .Release.Namespace }}.svc.cluster.local:8000"
+  APP_HOST: "tactical-frontend.{{ .Release.Namespace }}.svc.cluster.local:4443"
+  NATS_CONFIG_CHECK_INTERVAL: ""
+  NATS_STD_BIND_HOST: ""
+  NATS_WEBSOCKET_PORT: "9235"
+  NATS_WS_BIND_HOST: ""
+  {{- $natsUrl := required "nats.external.url is required (e.g. nats://nats.datasources.svc.cluster.local:4222)" .Values.nats.external.url | trimPrefix "nats://" }}
+  {{- $natsParts := splitList ":" $natsUrl }}
+  NATS_STANDARD_PORT: {{ if gt (len $natsParts) 1 }}{{ index $natsParts 1 | quote }}{{ else }}"4222"{{ end }}
+  NATS_CONNECT_HOST: {{ index $natsParts 0 | quote }}
+  NATS_WEBSOCKET_HOST: "tactical-websockets-0.tactical-websockets.{{ .Release.Namespace }}.svc.cluster.local"
+  WEBSOCKETS_BIND_HOST: "tactical-websockets"
+  WEBSOCKET_PORT: "8000"
+  PUBLIC_DIR: "/usr/share/nginx/html"
+  TACTICAL_READY_FILE: {{ .Values.tactical.readyFile | quote }}
+  NGINX_HOST_IP: "tactical-nginx-0.tactical-nginx.{{ .Release.Namespace }}.svc.cluster.local"
+  NGINX_HOST_PORT: "80"

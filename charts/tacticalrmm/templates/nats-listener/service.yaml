@@ -1,0 +1,15 @@
+{{- if (index .Values "tactical-nats-listener").enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-nats-listener
+spec:
+  selector:
+    {{- include "tacticalrmm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: tactical-nats-listener
+  ports:
+    - name: metrics
+      port: 9189
+      targetPort: 9189
+      protocol: TCP
+{{- end }}

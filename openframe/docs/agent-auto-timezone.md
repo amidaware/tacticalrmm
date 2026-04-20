@@ -23,7 +23,7 @@ Go agent (rmmagent)
         └── AgentInfoNatsEx { ...fields..., Timezone: "Europe/Kyiv" }
               │  (msgpack over NATS)
               ▼
-natsapi (Go)
+nats-listener (Go)
   └── agent-agentinfo handler
         ├── decode → trmm.AgentInfoNats   (standard fields UPDATE)
         └── decode → agentTimezone        (timezone-only UPDATE, OPENFRAME_MODE only)
@@ -43,12 +43,12 @@ external dependency).
 
 ## Files changed
 
-### `natsapi` (Go server)
+### `nats-listener` (Go server)
 
 | File | Change |
 |---|---|
-| `natsapi/types.go` | Added `agentTimezone` struct with `agent_id` + `timezone` fields |
-| `natsapi/svc.go` | `agent-agentinfo` handler: second decode into `agentTimezone`, UPDATE `time_zone` when `OPENFRAME_MODE=true` |
+| `nats-listener/types.go` | Added `agentTimezone` struct with `agent_id` + `timezone` fields |
+| `nats-listener/svc.go` | `agent-agentinfo` handler: second decode into `agentTimezone`, UPDATE `time_zone` when `OPENFRAME_MODE=true` |
 
 ---
 

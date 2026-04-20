@@ -52,10 +52,12 @@ services:
     restart: always
     environment:
       API_HOST: ${API_HOST}
+      REDIS_HOST: tactical-redis
     volumes:
       - tactical_data:/opt/tactical
     networks:
       api-db: null
+      redis: null
       proxy:
         aliases:
           - ${API_HOST}

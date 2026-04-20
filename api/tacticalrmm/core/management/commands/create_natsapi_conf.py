@@ -37,4 +37,10 @@ class Command(BaseCommand):
             json.dump(config, f)
         os.chmod(conf, 0o600)
 
+        # The legacy Redis-key transport for nats-api.conf has been removed.
+        # The tactical-nats container now reads Postgres + NATS settings
+        # directly from environment variables (see nats-listener/utils.go
+        # loadConfigFromEnv). This file is still generated for standalone
+        # installs where nats-api is a systemd service that reads it.
+
         self.stdout.write("Configuration for nats-api created successfully")

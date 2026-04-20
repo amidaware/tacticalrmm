@@ -94,7 +94,7 @@ Rotating `AUTH_SERVICE_PASS` has the same shape but affects only the
 
 ## Seed format validation
 
-`loadIssuerKey` at `natsapi/authcallout.go:loadIssuerKey` rejects any
+`loadIssuerKey` at `nats-listener/authcallout.go:loadIssuerKey` rejects any
 seed that isn't an `SA…` account key up-front with a clear error. If the
 wrong value lands in the secret, the pod fail-fasts on startup instead
 of silently mis-signing tokens.

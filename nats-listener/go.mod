@@ -1,4 +1,4 @@
-module github.com/amidaware/tacticalrmm/natsapi
+module github.com/amidaware/tacticalrmm/nats-listener
 
 go 1.26
 

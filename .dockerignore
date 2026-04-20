@@ -3,7 +3,7 @@
 **/.dockerignore
 # Standalone-install prebuilt nats-api binaries (used by install.sh, not by
 # the tactical-nats container build, which compiles from source).
-natsapi/bin/
+nats-listener/bin/
 **/.env
 **/.git
 **/.gitignore

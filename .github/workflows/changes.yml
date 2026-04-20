@@ -64,10 +64,10 @@ jobs:
               - 'docker/containers/tactical/**'
             tactical-nats:
               - 'docker/containers/tactical-nats/**'
-              - 'natsapi/**'
+              - 'nats-listener/**'
             tactical-nats-listener:
               - 'docker/containers/tactical-nats-listener/**'
-              - 'natsapi/**'
+              - 'nats-listener/**'
             tactical-frontend:
               - 'docker/containers/tactical-frontend/**'
               - 'api/tacticalrmm/tacticalrmm/settings.py'

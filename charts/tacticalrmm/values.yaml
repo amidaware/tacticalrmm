@@ -221,7 +221,7 @@ nats:
   #     from the AUTH_ISSUER_SEED in the tactical-nats-auth secret.
   #   - An account matching tactical-nats-listener.authTargetAccount where
   #     approved TRMM users (tacticalrmm superuser + agents) land.
-  # See tacticalrmm/natsapi/DESIGN_LAYER3_AUTH_CALLOUT.md for the full
+  # See tacticalrmm/nats-listener/DESIGN_LAYER3_AUTH_CALLOUT.md for the full
   # contract and the companion wrapper chart at
   # openframe-saas-tenant/manifests/integrated-tools/nats/ for an example.
   external:

@@ -216,9 +216,9 @@ with `writer.WriteConfig`.
 FROM golang:1.26-alpine AS build
 ARG TARGETOS TARGETARCH
 WORKDIR /src
-COPY natsapi/go.mod natsapi/go.sum ./
+COPY nats-listener/go.mod nats-listener/go.sum ./
 RUN go mod download
-COPY natsapi/ ./
+COPY nats-listener/ ./
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags "-s -w" -o /out/nats-api ./cmd/nats-api
 
@@ -445,7 +445,7 @@ spec:
 
 ## Files to Change
 
-### Go (natsapi/)
+### Go (nats-listener/)
 
 | File | Change |
 |------|--------|

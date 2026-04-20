@@ -392,13 +392,13 @@ EOF
 fi
 
 if [ "$arch" = "x86_64" ]; then
-  natsapi='nats-api'
+  nats_listener='nats-api'
 else
-  natsapi='nats-api-arm64'
+  nats_listener='nats-api-arm64'
 fi
 
 nats_api='/usr/local/bin/nats-api'
-sudo cp /rmm/natsapi/bin/${natsapi} $nats_api
+sudo cp /rmm/nats-listener/bin/${nats_listener} $nats_api
 sudo chown ${USER}:${USER} $nats_api
 sudo chmod +x $nats_api
 

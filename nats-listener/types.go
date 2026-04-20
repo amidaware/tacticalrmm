@@ -1,4 +1,4 @@
-package natsapi
+package natslistener
 
 type DjangoConfig struct {
 	Key     string `json:"key"`

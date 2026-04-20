@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"github.com/amidaware/tacticalrmm/natsapi"
+	"github.com/amidaware/tacticalrmm/nats-listener"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,7 +33,7 @@ func main() {
 
 	setupLogging(logLevel)
 
-	natsapi.Svc(log, *cfg)
+	natslistener.Svc(log, *cfg)
 }
 
 func setupLogging(level *string) {

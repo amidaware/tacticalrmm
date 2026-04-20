@@ -9,11 +9,11 @@ ARG TARGETARCH
 WORKDIR /src
 
 # Module files first so `go mod download` is cached independently of source.
-COPY natsapi/go.mod natsapi/go.sum ./
+COPY nats-listener/go.mod nats-listener/go.sum ./
 RUN go mod download
 
-# Copy the rest of the natsapi module (library .go files + cmd/nats-api/).
-COPY natsapi/ ./
+# Copy the rest of the nats-listener module (library .go files + cmd/nats-api/).
+COPY nats-listener/ ./
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags "-s -w" -o /out/nats-api ./cmd/nats-api

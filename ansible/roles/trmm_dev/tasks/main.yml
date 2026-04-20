@@ -418,7 +418,7 @@
     CGO_ENABLED=0 GOOS=linux GOARCH={{ goarch }} \
       /usr/local/go/bin/go build -trimpath -ldflags "-s -w" -o /tmp/nats-api ./cmd/nats-api
   args:
-    chdir: "{{ backend_dir }}/natsapi"
+    chdir: "{{ backend_dir }}/nats-listener"
 
 - name: install nats-api bin
   tags: nats-api

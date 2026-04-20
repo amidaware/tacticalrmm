@@ -299,10 +299,10 @@ For reference, all places that call `reload_nats()`:
 
 | File | Change |
 |------|--------|
-| `natsapi/svc.go` | Add reconciliation goroutine + shared hash state |
-| `natsapi/reconcile.go` | New file: `computeConfigHash()` function |
-| `natsapi/metrics.go` | Add `reconcile_total`, `reconcile_duration_seconds` |
-| `natsapi/utils.go` | Add `parseDurationEnv()` helper |
+| `nats-listener/svc.go` | Add reconciliation goroutine + shared hash state |
+| `nats-listener/reconcile.go` | New file: `computeConfigHash()` function |
+| `nats-listener/metrics.go` | Add `reconcile_total`, `reconcile_duration_seconds` |
+| `nats-listener/utils.go` | Add `parseDurationEnv()` helper |
 | `api/tacticalrmm/tacticalrmm/utils.py` | Clean up `reload_nats()`, remove dead code paths |
 
 ---

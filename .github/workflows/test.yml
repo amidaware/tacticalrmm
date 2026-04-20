@@ -19,7 +19,7 @@ on:
     paths:
       - 'api/**'
       - 'docker/**'
-      - 'natsapi/**'
+      - 'nats-listener/**'
       - '.github/**'
       - 'charts/**'
 

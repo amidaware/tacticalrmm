@@ -39,7 +39,7 @@ class Command(BaseCommand):
 
         # The legacy Redis-key transport for nats-api.conf has been removed.
         # The tactical-nats container now reads Postgres + NATS settings
-        # directly from environment variables (see natsapi/utils.go
+        # directly from environment variables (see nats-listener/utils.go
         # loadConfigFromEnv). This file is still generated for standalone
         # installs where nats-api is a systemd service that reads it.
 

@@ -1,4 +1,4 @@
-package natsapi
+package natslistener
 
 import (
 	"errors"

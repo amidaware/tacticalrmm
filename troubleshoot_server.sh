@@ -222,7 +222,7 @@ celerystatus=$(systemctl is-active celery)
 celerybeatstatus=$(systemctl is-active celerybeat)
 nginxstatus=$(systemctl is-active nginx)
 natsstatus=$(systemctl is-active nats)
-natsapistatus=$(systemctl is-active nats-api)
+nats_listener_status=$(systemctl is-active nats-api)
 meshcentralstatus=$(systemctl is-active meshcentral)
 postgresqlstatus=$(systemctl is-active postgresql)
 redisserverstatus=$(systemctl is-active redis-server)
@@ -294,7 +294,7 @@ else
 fi
 
 # nats-api Service
-if [ $natsapistatus = active ]; then
+if [ $nats_listener_status = active ]; then
 	echo -e ${GREEN} Success nats-api Service is running | tee -a checklog.log
 	printf >&2 "\n\n"
 else

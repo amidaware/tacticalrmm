@@ -16,8 +16,6 @@ winupdate = Recipe(
     severity=cycle(severity),
 )
 
-approved_winupdate = winupdate.extend(action="approve")
-
 winupdate_policy = Recipe(
     WinUpdatePolicy,
     run_time_hour=dt.now(timezone).hour,
@@ -26,16 +24,6 @@ winupdate_policy = Recipe(
 )
 
 winupdate_approve = winupdate_policy.extend(
-    critical="approve",
-    important="approve",
-    moderate="approve",
-    low="approve",
-    other="approve",
-)
-
-winupdate_approve_monthly = winupdate_policy.extend(
-    run_time_frequency="monthly",
-    run_time_day=dt.now(timezone).day,
     critical="approve",
     important="approve",
     moderate="approve",

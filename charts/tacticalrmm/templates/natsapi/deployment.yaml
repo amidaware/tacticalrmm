@@ -38,7 +38,9 @@ spec:
       containers:
         - name: nats-api
           image: "{{ (index .Values "tactical-natsapi").image.registry }}/{{ (index .Values "tactical-natsapi").image.repository }}:{{ (index .Values "tactical-natsapi").image.tag }}"
-          args: ["-log", "{{ (index .Values "tactical-natsapi").logLevel }}"]
+          args:
+            - "-log"
+            - {{ (index .Values "tactical-natsapi").logLevel | quote }}
           ports:
             - containerPort: 9189
               name: metrics
@@ -82,14 +84,14 @@ spec:
 
           livenessProbe:
             httpGet:
-              path: /metrics
+              path: /healthz
               port: 9189
             initialDelaySeconds: 15
             periodSeconds: 15
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /metrics
+              path: /healthz
               port: 9189
             initialDelaySeconds: 5
             periodSeconds: 10

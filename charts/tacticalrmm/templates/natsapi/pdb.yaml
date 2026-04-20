@@ -4,7 +4,11 @@ kind: PodDisruptionBudget
 metadata:
   name: tactical-natsapi
 spec:
-  minAvailable: {{ (index .Values "tactical-natsapi").pdb.minAvailable | default 1 }}
+  # maxUnavailable (not minAvailable) so that if replicas is ever
+  # overridden to 1, node drains aren't blocked forever — minAvailable: 1
+  # with replicas: 1 makes the pod non-evictable. maxUnavailable: 1 caps
+  # disruption at one pod at a time regardless of the replica count.
+  maxUnavailable: {{ (index .Values "tactical-natsapi").pdb.maxUnavailable | default 1 }}
   selector:
     matchLabels:
       {{- include "tacticalrmm.selectorLabels" . | nindent 6 }}

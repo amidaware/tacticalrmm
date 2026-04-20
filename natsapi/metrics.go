@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -194,12 +195,30 @@ func initMetrics() {
 	}
 }
 
+// healthChecker is installed by SetHealthChecker once the NATS connections
+// exist. Until then /healthz returns 503 (accommodated by liveness probe
+// initialDelaySeconds). Using atomic.Pointer so the request path is
+// lock-free and the setter can run from any goroutine.
+var healthChecker atomic.Pointer[func() error]
+
+// SetHealthChecker installs the function that /healthz invokes on every
+// request. Return a non-nil error to signal unhealthy (503); nil means
+// healthy (200). Calling again replaces the previous function.
+func SetHealthChecker(fn func() error) {
+	healthChecker.Store(&fn)
+}
+
 // StartMetricsServer starts the Prometheus /metrics endpoint on the address
 // in METRICS_LISTEN (e.g. ":9189"). Returns true if the listener was
 // started, false if METRICS_LISTEN was unset. Errors from the HTTP server
 // are logged but non-fatal — metrics must never take down the check-in
 // path. Callers should gate the queue-depth sampler on the return value so
 // we don't waste a ticker when the endpoint is disabled.
+//
+// Also serves /healthz on the same listener for the K8s liveness probe.
+// Unlike /metrics (which answers 200 as long as the HTTP server is up),
+// /healthz delegates to the checker installed via SetHealthChecker so a
+// dead NATS connection actually surfaces as an unhealthy pod.
 func StartMetricsServer(logger *logrus.Logger) bool {
 	addr := os.Getenv("METRICS_LISTEN")
 	if addr == "" {
@@ -211,6 +230,19 @@ func StartMetricsServer(logger *logrus.Logger) bool {
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		fn := healthChecker.Load()
+		if fn == nil {
+			http.Error(w, "starting", http.StatusServiceUnavailable)
+			return
+		}
+		if err := (*fn)(); err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
 	srv := &http.Server{
 		Addr:              addr,
 		Handler:           mux,

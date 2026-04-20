@@ -3,6 +3,7 @@ package natsapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"hash/maphash"
 	"os"
 	"os/signal"
@@ -437,6 +438,22 @@ func Svc(logger *logrus.Logger, cfg string) {
 	if err := nc.LastError(); err != nil {
 		logger.Fatalln(err)
 	}
+
+	// Liveness: pod is healthy only while both NATS connections are up.
+	// A dead connection means no check-ins land and no auth callouts are
+	// served, and nats-api can't recover that on its own, so surfacing it
+	// as a 503 lets kubelet restart the pod. IsConnected is false during
+	// RECONNECTING, so brief blips will fail /healthz; the livenessProbe's
+	// failureThreshold provides the grace window.
+	SetHealthChecker(func() error {
+		if !authNc.IsConnected() {
+			return fmt.Errorf("auth nats: %s", authNc.Status())
+		}
+		if !nc.IsConnected() {
+			return fmt.Errorf("main nats: %s", nc.Status())
+		}
+		return nil
+	})
 
 	sigCtx, sigStop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	<-sigCtx.Done()

@@ -7,6 +7,11 @@ tactical:
     repository: tactical-backend
     tag: latest
 
+  # Path of the file the backend writes once init completes. Sibling
+  # workers (celery, celerybeat, websockets) probe its existence to stay
+  # Ready. Must match TACTICAL_READY_FILE in the container image's ENV.
+  readyFile: "/opt/tactical/tmp/tactical.ready"
+
   initImage:
     registry: ghcr.io/flamingo-stack/registry
     repository: busybox
@@ -92,11 +97,12 @@ tactical-natsapi:
     limits:
       cpu: 50m
       memory: 256Mi
-  # Pod disruption budget — keep at least one callout pod available during
-  # voluntary disruptions (node upgrades, manual drains).
+  # Pod disruption budget — cap voluntary disruption at one pod at a time.
+  # Using maxUnavailable (not minAvailable) so a replicas=1 override
+  # doesn't make the pod non-evictable and block node drains.
   pdb:
     enabled: true
-    minAvailable: 1
+    maxUnavailable: 1
   # Secret containing the Ed25519 NKey seed for auth callout JWT signing.
   # The NATS wrapper chart must be configured with the corresponding public key.
   natsAuthNkeySeedSecret:
@@ -171,7 +177,15 @@ tactical-meshcentral:
 
 
 redis:
-  url:
+  enabled: false
+  # -- External Redis connection URL.
+  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
+  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
+  # tactical-datasources-urls ConfigMap it manages.
+  external:
+    existingConfigMap: ""
+    urlKey: "REDIS_URL"
+    url: ""
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: redis
@@ -179,13 +193,27 @@ redis:
 
 
 postgres:
-  url:
+  enabled: false
+  # -- External PostgreSQL connection URL.
+  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
+  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
+  # tactical-datasources-urls ConfigMap it manages.
+  external:
+    existingConfigMap: ""
+    urlKey: "POSTGRES_URL"
+    url: ""
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: postgres
     tag: "13-alpine"
 
 nats:
+  enabled: false
+  # -- External NATS connection URL.
+  # If existingConfigMap is set, the chart reads the URL from that ConfigMap
+  # under urlKey. Otherwise the chart adds {urlKey}: {url} to the combined
+  # tactical-datasources-urls ConfigMap it manages.
+  #
   # The NATS server at this URL MUST have auth callout enabled with:
   #   - An AUTH account containing an "auth-service" user whose password
   #     matches tactical-natsapi.authServicePassSecret above.
@@ -196,4 +224,7 @@ nats:
   # See tacticalrmm/natsapi/DESIGN_LAYER3_AUTH_CALLOUT.md for the full
   # contract and the companion wrapper chart at
   # openframe-saas-tenant/manifests/integrated-tools/nats/ for an example.
-  url: nats://nats.datasources.svc.cluster.local:4222
+  external:
+    existingConfigMap: ""
+    urlKey: "NATS_URL"
+    url: "nats://nats.datasources.svc.cluster.local:4222"

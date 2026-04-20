@@ -383,47 +383,6 @@ class AutomatedTask(BaseAuditModel):
 
         return "ok"
 
-    def modify_task_on_agent(self, agent: "Optional[Agent]" = None) -> str:
-        if self.policy and not agent:
-            return "agent parameter needs to be passed with policy task"
-        else:
-            agent = agent if self.policy else self.agent
-
-        try:
-            task_result = TaskResult.objects.get(agent=agent, task=self)
-        except TaskResult.DoesNotExist:
-            task_result = TaskResult(agent=agent, task=self)
-            task_result.save()
-
-        if agent.is_posix:
-            task_result.sync_status = TaskSyncStatus.SYNCED
-            task_result.save(update_fields=["sync_status"])
-            return "ok"
-
-        nats_data = {
-            "func": "schedtask",
-            "schedtaskpayload": self.generate_nats_task_payload(),
-        }
-        logger.debug(nats_data)
-
-        r = asyncio.run(task_result.agent.nats_cmd(nats_data, timeout=10))
-
-        if r != "ok":
-            task_result.sync_status = TaskSyncStatus.NOT_SYNCED
-            task_result.save(update_fields=["sync_status"])
-            logger.error(
-                f"Unable to modify scheduled task {self.name} on {task_result.agent.hostname}: {r}"
-            )
-            return "timeout"
-        else:
-            task_result.sync_status = TaskSyncStatus.SYNCED
-            task_result.save(update_fields=["sync_status"])
-            logger.info(
-                f"{task_result.agent.hostname} task {self.name} was successfully modified."
-            )
-
-        return "ok"
-
     def delete_task_on_agent(self, agent: "Optional[Agent]" = None) -> str:
         if self.policy and not agent:
             return "agent parameter needs to be passed with policy task"

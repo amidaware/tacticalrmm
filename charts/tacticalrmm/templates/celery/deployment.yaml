@@ -52,7 +52,7 @@ spec:
             exec:
               command:
                 - cat
-                - /opt/tactical/tmp/tactical/ready
+                - {{ .Values.tactical.readyFile | quote }}
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 3
@@ -60,7 +60,7 @@ spec:
             exec:
               command:
                 - cat
-                - /opt/tactical/tmp/tactical/ready
+                - {{ .Values.tactical.readyFile | quote }}
             initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 3

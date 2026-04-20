@@ -26,7 +26,6 @@ set -euo pipefail
 : "${API_HOST:=tactical-backend}"
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
-: "${REDIS_PORT:=6379}"
 : "${TACTICAL_BACKEND_PORT:=8080}"
 : "${DEBUG:=False}"
 : "${OPENFRAME_MODE:=True}"
@@ -35,6 +34,7 @@ set -euo pipefail
 : "${TRMM_DISABLE_SERVER_SCRIPTS:=False}"
 : "${TRMM_DISABLE_SSO:=False}"
 : "${TRMM_DISABLE_2FA:=True}"
+: "${TRMM_DISABLE_MESH_SYNC_TASK:=True}"
 : "${SWAGGER_ENABLED:=False}"
 : "${BETA_API_ENABLED:=False}"
 : "${CELERY_AUTOSCALE:=20,2}"
@@ -85,8 +85,8 @@ copy_custom_code() {
   export POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD POSTGRES_HOST POSTGRES_PORT
   export REDIS_HOST
   export NATS_CONNECT_HOST
-  export APP_HOST API_HOST
-  export TRMM_DISABLE_WEB_TERMINAL TRMM_DISABLE_SERVER_SCRIPTS TRMM_DISABLE_SSO TRMM_DISABLE_2FA
+  export APP_HOST
+  export TRMM_DISABLE_WEB_TERMINAL TRMM_DISABLE_SERVER_SCRIPTS TRMM_DISABLE_SSO TRMM_DISABLE_2FA TRMM_DISABLE_MESH_SYNC_TASK
   export OPENFRAME_MODE SWAGGER_ENABLED BETA_API_ENABLED
   export CERT_PUB_PATH CERT_PRIV_PATH
   export SESSION_COOKIE_SECURE CSRF_COOKIE_SECURE
@@ -122,8 +122,8 @@ copy_custom_code() {
   local vars='$SECRET_KEY $ADMINURL $DEBUG $TRMM_PROTO $TACTICAL_DIR $VIRTUAL_ENV'
   vars+=' $POSTGRES_DB $POSTGRES_USER $POSTGRES_PASSWORD $POSTGRES_HOST $POSTGRES_PORT'
   vars+=' $REDIS_HOST $NATS_CONNECT_HOST'
-  vars+=' $APP_HOST $API_HOST'
-  vars+=' $TRMM_DISABLE_WEB_TERMINAL $TRMM_DISABLE_SERVER_SCRIPTS $TRMM_DISABLE_SSO $TRMM_DISABLE_2FA'
+  vars+=' $APP_HOST'
+  vars+=' $TRMM_DISABLE_WEB_TERMINAL $TRMM_DISABLE_SERVER_SCRIPTS $TRMM_DISABLE_SSO $TRMM_DISABLE_2FA $TRMM_DISABLE_MESH_SYNC_TASK'
   vars+=' $OPENFRAME_MODE $SWAGGER_ENABLED $BETA_API_ENABLED'
   vars+=' $CERT_PUB_PATH $CERT_PRIV_PATH'
   vars+=' $ALLOWED_HOSTS $CORS_ALLOWED_ORIGINS $CSRF_TRUSTED_ORIGINS'
@@ -214,43 +214,24 @@ print(f'{api_key.key}')" | python manage.py shell --skip-checks > "${TACTICAL_DI
 }
 
 # ---------------------------------------------------------------------------
-# set_ready_status — file-based readiness signal
+# set_ready_status — signals K8s liveness/readiness probes that init is done.
+# Probes check existence only; file content is unused.
 # ---------------------------------------------------------------------------
 set_ready_status() {
-  local service_name=$1
-  echo "Setting ready status for ${service_name}"
-  mkdir -p "$(dirname "${TACTICAL_READY_FILE}")"
-  echo "${service_name}" > "${TACTICAL_READY_FILE}"
+  echo "Setting ready status"
+  touch "${TACTICAL_READY_FILE}"
 }
 
 # ---------------------------------------------------------------------------
-# check_tactical_ready — wait for the init ready file
-# ---------------------------------------------------------------------------
-check_tactical_ready() {
-  sleep 15
-  local attempts=0
-  local max_attempts=60  # 60 × 10 s = 10 minutes
-  until [ -f "${TACTICAL_READY_FILE}" ]; do
-    attempts=$((attempts + 1))
-    if [ "${attempts}" -ge "${max_attempts}" ]; then
-      echo "ERROR: timed out after $((max_attempts * 10))s waiting for tactical-backend to finish init"
-      exit 1
-    fi
-    echo "Waiting for init to finish... (${attempts}/${max_attempts})"
-    sleep 10
-  done
-}
-
-# ---------------------------------------------------------------------------
-# worker_init — lightweight initialization for worker containers (celery,
-#               celerybeat, websockets) that do not share the backend PVC.
-#               Requires SECRET_KEY and ADMINURL to be set as env vars.
+# worker_init — initialization for celery, celerybeat, websockets containers.
+# Unlike tactical_init, these don't share the backend PVC and don't generate
+# secrets; SECRET_KEY must be injected from a K8s Secret. ADMINURL is
+# optional (ADMIN_ENABLED=False in the settings template, so the value is
+# only used to render an unreachable URL prefix).
 # ---------------------------------------------------------------------------
 worker_init() {
-  local role=$1
-
-  if [ -z "${SECRET_KEY:-}" ] || [ -z "${ADMINURL:-}" ]; then
-    echo "ERROR: worker_init requires SECRET_KEY and ADMINURL env vars"
+  if [ -z "${SECRET_KEY:-}" ]; then
+    echo "ERROR: worker_init requires SECRET_KEY env var"
     exit 1
   fi
 
@@ -263,23 +244,18 @@ worker_init() {
   export SECRET_KEY ADMINURL
   copy_custom_code
 
-  set_ready_status "${role}"
+  set_ready_status
 }
 
 # ---------------------------------------------------------------------------
-# tactical_init — master initialization
+# tactical_init — backend initialization: preserves state dirs across restarts,
+#                 generates/restores SECRET_KEY + ADMINURL, runs migrations,
+#                 creates the default superuser and API key.
 # ---------------------------------------------------------------------------
 tactical_init() {
-  local role=$1
-
-  # Copy source to working directory.
-  # Preserve directories that hold persistent runtime state across restarts:
-  #   tmp/*                    — secrets, ready file, web_tar_url
-  #   certs/*                  — TLS certificates
-  #   api/tacticalrmm/private/ — agent executables, Django logs
-  #   api/celerybeat-schedule* — Celery Beat timing state (file-based scheduler)
-  #   reporting/*              — user-uploaded custom report assets
-  #   logs/*                   — application logs
+  # Copy source to working dir. --exclude flags below protect runtime state
+  # (secrets, certs, agent binaries, logs, reports, celerybeat schedule) from
+  # being wiped by --delete on restart.
   rsync -a --no-perms --no-owner --delete \
     --exclude "tmp/*" \
     --exclude "certs/*" \
@@ -317,41 +293,43 @@ tactical_init() {
 
   copy_custom_code
 
-  if [ "${role}" = "backend" ]; then
-    run_migrations
-    create_superuser_and_api_key
-  fi
+  run_migrations
+  create_superuser_and_api_key
 
   # Set ownership
   chown -R "${TACTICAL_USER}:${TACTICAL_USER}" "${TACTICAL_DIR}"
 
-  set_ready_status "init"
+  set_ready_status
 }
 
 # ===========================================================================
 # Entrypoint dispatch
 # ===========================================================================
 
-if [ "${1:-}" = 'tactical-backend' ]; then
-  tactical_init "backend"
-  exec uwsgi "${TACTICAL_DIR}/api/app.ini"
-fi
-
-if [ "${1:-}" = 'tactical-celery' ]; then
-  worker_init "celery"
-  exec celery -A tacticalrmm worker --autoscale="${CELERY_AUTOSCALE}" -l info
-fi
-
-if [ "${1:-}" = 'tactical-celerybeat' ]; then
-  worker_init "celerybeat"
-  # rm -f is idiomatic for "remove if exists": unlike `test -f && rm`, it always
-  # returns 0 so set -e does not abort when the file is absent on first start.
-  rm -f "${TACTICAL_DIR}/api/celerybeat.pid"
-  exec celery -A tacticalrmm beat -l info
-fi
-
-if [ "${1:-}" = 'tactical-websockets' ]; then
-  worker_init "websockets"
-  export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
-  exec uvicorn --host 0.0.0.0 --port 8383 --forwarded-allow-ips='*' tacticalrmm.asgi:application
-fi
+case "${1:-}" in
+  tactical-backend)
+    tactical_init
+    exec uwsgi "${TACTICAL_DIR}/api/app.ini"
+    ;;
+  tactical-celery)
+    worker_init
+    exec celery -A tacticalrmm worker --autoscale="${CELERY_AUTOSCALE}" -l info
+    ;;
+  tactical-celerybeat)
+    worker_init
+    # rm -f is idiomatic for "remove if exists": unlike `test -f && rm`, it always
+    # returns 0 so set -e does not abort when the file is absent on first start.
+    rm -f "${TACTICAL_DIR}/api/celerybeat.pid"
+    exec celery -A tacticalrmm beat -l info
+    ;;
+  tactical-websockets)
+    worker_init
+    export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
+    exec uvicorn --host 0.0.0.0 --port 8383 --forwarded-allow-ips='*' tacticalrmm.asgi:application
+    ;;
+  *)
+    echo "ERROR: unknown entrypoint role: ${1:-<none>}"
+    echo "Expected one of: tactical-backend, tactical-celery, tactical-celerybeat, tactical-websockets"
+    exit 1
+    ;;
+esac

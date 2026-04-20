@@ -795,5 +795,6 @@ class TestTerminalStreamConsumer(TacticalTestCase):
                     "session_id": self.session_id,
                     "shell": "cmd",
                 },
+                "run_as_user": False,
             }
         )

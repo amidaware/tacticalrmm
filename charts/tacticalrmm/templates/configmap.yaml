@@ -30,7 +30,7 @@ data:
   NATS_STD_BIND_HOST: ""
   NATS_WEBSOCKET_PORT: "9235"
   NATS_WS_BIND_HOST: ""
-  {{- $natsUrl := required "nats.url is required (e.g. nats://nats.datasources.svc.cluster.local:4222)" .Values.nats.url | trimPrefix "nats://" }}
+  {{- $natsUrl := required "nats.external.url is required (e.g. nats://nats.datasources.svc.cluster.local:4222)" .Values.nats.external.url | trimPrefix "nats://" }}
   {{- $natsParts := splitList ":" $natsUrl }}
   NATS_STANDARD_PORT: {{ if gt (len $natsParts) 1 }}{{ index $natsParts 1 | quote }}{{ else }}"4222"{{ end }}
   NATS_CONNECT_HOST: {{ index $natsParts 0 | quote }}

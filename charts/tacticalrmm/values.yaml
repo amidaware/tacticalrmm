@@ -185,7 +185,7 @@ redis:
   external:
     existingConfigMap: ""
     urlKey: "REDIS_URL"
-    url: ""
+    url: "redis://redis.datasources.svc.cluster.local:6379"
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: redis
@@ -201,7 +201,7 @@ postgres:
   external:
     existingConfigMap: ""
     urlKey: "POSTGRES_URL"
-    url: ""
+    url: "postgres://tacticalrmm:tacticalrmm@postgres.datasources.svc.cluster.local:5432/tacticalrmm"
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: postgres

@@ -465,16 +465,16 @@ class TestTerminalStreamConsumer(TacticalTestCase):
     @patch.object(TerminalStreamConsumer, "send_json", new_callable=AsyncMock)
     @patch.object(TerminalStreamConsumer, "accept", new_callable=AsyncMock)
     @patch.object(TerminalStreamConsumer, "close", new_callable=AsyncMock)
-    @patch.object(TerminalStreamConsumer, "has_perm", return_value=False)
+    @patch.object(
+        TerminalStreamConsumer, "has_perm", new_callable=AsyncMock, return_value=False
+    )
     def test_connect_permission_denied(
         self, mock_has_perm, mock_close, mock_accept, mock_send_json
     ):
         async_to_sync(self.consumer.connect)()
 
-        mock_accept.assert_awaited_once()
-        mock_send_json.assert_awaited_once_with(
-            {"error": "Permission denied", "status": 403}
-        )
+        mock_accept.assert_not_awaited()
+        mock_send_json.assert_not_awaited()
         mock_close.assert_awaited_once_with(code=4003)
         self.consumer.channel_layer.group_add.assert_not_awaited()
 

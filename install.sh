@@ -1,12 +1,27 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="90"
+SCRIPT_VERSION="91"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
-sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
-sudo apt install -y software-properties-common
-sudo apt update
-sudo apt install -y openssl
+set -Eeuo pipefail
+PS4='+ ${BASH_SOURCE}:${LINENO}: '
+
+error_handler() {
+  local lineno="${1}"
+  local exit_code="${2:-$?}"
+  print_error "ERROR: install.sh failed at line ${lineno} with exit code ${exit_code}."
+}
+
+trap 'error_handler ${LINENO} $?' ERR
+
+if [[ "${TRACE_INSTALL:-0}" == "1" ]]; then
+  set -x
+fi
+
+sudo apt-get install -y curl wget jq dirmngr gnupg lsb-release ca-certificates qrencode
+sudo apt-get install -y software-properties-common
+sudo apt-get update
+sudo apt-get install -y openssl
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -67,7 +82,7 @@ relno=$(lsb_release -sr | cut -d. -f1)
 fullrelno=$(lsb_release -sr)
 
 not_supported() {
-  echo -ne "${RED}ERROR: Only Debian 11, Debian 12 and Ubuntu 22.04 are supported.${NC}\n"
+  echo -ne "${RED}ERROR: Only Debian 11, Debian 12, Ubuntu 22.04, and Ubuntu 24.04 are supported.${NC}\n"
 }
 
 if [[ "$osname" == "debian" ]]; then
@@ -76,7 +91,8 @@ if [[ "$osname" == "debian" ]]; then
     exit 1
   fi
 elif [[ "$osname" == "ubuntu" ]]; then
-  if [[ "$fullrelno" != "22.04" ]]; then
+  # Ubuntu 24.04 uses codename noble; the repos and package names used below are available for both 22.04 and 24.04.
+  if [[ "$fullrelno" != "22.04" && "$fullrelno" != "24.04" ]]; then
     not_supported
     exit 1
   fi
@@ -118,6 +134,7 @@ postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-arch
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
 
+set +o pipefail
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
@@ -126,6 +143,7 @@ pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 MESHPGUSER=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 MESHPGPWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+set -o pipefail
 
 cls() {
   printf "\033c"
@@ -149,28 +167,47 @@ print_yellow() {
 
 cls
 
+rmmdomain="${rmmdomain:-}"
+frontenddomain="${frontenddomain:-}"
+meshdomain="${meshdomain:-}"
+rootdomain="${rootdomain:-}"
+letsemail="${letsemail:-}"
+djangousername="${djangousername:-}"
+djangopassword="${djangopassword:-}"
+Cloudflare_token="${Cloudflare_token:-}"
+Cloudflare_Zone_ID="${Cloudflare_Zone_ID:-}"
+CHECK_MESH_READY=''
+CHECK_MESH_READY2=''
+
 while [[ $rmmdomain != *[.]*[.]* ]]; do
   echo -ne "${YELLOW}Enter the subdomain for the backend (e.g. api.example.com)${NC}: "
-  read rmmdomain
+  read -r rmmdomain
 done
 
 while [[ $frontenddomain != *[.]*[.]* ]]; do
   echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. rmm.example.com)${NC}: "
-  read frontenddomain
+  read -r frontenddomain
 done
 
 while [[ $meshdomain != *[.]*[.]* ]]; do
   echo -ne "${YELLOW}Enter the subdomain for meshcentral (e.g. mesh.example.com)${NC}: "
-  read meshdomain
+  read -r meshdomain
 done
 
-echo -ne "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: "
-read rootdomain
+while [[ $rootdomain != *[.]* ]]; do
+  echo -ne "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: "
+  read -r rootdomain
+done
 
 while [[ $letsemail != *[@]*[.]* ]]; do
   echo -ne "${YELLOW}Enter a valid email address for django and meshcentral${NC}: "
-  read letsemail
+  read -r letsemail
 done
+
+cloudflare_dns_api=false
+if [[ -n "${Cloudflare_token:-}" ]]; then
+  cloudflare_dns_api=true
+fi
 
 byocert=false
 if [[ $* == *--use-own-cert* ]]; then
@@ -206,8 +243,16 @@ if grep -q manage_etc_hosts /etc/hosts; then
   sudo systemctl restart cloud-init >/dev/null
 fi
 
-CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
-HAS_11=$(grep 127.0.1.1 /etc/hosts)
+CHECK_HOSTS=''
+HAS_11=''
+
+if HAS_11=$(grep 127.0.1.1 /etc/hosts); then
+  if CHECK_HOSTS=$(printf '%s\n' "$HAS_11" | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain"); then
+    :
+  else
+    CHECK_HOSTS=''
+  fi
+fi
 
 if ! [[ $CHECK_HOSTS ]]; then
   print_green 'Adding subdomains to hosts file'
@@ -230,29 +275,47 @@ if [[ $* == *--insecure* ]]; then
 fi
 
 if [[ "$insecure" = true ]]; then
+  print_yellow 'SSL mode: self-signed'
   print_green 'Generating self-signed cert'
   certdir='/etc/ssl/tactical'
-  sudo mkdir -p $certdir
-  sudo chown ${USER}:${USER} $certdir
+  sudo mkdir -p "$certdir"
+  sudo chown "${USER}:${USER}" "$certdir"
   sudo chmod 770 $certdir
-  CERT_PRIV_KEY=${certdir}/key.pem
-  CERT_PUB_KEY=${certdir}/cert.pem
+  CERT_PRIV_KEY="${certdir}/key.pem"
+  CERT_PUB_KEY="${certdir}/cert.pem"
   openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
     -nodes -keyout ${CERT_PRIV_KEY} -out ${CERT_PUB_KEY} -subj "/CN=${rootdomain}" \
     -addext "subjectAltName=DNS:${rootdomain},DNS:*.${rootdomain}"
 
 elif [[ "$byocert" = true ]]; then
+  print_yellow 'SSL mode: existing certificate files'
   CERT_PRIV_KEY=$privkey_path
   CERT_PUB_KEY=$fullchain_path
   sudo chown ${USER}:${USER} $CERT_PRIV_KEY $CERT_PUB_KEY
 else
-  sudo apt install -y certbot
-  print_green 'Getting wildcard cert'
+  sudo apt-get install -y certbot python3-certbot-dns-cloudflare
 
-  sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
-  while [[ $? -ne 0 ]]; do
-    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email
-  done
+  if [[ "$cloudflare_dns_api" = true ]]; then
+    print_yellow 'SSL mode: Cloudflare DNS API'
+    print_green 'Getting wildcard cert using Cloudflare DNS API'
+    cloudflare_creds='/etc/letsencrypt/cloudflare.ini'
+    sudo bash -c "umask 077 && cat > ${cloudflare_creds}" <<EOF
+dns_cloudflare_api_token = ${Cloudflare_token}
+EOF
+    sudo chmod 600 ${cloudflare_creds}
+    sudo chown root:root ${cloudflare_creds}
+
+    until sudo certbot certonly --dns-cloudflare --dns-cloudflare-credentials ${cloudflare_creds} -d "*.${rootdomain}" --agree-tos --no-eff-email -m ${letsemail}; do
+      print_yellow 'Certbot failed using Cloudflare DNS API. Verify Cloudflare_token and DNS permissions, then retry.'
+    done
+  else
+    print_yellow 'SSL mode: manual DNS challenge'
+    print_green 'Getting wildcard cert'
+
+    until sudo certbot certonly --manual -d "*.${rootdomain}" --agree-tos --no-bootstrap --preferred-challenges dns -m ${letsemail} --no-eff-email; do
+      print_yellow 'Certbot failed. Verify DNS challenge records and press Enter to retry.'
+    done
+  fi
   CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
   CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
   sudo chown ${USER}:${USER} -R /etc/letsencrypt
@@ -271,8 +334,8 @@ EOF
 )"
 echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
 
-sudo apt update
-sudo apt install -y nginx
+sudo apt-get update
+sudo apt-get install -y nginx
 sudo systemctl stop nginx
 
 nginxdefaultconf='/etc/nginx/nginx.conf'
@@ -317,14 +380,14 @@ print_green 'Installing NodeJS'
 curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
 NODE_MAJOR=20
 echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-sudo apt update
-sudo apt install -y gcc g++ make
-sudo apt install -y nodejs
+sudo apt-get update
+sudo apt-get install -y gcc g++ make
+sudo apt-get install -y nodejs
 sudo npm install -g npm
 
 print_green "Installing Python ${PYTHON_VER}"
 
-sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev python3-venv python3-pip
 numprocs=$(nproc)
 cd ~
 wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
@@ -337,15 +400,15 @@ cd ~
 sudo rm -rf Python-${PYTHON_VER} Python-${PYTHON_VER}.tgz
 
 print_green 'Installing redis and git'
-sudo apt install -y redis git
+sudo apt-get install -y redis git
 
 print_green 'Installing postgresql'
 
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql-archive-keyring.gpg
-sudo apt update
-sudo apt install -y postgresql-15
+sudo apt-get update
+sudo apt-get install -y postgresql-15
 sleep 2
 sudo systemctl enable --now postgresql
 
@@ -378,15 +441,32 @@ sudo -iu postgres psql -c "GRANT USAGE, CREATE ON SCHEMA PUBLIC TO ${MESHPGUSER}
 
 print_green 'Cloning repos'
 
-sudo mkdir /rmm
+sudo mkdir -p /rmm
 sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/amidaware/tacticalrmm.git /rmm/
-cd /rmm
+
+# Added to account for /rmm mounted directory, pulls to new directory, then syncs back.
+RMM_CLONE_DIR="/tmp/tacticalrmm-clone"
+
+if find /rmm -mindepth 1 -maxdepth 1 ! -name lost+found -print -quit | grep -q .; then
+  print_error 'ERROR: /rmm contains files other than lost+found. Refusing to continue.'
+  exit 1
+fi
+
+rm -rf "${RMM_CLONE_DIR}"
+git clone https://github.com/amidaware/tacticalrmm.git "${RMM_CLONE_DIR}"
+cd "${RMM_CLONE_DIR}"
 git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
+
+shopt -s dotglob
+mv "${RMM_CLONE_DIR}"/* /rmm/
+shopt -u dotglob
+rmdir "${RMM_CLONE_DIR}"
+
+cd /rmm
 
 sudo mkdir -p ${SCRIPTS_DIR}
 sudo chown ${USER}:${USER} ${SCRIPTS_DIR}
@@ -542,14 +622,12 @@ print_green 'Installing the backend'
 
 # for weasyprint
 if [[ "$osname" == "debian" ]]; then
-  count=$(dpkg -l | grep -E "libpango-1.0-0|libpangoft2-1.0-0" | wc -l)
-  if ! [ "$count" -eq 2 ]; then
-    sudo apt install -y libpango-1.0-0 libpangoft2-1.0-0
+  if ! dpkg -s libpango-1.0-0 libpangoft2-1.0-0 >/dev/null 2>&1; then
+    sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
   fi
 elif [[ "$osname" == "ubuntu" ]]; then
-  count=$(dpkg -l | grep -E "libpango-1.0-0|libharfbuzz0b|libpangoft2-1.0-0" | wc -l)
-  if ! [ "$count" -eq 3 ]; then
-    sudo apt install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
+  if ! dpkg -s libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 >/dev/null 2>&1; then
+    sudo apt-get install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
   fi
 fi
 
@@ -561,35 +639,60 @@ sudo mkdir -p /opt/tactical/reporting/schemas
 sudo chown -R ${USER}:${USER} /opt/tactical
 
 cd /rmm/api
-python3.11 -m venv env
-source /rmm/api/env/bin/activate
+PYTHON_BIN="/usr/local/bin/python${PYTHON_VER%.*}"
+if [[ ! -x "${PYTHON_BIN}" ]]; then
+  print_error "ERROR: Python binary ${PYTHON_BIN} not found."
+  exit 1
+fi
+"${PYTHON_BIN}" -m venv env
+RMM_PYTHON=/rmm/api/env/bin/python
+RMM_PIP=/rmm/api/env/bin/pip
 cd /rmm/api/tacticalrmm
-pip install --no-cache-dir pip==25.1
-pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
-pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
-python manage.py migrate
-python manage.py generate_json_schemas
-python manage.py collectstatic --no-input
-python manage.py create_natsapi_conf
-python manage.py create_uwsgi_conf
-python manage.py load_chocos
-python manage.py load_community_scripts
-WEB_VERSION=$(python manage.py get_config webversion)
-WEBTAR_URL=$(python manage.py get_webtar_url)
+"${RMM_PIP}" install --no-cache-dir pip==25.1
+"${RMM_PIP}" install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
+"${RMM_PIP}" install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
+${RMM_PYTHON} manage.py migrate
+${RMM_PYTHON} manage.py generate_json_schemas
+${RMM_PYTHON} manage.py collectstatic --no-input
+${RMM_PYTHON} manage.py create_natsapi_conf
+${RMM_PYTHON} manage.py create_uwsgi_conf
+${RMM_PYTHON} manage.py load_chocos
+${RMM_PYTHON} manage.py load_community_scripts
+WEB_VERSION=$(${RMM_PYTHON} manage.py get_config webversion)
+WEBTAR_URL=$(${RMM_PYTHON} manage.py get_webtar_url)
+if [[ -z "${WEB_VERSION}" ]]; then
+  print_error 'ERROR: WEB_VERSION is empty.'
+  exit 1
+fi
+if [[ -z "${WEBTAR_URL}" ]]; then
+  print_error 'ERROR: WEBTAR_URL is empty.'
+  exit 1
+fi
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website${NC}\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
-echo -ne "Username: "
-read djangousername
-python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
-python manage.py create_installer_user
-RANDBASE=$(python manage.py generate_totp)
+while [[ -z "${djangousername}" ]]; do
+  echo -ne "Username: "
+  read -r djangousername
+done
+
+if [[ -n "${djangopassword:-}" ]]; then
+  export DJANGO_SUPERUSER_PASSWORD="${djangopassword}"
+  ${RMM_PYTHON} manage.py createsuperuser --noinput --username "${djangousername}" --email "${letsemail}"
+  unset DJANGO_SUPERUSER_PASSWORD
+else
+  ${RMM_PYTHON} manage.py createsuperuser --username "${djangousername}" --email "${letsemail}"
+fi
+
+${RMM_PYTHON} manage.py create_installer_user
+RANDBASE=$(${RMM_PYTHON} manage.py generate_totp)
 cls
-python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
-deactivate
-read -n 1 -s -r -p "Press any key to continue..."
+${RMM_PYTHON} manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
+if [[ "${TRMM_AUTO_CONTINUE:-1}" != "1" ]]; then
+  read -n 1 -s -r -p "Press any key to continue..." < /dev/tty
+fi
 
 rmmservice="$(
   cat <<EOF
@@ -914,12 +1017,14 @@ echo "${meshservice}" | sudo tee /etc/systemd/system/meshcentral.service >/dev/n
 
 sudo systemctl daemon-reload
 
+PRIMARY_GROUP=$(id -gn "${USER}")
+
 if [ -d ~/.npm ]; then
-  sudo chown -R $USER:$GROUP ~/.npm
+  sudo chown -R "${USER}:${PRIMARY_GROUP}" ~/.npm
 fi
 
 if [ -d ~/.config ]; then
-  sudo chown -R $USER:$GROUP ~/.config
+  sudo chown -R "${USER}:${PRIMARY_GROUP}" ~/.config
 fi
 
 print_green 'Installing the frontend'
@@ -993,10 +1098,14 @@ sleep 3
 # The first time we start meshcentral, it will need some time to generate certs and install plugins.
 # This will take anywhere from a few seconds to a few minutes depending on the server's hardware
 # We will know it's ready once the last line of the systemd service stdout is 'MeshCentral HTTP server running on port.....'
-while ! [[ $CHECK_MESH_READY ]]; do
-  CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
-  echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
-  sleep 5
+while [[ -z "${CHECK_MESH_READY}" ]]; do
+  if CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port"); then
+    :
+  else
+    CHECK_MESH_READY=''
+    echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
+    sleep 5
+  fi
 done
 
 print_green 'Generating meshcentral login token key'
@@ -1023,10 +1132,14 @@ node node_modules/meshcentral --adminaccount ${meshusername}
 sudo systemctl start meshcentral
 sleep 5
 
-while ! [[ $CHECK_MESH_READY2 ]]; do
-  CHECK_MESH_READY2=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
-  echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
-  sleep 5
+while [[ -z "${CHECK_MESH_READY2}" ]]; do
+  if CHECK_MESH_READY2=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port"); then
+    :
+  else
+    CHECK_MESH_READY2=''
+    echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
+    sleep 5
+  fi
 done
 
 node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
@@ -1034,11 +1147,10 @@ sleep 1
 
 sudo systemctl enable nats.service
 cd /rmm/api/tacticalrmm
-source /rmm/api/env/bin/activate
-python manage.py initial_db_setup
-python manage.py reload_nats
-python manage.py sync_mesh_with_trmm
-deactivate
+RMM_PYTHON=/rmm/api/env/bin/python
+${RMM_PYTHON} manage.py initial_db_setup
+${RMM_PYTHON} manage.py reload_nats
+${RMM_PYTHON} manage.py sync_mesh_with_trmm
 sudo systemctl start nats.service
 
 sleep 1

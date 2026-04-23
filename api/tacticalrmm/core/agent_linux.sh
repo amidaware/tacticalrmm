@@ -24,6 +24,12 @@ fi
 DEBUG=0
 INSECURE=0
 NOMESH=0
+UNINSTALL=0
+
+# INSTALL_PREFIX relocates the agent's install (/bin, /etc, /opt) to account for
+# read-only systems. Empty defaults to /. May be set via INSTALL_PREFIX env var
+# or --install-prefix.
+INSTALL_PREFIX="${INSTALL_PREFIX:-}"
 
 agentDL='agentDLChange'
 meshDL='meshDLChange'
@@ -35,17 +41,28 @@ siteID='siteIDChange'
 agentType='agentTypeChange'
 proxy=''
 
-agentBinPath='/usr/local/bin'
 binName='tacticalagent'
-agentBin="${agentBinPath}/${binName}"
-agentConf='/etc/tacticalagent'
 agentSvcName='tacticalagent.service'
-agentSysD="/etc/systemd/system/${agentSvcName}"
-agentDir='/opt/tacticalagent'
-meshDir='/opt/tacticalmesh'
-meshSystemBin="${meshDir}/meshagent"
 meshSvcName='meshagent.service'
-meshSysD="/lib/systemd/system/${meshSvcName}"
+
+# derive_prefixed_paths is called again after arg parsing so --install-prefix can
+# override the INSTALL_PREFIX env var. Every path is prefixed with INSTALL_PREFIX.
+derive_prefixed_paths() {
+    INSTALL_PREFIX="${INSTALL_PREFIX%/}"
+    if [ -n "${INSTALL_PREFIX}" ]; then
+        agentBinPath="${INSTALL_PREFIX}/bin"
+    else
+        agentBinPath="/usr/local/bin"
+    fi
+    agentBin="${agentBinPath}/${binName}"
+    agentConf="${INSTALL_PREFIX}/etc/tacticalagent"
+    agentSysD="${INSTALL_PREFIX}/etc/systemd/system/${agentSvcName}"
+    agentDir="${INSTALL_PREFIX}/opt/tacticalagent"
+    meshDir="${INSTALL_PREFIX}/opt/tacticalmesh"
+    meshSystemBin="${meshDir}/meshagent"
+    meshSysD="${INSTALL_PREFIX}/lib/systemd/system/${meshSvcName}"
+}
+derive_prefixed_paths
 
 deb=(ubuntu debian raspbian kali linuxmint)
 rhe=(fedora rocky centos rhel amzn arch opensuse)
@@ -68,6 +85,12 @@ RemoveOldAgent() {
         systemctl stop ${agentSvcName}
         rm -f "${agentSysD}"
         systemctl daemon-reload
+    fi
+
+    # Remove the compatibility symlink in systemd's default search path if we
+    # previously created one for a prefixed install.
+    if [ -L "/etc/systemd/system/${agentSvcName}" ]; then
+        rm "/etc/systemd/system/${agentSvcName}"
     fi
 
     if [ -f "${agentConf}" ]; then
@@ -104,7 +127,7 @@ InstallMesh() {
         fi
     fi
 
-    meshTmpDir='/root/meshtemp'
+    meshTmpDir="${INSTALL_PREFIX}/root/meshtemp"
     mkdir -p $meshTmpDir
 
     meshTmpBin="${meshTmpDir}/meshagent"
@@ -137,18 +160,17 @@ Uninstall() {
     RemoveOldAgent
 }
 
-if [ $# -ne 0 ] && [[ $1 =~ ^(uninstall|-uninstall|--uninstall)$ ]]; then
-    Uninstall
-    # Remove the current script
-    rm "$0"
-    exit 0
-fi
-
 while [[ "$#" -gt 0 ]]; do
     case $1 in
     -debug | --debug | debug) DEBUG=1 ;;
     -insecure | --insecure | insecure) INSECURE=1 ;;
     -nomesh | --nomesh | nomesh) NOMESH=1 ;;
+    uninstall | -uninstall | --uninstall) UNINSTALL=1 ;;
+    --install-prefix=*) INSTALL_PREFIX="${1#*=}" ;;
+    --install-prefix | -install-prefix)
+        shift
+        INSTALL_PREFIX="$1"
+        ;;
     *)
         echo "ERROR: Unknown parameter: $1"
         exit 1
@@ -157,7 +179,24 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+derive_prefixed_paths
+
+if [[ $UNINSTALL -eq 1 ]]; then
+    Uninstall
+    # Remove the current script
+    rm "$0"
+    exit 0
+fi
+
 RemoveOldAgent
+
+mkdir -p \
+    "${agentBinPath}" \
+    "$(dirname "${agentConf}")" \
+    "$(dirname "${agentSysD}")" \
+    "${agentDir}" \
+    "${meshDir}" \
+    "$(dirname "${meshSysD}")"
 
 echo "Downloading tactical agent..."
 wget -q -O ${agentBin} "${agentDL}"
@@ -182,11 +221,6 @@ else
     MESH_NODE_ID=$(env XAUTHORITY=foo DISPLAY=bar ${agentBin} -m nixmeshnodeid)
 fi
 
-if [ ! -d "${agentBinPath}" ]; then
-    echo "Creating ${agentBinPath}"
-    mkdir -p ${agentBinPath}
-fi
-
 INSTALL_CMD="${agentBin} -m install -api ${apiURL} -client-id ${clientID} -site-id ${siteID} -agent-type ${agentType} -auth ${token}"
 
 if [ "${MESH_NODE_ID}" != '' ]; then
@@ -205,7 +239,17 @@ if [ "${proxy}" != '' ]; then
     INSTALL_CMD+=" --proxy ${proxy}"
 fi
 
+if [ -n "${INSTALL_PREFIX}" ]; then
+    INSTALL_CMD+=" -install-prefix ${INSTALL_PREFIX}"
+fi
+
 eval "${INSTALL_CMD}"
+
+if [ -n "${INSTALL_PREFIX}" ]; then
+    prefixEnvLine="Environment=INSTALL_PREFIX=${INSTALL_PREFIX}"$'\n'
+else
+    prefixEnvLine=""
+fi
 
 tacticalsvc="$(
     cat <<EOF
@@ -214,7 +258,7 @@ Description=Tactical RMM Linux Agent
 
 [Service]
 Type=simple
-ExecStart=${agentBin} -m svc
+${prefixEnvLine}ExecStart=${agentBin} -m svc
 User=root
 Group=root
 Restart=always
@@ -227,6 +271,22 @@ WantedBy=multi-user.target
 EOF
 )"
 echo "${tacticalsvc}" | tee ${agentSysD} >/dev/null
+
+# If /etc/systemd/system is writable, a symlink is created to "install" the service.
+# This makes it easy to "reinstall" the service if /etc/ is wiped; TrueNAS does this
+# on upgrades. Recreating the symlink is left up to the user.
+if [ -n "${INSTALL_PREFIX}" ]; then
+    if [ -w "/etc/systemd/system" ]; then
+        linkPath="/etc/systemd/system/${agentSvcName}"
+        if [ -L "${linkPath}" ] || [ -e "${linkPath}" ]; then
+            rm "${linkPath}"
+        fi
+        ln -s "${agentSysD}" "${linkPath}"
+    else
+        echo "WARNING: /etc/systemd/system is not writable; skipping service enable/start."
+        exit 0
+    fi
+fi
 
 systemctl daemon-reload
 systemctl enable ${agentSvcName}

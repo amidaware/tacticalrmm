@@ -10,6 +10,7 @@ from tacticalrmm.constants import (
     ALL_TIMEZONES,
     AgentPlat,
     AgentTerminalShellChoices,
+    TerminalModeChoices,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
 
@@ -268,12 +269,17 @@ class AgentAuditSerializer(serializers.ModelSerializer):
 class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
     effective_default_shell = serializers.SerializerMethodField()
     resolved_default_shell = serializers.SerializerMethodField()
+    terminal_mode = serializers.SerializerMethodField()
 
     def get_effective_default_shell(self, obj):
         return obj.effective_default_shell
 
     def get_resolved_default_shell(self, obj):
         return obj.resolved_default_shell
+
+    def get_terminal_mode(self, obj):
+        settings = self.context.get("core_settings")
+        return settings.terminal_mode if settings else TerminalModeChoices.NEW
 
     class Meta:
         model = Agent
@@ -284,4 +290,5 @@ class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
             "default_shell",
             "resolved_default_shell",
             "effective_default_shell",
+            "terminal_mode",
         )

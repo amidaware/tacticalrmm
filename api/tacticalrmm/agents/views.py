@@ -61,6 +61,7 @@ from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
+from core.models import CoreSettings
 from .permissions import (
     AgentHistoryPerms,
     AgentNotesPerms,
@@ -77,6 +78,7 @@ from .permissions import (
     RunScriptPerms,
     SendCMDPerms,
     UpdateAgentPerms,
+    AgentTerminalPerms,
 )
 from .serializers import (
     AgentCustomFieldSerializer,
@@ -1610,7 +1612,7 @@ def modify_registry_value(request, agent_id):
 
 
 class AgentTerminalDefaults(APIView):
-    permission_classes = [IsAuthenticated, AgentPerms]
+    permission_classes = [IsAuthenticated, AgentTerminalPerms]
 
     def get(self, request, agent_id):
         agent = get_object_or_404(
@@ -1619,4 +1621,11 @@ class AgentTerminalDefaults(APIView):
             ),
             agent_id=agent_id,
         )
-        return Response(AgentTerminalDefaultsSerializer(agent).data)
+
+        core_settings = CoreSettings.objects.only("terminal_mode").first()
+        return Response(
+            AgentTerminalDefaultsSerializer(
+                agent,
+                context={"core_settings": core_settings},
+            ).data
+        )

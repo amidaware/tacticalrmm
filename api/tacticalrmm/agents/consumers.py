@@ -247,8 +247,6 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
             return
 
         if not await self.has_perm(self.agent_id):
-            await self.accept()
-            await self.send_json({"error": "Permission denied", "status": 403})
             await self.close(code=4003)
             return
 

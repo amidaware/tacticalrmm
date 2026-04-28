@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="90"
+SCRIPT_VERSION="91"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
@@ -345,7 +345,7 @@ echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql-archive-keyring.gpg
 sudo apt update
-sudo apt install -y postgresql-15
+sudo apt install -y postgresql-18
 sleep 2
 sudo systemctl enable --now postgresql
 

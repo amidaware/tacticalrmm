@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="65"
+SCRIPT_VERSION="66"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -312,7 +312,7 @@ print_green 'Installing postgresql'
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql-archive-keyring.gpg
 sudo apt update
-sudo apt install -y postgresql-15
+sudo apt install -y postgresql-18
 sleep 2
 sudo systemctl enable --now postgresql
 

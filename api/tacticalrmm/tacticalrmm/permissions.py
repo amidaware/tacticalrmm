@@ -26,6 +26,9 @@ def _has_perm(request, perm: str) -> bool:
 def _has_perm_on_agent(user: "User", agent_id: str) -> bool:
     from agents.models import Agent
 
+    if user.is_installer_user:
+        return False
+
     role = user.get_and_set_role_cache()
     if user.is_superuser or (role and getattr(role, "is_superuser")):
         return True

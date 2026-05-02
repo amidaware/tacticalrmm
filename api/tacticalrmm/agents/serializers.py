@@ -3,13 +3,8 @@ from rest_framework import serializers
 
 from tacticalrmm.constants import (
     AGENT_CHECKS_CACHE_PREFIX,
-    AGENT_DARWIN_SHELL_TOKENS,
-    AGENT_LINUX_SHELL_TOKENS,
     AGENT_STATUS_ONLINE,
-    AGENT_WINDOWS_SHELL_TOKENS,
     ALL_TIMEZONES,
-    AgentPlat,
-    AgentTerminalShellChoices,
     TerminalModeChoices,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -86,41 +81,6 @@ class AgentSerializer(serializers.ModelSerializer):
 
     def get_all_timezones(self, obj):
         return ALL_TIMEZONES
-
-    def validate(self, attrs):
-        instance = getattr(self, "instance", None)
-
-        def get_value(key):
-            if key in attrs:
-                return attrs[key]
-            if instance:
-                return getattr(instance, key)
-            return None
-
-        default_shell = get_value("default_shell")
-        custom_path = (get_value("default_shell_custom") or "").strip()
-        plat = get_value("plat")
-
-        if default_shell == AgentTerminalShellChoices.CUSTOM and not custom_path:
-            raise serializers.ValidationError(
-                {"default_shell_custom": "Custom shell path must be provided."}
-            )
-
-        if plat == AgentPlat.WINDOWS:
-            allowed = AGENT_WINDOWS_SHELL_TOKENS
-        elif plat == AgentPlat.LINUX:
-            allowed = AGENT_LINUX_SHELL_TOKENS
-        elif plat == AgentPlat.DARWIN:
-            allowed = AGENT_DARWIN_SHELL_TOKENS
-        else:
-            allowed = {AgentTerminalShellChoices.USE_GLOBAL}
-
-        if default_shell not in allowed:
-            raise serializers.ValidationError(
-                {"default_shell": "Selected shell is not valid for this OS."}
-            )
-
-        return attrs
 
     class Meta:
         model = Agent

@@ -27,6 +27,12 @@ from core.tasks import sync_mesh_perms_task
 from logs.models import AuditLog
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.mixins import GenericPermsViewMixin
+from tacticalrmm.throttles import (
+    CheckCredsDayThrottle,
+    CheckCredsMinThrottle,
+    LoginDayThrottle,
+    LoginMinThrottle,
+)
 from tacticalrmm.utils import get_core_settings
 
 from .models import APIKey, Role, User
@@ -48,6 +54,7 @@ from .serializers import (
 
 class CheckCredsV2(KnoxLoginView):
     permission_classes = (AllowAny,)
+    throttle_classes = [CheckCredsMinThrottle, CheckCredsDayThrottle]
 
     # restrict time on tokens issued by this view to 3 min
     def get_token_ttl(self):
@@ -84,6 +91,7 @@ class CheckCredsV2(KnoxLoginView):
 
 class LoginViewV2(KnoxLoginView):
     permission_classes = (AllowAny,)
+    throttle_classes = [LoginMinThrottle, LoginDayThrottle]
 
     def post(self, request, format=None):
         valid = False

@@ -176,7 +176,9 @@ class BulkAlerts(APIView):
 
     def post(self, request):
         if request.data["bulk_action"] == "resolve":
-            Alert.objects.filter(id__in=request.data["alerts"]).update(
+            Alert.objects.filter_by_role(request.user).filter(
+                id__in=request.data["alerts"]
+            ).update(
                 resolved=True,
                 resolved_on=djangotime.now(),
                 snoozed=False,
@@ -185,7 +187,9 @@ class BulkAlerts(APIView):
             return Response("ok")
         elif request.data["bulk_action"] == "snooze":
             if "snooze_days" in request.data.keys():
-                Alert.objects.filter(id__in=request.data["alerts"]).update(
+                Alert.objects.filter_by_role(request.user).filter(
+                    id__in=request.data["alerts"]
+                ).update(
                     snoozed=True,
                     snooze_until=djangotime.now()
                     + djangotime.timedelta(days=int(request.data["snooze_days"])),

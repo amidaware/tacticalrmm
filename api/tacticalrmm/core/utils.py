@@ -44,6 +44,7 @@ def clear_entire_cache() -> None:
     cache.delete(CORESETTINGS_CACHE_KEY)
     cache.delete_many_pattern("site_*")
     cache.delete_many_pattern("agent_*")
+    cache.delete_many_pattern("throttle_*")
 
 
 def token_is_valid() -> tuple[str, bool]:

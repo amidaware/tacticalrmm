@@ -151,14 +151,14 @@ class TestAuditViews(TacticalTestCase):
             )
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(
-                len(resp.data["audit_logs"]),  # type:ignore
+                len(resp.data["audit_logs"]),  # type: ignore
                 (
                     pagination["rowsPerPage"]
                     if req["count"] > pagination["rowsPerPage"]
                     else req["count"]
                 ),
             )
-            self.assertEqual(resp.data["total"], req["count"])  # type:ignore
+            self.assertEqual(resp.data["total"], req["count"])  # type: ignore
 
         self.check_not_authenticated("patch", url)
 
@@ -490,7 +490,7 @@ class TestLogTasks(TacticalTestCase):
         )
 
         days = 0
-        for item in debug_log:  # type:ignore
+        for item in debug_log:  # type: ignore
             item.entry_time = djangotime.now() - djangotime.timedelta(days=days)
             item.save()
             days = days + 5
@@ -511,7 +511,7 @@ class TestLogTasks(TacticalTestCase):
         )
 
         days = 0
-        for item in audit_log:  # type:ignore
+        for item in audit_log:  # type: ignore
             item.entry_time = djangotime.now() - djangotime.timedelta(days=days)
             item.save()
             days = days + 5

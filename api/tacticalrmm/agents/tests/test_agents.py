@@ -930,7 +930,7 @@ class TestAgentViews(TacticalTestCase):
         ctx = {"default_tz": ZoneInfo("America/Los_Angeles")}
         data = AgentHistorySerializer(history, many=True, context=ctx).data
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, data)  # type:ignore
+        self.assertEqual(r.data, data)  # type: ignore
 
 
 class TestAgentViewsNew(TacticalTestCase):

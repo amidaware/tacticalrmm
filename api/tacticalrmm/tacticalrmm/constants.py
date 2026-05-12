@@ -502,6 +502,14 @@ DEMO_NOT_ALLOWED = [
     {"name": "GetUpdateDeleteAPIKey", "methods": ["PUT", "DELETE"]},
     {"name": "WebVNC", "methods": ["GET"]},
     {"name": "UninstallSoftware", "methods": ["POST"]},
+    {"name": "browse_registry", "methods": ["GET"]},
+    {"name": "create_registry_key", "methods": ["POST"]},
+    {"name": "delete_registry_key", "methods": ["DELETE"]},
+    {"name": "rename_registry_key", "methods": ["POST"]},
+    {"name": "create_registry_value", "methods": ["POST"]},
+    {"name": "delete_registry_value", "methods": ["DELETE"]},
+    {"name": "rename_registry_value", "methods": ["POST"]},
+    {"name": "modify_registry_value", "methods": ["POST"]},
 ]
 
 CONFIG_MGMT_CMDS = (

@@ -9,7 +9,6 @@ django_asgi_app = get_asgi_application()  # isort:skip
 from tacticalrmm.utils import KnoxAuthMiddlewareStack  # isort:skip # noqa
 from .urls import ws_urlpatterns  # isort:skip # noqa
 
-
 application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,

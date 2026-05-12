@@ -108,7 +108,7 @@ InstallMesh() {
     mkdir -p $meshTmpDir
 
     meshTmpBin="${meshTmpDir}/meshagent"
-    wget --no-check-certificate -q -O ${meshTmpBin} ${meshDL}
+    wget --no-check-certificate -q -O ${meshTmpBin} "${meshDL}"
     chmod +x ${meshTmpBin}
     mkdir -p ${meshDir}
     env LC_ALL=en_US.UTF-8 LANGUAGE=en_US XAUTHORITY=foo DISPLAY=bar ${meshTmpBin} -install --installPath=${meshDir}
@@ -205,7 +205,7 @@ if [ "${proxy}" != '' ]; then
     INSTALL_CMD+=" --proxy ${proxy}"
 fi
 
-eval ${INSTALL_CMD}
+eval "${INSTALL_CMD}"
 
 tacticalsvc="$(
     cat <<EOF

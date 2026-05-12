@@ -16,15 +16,17 @@ jobs:
       matrix:
         python-version: ["3.11.8"]
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: pipeline
+          POSTGRES_USER: pipeline
+          POSTGRES_PASSWORD: pipeline123456
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
-
-      - uses: harmon758/postgresql-action@v1
-        with:
-          postgresql version: "15"
-          postgresql db: "pipeline"
-          postgresql user: "pipeline"
-          postgresql password: "pipeline123456"
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4

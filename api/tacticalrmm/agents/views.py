@@ -1628,6 +1628,9 @@ class AgentTerminalDefaults(APIView):
         return Response(
             AgentTerminalDefaultsSerializer(
                 agent,
-                context={"core_settings": core_settings, "supports_new_terminal": supports_new_terminal},
+                context={
+                    "core_settings": core_settings,
+                    "supports_new_terminal": supports_new_terminal,
+                },
             ).data
         )

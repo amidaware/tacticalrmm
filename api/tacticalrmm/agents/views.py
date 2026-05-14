@@ -1616,16 +1616,18 @@ class AgentTerminalDefaults(APIView):
 
     def get(self, request, agent_id):
         agent = get_object_or_404(
-            Agent.objects.filter_by_role(request.user).only(
-                "agent_id", "hostname", "plat", "default_shell"
-            ),
+            Agent.objects.filter_by_role(request.user).defer(*AGENT_DEFER),
             agent_id=agent_id,
         )
+
+        supports_new_terminal = True
+        if pyver.parse(agent.version) < pyver.parse("2.11.0"):
+            supports_new_terminal = False
 
         core_settings = CoreSettings.objects.only("terminal_mode").first()
         return Response(
             AgentTerminalDefaultsSerializer(
                 agent,
-                context={"core_settings": core_settings},
+                context={"core_settings": core_settings, "supports_new_terminal": supports_new_terminal},
             ).data
         )

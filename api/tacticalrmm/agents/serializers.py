@@ -230,6 +230,7 @@ class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
     effective_default_shell = serializers.SerializerMethodField()
     resolved_default_shell = serializers.SerializerMethodField()
     terminal_mode = serializers.SerializerMethodField()
+    supports_new_terminal = serializers.SerializerMethodField()
 
     def get_effective_default_shell(self, obj):
         return obj.effective_default_shell
@@ -241,6 +242,9 @@ class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
         settings = self.context.get("core_settings")
         return settings.terminal_mode if settings else TerminalModeChoices.NEW
 
+    def get_supports_new_terminal(self, obj):
+        return self.context.get("supports_new_terminal", True)
+
     class Meta:
         model = Agent
         fields = (
@@ -251,4 +255,5 @@ class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
             "resolved_default_shell",
             "effective_default_shell",
             "terminal_mode",
+            "supports_new_terminal",
         )

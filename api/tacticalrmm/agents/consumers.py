@@ -219,8 +219,6 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         self.started = False
         self.message_id = 0
         self._start_lock = asyncio.Lock()
-
-        # NATS (reused per WS session)
         self.nc = None
         self.sub = None
         self.nats_lock = asyncio.Lock()
@@ -258,12 +256,10 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         if self.group_name:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
-        # send kill only if we didn't already send it from explicit "kill" action
         if not self.killed:
             with contextlib.suppress(Exception):
                 await self._send_kill()
 
-        # unsubscribe + close nats connection
         with contextlib.suppress(Exception):
             if self.sub is not None:
                 await self.sub.unsubscribe()
@@ -276,7 +272,6 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
 
     async def receive_json(self, content):
         action = content.get("action")
-        # log incoming payload
         logger.debug(
             "[TerminalStreamConsumer] Received action=%s payload=%s",
             action,
@@ -317,14 +312,12 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
         self.nc = await nats.connect(**opts)
 
     async def _nats_publish(self, payload: dict):
-        # serialize writes on this connection
         async with self.nats_lock:
             try:
                 await self._ensure_nats()
                 await self.nc.publish(self.agent_id, msgpack.dumps(payload))
             except Exception as e:
                 logger.exception("Terminal NATS publish failed: %s", e)
-                # reset so next call reconnects
                 with contextlib.suppress(Exception):
                     if self.nc and not self.nc.is_closed:
                         await self.nc.close()
@@ -332,7 +325,6 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
                 raise
 
     async def _start_terminal(self, content):
-        # prevent double start race
         async with self._start_lock:
             if self.started:
                 return
@@ -441,7 +433,6 @@ class TerminalStreamConsumer(AsyncJsonWebsocketConsumer):
                         },
                     )
 
-            # subscribe first so we don't miss the initial prompt
             self.sub = await self.nc.subscribe(subject_output, cb=message_handler)
 
             run_as_user = bool(content.get("run_as_user", False))

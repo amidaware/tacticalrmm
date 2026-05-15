@@ -273,7 +273,6 @@ class Agent(BaseAuditModel):
         def clean(v) -> str:
             return (v or "").strip()
 
-        # Agent override
         if self.default_shell == AgentTerminalShellChoices.CUSTOM:
             v = clean(self.default_shell_custom)
             if self.plat == AgentPlat.WINDOWS:
@@ -296,7 +295,6 @@ class Agent(BaseAuditModel):
                 return shell if shell in DARWIN_TOKENS else "bash"
             return "cmd"
 
-        # Global default
         try:
             core = get_core_settings()
         except Exception:

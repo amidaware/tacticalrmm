@@ -356,7 +356,7 @@ class WebVNC(APIView):
             + "%2F"
             + "meshrelay.ashx%3Fauth%3D"
             + cookie_ret["cookie"]  # type: ignore
-            + f"&show_dot=1&l=en&name={agent.hostname}"
+            + f"&show_dot=1&l=en&resize=scale&name={agent.hostname}"
         )
 
         ret = {

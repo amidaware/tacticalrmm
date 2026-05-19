@@ -1,4 +1,5 @@
 import asyncio
+import re
 import urllib.parse
 from io import StringIO
 from pathlib import Path
@@ -159,3 +160,25 @@ def calculate_agent_checks(agent) -> dict:
         "has_failing_checks": failing > 0 or warning > 0,
     }
     return ret
+
+
+def is_windows_path(s: str) -> bool:
+    s = (s or "").strip()
+    if not s:
+        return False
+    if any(x in s for x in ('"', "'", "\n", "\r", "&", "|", ";")):
+        return False
+    if not re.match(r"^(?:[a-zA-Z]:\\|\\\\)", s):
+        return False
+    if not s.lower().endswith(".exe"):
+        return False
+    return True
+
+
+def is_posix_abs_path(s: str) -> bool:
+    s = (s or "").strip()
+    if not s:
+        return False
+    if any(x in s for x in ('"', "'", "\n", "\r", "&", "|", ";")):
+        return False
+    return s.startswith("/")

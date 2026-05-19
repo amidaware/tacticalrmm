@@ -537,3 +537,73 @@ CONFIG_MGMT_CMDS = (
 )
 
 ALL_TIMEZONES = sorted(zoneinfo.available_timezones())
+
+
+class TerminalShellChoices(models.TextChoices):
+    CMD = "cmd", "cmd"
+    POWERSHELL = "powershell", "powershell"
+    BASH = "bash", "bash"
+    CUSTOM = "custom", "custom"
+
+
+class WindowsTerminalShellChoices(models.TextChoices):
+    CMD = TerminalShellChoices.CMD, "cmd"
+    POWERSHELL = TerminalShellChoices.POWERSHELL, "powershell"
+    CUSTOM = TerminalShellChoices.CUSTOM, "custom"
+
+
+class LinuxTerminalShellChoices(models.TextChoices):
+    BASH = TerminalShellChoices.BASH, "bash"
+    CUSTOM = TerminalShellChoices.CUSTOM, "custom"
+
+
+class DarwinTerminalShellChoices(models.TextChoices):
+    BASH = TerminalShellChoices.BASH, "bash"
+    CUSTOM = TerminalShellChoices.CUSTOM, "custom"
+
+
+WINDOWS_TOKENS = {
+    TerminalShellChoices.CMD,
+    TerminalShellChoices.POWERSHELL,
+}
+
+LINUX_TOKENS = {
+    TerminalShellChoices.BASH,
+}
+
+DARWIN_TOKENS = {
+    TerminalShellChoices.BASH,
+}
+
+
+class AgentTerminalShellChoices(models.TextChoices):
+    USE_GLOBAL = "use_global", "Use global default"
+    CMD = "cmd", "cmd"
+    POWERSHELL = "powershell", "powershell"
+    BASH = "bash", "bash"
+    CUSTOM = "custom", "custom"
+
+
+AGENT_WINDOWS_SHELL_TOKENS = {
+    AgentTerminalShellChoices.USE_GLOBAL,
+    AgentTerminalShellChoices.CMD,
+    AgentTerminalShellChoices.POWERSHELL,
+    AgentTerminalShellChoices.CUSTOM,
+}
+
+AGENT_LINUX_SHELL_TOKENS = {
+    AgentTerminalShellChoices.USE_GLOBAL,
+    AgentTerminalShellChoices.BASH,
+    AgentTerminalShellChoices.CUSTOM,
+}
+
+AGENT_DARWIN_SHELL_TOKENS = {
+    AgentTerminalShellChoices.USE_GLOBAL,
+    AgentTerminalShellChoices.BASH,
+    AgentTerminalShellChoices.CUSTOM,
+}
+
+
+class TerminalModeChoices(models.TextChoices):
+    NEW = "new", "Use new terminal"
+    LEGACY = "legacy", "Use legacy terminal"

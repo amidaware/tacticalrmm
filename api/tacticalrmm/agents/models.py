@@ -19,7 +19,12 @@ from nats.errors import TimeoutError
 from packaging import version as pyver
 from packaging.version import Version as LooseVersion
 
-from agents.utils import calculate_agent_checks, get_agent_url
+from agents.utils import (
+    calculate_agent_checks,
+    get_agent_url,
+    is_posix_abs_path,
+    is_windows_path,
+)
 from core.models import TZ_CHOICES
 from core.utils import _b64_to_hex, get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog, PendingAction
@@ -28,15 +33,20 @@ from tacticalrmm.constants import (
     AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
     AGENT_TBL_PEND_ACTION_CNT_CACHE_PREFIX,
+    DARWIN_TOKENS,
+    LINUX_TOKENS,
     ONLINE_AGENTS,
+    WINDOWS_TOKENS,
     AgentHistoryType,
     AgentMonType,
     AgentPlat,
+    AgentTerminalShellChoices,
     CustomFieldType,
     DebugLogType,
     GoArch,
     PAAction,
     PAStatus,
+    TerminalShellChoices,
 )
 from tacticalrmm.helpers import has_script_actions, has_webhook, setup_nats_options
 from tacticalrmm.models import PermissionQuerySet
@@ -119,6 +129,18 @@ class Agent(BaseAuditModel):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+    )
+
+    default_shell = models.CharField(
+        max_length=32,
+        choices=AgentTerminalShellChoices.choices,
+        default=AgentTerminalShellChoices.USE_GLOBAL,
+    )
+
+    default_shell_custom = models.CharField(
+        max_length=512,
+        blank=True,
+        default="",
     )
 
     def __str__(self) -> str:
@@ -235,6 +257,83 @@ class Agent(BaseAuditModel):
                 return AGENT_STATUS_ONLINE
         else:
             return AGENT_STATUS_OFFLINE
+
+    @property
+    def effective_default_shell(self) -> str:
+        """
+        Final shell string used to launch the real-time terminal.
+
+        Windows:
+          - "cmd" | "powershell" | absolute Windows path
+
+        Linux/macOS:
+          - "bash" | absolute POSIX path
+        """
+
+        def clean(v) -> str:
+            return (v or "").strip()
+
+        if self.default_shell == AgentTerminalShellChoices.CUSTOM:
+            v = clean(self.default_shell_custom)
+            if self.plat == AgentPlat.WINDOWS:
+                return v if (v and is_windows_path(v)) else "cmd"
+            if self.plat in {AgentPlat.LINUX, AgentPlat.DARWIN}:
+                return v if (v and is_posix_abs_path(v)) else "bash"
+            return "cmd"
+
+        if (
+            self.default_shell
+            and self.default_shell != AgentTerminalShellChoices.USE_GLOBAL
+        ):
+            # token override only (cmd/powershell/bash)
+            shell = clean(self.default_shell).lower()
+            if self.plat == AgentPlat.WINDOWS:
+                return shell if shell in WINDOWS_TOKENS else "cmd"
+            if self.plat == AgentPlat.LINUX:
+                return shell if shell in LINUX_TOKENS else "bash"
+            if self.plat == AgentPlat.DARWIN:
+                return shell if shell in DARWIN_TOKENS else "bash"
+            return "cmd"
+
+        try:
+            core = get_core_settings()
+        except Exception:
+            core = None
+
+        if not core:
+            return "cmd" if self.plat == AgentPlat.WINDOWS else "bash"
+
+        if self.plat == AgentPlat.WINDOWS:
+            if core.default_shell_windows == TerminalShellChoices.CUSTOM:
+                v = clean(core.default_shell_windows_custom)
+                return v if (v and is_windows_path(v)) else "cmd"
+            shell = clean(core.default_shell_windows).lower()
+            return shell if shell in WINDOWS_TOKENS else "cmd"
+
+        if self.plat == AgentPlat.LINUX:
+            if core.default_shell_linux == TerminalShellChoices.CUSTOM:
+                v = clean(core.default_shell_linux_custom)
+                return v if (v and is_posix_abs_path(v)) else "bash"
+            shell = clean(core.default_shell_linux).lower()
+            return shell if shell in LINUX_TOKENS else "bash"
+
+        if self.plat == AgentPlat.DARWIN:
+            if core.default_shell_darwin == TerminalShellChoices.CUSTOM:
+                v = clean(core.default_shell_darwin_custom)
+                return v if (v and is_posix_abs_path(v)) else "bash"
+            shell = clean(core.default_shell_darwin).lower()
+            return shell if shell in DARWIN_TOKENS else "bash"
+
+        return "cmd"
+
+    @property
+    def resolved_default_shell(self):
+        effective_shell = (self.effective_default_shell or "").strip().lower()
+        builtin_shells = {"cmd", "powershell", "bash"}
+        if effective_shell in builtin_shells:
+            return effective_shell
+
+        return "custom"
 
     @property
     def checks(self) -> Dict[str, Any]:

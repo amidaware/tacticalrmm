@@ -21,11 +21,15 @@ from tacticalrmm.constants import (
     CORESETTINGS_CACHE_KEY,
     CustomFieldModel,
     CustomFieldType,
+    DarwinTerminalShellChoices,
     DebugLogLevel,
+    LinuxTerminalShellChoices,
     MonthlyType,
     ScheduleType,
+    TerminalModeChoices,
     URLActionRestMethod,
     URLActionType,
+    WindowsTerminalShellChoices,
 )
 from tacticalrmm.logger import logger
 
@@ -120,6 +124,38 @@ class CoreSettings(BaseAuditModel):
 
     block_local_user_logon = models.BooleanField(default=False)
     sso_enabled = models.BooleanField(default=False)
+
+    default_shell_windows = models.CharField(
+        max_length=32,
+        choices=WindowsTerminalShellChoices.choices,
+        default=WindowsTerminalShellChoices.CMD,
+    )
+    default_shell_windows_custom = models.CharField(
+        max_length=512, blank=True, default=""
+    )
+
+    default_shell_linux = models.CharField(
+        max_length=32,
+        choices=LinuxTerminalShellChoices.choices,
+        default=LinuxTerminalShellChoices.BASH,
+    )
+    default_shell_linux_custom = models.CharField(
+        max_length=512, blank=True, default=""
+    )
+
+    default_shell_darwin = models.CharField(
+        max_length=32,
+        choices=DarwinTerminalShellChoices.choices,
+        default=DarwinTerminalShellChoices.BASH,
+    )
+    default_shell_darwin_custom = models.CharField(
+        max_length=512, blank=True, default=""
+    )
+    terminal_mode = models.CharField(
+        max_length=20,
+        choices=TerminalModeChoices.choices,
+        default=TerminalModeChoices.NEW,
+    )
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template

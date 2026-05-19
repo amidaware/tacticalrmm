@@ -1,7 +1,10 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from tacticalrmm.constants import ALL_TIMEZONES
+from tacticalrmm.constants import (
+    ALL_TIMEZONES,
+    TerminalShellChoices,
+)
 
 from .models import (
     CodeSignToken,
@@ -34,6 +37,31 @@ class CoreSettingsSerializer(HostedCoreMixin, serializers.ModelSerializer):
 
     def all_time_zones(self, obj):
         return ALL_TIMEZONES
+
+    def validate(self, attrs):
+        instance = getattr(self, "instance", None)
+
+        def get_value(key):
+            if key in attrs:
+                return attrs[key]
+            if instance:
+                return getattr(instance, key)
+            return None
+
+        def require_custom(selection_key, custom_key):
+            selection = get_value(selection_key)
+            custom_path = (get_value(custom_key) or "").strip()
+
+            if selection == TerminalShellChoices.CUSTOM and not custom_path:
+                raise serializers.ValidationError(
+                    {custom_key: "Custom shell path is required."}
+                )
+
+        require_custom("default_shell_windows", "default_shell_windows_custom")
+        require_custom("default_shell_linux", "default_shell_linux_custom")
+        require_custom("default_shell_darwin", "default_shell_darwin_custom")
+
+        return attrs
 
     class Meta:
         model = CoreSettings

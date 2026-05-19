@@ -5,6 +5,7 @@ from tacticalrmm.constants import (
     AGENT_CHECKS_CACHE_PREFIX,
     AGENT_STATUS_ONLINE,
     ALL_TIMEZONES,
+    TerminalModeChoices,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
 
@@ -49,6 +50,10 @@ class AgentSerializer(serializers.ModelSerializer):
     applied_policies = serializers.SerializerMethodField()
     effective_patch_policy = serializers.SerializerMethodField()
     alert_template = serializers.SerializerMethodField()
+    effective_default_shell = serializers.SerializerMethodField()
+
+    def get_effective_default_shell(self, obj):
+        return obj.effective_default_shell
 
     def get_alert_template(self, obj):
         from alerts.serializers import AlertTemplateSerializer
@@ -219,3 +224,36 @@ class AgentAuditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         exclude = ["disks", "services", "wmi_detail"]
+
+
+class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
+    effective_default_shell = serializers.SerializerMethodField()
+    resolved_default_shell = serializers.SerializerMethodField()
+    terminal_mode = serializers.SerializerMethodField()
+    supports_new_terminal = serializers.SerializerMethodField()
+
+    def get_effective_default_shell(self, obj):
+        return obj.effective_default_shell
+
+    def get_resolved_default_shell(self, obj):
+        return obj.resolved_default_shell
+
+    def get_terminal_mode(self, obj):
+        settings = self.context.get("core_settings")
+        return settings.terminal_mode if settings else TerminalModeChoices.NEW
+
+    def get_supports_new_terminal(self, obj):
+        return self.context.get("supports_new_terminal", True)
+
+    class Meta:
+        model = Agent
+        fields = (
+            "agent_id",
+            "hostname",
+            "plat",
+            "default_shell",
+            "resolved_default_shell",
+            "effective_default_shell",
+            "terminal_mode",
+            "supports_new_terminal",
+        )

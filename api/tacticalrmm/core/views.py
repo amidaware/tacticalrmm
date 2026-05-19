@@ -88,7 +88,9 @@ class GetEditCoreSettings(APIView):
             data["enable_server_webterminal"] = False
 
         coresettings = CoreSettings.objects.first()
-        serializer = CoreSettingsSerializer(instance=coresettings, data=data)
+        serializer = CoreSettingsSerializer(
+            instance=coresettings, data=data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         sync_mesh_perms_task.delay()

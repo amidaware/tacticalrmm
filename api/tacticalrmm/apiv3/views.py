@@ -7,7 +7,7 @@ from django.utils import timezone as djangotime
 from packaging import version as pyver
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -536,7 +536,8 @@ class Installer(APIView):
 
         ver = request.data["version"]
         if (
-            pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER)
+            not getattr(settings, "TRMM_INSECURE", False)
+            and pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER)
             and "-dev" not in settings.LATEST_AGENT_VER
         ):
             return notify_error(
@@ -604,3 +605,40 @@ class AgentConfig(APIView):
     def get(self, request, agentid):
         ret = get_agent_config()
         return Response(ret._to_dict())
+
+
+
+
+class AgentInnoDownload(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from pathlib import Path
+        from django.http import FileResponse
+        from django.utils import timezone
+        from knox.models import AuthToken
+
+        token = request.query_params.get("token", "")
+        arch = request.query_params.get("arch", "amd64")
+
+        if not token:
+            return Response("invalid token", status=401)
+
+        token_key = token[:8]
+        try:
+            knox_token = AuthToken.objects.get(token_key=token_key)
+            if knox_token.expiry and knox_token.expiry < timezone.now():
+                return Response("token expired", status=401)
+        except AuthToken.DoesNotExist:
+            return Response("invalid token", status=401)
+
+        goarch = "amd64" if arch == "amd64" else "386"
+        ver = settings.LATEST_AGENT_VER
+        filename = f"tacticalagent-v{ver}-windows-{goarch}.exe"
+        filepath = Path(settings.BASE_DIR) / "tacticalrmm" / "static" / "agents" / filename
+
+        if not filepath.exists():
+            return Response(f"binary not found: {filename}", status=404)
+
+        return FileResponse(open(filepath, "rb"), as_attachment=True, filename=filename)

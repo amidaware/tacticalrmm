@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /home/node/app
 
@@ -17,10 +17,9 @@ RUN MESH_VER=$(grep -o 'MESH_VER.*' /tmp/settings.py | cut -d'"' -f 2) && \
     "archiver": "7.0.1",
     "meshcentral": "$MESH_VER",
     "mongodb": "4.13.0",
-    "otplib": "10.2.3",
-    "pg": "8.7.1",
-    "pgtools": "0.3.2",
-    "saslprep": "1.0.3"
+    "otplib": "12.0.1",
+    "pg": "8.16.3",
+    "saslprep": "1.3.1"
   }
 }
 EOF

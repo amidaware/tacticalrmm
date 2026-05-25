@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="158"
+SCRIPT_VERSION="159"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -356,10 +356,9 @@ if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]];
 {
   "dependencies": {
     "archiver": "7.0.1",
-    "meshcentral": "${LATEST_MESH_VER}",
-    "otplib": "10.2.3",
-    "pg": "8.7.1",
-    "pgtools": "0.3.2"
+    "meshcentral": "${MESH_VER}",
+    "otplib": "12.0.1",
+    "pg": "8.16.3"
   }
 }
 EOF

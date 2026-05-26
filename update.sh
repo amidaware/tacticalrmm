@@ -356,7 +356,7 @@ if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]];
 {
   "dependencies": {
     "archiver": "7.0.1",
-    "meshcentral": "${MESH_VER}",
+    "meshcentral": "${LATEST_MESH_VER}",
     "otplib": "12.0.1",
     "pg": "8.16.3"
   }

@@ -1,7 +1,9 @@
 import asyncio
+import os
 
 from django.conf import settings
 from django.db.models import Prefetch
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from packaging import version as pyver
@@ -26,6 +28,7 @@ from core.utils import (
     download_mesh_agent,
     get_core_settings,
     get_mesh_device_id,
+    get_mesh_installer,
     get_mesh_ws_url,
     get_meshagent_url,
 )
@@ -450,6 +453,51 @@ class MeshExe(APIView):
             return download_mesh_agent(dl_url)
         except Exception as e:
             return notify_error(f"Unable to download mesh agent: {e}")
+
+
+class MeshReinstall(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+
+        agent = get_object_or_404(
+            Agent.objects.only("plat", "goarch"), agent_id=agentid
+        )
+        core = get_core_settings()
+
+        try:
+            uri = get_mesh_ws_url()
+            mesh_device_id: str = asyncio.run(
+                get_mesh_device_id(uri, core.mesh_device_group)
+            )
+        except:
+            return notify_error("Unable to connect to mesh to get group id information")
+
+        # windows only for now
+        ident = (
+            MeshAgentIdent.WIN64
+            if agent.goarch == GoArch.AMD64
+            else MeshAgentIdent.WIN32
+        )
+        dl_url = get_meshagent_url(
+            ident=ident,
+            plat=agent.plat,
+            mesh_site=core.mesh_site,  # type: ignore
+            mesh_device_id=mesh_device_id,
+        )
+
+        try:
+            mesh_installer = get_mesh_installer(agent.goarch, dl_url, agent.plat)
+        except Exception as e:
+            return notify_error(str(e))
+
+        response = FileResponse(
+            open(mesh_installer, "rb"),
+            as_attachment=True,
+            filename=os.path.basename(mesh_installer),
+        )
+        return response
 
 
 class NewAgent(APIView):

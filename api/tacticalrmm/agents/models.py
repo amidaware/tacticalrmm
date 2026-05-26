@@ -1081,7 +1081,7 @@ class Agent(BaseAuditModel):
         elif mode == "mesh":
             data = {"func": "recover", "payload": {"mode": mode}}
             if wait:
-                r = asyncio.run(self.nats_cmd(data, timeout=20))
+                r = asyncio.run(self.nats_cmd(data, timeout=60))
                 if r == "ok":
                     return "ok", False
                 else:

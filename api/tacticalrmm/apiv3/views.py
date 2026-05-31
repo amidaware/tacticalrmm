@@ -82,6 +82,9 @@ class SyncMeshNodeID(APIView):
             agent.mesh_node_id = request.data["nodeid"]
             agent.save(update_fields=["mesh_node_id"])
 
+        if request.data.get("run_sync_task"):
+            sync_mesh_perms_task.delay()
+
         return Response("ok")
 
 
@@ -551,7 +554,10 @@ class NewAgent(APIView):
         )
 
         ret = {"pk": agent.pk, "token": token.key}
-        sync_mesh_perms_task.delay()
+
+        if agent.plat == AgentPlat.WINDOWS:
+            sync_mesh_perms_task.delay()
+
         cache_agents_alert_template.delay()
         return Response(ret)
 

@@ -1058,7 +1058,9 @@ class Agent(BaseAuditModel):
                     "NATS close failed for agent %s", self.agent_id, exc_info=True
                 )
 
-    def recover(self, mode: str, mesh_uri: str, wait: bool = True) -> tuple[str, bool]:
+    def recover(
+        self, mode: str, mesh_uri: str, wait: bool = True, agent_url: str = ""
+    ) -> tuple[str, bool]:
         """
         Return type: tuple(message: str, error: bool)
         """
@@ -1070,8 +1072,15 @@ class Agent(BaseAuditModel):
                 cmd = "launchctl kickstart -k system/tacticalagent"
                 shell = 3
             else:
-                cmd = "net stop tacticalrmm & taskkill /F /IM tacticalrmm.exe & net start tacticalrmm"
-                shell = 1
+                bin = f"tacticalagent-v{settings.LATEST_AGENT_VER}-{self.plat}-{self.goarch}.exe"
+                cmd = (
+                    f"$url='{agent_url}';"
+                    r"$destDir=Join-Path $env:ProgramData 'TacticalRMM';"
+                    f"$fileName='{bin}';"
+                    r"$fullPath=Join-Path $destDir $fileName;"
+                    r"Invoke-WebRequest -Uri $url -OutFile $fullPath; Start-Process -FilePath $fullPath -ArgumentList '/VERYSILENT' -Wait"
+                )
+                shell = 2
 
             asyncio.run(
                 send_command_with_mesh(cmd, mesh_uri, self.mesh_node_id, shell, 0)

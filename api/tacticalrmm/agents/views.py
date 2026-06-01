@@ -21,6 +21,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from agents.utils import get_agent_url
+from core.models import CoreSettings
 from core.tasks import sync_mesh_perms_task
 from core.utils import (
     get_core_settings,
@@ -61,12 +63,12 @@ from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
 from .models import Agent, AgentCustomField, AgentHistory, Note
-from core.models import CoreSettings
 from .permissions import (
     AgentHistoryPerms,
     AgentNotesPerms,
     AgentPerms,
     AgentRegistryPerms,
+    AgentTerminalPerms,
     AgentWOLPerms,
     EvtLogPerms,
     InstallAgentPerms,
@@ -78,7 +80,6 @@ from .permissions import (
     RunScriptPerms,
     SendCMDPerms,
     UpdateAgentPerms,
-    AgentTerminalPerms,
 )
 from .serializers import (
     AgentCustomFieldSerializer,
@@ -689,7 +690,6 @@ def install_agent(request):
     from knox.models import AuthToken
 
     from accounts.models import User
-    from agents.utils import get_agent_url
     from core.utils import token_is_valid
 
     insecure = getattr(settings, "TRMM_INSECURE", False)
@@ -854,7 +854,11 @@ def recover(request, agent_id: str) -> Response:
 
     if mode == "tacagent":
         uri = get_mesh_ws_url()
-        agent.recover(mode, uri, wait=False)
+        code_token, _ = token_is_valid()
+        agent_url = get_agent_url(
+            goarch=agent.goarch, plat=agent.plat, token=code_token
+        )
+        agent.recover(mode, uri, wait=False, agent_url=agent_url)
         return Response("Recovery will be attempted shortly")
 
     elif mode == "mesh":

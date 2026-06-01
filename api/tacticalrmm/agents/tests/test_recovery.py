@@ -17,10 +17,12 @@ class TestRecovery(TacticalTestCase):
         self.client1: "Client" = baker.make("clients.Client")
         self.site1: "Site" = baker.make("clients.Site", client=self.client1)
 
+    @patch("agents.views.get_agent_url")
     @patch("agents.models.Agent.recover")
     @patch("agents.views.get_mesh_ws_url")
-    def test_recover(self, get_mesh_ws_url, recover) -> None:
+    def test_recover(self, get_mesh_ws_url, recover, mock_agent_url) -> None:
         get_mesh_ws_url.return_value = "https://mesh.example.com"
+        mock_agent_url.return_value = "https://agent-download-url"
 
         agent = baker.make_recipe(
             "agents.online_agent",
@@ -35,7 +37,12 @@ class TestRecovery(TacticalTestCase):
         data = {"mode": "tacagent"}
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        recover.assert_called_with("tacagent", "https://mesh.example.com", wait=False)
+        recover.assert_called_with(
+            "tacagent",
+            "https://mesh.example.com",
+            wait=False,
+            agent_url="https://agent-download-url",
+        )
         get_mesh_ws_url.assert_called_once()
 
         # reset mocks

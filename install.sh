@@ -456,6 +456,8 @@ meshcfg="$(
     "wsCompression": false,
     "agentWsCompression": false,
     "maxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 },
+	"autoBackup": false,
+	"noAgentUpdate": true,
     "postgres": {
       "user": "${MESHPGUSER}",
       "password": "${MESHPGPWD}",

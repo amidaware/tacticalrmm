@@ -677,6 +677,15 @@ if which jq >/dev/null; then
   fi
 fi
 
+if which jq >/dev/null; then
+	cp "$mesh_cfg" ~/meshcfg1.4.0-$(date "+%Y%m%dT%H%M%S").bak
+	mesh_tmp2=$(mktemp)
+	if jq '.settings.noAgentUpdate = true | .settings.autoBackup = false' "$mesh_cfg" >"$mesh_tmp2" && [ -s "$mesh_tmp2" ]; then
+		mv "$mesh_tmp2" "$mesh_cfg"
+		sudo systemctl restart meshcentral
+	fi
+fi
+
 for i in nats nats-api rmm daphne celery celerybeat nginx; do
   printf >&2 "${GREEN}Starting ${i} service${NC}\n"
   sudo systemctl start ${i}

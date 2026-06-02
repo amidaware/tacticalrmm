@@ -4,6 +4,7 @@ from pathlib import Path
 
 import psutil
 import requests
+import validators
 from cryptography import x509
 from django.conf import settings
 from django.db import IntegrityError
@@ -282,10 +283,14 @@ class CodeSign(APIView):
     def patch(self, request):
         import requests
 
+        token = request.data["token"].strip().replace(" ", "").lower()
+        if not validators.uuid(token):
+            return notify_error("Invalid token format.")
+
         try:
             r = requests.post(
                 settings.CHECK_TOKEN_URL,
-                json={"token": request.data["token"], "api": settings.ALLOWED_HOSTS[0]},
+                json={"token": token, "api": settings.ALLOWED_HOSTS[0]},
                 headers={"Content-type": "application/json"},
                 timeout=15,
             )
@@ -297,11 +302,10 @@ class CodeSign(APIView):
         elif r.status_code == 200:
             t = CodeSignToken.objects.first()
             if t is None:
-                CodeSignToken.objects.create(token=request.data["token"])
+                CodeSignToken.objects.create(token=token)
             else:
-                serializer = CodeSignTokenSerializer(instance=t, data=request.data)
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
+                t.token = token
+                t.save(update_fields=["token"])
             return Response("Token was saved")
 
         try:

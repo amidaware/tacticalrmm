@@ -444,7 +444,6 @@ async def start_ssh_server(host="0.0.0.0", port=2222):
         public_key_auth=True,
         password_auth=False,
         kbdint_auth=False,
-        line_editor=False,
     )
     logger.info("SSH gateway listening on %s:%s", host, port)
     return server

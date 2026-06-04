@@ -227,6 +227,53 @@ class Role(BaseAuditModel):
         return RoleAuditSerializer(role).data
 
 
+class SSHPublicKey(BaseAuditModel):
+    user = models.ForeignKey(
+        User, related_name="ssh_keys", on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255)
+    key_type = models.CharField(max_length=64)
+    key_data = models.TextField()
+    fingerprint = models.CharField(max_length=128, unique=True)
+    comment = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.key_type})"
+
+    @staticmethod
+    def serialize(obj):
+        from .serializers import SSHPublicKeyAuditSerializer
+        return SSHPublicKeyAuditSerializer(obj).data
+
+
+class SSHSession(BaseAuditModel):
+    user = models.ForeignKey(
+        User, related_name="ssh_sessions", on_delete=models.CASCADE
+    )
+    agent = models.ForeignKey(
+        "agents.Agent", related_name="ssh_sessions", on_delete=models.CASCADE
+    )
+    session_id = models.CharField(max_length=255, unique=True)
+    remote_ip = models.GenericIPAddressField()
+    started_at = models.DateTimeField()
+    closed_at = models.DateTimeField(null=True, blank=True)
+    client_version = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"SSH {self.user.username} -> {self.agent.agent_id} ({self.session_id[:8]}...)"
+
+    @staticmethod
+    def serialize(obj):
+        from rest_framework.serializers import ModelSerializer, ReadOnlyField
+        class SSHSessionAuditSerializer(ModelSerializer):
+            username = ReadOnlyField(source="user.username")
+            agent_id = ReadOnlyField(source="agent.agent_id")
+            class Meta:
+                model = SSHSession
+                fields = ["session_id", "username", "agent_id", "remote_ip", "started_at", "closed_at"]
+        return SSHSessionAuditSerializer(obj).data
+
+
 class APIKey(BaseAuditModel):
     name = CharField(unique=True, max_length=25)
     key = CharField(unique=True, blank=True, max_length=48)

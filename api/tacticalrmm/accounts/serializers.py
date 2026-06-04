@@ -8,7 +8,7 @@ from rest_framework.serializers import (
 
 from tacticalrmm.util_settings import get_webdomain
 
-from .models import APIKey, Role, User
+from .models import APIKey, Role, SSHPublicKey, User
 
 
 class UserUISerializer(ModelSerializer):
@@ -91,6 +91,49 @@ class APIKeySerializer(ModelSerializer):
     class Meta:
         model = APIKey
         fields = "__all__"
+
+
+class SSHPublicKeySerializer(ModelSerializer):
+    username = ReadOnlyField(source="user.username")
+
+    class Meta:
+        model = SSHPublicKey
+        fields = [
+            "id",
+            "username",
+            "name",
+            "key_type",
+            "fingerprint",
+            "comment",
+            "created_time",
+        ]
+
+
+class SSHPublicKeyCreateSerializer(ModelSerializer):
+    class Meta:
+        model = SSHPublicKey
+        fields = [
+            "user",
+            "name",
+            "key_type",
+            "key_data",
+            "fingerprint",
+            "comment",
+        ]
+
+
+class SSHPublicKeyAuditSerializer(ModelSerializer):
+    username = ReadOnlyField(source="user.username")
+
+    class Meta:
+        model = SSHPublicKey
+        fields = [
+            "name",
+            "key_type",
+            "fingerprint",
+            "username",
+            "comment",
+        ]
 
 
 class APIKeyAuditSerializer(ModelSerializer):

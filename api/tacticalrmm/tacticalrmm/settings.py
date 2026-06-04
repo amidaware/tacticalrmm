@@ -371,6 +371,10 @@ def configure_logging_handler():
     return cfg
 
 
+SSH_SERVER_HOST = os.getenv("SSH_SERVER_HOST", "0.0.0.0")
+SSH_SERVER_PORT = int(os.getenv("SSH_SERVER_PORT", "2222"))
+SSH_HOST_KEY = os.getenv("SSH_HOST_KEY", "/etc/trmm/ssh_host_key")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

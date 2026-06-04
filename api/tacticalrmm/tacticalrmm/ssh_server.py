@@ -226,7 +226,7 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
     async def _start(self):
         sys.stderr.write(f"DEBUG: _start running for {self._session_id}\n")
         sys.stderr.flush()
-async def output_cb(data, done=False, exit_code=None):
+        async def output_cb(data, done=False, exit_code=None):
             sys.stderr.write(f"DEBUG: output_cb called, done={done}, data_type={type(data).__name__}, data={repr(data[:50]) if data else None}\n")
             sys.stderr.flush()
             try:
@@ -247,23 +247,6 @@ async def output_cb(data, done=False, exit_code=None):
                 sys.stderr.write(f"DEBUG: output_cb exception: {e}\n")
                 import traceback
                 traceback.print_exc(file=sys.stderr)
-                sys.stderr.flush()
-            try:
-                if isinstance(data, str):
-                    data = data.encode("utf-8", errors="replace")
-                if self._chan and not self._chan.is_closing():
-                    self._chan.write(data)
-                    sys.stderr.write(f"DEBUG: output_cb wrote {len(data)} bytes\n")
-                    sys.stderr.flush()
-                else:
-                    sys.stderr.write(f"DEBUG: output_cb skipped (chan={self._chan}, is_closing={self._chan.is_closing() if self._chan else 'N/A'})\n")
-                    sys.stderr.flush()
-                if done:
-                    sys.stderr.write(f"DEBUG: output_cb done, calling chan.exit({exit_code or 0})\n")
-                    sys.stderr.flush()
-                    self._chan.exit(exit_code or 0)
-            except Exception as e:
-                sys.stderr.write(f"DEBUG: output_cb exception: {e}\n")
                 sys.stderr.flush()
 
         sys.stderr.write(f"DEBUG: _start calling term.start for {self._session_id}\n")

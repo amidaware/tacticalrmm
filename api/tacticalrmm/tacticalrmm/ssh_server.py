@@ -261,9 +261,34 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
         return True
 
     def pty_requested(self, term_type, term_size, term_modes):
-        sys.stderr.write(f"DEBUG: pty_requested term_type={term_type} term_size={term_size}\n")
+        sys.stderr.write(f"DEBUG: pty_requested term_type={term_type}\n")
         sys.stderr.flush()
         return True
+
+    def terminal_modes(self):
+        sys.stderr.write(f"DEBUG: terminal_modes called\n")
+        sys.stderr.flush()
+        return {
+            asyncssh.VEOF: 4,
+            asyncssh.VINTR: 3,
+            asyncssh.VKILL: 21,
+            asyncssh.VQUIT: 28,
+            asyncssh.VSTART: 17,
+            asyncssh.VSTOP: 19,
+            asyncssh.VSUSP: 26,
+            asyncssh.VTIME: 0,
+            asyncssh.VMIN: 1,
+            asyncssh.ECHO: 0,
+            asyncssh.ECHOE: 0,
+            asyncssh.ECHOK: 0,
+            asyncssh.ECHOKE: 0,
+            asyncssh.ECHOCTL: 0,
+            asyncssh.ECHOPRT: 0,
+            asyncssh.ISIG: 1,
+            asyncssh.ICANON: 1,
+            asyncssh.IEXTEN: 1,
+            asyncssh.CTERMINAL: 0,
+        }
 
     def session_started(self):
         sys.stderr.write(f"DEBUG: session_started called\n")
@@ -419,6 +444,7 @@ async def start_ssh_server(host="0.0.0.0", port=2222):
         public_key_auth=True,
         password_auth=False,
         kbdint_auth=False,
+        line_editor=False,
     )
     logger.info("SSH gateway listening on %s:%s", host, port)
     return server

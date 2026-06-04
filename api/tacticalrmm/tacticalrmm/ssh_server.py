@@ -107,19 +107,11 @@ class NATSTerminal:
         self._lock = asyncio.Lock()
 
     async def start(self, output_cb):
-        sys.stderr.write(f"DEBUG: NATSTerminal.start connecting to NATS for {self.agent.agent_id}\n")
-        sys.stderr.flush()
         opts = setup_nats_options()
         self.nc = await nats.connect(**opts)
-        sys.stderr.write(f"DEBUG: NATSTerminal.start NATS connected\n")
-        sys.stderr.flush()
         subj_out = f"{self.agent.agent_id}.terminal.{self.session_id}"
-        sys.stderr.write(f"DEBUG: NATSTerminal.start subscribing to {subj_out}\n")
-        sys.stderr.flush()
 
         async def handler(msg):
-            sys.stderr.write(f"DEBUG: NATSTerminal handler received msg, data={msg.data[:100] if len(msg.data) > 100 else msg.data}\n")
-            sys.stderr.flush()
             try:
                 obj = msgpack.loads(msg.data)
             except Exception:
@@ -139,19 +131,13 @@ class NATSTerminal:
                 await output_cb(obj)
 
         self.sub = await self.nc.subscribe(subj_out, cb=handler)
-        sys.stderr.write(f"DEBUG: NATSTerminal.start subscribed, publishing terminal_start\n")
-        sys.stderr.flush()
         await self._pub({"func": "terminal_start", "payload": {"session_id": self.session_id, "shell": self.shell}})
-        sys.stderr.write(f"DEBUG: NATSTerminal.start published terminal_start, returning\n")
-        sys.stderr.flush()
 
     async def _pub(self, p):
         async with self._lock:
             await self.nc.publish(self.agent.agent_id, msgpack.dumps(p))
 
     async def write(self, data):
-        sys.stderr.write(f"DEBUG: NATSTerminal.write len={len(data)}\n")
-        sys.stderr.flush()
         await self._pub({"func": "terminal_input", "payload": {"session_id": self.session_id, "data": data}})
 
     async def resize(self, rows, cols):
@@ -187,87 +173,47 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
         self._chan = None
 
     def connection_made(self, chan):
-        sys.stderr.write(f"DEBUG: connection_made called, chan={type(chan).__name__}\n")
-        sys.stderr.flush()
         self._chan = chan
         try:
             peer_name = chan.get_extra_info("peername", ("", ""))
             self._remote_ip = peer_name[0] if peer_name else self._remote_ip
-            sys.stderr.write(f"DEBUG: connection_made peer={self._remote_ip}, _agent={self._agent}\n")
-            sys.stderr.flush()
             shell = self._agent.effective_default_shell
-            sys.stderr.write(f"DEBUG: connection_made shell={shell}\n")
-            sys.stderr.flush()
             self._term = NATSTerminal(self._agent, self._session_id, shell)
-            sys.stderr.write(f"DEBUG: connection_made NATSTerminal created, calling _start\n")
-            sys.stderr.flush()
             asyncio.ensure_future(self._start()).add_done_callback(self._on_start_done)
-            sys.stderr.write(f"DEBUG: connection_made _start scheduled\n")
-            sys.stderr.flush()
         except Exception as e:
-            sys.stderr.write(f"DEBUG: connection_made exception: {e}\n")
             import traceback
             traceback.print_exc(file=sys.stderr)
-            sys.stderr.flush()
             raise
 
     def _on_start_done(self, fut):
         exc = fut.exception()
         if exc:
-            sys.stderr.write(f"DEBUG: _start failed: {exc}\n")
             import traceback
             traceback.print_exc(file=sys.stderr)
-            sys.stderr.flush()
             logger.error("SSHSessionHandler._start failed: %s", exc, exc_info=exc)
-        else:
-            sys.stderr.write(f"DEBUG: _start completed successfully\n")
-            sys.stderr.flush()
 
     async def _start(self):
-        sys.stderr.write(f"DEBUG: _start running for {self._session_id}\n")
-        sys.stderr.flush()
         async def output_cb(data, done=False, exit_code=None):
-            sys.stderr.write(f"DEBUG: output_cb called, done={done}, data_type={type(data).__name__}, data={repr(data[:50]) if data else None}\n")
-            sys.stderr.flush()
             try:
                 if isinstance(data, bytes):
                     data = data.decode("utf-8", errors="replace")
                 if self._chan and not self._chan.is_closing():
                     self._chan.write(data)
-                    sys.stderr.write(f"DEBUG: output_cb wrote {len(data)} chars\n")
-                    sys.stderr.flush()
-                else:
-                    sys.stderr.write(f"DEBUG: output_cb skipped (chan={self._chan}, is_closing={self._chan.is_closing() if self._chan else 'N/A'})\n")
-                    sys.stderr.flush()
                 if done:
-                    sys.stderr.write(f"DEBUG: output_cb done, calling chan.exit({exit_code or 0})\n")
-                    sys.stderr.flush()
                     self._chan.exit(exit_code or 0)
             except Exception as e:
-                sys.stderr.write(f"DEBUG: output_cb exception: {e}\n")
                 import traceback
                 traceback.print_exc(file=sys.stderr)
-                sys.stderr.flush()
 
-        sys.stderr.write(f"DEBUG: _start calling term.start for {self._session_id}\n")
-        sys.stderr.flush()
         await self._term.start(output_cb)
-        sys.stderr.write(f"DEBUG: _start term.start returned (this is normal - NATSTerminal.start is async but only publishes)\n")
-        sys.stderr.flush()
 
     def shell_requested(self):
-        sys.stderr.write(f"DEBUG: shell_requested called, returning True\n")
-        sys.stderr.flush()
         return True
 
     def pty_requested(self, term_type, term_size, term_modes):
-        sys.stderr.write(f"DEBUG: pty_requested term_type={term_type}\n")
-        sys.stderr.flush()
         return True
 
     def terminal_modes(self):
-        sys.stderr.write(f"DEBUG: terminal_modes called\n")
-        sys.stderr.flush()
         return {
             asyncssh.VEOF: 4,
             asyncssh.VINTR: 3,
@@ -291,23 +237,16 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
         }
 
     def session_started(self):
-        sys.stderr.write(f"DEBUG: session_started called\n")
-        sys.stderr.flush()
+        pass
 
     def exec_requested(self, command):
-        sys.stderr.write(f"DEBUG: exec_requested command={command}\n")
-        sys.stderr.flush()
         return True
 
     def data_received(self, data, datatype):
-        sys.stderr.write(f"DEBUG: data_received len={len(data)} data={repr(data[:50])}\n")
-        sys.stderr.flush()
         if self._term:
             asyncio.ensure_future(self._term.write(data))
 
     def connection_lost(self, exc):
-        sys.stderr.write(f"DEBUG: connection_lost exc={exc}\n")
-        sys.stderr.flush()
         if self._term:
             asyncio.ensure_future(self._term.stop())
         if exc:
@@ -318,8 +257,6 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             asyncio.ensure_future(self._term.resize(h, w))
 
     def closed(self):
-        sys.stderr.write(f"DEBUG: session closed\n")
-        sys.stderr.flush()
         if self._term:
             asyncio.ensure_future(self._term.stop())
         asyncio.ensure_future(_close_session(self._session_id))
@@ -336,8 +273,6 @@ class SSHAgentServer(asyncssh.SSHServer):
         self._conn = conn
 
     async def begin_auth(self, username):
-        sys.stderr.write(f"DEBUG: begin_auth username={username}\n")
-        sys.stderr.flush()
         self._auth_user = None
         self._auth_agent = None
         self._session_id = uuid.uuid4().hex
@@ -354,73 +289,47 @@ class SSHAgentServer(asyncssh.SSHServer):
 
     async def validate_public_key(self, username, key):
         try:
-            sys.stderr.write(f"DEBUG: validate_public_key username={username}\n")
-            sys.stderr.flush()
             if hasattr(key, 'public_data'):
                 raw = key.public_data
             else:
                 raw = key.get_public_key_bytes()
             fp = _fingerprint(raw)
-            sys.stderr.write(f"DEBUG: fingerprint={fp}\n")
-            sys.stderr.flush()
 
             ssh_key = await _lookup_key(fp)
             if ssh_key is None:
-                sys.stderr.write(f"DEBUG: key not found for fingerprint {fp}\n")
-                sys.stderr.flush()
                 logger.warning("SSH: unknown key %s", fp)
                 return False
 
             user = ssh_key.user
-            sys.stderr.write(f"DEBUG: user={user.username}\n")
-            sys.stderr.flush()
             if not user.is_active or user.block_dashboard_login:
-                sys.stderr.write(f"DEBUG: user inactive or block_dashboard_login\n")
-                sys.stderr.flush()
                 logger.warning("SSH: inactive user %s", user.username)
                 return False
 
             agent = await _resolve_and_check(user, username)
             if agent is None:
-                sys.stderr.write(f"DEBUG: agent not found for user={user.username} username={username}\n")
-                sys.stderr.flush()
                 logger.warning("SSH: denied user=%s agent=%s", user.username, username)
                 return False
 
             self._auth_user = user
             self._auth_agent = agent
-            sys.stderr.write(f"DEBUG: auth success user={user.username} agent={agent.agent_id}\n")
-            sys.stderr.flush()
             return True
         except Exception as e:
-            sys.stderr.write(f"DEBUG: validate_public_key exception: {e}\n")
             import traceback
             traceback.print_exc(file=sys.stderr)
-            sys.stderr.flush()
             logger.error("SSH: validate_public_key error: %s", e, exc_info=True)
             return False
 
     def session_requested(self):
-        sys.stderr.write(f"DEBUG: session_requested called, _auth_user={self._auth_user}, _auth_agent={self._auth_agent}\n")
-        sys.stderr.flush()
         try:
             if not self._auth_user or not self._auth_agent:
-                sys.stderr.write(f"DEBUG: session_requested returning None (no auth)\n")
-                sys.stderr.flush()
                 return None
-            sys.stderr.write(f"DEBUG: session_requested creating handler for {self._auth_user.username}\n")
-            sys.stderr.flush()
             handler = SSHSessionHandler(
                 self._auth_user, self._auth_agent, self._session_id, ""
             )
-            sys.stderr.write(f"DEBUG: session_requested returning handler (no custom channel)\n")
-            sys.stderr.flush()
             return handler
         except Exception as e:
-            sys.stderr.write(f"DEBUG: session_requested exception: {e}\n")
             import traceback
             traceback.print_exc(file=sys.stderr)
-            sys.stderr.flush()
             logger.error("SSH: session_requested error: %s", e, exc_info=True)
             return None
 

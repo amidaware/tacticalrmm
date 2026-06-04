@@ -213,29 +213,6 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
     def pty_requested(self, term_type, term_size, term_modes):
         return True
 
-    def terminal_modes(self):
-        return {
-            asyncssh.VEOF: 4,
-            asyncssh.VINTR: 3,
-            asyncssh.VKILL: 21,
-            asyncssh.VQUIT: 28,
-            asyncssh.VSTART: 17,
-            asyncssh.VSTOP: 19,
-            asyncssh.VSUSP: 26,
-            asyncssh.VTIME: 0,
-            asyncssh.VMIN: 1,
-            asyncssh.ECHO: 0,
-            asyncssh.ECHOE: 0,
-            asyncssh.ECHOK: 0,
-            asyncssh.ECHOKE: 0,
-            asyncssh.ECHOCTL: 0,
-            asyncssh.ECHOPRT: 0,
-            asyncssh.ISIG: 1,
-            asyncssh.ICANON: 1,
-            asyncssh.IEXTEN: 1,
-            asyncssh.CTERMINAL: 0,
-        }
-
     def session_started(self):
         pass
 

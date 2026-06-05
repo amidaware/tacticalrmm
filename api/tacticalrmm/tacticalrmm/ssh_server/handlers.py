@@ -402,6 +402,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     async def _handle_char(self, ch):
         try:
             self._last_activity = djangotime.now()
+            self._agent_page = 0
+            self._agents_per_page = 10
 
             if ch in ("\r", "\n"):
                 if self._num_buf:
@@ -568,7 +570,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             agents = self._tree[self._menu_client][self._menu_site]
             idx = num - 1
             if 0 <= idx < len(agents):
-                aid, hostname, ip, status = agents[idx]
+                aid, hostname, ip, status, version, last_seen = agents[idx]
                 if status != "online":
                     await self._write(
                         f"\r\n\x1b[31m{hostname} is {status}.\x1b[0m "

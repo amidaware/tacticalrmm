@@ -404,6 +404,18 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             self._last_activity = djangotime.now()
 
             if ch in ("\r", "\n"):
+                if self._num_buf:
+                    if self._num_timer:
+                        self._num_timer.cancel()
+                    try:
+                        num = int(self._num_buf)
+                        self._num_buf = ""
+                        self._num_timer = None
+                        await self._handle_number(num)
+                    except ValueError:
+                        self._num_buf = ""
+                        self._num_timer = None
+                    return
                 if self._buf:
                     cmd = self._buf.strip().lower()
                     self._buf = ""

@@ -46,7 +46,7 @@ def _get_menu_agents(user):
         client_name = a.site.client.name
         site_name = a.site.name
         tree.setdefault(client_name, {}).setdefault(site_name, []).append(
-            (a.agent_id, a.hostname, a.public_ip or "", a.status)
+            (a.agent_id, a.hostname, a.public_ip or "", a.status, a.version, a.last_seen)
         )
     return tree
 
@@ -371,11 +371,23 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             "\x1b[2mSelect an agent\x1b[0m",
             "",
         ]
-        for i, (aid, hostname, ip, status) in enumerate(agents, 1):
+        for i, (aid, hostname, ip, status, version, last_seen) in enumerate(agents, 1):
             status_color = "\x1b[32m" if status == "online" else "\x1b[31m"
             ip_str = f" ({ip})" if ip else ""
+            version_str = f" v{version}" if version else ""
+            last_seen_str = ""
+            if last_seen:
+                ago = djangotime.now() - last_seen
+                minutes = int(ago.total_seconds() / 60)
+                if minutes < 1:
+                    last_seen_str = " (<1m ago)"
+                elif minutes < 60:
+                    last_seen_str = f" ({minutes}m ago)"
+                else:
+                    hours = minutes // 60
+                    last_seen_str = f" ({hours}h ago)"
             lines.append(
-                f"  {i:>2}. {hostname}{ip_str}"
+                f"  {i:>2}. {hostname}{ip_str}{version_str}{last_seen_str}"
                 f"  {status_color}{status}\x1b[0m"
             )
         lines += [

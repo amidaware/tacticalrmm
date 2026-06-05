@@ -33,6 +33,7 @@ class SSHAgentServer(asyncssh.SSHServer):
         self._ssh_key_type = ""
         self._ssh_key_fingerprint = ""
         self._is_menu = False
+        self._conn_counted = False
 
     def connection_made(self, conn):
         self._conn = conn
@@ -49,10 +50,13 @@ class SSHAgentServer(asyncssh.SSHServer):
             self._client_version = ""
         global _active_connections
         _active_connections += 1
+        self._conn_counted = True
 
     def connection_lost(self, exc):
-        global _active_connections
-        _active_connections -= 1
+        if self._conn_counted:
+            self._conn_counted = False
+            global _active_connections
+            _active_connections -= 1
         if exc:
             logger.error("SSH connection from %s lost: %s", self._remote_ip, exc)
 

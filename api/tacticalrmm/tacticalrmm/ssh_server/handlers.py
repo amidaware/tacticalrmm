@@ -328,7 +328,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         clients = sorted(self._tree.keys())
         lines = [
             "",
-            "\x1b[1mTactical RMM SSH Gateway\x1b[0m",
+            f"\x1b[1mTactical RMM SSH Gateway\x1b[0m \x1b[2mv{settings.TRMM_VERSION}\x1b[0m",
             "\x1b[2mSelect a client to browse its agents\x1b[0m",
             "",
         ]

@@ -1,280 +1,53 @@
 import asyncio
-import collections
-import json
 import logging
-import os
 import random
-import time
-import uuid
-from hashlib import sha256
-import base64
 
 import asyncssh
-import msgpack
-import nats
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils import timezone as djangotime
 
-from logs.models import AuditLog
-from tacticalrmm.constants import AuditActionType
-from tacticalrmm.helpers import setup_nats_options
+from .audit import _close_session_and_audit, _record_session_and_audit
+from .highscores import _add_highscore, _format_highscores
+from .terminal import NATSTerminal
+from .utils import _get_user_group, _resolve_and_check
 
 logger = logging.getLogger("trmm")
-if not logger.handlers:
-    _sh = logging.StreamHandler()
-    _sh.setLevel(logging.DEBUG)
-    _sh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
-    logger.addHandler(_sh)
-    logger.setLevel(logging.DEBUG)
-
-_active_connections = 0
-
-
-def get_active_connections() -> int:
-    return _active_connections
-
-
-def _fingerprint(key_bytes: bytes) -> str:
-    digest = sha256(key_bytes).digest()
-    return "SHA256:" + base64.b64encode(digest).decode().rstrip("=")
 
 
 @sync_to_async
-def _lookup_key(fp: str):
-    from accounts.models import SSHPublicKey
-    try:
-        return SSHPublicKey.objects.select_related("user__role").get(fingerprint=fp)
-    except SSHPublicKey.DoesNotExist:
-        return None
-
-
-@sync_to_async
-def _resolve_and_check(user, agent_id: str):
+def _get_menu_agents(user):
     from agents.models import Agent
+    agents = Agent.objects.select_related("site__client").only(
+        "agent_id", "hostname", "public_ip", "last_seen",
+        "offline_time", "overdue_time",
+        "site__name", "site__client__name",
+    )
+
     if user.is_superuser:
-        try:
-            return Agent.objects.get(agent_id=agent_id)
-        except Agent.DoesNotExist:
-            return None
-    role = user.get_and_set_role_cache()
-    if role and getattr(role, "is_superuser", False):
-        try:
-            return Agent.objects.get(agent_id=agent_id)
-        except Agent.DoesNotExist:
-            return None
-    if not role:
-        return None
-    if not getattr(role, "can_use_terminal", False):
-        return None
+        filtered = list(agents)
+    else:
+        role = user.get_and_set_role_cache()
+        if not (role and getattr(role, "can_use_terminal", False)):
+            return []
+        can_view_clients = list(role.can_view_clients.all()) if role.can_view_clients.exists() else None
+        can_view_sites = list(role.can_view_sites.all()) if role.can_view_sites.exists() else None
+        filtered = []
+        for a in agents:
+            if can_view_clients and a.client not in can_view_clients:
+                continue
+            if can_view_sites and a.site not in can_view_sites:
+                continue
+            filtered.append(a)
 
-    try:
-        agent = Agent.objects.defer("wmi_detail", "services").select_related(
-            "site__client"
-        ).get(agent_id=agent_id)
-    except Agent.DoesNotExist:
-        return None
-
-    can_view_clients = role.can_view_clients.all() if role else None
-    can_view_sites = role.can_view_sites.all() if role else None
-
-    if not can_view_clients and not can_view_sites:
-        return agent
-    if can_view_clients and agent.client in can_view_clients:
-        return agent
-    if can_view_sites and agent.site in can_view_sites:
-        return agent
-    return None
-
-
-@sync_to_async
-def _record_session_and_audit(
-    user, agent, session_id, remote_ip, client_version="",
-    ssh_key_name="", ssh_key_type="", ssh_key_fingerprint="",
-):
-    from accounts.models import SSHSession
-    now = djangotime.now()
-    SSHSession.objects.create(
-        user=user,
-        agent=agent,
-        session_id=session_id,
-        remote_ip=remote_ip,
-        started_at=now,
-        client_version=client_version,
-    )
-    AuditLog.audit_ssh_session_start(
-        username=user.username,
-        agent=agent,
-        session_id=session_id,
-        remote_ip=remote_ip,
-        client_version=client_version,
-        ssh_key_name=ssh_key_name,
-        ssh_key_type=ssh_key_type,
-        ssh_key_fingerprint=ssh_key_fingerprint,
-    )
-
-
-@sync_to_async
-def _close_session_and_audit(
-    user, agent, session_id, remote_ip, started_at,
-    terminal_type="", terminal_rows=0, terminal_cols=0,
-):
-    from accounts.models import SSHSession
-    now = djangotime.now()
-    duration = int((now - started_at).total_seconds())
-    SSHSession.objects.filter(session_id=session_id).update(closed_at=now)
-    AuditLog.audit_ssh_session_end(
-        username=user.username,
-        agent=agent,
-        session_id=session_id,
-        remote_ip=remote_ip,
-        started_at=str(started_at),
-        closed_at=str(now),
-        duration=duration,
-        terminal_type=terminal_type,
-        terminal_rows=terminal_rows,
-        terminal_cols=terminal_cols,
-    )
-
-
-@sync_to_async
-def _audit_session_failed(
-    username, agent_id, remote_ip, reason,
-    ssh_key_name="", ssh_key_type="", ssh_key_fingerprint="",
-):
-    AuditLog.audit_ssh_session_failed(
-        username=username,
-        agent_id=agent_id,
-        remote_ip=remote_ip,
-        reason=reason,
-        ssh_key_name=ssh_key_name,
-        ssh_key_type=ssh_key_type,
-        ssh_key_fingerprint=ssh_key_fingerprint,
-    )
-
-
-class NATSTerminal:
-    def __init__(self, agent, session_id, shell):
-        self.agent = agent
-        self.session_id = session_id
-        self.shell = shell
-        self.nc = None
-        self.sub = None
-        self._lock = asyncio.Lock()
-
-    async def start(self, output_cb):
-        opts = setup_nats_options()
-        self.nc = await nats.connect(**opts)
-        subj_out = f"{self.agent.agent_id}.terminal.{self.session_id}"
-
-        async def handler(msg):
-            try:
-                obj = msgpack.loads(msg.data)
-            except Exception:
-                obj = msg.data
-            if isinstance(obj, dict):
-                out = obj.get("output", b"")
-                done = obj.get("done", False)
-                ec = obj.get("exit_code")
-                if isinstance(out, bytes):
-                    out = out.decode("utf-8", errors="replace")
-                await output_cb(out, done=done, exit_code=ec)
-                if done:
-                    asyncio.ensure_future(self.stop())
-            elif isinstance(obj, (bytes, bytearray)):
-                await output_cb(obj.decode("utf-8", errors="replace"))
-            elif isinstance(obj, str):
-                await output_cb(obj)
-
-        self.sub = await self.nc.subscribe(subj_out, cb=handler)
-        await self._pub({"func": "terminal_start", "payload": {"session_id": self.session_id, "shell": self.shell}})
-
-    async def _pub(self, p):
-        async with self._lock:
-            await self.nc.publish(self.agent.agent_id, msgpack.dumps(p))
-
-    async def write(self, data):
-        await self._pub({"func": "terminal_input", "payload": {"session_id": self.session_id, "data": data}})
-
-    async def resize(self, rows, cols):
-        await self._pub({"func": "terminal_resize", "payload": {"session_id": self.session_id, "rows": str(rows), "cols": str(cols)}})
-
-    async def stop(self):
-        try:
-            await self._pub({"func": "terminal_kill", "payload": {"session_id": self.session_id}})
-        except Exception:
-            pass
-        if self.sub:
-            try:
-                await self.sub.unsubscribe()
-            except Exception:
-                pass
-            self.sub = None
-        if self.nc and not self.nc.is_closed:
-            try:
-                await self.nc.close()
-            except Exception:
-                pass
-            self.nc = None
-
-
-@sync_to_async
-def _get_user_group(user):
-    return user.role.name if user.role else None
-
-
-_HIGHSCORES_PATH = "/etc/trmm/snake_highscores.json"
-
-
-def _load_highscores():
-    if not os.path.exists(_HIGHSCORES_PATH):
-        return []
-    try:
-        with open(_HIGHSCORES_PATH, "r") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return []
-
-
-def _save_highscores(scores):
-    try:
-        os.makedirs(os.path.dirname(_HIGHSCORES_PATH), exist_ok=True)
-        with open(_HIGHSCORES_PATH, "w") as f:
-            json.dump(scores, f, indent=2)
-    except OSError:
-        pass
-
-
-def _add_highscore(username, score, won):
-    scores = _load_highscores()
-    scores.append({
-        "username": username,
-        "score": score,
-        "won": won,
-        "date": djangotime.now().isoformat(),
-    })
-    scores.sort(key=lambda s: (-s["score"], s["date"]))
-    scores = scores[:20]
-    _save_highscores(scores)
-    return scores
-
-
-def _format_highscores(scores):
-    if not scores:
-        return ""
-    lines = [
-        "\x1b[1m\xe2\x94\x80 High Scores " +
-        "\xe2\x94\x80" * 42 + "\x1b[0m\r\n",
-    ]
-    for i, entry in enumerate(scores[:10], 1):
-        star = " \xe2\x98\x85" if entry.get("won") else "   "
-        lines.append(
-            f"  {i:>2}. {entry['username']:<20} {entry['score']:>4}{star}\r\n"
+    tree = {}
+    for a in filtered:
+        client_name = a.site.client.name
+        site_name = a.site.name
+        tree.setdefault(client_name, {}).setdefault(site_name, []).append(
+            (a.agent_id, a.hostname, a.public_ip or "", a.status)
         )
-    lines.append(
-        "\x1b[2m" + "\xe2\x94\x80" * 52 + "\x1b[0m\r\n"
-    )
-    return "".join(lines)
+    return tree
 
 
 class SSHSessionHandler(asyncssh.SSHServerSession):
@@ -380,7 +153,6 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             asyncssh.CTERMINAL: 0,
         }
 
-
     def exec_requested(self, command):
         return True
 
@@ -418,41 +190,6 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             )
 
 
-@sync_to_async
-def _get_menu_agents(user):
-    from agents.models import Agent
-    agents = Agent.objects.select_related("site__client").only(
-        "agent_id", "hostname", "public_ip", "last_seen",
-        "offline_time", "overdue_time",
-        "site__name", "site__client__name",
-    )
-
-    if user.is_superuser:
-        filtered = list(agents)
-    else:
-        role = user.get_and_set_role_cache()
-        if not (role and getattr(role, "can_use_terminal", False)):
-            return []
-        can_view_clients = list(role.can_view_clients.all()) if role.can_view_clients.exists() else None
-        can_view_sites = list(role.can_view_sites.all()) if role.can_view_sites.exists() else None
-        filtered = []
-        for a in agents:
-            if can_view_clients and a.client not in can_view_clients:
-                continue
-            if can_view_sites and a.site not in can_view_sites:
-                continue
-            filtered.append(a)
-
-    tree = {}
-    for a in filtered:
-        client_name = a.site.client.name
-        site_name = a.site.name
-        tree.setdefault(client_name, {}).setdefault(site_name, []).append(
-            (a.agent_id, a.hostname, a.public_ip or "", a.status)
-        )
-    return tree
-
-
 class MenuSessionHandler(asyncssh.SSHServerSession):
     def __init__(self, user, session_id, remote_ip,
                  client_version="", ssh_key_name="", ssh_key_type="",
@@ -470,7 +207,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._started_at = None
         self._selected_agent = None
         self._tree = []
-        self._state = "client"  # client / site / agent / terminal / snake / snake_gameover
+        self._state = "client"
         self._menu_client = ""
         self._menu_site = ""
         self._agent_id = ""
@@ -953,257 +690,3 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._state = "client"
         self._snake_buf = ""
         await self._show_clients()
-
-
-class _RateLimiter:
-    def __init__(self, max_attempts: int = 10, window: int = 60):
-        self._max_attempts = max_attempts
-        self._window = window
-        self._attempts: dict[str, list[float]] = collections.defaultdict(list)
-
-    def allow(self, ip: str) -> bool:
-        now = time.time()
-        cutoff = now - self._window
-        attempts = self._attempts[ip]
-        attempts[:] = [t for t in attempts if t > cutoff]
-        if len(attempts) >= self._max_attempts:
-            return False
-        attempts.append(now)
-        return True
-
-    def reset(self, ip: str) -> None:
-        self._attempts.pop(ip, None)
-
-
-def _make_rate_limiter():
-    return _RateLimiter(
-        max_attempts=getattr(settings, "SSH_RATE_LIMIT_ATTEMPTS", 10),
-        window=getattr(settings, "SSH_RATE_LIMIT_WINDOW", 60),
-    )
-
-
-_rate_limiter = _make_rate_limiter()
-
-
-class SSHAgentServer(asyncssh.SSHServer):
-    def __init__(self):
-        self._auth_user = None
-        self._auth_agent = None
-        self._session_id = uuid.uuid4().hex
-        self._conn = None
-        self._remote_ip = ""
-        self._client_version = ""
-        self._ssh_key_name = ""
-        self._ssh_key_type = ""
-        self._ssh_key_fingerprint = ""
-        self._is_menu = False
-
-    def connection_made(self, conn):
-        self._conn = conn
-        try:
-            peer = conn.get_extra_info("peername", ("", 0))
-            self._remote_ip = peer[0] if peer else ""
-            self._client_version = conn.get_extra_info("client_version", "")
-            logger.info(
-                "SSH connection from %s client=%s",
-                self._remote_ip, self._client_version,
-            )
-        except Exception:
-            self._remote_ip = ""
-            self._client_version = ""
-        global _active_connections
-        _active_connections += 1
-
-    def connection_lost(self, exc):
-        global _active_connections
-        _active_connections -= 1
-        if exc:
-            logger.error("SSH connection from %s lost: %s", self._remote_ip, exc)
-
-    async def begin_auth(self, username):
-        self._auth_user = None
-        self._auth_agent = None
-        self._is_menu = False
-        self._session_id = uuid.uuid4().hex
-        if self._remote_ip and not _rate_limiter.allow(self._remote_ip):
-            logger.warning("SSH: rate limit exceeded for %s", self._remote_ip)
-            return False
-        return True
-
-    def public_key_auth_supported(self):
-        return True
-
-    def password_auth_supported(self):
-        return False
-
-    def kbdint_auth_supported(self):
-        return False
-
-    async def validate_public_key(self, username, key):
-        try:
-            if hasattr(key, 'public_data'):
-                raw = key.public_data
-            else:
-                raw = key.get_public_key_bytes()
-            fp = _fingerprint(raw)
-
-            ssh_key = await _lookup_key(fp)
-            if ssh_key is None:
-                logger.warning("SSH: unknown key %s from %s", fp, self._remote_ip)
-                return False
-
-            user = ssh_key.user
-            if not user.is_active or user.block_dashboard_login:
-                logger.warning(
-                    "SSH: inactive user %s from %s", user.username, self._remote_ip
-                )
-                return False
-
-            self._ssh_key_name = ssh_key.name
-            self._ssh_key_type = ssh_key.key_type
-            self._ssh_key_fingerprint = ssh_key.fingerprint
-
-            if username.lower() == "menu":
-                role = await sync_to_async(user.get_and_set_role_cache)()
-                if not user.is_superuser and not (role and getattr(role, "can_use_terminal", False)):
-                    logger.warning(
-                        "SSH: menu denied for user=%s from %s",
-                        user.username, self._remote_ip,
-                    )
-                    return False
-                self._auth_user = user
-                self._auth_agent = None
-                self._is_menu = True
-                logger.info(
-                    "SSH: menu session user=%s key=%s from %s",
-                    user.username, ssh_key.name, self._remote_ip,
-                )
-                return True
-
-            agent = await _resolve_and_check(user, username)
-            if agent is None:
-                logger.warning(
-                    "SSH: denied user=%s agent=%s from %s",
-                    user.username, username, self._remote_ip,
-                )
-                asyncio.ensure_future(
-                    _audit_session_failed(
-                        username=user.username,
-                        agent_id=username,
-                        remote_ip=self._remote_ip,
-                        reason="access_denied_no_permission",
-                        ssh_key_name=ssh_key.name,
-                        ssh_key_type=ssh_key.key_type,
-                        ssh_key_fingerprint=ssh_key.fingerprint,
-                    )
-                )
-                return False
-
-            if agent.status != "online":
-                logger.warning(
-                    "SSH: denied user=%s agent=%s from %s reason=agent_%s",
-                    user.username, username, self._remote_ip, agent.status,
-                )
-                asyncio.ensure_future(
-                    _audit_session_failed(
-                        username=user.username,
-                        agent_id=username,
-                        remote_ip=self._remote_ip,
-                        reason=f"agent_{agent.status}",
-                        ssh_key_name=ssh_key.name,
-                        ssh_key_type=ssh_key.key_type,
-                        ssh_key_fingerprint=ssh_key.fingerprint,
-                    )
-                )
-                return False
-
-            self._auth_user = user
-            self._auth_agent = agent
-            logger.info(
-                "SSH: auth success user=%s agent=%s key=%s from %s",
-                user.username, username, ssh_key.name, self._remote_ip,
-            )
-            return True
-        except Exception as e:
-            logger.error("SSH: validate_public_key error: %s", e, exc_info=True)
-            return False
-
-    def session_requested(self):
-        try:
-            if self._is_menu:
-                if not self._auth_user:
-                    return None
-                return MenuSessionHandler(
-                    self._auth_user, self._session_id, self._remote_ip,
-                    client_version=self._client_version,
-                    ssh_key_name=self._ssh_key_name,
-                    ssh_key_type=self._ssh_key_type,
-                    ssh_key_fingerprint=self._ssh_key_fingerprint,
-                )
-            if not self._auth_user or not self._auth_agent:
-                return None
-            handler = SSHSessionHandler(
-                self._auth_user, self._auth_agent, self._session_id, self._remote_ip,
-                client_version=self._client_version,
-                ssh_key_name=self._ssh_key_name,
-                ssh_key_type=self._ssh_key_type,
-                ssh_key_fingerprint=self._ssh_key_fingerprint,
-            )
-            return handler
-        except Exception as e:
-            logger.error("SSH: session_requested error: %s", e, exc_info=True)
-            return None
-
-
-async def start_ssh_server(host=None, port=None):
-    if host is None:
-        host = getattr(settings, "SSH_SERVER_HOST", "0.0.0.0")
-    if port is None:
-        port = getattr(settings, "SSH_SERVER_PORT", 2222)
-
-    if not isinstance(port, int) or port < 1 or port > 65535:
-        raise ValueError(f"Invalid SSH port: {port}")
-
-    login_timeout = getattr(settings, "SSH_LOGIN_TIMEOUT", 30)
-    if login_timeout < 5:
-        logger.warning("SSH_LOGIN_TIMEOUT=%d too low, using 5", login_timeout)
-        login_timeout = 5
-
-    keepalive_interval = getattr(settings, "SSH_KEEPALIVE_INTERVAL", 30)
-    keepalive_count_max = getattr(settings, "SSH_KEEPALIVE_COUNT_MAX", 3)
-    if keepalive_interval < 5:
-        logger.warning("SSH_KEEPALIVE_INTERVAL=%d too low, using 5", keepalive_interval)
-        keepalive_interval = 5
-    if keepalive_count_max < 1:
-        logger.warning("SSH_KEEPALIVE_COUNT_MAX=%d too low, using 1", keepalive_count_max)
-        keepalive_count_max = 1
-
-    host_key_path = getattr(settings, "SSH_HOST_KEY", "/etc/trmm/ssh_host_key")
-    if not os.path.exists(host_key_path):
-        logger.warning("SSH host key not found at %s, generating...", host_key_path)
-        os.makedirs(os.path.dirname(host_key_path), exist_ok=True)
-        key = asyncssh.generate_private_key("ssh-rsa")
-        key.write_private_key(host_key_path)
-
-    server_host_keys = [host_key_path]
-
-    server = await asyncssh.create_server(
-        SSHAgentServer,
-        host,
-        port,
-        server_host_keys=server_host_keys,
-        public_key_auth=True,
-        password_auth=False,
-        kbdint_auth=False,
-        kex_algs=["mlkem768x25519-sha256", "curve25519-sha256"],
-        line_editor=False,
-        login_timeout=login_timeout,
-        keepalive_interval=keepalive_interval,
-        keepalive_count_max=keepalive_count_max,
-        reuse_address=True,
-    )
-    logger.info(
-        "SSH gateway listening on %s:%s (timeout=%d keepalive=%d/%d)",
-        host, port, login_timeout, keepalive_interval, keepalive_count_max,
-    )
-    return server

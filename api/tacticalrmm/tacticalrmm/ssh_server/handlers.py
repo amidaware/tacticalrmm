@@ -20,7 +20,7 @@ logger = logging.getLogger("trmm")
 def _get_menu_agents(user):
     from agents.models import Agent
     agents = Agent.objects.select_related("site__client").only(
-        "agent_id", "hostname", "public_ip", "last_seen",
+        "agent_id", "hostname", "public_ip", "last_seen", "version", "notes",
         "offline_time", "overdue_time",
         "site__name", "site__client__name",
     )

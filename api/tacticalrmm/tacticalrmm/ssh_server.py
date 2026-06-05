@@ -374,6 +374,9 @@ async def start_ssh_server(host="0.0.0.0", port=2222):
         kbdint_auth=False,
         kex_algs=["mlkem768x25519-sha256", "curve25519-sha256"],
         line_editor=False,
+        login_timeout=30,
+        keepalive_interval=30,
+        keepalive_count_max=3,
     )
     logger.info("SSH gateway listening on %s:%s", host, port)
     return server

@@ -214,6 +214,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._agent_id = ""
         self._buf = ""
         self._last_activity = djangotime.now()
+        self._agent_page = 0
+        self._agents_per_page = 10
 
     def connection_made(self, chan):
         self._chan = chan
@@ -365,12 +367,20 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     async def _show_agents(self):
         self._state = "agent"
         agents = self._tree[self._menu_client][self._menu_site]
+        total_agents = len(agents)
+        total_pages = max(1, (total_agents + self._agents_per_page - 1) // self._agents_per_page)
+        if self._agent_page >= total_pages:
+            self._agent_page = total_pages - 1
+        start_idx = self._agent_page * self._agents_per_page
+        end_idx = min(start_idx + self._agents_per_page, total_agents)
+        page_agents = agents[start_idx:end_idx]
+
         lines = [
             f"\r\n\x1b[1mClients \x1b[2m>\x1b[0m {self._menu_client} \x1b[2m>\x1b[0m {self._menu_site}\x1b[0m",
-            "\x1b[2mSelect an agent\x1b[0m",
+            f"\x1b[2mSelect an agent\x1b[0m \x1b[33m(Page {self._agent_page + 1} of {total_pages})\x1b[0m",
             "",
         ]
-        for i, (aid, hostname, ip, status, version, last_seen) in enumerate(agents, 1):
+        for i, (aid, hostname, ip, status, version, last_seen) in enumerate(page_agents, start_idx + 1):
             status_color = "\x1b[32m" if status == "online" else "\x1b[31m"
             ip_str = f" ({ip})" if ip else ""
             version_str = f" v{version}" if version else ""
@@ -389,9 +399,14 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 f"  {i:>2}. {hostname}{ip_str}{version_str}{last_seen_str}"
                 f"  {status_color}{status}\x1b[0m"
             )
+        nav_hints = []
+        if total_pages > 1:
+            nav_hints.append("\x1b[2m n. Next page\x1b[0m")
+            nav_hints.append("\x1b[2m p. Prev page\x1b[0m")
         lines += [
             "",
-            "  \x1b[2m b. Back\x1b[0m   \x1b[2m r. Refresh\x1b[0m   \x1b[2m q. Quit\x1b[0m",
+            "  \x1b[2m b. Back\x1b[0m   \x1b[2m r. Refresh\x1b[0m   \x1b[2m q. Quit\x1b[0m" +
+            ("   " + "   ".join(nav_hints) if nav_hints else ""),
             "",
             "Enter choice: ",
         ]
@@ -400,8 +415,6 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     async def _handle_char(self, ch):
         try:
             self._last_activity = djangotime.now()
-            self._agent_page = 0
-            self._agents_per_page = 10
 
             if ch in ("\r", "\n"):
                 if self._state == "search":
@@ -479,6 +492,20 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
 
             if ch in ("?", "h", "H"):
                 await self._show_help()
+                return
+
+            if ch in ("n", "N") and self._state == "agent":
+                agents = self._tree[self._menu_client][self._menu_site]
+                total_pages = max(1, (len(agents) + self._agents_per_page - 1) // self._agents_per_page)
+                if self._agent_page < total_pages - 1:
+                    self._agent_page += 1
+                    await self._show_agents()
+                return
+
+            if ch in ("p", "P") and self._state == "agent":
+                if self._agent_page > 0:
+                    self._agent_page -= 1
+                    await self._show_agents()
                 return
 
             if ch.isdigit():
@@ -560,15 +587,23 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             idx = num - 1
             if 0 <= idx < len(sites):
                 self._menu_site = sites[idx]
+                self._agent_page = 0
                 await self._show_agents()
             else:
                 await self._write("\r\nInvalid choice.\r\n")
                 await self._show_sites()
         elif self._state == "agent":
             agents = self._tree[self._menu_client][self._menu_site]
+            total_agents = len(agents)
+            total_pages = max(1, (total_agents + self._agents_per_page - 1) // self._agents_per_page)
+            if self._agent_page >= total_pages:
+                self._agent_page = total_pages - 1
+            start_idx = self._agent_page * self._agents_per_page
+            end_idx = min(start_idx + self._agents_per_page, total_agents)
             idx = num - 1
-            if 0 <= idx < len(agents):
-                aid, hostname, ip, status, version, last_seen = agents[idx]
+            actual_idx = start_idx + idx
+            if start_idx <= actual_idx < end_idx:
+                aid, hostname, ip, status, version, last_seen = agents[actual_idx]
                 if status != "online":
                     last_seen_str = ""
                     if last_seen:

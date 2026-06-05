@@ -414,15 +414,17 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                     else:
                         await self._handle_number(num)
                     return
+                if self._state == "search" and self._buf.strip():
+                    query = self._buf.strip()
+                    self._buf = ""
+                    await self._search_agents(query)
+                    return
                 if self._buf:
                     cmd = self._buf.strip().lower()
                     self._buf = ""
                     if cmd == "egg":
                         self._egg = EggGame(self)
                         await self._egg.start()
-                        return
-                    if self._state == "client" and cmd:
-                        await self._search_agents(cmd)
                         return
                 return
 
@@ -448,6 +450,18 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                     self._state = "client"
                     await self._show_clients()
                 return
+
+            if ch in ("s", "S"):
+                if self._state == "client":
+                    self._buf = ""
+                    self._state = "search"
+                    await self._write("\r\nSearch hostname: ")
+                    return
+                elif self._state == "search":
+                    self._buf = ""
+                    self._state = "client"
+                    await self._show_clients()
+                    return
 
             if ch in ("r", "R"):
                 self._buf = ""

@@ -305,12 +305,6 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             self._started_at = djangotime.now()
             shell = self._agent.effective_default_shell
             self._term = NATSTerminal(self._agent, self._session_id, shell)
-            role_name = "None"
-            if self._user.role:
-                role_name = self._user.role.name
-            self._chan.write(
-                f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [Role: {role_name}]\x1b[0m\r\n\r\n"
-            )
             asyncio.ensure_future(self._start()).add_done_callback(self._on_start_done)
             asyncio.ensure_future(
                 _record_session_and_audit(
@@ -349,6 +343,12 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
         await self._term.start(output_cb)
 
     def shell_requested(self):
+        role_name = "None"
+        if self._user.role:
+            role_name = self._user.role.name
+        self._chan.write(
+            f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [Role: {role_name}]\x1b[0m\r\n\r\n"
+        )
         return True
 
     def pty_requested(self, term_type, term_size, term_modes):

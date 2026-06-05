@@ -251,6 +251,15 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     def data_received(self, data, datatype):
         try:
             if self._state == "terminal":
+                # Check for return-to-menu key (Ctrl+^ = 0x1e)
+                if isinstance(data, bytes):
+                    if b'\x1e' in data:
+                        asyncio.create_task(self._return_from_terminal())
+                        return
+                else:
+                    if '\x1e' in data:
+                        asyncio.create_task(self._return_from_terminal())
+                        return
                 if self._term:
                     asyncio.create_task(self._term.write(data))
                 return
@@ -536,6 +545,18 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             await self._show_agents()
         else:
             await self._show_clients()
+
+    async def _return_from_terminal(self):
+        if self._term:
+            try:
+                await self._term.stop()
+            except Exception:
+                pass
+            self._term = None
+        self._state = "agent"
+        self._selected_agent = None
+        await self._write("\r\n\x1b[33mReturning to agent list...\x1b[0m\r\n")
+        await self._show_agents()
 
     async def _idle_check(self):
         timeout = getattr(settings, "SSH_MENU_IDLE_TIMEOUT", 300)

@@ -1,3 +1,4 @@
+import fcntl
 import json
 import logging
 import os
@@ -14,7 +15,14 @@ def _load_highscores():
         return []
     try:
         with open(_HIGHSCORES_PATH, "r") as f:
-            return json.load(f)
+            fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+            try:
+                data = f.read()
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            if not data:
+                return []
+            return json.loads(data)
     except (json.JSONDecodeError, OSError):
         return []
 
@@ -23,22 +31,41 @@ def _save_highscores(scores):
     try:
         os.makedirs(os.path.dirname(_HIGHSCORES_PATH), exist_ok=True)
         with open(_HIGHSCORES_PATH, "w") as f:
-            json.dump(scores, f, indent=2)
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                json.dump(scores, f, indent=2)
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
     except OSError as e:
         logger.debug("Failed to save highscores: %s", e)
 
 
 def _add_highscore(username, score, won):
-    scores = _load_highscores()
-    scores.append({
-        "username": username,
-        "score": score,
-        "won": won,
-        "date": djangotime.now().isoformat(),
-    })
-    scores.sort(key=lambda s: (-s["score"], s["date"]))
-    scores = scores[:20]
-    _save_highscores(scores)
+    try:
+        with open(_HIGHSCORES_PATH, "a+") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                f.seek(0)
+                try:
+                    scores = json.load(f)
+                except json.JSONDecodeError:
+                    scores = []
+                scores.append({
+                    "username": username,
+                    "score": score,
+                    "won": won,
+                    "date": djangotime.now().isoformat(),
+                })
+                scores.sort(key=lambda s: (-s["score"], s["date"]))
+                scores = scores[:20]
+                f.seek(0)
+                f.truncate()
+                json.dump(scores, f, indent=2)
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    except OSError as e:
+        logger.debug("Failed to update highscores: %s", e)
+        return []
     return scores
 
 

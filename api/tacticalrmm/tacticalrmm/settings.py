@@ -374,6 +374,11 @@ def configure_logging_handler():
 SSH_SERVER_HOST = os.getenv("SSH_SERVER_HOST", "0.0.0.0")
 SSH_SERVER_PORT = int(os.getenv("SSH_SERVER_PORT", "2222"))
 SSH_HOST_KEY = os.getenv("SSH_HOST_KEY", "/etc/trmm/ssh_host_key")
+SSH_LOGIN_TIMEOUT = int(os.getenv("SSH_LOGIN_TIMEOUT", "30"))
+SSH_KEEPALIVE_INTERVAL = int(os.getenv("SSH_KEEPALIVE_INTERVAL", "30"))
+SSH_KEEPALIVE_COUNT_MAX = int(os.getenv("SSH_KEEPALIVE_COUNT_MAX", "3"))
+SSH_RATE_LIMIT_ATTEMPTS = int(os.getenv("SSH_RATE_LIMIT_ATTEMPTS", "10"))
+SSH_RATE_LIMIT_WINDOW = int(os.getenv("SSH_RATE_LIMIT_WINDOW", "60"))
 
 LOGGING = {
     "version": 1,

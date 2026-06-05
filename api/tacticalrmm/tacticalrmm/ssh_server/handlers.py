@@ -435,6 +435,10 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 await self._show_current()
                 return
 
+            if ch in ("?", "h", "H"):
+                await self._show_help()
+                return
+
             if ch.isdigit():
                 try:
                     num = int(ch)
@@ -557,6 +561,33 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._selected_agent = None
         await self._write("\r\n\x1b[33mReturning to agent list...\x1b[0m\r\n")
         await self._show_agents()
+
+    async def _show_help(self):
+        lines = [
+            "\r\n\x1b[1mTactical RMM SSH Gateway - Help\x1b[0m\r\n",
+            "\x1b[2m----------------------------------------\x1b[0m\r\n",
+            "",
+            "  \x1b[1mNavigation\x1b[0m",
+            "    1-9    Select item by number",
+            "    b     Back to previous menu",
+            "    q     Quit session",
+            "    r     Refresh agent list",
+            "    ? / h  Show this help",
+            "",
+            "  \x1b[1mEaster Eggs\x1b[0m",
+            "    egg   Start snake game",
+            "",
+            "  \x1b[1mTerminal\x1b[0m",
+            "    Ctrl+^  Return to agent list (from terminal)",
+            "    q     Quit terminal",
+            "",
+            "  \x1b[1mSnake Game\x1b[0m",
+            "    WASD or arrow keys  Move",
+            "    q     Quit game",
+            "",
+            "Press any key to continue...\r\n",
+        ]
+        await self._write("".join(lines))
 
     async def _idle_check(self):
         timeout = getattr(settings, "SSH_MENU_IDLE_TIMEOUT", 300)

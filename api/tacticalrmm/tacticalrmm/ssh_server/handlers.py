@@ -548,8 +548,23 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             if 0 <= idx < len(agents):
                 aid, hostname, ip, status, version, last_seen = agents[idx]
                 if status != "online":
+                    last_seen_str = ""
+                    if last_seen:
+                        ago = djangotime.now() - last_seen
+                        minutes = int(ago.total_seconds() / 60)
+                        if minutes < 1:
+                            last_seen_str = "<1m ago"
+                        elif minutes < 60:
+                            last_seen_str = f"{minutes}m ago"
+                        elif minutes < 1440:
+                            hours = minutes // 60
+                            last_seen_str = f"{hours}h ago"
+                        else:
+                            days = minutes // 1440
+                            last_seen_str = f"{days}d ago"
                     await self._write(
-                        f"\r\n\x1b[31m{hostname} is {status}.\x1b[0m "
+                        f"\r\n\x1b[31m{hostname}\x1b[0m is {status}.\n"
+                        f"Last seen: {last_seen_str}\n"
                         "Cannot connect.\r\n"
                     )
                     await self._show_agents()

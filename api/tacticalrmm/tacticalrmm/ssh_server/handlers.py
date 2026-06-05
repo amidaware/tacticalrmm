@@ -406,17 +406,10 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             self._agents_per_page = 10
 
             if ch in ("\r", "\n"):
-                if self._num_buf:
-                    if self._num_timer:
-                        self._num_timer.cancel()
-                    try:
-                        num = int(self._num_buf)
-                        self._num_buf = ""
-                        self._num_timer = None
-                        await self._handle_number(num)
-                    except ValueError:
-                        self._num_buf = ""
-                        self._num_timer = None
+                if self._buf.strip().isdigit():
+                    num = int(self._buf.strip())
+                    self._buf = ""
+                    await self._handle_number(num)
                     return
                 if self._buf:
                     cmd = self._buf.strip().lower()
@@ -467,25 +460,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 return
 
             if ch.isdigit():
-                if self._num_timer:
-                    self._num_timer.cancel()
-                    self._num_timer = None
-                self._num_buf += ch
+                self._buf += ch
                 self._chan.write(ch)
-
-                async def _delayed_process():
-                    await asyncio.sleep(0.35)
-                    if self._num_buf:
-                        try:
-                            num = int(self._num_buf)
-                            await self._handle_number(num)
-                        except ValueError:
-                            pass
-                        finally:
-                            self._num_buf = ""
-                            self._num_timer = None
-
-                self._num_timer = asyncio.create_task(_delayed_process())
                 return
 
             if ch.isprintable():

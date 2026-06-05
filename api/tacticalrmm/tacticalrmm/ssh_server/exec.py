@@ -61,6 +61,7 @@ class SSHExec:
                 "shell": self.shell,
                 "cmd_id": cmd_id,
             },
+            "run_as_user": False,
         })
 
     async def _pub(self, p):

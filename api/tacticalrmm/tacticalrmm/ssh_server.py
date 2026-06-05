@@ -13,6 +13,8 @@ from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils import timezone as djangotime
 
+from logs.models import AuditLog
+from tacticalrmm.constants import AuditActionType
 from tacticalrmm.helpers import setup_nats_options
 
 logger = logging.getLogger("trmm")
@@ -77,23 +79,39 @@ def _resolve_and_check(user, agent_id: str):
 
 
 @sync_to_async
-def _record_session(user, agent, session_id, remote_ip):
+def _record_session_and_audit(user, agent, session_id, remote_ip):
     from accounts.models import SSHSession
+    now = djangotime.now()
     SSHSession.objects.create(
         user=user,
         agent=agent,
         session_id=session_id,
         remote_ip=remote_ip,
-        started_at=djangotime.now(),
+        started_at=now,
         client_version="",
+    )
+    AuditLog.audit_ssh_session_start(
+        username=user.username,
+        agent=agent,
+        session_id=session_id,
+        remote_ip=remote_ip,
     )
 
 
 @sync_to_async
-def _close_session(session_id):
+def _close_session_and_audit(user, agent, session_id, remote_ip, started_at):
     from accounts.models import SSHSession
-    SSHSession.objects.filter(session_id=session_id).update(
-        closed_at=djangotime.now()
+    now = djangotime.now()
+    duration = int((now - started_at).total_seconds())
+    SSHSession.objects.filter(session_id=session_id).update(closed_at=now)
+    AuditLog.audit_ssh_session_end(
+        username=user.username,
+        agent=agent,
+        session_id=session_id,
+        remote_ip=remote_ip,
+        started_at=str(started_at),
+        closed_at=str(now),
+        duration=duration,
     )
 
 
@@ -185,30 +203,24 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
         self._remote_ip = remote_ip
         self._term = None
         self._chan = None
+        self._started_at = None
 
     def connection_made(self, chan):
-        sys.stderr.write(f"DEBUG: connection_made called, chan={type(chan).__name__}\n")
-        sys.stderr.flush()
         self._chan = chan
         try:
             peer_name = chan.get_extra_info("peername", ("", ""))
             self._remote_ip = peer_name[0] if peer_name else self._remote_ip
-            sys.stderr.write(f"DEBUG: connection_made peer={self._remote_ip}, _agent={self._agent}\n")
-            sys.stderr.flush()
+            self._started_at = djangotime.now()
             shell = self._agent.effective_default_shell
-            sys.stderr.write(f"DEBUG: connection_made shell={shell}\n")
-            sys.stderr.flush()
             self._term = NATSTerminal(self._agent, self._session_id, shell)
-            sys.stderr.write(f"DEBUG: connection_made NATSTerminal created, calling _start\n")
-            sys.stderr.flush()
             asyncio.ensure_future(self._start()).add_done_callback(self._on_start_done)
-            sys.stderr.write(f"DEBUG: connection_made _start scheduled\n")
-            sys.stderr.flush()
+            asyncio.ensure_future(
+                _record_session_and_audit(
+                    self._user, self._agent, self._session_id, self._remote_ip
+                )
+            )
         except Exception as e:
-            sys.stderr.write(f"DEBUG: connection_made exception: {e}\n")
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-            sys.stderr.flush()
+            logger.error("SSH connection_made failed: %s", e, exc_info=True)
             raise
 
     def _on_start_done(self, fut):
@@ -318,11 +330,14 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             asyncio.ensure_future(self._term.resize(h, w))
 
     def closed(self):
-        sys.stderr.write(f"DEBUG: session closed\n")
-        sys.stderr.flush()
         if self._term:
             asyncio.ensure_future(self._term.stop())
-        asyncio.ensure_future(_close_session(self._session_id))
+        if self._started_at:
+            asyncio.ensure_future(
+                _close_session_and_audit(
+                    self._user, self._agent, self._session_id, self._remote_ip, self._started_at
+                )
+            )
 
 
 class SSHAgentServer(asyncssh.SSHServer):

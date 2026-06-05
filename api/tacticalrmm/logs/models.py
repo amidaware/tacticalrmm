@@ -87,6 +87,49 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_ssh_session_start(
+        username: str, agent: "Agent", session_id: str, remote_ip: str
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.SSH_SESSION,
+            message=f"{username} started SSH session on {agent.hostname}.",
+            after_value={
+                "session_id": session_id,
+                "remote_ip": remote_ip,
+            },
+        )
+
+    @staticmethod
+    def audit_ssh_session_end(
+        username: str,
+        agent: "Agent",
+        session_id: str,
+        remote_ip: str,
+        started_at: str,
+        closed_at: str,
+        duration: int,
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.SSH_SESSION,
+            message=f"{username} ended SSH session on {agent.hostname} ({duration}s).",
+            after_value={
+                "session_id": session_id,
+                "remote_ip": remote_ip,
+                "started_at": started_at,
+                "closed_at": closed_at,
+                "duration_seconds": duration,
+            },
+        )
+
+    @staticmethod
     def audit_raw_command(
         username: str,
         agent: "Agent",

@@ -2,6 +2,7 @@ import asyncio
 import collections
 import logging
 import os
+import random
 import time
 import uuid
 from hashlib import sha256
@@ -403,15 +404,19 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._started_at = None
         self._selected_agent = None
         self._tree = []
-        self._state = "client"  # client / site / agent / terminal
+        self._state = "client"  # client / site / agent / terminal / snake / snake_gameover
         self._menu_client = ""
         self._menu_site = ""
         self._agent_id = ""
+        self._buf = ""
+        self._last_activity = djangotime.now()
+        self._snake_buf = ""
 
     def connection_made(self, chan):
         self._chan = chan
         self._started_at = djangotime.now()
         asyncio.ensure_future(self._enter_menu())
+        asyncio.ensure_future(self._idle_check())
 
     def shell_requested(self):
         return True
@@ -450,6 +455,14 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 text = data.decode("utf-8", errors="replace")
             else:
                 text = data
+            if self._state == "snake_gameover":
+                self._state = "client"
+                asyncio.ensure_future(self._show_clients())
+                return
+            if self._state == "snake":
+                for ch in text:
+                    self._handle_snake_input(ch)
+                return
             for ch in text:
                 asyncio.ensure_future(self._handle_char(ch))
         except Exception as e:
@@ -597,69 +610,61 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
 
     async def _handle_char(self, ch):
         try:
+            self._last_activity = djangotime.now()
             if ch in ("\r", "\n"):
+                if self._buf:
+                    cmd = self._buf.strip().lower()
+                    self._buf = ""
+                    if cmd == "egg":
+                        await self._start_snake()
+                        return
+                    try:
+                        num = int(cmd)
+                        await self._handle_number(num)
+                        return
+                    except ValueError:
+                        await self._write("\r\nUnknown command.\r\n")
+                        await self._show_current()
                 return
+
+            if ch == "\x7f":
+                if self._buf:
+                    self._buf = self._buf[:-1]
+                    self._chan.write("\x08 \x08")
+                return
+
             if ch in ("q", "Q", "\x03"):
+                self._buf = ""
                 await self._write("\r\nGoodbye.\r\n")
                 self._chan.exit(0)
                 return
 
-            if self._state == "client":
-                if ch == "b":
-                    return
-                clients = sorted(self._tree.keys())
-                try:
-                    idx = int(ch) - 1
-                    if 0 <= idx < len(clients):
-                        self._menu_client = clients[idx]
-                        await self._show_sites()
-                    else:
-                        await self._write("\r\nInvalid choice.\r\n")
-                        await self._show_clients()
-                except ValueError:
-                    await self._write("\r\nEnter a number.\r\n")
+            if ch in ("b", "B"):
+                self._buf = ""
+                if self._state == "site":
                     await self._show_clients()
-
-            elif self._state == "site":
-                if ch == "b":
-                    await self._show_clients()
-                    return
-                sites = sorted(self._tree[self._menu_client].keys())
-                try:
-                    idx = int(ch) - 1
-                    if 0 <= idx < len(sites):
-                        self._menu_site = sites[idx]
-                        await self._show_agents()
-                    else:
-                        await self._write("\r\nInvalid choice.\r\n")
-                        await self._show_sites()
-                except ValueError:
-                    await self._write("\r\nEnter a number.\r\n")
+                elif self._state == "agent":
                     await self._show_sites()
+                return
 
-            elif self._state == "agent":
-                if ch == "b":
-                    await self._show_sites()
+            if ch in ("r", "R"):
+                self._buf = ""
+                await self._write("\r\nRefreshing...\r\n")
+                self._tree = await _get_menu_agents(self._user)
+                if not self._tree:
+                    await self._write("\r\nNo agents available.\r\n")
+                    self._chan.exit(1)
                     return
-                agents = self._tree[self._menu_client][self._menu_site]
-                try:
-                    idx = int(ch) - 1
-                    if 0 <= idx < len(agents):
-                        aid, hostname, ip, status = agents[idx]
-                        if status != "online":
-                            await self._write(
-                                f"\r\n\x1b[31m{hostname} is {status}.\x1b[0m "
-                                "Cannot connect.\r\n"
-                            )
-                            await self._show_agents()
-                            return
-                        await self._connect_to_agent(aid, hostname)
-                    else:
-                        await self._write("\r\nInvalid choice.\r\n")
-                        await self._show_agents()
-                except ValueError:
-                    await self._write("\r\nEnter a number.\r\n")
-                    await self._show_agents()
+                if self._state in ("site", "agent") and self._menu_client not in self._tree:
+                    self._state = "client"
+                elif self._state == "agent" and self._menu_site not in self._tree.get(self._menu_client, {}):
+                    self._state = "site"
+                await self._show_current()
+                return
+
+            if ch.isprintable():
+                self._buf += ch
+                return
         except Exception as e:
             logger.error("SSH menu input error: %s", e, exc_info=True)
 
@@ -714,6 +719,177 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             await self._write(f"\r\n\x1b[31mFailed to connect: {e}\x1b[0m\r\n")
             self._state = "agent"
             await self._show_agents()
+
+    async def _handle_number(self, num):
+        if self._state == "client":
+            clients = sorted(self._tree.keys())
+            idx = num - 1
+            if 0 <= idx < len(clients):
+                self._menu_client = clients[idx]
+                await self._show_sites()
+            else:
+                await self._write("\r\nInvalid choice.\r\n")
+                await self._show_clients()
+        elif self._state == "site":
+            sites = sorted(self._tree[self._menu_client].keys())
+            idx = num - 1
+            if 0 <= idx < len(sites):
+                self._menu_site = sites[idx]
+                await self._show_agents()
+            else:
+                await self._write("\r\nInvalid choice.\r\n")
+                await self._show_sites()
+        elif self._state == "agent":
+            agents = self._tree[self._menu_client][self._menu_site]
+            idx = num - 1
+            if 0 <= idx < len(agents):
+                aid, hostname, ip, status = agents[idx]
+                if status != "online":
+                    await self._write(
+                        f"\r\n\x1b[31m{hostname} is {status}.\x1b[0m "
+                        "Cannot connect.\r\n"
+                    )
+                    await self._show_agents()
+                    return
+                await self._connect_to_agent(aid, hostname)
+            else:
+                await self._write("\r\nInvalid choice.\r\n")
+                await self._show_agents()
+
+    async def _show_current(self):
+        if self._state == "site":
+            await self._show_sites()
+        elif self._state == "agent":
+            await self._show_agents()
+        else:
+            await self._show_clients()
+
+    async def _idle_check(self):
+        timeout = getattr(settings, "SSH_MENU_IDLE_TIMEOUT", 300)
+        try:
+            while True:
+                await asyncio.sleep(15)
+                if self._state in ("terminal", "snake", "snake_gameover"):
+                    continue
+                elapsed = (djangotime.now() - self._last_activity).total_seconds()
+                if elapsed >= timeout:
+                    await self._write("\r\nIdle timeout. Disconnecting.\r\n")
+                    self._chan.exit(0)
+                    return
+        except asyncio.CancelledError:
+            pass
+
+    async def _start_snake(self):
+        self._state = "snake"
+        self._snake_width = 40
+        self._snake_height = 16
+        mid_r = self._snake_height // 2
+        mid_c = self._snake_width // 2
+        self._snake_body = [(mid_r, c) for c in range(mid_c, mid_c - 3, -1)]
+        self._snake_dir = (0, 1)
+        self._snake_score = 0
+        self._snake_buf = ""
+        self._snake_food = self._snake_place_food()
+        await self._write("\x1b[2J\x1b[H")
+        await self._draw_snake()
+        asyncio.ensure_future(self._snake_loop())
+
+    def _snake_place_food(self):
+        occupied = set(self._snake_body)
+        while True:
+            r = random.randrange(self._snake_height)
+            c = random.randrange(self._snake_width)
+            if (r, c) not in occupied:
+                return (r, c)
+
+    async def _draw_snake(self):
+        lines = ["\x1b[H"]
+        lines.append(
+            f"Score: {self._snake_score}    (WASD move, Q quit)\r\n"
+        )
+        for r in range(self._snake_height):
+            for c in range(self._snake_width):
+                if (r, c) == self._snake_body[0]:
+                    lines.append("\x1b[32mO\x1b[0m")
+                elif (r, c) in self._snake_body:
+                    lines.append("o")
+                elif (r, c) == self._snake_food:
+                    lines.append("\x1b[33m@\x1b[0m")
+                else:
+                    lines.append(".")
+            lines.append("\r\n")
+        lines.append("\x1b[J")
+        await self._write("".join(lines))
+
+    async def _snake_loop(self):
+        try:
+            while self._state == "snake":
+                await asyncio.sleep(0.15)
+                if self._state != "snake":
+                    return
+                head = self._snake_body[0]
+                dr, dc = self._snake_dir
+                new_head = (head[0] + dr, head[1] + dc)
+
+                if not (0 <= new_head[0] < self._snake_height and 0 <= new_head[1] < self._snake_width):
+                    await self._snake_game_over()
+                    return
+
+                if new_head in self._snake_body:
+                    await self._snake_game_over()
+                    return
+
+                self._snake_body.insert(0, new_head)
+
+                if new_head == self._snake_food:
+                    self._snake_score += 1
+                    self._snake_food = self._snake_place_food()
+                else:
+                    self._snake_body.pop()
+
+                await self._draw_snake()
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error("SSH snake loop error: %s", e, exc_info=True)
+
+    async def _snake_game_over(self):
+        lines = [
+            "\x1b[H",
+            "\x1b[31mGame Over!\x1b[0m\r\n",
+            f"Score: {self._snake_score}\r\n",
+            "\r\nPress any key to return to menu...\r\n",
+        ]
+        await self._write("".join(lines))
+        self._state = "snake_gameover"
+
+    def _handle_snake_input(self, ch):
+        self._snake_buf += ch
+        if len(self._snake_buf) > 100:
+            self._snake_buf = self._snake_buf[-50:]
+        for seq, dr, dc in [
+            ("\x1b[A", -1, 0), ("\x1b[B", 1, 0),
+            ("\x1b[C", 0, 1), ("\x1b[D", 0, -1),
+        ]:
+            idx = self._snake_buf.find(seq)
+            if idx >= 0:
+                self._snake_buf = self._snake_buf[:idx] + self._snake_buf[idx + 3:]
+                if (dr, dc) != (-self._snake_dir[0], -self._snake_dir[1]):
+                    self._snake_dir = (dr, dc)
+                return
+        if ch.lower() == "q" or ch == "\x03":
+            asyncio.ensure_future(self._snake_quit())
+            return
+        dirs = {"w": (-1, 0), "s": (1, 0), "a": (0, -1), "d": (0, 1)}
+        if ch.lower() in dirs:
+            dr, dc = dirs[ch.lower()]
+            if (dr, dc) != (-self._snake_dir[0], -self._snake_dir[1]):
+                self._snake_dir = (dr, dc)
+
+    async def _snake_quit(self):
+        self._state = "client"
+        self._snake_buf = ""
+        await self._show_clients()
 
 
 class _RateLimiter:
@@ -914,17 +1090,6 @@ class SSHAgentServer(asyncssh.SSHServer):
         except Exception as e:
             logger.error("SSH: session_requested error: %s", e, exc_info=True)
             return None
-            handler = SSHSessionHandler(
-                self._auth_user, self._auth_agent, self._session_id, self._remote_ip,
-                client_version=self._client_version,
-                ssh_key_name=self._ssh_key_name,
-                ssh_key_type=self._ssh_key_type,
-                ssh_key_fingerprint=self._ssh_key_fingerprint,
-            )
-            return handler
-        except Exception as e:
-            logger.error("SSH: session_requested error: %s", e, exc_info=True)
-            return None
 
 
 async def start_ssh_server(host=None, port=None):
@@ -933,8 +1098,24 @@ async def start_ssh_server(host=None, port=None):
     if port is None:
         port = getattr(settings, "SSH_SERVER_PORT", 2222)
 
-    host_key_path = getattr(settings, "SSH_HOST_KEY", "/etc/trmm/ssh_host_key")
+    if not isinstance(port, int) or port < 1 or port > 65535:
+        raise ValueError(f"Invalid SSH port: {port}")
 
+    login_timeout = getattr(settings, "SSH_LOGIN_TIMEOUT", 30)
+    if login_timeout < 5:
+        logger.warning("SSH_LOGIN_TIMEOUT=%d too low, using 5", login_timeout)
+        login_timeout = 5
+
+    keepalive_interval = getattr(settings, "SSH_KEEPALIVE_INTERVAL", 30)
+    keepalive_count_max = getattr(settings, "SSH_KEEPALIVE_COUNT_MAX", 3)
+    if keepalive_interval < 5:
+        logger.warning("SSH_KEEPALIVE_INTERVAL=%d too low, using 5", keepalive_interval)
+        keepalive_interval = 5
+    if keepalive_count_max < 1:
+        logger.warning("SSH_KEEPALIVE_COUNT_MAX=%d too low, using 1", keepalive_count_max)
+        keepalive_count_max = 1
+
+    host_key_path = getattr(settings, "SSH_HOST_KEY", "/etc/trmm/ssh_host_key")
     if not os.path.exists(host_key_path):
         logger.warning("SSH host key not found at %s, generating...", host_key_path)
         os.makedirs(os.path.dirname(host_key_path), exist_ok=True)
@@ -942,10 +1123,6 @@ async def start_ssh_server(host=None, port=None):
         key.write_private_key(host_key_path)
 
     server_host_keys = [host_key_path]
-
-    login_timeout = getattr(settings, "SSH_LOGIN_TIMEOUT", 30)
-    keepalive_interval = getattr(settings, "SSH_KEEPALIVE_INTERVAL", 30)
-    keepalive_count_max = getattr(settings, "SSH_KEEPALIVE_COUNT_MAX", 3)
 
     server = await asyncssh.create_server(
         SSHAgentServer,
@@ -960,6 +1137,7 @@ async def start_ssh_server(host=None, port=None):
         login_timeout=login_timeout,
         keepalive_interval=keepalive_interval,
         keepalive_count_max=keepalive_count_max,
+        reuse_address=True,
     )
     logger.info(
         "SSH gateway listening on %s:%s (timeout=%d keepalive=%d/%d)",

@@ -18,13 +18,12 @@ class SSHExec:
         self.nc = None
         self.sub = None
         self._lock = asyncio.Lock()
-        self._output_cb = None
 
     async def start(self, output_cb):
-        self._output_cb = output_cb
         opts = setup_nats_options()
         self.nc = await nats.connect(**opts)
-        subj_out = f"{self.agent.agent_id}.exec.{self.session_id}"
+        cmd_id = f"ssh_{self.session_id[:8]}"
+        subj_out = f"{self.agent.agent_id}.cmdoutput.{cmd_id}"
 
         async def handler(msg):
             try:
@@ -33,7 +32,7 @@ class SSHExec:
                 obj = msg.data
 
             if isinstance(obj, dict):
-                out = obj.get("output", b"")
+                out = obj.get("line") or obj.get("output", b"")
                 done = obj.get("done", False)
                 ec = obj.get("exit_code")
 
@@ -53,7 +52,6 @@ class SSHExec:
 
         self.sub = await self.nc.subscribe(subj_out, cb=handler)
 
-        cmd_id = f"ssh_{self.session_id}"
         await self._pub({
             "func": "rawcmd",
             "timeout": 60,
@@ -63,7 +61,6 @@ class SSHExec:
                 "shell": self.shell,
                 "cmd_id": cmd_id,
             },
-            "id": cmd_id,
         })
 
     async def _pub(self, p):

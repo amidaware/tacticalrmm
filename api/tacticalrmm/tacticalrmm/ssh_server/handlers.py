@@ -337,7 +337,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             lines.append(f"  {i:>2}. {name}  ({total} agent{'s' if total != 1 else ''})")
         lines += [
             "",
-            "  \x1b[2m q. Quit\x1b[0m",
+            "  \x1b[2m s. Search\x1b[0m   \x1b[2m r. Refresh\x1b[0m   \x1b[2m q. Quit\x1b[0m",
             "",
             "Enter choice: ",
         ]
@@ -356,8 +356,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             lines.append(f"  {i:>2}. {name}  ({count} agent{'s' if count != 1 else ''})")
         lines += [
             "",
-            "  \x1b[2m b. Back to clients\x1b[0m",
-            "  \x1b[2m q. Quit\x1b[0m",
+            "  \x1b[2m b. Back\x1b[0m   \x1b[2m r. Refresh\x1b[0m   \x1b[2m q. Quit\x1b[0m",
             "",
             "Enter choice: ",
         ]
@@ -392,8 +391,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             )
         lines += [
             "",
-            "  \x1b[2m b. Back to sites\x1b[0m",
-            "  \x1b[2m q. Quit\x1b[0m",
+            "  \x1b[2m b. Back\x1b[0m   \x1b[2m r. Refresh\x1b[0m   \x1b[2m q. Quit\x1b[0m",
             "",
             "Enter choice: ",
         ]

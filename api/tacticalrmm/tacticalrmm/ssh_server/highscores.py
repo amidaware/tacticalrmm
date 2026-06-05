@@ -50,12 +50,22 @@ def _add_highscore(username, score, won):
                     scores = json.load(f)
                 except json.JSONDecodeError:
                     scores = []
-                scores.append({
-                    "username": username,
-                    "score": score,
-                    "won": won,
-                    "date": djangotime.now().isoformat(),
-                })
+                existing = next((i for i, s in enumerate(scores) if s["username"] == username), None)
+                if existing is not None:
+                    if score > scores[existing]["score"]:
+                        scores[existing] = {
+                            "username": username,
+                            "score": score,
+                            "won": won,
+                            "date": djangotime.now().isoformat(),
+                        }
+                else:
+                    scores.append({
+                        "username": username,
+                        "score": score,
+                        "won": won,
+                        "date": djangotime.now().isoformat(),
+                    })
                 scores.sort(key=lambda s: (-s["score"], s["date"]))
                 scores = scores[:20]
                 f.seek(0)

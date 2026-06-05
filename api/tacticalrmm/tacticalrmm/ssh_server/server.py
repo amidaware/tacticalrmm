@@ -126,7 +126,7 @@ class SSHAgentServer(asyncssh.SSHServer):
                     "SSH: denied user=%s agent=%s from %s",
                     user.username, username, self._remote_ip,
                 )
-                asyncio.ensure_future(
+                asyncio.create_task(
                     _audit_session_failed(
                         username=user.username,
                         agent_id=username,
@@ -144,7 +144,7 @@ class SSHAgentServer(asyncssh.SSHServer):
                     "SSH: denied user=%s agent=%s from %s reason=agent_%s",
                     user.username, username, self._remote_ip, agent.status,
                 )
-                asyncio.ensure_future(
+                asyncio.create_task(
                     _audit_session_failed(
                         username=user.username,
                         agent_id=username,

@@ -78,8 +78,8 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             self._started_at = djangotime.now()
             shell = self._agent.effective_default_shell
             self._term = NATSTerminal(self._agent, self._session_id, shell)
-            asyncio.ensure_future(self._start()).add_done_callback(self._on_start_done)
-            asyncio.ensure_future(
+            asyncio.create_task(self._start()).add_done_callback(self._on_start_done)
+            asyncio.create_task(
                 _record_session_and_audit(
                     self._user, self._agent, self._session_id, self._remote_ip,
                     client_version=self._client_version,
@@ -158,23 +158,23 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
 
     def data_received(self, data, datatype):
         if self._term:
-            asyncio.ensure_future(self._term.write(data))
+            asyncio.create_task(self._term.write(data))
 
     def connection_lost(self, exc):
         if self._term:
-            asyncio.ensure_future(self._term.stop())
+            asyncio.create_task(self._term.stop())
         if exc:
             logger.error("SSH connection lost: %s", exc)
 
     def terminal_size_changed(self, w, h, pw, ph):
         if self._term:
-            asyncio.ensure_future(self._term.resize(h, w))
+            asyncio.create_task(self._term.resize(h, w))
 
     def closed(self):
         if self._term:
-            asyncio.ensure_future(self._term.stop())
+            asyncio.create_task(self._term.stop())
         if self._started_at:
-            asyncio.ensure_future(
+            asyncio.create_task(
                 _close_session_and_audit(
                     self._user, self._agent, self._session_id, self._remote_ip,
                     self._started_at,
@@ -218,8 +218,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     def connection_made(self, chan):
         self._chan = chan
         self._started_at = djangotime.now()
-        asyncio.ensure_future(self._enter_menu())
-        asyncio.ensure_future(self._idle_check())
+        asyncio.create_task(self._enter_menu())
+        asyncio.create_task(self._idle_check())
 
     def shell_requested(self):
         return True
@@ -252,7 +252,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         try:
             if self._state == "terminal":
                 if self._term:
-                    asyncio.ensure_future(self._term.write(data))
+                    asyncio.create_task(self._term.write(data))
                 return
             if isinstance(data, bytes):
                 text = data.decode("utf-8", errors="replace")
@@ -260,32 +260,32 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 text = data
             if self._state == "snake_gameover":
                 self._state = "client"
-                asyncio.ensure_future(self._show_clients())
+                asyncio.create_task(self._show_clients())
                 return
             if self._state == "snake":
                 for ch in text:
                     self._handle_snake_input(ch)
                 return
             for ch in text:
-                asyncio.ensure_future(self._handle_char(ch))
+                asyncio.create_task(self._handle_char(ch))
         except Exception as e:
             logger.error("SSH menu data_received error: %s", e, exc_info=True)
 
     def connection_lost(self, exc):
         if self._term:
-            asyncio.ensure_future(self._term.stop())
+            asyncio.create_task(self._term.stop())
         if exc:
             logger.error("SSH menu connection lost: %s", exc)
 
     def terminal_size_changed(self, w, h, pw, ph):
         if self._term:
-            asyncio.ensure_future(self._term.resize(h, w))
+            asyncio.create_task(self._term.resize(h, w))
 
     def closed(self):
         if self._term:
-            asyncio.ensure_future(self._term.stop())
+            asyncio.create_task(self._term.stop())
         if self._started_at and self._selected_agent:
-            asyncio.ensure_future(
+            asyncio.create_task(
                 _close_session_and_audit(
                     self._user, self._selected_agent, self._session_id,
                     self._remote_ip, self._started_at,
@@ -460,7 +460,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             f"\r\n\x1b[32mConnecting to {hostname} ({agent_id})...\x1b[0m\r\n\r\n"
         )
 
-        asyncio.ensure_future(
+        asyncio.create_task(
             _record_session_and_audit(
                 self._user, agent, self._session_id, self._remote_ip,
                 client_version=self._client_version,
@@ -565,7 +565,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._snake_food = self._snake_place_food()
         await self._write("\x1b[2J\x1b[H")
         await self._draw_snake()
-        asyncio.ensure_future(self._snake_loop())
+        asyncio.create_task(self._snake_loop())
 
     def _snake_place_food(self):
         occupied = set(self._snake_body)
@@ -665,7 +665,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
 
     def _handle_snake_input(self, ch):
         if ch.lower() == "q" or ch == "\x03":
-            asyncio.ensure_future(self._snake_quit())
+            asyncio.create_task(self._snake_quit())
             return
         dirs = {"w": (-1, 0), "s": (1, 0), "a": (0, -1), "d": (0, 1)}
         if ch.lower() in dirs:

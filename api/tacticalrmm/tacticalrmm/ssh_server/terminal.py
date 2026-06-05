@@ -36,7 +36,7 @@ class NATSTerminal:
                     out = out.decode("utf-8", errors="replace")
                 await output_cb(out, done=done, exit_code=ec)
                 if done:
-                    asyncio.ensure_future(self.stop())
+                    asyncio.create_task(self.stop())
             elif isinstance(obj, (bytes, bytearray)):
                 await output_cb(obj.decode("utf-8", errors="replace"))
             elif isinstance(obj, str):

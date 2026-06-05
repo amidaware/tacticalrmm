@@ -1,5 +1,6 @@
 import asyncio
 import collections
+import json
 import logging
 import os
 import random
@@ -43,7 +44,7 @@ def _fingerprint(key_bytes: bytes) -> str:
 def _lookup_key(fp: str):
     from accounts.models import SSHPublicKey
     try:
-        return SSHPublicKey.objects.select_related("user").get(fingerprint=fp)
+        return SSHPublicKey.objects.select_related("user__role").get(fingerprint=fp)
     except SSHPublicKey.DoesNotExist:
         return None
 
@@ -217,6 +218,65 @@ class NATSTerminal:
             self.nc = None
 
 
+@sync_to_async
+def _get_user_group(user):
+    return user.role.name if user.role else None
+
+
+_HIGHSCORES_PATH = "/etc/trmm/snake_highscores.json"
+
+
+def _load_highscores():
+    if not os.path.exists(_HIGHSCORES_PATH):
+        return []
+    try:
+        with open(_HIGHSCORES_PATH, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def _save_highscores(scores):
+    try:
+        os.makedirs(os.path.dirname(_HIGHSCORES_PATH), exist_ok=True)
+        with open(_HIGHSCORES_PATH, "w") as f:
+            json.dump(scores, f, indent=2)
+    except OSError:
+        pass
+
+
+def _add_highscore(username, score, won):
+    scores = _load_highscores()
+    scores.append({
+        "username": username,
+        "score": score,
+        "won": won,
+        "date": djangotime.now().isoformat(),
+    })
+    scores.sort(key=lambda s: (-s["score"], s["date"]))
+    scores = scores[:20]
+    _save_highscores(scores)
+    return scores
+
+
+def _format_highscores(scores):
+    if not scores:
+        return ""
+    lines = [
+        "\x1b[1m\xe2\x94\x80 High Scores " +
+        "\xe2\x94\x80" * 42 + "\x1b[0m\r\n",
+    ]
+    for i, entry in enumerate(scores[:10], 1):
+        star = " \xe2\x98\x85" if entry.get("won") else "   "
+        lines.append(
+            f"  {i:>2}. {entry['username']:<20} {entry['score']:>4}{star}\r\n"
+        )
+    lines.append(
+        "\x1b[2m" + "\xe2\x94\x80" * 52 + "\x1b[0m\r\n"
+    )
+    return "".join(lines)
+
+
 class SSHSessionHandler(asyncssh.SSHServerSession):
     def __init__(self, user, agent, session_id, remote_ip,
                  client_version="", ssh_key_name="", ssh_key_type="",
@@ -245,6 +305,12 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             self._started_at = djangotime.now()
             shell = self._agent.effective_default_shell
             self._term = NATSTerminal(self._agent, self._session_id, shell)
+            role_name = "None"
+            if self._user.role:
+                role_name = self._user.role.name
+            self._chan.write(
+                f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [Role: {role_name}]\x1b[0m\r\n\r\n"
+            )
             asyncio.ensure_future(self._start()).add_done_callback(self._on_start_done)
             asyncio.ensure_future(
                 _record_session_and_audit(
@@ -502,6 +568,9 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             )
             self._chan.exit(1)
             return
+        group = await _get_user_group(self._user) or "None"
+        msg = f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [Role: {group}]\x1b[0m\r\n"
+        await self._write(msg)
         logger.info(
             "SSH menu session started user=%s remote_ip=%s",
             self._user.username, self._remote_ip,
@@ -511,44 +580,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     async def _show_clients(self):
         self._state = "client"
         clients = sorted(self._tree.keys())
-        banner = (
-            "\x1b[2m"
-            "                     AAAAAAAAA  AAAAAAAAA                             \r\n"
-            "                     AAAAAAAAAAAAA  AAAAAAAAAAAAA                     \r\n"
-            "                  AAAAAAAAAAAAAAAA  AAAAAAAAAAAAAAAA                   \r\n"
-            "                AAAAAAAAAA                  AAAAAAAAAA                 \r\n"
-            "              AAAAAAAAA                        AAAAAAAAA               \r\n"
-            "            AAAAAAAA                              AAAAAAAA             \r\n"
-            "           AAAAAAA                                  AAAAAAA            \r\n"
-            "         AAAAAAAA                                    AAAAAAA           \r\n"
-            "        AAAAAAA                                        AAAAAAA         \r\n"
-            "       AAAAAAA      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA      AAAAAA         \r\n"
-            "       AAAAAA       AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA       AAAAAA        \r\n"
-            "      AAAAAAA       AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA       AAAAAAA       \r\n"
-            "      AAAAAA        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA        AAAAAA       \r\n"
-            "     AAAAAAA                  AAAAAAAAA                   AAAAAA       \r\n"
-            "     AAAAAAA                   AAAAAAAA                    AAAAAA      \r\n"
-            "     AAAAAA                     AAAAAA                     AAAAAA      \r\n"
-            "     AAAAAA                    AAAAAAAA                    AAAAAA      \r\n"
-            "     AAAAAAA             AAA   AAAAAAAA   AAA             AAAAAA       \r\n"
-            "      AAAAAA            AAAAA  AAAAAAAA  AAAAA            AAAAAA       \r\n"
-            "      AAAAAA          AAAAAAA  AAAAAAAA  AAAAAAA          AAAAAA       \r\n"
-            "       AAAAAA         AAAAAAA  AAAAAAAA  AAAAAAA         AAAAAA        \r\n"
-            "       AAAAAAA        AAAAAAA  AAAAAAAA  AAAAAAA        AAAAAAA        \r\n"
-            "        AAAAAAA       AAAAAAA  AAAAAAAA  AAAAAAA       AAAAAAA         \r\n"
-            "         AAAAAAA      AAAAAAA  AAAAAAAA  AAAAAAA      AAAAAAA          \r\n"
-            "          AAAAAAAA    AAAAAAA  AAAAAAAA  AAAAAAA    AAAAAAAA           \r\n"
-            "            AAAAAAAA  AAAAAAA  AAAAAAAA  AAAAAAA  AAAAAAAA             \r\n"
-            "             AAAAAAAAAAAAAAAA  AAAAAAAA  AAAAAAAAAAAAAAAA              \r\n"
-            "               AAAAAAAAAAAAAA  AAAAAAAA  AAAAAAAAAAAAAA                \r\n"
-            "                  AAAAAAAAAAA  AAAAAAAA  AAAAAAAAAAA                   \r\n"
-            "                    AAAAAAAAA  AAAAAAAA  AAAAAAAAA                     \r\n"
-            "                       AAAAAA  AAAAAAAA  AAAAA                        \r\n"
-            "\x1b[0m"
-        )
         lines = [
             "",
-            banner,
             "\x1b[1mTactical RMM SSH Gateway\x1b[0m",
             "\x1b[2mSelect a client to browse its agents\x1b[0m",
             "",
@@ -868,20 +901,26 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             logger.error("SSH snake loop error: %s", e, exc_info=True)
 
     async def _snake_game_over(self):
+        scores = _add_highscore(self._user.username, self._snake_score, False)
         lines = [
             "\x1b[H\x1b[J",
             "\x1b[31mGame Over!\x1b[0m\r\n",
             f"Score: {self._snake_score}\r\n",
+            "\r\n",
+            _format_highscores(scores),
             "\r\nPress any key to return to menu...\r\n",
         ]
         await self._write("".join(lines))
         self._state = "snake_gameover"
 
     async def _snake_win(self):
+        scores = _add_highscore(self._user.username, self._snake_score, True)
         lines = [
             "\x1b[H\x1b[J",
             "\x1b[32mYou Win!\x1b[0m\r\n",
             f"Final Score: {self._snake_score}\r\n",
+            "\r\n",
+            _format_highscores(scores),
             "\r\nPress any key to return to menu...\r\n",
         ]
         await self._write("".join(lines))

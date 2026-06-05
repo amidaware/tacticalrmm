@@ -404,6 +404,12 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             self._agents_per_page = 10
 
             if ch in ("\r", "\n"):
+                if self._state == "search":
+                    if self._buf.strip():
+                        query = self._buf.strip()
+                        self._buf = ""
+                        await self._search_agents(query)
+                    return
                 if self._buf.strip().isdigit():
                     num = int(self._buf.strip())
                     self._buf = ""
@@ -411,11 +417,6 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                         await self._handle_search_result(num)
                     else:
                         await self._handle_number(num)
-                    return
-                if self._state == "search" and self._buf.strip():
-                    query = self._buf.strip()
-                    self._buf = ""
-                    await self._search_agents(query)
                     return
                 if self._buf:
                     cmd = self._buf.strip().lower()

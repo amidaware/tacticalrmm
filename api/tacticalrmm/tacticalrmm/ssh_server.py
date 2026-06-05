@@ -611,6 +611,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     async def _handle_char(self, ch):
         try:
             self._last_activity = djangotime.now()
+
             if ch in ("\r", "\n"):
                 if self._buf:
                     cmd = self._buf.strip().lower()
@@ -618,13 +619,6 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                     if cmd == "egg":
                         await self._start_snake()
                         return
-                    try:
-                        num = int(cmd)
-                        await self._handle_number(num)
-                        return
-                    except ValueError:
-                        await self._write("\r\nUnknown command.\r\n")
-                        await self._show_current()
                 return
 
             if ch == "\x7f":
@@ -662,8 +656,17 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 await self._show_current()
                 return
 
+            if ch.isdigit():
+                try:
+                    num = int(ch)
+                    await self._handle_number(num)
+                except ValueError:
+                    pass
+                return
+
             if ch.isprintable():
                 self._buf += ch
+                self._chan.write(ch)
                 return
         except Exception as e:
             logger.error("SSH menu input error: %s", e, exc_info=True)

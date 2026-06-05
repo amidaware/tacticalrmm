@@ -1,6 +1,8 @@
 import asyncio
+import collections
 import logging
 import os
+import time
 import uuid
 from hashlib import sha256
 import base64
@@ -285,20 +287,52 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             )
 
 
+class _RateLimiter:
+    def __init__(self, max_attempts: int = 10, window: int = 60):
+        self._max_attempts = max_attempts
+        self._window = window
+        self._attempts: dict[str, list[float]] = collections.defaultdict(list)
+
+    def allow(self, ip: str) -> bool:
+        now = time.time()
+        cutoff = now - self._window
+        attempts = self._attempts[ip]
+        attempts[:] = [t for t in attempts if t > cutoff]
+        if len(attempts) >= self._max_attempts:
+            return False
+        attempts.append(now)
+        return True
+
+    def reset(self, ip: str) -> None:
+        self._attempts.pop(ip, None)
+
+
+_rate_limiter = _RateLimiter()
+
+
 class SSHAgentServer(asyncssh.SSHServer):
     def __init__(self):
         self._auth_user = None
         self._auth_agent = None
         self._session_id = uuid.uuid4().hex
         self._conn = None
+        self._remote_ip = ""
 
     def connection_made(self, conn):
         self._conn = conn
+        try:
+            peer = conn.get_extra_info("peername", ("", 0))
+            self._remote_ip = peer[0] if peer else ""
+        except Exception:
+            self._remote_ip = ""
 
     async def begin_auth(self, username):
         self._auth_user = None
         self._auth_agent = None
         self._session_id = uuid.uuid4().hex
+        if self._remote_ip and not _rate_limiter.allow(self._remote_ip):
+            logger.warning("SSH: rate limit exceeded for %s", self._remote_ip)
+            return False
         return True
 
     def public_key_auth_supported(self):

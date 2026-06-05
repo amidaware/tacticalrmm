@@ -8,6 +8,7 @@ from django.conf import settings
 from django.utils import timezone as djangotime
 
 from .audit import _close_session_and_audit, _record_session_and_audit
+from .exec import SSHExec
 from .highscores import _add_highscore, _format_highscores
 from .terminal import NATSTerminal
 from .utils import _get_user_group, _resolve_and_check
@@ -65,11 +66,14 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
         self._ssh_key_type = ssh_key_type
         self._ssh_key_fingerprint = ssh_key_fingerprint
         self._term = None
+        self._exec = None
         self._chan = None
         self._started_at = None
         self._terminal_type = ""
         self._terminal_rows = 0
         self._terminal_cols = 0
+        self._session_type = None
+        self._exec_cmd = None
 
     def connection_made(self, chan):
         self._chan = chan
@@ -77,32 +81,25 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             peer_name = chan.get_extra_info("peername", ("", ""))
             self._remote_ip = peer_name[0] if peer_name else self._remote_ip
             self._started_at = djangotime.now()
-            shell = self._agent.effective_default_shell
-            self._term = NATSTerminal(self._agent, self._session_id, shell)
-            asyncio.create_task(self._start()).add_done_callback(self._on_start_done)
-            asyncio.create_task(
-                _record_session_and_audit(
-                    self._user, self._agent, self._session_id, self._remote_ip,
-                    client_version=self._client_version,
-                    ssh_key_name=self._ssh_key_name,
-                    ssh_key_type=self._ssh_key_type,
-                    ssh_key_fingerprint=self._ssh_key_fingerprint,
-                )
-            )
             logger.info(
-                "SSH session started user=%s agent=%s remote_ip=%s client=%s",
+                "SSH connection made user=%s agent=%s remote_ip=%s client=%s",
                 self._user.username, self._agent.agent_id, self._remote_ip, self._client_version,
             )
         except Exception as e:
             logger.error("SSH connection_made failed: %s", e, exc_info=True)
             raise
 
-    def _on_start_done(self, fut):
-        exc = fut.exception()
-        if exc:
-            logger.error("SSHSessionHandler._start failed: %s", exc, exc_info=exc)
+    def exec_requested(self, command):
+        self._session_type = "exec"
+        self._exec_cmd = command
+        logger.info(
+            "SSH exec requested user=%s agent=%s command=%s",
+            self._user.username, self._agent.agent_id, command,
+        )
+        asyncio.create_task(self._start_exec())
+        return True
 
-    async def _start(self):
+    async def _start_exec(self):
         async def output_cb(data, done=False, exit_code=None):
             try:
                 if isinstance(data, bytes):
@@ -110,20 +107,73 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
                 if self._chan and not self._chan.is_closing():
                     self._chan.write(data)
                 if done:
+                    asyncio.create_task(_close_session_and_audit(
+                        self._user, self._agent, self._session_id, self._remote_ip,
+                        self._started_at,
+                    ))
                     self._chan.exit(exit_code or 0)
             except Exception:
-                logger.error("SSH output_cb error", exc_info=True)
+                logger.error("SSH exec output_cb error", exc_info=True)
 
-        await self._term.start(output_cb)
+        try:
+            self._exec = SSHExec(self._agent, self._session_id, self._exec_cmd)
+            await self._exec.start(output_cb)
+        except Exception as e:
+            logger.error("SSH exec start failed: %s", e, exc_info=True)
+            await self._chan.write(f"\r\nFailed to execute command: {e}\r\n")
+            self._chan.exit(1)
 
     def shell_requested(self):
+        self._session_type = "shell"
+        shell = self._agent.effective_default_shell
+        self._term = NATSTerminal(self._agent, self._session_id, shell)
         role_name = "None"
         if self._user.role:
             role_name = self._user.role.name
         self._chan.write(
             f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [Role: {role_name}]\x1b[0m\r\n\r\n"
         )
+        asyncio.create_task(self._start_terminal())
+        asyncio.create_task(
+            _record_session_and_audit(
+                self._user, self._agent, self._session_id, self._remote_ip,
+                client_version=self._client_version,
+                ssh_key_name=self._ssh_key_name,
+                ssh_key_type=self._ssh_key_type,
+                ssh_key_fingerprint=self._ssh_key_fingerprint,
+            )
+        )
+        logger.info(
+            "SSH shell started user=%s agent=%s remote_ip=%s client=%s",
+            self._user.username, self._agent.agent_id, self._remote_ip, self._client_version,
+        )
         return True
+
+    async def _start_terminal(self):
+        async def output_cb(data, done=False, exit_code=None):
+            try:
+                if isinstance(data, bytes):
+                    data = data.decode("utf-8", errors="replace")
+                if self._chan and not self._chan.is_closing():
+                    self._chan.write(data)
+                if done:
+                    asyncio.create_task(_close_session_and_audit(
+                        self._user, self._agent, self._session_id, self._remote_ip,
+                        self._started_at,
+                        terminal_type=self._terminal_type,
+                        terminal_rows=self._terminal_rows,
+                        terminal_cols=self._terminal_cols,
+                    ))
+                    self._chan.exit(exit_code or 0)
+            except Exception:
+                logger.error("SSH terminal output_cb error", exc_info=True)
+
+        try:
+            await self._term.start(output_cb)
+        except Exception as e:
+            logger.error("SSH terminal start failed: %s", e, exc_info=True)
+            await self._chan.write(f"\r\nFailed to start terminal: {e}\r\n")
+            self._chan.exit(1)
 
     def pty_requested(self, term_type, term_size, term_modes):
         self._terminal_type = term_type
@@ -154,9 +204,6 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
             asyncssh.CTERMINAL: 0,
         }
 
-    def exec_requested(self, command):
-        return True
-
     def data_received(self, data, datatype):
         if self._term:
             asyncio.create_task(self._term.write(data))
@@ -164,6 +211,8 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
     def connection_lost(self, exc):
         if self._term:
             asyncio.create_task(self._term.stop())
+        if self._exec:
+            asyncio.create_task(self._exec.stop())
         if exc:
             logger.error("SSH connection lost: %s", exc)
 
@@ -174,7 +223,9 @@ class SSHSessionHandler(asyncssh.SSHServerSession):
     def closed(self):
         if self._term:
             asyncio.create_task(self._term.stop())
-        if self._started_at:
+        if self._exec:
+            asyncio.create_task(self._exec.stop())
+        if self._started_at and self._session_type == "shell":
             asyncio.create_task(
                 _close_session_and_audit(
                     self._user, self._agent, self._session_id, self._remote_ip,

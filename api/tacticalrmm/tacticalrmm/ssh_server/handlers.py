@@ -220,10 +220,12 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     def connection_made(self, chan):
         self._chan = chan
         self._started_at = djangotime.now()
-        asyncio.create_task(self._enter_menu())
-        asyncio.create_task(self._idle_check())
+        self._state = "connected"
 
     def shell_requested(self):
+        self._state = "menu"
+        asyncio.create_task(self._enter_menu())
+        asyncio.create_task(self._idle_check())
         return True
 
     def pty_requested(self, term_type, term_size, term_modes):

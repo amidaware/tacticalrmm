@@ -1,7 +1,10 @@
 import json
+import logging
 import os
 
 from django.utils import timezone as djangotime
+
+logger = logging.getLogger("trmm")
 
 _HIGHSCORES_PATH = "/etc/trmm/snake_highscores.json"
 
@@ -21,8 +24,8 @@ def _save_highscores(scores):
         os.makedirs(os.path.dirname(_HIGHSCORES_PATH), exist_ok=True)
         with open(_HIGHSCORES_PATH, "w") as f:
             json.dump(scores, f, indent=2)
-    except OSError:
-        pass
+    except OSError as e:
+        logger.debug("Failed to save highscores: %s", e)
 
 
 def _add_highscore(username, score, won):

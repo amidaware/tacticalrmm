@@ -1,9 +1,12 @@
 import asyncio
+import logging
 
 import msgpack
 import nats
 
 from tacticalrmm.helpers import setup_nats_options
+
+logger = logging.getLogger("trmm")
 
 
 class NATSTerminal:
@@ -55,17 +58,17 @@ class NATSTerminal:
     async def stop(self):
         try:
             await self._pub({"func": "terminal_kill", "payload": {"session_id": self.session_id}})
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("NATSTerminal stop: failed to send kill: %s", e)
         if self.sub:
             try:
                 await self.sub.unsubscribe()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("NATSTerminal stop: failed to unsubscribe: %s", e)
             self.sub = None
         if self.nc and not self.nc.is_closed:
             try:
                 await self.nc.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("NATSTerminal stop: failed to close NATS connection: %s", e)
             self.nc = None

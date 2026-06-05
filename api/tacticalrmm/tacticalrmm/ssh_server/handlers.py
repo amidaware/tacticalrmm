@@ -409,7 +409,10 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 if self._buf.strip().isdigit():
                     num = int(self._buf.strip())
                     self._buf = ""
-                    await self._handle_number(num)
+                    if self._state == "search_results":
+                        await self._handle_search_result(num)
+                    else:
+                        await self._handle_number(num)
                     return
                 if self._buf:
                     cmd = self._buf.strip().lower()
@@ -417,6 +420,9 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                     if cmd == "egg":
                         self._egg = EggGame(self)
                         await self._egg.start()
+                        return
+                    if self._state == "client" and cmd:
+                        await self._search_agents(cmd)
                         return
                 return
 
@@ -438,6 +444,9 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                     await self._show_clients()
                 elif self._state == "agent":
                     await self._show_sites()
+                elif self._state == "search_results":
+                    self._state = "client"
+                    await self._show_clients()
                 return
 
             if ch in ("r", "R"):
@@ -573,6 +582,80 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             else:
                 await self._write("\r\nInvalid choice.\r\n")
                 await self._show_agents()
+
+    async def _search_agents(self, query):
+        query = query.lower()
+        matches = []
+        for client, sites in self._tree.items():
+            for site, agents in sites.items():
+                for aid, hostname, ip, status, version, last_seen in agents:
+                    if query in hostname.lower():
+                        matches.append((client, site, aid, hostname, ip, status, version, last_seen))
+        if not matches:
+            await self._write(f"\r\nNo agents found matching '{query}'.\r\n")
+            await self._show_clients()
+            return
+        lines = [
+            f"\r\n\x1b[1mSearch results for '{query}'\x1b[0m  ({len(matches)} found)",
+            "",
+        ]
+        for i, (client, site, aid, hostname, ip, status, version, last_seen) in enumerate(matches, 1):
+            status_color = "\x1b[32m" if status == "online" else "\x1b[31m"
+            lines.append(
+                f"  {i:>2}. {hostname}  ({client} > {site})\x1b[0m"
+                f"  {status_color}{status}\x1b[0m"
+            )
+        lines += [
+            "",
+            "  \x1b[2mType number to connect, b to go back\x1b[0m",
+            "",
+            "Enter choice: ",
+        ]
+        await self._write("\r\n".join(lines))
+        self._state = "search_results"
+        self._search_results = matches
+
+    async def _handle_search_result(self, num):
+        idx = num - 1
+        if 0 <= idx < len(self._search_results):
+            client, site, aid, hostname, ip, status, version, last_seen = self._search_results[idx]
+            if status != "online":
+                await self._write(
+                    f"\r\n\x1b[31m{hostname}\x1b[0m is {status}.\n"
+                    "Cannot connect.\r\n"
+                )
+                await self._show_search_results()
+                return
+            self._menu_client = client
+            self._menu_site = site
+            await self._connect_to_agent(aid, hostname)
+        else:
+            await self._write("\r\nInvalid choice.\r\n")
+            await self._show_search_results()
+
+    async def _show_search_results(self):
+        matches = self._search_results
+        if not matches:
+            await self._write("\r\nNo results.\r\n")
+            await self._show_clients()
+            return
+        lines = [
+            f"\r\n\x1b[1mSearch results\x1b[0m  ({len(matches)} found)",
+            "",
+        ]
+        for i, (client, site, aid, hostname, ip, status, version, last_seen) in enumerate(matches, 1):
+            status_color = "\x1b[32m" if status == "online" else "\x1b[31m"
+            lines.append(
+                f"  {i:>2}. {hostname}  ({client} > {site})\x1b[0m"
+                f"  {status_color}{status}\x1b[0m"
+            )
+        lines += [
+            "",
+            "  \x1b[2mType number to connect, b to go back\x1b[0m",
+            "",
+            "Enter choice: ",
+        ]
+        await self._write("\r\n".join(lines))
 
     async def _show_current(self):
         if self._state == "site":

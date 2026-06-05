@@ -347,7 +347,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._state = "site"
         sites = sorted(self._tree[self._menu_client].keys())
         lines = [
-            f"\r\n\x1b[1mClient: {self._menu_client}\x1b[0m",
+            f"\r\n\x1b[1mClients \x1b[2m>\x1b[0m {self._menu_client}\x1b[0m",
             "\x1b[2mSelect a site\x1b[0m",
             "",
         ]
@@ -367,7 +367,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._state = "agent"
         agents = self._tree[self._menu_client][self._menu_site]
         lines = [
-            f"\r\n\x1b[1m{self._menu_client} \x1b[2m>\x1b[0m {self._menu_site}\x1b[0m",
+            f"\r\n\x1b[1mClients \x1b[2m>\x1b[0m {self._menu_client} \x1b[2m>\x1b[0m {self._menu_site}\x1b[0m",
             "\x1b[2mSelect an agent\x1b[0m",
             "",
         ]

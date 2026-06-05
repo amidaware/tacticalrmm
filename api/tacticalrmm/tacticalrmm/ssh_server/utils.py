@@ -1,7 +1,24 @@
+import asyncio
+import logging
 from hashlib import sha256
 import base64
 
 from asgiref.sync import sync_to_async
+
+logger = logging.getLogger("trmm")
+
+
+def _safe_task(coro, name=""):
+    """Create a task that logs exceptions if they fail."""
+    task = asyncio.create_task(coro)
+
+    def _log_exception(fut):
+        exc = fut.exception()
+        if exc:
+            logger.error("SSH task '%s' failed: %s", name, exc, exc_info=True)
+
+    task.add_done_callback(_log_exception)
+    return task
 
 
 def _fingerprint(key_bytes: bytes) -> str:

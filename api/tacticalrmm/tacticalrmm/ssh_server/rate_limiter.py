@@ -9,6 +9,8 @@ class _RateLimiter:
         self._max_attempts = max_attempts
         self._window = window
         self._attempts: dict[str, list[float]] = collections.defaultdict(list)
+        self._last_cleanup = time.time()
+        self._cleanup_interval = 60
 
     def allow(self, ip: str) -> bool:
         now = time.time()
@@ -18,7 +20,18 @@ class _RateLimiter:
         if len(attempts) >= self._max_attempts:
             return False
         attempts.append(now)
+
+        if now - self._last_cleanup > self._cleanup_interval:
+            self._cleanup_stale(cutoff)
+            self._last_cleanup = now
+
         return True
+
+    def _cleanup_stale(self, cutoff: float) -> None:
+        for ip, timestamps in list(self._attempts.items()):
+            timestamps[:] = [t for t in timestamps if t > cutoff]
+            if not timestamps:
+                del self._attempts[ip]
 
     def reset(self, ip: str) -> None:
         self._attempts.pop(ip, None)

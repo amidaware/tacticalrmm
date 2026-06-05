@@ -248,7 +248,9 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         }
 
     def exec_requested(self, command):
-        return False
+        self._state = "exec"
+        self._exec_command = command
+        return True
 
     def data_received(self, data, datatype):
         try:
@@ -264,6 +266,12 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                         return
                 if self._term:
                     asyncio.create_task(self._term.write(data))
+                return
+            if self._state == "exec":
+                if isinstance(data, bytes):
+                    self._chan.write(data)
+                else:
+                    self._chan.write(data.encode('utf-8') if isinstance(data, str) else data)
                 return
             if isinstance(data, bytes):
                 text = data.decode("utf-8", errors="replace")

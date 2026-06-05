@@ -403,7 +403,6 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._started_at = None
         self._selected_agent = None
         self._tree = []
-        self._buf = ""
         self._state = "client"  # client / site / agent / terminal
         self._menu_client = ""
         self._menu_site = ""
@@ -428,34 +427,33 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             asyncssh.VQUIT: 28,
             asyncssh.VSTART: 17,
             asyncssh.VSTOP: 19,
-            asyncssh.VSUSP: 26,
+            asyncssh.ECHO: 1,
+            asyncssh.ECHOE: 1,
+            asyncssh.ECHOK: 1,
+            asyncssh.ECHOKE: 1,
+            asyncssh.ISIG: 1,
+            asyncssh.ICANON: 0,
             asyncssh.VTIME: 0,
             asyncssh.VMIN: 1,
-            asyncssh.ECHO: 0,
-            asyncssh.ECHOE: 0,
-            asyncssh.ECHOK: 0,
-            asyncssh.ECHOKE: 0,
-            asyncssh.ECHOCTL: 0,
-            asyncssh.ECHOPRT: 0,
-            asyncssh.ISIG: 1,
-            asyncssh.ICANON: 1,
-            asyncssh.IEXTEN: 1,
-            asyncssh.CTERMINAL: 0,
         }
 
     def exec_requested(self, command):
         return False
 
     def data_received(self, data, datatype):
-        if self._state == "terminal":
-            if self._term:
-                asyncio.ensure_future(self._term.write(data))
-            return
-        self._buf += data.decode("utf-8", errors="replace")
-        if "\n" in self._buf:
-            line = self._buf.strip()
-            self._buf = ""
-            asyncio.ensure_future(self._handle_input(line))
+        try:
+            if self._state == "terminal":
+                if self._term:
+                    asyncio.ensure_future(self._term.write(data))
+                return
+            if isinstance(data, bytes):
+                text = data.decode("utf-8", errors="replace")
+            else:
+                text = data
+            for ch in text:
+                asyncio.ensure_future(self._handle_char(ch))
+        except Exception as e:
+            logger.error("SSH menu data_received error: %s", e, exc_info=True)
 
     def connection_lost(self, exc):
         if self._term:
@@ -597,63 +595,73 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         ]
         await self._write("\r\n".join(lines))
 
-    async def _handle_input(self, line):
-        line = line.strip().lower()
-        if line in ("q", "quit", "exit"):
-            await self._write("\r\nGoodbye.\r\n")
-            self._chan.exit(0)
-            return
-
-        if self._state == "client":
-            if line == "b":
+    async def _handle_char(self, ch):
+        try:
+            if ch in ("\r", "\n"):
                 return
-            clients = sorted(self._tree.keys())
-            try:
-                idx = int(line) - 1
-                if 0 <= idx < len(clients):
-                    self._menu_client = clients[idx]
-                    await self._show_sites()
-                else:
-                    await self._write("\r\nInvalid choice. Try again: ")
-            except ValueError:
-                await self._write("\r\nEnter a number: ")
-
-        elif self._state == "site":
-            if line == "b":
-                await self._show_clients()
+            if ch in ("q", "Q", "\x03"):
+                await self._write("\r\nGoodbye.\r\n")
+                self._chan.exit(0)
                 return
-            sites = sorted(self._tree[self._menu_client].keys())
-            try:
-                idx = int(line) - 1
-                if 0 <= idx < len(sites):
-                    self._menu_site = sites[idx]
-                    await self._show_agents()
-                else:
-                    await self._write("\r\nInvalid choice. Try again: ")
-            except ValueError:
-                await self._write("\r\nEnter a number: ")
 
-        elif self._state == "agent":
-            if line == "b":
-                await self._show_sites()
-                return
-            agents = self._tree[self._menu_client][self._menu_site]
-            try:
-                idx = int(line) - 1
-                if 0 <= idx < len(agents):
-                    aid, hostname, ip, status = agents[idx]
-                    if status != "online":
-                        await self._write(
-                            f"\r\n\x1b[31m{hostname} is {status}.\x1b[0m "
-                            "Cannot connect.\r\n"
-                        )
+            if self._state == "client":
+                if ch == "b":
+                    return
+                clients = sorted(self._tree.keys())
+                try:
+                    idx = int(ch) - 1
+                    if 0 <= idx < len(clients):
+                        self._menu_client = clients[idx]
+                        await self._show_sites()
+                    else:
+                        await self._write("\r\nInvalid choice.\r\n")
+                        await self._show_clients()
+                except ValueError:
+                    await self._write("\r\nEnter a number.\r\n")
+                    await self._show_clients()
+
+            elif self._state == "site":
+                if ch == "b":
+                    await self._show_clients()
+                    return
+                sites = sorted(self._tree[self._menu_client].keys())
+                try:
+                    idx = int(ch) - 1
+                    if 0 <= idx < len(sites):
+                        self._menu_site = sites[idx]
                         await self._show_agents()
-                        return
-                    await self._connect_to_agent(aid, hostname)
-                else:
-                    await self._write("\r\nInvalid choice. Try again: ")
-            except ValueError:
-                await self._write("\r\nEnter a number: ")
+                    else:
+                        await self._write("\r\nInvalid choice.\r\n")
+                        await self._show_sites()
+                except ValueError:
+                    await self._write("\r\nEnter a number.\r\n")
+                    await self._show_sites()
+
+            elif self._state == "agent":
+                if ch == "b":
+                    await self._show_sites()
+                    return
+                agents = self._tree[self._menu_client][self._menu_site]
+                try:
+                    idx = int(ch) - 1
+                    if 0 <= idx < len(agents):
+                        aid, hostname, ip, status = agents[idx]
+                        if status != "online":
+                            await self._write(
+                                f"\r\n\x1b[31m{hostname} is {status}.\x1b[0m "
+                                "Cannot connect.\r\n"
+                            )
+                            await self._show_agents()
+                            return
+                        await self._connect_to_agent(aid, hostname)
+                    else:
+                        await self._write("\r\nInvalid choice.\r\n")
+                        await self._show_agents()
+                except ValueError:
+                    await self._write("\r\nEnter a number.\r\n")
+                    await self._show_agents()
+        except Exception as e:
+            logger.error("SSH menu input error: %s", e, exc_info=True)
 
     async def _connect_to_agent(self, agent_id, hostname):
         from agents.models import Agent
@@ -952,7 +960,6 @@ async def start_ssh_server(host=None, port=None):
         login_timeout=login_timeout,
         keepalive_interval=keepalive_interval,
         keepalive_count_max=keepalive_count_max,
-        tcp_keepalive=True,
     )
     logger.info(
         "SSH gateway listening on %s:%s (timeout=%d keepalive=%d/%d)",

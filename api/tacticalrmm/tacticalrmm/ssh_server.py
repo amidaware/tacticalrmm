@@ -796,11 +796,19 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
 
     def _snake_place_food(self):
         occupied = set(self._snake_body)
-        while True:
+        free = self._snake_height * self._snake_width - len(occupied)
+        if free <= 0:
+            return None
+        for _ in range(100):
             r = random.randrange(self._snake_height)
             c = random.randrange(self._snake_width)
             if (r, c) not in occupied:
                 return (r, c)
+        for r in range(self._snake_height):
+            for c in range(self._snake_width):
+                if (r, c) not in occupied:
+                    return (r, c)
+        return None
 
     async def _draw_snake(self):
         lines = ["\x1b[H"]
@@ -813,7 +821,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                     lines.append("\x1b[32mO\x1b[0m")
                 elif (r, c) in self._snake_body:
                     lines.append("o")
-                elif (r, c) == self._snake_food:
+                elif self._snake_food and (r, c) == self._snake_food:
                     lines.append("\x1b[33m@\x1b[0m")
                 else:
                     lines.append(".")
@@ -844,6 +852,9 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 if new_head == self._snake_food:
                     self._snake_score += 1
                     self._snake_food = self._snake_place_food()
+                    if self._snake_food is None:
+                        await self._snake_win()
+                        return
                 else:
                     self._snake_body.pop()
 
@@ -855,7 +866,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
 
     async def _snake_game_over(self):
         lines = [
-            "\x1b[H",
+            "\x1b[H\x1b[J",
             "\x1b[31mGame Over!\x1b[0m\r\n",
             f"Score: {self._snake_score}\r\n",
             "\r\nPress any key to return to menu...\r\n",
@@ -863,20 +874,17 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         await self._write("".join(lines))
         self._state = "snake_gameover"
 
+    async def _snake_win(self):
+        lines = [
+            "\x1b[H\x1b[J",
+            "\x1b[32mYou Win!\x1b[0m\r\n",
+            f"Final Score: {self._snake_score}\r\n",
+            "\r\nPress any key to return to menu...\r\n",
+        ]
+        await self._write("".join(lines))
+        self._state = "snake_gameover"
+
     def _handle_snake_input(self, ch):
-        self._snake_buf += ch
-        if len(self._snake_buf) > 100:
-            self._snake_buf = self._snake_buf[-50:]
-        for seq, dr, dc in [
-            ("\x1b[A", -1, 0), ("\x1b[B", 1, 0),
-            ("\x1b[C", 0, 1), ("\x1b[D", 0, -1),
-        ]:
-            idx = self._snake_buf.find(seq)
-            if idx >= 0:
-                self._snake_buf = self._snake_buf[:idx] + self._snake_buf[idx + 3:]
-                if (dr, dc) != (-self._snake_dir[0], -self._snake_dir[1]):
-                    self._snake_dir = (dr, dc)
-                return
         if ch.lower() == "q" or ch == "\x03":
             asyncio.ensure_future(self._snake_quit())
             return
@@ -885,6 +893,19 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             dr, dc = dirs[ch.lower()]
             if (dr, dc) != (-self._snake_dir[0], -self._snake_dir[1]):
                 self._snake_dir = (dr, dc)
+            return
+        self._snake_buf += ch
+        if len(self._snake_buf) > 10:
+            self._snake_buf = self._snake_buf[-5:]
+        for seq, dr, dc in [
+            ("\x1b[A", -1, 0), ("\x1b[B", 1, 0),
+            ("\x1b[C", 0, 1), ("\x1b[D", 0, -1),
+        ]:
+            if seq in self._snake_buf:
+                self._snake_buf = ""
+                if (dr, dc) != (-self._snake_dir[0], -self._snake_dir[1]):
+                    self._snake_dir = (dr, dc)
+                return
 
     async def _snake_quit(self):
         self._state = "client"

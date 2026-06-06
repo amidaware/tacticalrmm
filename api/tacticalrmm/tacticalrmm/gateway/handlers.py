@@ -14,7 +14,9 @@ logger = logging.getLogger("trmm")
 class DirectSessionHandler(asyncssh.SSHServerSession):
     def __init__(self, user, agent, session_id, remote_ip,
                  client_version="", ssh_key_name="", ssh_key_type="",
-                 ssh_key_fingerprint=""):
+                 ssh_key_fingerprint="",
+                 gateway_exec_enabled=True, gateway_terminal_enabled=True,
+                 gateway_session_timeout=300, gateway_max_sessions=10):
         super().__init__()
         self._user = user
         self._agent = agent
@@ -24,6 +26,10 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
         self._ssh_key_name = ssh_key_name
         self._ssh_key_type = ssh_key_type
         self._ssh_key_fingerprint = ssh_key_fingerprint
+        self._gateway_exec_enabled = gateway_exec_enabled
+        self._gateway_terminal_enabled = gateway_terminal_enabled
+        self._gateway_session_timeout = gateway_session_timeout
+        self._gateway_max_sessions = gateway_max_sessions
         self._term = None
         self._exec = None
         self._chan = None
@@ -50,6 +56,9 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             raise
 
     def exec_requested(self, command):
+        if not self._gateway_exec_enabled:
+            logger.warning("Gateway: exec denied (disabled) for %s", self._remote_ip)
+            return False
         self._session_type = "exec"
         self._exec_cmd = command
         asyncio.create_task(self._start_exec())
@@ -85,6 +94,9 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                 pass
 
     def shell_requested(self):
+        if not self._gateway_terminal_enabled:
+            logger.warning("Gateway: shell denied (disabled) for %s", self._remote_ip)
+            return False
         self._session_type = "shell"
         shell = self._agent.effective_default_shell
         self._term = TerminalProxy(self._agent, self._session_id, shell)

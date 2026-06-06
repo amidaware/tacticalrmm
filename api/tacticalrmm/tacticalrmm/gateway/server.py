@@ -11,7 +11,7 @@ from .audit import _audit_session_failed
 from .handlers import DirectSessionHandler
 from .menu import MenuSessionHandler
 from .rate_limiter import _rate_limiter
-from .utils import _fingerprint, _lookup_key, _resolve_and_check
+from .utils import _fingerprint, _lookup_key, _resolve_and_check, _get_gateway_settings
 
 logger = logging.getLogger("trmm")
 
@@ -66,9 +66,24 @@ class GatewayServer(asyncssh.SSHServer):
         self._auth_agent = None
         self._is_menu = False
         self._session_id = uuid.uuid4().hex
+        self._gateway_menu_enabled = True
+        self._gateway_exec_enabled = True
+        self._gateway_terminal_enabled = True
+        self._gateway_session_timeout = 300
+        self._gateway_max_sessions = 10
         if self._remote_ip and not _rate_limiter.allow(self._remote_ip):
             logger.warning("Gateway: rate limit exceeded for %s", self._remote_ip)
             return False
+        try:
+            core = await _get_gateway_settings()
+            if core:
+                self._gateway_menu_enabled = core.ssh_gateway_menu_enabled
+                self._gateway_exec_enabled = core.ssh_gateway_exec_enabled
+                self._gateway_terminal_enabled = core.ssh_gateway_terminal_enabled
+                self._gateway_session_timeout = core.ssh_gateway_session_timeout
+                self._gateway_max_sessions = core.ssh_gateway_max_sessions
+        except Exception:
+            logger.error("Gateway: failed to load settings", exc_info=True)
         return True
 
     def public_key_auth_supported(self):
@@ -174,6 +189,9 @@ class GatewayServer(asyncssh.SSHServer):
             if self._is_menu:
                 if not self._auth_user:
                     return None
+                if not self._gateway_menu_enabled:
+                    logger.warning("Gateway: menu denied (disabled) for %s", self._remote_ip)
+                    return None
                 return MenuSessionHandler(
                     self._auth_user, self._session_id, self._remote_ip,
                     client_version=self._client_version,
@@ -183,14 +201,17 @@ class GatewayServer(asyncssh.SSHServer):
                 )
             if not self._auth_user or not self._auth_agent:
                 return None
-            handler = DirectSessionHandler(
+            return DirectSessionHandler(
                 self._auth_user, self._auth_agent, self._session_id, self._remote_ip,
                 client_version=self._client_version,
                 ssh_key_name=self._ssh_key_name,
                 ssh_key_type=self._ssh_key_type,
                 ssh_key_fingerprint=self._ssh_key_fingerprint,
+                gateway_exec_enabled=self._gateway_exec_enabled,
+                gateway_terminal_enabled=self._gateway_terminal_enabled,
+                gateway_session_timeout=self._gateway_session_timeout,
+                gateway_max_sessions=self._gateway_max_sessions,
             )
-            return handler
         except Exception as e:
             logger.error("Gateway: session_requested error: %s", e, exc_info=True)
             return None

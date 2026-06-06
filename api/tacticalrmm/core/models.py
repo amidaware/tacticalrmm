@@ -120,6 +120,11 @@ class CoreSettings(BaseAuditModel):
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     enable_ssh_gateway = models.BooleanField(default=False)
+    ssh_gateway_session_timeout = models.PositiveIntegerField(default=300)
+    ssh_gateway_max_sessions = models.PositiveIntegerField(default=10)
+    ssh_gateway_enable_menu = models.BooleanField(default=True)
+    ssh_gateway_enable_exec = models.BooleanField(default=True)
+    ssh_gateway_enable_terminal = models.BooleanField(default=True)
     notify_on_info_alerts = models.BooleanField(default=False)
     notify_on_warning_alerts = models.BooleanField(default=True)
 
@@ -282,6 +287,18 @@ class CoreSettings(BaseAuditModel):
             return False
 
         return self.enable_ssh_gateway
+
+    @property
+    def ssh_gateway_menu_enabled(self) -> bool:
+        return self.ssh_gateway_enabled and self.ssh_gateway_enable_menu
+
+    @property
+    def ssh_gateway_exec_enabled(self) -> bool:
+        return self.ssh_gateway_enabled and self.ssh_gateway_enable_exec
+
+    @property
+    def ssh_gateway_terminal_enabled(self) -> bool:
+        return self.ssh_gateway_enabled and self.ssh_gateway_enable_terminal
 
     def send_mail(
         self,

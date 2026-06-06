@@ -87,6 +87,7 @@ class GetEditCoreSettings(APIView):
             data["sync_mesh_with_trmm"] = True
             data["enable_server_scripts"] = False
             data["enable_server_webterminal"] = False
+            data["enable_ssh_gateway"] = False
 
         coresettings = CoreSettings.objects.first()
         serializer = CoreSettingsSerializer(

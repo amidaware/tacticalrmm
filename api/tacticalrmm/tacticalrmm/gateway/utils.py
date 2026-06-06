@@ -72,3 +72,9 @@ def _resolve_and_check(user, agent_id: str):
 @sync_to_async
 def _get_user_group(user):
     return user.role.name if user.role else None
+
+
+@sync_to_async
+def _get_gateway_settings():
+    from core.models import CoreSettings
+    return CoreSettings.objects.first()

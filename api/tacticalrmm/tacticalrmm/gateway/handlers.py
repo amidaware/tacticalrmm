@@ -66,7 +66,6 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                     data = data.decode("utf-8", errors="replace")
                 if self._chan and not self._chan.is_closing():
                     self._chan.write(data)
-                    await self._chan.drain()
                 if done:
                     self._exec_completed = True
                     asyncio.create_task(_close_session_and_audit(

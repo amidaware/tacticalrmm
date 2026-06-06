@@ -258,7 +258,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def data_received(self, data, datatype):
         if self._term:
-            self._term_buf = getattr(self, "_term_buf", "") + data
+            self._term_buf = getattr(self, "_term_buf", b"") + data
             if b"\r" in self._term_buf or b"\n" in self._term_buf:
                 lines = self._term_buf.replace(b"\r\n", b"\n").replace(b"\r", b"\n").split(b"\n")
                 self._term_buf = lines.pop()

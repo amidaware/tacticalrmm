@@ -52,10 +52,6 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
     def exec_requested(self, command):
         self._session_type = "exec"
         self._exec_cmd = command
-        logger.warning(
-            "GW_DEBUG exec_requested called user=%s agent=%s cmd=%s",
-            self._user.username, self._agent.agent_id, command,
-        )
         asyncio.create_task(self._start_exec())
         return True
 
@@ -64,10 +60,6 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             try:
                 if isinstance(data, bytes):
                     data = data.decode("utf-8", errors="replace")
-                if done:
-                    logger.warning("GW_DEBUG exec completed: exit_code=%s", exit_code)
-                if data:
-                    logger.warning("GW_DEBUG exec output: %d bytes", len(data))
                 if self._chan and not self._chan.is_closing():
                     self._chan.write(data)
                 if done:
@@ -77,8 +69,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                         self._started_at,
                     ))
                     if self._chan and not self._chan.is_closing():
-                        self._chan.exit(exit_code or 0)
-                        logger.info("Gateway exec: channel exit sent")
+                        await self._chan.exit(exit_code or 0)
             except Exception:
                 logger.error("Gateway exec output_cb error", exc_info=True)
 
@@ -89,7 +80,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             logger.error("Gateway exec start failed: %s", e, exc_info=True)
             try:
                 await self._chan.write(f"\r\nFailed to execute command: {e}\r\n")
-                self._chan.exit(1)
+                await self._chan.exit(1)
             except Exception:
                 pass
 
@@ -134,7 +125,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                         terminal_rows=self._terminal_rows,
                         terminal_cols=self._terminal_cols,
                     ))
-                    self._chan.exit(exit_code or 0)
+                    await self._chan.exit(exit_code or 0)
             except Exception:
                 logger.error("Gateway terminal output_cb error", exc_info=True)
 
@@ -180,16 +171,12 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def eof_received(self):
         if self._session_type == "exec" and not self._exec_completed:
-            logger.warning("GW_DEBUG eof_received: keeping channel open for exec")
             return False
-        logger.warning("GW_DEBUG eof_received: closing channel (session=%s exec_completed=%s)", self._session_type, self._exec_completed)
         return True
 
     def connection_lost(self, exc):
         if self._session_type == "exec" and not self._exec_completed:
-            logger.warning("GW_DEBUG connection_lost: deferring cleanup (exec not yet completed)")
             return
-        logger.warning("GW_DEBUG connection_lost: cleaning up (session=%s exec_completed=%s)", self._session_type, self._exec_completed)
         if self._term:
             asyncio.create_task(self._term.stop())
         if self._exec:

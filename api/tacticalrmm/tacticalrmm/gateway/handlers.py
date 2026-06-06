@@ -258,6 +258,9 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def data_received(self, data, datatype):
         if self._term:
+            original_data = data
+            if isinstance(data, str):
+                data = data.encode("utf-8", errors="replace")
             self._term_buf = getattr(self, "_term_buf", b"") + data
             if b"\r" in self._term_buf or b"\n" in self._term_buf:
                 lines = self._term_buf.replace(b"\r\n", b"\n").replace(b"\r", b"\n").split(b"\n")
@@ -268,7 +271,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                             self._user, self._agent, line.decode("utf-8", errors="replace"),
                         ))
             try:
-                asyncio.create_task(self._term.write(data))
+                asyncio.create_task(self._term.write(original_data))
             except Exception as e:
                 logger.error("Gateway terminal write error: %s", e)
 

@@ -69,7 +69,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                         self._started_at,
                     ))
                     if self._chan and not self._chan.is_closing():
-                        await self._chan.exit(exit_code or 0)
+                        self._chan.exit(exit_code or 0)
             except Exception:
                 logger.error("Gateway exec output_cb error", exc_info=True)
 
@@ -79,8 +79,8 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
         except Exception as e:
             logger.error("Gateway exec start failed: %s", e, exc_info=True)
             try:
-                await self._chan.write(f"\r\nFailed to execute command: {e}\r\n")
-                await self._chan.exit(1)
+                self._chan.write(f"\r\nFailed to execute command: {e}\r\n")
+                self._chan.exit(1)
             except Exception:
                 pass
 
@@ -125,7 +125,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                         terminal_rows=self._terminal_rows,
                         terminal_cols=self._terminal_cols,
                     ))
-                    await self._chan.exit(exit_code or 0)
+                    self._chan.exit(exit_code or 0)
             except Exception:
                 logger.error("Gateway terminal output_cb error", exc_info=True)
 
@@ -133,7 +133,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             await self._term.start(output_cb)
         except Exception as e:
             logger.error("Gateway terminal start failed: %s", e, exc_info=True)
-            await self._chan.write(f"\r\nFailed to start terminal: {e}\r\n")
+            self._chan.write(f"\r\nFailed to start terminal: {e}\r\n")
             self._chan.exit(1)
 
     def pty_requested(self, term_type, term_size, term_modes):
@@ -171,8 +171,8 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def eof_received(self):
         if self._session_type == "exec" and not self._exec_completed:
-            return False
-        return True
+            return True
+        return False
 
     def connection_lost(self, exc):
         if self._session_type == "exec" and not self._exec_completed:

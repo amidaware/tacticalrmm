@@ -8,7 +8,7 @@ from asgiref.sync import sync_to_async
 from django.conf import settings
 
 from .audit import _audit_session_failed
-from .handlers import DirectSessionHandler
+from .handlers import DirectSessionHandler, RejectionHandler
 from .menu import MenuSessionHandler
 from .rate_limiter import _rate_limiter
 from .utils import _fingerprint, _lookup_key, _resolve_and_check, _get_gateway_settings
@@ -106,12 +106,32 @@ class GatewayServer(asyncssh.SSHServer):
             ssh_key = await _lookup_key(fp)
             if ssh_key is None:
                 logger.warning("Gateway: unknown key %s from %s", fp, self._remote_ip)
+                asyncio.create_task(
+                    _audit_session_failed(
+                        username=username,
+                        agent_id=username,
+                        remote_ip=self._remote_ip,
+                        reason="unknown_key",
+                        ssh_key_fingerprint=fp,
+                    )
+                )
                 return False
 
             user = ssh_key.user
             if not user.is_active or user.block_dashboard_login:
                 logger.warning(
                     "Gateway: inactive user %s from %s", user.username, self._remote_ip
+                )
+                asyncio.create_task(
+                    _audit_session_failed(
+                        username=user.username,
+                        agent_id=username,
+                        remote_ip=self._remote_ip,
+                        reason="inactive_user",
+                        ssh_key_name=ssh_key.name,
+                        ssh_key_type=ssh_key.key_type,
+                        ssh_key_fingerprint=ssh_key.fingerprint,
+                    )
                 )
                 return False
 
@@ -125,6 +145,17 @@ class GatewayServer(asyncssh.SSHServer):
                     logger.warning(
                         "Gateway: menu denied for user=%s from %s",
                         user.username, self._remote_ip,
+                    )
+                    asyncio.create_task(
+                        _audit_session_failed(
+                            username=user.username,
+                            agent_id=username,
+                            remote_ip=self._remote_ip,
+                            reason="menu_no_permission",
+                            ssh_key_name=ssh_key.name,
+                            ssh_key_type=ssh_key.key_type,
+                            ssh_key_fingerprint=ssh_key.fingerprint,
+                        )
                     )
                     return False
                 self._auth_user = user
@@ -191,7 +222,19 @@ class GatewayServer(asyncssh.SSHServer):
                     return None
                 if not self._gateway_menu_enabled:
                     logger.warning("Gateway: menu denied (disabled) for %s", self._remote_ip)
-                    return None
+                    audit = _audit_session_failed(
+                        username=self._auth_user.username,
+                        agent_id="menu",
+                        remote_ip=self._remote_ip,
+                        reason="menu_disabled",
+                        ssh_key_name=self._ssh_key_name,
+                        ssh_key_type=self._ssh_key_type,
+                        ssh_key_fingerprint=self._ssh_key_fingerprint,
+                    )
+                    asyncio.create_task(audit)
+                    return RejectionHandler(
+                        "SSH gateway menu access is disabled by your administrator.\r\n",
+                    )
                 return MenuSessionHandler(
                     self._auth_user, self._session_id, self._remote_ip,
                     client_version=self._client_version,

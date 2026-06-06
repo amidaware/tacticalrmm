@@ -4,11 +4,35 @@ import logging
 import asyncssh
 from django.utils import timezone as djangotime
 
-from .audit import _close_session_and_audit, _record_session_and_audit
+from .audit import (
+    _audit_exec_command,
+    _audit_session_failed,
+    _audit_terminal_command,
+    _close_session_and_audit,
+    _record_session_and_audit,
+)
 from .exec import CmdProxy
 from .terminal import TerminalProxy
 
 logger = logging.getLogger("trmm")
+
+
+class RejectionHandler(asyncssh.SSHServerSession):
+    def __init__(self, message, audit_coro=None):
+        super().__init__()
+        self._message = message
+        self._audit_coro = audit_coro
+        self._chan = None
+
+    def connection_made(self, chan):
+        self._chan = chan
+        chan.write(self._message.encode("utf-8", errors="replace"))
+        if self._audit_coro:
+            asyncio.create_task(self._audit_coro)
+        chan.exit(1)
+
+    def eof_received(self):
+        return False
 
 
 class DirectSessionHandler(asyncssh.SSHServerSession):
@@ -57,8 +81,18 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def exec_requested(self, command):
         if not self._gateway_exec_enabled:
-            logger.warning("Gateway: exec denied (disabled) for %s", self._remote_ip)
-            return False
+            logger.warning("Gateway: exec denied (disabled) user=%s agent=%s from %s",
+                           self._user.username, self._agent.agent_id, self._remote_ip)
+            audit = _audit_session_failed(
+                username=self._user.username, agent_id=self._agent.agent_id,
+                remote_ip=self._remote_ip, reason="exec_disabled",
+                ssh_key_name=self._ssh_key_name, ssh_key_type=self._ssh_key_type,
+                ssh_key_fingerprint=self._ssh_key_fingerprint,
+            )
+            return RejectionHandler(
+                "SSH gateway exec access is disabled by your administrator.\r\n",
+                audit_coro=audit,
+            )
         self._session_type = "exec"
         self._exec_cmd = command
         asyncio.create_task(self._start_exec())
@@ -73,6 +107,9 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                     self._chan.write(data)
                 if done:
                     self._exec_completed = True
+                    asyncio.create_task(_audit_exec_command(
+                        self._user, self._agent, self._exec_cmd, exit_code,
+                    ))
                     asyncio.create_task(_close_session_and_audit(
                         self._user, self._agent, self._session_id, self._remote_ip,
                         self._started_at,
@@ -95,8 +132,18 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def shell_requested(self):
         if not self._gateway_terminal_enabled:
-            logger.warning("Gateway: shell denied (disabled) for %s", self._remote_ip)
-            return False
+            logger.warning("Gateway: shell denied (disabled) user=%s agent=%s from %s",
+                           self._user.username, self._agent.agent_id, self._remote_ip)
+            audit = _audit_session_failed(
+                username=self._user.username, agent_id=self._agent.agent_id,
+                remote_ip=self._remote_ip, reason="terminal_disabled",
+                ssh_key_name=self._ssh_key_name, ssh_key_type=self._ssh_key_type,
+                ssh_key_fingerprint=self._ssh_key_fingerprint,
+            )
+            return RejectionHandler(
+                "SSH gateway terminal access is disabled by your administrator.\r\n",
+                audit_coro=audit,
+            )
         self._session_type = "shell"
         shell = self._agent.effective_default_shell
         self._term = TerminalProxy(self._agent, self._session_id, shell)
@@ -179,6 +226,15 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def data_received(self, data, datatype):
         if self._term:
+            self._term_buf = getattr(self, "_term_buf", "") + data
+            if b"\r" in self._term_buf or b"\n" in self._term_buf:
+                lines = self._term_buf.replace(b"\r\n", b"\n").replace(b"\r", b"\n").split(b"\n")
+                self._term_buf = lines.pop()
+                for line in lines:
+                    if line.strip() and not any(b < 32 for b in line if b not in (9,)):
+                        asyncio.create_task(_audit_terminal_command(
+                            self._user, self._agent, line.decode("utf-8", errors="replace"),
+                        ))
             asyncio.create_task(self._term.write(data))
 
     def eof_received(self):

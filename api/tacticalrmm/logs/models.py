@@ -1,6 +1,8 @@
+import json
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Tuple, Union, cast
 
+from django.conf import settings
 from django.db import models
 
 from core.utils import get_core_settings
@@ -42,11 +44,31 @@ class AuditLog(models.Model):
         return f"{self.username} {self.action} {self.object_type}"
 
     def save(self, *args: Any, **kwargs: Any) -> None:
-        if not self.pk and self.message:
+        if not self.pk:
             # truncate message field if longer than 255 characters
-            self.message = (
-                (self.message[:253] + "..") if len(self.message) > 255 else self.message
-            )
+            if self.message:
+                self.message = (
+                    (self.message[:253] + "..")
+                    if len(self.message) > 255
+                    else self.message
+                )
+
+            max_bytes = getattr(
+                settings, "AUDIT_MAX_VALUE_BYTES", 512 * 2**10
+            )  # 512 KiB
+            for field in ("before_value", "after_value", "debug_info"):
+                value = getattr(self, field)
+                try:
+                    if len(json.dumps(value).encode("utf-8")) > max_bytes:
+                        setattr(
+                            self,
+                            field,
+                            {
+                                "error": "value too large to store in audit log. Check documentation for configuring AUDIT_MAX_VALUE_BYTES"
+                            },
+                        )
+                except Exception:
+                    setattr(self, field, {"error": "could not process audit value"})
 
         return super().save(*args, **kwargs)
 

@@ -9,7 +9,7 @@ from tacticalrmm.helpers import setup_nats_options
 logger = logging.getLogger("trmm")
 
 
-class NATSTerminal:
+class TerminalProxy:
     def __init__(self, agent, session_id, shell):
         self.agent = agent
         self.session_id = session_id
@@ -59,16 +59,16 @@ class NATSTerminal:
         try:
             await self._pub({"func": "terminal_kill", "payload": {"session_id": self.session_id}})
         except Exception as e:
-            logger.debug("NATSTerminal stop: failed to send kill: %s", e)
+            logger.debug("TerminalProxy stop: failed to send kill: %s", e)
         if self.sub:
             try:
                 await self.sub.unsubscribe()
             except Exception as e:
-                logger.debug("NATSTerminal stop: failed to unsubscribe: %s", e)
+                logger.debug("TerminalProxy stop: failed to unsubscribe: %s", e)
             self.sub = None
         if self.nc and not self.nc.is_closed:
             try:
                 await self.nc.close()
             except Exception as e:
-                logger.debug("NATSTerminal stop: failed to close NATS connection: %s", e)
+                logger.debug("TerminalProxy stop: failed to close NATS connection: %s", e)
             self.nc = None

@@ -119,6 +119,7 @@ class CoreSettings(BaseAuditModel):
     )
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
+    enable_ssh_gateway = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)
     notify_on_warning_alerts = models.BooleanField(default=True)
 
@@ -271,6 +272,16 @@ class CoreSettings(BaseAuditModel):
             return False
 
         return self.enable_server_webterminal
+
+    @property
+    def ssh_gateway_enabled(self) -> bool:
+        if (
+            getattr(settings, "HOSTED", False)
+            or getattr(settings, "DEMO", False)
+        ):
+            return False
+
+        return self.enable_ssh_gateway
 
     def send_mail(
         self,

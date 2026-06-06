@@ -9,7 +9,7 @@ from tacticalrmm.helpers import setup_nats_options
 logger = logging.getLogger("trmm")
 
 
-class SSHExec:
+class CmdProxy:
     def __init__(self, agent, session_id, command, shell="/bin/bash"):
         self.agent = agent
         self.session_id = session_id
@@ -18,6 +18,8 @@ class SSHExec:
         self.nc = None
         self.sub = None
         self._lock = asyncio.Lock()
+        self._done = asyncio.Event()
+        self._started = False
 
     async def start(self, output_cb):
         opts = setup_nats_options()
@@ -28,30 +30,34 @@ class SSHExec:
         async def handler(msg):
             try:
                 obj = msgpack.loads(msg.data)
-            except Exception:
+            except Exception as e:
+                logger.error(f"CmdProxy: failed to decode msg: {e}")
                 obj = msg.data
 
             if isinstance(obj, dict):
-                out = obj.get("line") or obj.get("output", b"")
                 done = obj.get("done", False)
                 ec = obj.get("exit_code")
+
+                if done:
+                    await output_cb("", done=True, exit_code=ec)
+                    return
+
+                out = obj.get("line") or obj.get("output", b"")
 
                 if isinstance(out, bytes):
                     out = out.decode("utf-8", errors="replace")
                 elif not isinstance(out, str):
                     out = str(out)
 
-                await output_cb(out, done=done, exit_code=ec)
-
-                if done:
-                    await self.stop()
+                if out:
+                    await output_cb(out, done=done, exit_code=ec)
             elif isinstance(obj, (bytes, bytearray)):
                 await output_cb(obj.decode("utf-8", errors="replace"), done=False)
             elif isinstance(obj, str):
                 await output_cb(obj, done=False)
 
         self.sub = await self.nc.subscribe(subj_out, cb=handler)
-
+        self._started = True
         await self._pub({
             "func": "rawcmd",
             "timeout": 60,
@@ -62,22 +68,24 @@ class SSHExec:
                 "cmd_id": cmd_id,
             },
             "run_as_user": False,
+            "id": 0,
         })
 
     async def _pub(self, p):
         async with self._lock:
             await self.nc.publish(self.agent.agent_id, msgpack.dumps(p))
+            await self.nc.flush()
 
     async def stop(self):
         if self.sub:
             try:
                 await self.sub.unsubscribe()
             except Exception as e:
-                logger.debug("SSHExec stop: failed to unsubscribe: %s", e)
+                logger.debug("CmdProxy stop: failed to unsubscribe: %s", e)
             self.sub = None
         if self.nc and not self.nc.is_closed:
             try:
                 await self.nc.close()
             except Exception as e:
-                logger.debug("SSHExec stop: failed to close NATS connection: %s", e)
+                logger.debug("CmdProxy stop: failed to close NATS connection: %s", e)
             self.nc = None

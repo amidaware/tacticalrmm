@@ -7,7 +7,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone as djangotime
 
-from tacticalrmm.ssh_server import start_ssh_server, _active_connections
+from tacticalrmm.gateway import start_gateway, _active_connections
+from core.utils import get_core_settings
 
 logger = logging.getLogger("trmm")
 
@@ -19,7 +20,7 @@ def _cleanup_orphan_sessions():
         closed_at=djangotime.now()
     )
     if count:
-        logger.info("SSH: closed %d orphaned session(s) from previous run", count)
+        logger.info("Gateway: closed %d orphaned session(s) from previous run", count)
     return count
 
 
@@ -28,31 +29,39 @@ async def _stats_loop(shutdown_event):
         try:
             await asyncio.wait_for(shutdown_event.wait(), timeout=300)
         except asyncio.TimeoutError:
-            logger.info("SSH gateway: %d active connection(s)", _active_connections)
+            logger.info("Gateway: %d active connection(s)", _active_connections)
 
 
 class Command(BaseCommand):
-    help = "Start the Tactical RMM SSH gateway server"
+    help = "Start the Tactical RMM gateway server"
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--port",
             type=int,
             default=getattr(settings, "SSH_SERVER_PORT", 2222),
-            help="SSH server port (default: 2222)",
+            help="Gateway port (default: 2222)",
         )
         parser.add_argument(
             "--host",
             type=str,
             default=getattr(settings, "SSH_SERVER_HOST", "0.0.0.0"),
-            help="SSH server bind address (default: 0.0.0.0)",
+            help="Gateway bind address (default: 0.0.0.0)",
         )
 
     def handle(self, *args, **options):
+        core = get_core_settings()
+        if not core.ssh_gateway_enabled:
+            self.stderr.write(
+                self.style.ERROR("Gateway is disabled in global settings. "
+                                  "Enable 'Enable SSH gateway' in Global Settings > General.")
+            )
+            return
+
         host = options["host"]
         port = options["port"]
 
-        self.stdout.write(self.style.SUCCESS(f"Starting SSH gateway on {host}:{port}"))
+        self.stdout.write(self.style.SUCCESS(f"Starting gateway on {host}:{port}"))
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -68,23 +77,23 @@ class Command(BaseCommand):
 
         try:
             loop.run_until_complete(_cleanup_orphan_sessions())
-            server = loop.run_until_complete(start_ssh_server(host=host, port=port))
+            server = loop.run_until_complete(start_gateway(host=host, port=port))
             server_ref.append(server)
             self.stdout.write(
-                self.style.SUCCESS(f"SSH gateway running on {host}:{port}")
+                self.style.SUCCESS(f"Gateway running on {host}:{port}")
             )
             loop.create_task(_stats_loop(shutdown_event))
             loop.run_forever()
         except KeyboardInterrupt:
             pass
         except Exception as e:
-            self.stderr.write(self.style.ERROR(f"Failed to start SSH server: {e}"))
+            self.stderr.write(self.style.ERROR(f"Failed to start gateway: {e}"))
             raise
         finally:
             self._do_shutdown(server_ref, loop, shutdown_event)
 
     async def _shutdown(self, server_ref, loop, shutdown_event):
-        logger.info("SSH gateway shutting down (signal)...")
+        logger.info("Gateway shutting down (signal)...")
         shutdown_event.set()
         if server_ref and server_ref[0]:
             server_ref[0].close()
@@ -96,7 +105,7 @@ class Command(BaseCommand):
     def _do_shutdown(self, server_ref, loop, shutdown_event):
         if shutdown_event.is_set():
             return
-        logger.info("SSH gateway shutting down...")
+        logger.info("Gateway shutting down...")
         shutdown_event.set()
         if server_ref and server_ref[0]:
             server_ref[0].close()

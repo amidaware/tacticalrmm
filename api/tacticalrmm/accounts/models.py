@@ -264,13 +264,7 @@ class SSHSession(BaseAuditModel):
 
     @staticmethod
     def serialize(obj):
-        from rest_framework.serializers import ModelSerializer, ReadOnlyField
-        class SSHSessionAuditSerializer(ModelSerializer):
-            username = ReadOnlyField(source="user.username")
-            agent_id = ReadOnlyField(source="agent.agent_id")
-            class Meta:
-                model = SSHSession
-                fields = ["session_id", "username", "agent_id", "remote_ip", "started_at", "closed_at"]
+        from .serializers import SSHSessionAuditSerializer
         return SSHSessionAuditSerializer(obj).data
 
 

@@ -9,7 +9,6 @@ logger = logging.getLogger("trmm")
 
 
 def _safe_task(coro, name=""):
-    """Create a task that logs exceptions if they fail."""
     task = asyncio.create_task(coro)
 
     def _log_exception(fut):

@@ -8,4 +8,4 @@ if not _log.handlers:
     _log.addHandler(_sh)
     _log.setLevel(logging.DEBUG)
 
-from .server import start_ssh_server, _active_connections, get_active_connections  # noqa: E402, F401
+from .server import start_gateway, _active_connections, get_active_connections  # noqa: E402, F401

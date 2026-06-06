@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 
 import asyncssh
 from django.utils import timezone as djangotime
@@ -15,6 +16,12 @@ from .exec import CmdProxy
 from .terminal import TerminalProxy
 
 logger = logging.getLogger("trmm")
+
+ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]|\x1b[()][AB012]|\x1b[>=]')
+
+
+def _strip_ansi(data):
+    return ANSI_ESCAPE.sub("", data)
 
 
 class RejectionHandler(asyncssh.SSHServerSession):
@@ -103,9 +110,10 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             try:
                 if isinstance(data, bytes):
                     data = data.decode("utf-8", errors="replace")
-                data = data.rstrip()
-                if self._chan and not self._chan.is_closing():
-                    self._chan.write(data)
+                data = _strip_ansi(data).rstrip()
+                if data:
+                    if self._chan and not self._chan.is_closing():
+                        self._chan.write(data)
                 if done:
                     self._exec_completed = True
                     asyncio.create_task(_audit_exec_command(
@@ -153,10 +161,13 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             role_name = self._user.role.name
         os_info = self._agent.operating_system or "Unknown"
         agent_ver = self._agent.version or "Unknown"
+        pubip = self._agent.public_ip or "N/A"
+        local_ips = self._agent.local_ips() or "N/A"
         self._chan.write(
-            f"\r\n\x1b[32mSSH session open on \x1b[1m{self._agent.hostname}\x1b[0m\x1b[32m "
+            f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [\x1b[1mRole: {role_name}\x1b[0m\x1b[32m]\x1b[0m\r\n"
+            f"\x1b[32mSSH session open on \x1b[1m{self._agent.hostname}\x1b[0m\x1b[32m "
             f"({os_info}), shell: {shell}, agent: {agent_ver}, via TRMM proxy\x1b[0m\r\n"
-            f"Role: {role_name}\r\n\r\n"
+            f"\x1b[32mpubip: {pubip}, local IPs: {local_ips}\x1b[0m\r\n\r\n"
         )
         asyncio.create_task(self._start_terminal())
         asyncio.create_task(
@@ -179,7 +190,8 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             try:
                 if isinstance(data, bytes):
                     data = data.decode("utf-8", errors="replace")
-                if self._chan and not self._chan.is_closing():
+                data = _strip_ansi(data)
+                if data and self._chan and not self._chan.is_closing():
                     self._chan.write(data)
                 if done:
                     asyncio.create_task(_close_session_and_audit(
@@ -242,7 +254,10 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                         asyncio.create_task(_audit_terminal_command(
                             self._user, self._agent, line.decode("utf-8", errors="replace"),
                         ))
-            asyncio.create_task(self._term.write(data))
+            try:
+                asyncio.create_task(self._term.write(data))
+            except Exception as e:
+                logger.error("Gateway terminal write failed: %s", e)
 
     def eof_received(self):
         if self._session_type == "exec" and not self._exec_completed:

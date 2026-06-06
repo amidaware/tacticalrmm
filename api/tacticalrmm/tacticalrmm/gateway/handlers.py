@@ -161,7 +161,11 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
         os_info = self._agent.operating_system or "Unknown"
         agent_ver = self._agent.version or "Unknown"
         pubip = self._agent.public_ip or "N/A"
-        local_ips = self._agent.local_ips() or "N/A"
+        local_ips_val = getattr(self._agent, 'local_ips', None)
+        if local_ips_val:
+            local_ips = str(local_ips_val)
+        else:
+            local_ips = "N/A"
         try:
             self._chan.write(
                 f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [\x1b[1mRole: {role_name}\x1b[0m\x1b[32m]\x1b[0m\r\n"

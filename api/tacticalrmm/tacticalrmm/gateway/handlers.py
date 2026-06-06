@@ -173,6 +173,11 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
         if self._term:
             asyncio.create_task(self._term.write(data))
 
+    def eof_received(self):
+        if self._session_type == "exec" and not self._exec_completed:
+            return False
+        return True
+
     def connection_lost(self, exc):
         if self._session_type == "exec" and not self._exec_completed:
             return

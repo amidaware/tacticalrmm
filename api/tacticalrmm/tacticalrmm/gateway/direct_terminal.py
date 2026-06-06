@@ -1,24 +1,19 @@
 import asyncio
 import logging
-import re
 
 import asyncssh
 from django.utils import timezone as djangotime
 
+from .constants import ANSI_ESCAPE, TERMINAL_MODES, WELCOME_TEMPLATE, _strip_ansi
 from .audit import (
     _audit_terminal_command,
     _close_session_and_audit,
     _record_session_and_audit,
 )
 from .terminal import TerminalProxy
+from .mixins import DataBuffer, get_local_ips, build_welcome_message
 
 logger = logging.getLogger("trmm")
-
-ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]|\x1b[()][AB012]|\x1b[>=]')
-
-
-def _strip_ansi(data):
-    return ANSI_ESCAPE.sub("", data)
 
 
 class DirectTerminalHandler(asyncssh.SSHServerSession):
@@ -62,19 +57,28 @@ class DirectTerminalHandler(asyncssh.SSHServerSession):
         self._session_type = "shell"
         shell = self._agent.effective_default_shell
         self._term = TerminalProxy(self._agent, self._session_id, shell)
-        role_name = "None"
-        if self._user.role:
-            role_name = self._user.role.name
+
+        role_name = self._user.role.name if self._user.role else None
         os_info = self._agent.operating_system or "Unknown"
         agent_ver = self._agent.version or "Unknown"
         pubip = self._agent.public_ip or "N/A"
-        local_ips = self._agent.local_ips() or "N/A"
-        self._chan.write(
-            f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [\x1b[1mRole: {role_name}\x1b[0m\x1b[32m]\x1b[0m\r\n"
-            f"\x1b[32mSSH session open on \x1b[1m{self._agent.hostname}\x1b[0m\x1b[32m "
-            f"({os_info}), shell: {shell}, agent: {agent_ver}, via TRMM proxy\x1b[0m\r\n"
-            f"\x1b[32mpubip: {pubip}, local IPs: {local_ips}\x1b[0m\r\n\r\n"
+        local_ips = get_local_ips(self._agent)
+
+        msg = build_welcome_message(
+            self._user.username,
+            role_name,
+            self._agent.hostname,
+            os_info,
+            shell,
+            agent_ver,
+            pubip,
+            local_ips,
         )
+        try:
+            self._chan.write(msg)
+        except Exception as e:
+            logger.error("Gateway terminal welcome write failed: %s", e)
+
         asyncio.create_task(self._start_terminal())
         asyncio.create_task(
             _record_session_and_audit(
@@ -129,31 +133,14 @@ class DirectTerminalHandler(asyncssh.SSHServerSession):
         return True
 
     def terminal_modes(self):
-        return {
-            asyncssh.VEOF: 4,
-            asyncssh.VINTR: 3,
-            asyncssh.VKILL: 21,
-            asyncssh.VQUIT: 28,
-            asyncssh.VSTART: 17,
-            asyncssh.VSTOP: 19,
-            asyncssh.VSUSP: 26,
-            asyncssh.VTIME: 0,
-            asyncssh.VMIN: 1,
-            asyncssh.ECHO: 0,
-            asyncssh.ECHOE: 0,
-            asyncssh.ECHOK: 0,
-            asyncssh.ECHOKE: 0,
-            asyncssh.ECHOCTL: 0,
-            asyncssh.ECHOPRT: 0,
-            asyncssh.ISIG: 1,
-            asyncssh.ICANON: 1,
-            asyncssh.IEXTEN: 1,
-            asyncssh.CTERMINAL: 0,
-        }
+        return TERMINAL_MODES
 
     def data_received(self, data, datatype):
         if self._term:
-            self._term_buf = getattr(self, "_term_buf", "") + data
+            original_data = data
+            if isinstance(data, str):
+                data = data.encode("utf-8", errors="replace")
+            self._term_buf = getattr(self, "_term_buf", b"") + data
             if b"\r" in self._term_buf or b"\n" in self._term_buf:
                 lines = self._term_buf.replace(b"\r\n", b"\n").replace(b"\r", b"\n").split(b"\n")
                 self._term_buf = lines.pop()
@@ -162,11 +149,10 @@ class DirectTerminalHandler(asyncssh.SSHServerSession):
                         asyncio.create_task(_audit_terminal_command(
                             self._user, self._agent, line.decode("utf-8", errors="replace"),
                         ))
-            if self._term:
-                try:
-                    asyncio.create_task(self._term.write(data))
-                except Exception as e:
-                    logger.error("Gateway terminal write error: %s", e)
+            try:
+                asyncio.create_task(self._term.write(original_data))
+            except Exception as e:
+                logger.error("Gateway terminal write error: %s", e)
 
     def eof_received(self):
         return False

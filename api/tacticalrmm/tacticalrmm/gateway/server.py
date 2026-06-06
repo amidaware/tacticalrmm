@@ -4,18 +4,23 @@ import os
 import uuid
 
 import asyncssh
-from asgiref.sync import sync_to_async
 from django.conf import settings
 
 from .audit import _audit_session_failed
 from .handlers import DirectSessionHandler, RejectionHandler
 from .menu import MenuSessionHandler
+from .permissions import (
+    _fingerprint,
+    _lookup_key,
+    _resolve_and_check,
+    _get_gateway_settings,
+)
 from .rate_limiter import _rate_limiter
-from .utils import _fingerprint, _lookup_key, _resolve_and_check, _get_gateway_settings
 
 logger = logging.getLogger("trmm")
 
 _active_connections = 0
+_active_connections_lock = asyncio.Lock()
 
 
 def get_active_connections() -> int:
@@ -140,6 +145,7 @@ class GatewayServer(asyncssh.SSHServer):
             self._ssh_key_fingerprint = ssh_key.fingerprint
 
             if username.lower() == "menu":
+                from asgiref.sync import sync_to_async
                 role = await sync_to_async(user.get_and_set_role_cache)()
                 if not user.is_superuser and not (role and getattr(role, "can_use_terminal", False)):
                     logger.warning(

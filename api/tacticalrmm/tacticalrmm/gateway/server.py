@@ -231,9 +231,9 @@ class GatewayServer(asyncssh.SSHServer):
                         ssh_key_type=self._ssh_key_type,
                         ssh_key_fingerprint=self._ssh_key_fingerprint,
                     )
-                    asyncio.create_task(audit)
                     return RejectionHandler(
                         "SSH gateway menu access is disabled by your administrator.\r\n",
+                        audit_coro=audit,
                     )
                 return MenuSessionHandler(
                     self._auth_user, self._session_id, self._remote_ip,

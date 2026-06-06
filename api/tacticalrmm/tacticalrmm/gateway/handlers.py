@@ -103,6 +103,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             try:
                 if isinstance(data, bytes):
                     data = data.decode("utf-8", errors="replace")
+                data = data.rstrip()
                 if self._chan and not self._chan.is_closing():
                     self._chan.write(data)
                 if done:
@@ -150,8 +151,12 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
         role_name = "None"
         if self._user.role:
             role_name = self._user.role.name
+        os_info = self._agent.operating_system or "Unknown"
+        agent_ver = self._agent.version or "Unknown"
         self._chan.write(
-            f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [Role: {role_name}]\x1b[0m\r\n\r\n"
+            f"\r\n\x1b[32mSSH session open on \x1b[1m{self._agent.hostname}\x1b[0m\x1b[32m "
+            f"({os_info}), shell: {shell}, agent: {agent_ver}, via TRMM proxy\x1b[0m\r\n"
+            f"Role: {role_name}\r\n\r\n"
         )
         asyncio.create_task(self._start_terminal())
         asyncio.create_task(
@@ -196,6 +201,8 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             self._chan.exit(1)
 
     def pty_requested(self, term_type, term_size, term_modes):
+        if not self._gateway_terminal_enabled:
+            return False
         self._terminal_type = term_type
         if term_size:
             self._terminal_cols, self._terminal_rows = term_size[0], term_size[1]

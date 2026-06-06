@@ -14,6 +14,17 @@ from .utils import _get_user_group, _resolve_and_check
 
 logger = logging.getLogger("trmm")
 
+TRMM_LOGO = """@@@@@@@@@
+    @@@@      @@@@
+   @@@          @@@
+  @@* @@@@@@@@@@ @@@
+  @@      @@      @@
+  @@    @ @@ @    @@
+  @@.  @@ @@ @@  @@@
+   @@@ @@ @@ @@ @@@
+    @@@@@ @@ @@@@@
+      @@@@@@@@@@"""
+
 
 @sync_to_async
 def _get_menu_agents(user):
@@ -196,8 +207,11 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     async def _show_clients(self):
         self._state = "client"
         clients = sorted(self._tree.keys())
-        lines = [
-            "",
+        logo_lines = TRMM_LOGO.split("\n")
+        lines = [""]
+        for l in logo_lines:
+            lines.append(f"\x1b[36m{l}\x1b[0m")
+        lines += [
             f"\x1b[1mTactical RMM Gateway\x1b[0m \x1b[2mv{settings.TRMM_VERSION}\x1b[0m",
             "\x1b[2mSelect a client to browse its agents\x1b[0m",
             "",

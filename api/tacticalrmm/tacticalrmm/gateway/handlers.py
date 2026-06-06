@@ -111,8 +111,11 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                 if isinstance(data, bytes):
                     data = data.decode("utf-8", errors="replace")
                 data = _strip_ansi(data).rstrip()
-                if data and self._chan and not self._chan.is_closing():
-                    self._chan.write(data)
+                if data:
+                    if not data.endswith('\n'):
+                        data += '\n'
+                    if self._chan and not self._chan.is_closing():
+                        self._chan.write(data)
                 if done:
                     self._exec_completed = True
                     asyncio.create_task(_audit_exec_command(

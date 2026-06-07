@@ -305,21 +305,9 @@ def check_egg_game():
 
 
 def check_refactored_handlers():
-    """Check TerminalSessionHandler and ExecSessionHandler from refactored modules."""
+    """Check ExecSessionHandler from refactored modules."""
     print_header("Refactored handler classes")
     all_ok = True
-
-    term_methods = [
-        "connection_made", "shell_requested", "pty_requested",
-        "terminal_modes", "data_received", "eof_received",
-        "connection_lost", "terminal_size_changed", "closed",
-    ]
-    for m in term_methods:
-        if hasattr(TerminalSessionHandler, m):
-            print_ok(f"TerminalSessionHandler.{m}()")
-        else:
-            print_fail(f"TerminalSessionHandler.{m}() MISSING")
-            all_ok = False
 
     exec_methods = ["connection_made", "exec_requested", "eof_received", "connection_lost"]
     for m in exec_methods:

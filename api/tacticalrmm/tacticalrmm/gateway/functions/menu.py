@@ -124,12 +124,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     def data_received(self, data, datatype):
         try:
             if self._active_func:
-                if isinstance(data, bytes):
-                    text = data.decode("utf-8", errors="replace")
-                else:
-                    text = data
-                for ch in text:
-                    self._active_func.handle_input(ch)
+                self._active_func.data_received(data, datatype)
                 return
             if self._state == "terminal":
                 if isinstance(data, bytes):
@@ -153,10 +148,6 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 text = data.decode("utf-8", errors="replace")
             else:
                 text = data
-            if self._state == "snake_gameover":
-                self._state = "client"
-                asyncio.create_task(self._show_clients())
-                return
             for ch in text:
                 asyncio.create_task(self._handle_char(ch))
         except Exception as e:
@@ -412,9 +403,32 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             child = await func_cls.launch(self)
             if child:
                 self._active_func = child
-        else:
-            await self._write(f"\r\nFunction '{cmd}' not available in menu.\r\n")
-            await self._show_current()
+            return
+        handler = func_cls(
+            self._user, self._session_id, self._remote_ip,
+            client_version=self._client_version,
+            ssh_key_name=self._ssh_key_name,
+            ssh_key_type=self._ssh_key_type,
+            ssh_key_fingerprint=self._ssh_key_fingerprint,
+        )
+        menu = self
+
+        class _Channel:
+            def write(self_, data):
+                menu._chan.write(data)
+            def exit(self_, code=0):
+                menu._active_func = None
+                asyncio.create_task(menu._show_clients())
+            def is_closing(self_):
+                return False
+            def get_extra_info(self_, *a, **kw):
+                return menu._chan.get_extra_info(*a, **kw)
+
+        handler._chan = _Channel()
+        handler.connection_made(handler._chan)
+        self._active_func = handler
+        if hasattr(handler, 'shell_requested'):
+            handler.shell_requested()
 
     async def _connect_to_agent(self, agent_id, hostname):
         from agents.models import Agent
@@ -465,7 +479,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 if self._chan and not self._chan.is_closing():
                     self._chan.write(data)
                 if done:
-                    self._chan.exit(exit_code or 0)
+                    await self._return_from_terminal()
             except Exception:
                 gw_log.error("Gateway menu output_cb error", exc_info=True)
 
@@ -664,7 +678,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         try:
             while True:
                 await asyncio.sleep(15)
-                if self._state in ("terminal", "snake", "snake_gameover"):
+                if self._active_func or self._state == "terminal":
                     continue
                 elapsed = (djangotime.now() - self._last_activity).total_seconds()
                 if elapsed >= timeout:

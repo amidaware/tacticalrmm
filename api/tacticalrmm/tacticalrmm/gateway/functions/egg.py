@@ -168,12 +168,6 @@ class EggGame:
 class Handler(asyncssh.SSHServerSession):
     name = "egg"
 
-    @classmethod
-    async def launch(cls, menu_handler):
-        game = EggGame(menu_handler, standalone=False)
-        await game.start()
-        return game
-
     def __init__(self, user, session_id, remote_ip,
                  client_version="", ssh_key_name="", ssh_key_type="",
                  ssh_key_fingerprint=""):

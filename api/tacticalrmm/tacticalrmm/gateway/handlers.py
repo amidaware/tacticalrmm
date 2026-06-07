@@ -22,15 +22,14 @@ class RejectionHandler(asyncssh.SSHServerSession):
 
     def connection_made(self, chan):
         self._chan = chan
-        chan.write(self._message.encode("utf-8", errors="replace"))
+        try:
+            self._chan.write(b"\r\n==DENIED==\r\n")
+            logger.error("GW_REJECTION: wrote denial data to channel")
+        except Exception as e:
+            logger.error("GW_REJECTION: write failed: %s", e)
         if self._audit_coro:
             asyncio.create_task(self._audit_coro)
-        asyncio.create_task(self._delayed_exit())
-
-    async def _delayed_exit(self):
-        await asyncio.sleep(0.1)
-        if self._chan and not self._chan.is_closing():
-            self._chan.exit(1)
+        chan.exit(1)
 
     def pty_requested(self, term_type, term_size, term_modes):
         return True

@@ -37,6 +37,7 @@ from tacticalrmm.gateway.constants import (
     TERMINAL_MODES, ANSI_ESCAPE, WELCOME_TEMPLATE,
 )
 from tacticalrmm.gateway.mixins import DataBuffer, BaseSessionMixin
+from tacticalrmm.gateway.handlers import deny, RejectionHandler
 
 
 def print_header(msg):
@@ -939,6 +940,89 @@ def check_direct_session_handler_full():
     return all_ok
 
 
+def check_error_module():
+    """Error module provides all expected error messages and deny helper."""
+    print_header("Error module coverage")
+    from tacticalrmm.gateway import error as err_mod
+    all_ok = True
+
+    # Every user-facing message ends with \r\n
+    user_msgs = ["DENIED_EXEC_DISABLED", "DENIED_TERMINAL_DISABLED",
+                 "DENIED_AGENT_PERMISSION", "DENIED_AGENT_NOT_FOUND_FMT",
+                 "DENIED_NO_AGENTS", "DENIED_NO_AGENTS_REFRESH", "GOODBYE"]
+    for name in user_msgs:
+        val = getattr(err_mod, name, None)
+        if val is None:
+            print_fail(f"error.{name} MISSING")
+            all_ok = False
+        elif isinstance(val, str) and val.endswith("\r\n"):
+            print_ok(f"error.{name} ends with CRLF")
+        else:
+            print_fail(f"error.{name} should end with CRLF (got: {repr(val[-10:])})")
+            all_ok = False
+
+    # Every audit reason is a non-empty string
+    audit_reasons = ["REASON_FUNCTION_NO_PERMISSION", "REASON_EXEC_DISABLED",
+                     "REASON_TERMINAL_DISABLED", "REASON_UNKNOWN_KEY",
+                     "REASON_INACTIVE_USER", "REASON_NO_PERMISSION",
+                     "REASON_AGENT_OFFLINE"]
+    for name in audit_reasons:
+        val = getattr(err_mod, name, None)
+        if val is None:
+            print_fail(f"error.{name} MISSING")
+            all_ok = False
+        elif isinstance(val, str) and len(val) > 0:
+            print_ok(f"error.{name} = '{val}'")
+        else:
+            print_fail(f"error.{name} should be a non-empty string")
+            all_ok = False
+
+    # Every log template contains %s placeholders
+    log_templates = ["LOG_FUNCTION_DENIED", "LOG_EXEC_DISABLED",
+                     "LOG_TERMINAL_DISABLED", "LOG_AGENT_DENIED",
+                     "LOG_AGENT_OFFLINE", "LOG_UNKNOWN_KEY", "LOG_INACTIVE_USER"]
+    for name in log_templates:
+        val = getattr(err_mod, name, None)
+        if val is None:
+            print_fail(f"error.{name} MISSING")
+            all_ok = False
+        elif isinstance(val, str) and "%s" in val:
+            print_ok(f"error.{name} contains %%s")
+        else:
+            print_fail(f"error.{name} should contain %%s placeholder")
+            all_ok = False
+
+    # deny() returns RejectionHandler with the message
+    rh = deny("test message\r\n")
+    from tacticalrmm.gateway.handlers import RejectionHandler
+    if isinstance(rh, RejectionHandler):
+        print_ok("deny() returns RejectionHandler")
+    else:
+        print_fail(f"deny() returned {type(rh).__name__}")
+        all_ok = False
+    if rh._message == "test message\r\n":
+        print_ok("deny() passes message to RejectionHandler")
+    else:
+        print_fail("deny() did not set correct message")
+        all_ok = False
+    if rh._audit_coro is None:
+        print_ok("deny() without reason has no audit coroutine")
+    else:
+        print_fail("deny() without reason should not create audit coroutine")
+        all_ok = False
+
+    # deny() with audit reason creates coroutine
+    rh2 = deny("err\r\n", reason="test_reason", audit_user="user",
+               audit_agent_id="agent", audit_remote_ip="1.2.3.4")
+    if rh2._audit_coro is not None:
+        print_ok("deny() with reason creates audit coroutine")
+    else:
+        print_fail("deny() with reason should create audit coroutine")
+        all_ok = False
+
+    return all_ok
+
+
 def check_constants_functional():
     """Functional tests for constants module helpers."""
     print_header("Constants functional tests")
@@ -1001,7 +1085,6 @@ def check_constants_functional():
 def check_mixins_functional():
     """Functional tests for mixins: DataBuffer, BaseSessionMixin."""
     print_header("Mixins functional tests")
-    from tacticalrmm.gateway.mixins import DataBuffer, BaseSessionMixin
     all_ok = True
 
     db = DataBuffer()
@@ -1161,6 +1244,7 @@ def main():
     results.append(("Constants functional", check_constants_functional()))
     results.append(("Mixins", check_mixins_functional()))
     results.append(("Permissions functions", check_permissions_functions()))
+    results.append(("Error module", check_error_module()))
 
     # Run async checks
     try:

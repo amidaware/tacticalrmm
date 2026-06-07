@@ -6,8 +6,19 @@ import asyncssh
 from django.conf import settings
 
 from .audit import _audit_session_failed
+from .error import (
+    LOG_FUNCTION_DENIED,
+    LOG_AGENT_DENIED,
+    LOG_AGENT_OFFLINE,
+    LOG_UNKNOWN_KEY,
+    LOG_INACTIVE_USER,
+    REASON_FUNCTION_NO_PERMISSION,
+    REASON_NO_PERMISSION,
+    REASON_UNKNOWN_KEY,
+    REASON_INACTIVE_USER,
+)
 from .functions import FUNCTION_REGISTRY
-from .handlers import DirectSessionHandler, RejectionHandler
+from .handlers import DirectSessionHandler
 from .logger import gw_log
 from .permissions import (
     _fingerprint,
@@ -36,7 +47,6 @@ class GatewayServer(asyncssh.SSHServer):
         self._ssh_key_name = ""
         self._ssh_key_type = ""
         self._ssh_key_fingerprint = ""
-        self._is_menu = False
         self._conn_counted = False
 
     def connection_made(self, conn):
@@ -67,11 +77,9 @@ class GatewayServer(asyncssh.SSHServer):
     async def begin_auth(self, username):
         self._auth_user = None
         self._auth_agent = None
-        self._is_menu = False
         self._is_function = False
         self._function_handler_cls = None
         self._session_id = uuid.uuid4().hex
-        self._gateway_menu_enabled = True
         self._gateway_exec_enabled = True
         self._gateway_terminal_enabled = True
         self._gateway_session_timeout = 300
@@ -80,7 +88,6 @@ class GatewayServer(asyncssh.SSHServer):
         try:
             core = await _get_gateway_settings()
             if core:
-                self._gateway_menu_enabled = core.ssh_gateway_menu_enabled
                 self._gateway_exec_enabled = core.ssh_gateway_exec_enabled
                 self._gateway_terminal_enabled = core.ssh_gateway_terminal_enabled
                 self._gateway_session_timeout = core.ssh_gateway_session_timeout
@@ -117,13 +124,13 @@ class GatewayServer(asyncssh.SSHServer):
 
             ssh_key = await _lookup_key(fp)
             if ssh_key is None:
-                gw_log.warning("Gateway: unknown key %s from %s", fp, self._remote_ip)
+                gw_log.warning(LOG_UNKNOWN_KEY, fp, self._remote_ip)
                 asyncio.create_task(
                     _audit_session_failed(
                         username=username,
                         agent_id=username,
                         remote_ip=self._remote_ip,
-                        reason="unknown_key",
+                        reason=REASON_UNKNOWN_KEY,
                         ssh_key_fingerprint=fp,
                     )
                 )
@@ -131,15 +138,13 @@ class GatewayServer(asyncssh.SSHServer):
 
             user = ssh_key.user
             if not user.is_active or user.block_dashboard_login:
-                gw_log.warning(
-                    "Gateway: inactive user %s from %s", user.username, self._remote_ip
-                )
+                gw_log.warning(LOG_INACTIVE_USER, user.username, self._remote_ip)
                 asyncio.create_task(
                     _audit_session_failed(
                         username=user.username,
                         agent_id=username,
                         remote_ip=self._remote_ip,
-                        reason="inactive_user",
+                        reason=REASON_INACTIVE_USER,
                         ssh_key_name=ssh_key.name,
                         ssh_key_type=ssh_key.key_type,
                         ssh_key_fingerprint=ssh_key.fingerprint,
@@ -151,51 +156,19 @@ class GatewayServer(asyncssh.SSHServer):
             self._ssh_key_type = ssh_key.key_type
             self._ssh_key_fingerprint = ssh_key.fingerprint
 
-            if username.lower() == "menu":
-                from asgiref.sync import sync_to_async
-                role = await sync_to_async(user.get_and_set_role_cache)()
-                if not user.is_superuser and not (role and getattr(role, "can_ssh_use_functions", False)):
-                    gw_log.warning(
-                        "Gateway: menu denied for user=%s from %s",
-                        user.username, self._remote_ip,
-                    )
-                    asyncio.create_task(
-                        _audit_session_failed(
-                            username=user.username,
-                            agent_id=username,
-                            remote_ip=self._remote_ip,
-                            reason="menu_no_permission",
-                            ssh_key_name=ssh_key.name,
-                            ssh_key_type=ssh_key.key_type,
-                            ssh_key_fingerprint=ssh_key.fingerprint,
-                        )
-                    )
-                    return False
-                self._auth_user = user
-                self._auth_agent = None
-                self._is_menu = True
-                gw_log.info(
-                    "Gateway: menu session user=%s key=%s from %s",
-                    user.username, ssh_key.name, self._remote_ip,
-                )
-                return True
-
             func_username = username.lower()
             if func_username in FUNCTION_REGISTRY:
                 from asgiref.sync import sync_to_async
                 role = await sync_to_async(user.get_and_set_role_cache)()
                 can_use = getattr(role, "can_ssh_use_functions", False) if role else False
                 if not user.is_superuser and not can_use:
-                    gw_log.warning(
-                        "Gateway: function %s denied for user=%s from %s",
-                        func_username, user.username, self._remote_ip,
-                    )
+                    gw_log.warning(LOG_FUNCTION_DENIED, func_username, user.username, self._remote_ip)
                     asyncio.create_task(
                         _audit_session_failed(
                             username=user.username,
                             agent_id=username,
                             remote_ip=self._remote_ip,
-                            reason="function_no_permission",
+                            reason=REASON_FUNCTION_NO_PERMISSION,
                             ssh_key_name=ssh_key.name,
                             ssh_key_type=ssh_key.key_type,
                             ssh_key_fingerprint=ssh_key.fingerprint,
@@ -214,16 +187,13 @@ class GatewayServer(asyncssh.SSHServer):
 
             agent = await _resolve_and_check(user, username)
             if agent is None:
-                gw_log.warning(
-                    "Gateway: denied user=%s agent=%s from %s",
-                    user.username, username, self._remote_ip,
-                )
+                gw_log.warning(LOG_AGENT_DENIED, user.username, username, self._remote_ip)
                 asyncio.create_task(
                     _audit_session_failed(
                         username=user.username,
                         agent_id=username,
                         remote_ip=self._remote_ip,
-                        reason="access_denied_no_permission",
+                        reason=REASON_NO_PERMISSION,
                         ssh_key_name=ssh_key.name,
                         ssh_key_type=ssh_key.key_type,
                         ssh_key_fingerprint=ssh_key.fingerprint,
@@ -232,16 +202,13 @@ class GatewayServer(asyncssh.SSHServer):
                 return False
 
             if agent.status != "online":
-                gw_log.warning(
-                    "Gateway: denied user=%s agent=%s from %s reason=agent_%s",
-                    user.username, username, self._remote_ip, agent.status,
-                )
+                gw_log.warning(LOG_AGENT_OFFLINE, user.username, username, self._remote_ip, agent.status)
                 asyncio.create_task(
                     _audit_session_failed(
                         username=user.username,
                         agent_id=username,
                         remote_ip=self._remote_ip,
-                        reason=f"agent_{agent.status}",
+                        reason=REASON_AGENT_OFFLINE,
                         ssh_key_name=ssh_key.name,
                         ssh_key_type=ssh_key.key_type,
                         ssh_key_fingerprint=ssh_key.fingerprint,
@@ -262,31 +229,6 @@ class GatewayServer(asyncssh.SSHServer):
 
     def session_requested(self):
         try:
-            if self._is_menu:
-                if not self._auth_user:
-                    return None
-                if not self._gateway_menu_enabled:
-                    gw_log.warning("Gateway: menu denied (disabled) for %s", self._remote_ip)
-                    audit = _audit_session_failed(
-                        username=self._auth_user.username,
-                        agent_id="menu",
-                        remote_ip=self._remote_ip,
-                        reason="menu_disabled",
-                        ssh_key_name=self._ssh_key_name,
-                        ssh_key_type=self._ssh_key_type,
-                        ssh_key_fingerprint=self._ssh_key_fingerprint,
-                    )
-                    return RejectionHandler(
-                        "SSH gateway menu access is disabled by your administrator.\r\n",
-                        audit_coro=audit,
-                    )
-                return FUNCTION_REGISTRY["menu"](
-                    self._auth_user, self._session_id, self._remote_ip,
-                    client_version=self._client_version,
-                    ssh_key_name=self._ssh_key_name,
-                    ssh_key_type=self._ssh_key_type,
-                    ssh_key_fingerprint=self._ssh_key_fingerprint,
-                )
             if self._is_function:
                 if not self._auth_user or not self._function_handler_cls:
                     return None

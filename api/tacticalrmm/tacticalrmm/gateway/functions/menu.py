@@ -6,6 +6,13 @@ from django.conf import settings
 from django.utils import timezone as djangotime
 
 from ..audit import _close_session_and_audit, _record_session_and_audit
+from ..error import (
+    DENIED_AGENT_PERMISSION,
+    DENIED_AGENT_NOT_FOUND_FMT,
+    DENIED_NO_AGENTS,
+    DENIED_NO_AGENTS_REFRESH,
+    GOODBYE,
+)
 from ..handlers import RejectionHandler
 from ..logger import gw_log
 from ..terminal import TerminalProxy
@@ -199,10 +206,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     async def _enter_menu(self):
         self._tree = await _get_menu_agents(self._user)
         if not self._tree:
-            await self._write(
-                "\r\nNo agents available. You don't have permission "
-                "to access any agents, or no agents exist.\r\n"
-            )
+            await self._write(DENIED_NO_AGENTS)
             self._chan.exit(1)
             return
         group = await _get_user_group(self._user) or "None"
@@ -338,7 +342,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
 
             if ch in ("q", "Q", "\x03"):
                 self._buf = ""
-                await self._write("\r\nGoodbye.\r\n")
+                await self._write(GOODBYE)
                 self._chan.exit(0)
                 return
 
@@ -370,7 +374,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 await self._write("\r\nRefreshing...\r\n")
                 self._tree = await _get_menu_agents(self._user)
                 if not self._tree:
-                    await self._write("\r\nNo agents available.\r\n")
+                    await self._write(DENIED_NO_AGENTS_REFRESH)
                     self._chan.exit(1)
                     return
                 if self._state in ("site", "agent") and self._menu_client not in self._tree:
@@ -441,8 +445,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         agent = await _resolve_and_check(self._user, agent_id)
         if agent is None:
             await self._write(
-                f"\r\n\x1b[31mAccess denied: you don't have permission "
-                f"to access agent {hostname}\x1b[0m\r\n"
+                f"\r\n{DENIED_AGENT_PERMISSION}"
             )
             return
 
@@ -451,7 +454,9 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 lambda: Agent.objects.get(agent_id=agent_id)
             )()
         except Agent.DoesNotExist:
-            await self._write(f"\r\nAgent {agent_id} not found.\r\n")
+            await self._write(
+                f"\r\n{DENIED_AGENT_NOT_FOUND_FMT.format(agent_id=agent_id, hostname=hostname)}"
+            )
             return
 
         self._selected_agent = agent

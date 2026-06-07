@@ -5,6 +5,14 @@ from django.utils import timezone as djangotime
 
 from .audit import _audit_session_failed, _audit_exec_command, _audit_terminal_command, _close_session_and_audit, _record_session_and_audit
 from .constants import ANSI_ESCAPE, TERMINAL_MODES, _strip_ansi
+from .error import (
+    DENIED_EXEC_DISABLED,
+    DENIED_TERMINAL_DISABLED,
+    LOG_EXEC_DISABLED,
+    LOG_TERMINAL_DISABLED,
+    REASON_EXEC_DISABLED,
+    REASON_TERMINAL_DISABLED,
+)
 from .exec import CmdProxy
 from .logger import gw_log
 from .terminal import TerminalProxy, start_terminal_session
@@ -45,6 +53,23 @@ class RejectionHandler(asyncssh.SSHServerSession):
 
     def closed(self):
         pass
+
+
+def deny(message, reason=None, audit_user=None, audit_agent_id=None,
+         audit_remote_ip=None, ssh_key_name="", ssh_key_type="",
+         ssh_key_fingerprint=""):
+    audit_coro = None
+    if reason:
+        audit_coro = _audit_session_failed(
+            username=audit_user or "",
+            agent_id=audit_agent_id or "",
+            remote_ip=audit_remote_ip or "",
+            reason=reason,
+            ssh_key_name=ssh_key_name,
+            ssh_key_type=ssh_key_type,
+            ssh_key_fingerprint=ssh_key_fingerprint,
+        )
+    return RejectionHandler(message, audit_coro=audit_coro)
 
 
 class DirectSessionHandler(asyncssh.SSHServerSession):
@@ -92,17 +117,14 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def exec_requested(self, command):
         if not self._gateway_exec_enabled:
-            gw_log.warning("Gateway: exec denied (disabled) user=%s agent=%s from %s",
+            gw_log.warning(LOG_EXEC_DISABLED,
                            self._user.username, self._agent.agent_id, self._remote_ip)
-            audit = _audit_session_failed(
-                username=self._user.username, agent_id=self._agent.agent_id,
-                remote_ip=self._remote_ip, reason="exec_disabled",
+            return deny(
+                DENIED_EXEC_DISABLED, reason=REASON_EXEC_DISABLED,
+                audit_user=self._user.username, audit_agent_id=self._agent.agent_id,
+                audit_remote_ip=self._remote_ip,
                 ssh_key_name=self._ssh_key_name, ssh_key_type=self._ssh_key_type,
                 ssh_key_fingerprint=self._ssh_key_fingerprint,
-            )
-            return RejectionHandler(
-                "SSH gateway exec access is disabled by your administrator.\r\n",
-                audit_coro=audit,
             )
         self._exec_cmd = command
         self._session_type = "exec"
@@ -150,7 +172,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
         if not self._gateway_terminal_enabled:
             asyncio.create_task(_audit_session_failed(
                 username=self._user.username, agent_id=self._agent.agent_id,
-                remote_ip=self._remote_ip, reason="terminal_disabled",
+                remote_ip=self._remote_ip, reason=REASON_TERMINAL_DISABLED,
                 ssh_key_name=self._ssh_key_name, ssh_key_type=self._ssh_key_type,
                 ssh_key_fingerprint=self._ssh_key_fingerprint,
             ))

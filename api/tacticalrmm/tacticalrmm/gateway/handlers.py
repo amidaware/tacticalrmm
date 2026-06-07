@@ -19,7 +19,6 @@ class RejectionHandler(asyncssh.SSHServerSession):
         self._message = message
         self._audit_coro = audit_coro
         self._chan = None
-        self._rejected = False
 
     def connection_made(self, chan):
         self._chan = chan
@@ -144,6 +143,18 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             except Exception:
                 pass
 
+    def pty_requested(self, term_type, term_size, term_modes):
+        if not self._gateway_terminal_enabled:
+            return True
+        self._terminal_type = term_type
+        if term_size:
+            self._terminal_cols, self._terminal_rows = term_size[0], term_size[1]
+        self._session_type = "shell"
+        return True
+
+    def terminal_modes(self):
+        return TERMINAL_MODES
+
     def shell_requested(self):
         if not self._gateway_terminal_enabled:
             logger.warning("Gateway: shell denied (disabled) user=%s agent=%s from %s",
@@ -158,6 +169,8 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                 "SSH gateway terminal access is disabled by your administrator.\r\n",
                 audit_coro=audit,
             )
+        self._session_type = "shell"
+        asyncio.create_task(self._start_terminal())
         return True
 
     async def _start_terminal(self):
@@ -184,19 +197,6 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                 self._chan.exit(1)
             except Exception:
                 pass
-
-    def pty_requested(self, term_type, term_size, term_modes):
-        if not self._gateway_terminal_enabled:
-            return False
-        self._terminal_type = term_type
-        if term_size:
-            self._terminal_cols, self._terminal_rows = term_size[0], term_size[1]
-        self._session_type = "shell"
-        asyncio.create_task(self._start_terminal())
-        return True
-
-    def terminal_modes(self):
-        return TERMINAL_MODES
 
     def data_received(self, data, datatype):
         if self._term:

@@ -2,6 +2,8 @@ import importlib
 import os
 import sys
 
+import asyncssh
+
 FUNCTION_REGISTRY = {}
 
 _functions_dir = os.path.dirname(__file__)
@@ -22,9 +24,17 @@ def load_functions():
 
         handler = getattr(mod, "Handler", None)
         if handler is None:
+            for name in dir(mod):
+                obj = getattr(mod, name)
+                if isinstance(obj, type) and issubclass(obj, asyncssh.SSHServerSession) and obj is not asyncssh.SSHServerSession:
+                    handler = obj
+                    break
+        if handler is None:
             continue
 
-        func_name = getattr(handler, "name", None) or modname
+        func_name = getattr(handler, "name", None)
+        if not func_name:
+            continue
         FUNCTION_REGISTRY[func_name.lower()] = handler
 
 

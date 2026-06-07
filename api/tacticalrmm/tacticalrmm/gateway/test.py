@@ -1221,16 +1221,17 @@ def check_egg_game_mechanics():
         print_fail("EggGame _snake_place_food returned invalid")
         all_ok = False
 
-    # Direction reversal should be prevented
+    # Direction change allowed (not reversal)
     game._snake_dir = (0, 1)
-    game.handle_input("a")  # left
-    if game._snake_dir == (0, -1):
+    game.handle_input("w")  # up, not reverse of right
+    if game._snake_dir == (-1, 0):
         print_ok("EggGame handle_input changes direction")
     else:
         print_fail(f"EggGame handle_input direction is {game._snake_dir}")
         all_ok = False
-    game.handle_input("d")  # right = reverse of left
-    if game._snake_dir == (0, -1):
+    # Direction reversal (down) should be prevented
+    game.handle_input("s")  # down = reverse of up
+    if game._snake_dir == (-1, 0):
         print_ok("EggGame prevents reversing direction")
     else:
         print_fail("EggGame allowed reverse direction")

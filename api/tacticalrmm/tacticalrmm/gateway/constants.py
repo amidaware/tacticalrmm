@@ -9,6 +9,26 @@ def _strip_ansi(data):
     return ANSI_ESCAPE.sub("", data)
 
 
+def get_local_ips(agent):
+    local_ips_val = getattr(agent, 'local_ips', None)
+    if local_ips_val:
+        return str(local_ips_val)
+    return "N/A"
+
+
+def build_welcome_message(username, role_name, hostname, os_info, shell, agent_ver, pubip, local_ips):
+    return WELCOME_TEMPLATE.format(
+        username=username,
+        role=role_name or "None",
+        hostname=hostname,
+        os_info=os_info,
+        shell=shell,
+        agent_ver=agent_ver,
+        pubip=pubip,
+        local_ips=local_ips,
+    )
+
+
 TERMINAL_MODES = {
     4: 4,
     3: 3,

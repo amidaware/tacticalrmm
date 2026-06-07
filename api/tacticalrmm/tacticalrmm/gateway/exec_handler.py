@@ -23,6 +23,10 @@ async def run_exec(user, agent, session_id, command, output_cb):
     await exec_proxy.start(output_cb)
 
 
+async def run_terminal(term, output_cb):
+    await term.start(output_cb)
+
+
 class ExecSessionHandler(asyncssh.SSHServerSession):
     def __init__(self, user, agent, session_id, command, remote_ip,
                  client_version="", ssh_key_name="", ssh_key_type="",

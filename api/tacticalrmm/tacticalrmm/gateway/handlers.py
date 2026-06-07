@@ -19,13 +19,27 @@ class RejectionHandler(asyncssh.SSHServerSession):
         self._message = message
         self._audit_coro = audit_coro
         self._chan = None
+        self._rejected = False
 
     def connection_made(self, chan):
         self._chan = chan
         chan.write(self._message.encode("utf-8", errors="replace"))
         if self._audit_coro:
             asyncio.create_task(self._audit_coro)
-        chan.exit(1)
+        asyncio.get_event_loop().call_soon(self._delayed_exit)
+
+    def _delayed_exit(self):
+        if self._chan and not self._chan.is_closing():
+            self._chan.exit(1)
+
+    def pty_requested(self, term_type, term_size, term_modes):
+        return True
+
+    def shell_requested(self):
+        return True
+
+    def exec_requested(self, command):
+        return True
 
     def eof_received(self):
         return False

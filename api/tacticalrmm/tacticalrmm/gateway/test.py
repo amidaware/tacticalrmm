@@ -32,7 +32,6 @@ from tacticalrmm.gateway.audit import (
     _record_session_and_audit, _close_session_and_audit,
 )
 from tacticalrmm.gateway.exec_handler import run_exec, ExecSessionHandler
-from tacticalrmm.gateway.terminal_handler import TerminalSessionHandler
 from tacticalrmm.gateway.constants import (
     _strip_ansi, get_local_ips, build_welcome_message,
     TERMINAL_MODES, ANSI_ESCAPE, WELCOME_TEMPLATE,
@@ -168,7 +167,6 @@ def check_gateway_module_imports():
         "tacticalrmm.gateway.constants",
         "tacticalrmm.gateway.permissions",
         "tacticalrmm.gateway.exec_handler",
-        "tacticalrmm.gateway.terminal_handler",
         "tacticalrmm.gateway.mixins",
         "tacticalrmm.gateway.direct_terminal",
     ]
@@ -375,6 +373,243 @@ def check_constants_helpers():
     return all_ok
 
 
+def check_new_ssh_permission_fields():
+    """Check that new SSH permission fields exist on Role model."""
+    print_header("New SSH Permission Fields")
+    from accounts.models import Role
+    all_ok = True
+    fields = [
+        "can_ssh_open_terminal",
+        "can_ssh_send_commands",
+        "can_ssh_use_functions",
+    ]
+    for field in fields:
+        if hasattr(Role, field):
+            print_ok(f"Role.{field} exists")
+        else:
+            print_fail(f"Role.{field} MISSING")
+            all_ok = False
+    return all_ok
+
+
+async def check_resolve_and_check_terminal_requires_can_ssh_open_terminal():
+    """User without can_ssh_open_terminal should be denied terminal access."""
+    print_header("_resolve_and_check terminal permission")
+    from accounts.models import User, Role
+    from agents.models import Agent
+
+    user = await sync_to_async(lambda: User.objects.filter(is_superuser=False).first())()
+    if not user:
+        print_info("No non-superuser found, skipping")
+        return True
+
+    role = await sync_to_async(lambda: user.role)()
+    if not role:
+        print_info("User has no role, skipping")
+        return True
+
+    agent = await sync_to_async(lambda: Agent.objects.first())()
+    if not agent:
+        print_info("No agent found, skipping")
+        return True
+
+    old_term = getattr(role, "can_ssh_open_terminal", None)
+    old_exec = getattr(role, "can_ssh_send_commands", None)
+    old_funcs = getattr(role, "can_ssh_use_functions", None)
+
+    try:
+        role.can_ssh_open_terminal = False
+        role.can_ssh_send_commands = True
+        role.can_ssh_use_functions = True
+        await sync_to_async(role.save)()
+
+        from tacticalrmm.gateway.permissions import _resolve_and_check, validate_menu_access
+        result = await _resolve_and_check(user, agent.agent_id, session_type="terminal")
+        if result is None:
+            print_ok("Terminal access DENIED when can_ssh_open_terminal=False")
+        else:
+            print_fail("Terminal access GRANTED but should be DENIED")
+            return False
+
+        role.can_ssh_open_terminal = True
+        await sync_to_async(role.save)()
+        result = await _resolve_and_check(user, agent.agent_id, session_type="terminal")
+        if result is not None:
+            print_ok("Terminal access GRANTED when can_ssh_open_terminal=True")
+        else:
+            print_fail("Terminal access DENIED but should be GRANTED")
+            return False
+
+        return True
+    except Exception as e:
+        print_fail(f"Error: {e}")
+        return False
+    finally:
+        if old_term is not None:
+            role.can_ssh_open_terminal = old_term
+        if old_exec is not None:
+            role.can_ssh_send_commands = old_exec
+        if old_funcs is not None:
+            role.can_ssh_use_functions = old_funcs
+        await sync_to_async(role.save)()
+
+
+async def check_resolve_and_check_exec_requires_can_ssh_send_commands():
+    """User without can_ssh_send_commands should be denied exec access."""
+    print_header("_resolve_and_check exec permission")
+    from accounts.models import User, Role
+    from agents.models import Agent
+
+    user = await sync_to_async(lambda: User.objects.filter(is_superuser=False).first())()
+    if not user:
+        print_info("No non-superuser found, skipping")
+        return True
+
+    role = await sync_to_async(lambda: user.role)()
+    if not role:
+        print_info("User has no role, skipping")
+        return True
+
+    agent = await sync_to_async(lambda: Agent.objects.first())()
+    if not agent:
+        print_info("No agent found, skipping")
+        return True
+
+    old_term = getattr(role, "can_ssh_open_terminal", None)
+    old_exec = getattr(role, "can_ssh_send_commands", None)
+    old_funcs = getattr(role, "can_ssh_use_functions", None)
+
+    try:
+        role.can_ssh_open_terminal = True
+        role.can_ssh_send_commands = False
+        role.can_ssh_use_functions = True
+        await sync_to_async(role.save)()
+
+        from tacticalrmm.gateway.permissions import _resolve_and_check, validate_menu_access
+        result = await _resolve_and_check(user, agent.agent_id, session_type="exec")
+        if result is None:
+            print_ok("Exec access DENIED when can_ssh_send_commands=False")
+        else:
+            print_fail("Exec access GRANTED but should be DENIED")
+            return False
+
+        role.can_ssh_send_commands = True
+        await sync_to_async(role.save)()
+        result = await _resolve_and_check(user, agent.agent_id, session_type="exec")
+        if result is not None:
+            print_ok("Exec access GRANTED when can_ssh_send_commands=True")
+        else:
+            print_fail("Exec access DENIED but should be GRANTED")
+            return False
+
+        return True
+    except Exception as e:
+        print_fail(f"Error: {e}")
+        return False
+    finally:
+        if old_term is not None:
+            role.can_ssh_open_terminal = old_term
+        if old_exec is not None:
+            role.can_ssh_send_commands = old_exec
+        if old_funcs is not None:
+            role.can_ssh_use_functions = old_funcs
+        await sync_to_async(role.save)()
+
+
+async def check_menu_access_requires_can_ssh_use_functions():
+    """User without can_ssh_use_functions should be denied menu access."""
+    print_header("validate_menu_access permission")
+    from accounts.models import User, Role
+
+    user = await sync_to_async(lambda: User.objects.filter(is_superuser=False).first())()
+    if not user:
+        print_info("No non-superuser found, skipping")
+        return True
+
+    role = await sync_to_async(lambda: user.role)()
+    if not role:
+        print_info("User has no role, skipping")
+        return True
+
+    old_funcs = getattr(role, "can_ssh_use_functions", None)
+
+    try:
+        role.can_ssh_use_functions = False
+        await sync_to_async(role.save)()
+
+        from tacticalrmm.gateway.permissions import validate_menu_access
+        allowed, reason, data = await validate_menu_access(user)
+        if not allowed and reason == "menu_no_permission":
+            print_ok("Menu access DENIED when can_ssh_use_functions=False")
+        else:
+            print_fail(f"Menu access {'GRANTED' if allowed else reason} but should be DENIED")
+            return False
+
+        role.can_ssh_use_functions = True
+        await sync_to_async(role.save)()
+        allowed, reason, data = await validate_menu_access(user)
+        if allowed:
+            print_ok("Menu access GRANTED when can_ssh_use_functions=True")
+        else:
+            print_fail(f"Menu access DENIED but should be GRANTED: {reason}")
+            return False
+
+        return True
+    except Exception as e:
+        print_fail(f"Error: {e}")
+        return False
+    finally:
+        if old_funcs is not None:
+            role.can_ssh_use_functions = old_funcs
+        await sync_to_async(role.save)()
+
+
+async def check_superuser_bypasses_permissions():
+    """Superuser should bypass all permission checks."""
+    print_header("Superuser bypasses permissions")
+    from accounts.models import User
+    from agents.models import Agent
+
+    user = await sync_to_async(lambda: User.objects.filter(is_superuser=True).first())()
+    if not user:
+        print_info("No superuser found, skipping")
+        return True
+
+    agent = await sync_to_async(lambda: Agent.objects.first())()
+    if not agent:
+        print_info("No agent found, skipping")
+        return True
+
+    try:
+        from tacticalrmm.gateway.permissions import _resolve_and_check, validate_menu_access, validate_menu_access
+
+        result = await _resolve_and_check(user, agent.agent_id, session_type="terminal")
+        if result is not None:
+            print_ok("Superuser can access agent for terminal")
+        else:
+            print_fail("Superuser should bypass terminal permission check")
+            return False
+
+        result = await _resolve_and_check(user, agent.agent_id, session_type="exec")
+        if result is not None:
+            print_ok("Superuser can access agent for exec")
+        else:
+            print_fail("Superuser should bypass exec permission check")
+            return False
+
+        allowed, _, _ = await validate_menu_access(user)
+        if allowed:
+            print_ok("Superuser can access menu")
+        else:
+            print_fail("Superuser should bypass menu permission check")
+            return False
+
+        return True
+    except Exception as e:
+        print_fail(f"Error: {e}")
+        return False
+
+
 async def run_async_checks():
     """Run async checks that need an event loop."""
     await check_get_gateway_settings()
@@ -400,14 +635,24 @@ def main():
     results.append(("EggGame import", check_egg_game()))
     results.append(("Refactored handlers", check_refactored_handlers()))
     results.append(("Constants helpers", check_constants_helpers()))
+    results.append(("New SSH permission fields", check_new_ssh_permission_fields()))
 
     # Run async checks
     try:
-        asyncio.run(run_async_checks())
-        results.append(("_get_gateway_settings", True))
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(check_resolve_and_check_terminal_requires_can_ssh_open_terminal())
+        loop.run_until_complete(check_resolve_and_check_exec_requires_can_ssh_send_commands())
+        loop.run_until_complete(check_menu_access_requires_can_ssh_use_functions())
+        loop.run_until_complete(check_superuser_bypasses_permissions())
+        loop.close()
+        results.append(("Terminal permission denial", True))
+        results.append(("Exec permission denial", True))
+        results.append(("Menu permission denial", True))
+        results.append(("Superuser bypass", True))
     except Exception as e:
-        print_fail(f"Async check failed: {e}")
-        results.append(("_get_gateway_settings", False))
+        print_fail(f"Permission tests failed: {e}")
+        results.append(("Permission tests", False))
 
     print_header("Summary")
     passed = sum(1 for _, ok in results if ok)

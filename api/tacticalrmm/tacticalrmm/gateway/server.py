@@ -7,7 +7,6 @@ from django.conf import settings
 
 from .audit import _audit_session_failed
 from .functions import FUNCTION_REGISTRY
-from .functions.menu import MenuSessionHandler
 from .handlers import DirectSessionHandler, RejectionHandler
 from .logger import gw_log
 from .permissions import (
@@ -108,8 +107,12 @@ class GatewayServer(asyncssh.SSHServer):
         try:
             if hasattr(key, 'public_data'):
                 raw = key.public_data
-            else:
+            elif hasattr(key, 'get_public_key_bytes'):
                 raw = key.get_public_key_bytes()
+            else:
+                raw = key.public_bytes(raw=True) if hasattr(key, 'public_bytes') else None
+            if raw is None:
+                return False
             fp = _fingerprint(raw)
 
             ssh_key = await _lookup_key(fp)
@@ -277,7 +280,7 @@ class GatewayServer(asyncssh.SSHServer):
                         "SSH gateway menu access is disabled by your administrator.\r\n",
                         audit_coro=audit,
                     )
-                return MenuSessionHandler(
+                    return FUNCTION_REGISTRY["menu"](
                     self._auth_user, self._session_id, self._remote_ip,
                     client_version=self._client_version,
                     ssh_key_name=self._ssh_key_name,

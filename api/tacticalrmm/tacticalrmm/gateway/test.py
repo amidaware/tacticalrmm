@@ -31,7 +31,7 @@ from tacticalrmm.gateway.audit import (
     _audit_session_failed, _audit_exec_command, _audit_terminal_command,
     _record_session_and_audit, _close_session_and_audit,
 )
-from tacticalrmm.gateway.exec import run_exec, ExecSessionHandler
+from tacticalrmm.gateway.exec import run_exec
 from tacticalrmm.gateway.constants import (
     _strip_ansi, get_local_ips, build_welcome_message,
     TERMINAL_MODES, ANSI_ESCAPE, WELCOME_TEMPLATE,
@@ -304,20 +304,19 @@ def check_egg_game():
 
 
 def check_refactored_handlers():
-    """Check ExecSessionHandler from refactored modules."""
+    """Check DirectSessionHandler and run_exec."""
     print_header("Refactored handler classes")
     all_ok = True
 
-    exec_methods = ["connection_made", "exec_requested", "eof_received", "connection_lost"]
-    for m in exec_methods:
-        if hasattr(ExecSessionHandler, m):
-            print_ok(f"ExecSessionHandler.{m}()")
+    methods = ["connection_made", "exec_requested", "shell_requested", "pty_requested"]
+    for m in methods:
+        if hasattr(DirectSessionHandler, m):
+            print_ok(f"DirectSessionHandler.{m}()")
         else:
-            print_fail(f"ExecSessionHandler.{m}() MISSING")
+            print_fail(f"DirectSessionHandler.{m}() MISSING")
             all_ok = False
 
     print_ok("run_exec() function exists")
-    print_ok("run_terminal() function exists")
 
     return all_ok
 

@@ -6,6 +6,7 @@ from django.conf import settings
 from django.utils import timezone as djangotime
 
 from ..audit import _close_session_and_audit, _record_session_and_audit
+from ..handlers import RejectionHandler
 from ..logger import gw_log
 from ..terminal import TerminalProxy
 from ..utils import _get_user_group, _resolve_and_check
@@ -117,9 +118,9 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         }
 
     def exec_requested(self, command):
-        self._state = "exec"
-        self._exec_command = command
-        return True
+        return RejectionHandler(
+            "The gateway menu is interactive only. Use an agent ID as the SSH username for command execution.\r\n",
+        )
 
     def data_received(self, data, datatype):
         try:
@@ -137,12 +138,6 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                         return
                 if self._term:
                     asyncio.create_task(self._term.write(data))
-                return
-            if self._state == "exec":
-                if isinstance(data, bytes):
-                    self._chan.write(data)
-                else:
-                    self._chan.write(data.encode('utf-8') if isinstance(data, str) else data)
                 return
             if isinstance(data, bytes):
                 text = data.decode("utf-8", errors="replace")

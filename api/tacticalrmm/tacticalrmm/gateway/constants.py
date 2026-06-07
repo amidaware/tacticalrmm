@@ -65,16 +65,5 @@ WELCOME_TEMPLATE_PLAIN = (
     "pubip: {pubip}, local IPs: {local_ips}\n\n"
 )
 
-TRMM_LOGO = """@@@@@@@@@
-    @@@@      @@@@
-   @@@          @@@
-  @@* @@@@@@@@@@ @@@
-  @@      @@      @@
-  @@    @ @@ @    @@
-  @@.  @@ @@ @@  @@@
-   @@@ @@ @@ @@ @@@
-    @@@@@ @@ @@@@@
-      @@@@@@@@@@"""
-
 RATE_LIMITER_DEFAULT_MAX_ENTRIES = 1000
 RATE_LIMITER_CLEANUP_INTERVAL = 300

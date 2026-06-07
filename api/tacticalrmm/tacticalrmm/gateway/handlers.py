@@ -52,6 +52,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
         self._term = None
         self._chan = None
         self._started_at = None
+        self._session_type = None
         self._terminal_type = ""
         self._terminal_rows = 0
         self._terminal_cols = 0

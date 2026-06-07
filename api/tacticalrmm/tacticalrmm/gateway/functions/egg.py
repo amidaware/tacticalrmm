@@ -4,16 +4,20 @@ import json
 import os
 import random
 
+import asyncssh
 from django.utils import timezone as djangotime
 
-from .logger import gw_log
+from ..logger import gw_log
+
+_HIGHSCORES_PATH = "/etc/trmm/snake_highscores.json"
 
 
 class EggGame:
-    def __init__(self, handler):
+    def __init__(self, handler, standalone=False):
         self._handler = handler
         self._chan = handler._chan
         self._user = handler._user
+        self._standalone = standalone
 
     async def start(self):
         self._handler._state = "snake"
@@ -26,7 +30,7 @@ class EggGame:
         self._snake_score = 0
         self._snake_buf = ""
         self._snake_food = self._snake_place_food()
-        await self._handler._write("\x1b[2J\x1b[H")
+        await self._write("\x1b[2J\x1b[H")
         await self._draw()
         asyncio.create_task(self._loop())
 
@@ -48,9 +52,7 @@ class EggGame:
 
     async def _draw(self):
         lines = ["\x1b[H"]
-        lines.append(
-            f"Score: {self._snake_score}    (WASD move, Q quit)\r\n"
-        )
+        lines.append(f"Score: {self._snake_score}    (WASD move, Q quit)\r\n")
         for r in range(self._snake_height):
             for c in range(self._snake_width):
                 if (r, c) == self._snake_body[0]:
@@ -63,7 +65,7 @@ class EggGame:
                     lines.append(".")
             lines.append("\r\n")
         lines.append("\x1b[J")
-        await self._handler._write("".join(lines))
+        await self._write("".join(lines))
 
     async def _loop(self):
         try:
@@ -74,17 +76,13 @@ class EggGame:
                 head = self._snake_body[0]
                 dr, dc = self._snake_dir
                 new_head = (head[0] + dr, head[1] + dc)
-
                 if not (0 <= new_head[0] < self._snake_height and 0 <= new_head[1] < self._snake_width):
                     await self._game_over()
                     return
-
                 if new_head in self._snake_body:
                     await self._game_over()
                     return
-
                 self._snake_body.insert(0, new_head)
-
                 if new_head == self._snake_food:
                     self._snake_score += 1
                     self._snake_food = self._snake_place_food()
@@ -93,7 +91,6 @@ class EggGame:
                         return
                 else:
                     self._snake_body.pop()
-
                 await self._draw()
         except asyncio.CancelledError:
             pass
@@ -108,10 +105,13 @@ class EggGame:
             f"Score: {self._snake_score}\r\n",
             "\r\n",
             _format_highscores(scores),
-            "\r\nPress any key to return to menu...\r\n",
+            "\r\nPress any key to exit..." if self._standalone else "\r\nPress any key to return to menu...\r\n",
         ]
-        await self._handler._write("".join(lines))
-        self._handler._state = "snake_gameover"
+        await self._write("".join(lines))
+        if self._standalone:
+            self._handler._state = "exit"
+        else:
+            self._handler._state = "snake_gameover"
 
     async def _win(self):
         scores = _add_highscore(self._user.username, self._snake_score, True)
@@ -121,10 +121,13 @@ class EggGame:
             f"Final Score: {self._snake_score}\r\n",
             "\r\n",
             _format_highscores(scores),
-            "\r\nPress any key to return to menu...\r\n",
+            "\r\nPress any key to exit..." if self._standalone else "\r\nPress any key to return to menu...\r\n",
         ]
-        await self._handler._write("".join(lines))
-        self._handler._state = "snake_gameover"
+        await self._write("".join(lines))
+        if self._standalone:
+            self._handler._state = "exit"
+        else:
+            self._handler._state = "snake_gameover"
 
     def handle_input(self, ch):
         if ch.lower() == "q" or ch == "\x03":
@@ -150,11 +153,75 @@ class EggGame:
                 return
 
     async def _quit(self):
-        self._handler._state = "client"
-        await self._handler._show_clients()
+        if self._standalone:
+            self._handler._state = "exit"
+            self._chan.exit(0)
+        else:
+            self._handler._state = "client"
+            await self._handler._show_clients()
+
+    async def _write(self, text=""):
+        if self._chan and not self._chan.is_closing():
+            self._chan.write(text)
 
 
-_HIGHSCORES_PATH = "/etc/trmm/snake_highscores.json"
+class Handler(asyncssh.SSHServerSession):
+    name = "egg"
+
+    def __init__(self, user, session_id, remote_ip,
+                 client_version="", ssh_key_name="", ssh_key_type="",
+                 ssh_key_fingerprint=""):
+        super().__init__()
+        self._user = user
+        self._session_id = session_id
+        self._remote_ip = remote_ip
+        self._client_version = client_version
+        self._ssh_key_name = ssh_key_name
+        self._ssh_key_type = ssh_key_type
+        self._ssh_key_fingerprint = ssh_key_fingerprint
+        self._chan = None
+        self._state = "init"
+        self._game = None
+
+    def connection_made(self, chan):
+        self._chan = chan
+
+    def pty_requested(self, term_type, term_size, term_modes):
+        return True
+
+    def shell_requested(self):
+        self._state = "started"
+        asyncio.create_task(self._run())
+        return True
+
+    async def _run(self):
+        self._game = EggGame(self, standalone=True)
+        await self._game.start()
+
+    def data_received(self, data, datatype):
+        if self._state == "exit":
+            self._chan.exit(0)
+            return
+        if self._state == "snake_gameover":
+            self._state = "exit"
+            self._chan.exit(0)
+            return
+        if self._game and self._state == "snake":
+            if isinstance(data, bytes):
+                text = data.decode("utf-8", errors="replace")
+            else:
+                text = data
+            for ch in text:
+                self._game.handle_input(ch)
+
+    def eof_received(self):
+        return False
+
+
+async def launch(menu_handler):
+    game = EggGame(menu_handler, standalone=False)
+    await game.start()
+    return game
 
 
 def _load_highscores():
@@ -210,14 +277,12 @@ def _add_highscore(username, score, won):
                             "date": djangotime.now().isoformat(),
                         }
                 else:
-                    scores.append(
-                        {
-                            "username": username,
-                            "score": score,
-                            "won": won,
-                            "date": djangotime.now().isoformat(),
-                        }
-                    )
+                    scores.append({
+                        "username": username,
+                        "score": score,
+                        "won": won,
+                        "date": djangotime.now().isoformat(),
+                    })
                 scores.sort(key=lambda s: (-s["score"], s["date"]))
                 scores = scores[:20]
                 f.seek(0)
@@ -235,12 +300,10 @@ def _format_highscores(scores):
     if not scores:
         return ""
     lines = [
-        "\x1b[1m\xe2\x94\x80 High Scores " + "\xe2\x94\x80" * 42 + "\x1b[0m\r\n",
+        "\x1b[1m\u2500 High Scores " + "\u2500" * 42 + "\x1b[0m\r\n",
     ]
     for i, entry in enumerate(scores[:10], 1):
-        star = " \xe2\x98\x85" if entry.get("won") else "   "
-        lines.append(
-            f"  {i:>2}. {entry['username']:<20} {entry['score']:>4}{star}\r\n"
-        )
-    lines.append("\x1b[2m" + "\xe2\x94\x80" * 52 + "\x1b[0m\r\n")
+        star = " \u2605" if entry.get("won") else "   "
+        lines.append(f"  {i:>2}. {entry['username']:<20} {entry['score']:>4}{star}\r\n")
+    lines.append("\x1b[2m" + "\u2500" * 52 + "\x1b[0m\r\n")
     return "".join(lines)

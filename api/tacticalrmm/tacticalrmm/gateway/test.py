@@ -24,14 +24,14 @@ from logs.models import AuditLog
 from tacticalrmm.gateway import start_gateway, get_active_connections
 from tacticalrmm.gateway.server import GatewayServer
 from tacticalrmm.gateway.handlers import DirectSessionHandler, RejectionHandler
-from tacticalrmm.gateway.menu import MenuSessionHandler
+from tacticalrmm.gateway.functions.menu import MenuSessionHandler
 from tacticalrmm.gateway.utils import _lookup_key, _resolve_and_check, _get_gateway_settings
 from tacticalrmm.gateway.permissions import _get_gateway_settings
 from tacticalrmm.gateway.audit import (
     _audit_session_failed, _audit_exec_command, _audit_terminal_command,
     _record_session_and_audit, _close_session_and_audit,
 )
-from tacticalrmm.gateway.exec_handler import run_exec, ExecSessionHandler
+from tacticalrmm.gateway.exec import run_exec, ExecSessionHandler
 from tacticalrmm.gateway.constants import (
     _strip_ansi, get_local_ips, build_welcome_message,
     TERMINAL_MODES, ANSI_ESCAPE, WELCOME_TEMPLATE,
@@ -158,7 +158,9 @@ def check_gateway_module_imports():
         "tacticalrmm.gateway",
         "tacticalrmm.gateway.server",
         "tacticalrmm.gateway.handlers",
-        "tacticalrmm.gateway.menu",
+        "tacticalrmm.gateway.functions",
+        "tacticalrmm.gateway.functions.menu",
+        "tacticalrmm.gateway.functions.egg",
         "tacticalrmm.gateway.audit",
         "tacticalrmm.gateway.exec",
         "tacticalrmm.gateway.terminal",
@@ -166,9 +168,6 @@ def check_gateway_module_imports():
         "tacticalrmm.gateway.rate_limiter",
         "tacticalrmm.gateway.constants",
         "tacticalrmm.gateway.permissions",
-        "tacticalrmm.gateway.exec_handler",
-        "tacticalrmm.gateway.mixins",
-        "tacticalrmm.gateway.direct_terminal",
     ]
     all_ok = True
     for mod in modules:
@@ -296,7 +295,7 @@ def check_egg_game():
     """Check egg game still works."""
     print_header("EggGame (snake) import")
     try:
-        from tacticalrmm.gateway.egg import EggGame, _add_highscore, _format_highscores
+        from tacticalrmm.gateway.functions.egg import EggGame, _add_highscore, _format_highscores
         print_ok("EggGame and highscore helpers import cleanly")
         return True
     except Exception as e:

@@ -1,16 +1,14 @@
 import asyncio
-import random
 
 import asyncssh
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils import timezone as djangotime
 
-from .audit import _close_session_and_audit, _record_session_and_audit
-from .egg import EggGame
-from .logger import gw_log
-from .terminal import TerminalProxy
-from .utils import _get_user_group, _resolve_and_check
+from ..audit import _close_session_and_audit, _record_session_and_audit
+from ..logger import gw_log
+from ..terminal import TerminalProxy
+from ..utils import _get_user_group, _resolve_and_check
 
 TRMM_LOGO = """@@@@@@@@@
     @@@@      @@@@
@@ -32,7 +30,6 @@ def _get_menu_agents(user):
         "offline_time", "overdue_time",
         "site__name", "site__client__name",
     )
-
     if user.is_superuser:
         filtered = list(agents)
     else:
@@ -48,7 +45,6 @@ def _get_menu_agents(user):
             if can_view_sites and a.site not in can_view_sites:
                 continue
             filtered.append(a)
-
     tree = {}
     for a in filtered:
         client_name = a.site.client.name
@@ -60,6 +56,8 @@ def _get_menu_agents(user):
 
 
 class MenuSessionHandler(asyncssh.SSHServerSession):
+    name = "menu"
+
     def __init__(self, user, session_id, remote_ip,
                  client_version="", ssh_key_name="", ssh_key_type="",
                  ssh_key_fingerprint=""):
@@ -84,6 +82,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._last_activity = djangotime.now()
         self._agent_page = 0
         self._agents_per_page = 10
+        self._active_func = None
 
     def connection_made(self, chan):
         self._chan = chan
@@ -124,6 +123,14 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
 
     def data_received(self, data, datatype):
         try:
+            if self._active_func:
+                if isinstance(data, bytes):
+                    text = data.decode("utf-8", errors="replace")
+                else:
+                    text = data
+                for ch in text:
+                    self._active_func.handle_input(ch)
+                return
             if self._state == "terminal":
                 if isinstance(data, bytes):
                     if b'\x1e' in data:
@@ -149,10 +156,6 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             if self._state == "snake_gameover":
                 self._state = "client"
                 asyncio.create_task(self._show_clients())
-                return
-            if self._state == "snake":
-                for ch in text:
-                    self._egg.handle_input(ch)
                 return
             for ch in text:
                 asyncio.create_task(self._handle_char(ch))
@@ -314,10 +317,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 if self._buf:
                     cmd = self._buf.strip().lower()
                     self._buf = ""
-                    if cmd == "egg":
-                        self._egg = EggGame(self)
-                        await self._egg.start()
-                        return
+                    if cmd:
+                        await self._try_launch_function(cmd)
                 return
 
             if ch == "\x7f":
@@ -399,6 +400,21 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 return
         except Exception as e:
             gw_log.error("Gateway menu input error: %s", e, exc_info=True)
+
+    async def _try_launch_function(self, cmd):
+        from . import FUNCTION_REGISTRY
+        func_cls = FUNCTION_REGISTRY.get(cmd.lower())
+        if func_cls is None:
+            await self._write(f"\r\nUnknown command: {cmd}\r\n")
+            await self._show_current()
+            return
+        if hasattr(func_cls, "launch") and callable(func_cls.launch):
+            child = await func_cls.launch(self)
+            if child:
+                self._active_func = child
+        else:
+            await self._write(f"\r\nFunction '{cmd}' not available in menu.\r\n")
+            await self._show_current()
 
     async def _connect_to_agent(self, agent_id, hostname):
         from agents.models import Agent
@@ -484,7 +500,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         elif self._state == "agent":
             agents = self._tree[self._menu_client][self._menu_site]
             total_agents = len(agents)
-            total_pages = max(1, (total_agents + self._agents_per_page - 1) // self._agents_per_page)
+            total_pages = max(1, (len(agents) + self._agents_per_page - 1) // self._agents_per_page)
             if self._agent_page >= total_pages:
                 self._agent_page = total_pages - 1
             start_idx = self._agent_page * self._agents_per_page
@@ -615,6 +631,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         await self._show_agents()
 
     async def _show_help(self):
+        from . import FUNCTION_REGISTRY
+        func_names = sorted(k for k in FUNCTION_REGISTRY if k != "menu")
         lines = [
             "\r\n\x1b[1mTactical RMM Gateway - Help\x1b[0m\r\n",
             "\x1b[2m----------------------------------------\x1b[0m\r\n",
@@ -626,16 +644,16 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             "    r     Refresh agent list",
             "    ? / h  Show this help",
             "",
-            "  \x1b[1mEaster Eggs\x1b[0m",
-            "    egg   Start snake game",
-            "",
+        ]
+        if func_names:
+            lines.append("  \x1b[1mFunctions\x1b[0m")
+            for fn in func_names:
+                lines.append(f"    {fn}")
+            lines.append("")
+        lines += [
             "  \x1b[1mTerminal\x1b[0m",
             "    Ctrl+^  Return to agent list (from terminal)",
             "    q     Quit terminal",
-            "",
-            "  \x1b[1mSnake Game\x1b[0m",
-            "    WASD or arrow keys  Move",
-            "    q     Quit game",
             "",
             "Press any key to continue...\r\n",
         ]
@@ -655,3 +673,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                     return
         except asyncio.CancelledError:
             pass
+
+
+async def go_back(handler):
+    handler._state = "client"
+    await handler._show_clients()

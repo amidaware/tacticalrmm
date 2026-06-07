@@ -6,9 +6,10 @@ import asyncssh
 from django.conf import settings
 
 from .audit import _audit_session_failed
+from .functions import FUNCTION_REGISTRY
+from .functions.menu import MenuSessionHandler
 from .handlers import DirectSessionHandler, RejectionHandler
 from .logger import gw_log
-from .menu import MenuSessionHandler
 from .permissions import (
     _fingerprint,
     _lookup_key,
@@ -68,6 +69,8 @@ class GatewayServer(asyncssh.SSHServer):
         self._auth_user = None
         self._auth_agent = None
         self._is_menu = False
+        self._is_function = False
+        self._function_handler_cls = None
         self._session_id = uuid.uuid4().hex
         self._gateway_menu_enabled = True
         self._gateway_exec_enabled = True
@@ -174,6 +177,38 @@ class GatewayServer(asyncssh.SSHServer):
                 )
                 return True
 
+            func_username = username.lower()
+            if func_username in FUNCTION_REGISTRY:
+                from asgiref.sync import sync_to_async
+                role = await sync_to_async(user.get_and_set_role_cache)()
+                can_use = getattr(role, "can_ssh_use_functions", False) if role else False
+                if not user.is_superuser and not can_use:
+                    gw_log.warning(
+                        "Gateway: function %s denied for user=%s from %s",
+                        func_username, user.username, self._remote_ip,
+                    )
+                    asyncio.create_task(
+                        _audit_session_failed(
+                            username=user.username,
+                            agent_id=username,
+                            remote_ip=self._remote_ip,
+                            reason="function_no_permission",
+                            ssh_key_name=ssh_key.name,
+                            ssh_key_type=ssh_key.key_type,
+                            ssh_key_fingerprint=ssh_key.fingerprint,
+                        )
+                    )
+                    return False
+                self._auth_user = user
+                self._auth_agent = None
+                self._is_function = True
+                self._function_handler_cls = FUNCTION_REGISTRY[func_username]
+                gw_log.info(
+                    "Gateway: function %s session user=%s key=%s from %s",
+                    func_username, user.username, ssh_key.name, self._remote_ip,
+                )
+                return True
+
             agent = await _resolve_and_check(user, username)
             if agent is None:
                 gw_log.warning(
@@ -243,6 +278,16 @@ class GatewayServer(asyncssh.SSHServer):
                         audit_coro=audit,
                     )
                 return MenuSessionHandler(
+                    self._auth_user, self._session_id, self._remote_ip,
+                    client_version=self._client_version,
+                    ssh_key_name=self._ssh_key_name,
+                    ssh_key_type=self._ssh_key_type,
+                    ssh_key_fingerprint=self._ssh_key_fingerprint,
+                )
+            if self._is_function:
+                if not self._auth_user or not self._function_handler_cls:
+                    return None
+                return self._function_handler_cls(
                     self._auth_user, self._session_id, self._remote_ip,
                     client_version=self._client_version,
                     ssh_key_name=self._ssh_key_name,

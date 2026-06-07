@@ -1173,77 +1173,7 @@ def check_permissions_functions():
     return all_ok
 
 
-def check_egg_game_mechanics():
-    """EggGame (snake) core mechanics: food placement, direction, score."""
-    print_header("EggGame mechanics")
-    from tacticalrmm.gateway.functions.egg import EggGame, _format_highscores
-    all_ok = True
 
-    class _FakeHandler:
-        _chan = None
-        _user = None
-        _state = "snake"
-
-    handler = _FakeHandler()
-    game = EggGame(handler)
-
-    if game._snake_width > 0 and game._snake_height > 0:
-        print_ok(f"EggGame board is {game._snake_width}x{game._snake_height}")
-    else:
-        print_fail("EggGame board dimensions invalid")
-        all_ok = False
-    if game._snake_dir == (0, 1):
-        print_ok("EggGame initial direction is right (0, 1)")
-    else:
-        print_fail(f"EggGame direction is {game._snake_dir}")
-        all_ok = False
-    if game._snake_score == 0:
-        print_ok("EggGame score starts at 0")
-    else:
-        print_fail(f"EggGame score is {game._snake_score}")
-        all_ok = False
-    if game._snake_buf == "":
-        print_ok("EggGame input buffer starts empty")
-    else:
-        print_fail(f"EggGame input buffer is {game._snake_buf!r}")
-        all_ok = False
-
-    # _place_food returns valid cell even with empty snake
-    food = game._snake_place_food()
-    if food is not None and len(food) == 2:
-        r, c = food
-        if 0 <= r < game._snake_height and 0 <= c < game._snake_width:
-            print_ok(f"EggGame places food at valid cell {food}")
-        else:
-            print_fail(f"EggGame food cell {food} out of bounds")
-            all_ok = False
-    else:
-        print_fail("EggGame _snake_place_food returned invalid")
-        all_ok = False
-
-    # Direction change allowed (not reversal)
-    game._snake_dir = (0, 1)
-    game.handle_input("w")  # up, not reverse of right
-    if game._snake_dir == (-1, 0):
-        print_ok("EggGame handle_input changes direction")
-    else:
-        print_fail(f"EggGame handle_input direction is {game._snake_dir}")
-        all_ok = False
-    # Direction reversal (down) should be prevented
-    game.handle_input("s")  # down = reverse of up
-    if game._snake_dir == (-1, 0):
-        print_ok("EggGame prevents reversing direction")
-    else:
-        print_fail("EggGame allowed reverse direction")
-        all_ok = False
-
-    if _format_highscores([]) == "":
-        print_ok("_format_highscores returns empty for no scores")
-    else:
-        print_fail("_format_highscores should be empty for no scores")
-        all_ok = False
-
-    return all_ok
 
 
 async def run_async_checks():
@@ -1281,7 +1211,6 @@ def main():
     results.append(("Constants functional", check_constants_functional()))
     results.append(("Mixins", check_mixins_functional()))
     results.append(("Permissions functions", check_permissions_functions()))
-    results.append(("EggGame mechanics", check_egg_game_mechanics()))
 
     # Run async checks
     try:

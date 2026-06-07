@@ -122,6 +122,7 @@ class CoreSettings(BaseAuditModel):
     enable_ssh_gateway = models.BooleanField(default=False)
     ssh_gateway_session_timeout = models.PositiveIntegerField(default=300)
     ssh_gateway_max_sessions = models.PositiveIntegerField(default=10)
+    ssh_gateway_rate_limit_max_entries = models.PositiveIntegerField(default=10)
     ssh_gateway_enable_menu = models.BooleanField(default=True)
     ssh_gateway_enable_exec = models.BooleanField(default=True)
     ssh_gateway_enable_terminal = models.BooleanField(default=True)

@@ -36,6 +36,12 @@ class _RateLimiter:
     def reset(self, ip: str) -> None:
         self._attempts.pop(ip, None)
 
+    def configure(self, max_attempts: int = None, window: int = None) -> None:
+        if max_attempts is not None:
+            self._max_attempts = max_attempts
+        if window is not None:
+            self._window = window
+
 
 def _make_rate_limiter():
     return _RateLimiter(

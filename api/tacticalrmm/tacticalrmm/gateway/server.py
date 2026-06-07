@@ -76,9 +76,7 @@ class GatewayServer(asyncssh.SSHServer):
         self._gateway_terminal_enabled = True
         self._gateway_session_timeout = 300
         self._gateway_max_sessions = 10
-        if self._remote_ip and not _rate_limiter.allow(self._remote_ip):
-            logger.warning("Gateway: rate limit exceeded for %s", self._remote_ip)
-            return False
+        self._gateway_rate_limit_max_entries = 10
         try:
             core = await _get_gateway_settings()
             if core:
@@ -87,8 +85,13 @@ class GatewayServer(asyncssh.SSHServer):
                 self._gateway_terminal_enabled = core.ssh_gateway_terminal_enabled
                 self._gateway_session_timeout = core.ssh_gateway_session_timeout
                 self._gateway_max_sessions = core.ssh_gateway_max_sessions
+                self._gateway_rate_limit_max_entries = core.ssh_gateway_rate_limit_max_entries
+                _rate_limiter.configure(max_attempts=core.ssh_gateway_rate_limit_max_entries)
         except Exception:
             logger.error("Gateway: failed to load settings", exc_info=True)
+        if self._remote_ip and not _rate_limiter.allow(self._remote_ip):
+            logger.warning("Gateway: rate limit exceeded for %s", self._remote_ip)
+            return False
         return True
 
     def public_key_auth_supported(self):

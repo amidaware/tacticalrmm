@@ -1,13 +1,12 @@
 import asyncio
 import fcntl
 import json
-import logging
 import os
 import random
 
 from django.utils import timezone as djangotime
 
-logger = logging.getLogger("trmm")
+from .logger import gw_log
 
 
 class EggGame:
@@ -99,7 +98,7 @@ class EggGame:
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            logger.error("SSH egg loop error: %s", e, exc_info=True)
+            gw_log.error("SSH egg loop error: %s", e, exc_info=True)
 
     async def _game_over(self):
         scores = _add_highscore(self._user.username, self._snake_score, False)
@@ -185,7 +184,7 @@ def _save_highscores(scores):
             finally:
                 fcntl.flock(f.fileno(), fcntl.LOCK_UN)
     except OSError as e:
-        logger.debug("Failed to save highscores: %s", e)
+        gw_log.debug("Failed to save highscores: %s", e)
 
 
 def _add_highscore(username, score, won):
@@ -227,7 +226,7 @@ def _add_highscore(username, score, won):
             finally:
                 fcntl.flock(f.fileno(), fcntl.LOCK_UN)
     except OSError as e:
-        logger.debug("Failed to update highscores: %s", e)
+        gw_log.debug("Failed to update highscores: %s", e)
         return []
     return scores
 

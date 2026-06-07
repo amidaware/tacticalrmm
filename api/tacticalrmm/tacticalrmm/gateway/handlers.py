@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 import asyncssh
 from django.utils import timezone as djangotime
@@ -8,9 +7,8 @@ from .audit import _audit_session_failed, _audit_exec_command, _audit_terminal_c
 from .constants import ANSI_ESCAPE, TERMINAL_MODES, _strip_ansi
 from .direct_terminal import start_terminal_session
 from .exec import CmdProxy
+from .logger import gw_log
 from .terminal import TerminalProxy
-
-logger = logging.getLogger("trmm")
 
 
 class RejectionHandler(asyncssh.SSHServerSession):
@@ -24,9 +22,9 @@ class RejectionHandler(asyncssh.SSHServerSession):
         self._chan = chan
         try:
             self._chan.write(b"\r\n==DENIED==\r\n")
-            logger.error("GW_REJECTION: wrote denial data to channel")
+            gw_log.error("GW_REJECTION: wrote denial data to channel")
         except Exception as e:
-            logger.error("GW_REJECTION: write failed: %s", e)
+            gw_log.error("GW_REJECTION: write failed: %s", e)
         if self._audit_coro:
             asyncio.create_task(self._audit_coro)
         chan.exit(1)
@@ -79,17 +77,17 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             peer_name = chan.get_extra_info("peername", ("", ""))
             self._remote_ip = peer_name[0] if peer_name else self._remote_ip
             self._started_at = djangotime.now()
-            logger.info(
+            gw_log.info(
                 "Gateway session user=%s agent=%s remote_ip=%s client=%s",
                 self._user.username, self._agent.agent_id, self._remote_ip, self._client_version,
             )
         except Exception as e:
-            logger.error("Gateway connection_made failed: %s", e, exc_info=True)
+            gw_log.error("Gateway connection_made failed: %s", e, exc_info=True)
             raise
 
     def exec_requested(self, command):
         if not self._gateway_exec_enabled:
-            logger.warning("Gateway: exec denied (disabled) user=%s agent=%s from %s",
+            gw_log.warning("Gateway: exec denied (disabled) user=%s agent=%s from %s",
                            self._user.username, self._agent.agent_id, self._remote_ip)
             audit = _audit_session_failed(
                 username=self._user.username, agent_id=self._agent.agent_id,
@@ -131,12 +129,12 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                     if self._chan and not self._chan.is_closing():
                         self._chan.exit(exit_code or 0)
             except Exception:
-                logger.error("Gateway exec output_cb error", exc_info=True)
+                gw_log.error("Gateway exec output_cb error", exc_info=True)
 
         try:
             await run_exec(self._user, self._agent, self._session_id, self._exec_cmd, output_cb)
         except Exception as e:
-            logger.error("Gateway exec start failed: %s", e, exc_info=True)
+            gw_log.error("Gateway exec start failed: %s", e, exc_info=True)
             try:
                 self._chan.write(f"\r\nFailed to execute command: {e}\r\n")
                 self._chan.exit(1)
@@ -157,7 +155,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
 
     def shell_requested(self):
         if not self._gateway_terminal_enabled:
-            logger.warning("Gateway: shell denied (disabled) user=%s agent=%s from %s",
+            gw_log.warning("Gateway: shell denied (disabled) user=%s agent=%s from %s",
                            self._user.username, self._agent.agent_id, self._remote_ip)
             audit = _audit_session_failed(
                 username=self._user.username, agent_id=self._agent.agent_id,
@@ -191,7 +189,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                 terminal_cols=self._terminal_cols,
             ))
         except Exception as e:
-            logger.error("Gateway terminal start failed: %s", e, exc_info=True)
+            gw_log.error("Gateway terminal start failed: %s", e, exc_info=True)
             try:
                 self._chan.write(f"\r\nFailed to start terminal: {e}\r\n")
                 self._chan.exit(1)
@@ -215,7 +213,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             try:
                 asyncio.create_task(self._term.write(original_data))
             except Exception as e:
-                logger.error("Gateway terminal write error: %s", e)
+                gw_log.error("Gateway terminal write error: %s", e)
 
     def eof_received(self):
         if self._session_type == "exec" and not self._exec_completed:
@@ -229,7 +227,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
             asyncio.create_task(self._term.stop())
             self._term = None
         if exc:
-            logger.error("Gateway connection lost: %s", exc)
+            gw_log.error("Gateway connection lost: %s", exc)
 
     def terminal_size_changed(self, w, h, pw, ph):
         if self._term:
@@ -249,7 +247,7 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
                     terminal_cols=self._terminal_cols,
                 )
             )
-            logger.info(
+            gw_log.info(
                 "Gateway session ended user=%s agent=%s duration=%ds",
                 self._user.username, self._agent.agent_id,
                 int((djangotime.now() - self._started_at).total_seconds()),

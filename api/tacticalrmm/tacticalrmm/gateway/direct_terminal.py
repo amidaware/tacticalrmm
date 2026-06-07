@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 from django.utils import timezone as djangotime
 
@@ -9,9 +8,8 @@ from .audit import (
     _close_session_and_audit,
     _record_session_and_audit,
 )
+from .logger import gw_log
 from .terminal import TerminalProxy
-
-logger = logging.getLogger("trmm")
 
 
 def _strip_ansi(data):
@@ -41,7 +39,7 @@ async def start_terminal_session(chan, user, agent, session_id, remote_ip,
     try:
         chan.write(msg)
     except Exception as e:
-        logger.error("Gateway terminal welcome write failed: %s", e)
+        gw_log.error("Gateway terminal welcome write failed: %s", e)
 
     asyncio.create_task(_record_session_and_audit(
         user, agent, session_id, remote_ip,
@@ -77,12 +75,12 @@ async def _run_terminal(term, chan, user, agent, session_id, remote_ip, started_
                 if chan and not chan.is_closing():
                     chan.exit(exit_code or 0)
         except Exception as e:
-            logger.error("Gateway terminal output_cb error: %s", e)
+            gw_log.error("Gateway terminal output_cb error: %s", e)
 
     try:
         await term.start(output_cb)
     except Exception as e:
-        logger.error("Gateway terminal start failed: %s", e, exc_info=True)
+        gw_log.error("Gateway terminal start failed: %s", e, exc_info=True)
         try:
             chan.write(f"\r\nFailed to start terminal: {e}\r\n")
             chan.exit(1)

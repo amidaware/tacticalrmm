@@ -1,11 +1,8 @@
-import logging
-
 from asgiref.sync import sync_to_async
 from django.utils import timezone as djangotime
 
+from .logger import gw_log
 from logs.models import AuditLog
-
-logger = logging.getLogger("trmm")
 
 
 @sync_to_async
@@ -55,12 +52,12 @@ def _audit_exec_command(user, agent, command, exit_code=None):
             cmd=command,
             shell="ssh",
         )
-        logger.info(
+        gw_log.info(
             "Gateway exec user=%s agent=%s cmd=%s exit=%s",
             user.username, agent.agent_id, command, exit_code,
         )
     except Exception:
-        logger.error("Gateway exec audit failed", exc_info=True)
+        gw_log.error("Gateway exec audit failed", exc_info=True)
 
 
 @sync_to_async

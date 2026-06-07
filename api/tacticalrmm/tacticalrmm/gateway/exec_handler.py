@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 import asyncssh
 from django.utils import timezone as djangotime
@@ -10,8 +9,7 @@ from .audit import (
 )
 from .constants import ANSI_ESCAPE
 from .exec import CmdProxy
-
-logger = logging.getLogger("trmm")
+from .logger import gw_log
 
 
 def _strip_ansi(data):
@@ -51,12 +49,12 @@ class ExecSessionHandler(asyncssh.SSHServerSession):
             peer_name = chan.get_extra_info("peername", ("", ""))
             self._remote_ip = peer_name[0] if peer_name else self._remote_ip
             self._started_at = djangotime.now()
-            logger.info(
+            gw_log.info(
                 "Gateway exec session user=%s agent=%s remote_ip=%s cmd=%s",
                 self._user.username, self._agent.agent_id, self._remote_ip, self._command,
             )
         except Exception as e:
-            logger.error("Gateway exec connection_made failed: %s", e, exc_info=True)
+            gw_log.error("Gateway exec connection_made failed: %s", e, exc_info=True)
             raise
         asyncio.create_task(self._start_exec())
 
@@ -83,12 +81,12 @@ class ExecSessionHandler(asyncssh.SSHServerSession):
                     if self._chan and not self._chan.is_closing():
                         self._chan.exit(exit_code or 0)
             except Exception:
-                logger.error("Gateway exec output_cb error", exc_info=True)
+                gw_log.error("Gateway exec output_cb error", exc_info=True)
 
         try:
             await run_exec(self._user, self._agent, self._session_id, self._command, output_cb)
         except Exception as e:
-            logger.error("Gateway exec start failed: %s", e, exc_info=True)
+            gw_log.error("Gateway exec start failed: %s", e, exc_info=True)
             try:
                 self._chan.write(f"\r\nFailed to execute command: {e}\r\n")
                 self._chan.exit(1)
@@ -104,7 +102,7 @@ class ExecSessionHandler(asyncssh.SSHServerSession):
         if not self._completed:
             return
         if exc:
-            logger.error("Gateway exec connection lost: %s", exc)
+            gw_log.error("Gateway exec connection lost: %s", exc)
 
     def closed(self):
         if self._started_at:

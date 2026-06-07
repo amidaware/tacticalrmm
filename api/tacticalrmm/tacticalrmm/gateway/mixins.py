@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import re
 
 import asyncssh
@@ -11,8 +10,7 @@ from .audit import (
     _close_session_and_audit,
     _record_session_and_audit,
 )
-
-logger = logging.getLogger("trmm")
+from .logger import gw_log
 
 
 def _strip_ansi(data):
@@ -77,7 +75,7 @@ class BaseSessionMixin:
             self._remote_ip = peer_name[0] if peer_name else self._remote_ip
             self._started_at = djangotime.now()
         except Exception as e:
-            logger.error("Gateway connection setup failed: %s", e, exc_info=True)
+            gw_log.error("Gateway connection setup failed: %s", e, exc_info=True)
 
     def _write_welcome(self, shell):
         role_name = self._user.role.name if self._user.role else None
@@ -98,7 +96,7 @@ class BaseSessionMixin:
         try:
             self._chan.write(msg)
         except Exception as e:
-            logger.error("Gateway welcome write failed: %s", e)
+            gw_log.error("Gateway welcome write failed: %s", e)
 
     def _record_session(self):
         return _record_session_and_audit(

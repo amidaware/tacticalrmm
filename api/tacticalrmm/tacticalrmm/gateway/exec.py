@@ -1,12 +1,10 @@
 import asyncio
-import logging
 
 import msgpack
 import nats
 
+from .logger import gw_log
 from tacticalrmm.helpers import setup_nats_options
-
-logger = logging.getLogger("trmm")
 
 
 class CmdProxy:
@@ -31,7 +29,7 @@ class CmdProxy:
             try:
                 obj = msgpack.loads(msg.data)
             except Exception as e:
-                logger.error(f"CmdProxy: failed to decode msg: {e}")
+                gw_log.error(f"CmdProxy: failed to decode msg: {e}")
                 obj = msg.data
 
             if isinstance(obj, dict):
@@ -81,11 +79,11 @@ class CmdProxy:
             try:
                 await self.sub.unsubscribe()
             except Exception as e:
-                logger.debug("CmdProxy stop: failed to unsubscribe: %s", e)
+                gw_log.debug("CmdProxy stop: failed to unsubscribe: %s", e)
             self.sub = None
         if self.nc and not self.nc.is_closed:
             try:
                 await self.nc.close()
             except Exception as e:
-                logger.debug("CmdProxy stop: failed to close NATS connection: %s", e)
+                gw_log.debug("CmdProxy stop: failed to close NATS connection: %s", e)
             self.nc = None

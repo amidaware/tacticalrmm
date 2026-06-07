@@ -1,13 +1,11 @@
 import asyncio
-import logging
 from hashlib import sha256
 import base64
 
 from asgiref.sync import sync_to_async
 
 from .audit import _audit_session_failed
-
-logger = logging.getLogger("trmm")
+from .logger import gw_log
 
 
 def _fingerprint(key_bytes: bytes) -> str:
@@ -83,7 +81,7 @@ def _validate_key(key) -> tuple[bytes, str]:
 async def validate_ssh_key(fp: str) -> tuple[bool, str, dict]:
     ssh_key = await _lookup_key(fp)
     if ssh_key is None:
-        logger.warning("Gateway: unknown key %s", fp)
+        gw_log.warning("Gateway: unknown key %s", fp)
         asyncio.create_task(_audit_session_failed(
             username="unknown",
             agent_id="unknown",
@@ -105,7 +103,7 @@ async def validate_ssh_key(fp: str) -> tuple[bool, str, dict]:
 
 async def validate_user_active(user) -> tuple[bool, str, dict]:
     if not user.is_active or user.block_dashboard_login:
-        logger.warning("Gateway: inactive user %s", user.username)
+        gw_log.warning("Gateway: inactive user %s", user.username)
         asyncio.create_task(_audit_session_failed(
             username=user.username,
             agent_id="unknown",
@@ -123,7 +121,7 @@ async def validate_user_active(user) -> tuple[bool, str, dict]:
 async def validate_menu_access(user) -> tuple[bool, str, dict]:
     role = await sync_to_async(user.get_and_set_role_cache)()
     if not user.is_superuser and not (role and getattr(role, "can_ssh_use_functions", False)):
-        logger.warning("Gateway: menu denied for user=%s", user.username)
+        gw_log.warning("Gateway: menu denied for user=%s", user.username)
         asyncio.create_task(_audit_session_failed(
             username=user.username,
             agent_id="menu",
@@ -138,7 +136,7 @@ async def validate_menu_access(user) -> tuple[bool, str, dict]:
 async def validate_agent_access(user, agent_id: str) -> tuple[bool, str, dict]:
     agent = await _resolve_and_check(user, agent_id)
     if agent is None:
-        logger.warning("Gateway: denied user=%s agent=%s", user.username, agent_id)
+        gw_log.warning("Gateway: denied user=%s agent=%s", user.username, agent_id)
         asyncio.create_task(_audit_session_failed(
             username=user.username,
             agent_id=agent_id,
@@ -148,7 +146,7 @@ async def validate_agent_access(user, agent_id: str) -> tuple[bool, str, dict]:
         return False, "access_denied_no_permission", {}
 
     if agent.status != "online":
-        logger.warning("Gateway: denied user=%s agent=%s reason=agent_%s",
+        gw_log.warning("Gateway: denied user=%s agent=%s reason=agent_%s",
                        user.username, agent_id, agent.status)
         asyncio.create_task(_audit_session_failed(
             username=user.username,

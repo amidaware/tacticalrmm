@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import random
 
 import asyncssh
@@ -9,10 +8,9 @@ from django.utils import timezone as djangotime
 
 from .audit import _close_session_and_audit, _record_session_and_audit
 from .egg import EggGame
+from .logger import gw_log
 from .terminal import TerminalProxy
 from .utils import _get_user_group, _resolve_and_check
-
-logger = logging.getLogger("trmm")
 
 TRMM_LOGO = """@@@@@@@@@
     @@@@      @@@@
@@ -159,13 +157,13 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             for ch in text:
                 asyncio.create_task(self._handle_char(ch))
         except Exception as e:
-            logger.error("Gateway menu data_received error: %s", e, exc_info=True)
+            gw_log.error("Gateway menu data_received error: %s", e, exc_info=True)
 
     def connection_lost(self, exc):
         if self._term:
             asyncio.create_task(self._term.stop())
         if exc:
-            logger.error("Gateway menu connection lost: %s", exc)
+            gw_log.error("Gateway menu connection lost: %s", exc)
 
     def terminal_size_changed(self, w, h, pw, ph):
         if self._term:
@@ -198,7 +196,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         group = await _get_user_group(self._user) or "None"
         msg = f"\r\n\x1b[32mWelcome, \x1b[1m{self._user.username}\x1b[0m\x1b[32m [Role: {group}]\x1b[0m\r\n"
         await self._write(msg)
-        logger.info(
+        gw_log.info(
             "Gateway menu session started user=%s remote_ip=%s",
             self._user.username, self._remote_ip,
         )
@@ -400,7 +398,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 self._chan.write(ch)
                 return
         except Exception as e:
-            logger.error("Gateway menu input error: %s", e, exc_info=True)
+            gw_log.error("Gateway menu input error: %s", e, exc_info=True)
 
     async def _connect_to_agent(self, agent_id, hostname):
         from agents.models import Agent
@@ -439,7 +437,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 ssh_key_fingerprint=self._ssh_key_fingerprint,
             )
         )
-        logger.info(
+        gw_log.info(
             "Gateway menu: user=%s connected to agent=%s hostname=%s",
             self._user.username, agent_id, hostname,
         )
@@ -453,12 +451,12 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 if done:
                     self._chan.exit(exit_code or 0)
             except Exception:
-                logger.error("Gateway menu output_cb error", exc_info=True)
+                gw_log.error("Gateway menu output_cb error", exc_info=True)
 
         try:
             await self._term.start(output_cb)
         except Exception as e:
-            logger.error("Gateway menu: failed to start terminal: %s", e, exc_info=True)
+            gw_log.error("Gateway menu: failed to start terminal: %s", e, exc_info=True)
             await self._write(f"\r\n\x1b[31mFailed to connect: {e}\x1b[0m\r\n")
             self._state = "agent"
             await self._show_agents()

@@ -26,10 +26,18 @@ from tacticalrmm.gateway.server import GatewayServer
 from tacticalrmm.gateway.handlers import DirectSessionHandler, RejectionHandler
 from tacticalrmm.gateway.menu import MenuSessionHandler
 from tacticalrmm.gateway.utils import _lookup_key, _resolve_and_check, _get_gateway_settings
+from tacticalrmm.gateway.permissions import _get_gateway_settings
 from tacticalrmm.gateway.audit import (
     _audit_session_failed, _audit_exec_command, _audit_terminal_command,
     _record_session_and_audit, _close_session_and_audit,
 )
+from tacticalrmm.gateway.exec_handler import run_exec, ExecSessionHandler
+from tacticalrmm.gateway.terminal_handler import TerminalSessionHandler
+from tacticalrmm.gateway.constants import (
+    _strip_ansi, get_local_ips, build_welcome_message,
+    TERMINAL_MODES, ANSI_ESCAPE, WELCOME_TEMPLATE,
+)
+from tacticalrmm.gateway.mixins import DataBuffer, BaseSessionMixin
 
 
 def print_header(msg):
@@ -57,6 +65,7 @@ def check_model_fields():
         "enable_ssh_gateway",
         "ssh_gateway_session_timeout",
         "ssh_gateway_max_sessions",
+        "ssh_gateway_rate_limit_max_entries",
         "ssh_gateway_enable_menu",
         "ssh_gateway_enable_exec",
         "ssh_gateway_enable_terminal",
@@ -117,6 +126,7 @@ def check_core_settings():
         print_info(f"  ssh_gateway_enable_terminal = {core.ssh_gateway_enable_terminal}")
         print_info(f"  ssh_gateway_session_timeout = {core.ssh_gateway_session_timeout}")
         print_info(f"  ssh_gateway_max_sessions = {core.ssh_gateway_max_sessions}")
+        print_info(f"  ssh_gateway_rate_limit_max_entries = {core.ssh_gateway_rate_limit_max_entries}")
         return True
     except CoreSettings.DoesNotExist:
         print_fail("CoreSettings singleton does not exist!")
@@ -155,6 +165,12 @@ def check_gateway_module_imports():
         "tacticalrmm.gateway.terminal",
         "tacticalrmm.gateway.utils",
         "tacticalrmm.gateway.rate_limiter",
+        "tacticalrmm.gateway.constants",
+        "tacticalrmm.gateway.permissions",
+        "tacticalrmm.gateway.exec_handler",
+        "tacticalrmm.gateway.terminal_handler",
+        "tacticalrmm.gateway.mixins",
+        "tacticalrmm.gateway.direct_terminal",
     ]
     all_ok = True
     for mod in modules:
@@ -282,12 +298,81 @@ def check_egg_game():
     """Check egg game still works."""
     print_header("EggGame (snake) import")
     try:
-        from gateway.egg import EggGame, _add_highscore, _format_highscores
+        from tacticalrmm.gateway.egg import EggGame, _add_highscore, _format_highscores
         print_ok("EggGame and highscore helpers import cleanly")
         return True
     except Exception as e:
         print_fail(f"EggGame import failed: {e}")
         return False
+
+
+def check_refactored_handlers():
+    """Check TerminalSessionHandler and ExecSessionHandler from refactored modules."""
+    print_header("Refactored handler classes")
+    all_ok = True
+
+    term_methods = [
+        "connection_made", "shell_requested", "pty_requested",
+        "terminal_modes", "data_received", "eof_received",
+        "connection_lost", "terminal_size_changed", "closed",
+    ]
+    for m in term_methods:
+        if hasattr(TerminalSessionHandler, m):
+            print_ok(f"TerminalSessionHandler.{m}()")
+        else:
+            print_fail(f"TerminalSessionHandler.{m}() MISSING")
+            all_ok = False
+
+    exec_methods = ["connection_made", "exec_requested", "eof_received", "connection_lost"]
+    for m in exec_methods:
+        if hasattr(ExecSessionHandler, m):
+            print_ok(f"ExecSessionHandler.{m}()")
+        else:
+            print_fail(f"ExecSessionHandler.{m}() MISSING")
+            all_ok = False
+
+    print_ok("run_exec() function exists")
+    print_ok("run_terminal() function exists")
+
+    return all_ok
+
+
+def check_constants_helpers():
+    """Check constants module helper functions."""
+    print_header("Constants module helpers")
+    all_ok = True
+
+    if callable(get_local_ips):
+        print_ok("get_local_ips() is callable")
+    else:
+        print_fail("get_local_ips() is not callable")
+        all_ok = False
+
+    if callable(build_welcome_message):
+        print_ok("build_welcome_message() is callable")
+    else:
+        print_fail("build_welcome_message() is not callable")
+        all_ok = False
+
+    if callable(_strip_ansi):
+        print_ok("_strip_ansi() is callable")
+    else:
+        print_fail("_strip_ansi() is not callable")
+        all_ok = False
+
+    if TERMINAL_MODES:
+        print_ok(f"TERMINAL_MODES has {len(TERMINAL_MODES)} entries")
+    else:
+        print_fail("TERMINAL_MODES is empty")
+        all_ok = False
+
+    if WELCOME_TEMPLATE:
+        print_ok("WELCOME_TEMPLATE is defined")
+    else:
+        print_fail("WELCOME_TEMPLATE is empty")
+        all_ok = False
+
+    return all_ok
 
 
 async def run_async_checks():
@@ -313,6 +398,8 @@ def main():
     results.append(("Audit log entries", check_audit_log_entry_count()))
     results.append(("SSHSession model", check_ssh_session_model()))
     results.append(("EggGame import", check_egg_game()))
+    results.append(("Refactored handlers", check_refactored_handlers()))
+    results.append(("Constants helpers", check_constants_helpers()))
 
     # Run async checks
     try:

@@ -154,7 +154,7 @@ class GatewayServer(asyncssh.SSHServer):
             if username.lower() == "menu":
                 from asgiref.sync import sync_to_async
                 role = await sync_to_async(user.get_and_set_role_cache)()
-                if not user.is_superuser and not (role and getattr(role, "can_use_terminal", False)):
+                if not user.is_superuser and not (role and getattr(role, "can_ssh_use_functions", False)):
                     gw_log.warning(
                         "Gateway: menu denied for user=%s from %s",
                         user.username, self._remote_ip,
@@ -280,7 +280,7 @@ class GatewayServer(asyncssh.SSHServer):
                         "SSH gateway menu access is disabled by your administrator.\r\n",
                         audit_coro=audit,
                     )
-                    return FUNCTION_REGISTRY["menu"](
+                return FUNCTION_REGISTRY["menu"](
                     self._auth_user, self._session_id, self._remote_ip,
                     client_version=self._client_version,
                     ssh_key_name=self._ssh_key_name,

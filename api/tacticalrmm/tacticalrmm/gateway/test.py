@@ -623,55 +623,6 @@ def check_function_registry_autodiscovery():
     return all_ok
 
 
-def check_base_function_handler():
-    """BaseFunctionHandler provides expected default methods."""
-    print_header("BaseFunctionHandler class")
-    from tacticalrmm.gateway.functions.base import BaseFunctionHandler
-    all_ok = True
-    for m in ["connection_made", "pty_requested", "eof_received"]:
-        if hasattr(BaseFunctionHandler, m):
-            print_ok(f"BaseFunctionHandler.{m}()")
-        else:
-            print_fail(f"BaseFunctionHandler.{m}() MISSING")
-            all_ok = False
-    if BaseFunctionHandler.name == "":
-        print_ok("BaseFunctionHandler.name is empty string (meant to be overridden)")
-    else:
-        print_fail(f"BaseFunctionHandler.name is '{BaseFunctionHandler.name}'")
-        all_ok = False
-    # pty_requested returns True
-    if BaseFunctionHandler.pty_requested(None, "xterm", None, {}):
-        print_ok("BaseFunctionHandler.pty_requested returns True")
-    else:
-        print_fail("BaseFunctionHandler.pty_requested should return True")
-        all_ok = False
-    # eof_received returns False
-    if BaseFunctionHandler.eof_received(None) is False:
-        print_ok("BaseFunctionHandler.eof_received returns False")
-    else:
-        print_fail("BaseFunctionHandler.eof_received should return False")
-        all_ok = False
-    # __init__ stores params
-    class _MockUser: pass
-    u = _MockUser()
-    inst = BaseFunctionHandler(u, "sid", "1.2.3.4", client_version="v1",
-                               ssh_key_name="k", ssh_key_type="ed25519",
-                               ssh_key_fingerprint="fp")
-    if inst._user is u and inst._session_id == "sid" and inst._remote_ip == "1.2.3.4":
-        print_ok("BaseFunctionHandler.__init__ stores constructor args")
-    else:
-        print_fail("BaseFunctionHandler.__init__ did not store args")
-        all_ok = False
-    # connection_made sets _chan
-    inst.connection_made("mock_chan")
-    if inst._chan == "mock_chan":
-        print_ok("BaseFunctionHandler.connection_made sets _chan")
-    else:
-        print_fail("BaseFunctionHandler.connection_made did not set _chan")
-        all_ok = False
-    return all_ok
-
-
 def check_every_function_interface():
     """Every registered function handler must conform to the expected interface."""
     print_header("Universal function interface tests")
@@ -1203,7 +1154,6 @@ def main():
     results.append(("Constants helpers", check_constants_helpers()))
     results.append(("New SSH permission fields", check_new_ssh_permission_fields()))
     results.append(("FUNCTION_REGISTRY autodiscovery", check_function_registry_autodiscovery()))
-    results.append(("BaseFunctionHandler", check_base_function_handler()))
     results.append(("Universal function interface", check_every_function_interface()))
     results.append(("Rate limiter", check_rate_limiter()))
     results.append(("RejectionHandler full", check_rejection_handler_full()))

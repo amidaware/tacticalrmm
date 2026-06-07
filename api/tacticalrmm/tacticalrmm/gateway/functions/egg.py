@@ -232,19 +232,6 @@ def _load_highscores():
         return []
 
 
-def _save_highscores(scores):
-    try:
-        os.makedirs(os.path.dirname(_HIGHSCORES_PATH), exist_ok=True)
-        with open(_HIGHSCORES_PATH, "w") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-            try:
-                json.dump(scores, f, indent=2)
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-    except OSError as e:
-        gw_log.debug("Failed to save highscores: %s", e)
-
-
 def _add_highscore(username, score, won):
     try:
         with open(_HIGHSCORES_PATH, "a+") as f:
@@ -260,7 +247,7 @@ def _add_highscore(username, score, won):
                     None,
                 )
                 if existing is not None:
-                    if score > scores[existing]["score"]:
+                    if score >= scores[existing]["score"]:
                         scores[existing] = {
                             "username": username,
                             "score": score,

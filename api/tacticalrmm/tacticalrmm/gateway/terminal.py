@@ -9,7 +9,7 @@ from .audit import (
     _close_session_and_audit,
     _record_session_and_audit,
 )
-from .constants import ANSI_ESCAPE, TERMINAL_MODES, get_local_ips, build_welcome_message
+from .constants import _strip_ansi, get_local_ips, build_welcome_message
 from .logger import gw_log
 from tacticalrmm.helpers import setup_nats_options
 
@@ -77,10 +77,6 @@ class TerminalProxy:
             except Exception as e:
                 gw_log.debug("TerminalProxy stop: failed to close NATS connection: %s", e)
             self.nc = None
-
-
-def _strip_ansi(data):
-    return ANSI_ESCAPE.sub("", data)
 
 
 async def start_terminal_session(chan, user, agent, session_id, remote_ip,

@@ -26,16 +26,25 @@ def load_functions():
         if handler is None:
             for name in dir(mod):
                 obj = getattr(mod, name)
-                if isinstance(obj, type) and issubclass(obj, asyncssh.SSHServerSession) and obj is not asyncssh.SSHServerSession:
+                if (isinstance(obj, type) and issubclass(obj, asyncssh.SSHServerSession)
+                        and obj is not asyncssh.SSHServerSession
+                        and getattr(obj, "name", None)):
                     handler = obj
                     break
         if handler is None:
             continue
 
         func_name = getattr(handler, "name", None)
-        if not func_name:
+        if not func_name or not isinstance(func_name, str):
             continue
-        FUNCTION_REGISTRY[func_name.lower()] = handler
+        lower_name = func_name.lower()
+        if lower_name in FUNCTION_REGISTRY:
+            import logging
+            logging.getLogger("trmm").warning(
+                "Function name collision: '%s' already registered by another module, overwriting",
+                lower_name,
+            )
+        FUNCTION_REGISTRY[lower_name] = handler
 
 
 load_functions()

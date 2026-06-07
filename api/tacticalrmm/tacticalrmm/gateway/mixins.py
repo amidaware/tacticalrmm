@@ -4,17 +4,13 @@ import re
 import asyncssh
 from django.utils import timezone as djangotime
 
-from .constants import ANSI_ESCAPE, TERMINAL_MODES, WELCOME_TEMPLATE
+from .constants import _strip_ansi, get_local_ips, build_welcome_message
 from .audit import (
     _audit_terminal_command,
     _close_session_and_audit,
     _record_session_and_audit,
 )
 from .logger import gw_log
-
-
-def _strip_ansi(data):
-    return ANSI_ESCAPE.sub("", data)
 
 
 class DataBuffer:
@@ -33,26 +29,6 @@ class DataBuffer:
         lines = self._buf.replace(b"\r\n", b"\n").replace(b"\r", b"\n").split(b"\n")
         self._buf = lines.pop()
         return [line for line in lines if line.strip() and not any(b < 32 for b in line if b not in (9,))]
-
-
-def build_welcome_message(username, role_name, hostname, os_info, shell, agent_ver, pubip, local_ips):
-    return WELCOME_TEMPLATE.format(
-        username=username,
-        role=role_name or "None",
-        hostname=hostname,
-        os_info=os_info,
-        shell=shell,
-        agent_ver=agent_ver,
-        pubip=pubip,
-        local_ips=local_ips,
-    )
-
-
-def get_local_ips(agent):
-    local_ips_val = getattr(agent, 'local_ips', None)
-    if local_ips_val:
-        return str(local_ips_val)
-    return "N/A"
 
 
 class BaseSessionMixin:

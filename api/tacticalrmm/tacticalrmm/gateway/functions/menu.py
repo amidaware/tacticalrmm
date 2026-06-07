@@ -23,6 +23,24 @@ TRMM_LOGO = """@@@@@@@@@
       @@@@@@@@@@"""
 
 
+class _Channel:
+    def __init__(self, menu):
+        self._menu = menu
+
+    def write(self, data):
+        self._menu._chan.write(data)
+
+    def exit(self, code=0):
+        self._menu._active_func = None
+        asyncio.create_task(self._menu._show_clients())
+
+    def is_closing(self):
+        return False
+
+    def get_extra_info(self, *a, **kw):
+        return self._menu._chan.get_extra_info(*a, **kw)
+
+
 @sync_to_async
 def _get_menu_agents(user):
     from agents.models import Agent
@@ -35,7 +53,7 @@ def _get_menu_agents(user):
         filtered = list(agents)
     else:
         role = user.get_and_set_role_cache()
-        if not (role and getattr(role, "can_use_terminal", False)):
+        if not (role and getattr(role, "can_ssh_open_terminal", False)):
             return []
         can_view_clients = list(role.can_view_clients.all()) if role.can_view_clients.exists() else None
         can_view_sites = list(role.can_view_sites.all()) if role.can_view_sites.exists() else None
@@ -84,6 +102,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         self._agent_page = 0
         self._agents_per_page = 10
         self._active_func = None
+        self._idle_task = None
 
     def connection_made(self, chan):
         self._chan = chan
@@ -93,7 +112,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
     def shell_requested(self):
         self._state = "menu"
         asyncio.create_task(self._enter_menu())
-        asyncio.create_task(self._idle_check())
+        self._idle_task = asyncio.create_task(self._idle_check())
         return True
 
     def pty_requested(self, term_type, term_size, term_modes):
@@ -149,6 +168,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             gw_log.error("Gateway menu data_received error: %s", e, exc_info=True)
 
     def connection_lost(self, exc):
+        if self._idle_task:
+            self._idle_task.cancel()
         if self._term:
             asyncio.create_task(self._term.stop())
         if exc:
@@ -159,6 +180,8 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             asyncio.create_task(self._term.resize(h, w))
 
     def closed(self):
+        if self._idle_task:
+            self._idle_task.cancel()
         if self._term:
             asyncio.create_task(self._term.stop())
         if self._started_at and self._selected_agent:
@@ -406,20 +429,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
             ssh_key_type=self._ssh_key_type,
             ssh_key_fingerprint=self._ssh_key_fingerprint,
         )
-        menu = self
-
-        class _Channel:
-            def write(self_, data):
-                menu._chan.write(data)
-            def exit(self_, code=0):
-                menu._active_func = None
-                asyncio.create_task(menu._show_clients())
-            def is_closing(self_):
-                return False
-            def get_extra_info(self_, *a, **kw):
-                return menu._chan.get_extra_info(*a, **kw)
-
-        handler._chan = _Channel()
+        handler._chan = _Channel(self)
         handler.connection_made(handler._chan)
         self._active_func = handler
         if hasattr(handler, 'shell_requested'):

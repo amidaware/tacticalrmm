@@ -25,7 +25,7 @@ def _lookup_key(fp: str):
 
 
 @sync_to_async
-def _resolve_and_check(user, agent_id: str):
+def _resolve_and_check(user, agent_id: str, session_type="terminal"):
     from agents.models import Agent
     if user.is_superuser:
         try:
@@ -40,7 +40,8 @@ def _resolve_and_check(user, agent_id: str):
             return None
     if not role:
         return None
-    if not getattr(role, "can_use_terminal", False):
+    perm = "can_ssh_open_terminal" if session_type == "terminal" else "can_ssh_send_commands"
+    if not getattr(role, perm, False):
         return None
     try:
         agent = Agent.objects.defer("wmi_detail", "services").select_related(
@@ -121,7 +122,7 @@ async def validate_user_active(user) -> tuple[bool, str, dict]:
 
 async def validate_menu_access(user) -> tuple[bool, str, dict]:
     role = await sync_to_async(user.get_and_set_role_cache)()
-    if not user.is_superuser and not (role and getattr(role, "can_use_terminal", False)):
+    if not user.is_superuser and not (role and getattr(role, "can_ssh_use_functions", False)):
         logger.warning("Gateway: menu denied for user=%s", user.username)
         asyncio.create_task(_audit_session_failed(
             username=user.username,
@@ -176,7 +177,7 @@ async def check_user_can_use_menu(user) -> bool:
     if user.is_superuser:
         return True
     role = await sync_to_async(user.get_and_set_role_cache)()
-    return role and getattr(role, "can_use_terminal", False)
+    return role and getattr(role, "can_ssh_use_functions", False)
 
 
 async def check_agent_online(agent) -> bool:

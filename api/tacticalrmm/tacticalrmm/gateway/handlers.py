@@ -5,7 +5,8 @@ import asyncssh
 from django.utils import timezone as djangotime
 
 from .audit import _audit_session_failed, _audit_exec_command, _audit_terminal_command, _close_session_and_audit, _record_session_and_audit
-from .constants import ANSI_ESCAPE, TERMINAL_MODES, _strip_ansi, get_local_ips, build_welcome_message
+from .constants import ANSI_ESCAPE, TERMINAL_MODES, _strip_ansi
+from .direct_terminal import start_terminal_session
 from .exec import CmdProxy
 from .terminal import TerminalProxy
 
@@ -146,50 +147,22 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
         return True
 
     async def _start_terminal(self):
-        from .exec_handler import run_terminal
-
-        async def output_cb(data, done=False, exit_code=None):
-            try:
-                if isinstance(data, bytes):
-                    data = data.decode("utf-8", errors="replace")
-                data = _strip_ansi(data)
-                if data and self._chan and not self._chan.is_closing():
-                    self._chan.write(data)
-                if done:
-                    asyncio.create_task(_close_session_and_audit(
-                        self._user, self._agent, self._session_id, self._remote_ip,
-                        self._started_at,
-                        terminal_type=self._terminal_type,
-                        terminal_rows=self._terminal_rows,
-                        terminal_cols=self._terminal_cols,
-                    ))
-                    if self._chan and not self._chan.is_closing():
-                        self._chan.exit(exit_code or 0)
-            except Exception as e:
-                logger.error("Gateway terminal output_cb error: %s", e)
+        from .direct_terminal import start_terminal_session
 
         try:
             shell = self._agent.effective_default_shell
-            role_name = self._user.role.name if self._user.role else None
-            os_info = self._agent.operating_system or "Unknown"
-            agent_ver = self._agent.version or "Unknown"
-            pubip = self._agent.public_ip or "N/A"
-            local_ips = get_local_ips(self._agent)
-            msg = build_welcome_message(
-                self._user.username, role_name, self._agent.hostname,
-                os_info, shell, agent_ver, pubip, local_ips,
-            )
-            self._chan.write(msg)
-
             self._term = TerminalProxy(self._agent, self._session_id, shell)
-            asyncio.create_task(_record_session_and_audit(
-                self._user, self._agent, self._session_id, self._remote_ip,
+            asyncio.create_task(start_terminal_session(
+                self._chan, self._user, self._agent, self._session_id, self._remote_ip,
                 client_version=self._client_version,
                 ssh_key_name=self._ssh_key_name,
                 ssh_key_type=self._ssh_key_type,
                 ssh_key_fingerprint=self._ssh_key_fingerprint,
+                term=self._term,
+                terminal_type=self._terminal_type,
+                terminal_rows=self._terminal_rows,
+                terminal_cols=self._terminal_cols,
             ))
-            await run_terminal(self._term, output_cb)
         except Exception as e:
             logger.error("Gateway terminal start failed: %s", e, exc_info=True)
             try:

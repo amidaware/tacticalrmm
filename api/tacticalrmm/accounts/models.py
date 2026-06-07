@@ -211,6 +211,11 @@ class Role(BaseAuditModel):
     can_view_reports = models.BooleanField(default=False)
     can_manage_reports = models.BooleanField(default=False)
 
+    # ssh
+    can_ssh_open_terminal = models.BooleanField(default=False)
+    can_ssh_send_commands = models.BooleanField(default=False)
+    can_ssh_use_functions = models.BooleanField(default=False)
+
     def __str__(self):
         return self.name
 

@@ -40,6 +40,12 @@ class RejectionHandler(asyncssh.SSHServerSession):
     def eof_received(self):
         return False
 
+    def connection_lost(self, exc):
+        pass
+
+    def closed(self):
+        pass
+
 
 class DirectSessionHandler(asyncssh.SSHServerSession):
     def __init__(self, user, agent, session_id, remote_ip,

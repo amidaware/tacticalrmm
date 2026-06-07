@@ -17,17 +17,19 @@ class EggGame:
         self._handler = handler
         self._chan = handler._chan
         self._user = handler._user
-
-    async def start(self):
-        self._handler._state = "snake"
         self._snake_width = 40
         self._snake_height = 16
-        mid_r = self._snake_height // 2
-        mid_c = self._snake_width // 2
-        self._snake_body = [(mid_r, c) for c in range(mid_c, mid_c - 3, -1)]
+        self._snake_body = []
         self._snake_dir = (0, 1)
         self._snake_score = 0
         self._snake_buf = ""
+        self._snake_food = None
+
+    async def start(self):
+        self._handler._state = "snake"
+        mid_r = self._snake_height // 2
+        mid_c = self._snake_width // 2
+        self._snake_body = [(mid_r, c) for c in range(mid_c, mid_c - 3, -1)]
         self._snake_food = self._snake_place_food()
         await self._write("\x1b[2J\x1b[H")
         await self._draw()
@@ -205,6 +207,12 @@ class Handler(asyncssh.SSHServerSession):
 
     def eof_received(self):
         return False
+
+    def connection_lost(self, exc):
+        pass
+
+    def closed(self):
+        pass
 
 
 def _load_highscores():

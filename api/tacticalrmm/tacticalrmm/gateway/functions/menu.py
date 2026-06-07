@@ -688,7 +688,3 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
         except asyncio.CancelledError:
             pass
 
-
-async def go_back(handler):
-    handler._state = "client"
-    await handler._show_clients()

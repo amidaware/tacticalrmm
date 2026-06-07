@@ -13,11 +13,10 @@ _HIGHSCORES_PATH = "/etc/trmm/snake_highscores.json"
 
 
 class EggGame:
-    def __init__(self, handler, standalone=False):
+    def __init__(self, handler):
         self._handler = handler
         self._chan = handler._chan
         self._user = handler._user
-        self._standalone = standalone
 
     async def start(self):
         self._handler._state = "snake"
@@ -105,13 +104,10 @@ class EggGame:
             f"Score: {self._snake_score}\r\n",
             "\r\n",
             _format_highscores(scores),
-            "\r\nPress any key to exit..." if self._standalone else "\r\nPress any key to return to menu...\r\n",
+            "\r\nPress any key to exit...\r\n",
         ]
         await self._write("".join(lines))
-        if self._standalone:
-            self._handler._state = "exit"
-        else:
-            self._handler._state = "snake_gameover"
+        self._handler._state = "exit"
 
     async def _win(self):
         scores = _add_highscore(self._user.username, self._snake_score, True)
@@ -121,13 +117,10 @@ class EggGame:
             f"Final Score: {self._snake_score}\r\n",
             "\r\n",
             _format_highscores(scores),
-            "\r\nPress any key to exit..." if self._standalone else "\r\nPress any key to return to menu...\r\n",
+            "\r\nPress any key to exit...\r\n",
         ]
         await self._write("".join(lines))
-        if self._standalone:
-            self._handler._state = "exit"
-        else:
-            self._handler._state = "snake_gameover"
+        self._handler._state = "exit"
 
     def handle_input(self, ch):
         if ch.lower() == "q" or ch == "\x03":
@@ -153,12 +146,8 @@ class EggGame:
                 return
 
     async def _quit(self):
-        if self._standalone:
-            self._handler._state = "exit"
-            self._chan.exit(0)
-        else:
-            self._handler._state = "client"
-            await self._handler._show_clients()
+        self._handler._state = "exit"
+        self._chan.exit(0)
 
     async def _write(self, text=""):
         if self._chan and not self._chan.is_closing():
@@ -195,7 +184,7 @@ class Handler(asyncssh.SSHServerSession):
         return True
 
     async def _run(self):
-        self._game = EggGame(self, standalone=True)
+        self._game = EggGame(self)
         await self._game.start()
 
     def data_received(self, data, datatype):

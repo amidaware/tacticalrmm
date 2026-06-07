@@ -332,7 +332,7 @@ class Alert(models.Model):
                 always_email = alert_template.agent_always_email
                 always_text = alert_template.agent_always_text
                 alert_interval = alert_template.agent_periodic_alert_days
-                should_run_script_or_webhook = alert_template.agent_script_actions
+                should_run_script_or_webhook = alert_template.agent_script_actions and alert_template.action
 
         elif isinstance(instance, CheckResult):
             from checks.tasks import (
@@ -383,7 +383,7 @@ class Alert(models.Model):
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
                 alert_interval = alert_template.check_periodic_alert_days
-                should_run_script_or_webhook = alert_template.check_script_actions
+                should_run_script_or_webhook = alert_template.check_script_actions and alert_template.action
 
         elif isinstance(instance, TaskResult):
             from autotasks.tasks import handle_task_email_alert, handle_task_sms_alert
@@ -417,7 +417,7 @@ class Alert(models.Model):
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text
                 alert_interval = alert_template.task_periodic_alert_days
-                should_run_script_or_webhook = alert_template.task_script_actions
+                should_run_script_or_webhook = alert_template.task_script_actions and alert_template.action
 
         else:
             return
@@ -610,7 +610,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.agent_email_on_resolved
                 text_on_resolved = alert_template.agent_text_on_resolved
-                should_run_script_or_webhook = alert_template.agent_script_actions
+                should_run_script_or_webhook = alert_template.agent_script_actions and alert_template.resolved_action
                 email_severities = [AlertSeverity.ERROR]
                 text_severities = [AlertSeverity.ERROR]
 
@@ -635,7 +635,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.check_email_on_resolved
                 text_on_resolved = alert_template.check_text_on_resolved
-                should_run_script_or_webhook = alert_template.check_script_actions
+                should_run_script_or_webhook = alert_template.check_script_actions and alert_template.resolved_action
                 email_severities = alert_template.check_email_alert_severity or [
                     AlertSeverity.ERROR,
                     AlertSeverity.WARNING,
@@ -661,7 +661,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.task_email_on_resolved
                 text_on_resolved = alert_template.task_text_on_resolved
-                should_run_script_or_webhook = alert_template.task_script_actions
+                should_run_script_or_webhook = alert_template.task_script_actions and alert_template.resolved_action
                 email_severities = alert_template.task_email_alert_severity or [
                     AlertSeverity.ERROR,
                     AlertSeverity.WARNING,
@@ -759,7 +759,7 @@ class Alert(models.Model):
                     "retcode": retcode,
                 }
 
-            elif alert_template.action_type == AlertTemplateActionType.REST:
+            elif alert_template.resolved_action_type == AlertTemplateActionType.REST:
                 if (
                     alert.severity == AlertSeverity.INFO
                     and not core.notify_on_info_alerts

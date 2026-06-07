@@ -22,16 +22,13 @@ class RejectionHandler(asyncssh.SSHServerSession):
 
     def connection_made(self, chan):
         self._chan = chan
-        try:
-            chan.write(self._message.encode("utf-8", errors="replace"))
-            chan.write_eof()
-        except Exception:
-            pass
+        chan.write(self._message.encode("utf-8", errors="replace"))
         if self._audit_coro:
             asyncio.create_task(self._audit_coro)
-        asyncio.get_event_loop().call_soon(self._delayed_exit)
+        asyncio.create_task(self._delayed_exit())
 
-    def _delayed_exit(self):
+    async def _delayed_exit(self):
+        await asyncio.sleep(0.1)
         if self._chan and not self._chan.is_closing():
             self._chan.exit(1)
 

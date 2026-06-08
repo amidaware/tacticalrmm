@@ -74,11 +74,15 @@ class Command(BaseCommand):
             "cheaper-overload": str(getattr(settings, "UWSGI_CHEAPER_OVERLOAD", 3)),
             "cheaper-busyness-min": str(getattr(settings, "UWSGI_BUSYNESS_MIN", 5)),
             "cheaper-busyness-max": str(getattr(settings, "UWSGI_BUSYNESS_MAX", 10)),
+            "listen": str(getattr(settings, "UWSGI_LISTEN_QUEUE", 1024)),
         }
 
         if getattr(settings, "UWSGI_DEBUG", False):
             config["uwsgi"]["stats"] = "/tmp/stats.socket"
             config["uwsgi"]["cheaper-busyness-verbose"] = str(True).lower()
+
+        if getattr(settings, "UWSGI_THUNDER_LOCK", False):
+            config["uwsgi"]["thunder-lock"] = str(True).lower()
 
         with open(settings.BASE_DIR / "app.ini", "w") as fp:
             config.write(fp)

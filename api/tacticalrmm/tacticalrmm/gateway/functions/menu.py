@@ -18,7 +18,7 @@ from ..logger import gw_log
 from ..terminal import TerminalProxy
 from ..utils import _get_user_group, _resolve_and_check
 
-TRMM_LOGO = """@@@@@@@@@
+TRMM_LOGO = """      @@@@@@@@@
     @@@@      @@@@
    @@@          @@@
   @@* @@@@@@@@@@ @@@

@@ -5,6 +5,7 @@ from asgiref.sync import sync_to_async
 from django.core.cache import cache
 
 from tacticalrmm.constants import AGENT_CHECKS_CACHE_PREFIX
+from agents.utils import calculate_agent_checks
 from ..handlers import RejectionHandler
 from ..logger import gw_log
 
@@ -100,7 +101,7 @@ class Handler(asyncssh.SSHServerSession):
 
             for site in sites:
                 agents = await sync_to_async(
-                    lambda s=site: list(s.agent_set.all().order_by("hostname"))
+                    lambda s=site: list(s.agents.all().order_by("hostname"))
                 )()
                 site_entry = {"site": site, "agents": [], "failing": 0, "warning": 0, "passing": 0, "total": 0}
 
@@ -109,7 +110,9 @@ class Handler(asyncssh.SSHServerSession):
                         lambda a=agent: cache.get(f"{AGENT_CHECKS_CACHE_PREFIX}{a.pk}", None)
                     )()
                     if agent_data is None:
-                        agent_data = {"failing": 0, "warning": 0, "passing": 0, "total": 0}
+                        agent_data = await sync_to_async(
+                            lambda a=agent: calculate_agent_checks(a)
+                        )()
 
                     failing = agent_data.get("failing", 0)
                     warning = agent_data.get("warning", 0)
@@ -161,10 +164,10 @@ class Handler(asyncssh.SSHServerSession):
             return "  ".join(parts)
 
         lines = [
-            f"\r\n{BOLD_CYAN}\u2500" * 60 + f"{C}\r\n",
-            f"{BOLD_CYAN}  Tactical RMM \u2014 Check Status Report{C}\r\n",
-            f"{BOLD_CYAN}\u2500" * 60 + f"{C}\r\n",
-            f"{DIM}  Agent checks are cached and refreshed every ~5 min{C}\r\n",
+            f"\r\n{BOLD_CYAN}" + "\u2500" * 60 + f"{C}\r\n",
+            f"  {BOLD_CYAN}Tactical RMM \u2014 Check Status Report{C}\r\n",
+            f"{BOLD_CYAN}" + "\u2500" * 60 + f"{C}\r\n",
+            f"  {DIM}Check data read from Redis cache (falls back to live calculation){C}\r\n",
             f"\r\n",
         ]
 
@@ -220,8 +223,8 @@ class Handler(asyncssh.SSHServerSession):
             lines.append(f"\r\n")
 
         lines += [
-            f"{BOLD_CYAN}\u2500" * 60 + f"{C}\r\n",
-            f"{BOLD}  GLOBAL TOTALS{C}\r\n",
+            f"{BOLD_CYAN}" + "\u2500" * 60 + f"{C}\r\n",
+            f"  {BOLD}GLOBAL TOTALS{C}\r\n",
             f"    {BOLD if gt['failing'] else ''}{RED}{gt['failing']} failed{C}  "
             f"{YELLOW}{gt['warning']} warn{C}  "
             f"{GREEN}{gt['passing']} ok{C}  "
@@ -229,7 +232,7 @@ class Handler(asyncssh.SSHServerSession):
             f"    {DIM}Clients: {len(tree)}  "
             f"Sites: {sum(len(c['sites']) for c in tree)}  "
             f"Agents: {sum(sum(len(s['agents']) for s in c['sites']) for c in tree)}{C}\r\n",
-            f"{BOLD_CYAN}\u2500" * 60 + f"{C}\r\n",
+            f"{BOLD_CYAN}" + "\u2500" * 60 + f"{C}\r\n",
         ]
 
         return lines

@@ -82,7 +82,7 @@ class AuditLog(models.Model):
             agent_id=agent.agent_id,
             object_type=AuditObjType.AGENT,
             action=AuditActionType.REMOTE_SESSION,
-            message=f"{username} used Mesh Central to initiate a remote session to {agent.hostname}.",
+            message=f"{username} initiated a remote session to {agent.hostname}.",
             debug_info=debug_info,
         )
 

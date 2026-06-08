@@ -489,7 +489,7 @@ class MenuSessionHandler(asyncssh.SSHServerSession):
                 if self._chan and not self._chan.is_closing():
                     self._chan.write(data)
                 if done:
-                    await self._return_from_terminal()
+                    asyncio.create_task(self._return_from_terminal())
             except Exception:
                 gw_log.error("Gateway menu output_cb error", exc_info=True)
 

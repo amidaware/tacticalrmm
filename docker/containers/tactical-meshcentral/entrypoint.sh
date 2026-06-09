@@ -23,6 +23,12 @@ set -e
 : "${SMTP_PASS:=mesh-smtp-pass}"
 : "${SMTP_TLS:=false}"
 
+if [ -n "${APP_HOST}" ]; then
+  ALLOWED_FRAMING_ORIGINS='["https://'"${APP_HOST}"'"]'
+else
+  ALLOWED_FRAMING_ORIGINS='[]'
+fi
+
 if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 0 ]]; then
 
   encoded_uri=$(node -p "encodeURI('mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}')")
@@ -41,7 +47,7 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "agentAliasPort": 443,
     "aliasPort": 443,
     "allowLoginToken": true,
-    "allowFraming": true,
+    "allowedFramingOrigins": ${ALLOWED_FRAMING_ORIGINS},
     "agentPing": 35,
     "allowHighQualityDesktop": true,
     "agentCoreDump": false,

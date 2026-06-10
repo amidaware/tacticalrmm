@@ -789,7 +789,7 @@ def install_agent(request):
                 "ping",
                 "127.0.0.1",
                 "-n",
-                "5",
+                "7",
                 "&&",
                 r'"C:\Program Files\TacticalAgent\tacticalrmm.exe"',
             ] + install_flags

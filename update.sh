@@ -339,10 +339,64 @@ if ! which npm >/dev/null; then
   cd /meshcentral
   rm -rf node_modules/ package-lock.json
   npm install
+  sudo systemctl start nginx
+  sleep 1
   sudo systemctl start meshcentral
 fi
 
 sudo npm install -g npm
+
+# disable compression if set to fix some mesh issues
+mesh_cfg='/meshcentral/meshcentral-data/config.json'
+
+check_jq_filter='
+( .settings // {} ) |
+to_entries |
+map(
+    select((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression"))
+) |
+all(.value == false)
+'
+
+apply_jq_filter='
+.settings |= (
+    with_entries(
+        if ((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression")) then
+            .value = false
+        else
+            .
+        end
+    )
+)
+'
+
+if ! which jq >/dev/null; then
+  echo "installing jq"
+  sudo apt-get install -y jq >/dev/null
+fi
+
+if which jq >/dev/null; then
+  if ! jq -e "$check_jq_filter" "$mesh_cfg" >/dev/null; then
+    echo "Disabling mesh compression"
+    # backup to homedir first
+    cp "$mesh_cfg" ~/meshcfg-$(date "+%Y%m%dT%H%M%S").bak
+    mesh_tmp=$(mktemp)
+    if jq "$apply_jq_filter" "$mesh_cfg" >"$mesh_tmp"; then
+      if [ -s "$mesh_tmp" ]; then
+        mv "$mesh_tmp" "$mesh_cfg"
+      fi
+    fi
+    rm -f "$mesh_tmp"
+  fi
+fi
+
+if which jq >/dev/null; then
+	cp "$mesh_cfg" ~/meshcfg${CURRENT_TRMM_VER}-$(date "+%Y%m%dT%H%M%S").bak
+	mesh_tmp2=$(mktemp)
+	if jq '.settings.noAgentUpdate = true | .settings.autoBackup = false' "$mesh_cfg" >"$mesh_tmp2" && [ -s "$mesh_tmp2" ]; then
+		mv "$mesh_tmp2" "$mesh_cfg"
+	fi
+fi
 
 CURRENT_MESH_VER=$(cd /meshcentral/node_modules/meshcentral && node -p -e "require('./package.json').version")
 if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]]; then
@@ -365,6 +419,8 @@ EOF
   )"
   echo "${mesh_pkg}" >/meshcentral/package.json
   npm install
+  sudo systemctl start nginx
+  sleep 1
   sudo systemctl start meshcentral
 fi
 
@@ -632,59 +688,6 @@ echo "window._env_ = {PROD_URL: \"https://${API}\"}" | sudo tee /var/www/rmm/dis
 sudo chown www-data:www-data -R /var/www/rmm/dist
 rm -f /tmp/${webtar}
 
-# disable compression if set to fix some mesh issues
-mesh_cfg='/meshcentral/meshcentral-data/config.json'
-
-check_jq_filter='
-( .settings // {} ) |
-to_entries |
-map(
-    select((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression"))
-) |
-all(.value == false)
-'
-
-apply_jq_filter='
-.settings |= (
-    with_entries(
-        if ((.key | ascii_downcase) | IN("compression", "wscompression", "agentwscompression")) then
-            .value = false
-        else
-            .
-        end
-    )
-)
-'
-
-if ! which jq >/dev/null; then
-  echo "installing jq"
-  sudo apt-get install -y jq >/dev/null
-fi
-
-if which jq >/dev/null; then
-  if ! jq -e "$check_jq_filter" "$mesh_cfg" >/dev/null; then
-    echo "Disabling mesh compression"
-    # backup to homedir first
-    cp "$mesh_cfg" ~/meshcfg-$(date "+%Y%m%dT%H%M%S").bak
-    mesh_tmp=$(mktemp)
-    if jq "$apply_jq_filter" "$mesh_cfg" >"$mesh_tmp"; then
-      if [ -s "$mesh_tmp" ]; then
-        mv "$mesh_tmp" "$mesh_cfg"
-        sudo systemctl restart meshcentral
-      fi
-    fi
-    rm -f "$mesh_tmp"
-  fi
-fi
-
-if which jq >/dev/null; then
-	cp "$mesh_cfg" ~/meshcfg1.4.0-$(date "+%Y%m%dT%H%M%S").bak
-	mesh_tmp2=$(mktemp)
-	if jq '.settings.noAgentUpdate = true | .settings.autoBackup = false' "$mesh_cfg" >"$mesh_tmp2" && [ -s "$mesh_tmp2" ]; then
-		mv "$mesh_tmp2" "$mesh_cfg"
-		sudo systemctl restart meshcentral
-	fi
-fi
 
 for i in nats nats-api rmm daphne celery celerybeat nginx; do
   printf >&2 "${GREEN}Starting ${i} service${NC}\n"
@@ -692,4 +695,5 @@ for i in nats nats-api rmm daphne celery celerybeat nginx; do
 done
 
 rm -f $TMP_SETTINGS
+sudo systemctl reload nginx
 printf >&2 "${GREEN}Update finished!${NC}\n"

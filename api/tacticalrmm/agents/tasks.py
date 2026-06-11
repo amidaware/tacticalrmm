@@ -59,7 +59,7 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
     else:
         if alert_interval:
             # send an email only if the last email sent is older than alert interval
-            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            delta = djangotime.now() - dt.timedelta(minutes=alert_interval)
             if alert.email_sent < delta:
                 sleep(rand_range(100, 1500))
                 alert.agent.send_outage_email()
@@ -104,7 +104,7 @@ def agent_outage_sms_task(pk: int, alert_interval: Optional[float] = None) -> st
     else:
         if alert_interval:
             # send an sms only if the last sms sent is older than alert interval
-            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            delta = djangotime.now() - dt.timedelta(minutes=alert_interval)
             if alert.sms_sent < delta:
                 sleep(rand_range(100, 1500))
                 alert.agent.send_outage_sms()

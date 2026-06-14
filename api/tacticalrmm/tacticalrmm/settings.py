@@ -290,8 +290,7 @@ MIDDLEWARE = [
     "ee.sso.middleware.SSOIconMiddleware",
 ]
 
-if SWAGGER_ENABLED:
-    INSTALLED_APPS += ("drf_spectacular",)
+INSTALLED_APPS += ("drf_spectacular",)
 
 if DEBUG and not DEMO:
     INSTALLED_APPS.insert(0, "daphne")

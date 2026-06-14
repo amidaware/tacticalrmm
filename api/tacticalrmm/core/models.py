@@ -124,6 +124,7 @@ class CoreSettings(BaseAuditModel):
 
     block_local_user_logon = models.BooleanField(default=False)
     sso_enabled = models.BooleanField(default=False)
+    enable_swagger = models.BooleanField(default=False)
 
     default_shell_windows = models.CharField(
         max_length=32,
@@ -271,6 +272,32 @@ class CoreSettings(BaseAuditModel):
             return False
 
         return self.enable_server_webterminal
+
+    @property
+    def ssh_gateway_enabled(self) -> bool:
+        if (
+            getattr(settings, "HOSTED", False)
+            or getattr(settings, "DEMO", False)
+        ):
+            return False
+
+        return self.enable_ssh_gateway
+
+    @property
+    def ssh_gateway_menu_enabled(self) -> bool:
+        return self.ssh_gateway_enabled and self.ssh_gateway_enable_menu
+
+    @property
+    def ssh_gateway_exec_enabled(self) -> bool:
+        return self.ssh_gateway_enabled and self.ssh_gateway_enable_exec
+
+    @property
+    def ssh_gateway_terminal_enabled(self) -> bool:
+        return self.ssh_gateway_enabled and self.ssh_gateway_enable_terminal
+
+    @property
+    def swagger_enabled(self) -> bool:
+        return self.enable_swagger
 
     def send_mail(
         self,

@@ -78,6 +78,16 @@ class TacticalTestCase(TestCase):
         )
         Token.objects.create(user=agent_user)
 
+    def authenticate_agent(self, agent: "Agent") -> "User":
+        agent_user = User.objects.create_user(  # type: ignore
+            username=agent.agent_id,
+            agent=agent,
+            password=make_random_password(len=60),  # type: ignore
+        )
+        token = Token.objects.create(user=agent_user)
+        self.client.force_authenticate(user=agent_user, token=token)
+        return agent_user
+
     # fixes tests waiting 2 minutes for mesh token to appear
     @override_settings(
         MESH_TOKEN_KEY="41410834b8bb4481446027f87d88ec6f119eb9aa97860366440b778540c7399613f7cabfef4f1aa5c0bd9beae03757e17b2e990e5876b0d9924da59bdf24d3437b3ed1a8593b78d65a72a76c794160d9",

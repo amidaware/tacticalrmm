@@ -393,7 +393,7 @@ fi
 if which jq >/dev/null; then
 	cp "$mesh_cfg" ~/meshcfg${CURRENT_TRMM_VER}-$(date "+%Y%m%dT%H%M%S").bak
 	mesh_tmp2=$(mktemp)
-	if jq '.settings.noAgentUpdate = true | .settings.autoBackup = false' "$mesh_cfg" >"$mesh_tmp2" && [ -s "$mesh_tmp2" ]; then
+	if jq '.settings.autoBackup = false' "$mesh_cfg" >"$mesh_tmp2" && [ -s "$mesh_tmp2" ]; then
 		mv "$mesh_tmp2" "$mesh_cfg"
 	fi
 fi

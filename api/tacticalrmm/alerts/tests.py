@@ -330,7 +330,7 @@ class TestAlertsViews(TacticalTestCase):
             "agent_always_email": True,
             "agent_always_text": True,
             "agent_always_alert": True,
-            "agent_periodic_alert_days": "90",
+            "agent_periodic_alert_minutes": "90",
         }
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -566,13 +566,13 @@ class TestAlertTasks(TacticalTestCase):
             "alerts.AlertTemplate",
             is_active=True,
             agent_always_text=True,
-            agent_periodic_alert_days=5,
+            agent_periodic_alert_minutes=5,
         )
         alert_template_always_email = baker.make(
             "alerts.AlertTemplate",
             is_active=True,
             agent_always_email=True,
-            agent_periodic_alert_days=5,
+            agent_periodic_alert_minutes=5,
         )
 
         alert_template_blank = baker.make("alerts.AlertTemplate", is_active=True)
@@ -977,10 +977,10 @@ class TestAlertTasks(TacticalTestCase):
             Alert.objects.filter(assigned_check=check_template_email).count(), 1
         )
 
-        alert_template_email.check_periodic_alert_days = 1
+        alert_template_email.check_periodic_alert_minutes = 1
         alert_template_email.save()
 
-        alert_template_dashboard_text.check_periodic_alert_days = 1
+        alert_template_dashboard_text.check_periodic_alert_minutes = 1
         alert_template_dashboard_text.save()
 
         # set last email time for alert in the past
@@ -1285,10 +1285,10 @@ class TestAlertTasks(TacticalTestCase):
             Alert.objects.filter(assigned_task=task_template_email).count(), 1
         )
 
-        alert_template_email.task_periodic_alert_days = 1
+        alert_template_email.task_periodic_alert_minutes = 1
         alert_template_email.save()
 
-        alert_template_dashboard_text.task_periodic_alert_days = 1
+        alert_template_dashboard_text.task_periodic_alert_minutes = 1
         alert_template_dashboard_text.save()
 
         # set last email time for alert in the past

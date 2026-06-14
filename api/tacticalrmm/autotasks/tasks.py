@@ -175,7 +175,7 @@ def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) 
     else:
         if alert_interval:
             # send an email only if the last email sent is older than alert interval
-            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            delta = djangotime.now() - dt.timedelta(minutes=alert_interval)
             if alert.email_sent < delta:
                 task_result = TaskResult.objects.get(
                     task=alert.assigned_task, agent=alert.agent
@@ -207,7 +207,7 @@ def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) ->
     else:
         if alert_interval:
             # send a text only if the last text sent is older than alert interval
-            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            delta = djangotime.now() - dt.timedelta(minutes=alert_interval)
             if alert.sms_sent < delta:
                 task_result = TaskResult.objects.get(
                     task=alert.assigned_task, agent=alert.agent

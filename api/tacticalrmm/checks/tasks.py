@@ -32,7 +32,7 @@ def handle_check_email_alert_task(
     else:
         if alert_interval:
             # send an email only if the last email sent is older than alert interval
-            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            delta = djangotime.now() - dt.timedelta(minutes=alert_interval)
             if alert.email_sent < delta:
                 check_result = CheckResult.objects.get(
                     assigned_check=alert.assigned_check, agent=alert.agent
@@ -64,7 +64,7 @@ def handle_check_sms_alert_task(pk: int, alert_interval: Optional[float] = None)
     else:
         if alert_interval:
             # send a text only if the last text sent is older than 24 hours
-            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            delta = djangotime.now() - dt.timedelta(minutes=alert_interval)
             if alert.sms_sent < delta:
                 check_result = CheckResult.objects.get(
                     assigned_check=alert.assigned_check, agent=alert.agent

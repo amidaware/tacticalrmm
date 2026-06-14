@@ -331,7 +331,7 @@ class Alert(models.Model):
                 always_dashboard = alert_template.agent_always_alert
                 always_email = alert_template.agent_always_email
                 always_text = alert_template.agent_always_text
-                alert_interval = alert_template.agent_periodic_alert_days
+                alert_interval = alert_template.agent_periodic_alert_minutes
                 should_run_script_or_webhook = (
                     alert_template.agent_script_actions and alert_template.action
                 )
@@ -384,7 +384,7 @@ class Alert(models.Model):
                 always_dashboard = alert_template.check_always_alert
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
-                alert_interval = alert_template.check_periodic_alert_days
+                alert_interval = alert_template.check_periodic_alert_minutes
                 should_run_script_or_webhook = (
                     alert_template.check_script_actions and alert_template.action
                 )
@@ -420,7 +420,7 @@ class Alert(models.Model):
                 always_dashboard = alert_template.task_always_alert
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text
-                alert_interval = alert_template.task_periodic_alert_days
+                alert_interval = alert_template.task_periodic_alert_minutes
                 should_run_script_or_webhook = (
                     alert_template.task_script_actions and alert_template.action
                 )
@@ -934,7 +934,7 @@ class AlertTemplate(BaseAuditModel):
     agent_always_email = BooleanField(null=True, blank=True, default=None)
     agent_always_text = BooleanField(null=True, blank=True, default=None)
     agent_always_alert = BooleanField(null=True, blank=True, default=None)
-    agent_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    agent_periodic_alert_minutes = PositiveIntegerField(blank=True, null=True, default=0)
     # fmt: off
     agent_script_actions = BooleanField(null=True, blank=True, default=True)  # should be renamed because also deals with webhooks
 
@@ -959,7 +959,7 @@ class AlertTemplate(BaseAuditModel):
     check_always_email = BooleanField(null=True, blank=True, default=None)
     check_always_text = BooleanField(null=True, blank=True, default=None)
     check_always_alert = BooleanField(null=True, blank=True, default=None)
-    check_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    check_periodic_alert_minutes = PositiveIntegerField(blank=True, null=True, default=0)
     # fmt: off
     check_script_actions = BooleanField(null=True, blank=True, default=True)  # should be renamed because also deals with webhooks
 
@@ -984,7 +984,7 @@ class AlertTemplate(BaseAuditModel):
     task_always_email = BooleanField(null=True, blank=True, default=None)
     task_always_text = BooleanField(null=True, blank=True, default=None)
     task_always_alert = BooleanField(null=True, blank=True, default=None)
-    task_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    task_periodic_alert_minutes = PositiveIntegerField(blank=True, null=True, default=0)
     # fmt: off
     task_script_actions = BooleanField(null=True, blank=True, default=True)  # should be renamed because also deals with webhooks
 
@@ -1031,7 +1031,7 @@ class AlertTemplate(BaseAuditModel):
             or self.agent_always_email
             or self.agent_always_text
             or self.agent_always_alert
-            or bool(self.agent_periodic_alert_days)
+            or bool(self.agent_periodic_alert_minutes)
         )
 
     @property
@@ -1045,7 +1045,7 @@ class AlertTemplate(BaseAuditModel):
             or self.check_always_email
             or self.check_always_text
             or self.check_always_alert
-            or bool(self.check_periodic_alert_days)
+            or bool(self.check_periodic_alert_minutes)
         )
 
     @property
@@ -1059,7 +1059,7 @@ class AlertTemplate(BaseAuditModel):
             or self.task_always_email
             or self.task_always_text
             or self.task_always_alert
-            or bool(self.task_periodic_alert_days)
+            or bool(self.task_periodic_alert_minutes)
         )
 
     @property

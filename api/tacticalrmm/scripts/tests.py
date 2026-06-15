@@ -664,7 +664,7 @@ class TestScriptSnippetViews(TacticalTestCase):
         result = Script.replace_with_snippets(test_with_snippet)
         self.assertEqual(
             result,
-            f"Snippet 1: {snippet1.code}\nSnippet 2: {snippet2.code}",  # type:ignore
+            f"Snippet 1: {snippet1.code}\nSnippet 2: {snippet2.code}",  # type: ignore
         )
 
         # test text with no snippets

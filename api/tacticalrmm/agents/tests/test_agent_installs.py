@@ -15,7 +15,7 @@ class TestAgentInstalls(TacticalTestCase):
     @patch("knox.models.AuthToken.objects.create")
     @patch("tacticalrmm.utils.generate_winagent_exe")
     @patch("core.utils.token_is_valid")
-    @patch("agents.utils.get_agent_url")
+    @patch("agents.views.get_agent_url")
     def test_install_agent(
         self,
         mock_agent_url,

@@ -41,6 +41,7 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
             Add-MpPreference -ExclusionPath 'C:\Program Files\TacticalAgent\*'
             Add-MpPreference -ExclusionPath 'C:\Program Files\Mesh Agent\*'
             Add-MpPreference -ExclusionPath 'C:\ProgramData\TacticalRMM\*'
+            Add-MpPreference -ExclusionProcess 'C:\Windows\Temp\is-*.tmp\tacticalagent*'
         }
     }
     Catch {
@@ -60,7 +61,7 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
             Invoke-WebRequest -Uri $downloadlink -OutFile $OutPath\$output
             Start-Process -FilePath $OutPath\$output -ArgumentList ('/VERYSILENT /SUPPRESSMSGBOXES') -Wait
             write-host ('Extracting...')
-            Start-Sleep -s 5
+            Start-Sleep -s 7
             Start-Process -FilePath "C:\Program Files\TacticalAgent\tacticalrmm.exe" -ArgumentList $installArgs -Wait
             exit 0
         }

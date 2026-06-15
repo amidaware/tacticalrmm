@@ -13,13 +13,19 @@ class TestBulkRestartAgents(TacticalTestCase):
         self.setup_coresettings()
         self.setup_base_instance()
 
+    @patch("core.management.commands.bulk_restart_agents.get_agent_url")
     @patch("core.management.commands.bulk_restart_agents.sleep")
     @patch("agents.models.Agent.recover")
     @patch("core.management.commands.bulk_restart_agents.get_mesh_ws_url")
     def test_bulk_restart_agents_mgmt_cmd(
-        self, get_mesh_ws_url, recover, mock_sleep
+        self,
+        get_mesh_ws_url,
+        recover,
+        mock_sleep,
+        mock_agent_url,
     ) -> None:
         get_mesh_ws_url.return_value = "https://mesh.example.com/test"
+        mock_agent_url.return_value = "https://agent-download-url"
 
         baker.make_recipe(
             "agents.online_agent",
@@ -36,7 +42,12 @@ class TestBulkRestartAgents(TacticalTestCase):
         )
 
         calls = [
-            call("tacagent", "https://mesh.example.com/test", wait=False),
+            call(
+                "tacagent",
+                "https://mesh.example.com/test",
+                wait=False,
+                agent_url="https://agent-download-url",
+            ),
             call("mesh", "", wait=False),
         ]
 

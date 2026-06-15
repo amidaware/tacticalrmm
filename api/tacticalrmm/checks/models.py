@@ -614,7 +614,7 @@ class CheckResult(models.Model):
         body: str = ""
 
         if self.agent:
-            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
+            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
         else:
             subject = f"{self} Failed"
 
@@ -662,15 +662,15 @@ class CheckResult(models.Model):
     def send_resolved_email(self):
         CORE = get_core_settings()
 
-        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
-        body = f"{self.agent.client.name}, {self.agent.site.name}, {self} is now back to normal"
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Resolved"
+        body = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} is now back to normal"
 
         CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
 
     def send_resolved_sms(self):
         CORE = get_core_settings()
 
-        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Resolved"
         CORE.send_sms(subject, alert_template=self.agent.alert_template)
 
 

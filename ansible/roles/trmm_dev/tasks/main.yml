@@ -178,7 +178,7 @@
   tags: postgres
   become: yes
   ansible.builtin.apt:
-    pkg: postgresql-15
+    pkg: postgresql-18
     state: present
 
 - name: ensure postgres enabled and started

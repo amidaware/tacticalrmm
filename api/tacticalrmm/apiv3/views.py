@@ -1,7 +1,11 @@
 import asyncio
+import os
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Prefetch
+from django.db.utils import IntegrityError
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from packaging import version as pyver
@@ -26,6 +30,7 @@ from core.utils import (
     download_mesh_agent,
     get_core_settings,
     get_mesh_device_id,
+    get_mesh_installer,
     get_mesh_ws_url,
     get_meshagent_url,
 )
@@ -58,7 +63,8 @@ class CheckIn(APIView):
     # called once during tacticalagent windows service startup
     def post(self, request):
         agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
         )
         if not agent.choco_installed:
             asyncio.run(agent.nats_cmd({"func": "installchoco"}, wait=False))
@@ -73,11 +79,15 @@ class SyncMeshNodeID(APIView):
 
     def post(self, request):
         agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
         )
         if agent.mesh_node_id != request.data["nodeid"]:
             agent.mesh_node_id = request.data["nodeid"]
             agent.save(update_fields=["mesh_node_id"])
+
+        if request.data.get("run_sync_task"):
+            sync_mesh_perms_task.delay()
 
         return Response("ok")
 
@@ -88,7 +98,8 @@ class Choco(APIView):
 
     def post(self, request):
         agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
         )
         agent.choco_installed = request.data["installed"]
         agent.save(update_fields=["choco_installed"])
@@ -101,7 +112,8 @@ class WinUpdates(APIView):
 
     def put(self, request):
         agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
         )
 
         needs_reboot: bool = request.data["needs_reboot"]
@@ -129,7 +141,8 @@ class WinUpdates(APIView):
 
     def patch(self, request):
         agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
         )
         u = agent.winupdates.filter(guid=request.data["guid"]).last()  # type: ignore
         if not u:
@@ -162,7 +175,8 @@ class WinUpdates(APIView):
             return notify_error("Empty payload")
 
         agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
         )
 
         for update in updates:
@@ -204,7 +218,8 @@ class SupersededWinUpdate(APIView):
 
     def post(self, request):
         agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
         )
         updates = agent.winupdates.filter(guid=request.data["guid"])  # type: ignore
         for u in updates:
@@ -222,7 +237,7 @@ class RunChecks(APIView):
             Agent.objects.defer(*AGENT_DEFER).prefetch_related(
                 Prefetch("agentchecks", queryset=Check.objects.select_related("script"))
             ),
-            agent_id=agentid,
+            user=request.user,
         )
         checks = agent.get_checks_with_policies(exclude_overridden=True)
         ret = {
@@ -244,7 +259,7 @@ class CheckRunner(APIView):
             Agent.objects.defer(*AGENT_DEFER).prefetch_related(
                 Prefetch("agentchecks", queryset=Check.objects.select_related("script"))
             ),
-            agent_id=agentid,
+            user=request.user,
         )
         checks = agent.get_checks_with_policies(exclude_overridden=True)
 
@@ -282,7 +297,8 @@ class CheckRunner(APIView):
             pk=request.data["id"],
         )
         agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER), agent_id=request.data["agent_id"]
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
         )
 
         # get check result or create if doesn't exist
@@ -315,7 +331,7 @@ class CheckRunnerInterval(APIView):
     def get(self, request, agentid):
         agent = get_object_or_404(
             Agent.objects.defer(*AGENT_DEFER).prefetch_related("agentchecks"),
-            agent_id=agentid,
+            user=request.user,
         )
 
         return Response(
@@ -330,7 +346,7 @@ class TaskRunner(APIView):
     def get(self, request, pk, agentid):
         agent = get_object_or_404(
             Agent.objects.select_related("policy", "site").defer(*AGENT_DEFER),
-            agent_id=agentid,
+            user=request.user,
         )
         task = get_object_or_404(
             AutomatedTask.objects.select_related("agent", "policy"), pk=pk
@@ -348,10 +364,7 @@ class TaskRunner(APIView):
     def patch(self, request, pk, agentid):
         from alerts.models import Alert
 
-        agent = get_object_or_404(
-            Agent.objects.defer(*AGENT_DEFER),
-            agent_id=agentid,
-        )
+        agent = get_object_or_404(Agent.objects.defer(*AGENT_DEFER), user=request.user)
         task = get_object_or_404(
             AutomatedTask.objects.select_related("custom_field"), pk=pk
         )
@@ -452,58 +465,106 @@ class MeshExe(APIView):
             return notify_error(f"Unable to download mesh agent: {e}")
 
 
+class MeshReinstall(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+
+        agent = get_object_or_404(
+            Agent.objects.only("plat", "goarch"), user=request.user
+        )
+        core = get_core_settings()
+
+        try:
+            uri = get_mesh_ws_url()
+            mesh_device_id: str = asyncio.run(
+                get_mesh_device_id(uri, core.mesh_device_group)
+            )
+        except:
+            return notify_error("Unable to connect to mesh to get group id information")
+
+        # windows only for now
+        ident = (
+            MeshAgentIdent.WIN64
+            if agent.goarch == GoArch.AMD64
+            else MeshAgentIdent.WIN32
+        )
+        dl_url = get_meshagent_url(
+            ident=ident,
+            plat=agent.plat,
+            mesh_site=core.mesh_site,  # type: ignore
+            mesh_device_id=mesh_device_id,
+        )
+
+        try:
+            mesh_installer = get_mesh_installer(agent.goarch, dl_url, agent.plat)
+        except Exception as e:
+            return notify_error(str(e))
+
+        response = FileResponse(
+            open(mesh_installer, "rb"),
+            as_attachment=True,
+            filename=os.path.basename(mesh_installer),
+        )
+        return response
+
+
 class NewAgent(APIView):
     def post(self, request):
         from logs.models import AuditLog
 
         """ Creates the agent """
 
-        if Agent.objects.filter(agent_id=request.data["agent_id"]).exists():
+        try:
+            with transaction.atomic():
+                agent = Agent(
+                    agent_id=request.data["agent_id"],
+                    hostname=request.data["hostname"],
+                    site_id=int(request.data["site"]),
+                    monitoring_type=request.data["monitoring_type"],
+                    description=request.data["description"],
+                    mesh_node_id=request.data["mesh_node_id"],
+                    goarch=request.data["goarch"],
+                    plat=request.data["plat"],
+                    last_seen=djangotime.now(),
+                )
+                agent.save()
+
+                user = User.objects.create_user(  # type: ignore
+                    username=request.data["agent_id"],
+                    agent=agent,
+                    password=make_random_password(len=60),
+                )
+
+                token = Token.objects.create(user=user)
+
+                if agent.monitoring_type == AgentMonType.WORKSTATION:
+                    WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
+                else:
+                    WinUpdatePolicy(agent=agent).save()
+
+                # create agent install audit record
+                AuditLog.objects.create(
+                    username=request.user,
+                    agent=agent.hostname,
+                    object_type=AuditObjType.AGENT,
+                    action=AuditActionType.AGENT_INSTALL,
+                    message=f"{request.user} installed new agent {agent.hostname}",
+                    after_value=Agent.serialize(agent),
+                    debug_info={"ip": request._client_ip},
+                )
+        except IntegrityError:
             return notify_error(
                 "Agent already exists. Remove old agent first if trying to re-install"
             )
 
-        agent = Agent(
-            agent_id=request.data["agent_id"],
-            hostname=request.data["hostname"],
-            site_id=int(request.data["site"]),
-            monitoring_type=request.data["monitoring_type"],
-            description=request.data["description"],
-            mesh_node_id=request.data["mesh_node_id"],
-            goarch=request.data["goarch"],
-            plat=request.data["plat"],
-            last_seen=djangotime.now(),
-        )
-        agent.save()
-
-        user = User.objects.create_user(  # type: ignore
-            username=request.data["agent_id"],
-            agent=agent,
-            password=make_random_password(len=60),
-        )
-
-        token = Token.objects.create(user=user)
-
-        if agent.monitoring_type == AgentMonType.WORKSTATION:
-            WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
-        else:
-            WinUpdatePolicy(agent=agent).save()
-
         reload_nats()
-
-        # create agent install audit record
-        AuditLog.objects.create(
-            username=request.user,
-            agent=agent.hostname,
-            object_type=AuditObjType.AGENT,
-            action=AuditActionType.AGENT_INSTALL,
-            message=f"{request.user} installed new agent {agent.hostname}",
-            after_value=Agent.serialize(agent),
-            debug_info={"ip": request._client_ip},
-        )
-
         ret = {"pk": agent.pk, "token": token.key}
-        sync_mesh_perms_task.delay()
+
+        if agent.plat == AgentPlat.WINDOWS:
+            sync_mesh_perms_task.delay()
+
         cache_agents_alert_template.delay()
         return Response(ret)
 
@@ -513,7 +574,7 @@ class Software(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent = get_object_or_404(Agent, user=request.user)
         sw = request.data["software"]
         if not InstalledSoftware.objects.filter(agent=agent).exists():
             InstalledSoftware(agent=agent, software=sw).save()
@@ -562,7 +623,7 @@ class AgentHistoryResult(APIView):
 
         hist = get_object_or_404(
             AgentHistory.objects.select_related("custom_field").filter(
-                agent__agent_id=agentid
+                agent__user=request.user,
             ),
             pk=pk,
         )

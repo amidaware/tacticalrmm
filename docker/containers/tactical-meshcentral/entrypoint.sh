@@ -13,6 +13,7 @@ set -e
 : "${MESH_COMPRESSION_ENABLED:=false}"
 : "${MESH_PERSISTENT_CONFIG:=0}"
 : "${MESH_WEBRTC_ENABLED:=false}"
+: "${MESH_AUTO_BACKUP:=false}"
 : "${WS_MASK_OVERRIDE:=0}"
 : "${SMTP_HOST:=smtp.example.com}"
 : "${SMTP_PORT:=587}"
@@ -43,6 +44,7 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
     "agentPing": 35,
     "allowHighQualityDesktop": true,
     "agentCoreDump": false,
+	"autoBackup": ${MESH_AUTO_BACKUP},
     "compression": ${MESH_COMPRESSION_ENABLED},
     "wsCompression": ${MESH_COMPRESSION_ENABLED},
     "agentWsCompression": ${MESH_COMPRESSION_ENABLED},

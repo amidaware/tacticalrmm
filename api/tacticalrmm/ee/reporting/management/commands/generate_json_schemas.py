@@ -16,7 +16,6 @@ from ee.reporting.constants import (
     get_property_fields,
 )
 
-
 if TYPE_CHECKING:
     from django.db.models import Model
 

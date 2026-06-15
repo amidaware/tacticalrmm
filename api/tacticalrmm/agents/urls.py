@@ -82,4 +82,5 @@ urlpatterns = [
         views.modify_registry_value,
         name="modify_registry_value",
     ),
+    path("<agent:agent_id>/terminal-defaults/", views.AgentTerminalDefaults.as_view()),
 ]

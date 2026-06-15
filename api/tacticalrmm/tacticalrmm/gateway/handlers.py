@@ -242,6 +242,8 @@ class DirectSessionHandler(asyncssh.SSHServerSession):
     def eof_received(self):
         if self._session_type == "exec" and not self._exec_completed:
             return True
+        if self._session_type == "shell":
+            return True
         return False
 
     def connection_lost(self, exc):

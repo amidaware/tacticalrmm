@@ -14,3 +14,4 @@ rm -rf /opt/tacticalmesh
 rm -f /etc/tacticalagent
 rm -rf /opt/tacticalagent
 rm -f /Library/LaunchDaemons/tacticalagent.plist
+rm -f /Library/LaunchAgents/meshagent-agent.plist

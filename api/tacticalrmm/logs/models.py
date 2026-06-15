@@ -87,6 +87,91 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_ssh_session_start(
+        username: str,
+        agent: "Agent",
+        session_id: str,
+        remote_ip: str,
+        client_version: str = "",
+        ssh_key_name: str = "",
+        ssh_key_type: str = "",
+        ssh_key_fingerprint: str = "",
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.SSH_SESSION,
+            message=f"{username} started SSH session on {agent.hostname}.",
+            after_value={
+                "session_id": session_id,
+                "remote_ip": remote_ip,
+                "client_version": client_version,
+                "ssh_key_name": ssh_key_name,
+                "ssh_key_type": ssh_key_type,
+                "ssh_key_fingerprint": ssh_key_fingerprint,
+            },
+        )
+
+    @staticmethod
+    def audit_ssh_session_end(
+        username: str,
+        agent: "Agent",
+        session_id: str,
+        remote_ip: str,
+        started_at: str,
+        closed_at: str,
+        duration: int,
+        terminal_type: str = "",
+        terminal_rows: int = 0,
+        terminal_cols: int = 0,
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.SSH_SESSION,
+            message=f"{username} ended SSH session on {agent.hostname} ({duration}s).",
+            after_value={
+                "session_id": session_id,
+                "remote_ip": remote_ip,
+                "started_at": started_at,
+                "closed_at": closed_at,
+                "duration_seconds": duration,
+                "terminal_type": terminal_type,
+                "terminal_rows": terminal_rows,
+                "terminal_cols": terminal_cols,
+            },
+        )
+
+    @staticmethod
+    def audit_ssh_session_failed(
+        username: str,
+        agent_id: str,
+        remote_ip: str,
+        reason: str,
+        ssh_key_name: str = "",
+        ssh_key_type: str = "",
+        ssh_key_fingerprint: str = "",
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            agent_id=agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.SSH_SESSION,
+            message=f"SSH session failed for {username} on {agent_id}: {reason}.",
+            after_value={
+                "remote_ip": remote_ip,
+                "reason": reason,
+                "ssh_key_name": ssh_key_name,
+                "ssh_key_type": ssh_key_type,
+                "ssh_key_fingerprint": ssh_key_fingerprint,
+            },
+        )
+
+    @staticmethod
     def audit_raw_command(
         username: str,
         agent: "Agent",

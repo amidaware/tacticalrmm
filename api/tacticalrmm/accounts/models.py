@@ -211,6 +211,11 @@ class Role(BaseAuditModel):
     can_view_reports = models.BooleanField(default=False)
     can_manage_reports = models.BooleanField(default=False)
 
+    # ssh
+    can_ssh_open_terminal = models.BooleanField(default=False)
+    can_ssh_send_commands = models.BooleanField(default=False)
+    can_ssh_use_functions = models.BooleanField(default=False)
+
     def __str__(self):
         return self.name
 
@@ -225,6 +230,47 @@ class Role(BaseAuditModel):
         from .serializers import RoleAuditSerializer
 
         return RoleAuditSerializer(role).data
+
+
+class SSHPublicKey(BaseAuditModel):
+    user = models.ForeignKey(
+        User, related_name="ssh_keys", on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255)
+    key_type = models.CharField(max_length=64)
+    key_data = models.TextField()
+    fingerprint = models.CharField(max_length=128, unique=True)
+    comment = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.key_type})"
+
+    @staticmethod
+    def serialize(obj):
+        from .serializers import SSHPublicKeyAuditSerializer
+        return SSHPublicKeyAuditSerializer(obj).data
+
+
+class SSHSession(BaseAuditModel):
+    user = models.ForeignKey(
+        User, related_name="ssh_sessions", on_delete=models.CASCADE
+    )
+    agent = models.ForeignKey(
+        "agents.Agent", related_name="ssh_sessions", on_delete=models.CASCADE
+    )
+    session_id = models.CharField(max_length=255, unique=True)
+    remote_ip = models.GenericIPAddressField()
+    started_at = models.DateTimeField()
+    closed_at = models.DateTimeField(null=True, blank=True)
+    client_version = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"SSH {self.user.username} -> {self.agent.agent_id} ({self.session_id[:8]}...)"
+
+    @staticmethod
+    def serialize(obj):
+        from .serializers import SSHSessionAuditSerializer
+        return SSHSessionAuditSerializer(obj).data
 
 
 class APIKey(BaseAuditModel):

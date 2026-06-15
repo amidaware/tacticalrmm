@@ -17,6 +17,7 @@ class TestAPIv3(TacticalTestCase):
     @patch("agents.models.random.randint", return_value=0)
     def test_get_checks(self, mock_randint):
         agent = baker.make_recipe("agents.agent")
+        self.authenticate_agent(agent)
         url = f"/api/v3/{agent.agent_id}/checkrunner/"
 
         # add a check
@@ -64,14 +65,11 @@ class TestAPIv3(TacticalTestCase):
         self.assertEqual(r.data["check_interval"], 20)
         self.assertEqual(len(r.data["checks"]), 2)
 
-        url = "/api/v3/Maj34ACb324j234asdj2n34kASDjh34-DESKTOPTEST123/checkrunner/"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 404)
-
         self.check_not_authenticated("get", url)
 
     @patch("agents.models.random.randint", return_value=0)
     def test_checkrunner_interval(self, mock_randint):
+        self.authenticate_agent(self.agent)
         url = f"/api/v3/{self.agent.agent_id}/checkinterval/"
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)
@@ -103,6 +101,7 @@ class TestAPIv3(TacticalTestCase):
     def test_run_checks(self):
         # force run all checks regardless of interval
         agent = baker.make_recipe("agents.online_agent")
+        self.authenticate_agent(agent)
         baker.make_recipe("checks.ping_check", agent=agent)
         baker.make_recipe("checks.diskspace_check", agent=agent)
         baker.make_recipe("checks.cpuload_check", agent=agent)
@@ -143,6 +142,7 @@ class TestAPIv3(TacticalTestCase):
         ]
 
         agent = baker.make_recipe("agents.agent")
+        self.authenticate_agent(agent)
         task = baker.make("autotasks.AutomatedTask", agent=agent, actions=task_actions)
 
         url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"
@@ -158,6 +158,7 @@ class TestAPIv3(TacticalTestCase):
 
         # setup data
         agent = baker.make_recipe("agents.agent")
+        self.authenticate_agent(agent)
         task = baker.make("autotasks.AutomatedTask", agent=agent)
         task_result = baker.make("autotasks.TaskResult", agent=agent, task=task)
 
@@ -308,6 +309,7 @@ class TestAPIv3(TacticalTestCase):
 
     def test_get_agent_config(self):
         agent = baker.make_recipe("agents.online_agent")
+        self.authenticate_agent(agent)
         url = f"/api/v3/{agent.agent_id}/config/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)

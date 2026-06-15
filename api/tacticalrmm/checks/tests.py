@@ -323,6 +323,7 @@ class TestCheckTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
         self.agent = baker.make_recipe("agents.agent", version="1.5.7")
+        self.authenticate_agent(self.agent)
 
     def test_prune_check_history(self):
         from .tasks import prune_check_history

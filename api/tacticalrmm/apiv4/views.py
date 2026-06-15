@@ -14,7 +14,7 @@ class ChocoResultV4(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, agentid, pk):
-        agent = get_object_or_404(Agent.objects.defer(*AGENT_DEFER), agent_id=agentid)
+        agent = get_object_or_404(Agent.objects.defer(*AGENT_DEFER), user=request.user)
         action = get_object_or_404(PendingAction, agent=agent, pk=pk)
 
         results: str = request.data["results"]

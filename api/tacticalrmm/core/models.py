@@ -124,6 +124,7 @@ class CoreSettings(BaseAuditModel):
 
     block_local_user_logon = models.BooleanField(default=False)
     sso_enabled = models.BooleanField(default=False)
+    branding = models.JSONField(default=dict)
 
     default_shell_windows = models.CharField(
         max_length=32,

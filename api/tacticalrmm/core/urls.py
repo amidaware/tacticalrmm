@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 from django.conf import settings
 
 from . import views
@@ -24,6 +24,7 @@ urlpatterns = [
     path("clearcache/", views.clear_cache),
     path("openai/generate/", views.OpenAICodeCompletion.as_view()),
     path("webtermperms/", views.webterm_perms),
+    path("", include("ee.whitelabel.urls")),
 ]
 
 if not getattr(settings, "DEMO", False):

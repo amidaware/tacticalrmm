@@ -157,6 +157,8 @@ def dashboard_info(request):
             "web_terminal_enabled": core_settings.web_terminal_enabled,
             "block_local_user_logon": core_settings.block_local_user_logon,
             "sso_enabled": core_settings.sso_enabled,
+            "swagger_enabled": core_settings.swagger_enabled,
+            "swagger_url": request.build_absolute_uri("/api/schema/swagger-ui/"),
         }
     )
 

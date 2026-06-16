@@ -575,7 +575,7 @@ def send_raw_cmd(request, agent_id):
             "command": request.data["cmd"],
             "shell": shell,
         },
-        "run_as_user": request.data["run_as_user"],
+        "run_as_user": request.data.get("run_as_user", False),
     }
 
     hist = AgentHistory.objects.create(
@@ -876,7 +876,7 @@ def run_script(request, agent_id):
     script = get_object_or_404(Script, pk=request.data["script"])
     output = request.data["output"]
     args = request.data["args"]
-    run_as_user: bool = request.data["run_as_user"]
+    run_as_user: bool = request.data.get("run_as_user", False)
     env_vars: list[str] = request.data["env_vars"]
     req_timeout = int(request.data["timeout"]) + 3
     run_on_server: bool | None = request.data.get("run_on_server")
@@ -1139,7 +1139,7 @@ def bulk(request):
             shell=shell,
             timeout=request.data["timeout"],
             username=request.user.username[:50],
-            run_as_user=request.data["run_as_user"],
+            run_as_user=request.data.get("run_as_user", False),
         )
         return Response(f"Command will now be run on {len(agents)} agents. {ht}")
 
@@ -1162,7 +1162,7 @@ def bulk(request):
             args=request.data["args"],
             timeout=request.data["timeout"],
             username=request.user.username[:50],
-            run_as_user=request.data["run_as_user"],
+            run_as_user=request.data.get("run_as_user", False),
             env_vars=request.data["env_vars"],
             custom_field_pk=custom_field_pk,
             collector_all_output=collector_all_output,

@@ -416,6 +416,42 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
+    @patch("agents.models.Agent.run_script")
+    @patch("agents.models.Agent.nats_cmd")
+    def test_run_as_user_defaults_to_false_when_omitted(self, nats_cmd, run_script):
+        # API clients that predate the run_as_user field omit it from the
+        # payload. The field must default to False instead of raising
+        # KeyError -> HTTP 500. See send_raw_cmd / run_script.
+        nats_cmd.return_value = "ok"
+        run_script.return_value = "ok"
+
+        # /cmd/ (send_raw_cmd)
+        cmd_url = f"{base_url}/{self.agent.agent_id}/cmd/"
+        r = self.client.post(
+            cmd_url,
+            {"cmd": "ipconfig", "shell": "cmd", "timeout": 30},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(nats_cmd.call_args.args[0]["run_as_user"])
+
+        # /runscript/ (run_script)
+        script = baker.make_recipe("scripts.script")
+        run_url = f"{base_url}/{self.agent.agent_id}/runscript/"
+        r = self.client.post(
+            run_url,
+            {
+                "script": script.pk,
+                "output": "wait",
+                "args": [],
+                "timeout": 15,
+                "env_vars": [],
+            },
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(run_script.call_args.kwargs["run_as_user"])
+
     @patch("agents.models.Agent.nats_cmd")
     def test_reboot_later(self, nats_cmd):
         nats_cmd.return_value = "ok"

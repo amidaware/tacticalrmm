@@ -155,6 +155,25 @@ class TestScriptViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
+    @patch("agents.models.Agent.nats_cmd", return_value="return value")
+    def test_test_script_run_as_user_defaults_to_false_when_omitted(self, nats_cmd):
+        # Older API clients omit run_as_user; it must default to False
+        # rather than raising KeyError -> HTTP 500.
+        agent = baker.make_recipe("agents.agent")
+        url = f"/scripts/{agent.agent_id}/test/"
+
+        data = {
+            "code": "some_code",
+            "timeout": 90,
+            "args": [],
+            "shell": ScriptShell.POWERSHELL,
+            "env_vars": [],
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(nats_cmd.call_args.args[0]["run_as_user"])
+
     def test_delete_script(self):
         # test a call where script doesn't exist
         resp = self.client.delete("/scripts/500/", format="json")

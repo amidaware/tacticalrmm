@@ -1,0 +1,100 @@
+/* Buttons */
+.btn {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  transition: background 160ms ease, box-shadow 160ms ease, transform 120ms ease;
+}
+.btn:hover { box-shadow: var(--shadow-md); }
+.btn:active { transform: translateY(0.5px); }
+.btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border-color: transparent;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: var(--color-border);
+}
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+  border-color: transparent;
+}
+.btn-sm { height: 1.875rem; padding: 0 0.625rem; border-radius: var(--radius-xs); font-size: var(--text-sm); }
+.btn-lg { height: 2.75rem; padding: 0 1.25rem; border-radius: var(--radius-md); font-size: var(--text-lg); }
+
+/* Inputs */
+.input, select, textarea, input[type="text"], input[type="search"], input[type="number"], input[type="email"], input[type="password"] {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.input:focus, select:focus, textarea:focus, input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 20%, transparent);
+}
+.is-invalid {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-danger) 20%, transparent) !important;
+}
+textarea { min-height: 5rem; padding: 0.5rem 0.75rem; }
+
+/* Cards */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.card-header { padding: var(--space-4); border-bottom: 1px solid var(--color-border); font-weight: 600; }
+.card-body { padding: var(--space-4); }
+.card-footer { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border); }
+
+/* Tables */
+.table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; }
+.table thead th { position: sticky; top: 0; background: var(--color-elevated); text-align: left; font-size: var(--text-sm); color: var(--color-muted); padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--color-border); }
+.table tbody td { padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--color-border); }
+.table tbody tr:nth-child(odd) { background: color-mix(in oklab, var(--color-surface) 92%, var(--color-text)); }
+.table tbody tr:hover { background: color-mix(in oklab, var(--color-surface) 86%, var(--color-text)); }
+
+/* Badges */
+.badge { display: inline-flex; align-items: center; gap: 0.375rem; height: 1.5rem; padding: 0 0.5rem; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-elevated); font-size: var(--text-xs); }
+.badge-success { background: color-mix(in oklab, var(--color-success) 18%, var(--color-elevated)); color: #063; border-color: color-mix(in oklab, var(--color-success) 35%, var(--color-border)); }
+.badge-warning { background: color-mix(in oklab, var(--color-warning) 18%, var(--color-elevated)); color: #5a3a00; border-color: color-mix(in oklab, var(--color-warning) 35%, var(--color-border)); }
+.badge-danger { background: color-mix(in oklab, var(--color-danger) 18%, var(--color-elevated)); color: #5a0a0a; border-color: color-mix(in oklab, var(--color-danger) 35%, var(--color-border)); }
+
+/* Alerts */
+.alert { border-radius: var(--radius-md); padding: var(--space-4); border: 1px solid var(--color-border); }
+.alert-info { background: color-mix(in oklab, var(--color-primary) 10%, var(--color-elevated)); }
+.alert-success { background: color-mix(in oklab, var(--color-success) 12%, var(--color-elevated)); }
+.alert-warning { background: color-mix(in oklab, var(--color-warning) 12%, var(--color-elevated)); }
+.alert-danger { background: color-mix(in oklab, var(--color-danger) 12%, var(--color-elevated)); }
+
+/* Tabs */
+.tabs { display: flex; border-bottom: 1px solid var(--color-border); gap: var(--space-2); }
+.tabs a { position: relative; display: inline-flex; padding: var(--space-3) var(--space-4); color: var(--color-muted); text-decoration: none; }
+.tabs a[aria-current="page"], .tabs a.is-active { color: var(--color-text); }
+.tabs a::after { content: ""; position: absolute; left: var(--space-4); right: var(--space-4); bottom: -1px; height: 2px; background: transparent; transition: background 160ms ease; }
+.tabs a[aria-current="page"]::after, .tabs a.is-active::after { background: var(--color-primary); }
+
+

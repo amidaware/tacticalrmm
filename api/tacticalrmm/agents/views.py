@@ -605,12 +605,18 @@ def send_raw_cmd(request, agent_id):
 class Shutdown(APIView):
     permission_classes = [IsAuthenticated, RebootAgentPerms]
 
-    # shutdown
     def post(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd({"func": "shutdown"}, timeout=10))
         if r != "ok":
             return notify_error("Unable to contact the agent")
+
+        AuditLog.audit_reboot(
+            username=request.user.username,
+            agent=agent,
+            action_type="shutdown",
+            debug_info={"ip": request._client_ip},
+        )
 
         return Response("ok")
 
@@ -618,16 +624,21 @@ class Shutdown(APIView):
 class Reboot(APIView):
     permission_classes = [IsAuthenticated, RebootAgentPerms]
 
-    # reboot now
     def post(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd({"func": "rebootnow"}, timeout=10))
         if r != "ok":
             return notify_error("Unable to contact the agent")
 
+        AuditLog.audit_reboot(
+            username=request.user.username,
+            agent=agent,
+            action_type="reboot now",
+            debug_info={"ip": request._client_ip},
+        )
+
         return Response("ok")
 
-    # reboot later
     def patch(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         if agent.is_posix:
@@ -678,6 +689,14 @@ class Reboot(APIView):
         PendingAction.objects.create(
             agent=agent, action_type=PAAction.SCHED_REBOOT, details=details
         )
+
+        AuditLog.audit_reboot(
+            username=request.user.username,
+            agent=agent,
+            action_type="scheduled reboot",
+            debug_info={"ip": request._client_ip},
+        )
+
         nice_time = dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
         return Response(
             {"time": nice_time, "agent": agent.hostname, "task_name": task_name}

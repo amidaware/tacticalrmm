@@ -26,6 +26,7 @@ urlpatterns = [
     # agent remote background
     path("<agent:agent_id>/meshcentral/", views.AgentMeshCentral.as_view()),
     path("<agent:agent_id>/<str:port>/webvnc/", views.WebVNC.as_view()),
+    path("<agent:agent_id>/webproxy/", views.AgentWebProxy.as_view()),
     path("<agent:agent_id>/meshcentral/recover/", views.AgentMeshCentral.as_view()),
     path("<agent:agent_id>/processes/", views.AgentProcesses.as_view()),
     path("<agent:agent_id>/processes/<int:pid>/", views.AgentProcesses.as_view()),

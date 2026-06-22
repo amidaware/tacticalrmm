@@ -693,6 +693,11 @@ map \$http_user_agent \$ignore_ua {
     default 1;
 }
 
+map \$http_upgrade \$connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
 server {
     listen 80;
     listen [::]:80;
@@ -731,6 +736,22 @@ server {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
         alias /opt/tactical/reporting/assets/;
+    }
+
+    location ^~ /agentproxy/ {
+        proxy_pass http://unix:/rmm/daphne.sock;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade \$http_upgrade;
+        proxy_set_header   Connection \$connection_upgrade;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto \$scheme;
+        proxy_set_header   X-Forwarded-Host \$server_name;
+        proxy_buffering    off;
+        proxy_request_buffering off;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
     }
 
     location ~ ^/ws/ {
@@ -937,6 +958,21 @@ nginxfrontend="$(
 server {
     server_name ${frontenddomain};
     charset utf-8;
+    location ^~ /agentproxy/ {
+        proxy_pass http://unix:/rmm/daphne.sock;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade \$http_upgrade;
+        proxy_set_header   Connection \$connection_upgrade;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto \$scheme;
+        proxy_set_header   X-Forwarded-Host \$server_name;
+        proxy_buffering    off;
+        proxy_request_buffering off;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
     location / {
         root /var/www/rmm/dist;
         try_files \$uri \$uri/ /index.html;

@@ -574,6 +574,11 @@ map \$http_user_agent \$ignore_ua {
     default 1;
 }
 
+map \$http_upgrade \$connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
 server {
     listen 80;
     listen [::]:80;
@@ -614,6 +619,22 @@ server {
         alias /opt/tactical/reporting/assets/;
     }
 
+    location ^~ /agentproxy/ {
+        proxy_pass http://unix:/rmm/daphne.sock;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade \$http_upgrade;
+        proxy_set_header   Connection \$connection_upgrade;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto \$scheme;
+        proxy_set_header   X-Forwarded-Host \$server_name;
+        proxy_buffering    off;
+        proxy_request_buffering off;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+
     location ~ ^/ws/ {
         proxy_pass http://unix:/rmm/daphne.sock;
 
@@ -651,6 +672,58 @@ EOF
   )"
   echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf >/dev/null
 fi
+
+# Remote Proxy: ensure the /agentproxy/ location exists on existing installs
+# (idempotent in-place patch so we don't clobber custom nginx changes).
+feconf='/etc/nginx/sites-available/frontend.conf'
+cat >/tmp/_ap_loc <<'NGINX'
+    location ^~ /agentproxy/ {
+        proxy_pass http://unix:/rmm/daphne.sock;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection $connection_upgrade;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_set_header   X-Forwarded-Host $server_name;
+        proxy_buffering    off;
+        proxy_request_buffering off;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+NGINX
+cat >/tmp/_ap_map <<'NGINX'
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+NGINX
+
+if [ -f "$rmmconf" ] && ! grep -q "/agentproxy/" "$rmmconf"; then
+  printf >&2 "${GREEN}Adding /agentproxy/ (Remote Proxy) routing to ${rmmconf}${NC}\n"
+  cp "$rmmconf" ~/rmm.conf.agentproxy.bak
+  hasmap=$(grep -c "connection_upgrade" "$rmmconf")
+  awk -v hasmap="$hasmap" '
+    { print }
+    /^server_tokens off;/ && hasmap==0 && !m { while ((getline l < "/tmp/_ap_map") > 0) print l; m=1 }
+  ' "$rmmconf" >/tmp/_rmm_patched
+  awk '
+    /location ~ \^\/ws\/ \{/ && !d { while ((getline l < "/tmp/_ap_loc") > 0) print l; print ""; d=1 }
+    { print }
+  ' /tmp/_rmm_patched | sudo tee "$rmmconf" >/dev/null
+  rm -f /tmp/_rmm_patched
+fi
+
+if [ -f "$feconf" ] && ! grep -q "/agentproxy/" "$feconf"; then
+  printf >&2 "${GREEN}Adding /agentproxy/ (Remote Proxy) routing to ${feconf}${NC}\n"
+  cp "$feconf" ~/frontend.conf.agentproxy.bak
+  awk '
+    /location \/ \{/ && !d { while ((getline l < "/tmp/_ap_loc") > 0) print l; d=1 }
+    { print }
+  ' "$feconf" | sudo tee "$feconf.tmp" >/dev/null && sudo mv "$feconf.tmp" "$feconf"
+fi
+rm -f /tmp/_ap_loc /tmp/_ap_map
 
 for i in rmm frontend meshcentral; do
   conf="/etc/nginx/sites-enabled/${i}.conf"

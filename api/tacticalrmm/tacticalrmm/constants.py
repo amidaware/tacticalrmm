@@ -243,6 +243,7 @@ class AuditObjType(models.TextChoices):
     URL_ACTION = "urlaction", "URL Action"
     KEYSTORE = "keystore", "Global Key Store"
     CUSTOM_FIELD = "customfield", "Custom Field"
+    NETDEVICE = "netdevice", "Network Device"
 
 
 class DebugLogLevel(models.TextChoices):

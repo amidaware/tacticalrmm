@@ -25,7 +25,7 @@ from agents.utils import (
     is_posix_abs_path,
     is_windows_path,
 )
-from core.models import TZ_CHOICES
+from core.models import EmailTemplateSection, TZ_CHOICES
 from core.utils import _b64_to_hex, get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog, PendingAction
 from tacticalrmm.constants import (
@@ -1159,10 +1159,26 @@ class Agent(BaseAuditModel):
             or has_script_actions(alert_template, "agent")
         )
 
-    def send_outage_email(self) -> None:
-        CORE = get_core_settings()
+    def email_template_context(self, status: str, details: str) -> dict[str, str]:
+        policy_name = self.policy.name if self.policy else ""
 
-        CORE.send_mail(
+        return {
+            "alert_type": "agent",
+            "alert_status": status,
+            "client": self.client.name,
+            "site": self.site.name,
+            "site_id": str(self.site_id),
+            "agent": self.hostname,
+            "policy": policy_name,
+            "alert_name": self.hostname,
+            "details": details,
+        }
+
+    def send_outage_email(self):
+        CORE = get_core_settings()
+        details = "Data has not been received within the expected time."
+
+        return CORE.send_mail(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             (
                 f"Data has not been received from client {self.client.name}, "
@@ -1171,12 +1187,15 @@ class Agent(BaseAuditModel):
                 "within the expected time."
             ),
             alert_template=self.alert_template,
+            template_context=self.email_template_context("failed", details),
+            template_section=EmailTemplateSection.AGENT_OUTAGE,
         )
 
-    def send_recovery_email(self) -> None:
+    def send_recovery_email(self):
         CORE = get_core_settings()
+        details = "Data has been received after an interruption in data transmission."
 
-        CORE.send_mail(
+        return CORE.send_mail(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             (
                 f"Data has been received from client {self.client.name}, "
@@ -1185,6 +1204,8 @@ class Agent(BaseAuditModel):
                 "after an interruption in data transmission."
             ),
             alert_template=self.alert_template,
+            template_context=self.email_template_context("resolved", details),
+            template_section=EmailTemplateSection.AGENT_RECOVERY,
         )
 
     def send_outage_sms(self) -> None:

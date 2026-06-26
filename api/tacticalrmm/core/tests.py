@@ -119,6 +119,10 @@ class TestCoreTasks(TacticalTestCase):
             "mesh_site": "https://mesh.example.com",
             "mesh_username": "bob",
             "sync_mesh_with_trmm": False,
+            "email_subject_template": "[TRMM] {subject}",
+            "email_body_template": "Alert title: {subject}\n\n{body}",
+            "check_email_subject_template": "Check: {alert_name}",
+            "task_email_body_template": "Task details: {details}",
         }
         r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
@@ -128,6 +132,13 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(core.mesh_site, "https://mesh.example.com")
         self.assertEqual(core.mesh_username, "bob")
         self.assertFalse(core.sync_mesh_with_trmm)
+        self.assertEqual(core.email_subject_template, "[TRMM] {subject}")
+        self.assertEqual(
+            core.email_body_template,
+            "Alert title: {subject}\n\n{body}",
+        )
+        self.assertEqual(core.check_email_subject_template, "Check: {alert_name}")
+        self.assertEqual(core.task_email_body_template, "Task details: {details}")
 
         # test to_representation
         r = self.client.get(url)
@@ -136,8 +147,117 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.data["mesh_site"], "https://mesh.example.com")
         self.assertEqual(r.data["mesh_username"], "bob")
         self.assertFalse(r.data["sync_mesh_with_trmm"])
+        self.assertEqual(r.data["email_subject_template"], "[TRMM] {subject}")
+        self.assertEqual(
+            r.data["email_body_template"],
+            "Alert title: {subject}\n\n{body}",
+        )
+        self.assertEqual(r.data["check_email_subject_template"], "Check: {alert_name}")
+        self.assertEqual(r.data["task_email_body_template"], "Task details: {details}")
 
         self.check_not_authenticated("put", url)
+
+    @patch("smtplib.SMTP")
+    def test_send_mail_uses_configured_templates(self, smtp):
+        core = get_core_settings()
+        core.smtp_from_email = "alerts@example.com"
+        core.smtp_host = "smtp.example.com"
+        core.smtp_port = 587
+        core.smtp_host_user = "alerts@example.com"
+        core.smtp_host_password = "password"
+        core.smtp_requires_auth = True
+        core.email_alert_recipients = ["dest@example.com"]
+        core.email_subject_template = "{agent} - {alert_name} {alert_status}"
+        core.email_body_template = "Client: {client}\nDetails: {details}"
+
+        msg, ok = core.send_mail(
+            subject="Original Subject",
+            body="Original Body",
+            template_context={
+                "agent": "server01",
+                "alert_name": "Disk Space",
+                "alert_status": "failed",
+                "client": "Acme",
+                "details": "Drive C is at 95%",
+            },
+        )
+
+        self.assertTrue(ok)
+        self.assertEqual(msg, "ok")
+
+        sent_message = (
+            smtp.return_value.__enter__.return_value.send_message.call_args.args[0]
+        )
+        self.assertEqual(sent_message["Subject"], "server01 - Disk Space failed")
+        self.assertEqual(
+            sent_message.get_content().strip(),
+            "Client: Acme\nDetails: Drive C is at 95%",
+        )
+
+    @patch("smtplib.SMTP")
+    def test_send_mail_supports_subject_and_body_placeholders(self, smtp):
+        core = get_core_settings()
+        core.smtp_from_email = "alerts@example.com"
+        core.smtp_host = "smtp.example.com"
+        core.smtp_port = 587
+        core.smtp_host_user = "alerts@example.com"
+        core.smtp_host_password = "password"
+        core.smtp_requires_auth = True
+        core.email_alert_recipients = ["dest@example.com"]
+        core.email_subject_template = "Prefixed: {subject}"
+        core.email_body_template = "Original body: {body}"
+
+        msg, ok = core.send_mail(
+            subject="Original Subject",
+            body="Original Body",
+        )
+
+        self.assertTrue(ok)
+        self.assertEqual(msg, "ok")
+
+        sent_message = (
+            smtp.return_value.__enter__.return_value.send_message.call_args.args[0]
+        )
+        self.assertEqual(sent_message["Subject"], "Prefixed: Original Subject")
+        self.assertEqual(
+            sent_message.get_content().strip(),
+            "Original body: Original Body",
+        )
+
+    @patch("smtplib.SMTP")
+    def test_send_mail_uses_section_template_with_default_body(self, smtp):
+        core = get_core_settings()
+        core.smtp_from_email = "alerts@example.com"
+        core.smtp_host = "smtp.example.com"
+        core.smtp_port = 587
+        core.smtp_host_user = "alerts@example.com"
+        core.smtp_host_password = "password"
+        core.smtp_requires_auth = True
+        core.email_alert_recipients = ["dest@example.com"]
+        core.check_email_subject_template = "Check {check_name} {alert_status}"
+
+        msg, ok = core.send_mail(
+            subject="Original Subject",
+            body="Original Body",
+            template_context={
+                "check_name": "CPU Load",
+                "alert_status": "failed",
+                "details": "Average CPU utilization: 98%",
+            },
+            template_section="check",
+        )
+
+        self.assertTrue(ok)
+        self.assertEqual(msg, "ok")
+
+        sent_message = (
+            smtp.return_value.__enter__.return_value.send_message.call_args.args[0]
+        )
+        self.assertEqual(sent_message["Subject"], "Check CPU Load failed")
+        self.assertEqual(
+            sent_message.get_content().strip(),
+            "Original Body",
+        )
 
     @override_settings(HOSTED=True)
     def test_hosted_edit_coresettings(self):

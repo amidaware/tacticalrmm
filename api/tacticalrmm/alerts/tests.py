@@ -547,6 +547,8 @@ class TestAlertTasks(TacticalTestCase):
         )
         from alerts.models import Alert
 
+        send_email.return_value = ("ok", True)
+
         agent_dashboard_alert = baker.make_recipe("agents.overdue_agent")
 
         # call outages task and no alert should be created
@@ -754,6 +756,8 @@ class TestAlertTasks(TacticalTestCase):
             handle_resolved_check_email_alert_task,
             handle_resolved_check_sms_alert_task,
         )
+
+        send_email.return_value = ("ok", True)
 
         # create test data
         agent = baker.make_recipe("agents.agent")
@@ -1079,6 +1083,8 @@ class TestAlertTasks(TacticalTestCase):
             handle_task_email_alert,
             handle_task_sms_alert,
         )
+
+        send_email.return_value = ("ok", True)
 
         # create test data
         agent = baker.make_recipe("agents.agent")

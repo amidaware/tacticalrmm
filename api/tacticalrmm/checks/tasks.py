@@ -26,9 +26,10 @@ def handle_check_email_alert_task(
             assigned_check=alert.assigned_check, agent=alert.agent
         )
         sleep(rand_range(100, 1500))
-        check_result.send_email()
-        alert.email_sent = djangotime.now()
-        alert.save(update_fields=["email_sent"])
+        _, ok = check_result.send_email()
+        if ok:
+            alert.email_sent = djangotime.now()
+            alert.save(update_fields=["email_sent"])
     else:
         if alert_interval:
             # send an email only if the last email sent is older than alert interval
@@ -38,9 +39,10 @@ def handle_check_email_alert_task(
                     assigned_check=alert.assigned_check, agent=alert.agent
                 )
                 sleep(rand_range(100, 1500))
-                check_result.send_email()
-                alert.email_sent = djangotime.now()
-                alert.save(update_fields=["email_sent"])
+                _, ok = check_result.send_email()
+                if ok:
+                    alert.email_sent = djangotime.now()
+                    alert.save(update_fields=["email_sent"])
 
     return "ok"
 
@@ -110,9 +112,10 @@ def handle_resolved_check_email_alert_task(pk: int) -> str:
             assigned_check=alert.assigned_check, agent=alert.agent
         )
         sleep(rand_range(100, 1500))
-        check_result.send_resolved_email()
-        alert.resolved_email_sent = djangotime.now()
-        alert.save(update_fields=["resolved_email_sent"])
+        _, ok = check_result.send_resolved_email()
+        if ok:
+            alert.resolved_email_sent = djangotime.now()
+            alert.save(update_fields=["resolved_email_sent"])
 
     return "ok"
 

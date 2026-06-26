@@ -4,7 +4,7 @@ from contextlib import suppress
 from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import formatdate
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 
 import requests
 from django.conf import settings
@@ -39,6 +39,19 @@ if TYPE_CHECKING:
 TZ_CHOICES = [(_, _) for _ in ALL_TIMEZONES]
 
 
+class EmailTemplateContext(dict[str, str]):
+    def __missing__(self, key: str) -> str:
+        return ""
+
+
+class EmailTemplateSection(models.TextChoices):
+    DEFAULT = "default", "Default"
+    CHECK = "check", "Check"
+    TASK = "task", "Task"
+    AGENT_OUTAGE = "agent_outage", "Agent Outage"
+    AGENT_RECOVERY = "agent_recovery", "Agent Recovery"
+
+
 class CoreSettings(BaseAuditModel):
     email_alert_recipients = ArrayField(
         models.EmailField(null=True, blank=True),
@@ -66,6 +79,34 @@ class CoreSettings(BaseAuditModel):
     )
     smtp_port = models.PositiveIntegerField(default=587, blank=True)
     smtp_requires_auth = models.BooleanField(default=True)
+    email_subject_template = models.CharField(
+        max_length=255, blank=True, default="{subject}"
+    )
+    email_body_template = models.CharField(
+        max_length=2048, blank=True, default="{body}"
+    )
+    check_email_subject_template = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    check_email_body_template = models.CharField(
+        max_length=2048, blank=True, default=""
+    )
+    task_email_subject_template = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    task_email_body_template = models.CharField(max_length=2048, blank=True, default="")
+    agent_outage_email_subject_template = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    agent_outage_email_body_template = models.CharField(
+        max_length=2048, blank=True, default=""
+    )
+    agent_recovery_email_subject_template = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    agent_recovery_email_body_template = models.CharField(
+        max_length=2048, blank=True, default=""
+    )
     default_time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, default="America/Los_Angeles"
     )
@@ -272,6 +313,89 @@ class CoreSettings(BaseAuditModel):
 
         return self.enable_server_webterminal
 
+    def build_email_template_context(
+        self,
+        subject: str,
+        body: str,
+        template_context: Optional[dict[str, Any]] = None,
+    ) -> EmailTemplateContext:
+        context = EmailTemplateContext(
+            subject=subject,
+            body=body,
+        )
+
+        if template_context:
+            for key, value in template_context.items():
+                context[key] = "" if value is None else str(value)
+
+        return context
+
+    def render_email_template(
+        self,
+        template: str,
+        fallback: str,
+        template_context: EmailTemplateContext,
+    ) -> str:
+        selected_template = template or fallback
+
+        try:
+            rendered = selected_template.format_map(template_context).strip()
+        except ValueError:
+            rendered = fallback
+
+        return rendered or fallback
+
+    def get_email_templates(self, template_section: str) -> tuple[str, str]:
+        templates = {
+            EmailTemplateSection.DEFAULT: (
+                self.email_subject_template,
+                self.email_body_template,
+            ),
+            EmailTemplateSection.CHECK: (
+                self.check_email_subject_template,
+                self.check_email_body_template,
+            ),
+            EmailTemplateSection.TASK: (
+                self.task_email_subject_template,
+                self.task_email_body_template,
+            ),
+            EmailTemplateSection.AGENT_OUTAGE: (
+                self.agent_outage_email_subject_template,
+                self.agent_outage_email_body_template,
+            ),
+            EmailTemplateSection.AGENT_RECOVERY: (
+                self.agent_recovery_email_subject_template,
+                self.agent_recovery_email_body_template,
+            ),
+        }
+
+        return templates.get(
+            template_section,
+            (self.email_subject_template, self.email_body_template),
+        )
+
+    def render_email_subject(
+        self,
+        subject: str,
+        body: str,
+        template_context: Optional[dict[str, Any]] = None,
+        template_section: str = EmailTemplateSection.DEFAULT,
+    ) -> str:
+        context = self.build_email_template_context(subject, body, template_context)
+        subject_template, _ = self.get_email_templates(template_section)
+        return self.render_email_template(subject_template, subject, context)
+
+    def render_email_body(
+        self,
+        body: str,
+        subject: str,
+        template_context: Optional[dict[str, Any]] = None,
+        template_section: str = EmailTemplateSection.DEFAULT,
+    ) -> str:
+        context = self.build_email_template_context(subject, body, template_context)
+        _, body_template = self.get_email_templates(template_section)
+        return self.render_email_template(body_template, body, context)
+
     def send_mail(
         self,
         subject: str,
@@ -282,6 +406,8 @@ class CoreSettings(BaseAuditModel):
         attachment_extension: Optional[str] = None,
         alert_template: "Optional[AlertTemplate]" = None,
         override_recipients: Optional[List[str]] = [],
+        template_context: Optional[dict[str, Any]] = None,
+        template_section: str = EmailTemplateSection.DEFAULT,
         test: bool = False,
     ) -> tuple[str, bool]:
         if test and not self.email_is_configured:
@@ -307,9 +433,21 @@ class CoreSettings(BaseAuditModel):
             return "There needs to be at least one email recipient configured", False
 
         try:
+            rendered_subject = self.render_email_subject(
+                subject,
+                body,
+                template_context=template_context,
+                template_section=template_section,
+            )
+            rendered_body = self.render_email_body(
+                body,
+                subject,
+                template_context=template_context,
+                template_section=template_section,
+            )
             msg = EmailMessage()
 
-            msg["Subject"] = subject
+            msg["Subject"] = rendered_subject
             msg["Date"] = formatdate(localtime=True)
 
             if self.smtp_from_name:
@@ -320,7 +458,7 @@ class CoreSettings(BaseAuditModel):
                 msg["From"] = from_address
 
             msg["To"] = email_recipients
-            msg.set_content(body)
+            msg.set_content(rendered_body)
 
             if attachment:
                 match attachment_type:
@@ -376,8 +514,7 @@ class CoreSettings(BaseAuditModel):
         except Exception as e:
             logger.error(traceback.format_exc())
             DebugLog.error(message=f"Sending email failed with error: {e}")
-            if test:
-                return str(e), False
+            return str(e), False
 
         if test:
             return "Email test ok!", True

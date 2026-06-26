@@ -53,18 +53,20 @@ def agent_outage_email_task(pk: int, alert_interval: Optional[float] = None) -> 
 
     if not alert.email_sent:
         sleep(rand_range(100, 1500))
-        alert.agent.send_outage_email()
-        alert.email_sent = djangotime.now()
-        alert.save(update_fields=["email_sent"])
+        _, ok = alert.agent.send_outage_email()
+        if ok:
+            alert.email_sent = djangotime.now()
+            alert.save(update_fields=["email_sent"])
     else:
         if alert_interval:
             # send an email only if the last email sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
             if alert.email_sent < delta:
                 sleep(rand_range(100, 1500))
-                alert.agent.send_outage_email()
-                alert.email_sent = djangotime.now()
-                alert.save(update_fields=["email_sent"])
+                _, ok = alert.agent.send_outage_email()
+                if ok:
+                    alert.email_sent = djangotime.now()
+                    alert.save(update_fields=["email_sent"])
 
     return "ok"
 
@@ -80,9 +82,10 @@ def agent_recovery_email_task(pk: int) -> str:
     except Alert.DoesNotExist:
         return "alert not found"
 
-    alert.agent.send_recovery_email()
-    alert.resolved_email_sent = djangotime.now()
-    alert.save(update_fields=["resolved_email_sent"])
+    _, ok = alert.agent.send_recovery_email()
+    if ok:
+        alert.resolved_email_sent = djangotime.now()
+        alert.save(update_fields=["resolved_email_sent"])
 
     return "ok"
 

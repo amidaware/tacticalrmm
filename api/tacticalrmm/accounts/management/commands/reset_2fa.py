@@ -4,7 +4,7 @@ import pyotp
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from accounts.models import User
+from accounts.models import User, WebAuthnCredential
 from tacticalrmm.util_settings import get_webdomain
 
 
@@ -25,6 +25,7 @@ class Command(BaseCommand):
         code = pyotp.random_base32()
         user.totp_key = code
         user.save(update_fields=["totp_key"])
+        passkey_count, _ = WebAuthnCredential.objects.filter(user=user).delete()
 
         url = pyotp.totp.TOTP(code).provisioning_uri(
             username, issuer_name=get_webdomain(settings.CORS_ORIGIN_WHITELIST[0])
@@ -39,5 +40,8 @@ class Command(BaseCommand):
             )
         )
         self.stdout.write(
-            self.style.SUCCESS(f"2fa was successfully reset for user {username}")
+            self.style.SUCCESS(
+                f"2fa was successfully reset for user {username}; "
+                f"removed {passkey_count} passkey(s)"
+            )
         )

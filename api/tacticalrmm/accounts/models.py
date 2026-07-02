@@ -227,6 +227,57 @@ class Role(BaseAuditModel):
         return RoleAuditSerializer(role).data
 
 
+class WebAuthnCredential(BaseAuditModel):
+    """A registered passkey / FIDO2 credential for a user.
+
+    Passkeys are the primary login second-step; TOTP stays the mandatory
+    baseline + fallback, so deleting a passkey can never lock a user out.
+    """
+
+    user = models.ForeignKey(
+        "accounts.User",
+        related_name="webauthn_credentials",
+        on_delete=models.CASCADE,
+    )
+    credential_id = models.CharField(max_length=512, unique=True, db_index=True)
+    public_key = models.BinaryField()
+    sign_count = models.BigIntegerField(default=0)
+    transports = models.CharField(max_length=255, blank=True, null=True)
+    nickname = models.CharField(max_length=100, blank=True, null=True)
+    device_id = models.CharField(max_length=128, blank=True, null=True, db_index=True)
+    last_used_at = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"WebAuthnCredential({self.nickname or self.pk}, user={self.user_id})"
+
+    @staticmethod
+    def serialize(credential):
+        from .serializers import WebAuthnCredentialAuditSerializer
+
+        return WebAuthnCredentialAuditSerializer(credential).data
+
+
+class WebAuthnChallenge(models.Model):
+    """One-time passkey challenge for stateless/mobile ceremonies."""
+
+    challenge = models.CharField(max_length=512, unique=True, db_index=True)
+    purpose = models.CharField(max_length=20, db_index=True)
+    user = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="webauthn_challenges",
+    )
+    device_id = models.CharField(max_length=128, blank=True, null=True)
+    expires_at = models.DateTimeField(db_index=True)
+    consumed_at = models.DateTimeField(blank=True, null=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"WebAuthnChallenge({self.purpose}, user={self.user_id})"
+
+
 class APIKey(BaseAuditModel):
     name = CharField(unique=True, max_length=25)
     key = CharField(unique=True, blank=True, max_length=48)

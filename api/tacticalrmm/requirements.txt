@@ -21,6 +21,7 @@ psycopg[binary]==3.3.4
 pycparser==2.22
 pycryptodome==3.23.0
 pyotp==2.9.0
+webauthn==2.8.0
 pyparsing==3.2.3
 python-ipware==2.0.2
 qrcode==8.2

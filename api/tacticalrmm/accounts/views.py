@@ -22,7 +22,7 @@ from rest_framework.serializers import (
 )
 from rest_framework.views import APIView
 
-from accounts.utils import is_root_user
+from accounts.utils import can_dashboard_login, is_root_user
 from core.tasks import sync_mesh_perms_task
 from logs.models import AuditLog
 from tacticalrmm.helpers import notify_error
@@ -33,9 +33,9 @@ from tacticalrmm.throttles import (
     LoginDayThrottle,
     LoginMinThrottle,
 )
-from tacticalrmm.utils import get_core_settings
 
-from .models import APIKey, Role, User
+from .models import APIKey, Role, User, WebAuthnCredential
+from .webauthn_views import _clear_pre_2fa, _set_pre_2fa_user
 from .permissions import (
     AccountsPerms,
     APIKeyPerms,
@@ -71,22 +71,21 @@ class CheckCredsV2(KnoxLoginView):
 
         user = serializer.validated_data["user"]
 
-        if user.block_dashboard_login or user.is_sso_user:
+        if not can_dashboard_login(user):
             return notify_error("Bad credentials")
 
-        # block local logon if configured
-        core_settings = get_core_settings()
-        if not user.is_superuser and core_settings.block_local_user_logon:
-            return notify_error("Bad credentials")
+        has_passkeys = WebAuthnCredential.objects.filter(user=user).exists()
+        needs_2fa = bool(user.totp_key) or has_passkeys
 
-        # if totp token not set modify response to notify frontend
-        if not user.totp_key:
+        if not needs_2fa:
             login(request, user)
             response = super().post(request, format=None)
             response.data["totp"] = False
+            response.data["passkey"] = False
             return response
 
-        return Response({"totp": True})
+        _set_pre_2fa_user(request, user)
+        return Response({"totp": bool(user.totp_key), "passkey": has_passkeys})
 
 
 class LoginViewV2(KnoxLoginView):
@@ -100,15 +99,7 @@ class LoginViewV2(KnoxLoginView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
 
-        if user.block_dashboard_login:
-            return notify_error("Bad credentials")
-
-        # block local logon if configured
-        core_settings = get_core_settings()
-        if not user.is_superuser and core_settings.block_local_user_logon:
-            return notify_error("Bad credentials")
-
-        if user.is_sso_user:
+        if not can_dashboard_login(user):
             return notify_error("Bad credentials")
 
         token = request.data["twofactor"]
@@ -131,6 +122,7 @@ class LoginViewV2(KnoxLoginView):
                 user.last_login_ip = str(client_ip)
                 user.save()
 
+            _clear_pre_2fa(request)
             AuditLog.audit_user_login_successful(
                 request.data["username"], debug_info={"ip": request._client_ip}
             )
@@ -193,6 +185,9 @@ class GetAddUsers(APIView):
 
     class UserSerializerSSO(ModelSerializer):
         social_accounts = SerializerMethodField()
+        passkey_count = SerializerMethodField()
+        passkey_last_used_at = SerializerMethodField()
+        totp_enabled = SerializerMethodField()
 
         def get_social_accounts(self, obj):
             accounts = SocialAccount.objects.filter(user_id=obj.pk)
@@ -223,6 +218,24 @@ class GetAddUsers(APIView):
 
             return []
 
+        def get_passkey_count(self, obj):
+            if not obj.pk:
+                return 0
+            return obj.webauthn_credentials.count()
+
+        def get_passkey_last_used_at(self, obj):
+            if not obj.pk:
+                return None
+            return (
+                obj.webauthn_credentials.exclude(last_used_at__isnull=True)
+                .order_by("-last_used_at")
+                .values_list("last_used_at", flat=True)
+                .first()
+            )
+
+        def get_totp_enabled(self, obj):
+            return bool(obj.totp_key)
+
         class Meta:
             model = User
             fields = [
@@ -238,6 +251,9 @@ class GetAddUsers(APIView):
                 "block_dashboard_login",
                 "date_format",
                 "social_accounts",
+                "totp_enabled",
+                "passkey_count",
+                "passkey_last_used_at",
             ]
 
     def get(self, request):
@@ -337,9 +353,10 @@ class UserActions(APIView):
 
         user.totp_key = ""
         user.save()
+        WebAuthnCredential.objects.filter(user=user).delete()
 
         return Response(
-            f"{user.username}'s Two-Factor key was reset. Have them sign in again to setup"
+            f"{user.username}'s MFA was reset. Have them sign in again to set up TOTP and passkeys."
         )
 
 
@@ -458,4 +475,7 @@ class Reset2FA(APIView):
         user = request.user
         user.totp_key = ""
         user.save()
-        return Response("2FA was reset. Log out and back in to setup.")
+        WebAuthnCredential.objects.filter(user=user).delete()
+        return Response(
+            "MFA was reset. Log out and back in to set up TOTP and passkeys."
+        )

@@ -1,5 +1,5 @@
 coverage
-model_bakery
+model_bakery<1.24
 black
 pytest
 pytest-django
@@ -8,4 +8,5 @@ pytest-cov
 refurb
 flake8
 daphne
+service-identity<26
 time-machine

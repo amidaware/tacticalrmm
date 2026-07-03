@@ -5,6 +5,7 @@ import re
 from collections import Counter
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union, cast
+from zoneinfo import ZoneInfo
 
 import msgpack
 import nats
@@ -25,7 +26,11 @@ from agents.utils import (
     is_posix_abs_path,
     is_windows_path,
 )
-from core.models import EmailTemplateSection, TZ_CHOICES
+from core.models import (
+    EmailTemplateSection,
+    TZ_CHOICES,
+    format_quasar_date,
+)
 from core.utils import _b64_to_hex, get_core_settings, send_command_with_mesh
 from logs.models import BaseAuditModel, DebugLog, PendingAction
 from tacticalrmm.constants import (
@@ -1159,10 +1164,12 @@ class Agent(BaseAuditModel):
             or has_script_actions(alert_template, "agent")
         )
 
-    def email_template_context(self, status: str, details: str) -> dict[str, str]:
+    def email_template_context(
+        self, status: str, details: str, date_format: str
+    ) -> dict[str, str]:
         policy_name = self.policy.name if self.policy else ""
 
-        return {
+        context = {
             "alert_type": "agent",
             "alert_status": status,
             "client": self.client.name,
@@ -1172,7 +1179,16 @@ class Agent(BaseAuditModel):
             "policy": policy_name,
             "alert_name": self.hostname,
             "details": details,
+            "last_response": "",
         }
+
+        if self.last_seen:
+            last_seen = djangotime.localtime(
+                self.last_seen, timezone=ZoneInfo(self.timezone)
+            )
+            context["last_response"] = format_quasar_date(last_seen, date_format)
+
+        return context
 
     def send_outage_email(self):
         CORE = get_core_settings()
@@ -1187,7 +1203,9 @@ class Agent(BaseAuditModel):
                 "within the expected time."
             ),
             alert_template=self.alert_template,
-            template_context=self.email_template_context("failed", details),
+            template_context=self.email_template_context(
+                "failed", details, CORE.date_format
+            ),
             template_section=EmailTemplateSection.AGENT_OUTAGE,
         )
 
@@ -1204,7 +1222,9 @@ class Agent(BaseAuditModel):
                 "after an interruption in data transmission."
             ),
             alert_template=self.alert_template,
-            template_context=self.email_template_context("resolved", details),
+            template_context=self.email_template_context(
+                "resolved", details, CORE.date_format
+            ),
             template_section=EmailTemplateSection.AGENT_RECOVERY,
         )
 

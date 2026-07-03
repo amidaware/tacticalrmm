@@ -1,3 +1,4 @@
+import datetime as dt
 import os
 from unittest.mock import patch
 
@@ -24,7 +25,12 @@ from tacticalrmm.helpers import get_nats_hosts, get_nats_url
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
-from .models import CustomField, GlobalKVStore, URLAction
+from .models import (
+    CustomField,
+    GlobalKVStore,
+    URLAction,
+    format_quasar_date,
+)
 from .serializers import CustomFieldSerializer, KeyStoreSerializer, URLActionSerializer
 from .tasks import core_maintenance_tasks  # , resolve_pending_actions
 
@@ -156,6 +162,22 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.data["task_email_body_template"], "Task details: {details}")
 
         self.check_not_authenticated("put", url)
+
+    def test_format_quasar_date(self):
+        date_obj = dt.datetime(2026, 6, 9, 14, 5, 7, 123000)
+
+        self.assertEqual(
+            format_quasar_date(date_obj, "MMM-DD-YYYY - HH:mm"),
+            "Jun-09-2026 - 14:05",
+        )
+        self.assertEqual(
+            format_quasar_date(date_obj, "YYYY-MM-DD hh:mm A"),
+            "2026-06-09 02:05 PM",
+        )
+        self.assertEqual(
+            format_quasar_date(date_obj, "MMM D, YYYY [at] h:mm aa"),
+            "Jun 9, 2026 at 2:05 p.m.",
+        )
 
     @patch("smtplib.SMTP")
     def test_send_mail_uses_configured_templates(self, smtp):

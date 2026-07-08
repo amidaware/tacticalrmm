@@ -77,6 +77,14 @@ app.conf.beat_schedule = {
         "task": "ee.reporting.tasks.scheduled_reports_runner",
         "schedule": crontab(),
     },
+    "dispatch-due-ai-tasks": {
+        "task": "core.tasks.dispatch_due_ai_tasks",
+        "schedule": crontab(),
+    },
+    "dispatch-due-bulk-ai-commands": {
+        "task": "core.tasks.dispatch_due_bulk_ai_commands",
+        "schedule": crontab(),
+    },
 }
 
 

@@ -125,6 +125,12 @@ class Role(BaseAuditModel):
     can_send_wol = models.BooleanField(default=False)
     can_use_registry = models.BooleanField(default=False)
     can_use_terminal = models.BooleanField(default=False)
+    # Pi.dev AI assistant
+    can_use_ai = models.BooleanField(default=False)
+    can_use_ai_autoapprove = models.BooleanField(default=False)
+    ai_allowed_models = models.ManyToManyField(
+        "core.AIModel", related_name="role_ai_models", blank=True
+    )
 
     # core
     can_list_notes = models.BooleanField(default=False)

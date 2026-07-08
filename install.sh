@@ -759,6 +759,22 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
+    # Pi.dev AI assistant bridge (WebSocket + HTTP)
+    location ~ ^/pi/ {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$server_name;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
     location / {
         uwsgi_pass  tacticalrmm;
         include     /etc/nginx/uwsgi_params;
@@ -1053,6 +1069,10 @@ for i in rmm.service daphne.service celery.service celerybeat.service; do
   sudo systemctl stop ${i}
   sudo systemctl start ${i}
 done
+
+# Pi.dev AI assistant bridge
+print_green 'Setting up Pi.dev AI assistant bridge'
+bash /rmm/pibridge/setup.sh || printf >&2 "${RED}Pi bridge setup failed (non-fatal); run /rmm/pibridge/setup.sh manually${NC}\n"
 
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"

@@ -11,6 +11,32 @@ class CoreSettingsPerms(permissions.BasePermission):
         return _has_perm(r, "can_edit_core_settings")
 
 
+class AITaskPerms(permissions.BasePermission):
+    """Scheduled AI tasks are usable by any tech with can_use_ai (not just core
+    settings admins). Per-agent access is enforced in the views; the list is
+    filtered to the agents the role can see."""
+
+    def has_permission(self, r, view) -> bool:
+        from core.models import CoreSettings
+
+        core = CoreSettings.objects.first()
+        if not core or not core.ai_module_enabled:
+            return False
+        return _has_perm(r, "can_use_ai")
+
+
+class BulkAIPerms(permissions.BasePermission):
+    """Bulk AI commands target many agents, so require can_use_ai + can_run_bulk."""
+
+    def has_permission(self, r, view) -> bool:
+        from core.models import CoreSettings
+
+        core = CoreSettings.objects.first()
+        if not core or not core.ai_module_enabled:
+            return False
+        return _has_perm(r, "can_use_ai") and _has_perm(r, "can_run_bulk")
+
+
 class GlobalKeyStorePerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
         if r.method == "GET":

@@ -74,6 +74,7 @@ from .permissions import (
     InstallAgentPerms,
     ManageProcPerms,
     MeshPerms,
+    PiPerms,
     RebootAgentPerms,
     RecoverAgentPerms,
     RunBulkPerms,
@@ -1638,3 +1639,175 @@ class AgentTerminalDefaults(APIView):
                 },
             ).data
         )
+
+
+class AgentPiSession(APIView):
+    """Create a short-lived Pi.dev AI assistant session bound to one agent.
+
+    Validates permission, computes the caller's allowed
+    models, writes a redis token that the pi-trmm-bridge reads, audits, and
+    returns a popup URL + token.
+    """
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request, agent_id):
+        from core.models import AIModel, CoreSettings
+        from agents.pi_session import create_pi_session
+
+        agent = get_object_or_404(
+            Agent.objects.select_related("site__client").defer(*AGENT_DEFER),
+            agent_id=agent_id,
+        )
+        core = CoreSettings.objects.first()
+
+        user = request.user
+        is_super = user.is_superuser or (user.role and user.role.is_superuser)
+
+        enabled_models = AIModel.objects.filter(
+            enabled=True, provider__enabled=True
+        ).select_related("provider")
+
+        if is_super:
+            allowed = list(enabled_models)
+        else:
+            role = user.role
+            role_models = (
+                role.ai_allowed_models.filter(
+                    enabled=True, provider__enabled=True
+                ).select_related("provider")
+                if role
+                else AIModel.objects.none()
+            )
+            allowed = list(role_models)
+            if not allowed:
+                # fall back to global default only
+                allowed = [m for m in enabled_models if m.is_default]
+
+        if not allowed:
+            return notify_error(
+                "No AI models are available for your role. Ask an admin to "
+                "configure providers/models and grant access."
+            )
+
+        default_model = next(
+            (m for m in allowed if m.is_default), allowed[0]
+        )
+
+        # requested model (optional) must be in allowed set
+        req_id = request.data.get("model_id")
+        chosen = default_model
+        if req_id:
+            match = next((m for m in allowed if m.model_id == req_id), None)
+            if not match:
+                return notify_error("Requested model is not permitted for your role.")
+            chosen = match
+
+        def model_dict(m):
+            # safe for the browser (no api key)
+            return {
+                "provider": m.provider.name,
+                "model_id": m.model_id,
+                "display_name": m.display_name,
+                "thinking_level": m.thinking_level,
+                "base_url": m.provider.base_url,
+            }
+
+        def model_dict_full(m):
+            # server-side only (includes api key so the bridge can switch models)
+            return {**model_dict(m), "api_key": m.provider.api_key}
+
+        device_facts = {
+            "agent_id": agent.agent_id,
+            "hostname": agent.hostname,
+            "client": agent.client.name,
+            "site": agent.site.name,
+            "operating_system": agent.operating_system,
+            "plat": agent.plat,
+            "goarch": agent.goarch,
+            "public_ip": agent.public_ip,
+            "logged_in_username": agent.logged_in_username,
+            "last_logged_in_user": agent.last_logged_in_user,
+            "description": agent.description,
+            "agent_version": agent.version,
+            "monitoring_type": agent.monitoring_type,
+            "last_seen": str(agent.last_seen) if agent.last_seen else None,
+        }
+
+        blob = {
+            "agent_id": agent.agent_id,
+            "hostname": agent.hostname,
+            "username": user.username,
+            "provider": chosen["provider"] if isinstance(chosen, dict) else chosen.provider.name,
+            "model_id": chosen.model_id,
+            "thinking_level": chosen.thinking_level,
+            "base_url": chosen.provider.base_url,
+            "api_key": chosen.provider.api_key,
+            "allowed_models": [model_dict_full(m) for m in allowed],
+            "device_facts": device_facts,
+            "require_approval": bool(core.ai_require_approval),
+            "autoapprove_allowed": bool(is_super or (user.role and user.role.can_use_ai_autoapprove)),
+            "persist_history": bool(core.ai_persist_history),
+            "resume_session": request.data.get("resume_session") or None,
+        }
+
+        token = create_pi_session(data=blob)
+
+        AuditLog.audit_mesh_session(
+            username=user.username,
+            agent=agent,
+            debug_info={
+                "ip": request._client_ip,
+                "feature": "pi_ai",
+                "model": f"{blob['provider']}/{blob['model_id']}",
+            },
+        )
+
+        return Response(
+            {
+                "token": token,
+                "url": f"/pichat/{agent.agent_id}?token={token}",
+                "hostname": agent.hostname,
+                "client": agent.client.name,
+                "site": agent.site.name,
+                "model_id": chosen.model_id,
+                "model_display": chosen.display_name,
+                "allowed_models": [model_dict(m) for m in allowed],
+                "require_approval": blob["require_approval"],
+                "autoapprove_allowed": blob["autoapprove_allowed"],
+            }
+        )
+
+
+class AgentPiHistory(APIView):
+    """Proxy the pi-trmm-bridge chat history index for one agent (auth enforced
+    here, then fetched from the local bridge)."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request, agent_id):
+        import requests as _requests
+
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.get(f"{bridge}/pi/history/{agent.agent_id}", timeout=10)
+            return Response(r.json())
+        except Exception:
+            return Response({"sessions": []})
+
+    def delete(self, request, agent_id):
+        import requests as _requests
+
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        session_id = request.data.get("session_id")
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            _requests.delete(
+                f"{bridge}/pi/history/{agent.agent_id}",
+                json={"session_id": session_id},
+                timeout=10,
+            )
+        except Exception:
+            pass
+        return Response("ok")

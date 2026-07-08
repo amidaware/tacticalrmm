@@ -145,3 +145,17 @@ class AgentTerminalPerms(permissions.BasePermission):
             )
 
         return _has_perm(r, "can_use_terminal")
+
+
+class PiPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        from core.models import CoreSettings
+
+        core = CoreSettings.objects.first()
+        if not core or not core.ai_module_enabled:
+            return False
+        if "agent_id" in view.kwargs.keys():
+            return _has_perm(r, "can_use_ai") and _has_perm_on_agent(
+                r.user, view.kwargs["agent_id"]
+            )
+        return _has_perm(r, "can_use_ai")

@@ -7,6 +7,11 @@ from tacticalrmm.constants import (
 )
 
 from .models import (
+    AIModel,
+    AIProvider,
+    AITask,
+    AITaskRun,
+    BulkAICommand,
     CodeSignToken,
     CoreSettings,
     CustomField,
@@ -159,3 +164,86 @@ class ScheduleAuditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
         fields = "__all__"
+
+
+class AIModelSerializer(serializers.ModelSerializer):
+    provider_name = serializers.CharField(source="provider.name", read_only=True)
+
+    class Meta:
+        model = AIModel
+        fields = "__all__"
+
+
+class AIProviderSerializer(serializers.ModelSerializer):
+    models = AIModelSerializer(many=True, read_only=True)
+    api_key_set = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AIProvider
+        fields = "__all__"
+        extra_kwargs = {"api_key": {"write_only": True, "required": False}}
+
+    def get_api_key_set(self, obj) -> bool:
+        return bool(obj.api_key)
+
+
+class AITaskSerializer(serializers.ModelSerializer):
+    hostname = serializers.CharField(source="agent.hostname", read_only=True)
+    agent_id = serializers.CharField(source="agent.agent_id", read_only=True)
+    model_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AITask
+        fields = "__all__"
+
+    def get_model_display(self, obj) -> str:
+        return obj.model.display_name if obj.model else "(default)"
+
+
+class AITaskRunSerializer(serializers.ModelSerializer):
+    source = serializers.CharField(read_only=True)
+    source_name = serializers.CharField(read_only=True)
+    hostname = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AITaskRun
+        fields = "__all__"
+
+    def get_hostname(self, obj) -> str:
+        a = obj.get_agent()
+        return a.hostname if a else ""
+
+
+class BulkAICommandSerializer(serializers.ModelSerializer):
+    model_display = serializers.SerializerMethodField()
+    agent_ids = serializers.SerializerMethodField()
+    target_summary = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BulkAICommand
+        fields = "__all__"
+
+    def get_model_display(self, obj) -> str:
+        return obj.model.display_name if obj.model else "(default)"
+
+    def get_agent_ids(self, obj):
+        if not obj.pk:
+            return []
+        return list(obj.agents.values_list("agent_id", flat=True))
+
+    def get_target_summary(self, obj) -> str:
+        agent_count = obj.agents.count() if obj.pk else 0
+        if obj.target == "client" and obj.client:
+            base = f"Client: {obj.client.name}"
+        elif obj.target == "site" and obj.site:
+            base = f"Site: {obj.site.name}"
+        elif obj.target == "agents":
+            base = f"{agent_count} selected agents"
+        else:
+            base = "All agents"
+        extra = []
+        if obj.mon_type != "all":
+            extra.append(obj.mon_type)
+        if obj.os_type != "all":
+            extra.append(obj.os_type)
+        return base + (f" ({', '.join(extra)})" if extra else "")

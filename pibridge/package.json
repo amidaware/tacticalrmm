@@ -1,0 +1,17 @@
+{
+  "name": "pi-trmm-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bridge between Tactical RMM and pi.dev - per-device AI assistant",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "^0.80.3",
+    "ioredis": "^5.4.1",
+    "typebox": "^1.1.38",
+    "ws": "^8.18.0"
+  }
+}

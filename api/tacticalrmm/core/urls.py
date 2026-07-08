@@ -23,6 +23,21 @@ urlpatterns = [
     path("smstest/", views.TwilioSMSTest.as_view()),
     path("clearcache/", views.clear_cache),
     path("openai/generate/", views.OpenAICodeCompletion.as_view()),
+    # Pi.dev AI providers & models
+    path("ai/providers/", views.GetAddAIProvider.as_view()),
+    path("ai/providers/<int:pk>/", views.UpdateDeleteAIProvider.as_view()),
+    path("ai/available-models/", views.AIAvailableModels.as_view()),
+    path("ai/models/", views.GetAddAIModel.as_view()),
+    path("ai/models/<int:pk>/", views.UpdateDeleteAIModel.as_view()),
+    path("ai/tasks/", views.GetAddAITask.as_view()),
+    path("ai/tasks/<int:pk>/", views.UpdateDeleteAITask.as_view()),
+    path("ai/tasks/<int:pk>/run/", views.RunAITaskNow.as_view()),
+    path("ai/runs/", views.AITaskRuns.as_view()),
+    path("ai/runs/<str:run_id>/live/", views.AITaskRunLive.as_view()),
+    path("ai/bulk/", views.GetAddBulkAICommand.as_view()),
+    path("ai/bulk/<int:pk>/", views.UpdateDeleteBulkAICommand.as_view()),
+    path("ai/bulk/<int:pk>/run/", views.RunBulkAICommandNow.as_view()),
+    path("ai/bulk/preview/", views.PreviewBulkAITargets.as_view()),
     path("webtermperms/", views.webterm_perms),
 ]
 

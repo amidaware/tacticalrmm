@@ -207,6 +207,12 @@ async function startChat(ws, blob) {
       last_activity: new Date().toISOString(),
       model: `${blob.provider}/${blob.model_id}`,
       user: blob.username,
+      // persist the multi-machine set so "Continue" can rebuild the full
+      // session (all machines + their roles), not just the primary machine.
+      multi,
+      machines: multi
+        ? toolMachines.map((m) => ({ agent_id: m.agentId, hostname: m.label, role: m.role }))
+        : undefined,
     });
   }
 

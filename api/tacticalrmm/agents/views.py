@@ -1796,6 +1796,9 @@ class PiMultiSession(APIView):
             "autoapprove_allowed": bool(
                 is_super or (user.role and user.role.can_use_ai_autoapprove)
             ),
+            "allow_mutating": bool(
+                is_super or (user.role and user.role.can_use_ai_mutate)
+            ),
             "persist_history": bool(core.ai_persist_history),
             "resume_session": request.data.get("resume_session") or None,
         }
@@ -1946,6 +1949,7 @@ class AgentPiSession(APIView):
             "device_facts": device_facts,
             "require_approval": bool(core.ai_require_approval),
             "autoapprove_allowed": bool(is_super or (user.role and user.role.can_use_ai_autoapprove)),
+            "allow_mutating": bool(is_super or (user.role and user.role.can_use_ai_mutate)),
             "persist_history": bool(core.ai_persist_history),
             "resume_session": request.data.get("resume_session") or None,
         }

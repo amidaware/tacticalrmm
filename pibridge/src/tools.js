@@ -2,6 +2,51 @@ import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { trmm } from "./trmm.js";
 
+// Best-effort classification of a shell/powershell command as "mutating" (i.e.
+// it changes the system) so a READ-ONLY session can refuse it. This is a
+// guardrail, not a sandbox: arbitrary shell can be obfuscated. The hard
+// guarantee for read-only sessions is at the TOOL level (write-only tools are
+// removed); this adds a strong deterrent for run_command_on_device.
+const NIX_MUTATE = [
+  /\brm\b/, /\brmdir\b/, /\bunlink\b/, /\bshred\b/, /\bdd\b/, /\bmkfs\.?\w*/,
+  /\bfdisk\b/, /\bparted\b/, /\bwipefs\b/, /\bmkswap\b/, /\btruncate\b/,
+  /\bchmod\b/, /\bchown\b/, /\bchattr\b/, /\bsetfacl\b/,
+  /\bmv\b/, /\bcp\b/, /\bln\b/, /\btee\b/,
+  /\bsystemctl\s+(start|stop|restart|reload|enable|disable|mask|unmask|kill)/,
+  /\bservice\s+\S+\s+(start|stop|restart|reload)/, /\binvoke-rc\.d\b/,
+  /\b(apt|apt-get|aptitude|dpkg|yum|dnf|rpm|zypper|apk|snap|flatpak|pip|pip3|npm|yarn|gem|cargo)\b[^\n]*\b(install|remove|purge|erase|autoremove|upgrade|dist-upgrade|add|del|delete|uninstall)\b/,
+  /\b(reboot|shutdown|halt|poweroff|telinit|init)\b/,
+  /\b(kill|pkill|killall)\b/,
+  /\b(useradd|userdel|usermod|groupadd|groupdel|passwd|chpasswd|adduser|deluser)\b/,
+  /\bcrontab\b/, /\b(iptables|ip6tables|nft|ufw|firewall-cmd)\b/,
+  /\b(mount|umount|swapon|swapoff)\b/,
+  /\bsed\b[^|]*\s-\w*i/, /\bperl\b[^|]*\s-\w*i/,
+  /\beval\b/, /\|\s*(sh|bash|zsh)\b/,
+  /\b(qm|pct|pvesm|pveceph|ha-manager|pvecm)\s+(create|destroy|set|start|stop|delete|remove|add|migrate|rollback)/,
+];
+const WIN_MUTATE = [
+  /\bRemove-\w+/i, /\bSet-\w+/i, /\bNew-\w+/i, /\bStop-\w+/i, /\bRestart-\w+/i,
+  /\bSuspend-\w+/i, /\bStart-(Service|Process|ScheduledTask)\b/i,
+  /\bDisable-\w+/i, /\bEnable-\w+/i, /\bClear-\w+/i, /\bRename-\w+/i,
+  /\bMove-\w+/i, /\bCopy-Item\b/i, /\b(Install|Uninstall|Update|Register|Unregister)-\w+/i,
+  /\b(Add|Set)-Content\b/i, /\bOut-File\b/i, /\bExport-\w+/i,
+  /\bFormat-Volume\b/i, /\b(Restart|Stop)-Computer\b/i,
+  /\b(del|erase|rd|rmdir|move|ren|rename|xcopy|robocopy|copy)\b/i,
+  /\breg(\.exe)?\s+(add|delete|import)\b/i,
+  /\bsc(\.exe)?\s+(create|config|delete|stop|start|failure)\b/i,
+  /\bnet(\.exe)?\s+(stop|start|user|localgroup|group)\b/i,
+  /\b(shutdown|bcdedit|diskpart|fsutil|takeown|icacls|cacls|attrib)\b/i,
+  /\bformat\b(?!-)/i, /\bschtasks\b[^\n]*\/(create|delete|change)/i,
+  /\bmsiexec\b/i, /\b(winget|choco)\s+(install|uninstall|upgrade|remove)\b/i,
+];
+function mutatingMatch(command, isWindows) {
+  for (const re of isWindows ? WIN_MUTATE : NIX_MUTATE) {
+    const m = command.match(re);
+    if (m) return m[0];
+  }
+  return null;
+}
+
 // Builds the device-scoped toolset.
 //
 // Single-machine mode (machines.length === 1): identical behavior/shape to the
@@ -160,6 +205,16 @@ export function buildTools({
       const win = m.plat === "windows";
       const shell = win ? (p.shell === "cmd" ? "cmd" : "powershell") : "/bin/bash";
       const timeout = p.timeout && p.timeout > 0 ? Math.min(p.timeout, 900) : 60;
+      if (readonly) {
+        const hit = mutatingMatch(p.command, win);
+        if (hit) {
+          return text(
+            `BLOCKED: this is a READ-ONLY AI session, but the command appears to modify the system ` +
+              `(matched "${hit}"). Only read-only/diagnostic commands are permitted. Do not retry a ` +
+              `mutating command; an operator with write (mutate) rights must make changes.`,
+          );
+        }
+      }
       const ok = await gateFor(m, `Run on device [${shell}]: ${p.command}`);
       if (!ok) return denied();
       // On Linux, self-terminate the command with `timeout` so a hung command

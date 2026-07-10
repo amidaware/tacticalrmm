@@ -1214,6 +1214,119 @@ class RunBulkAICommandNow(APIView):
         return Response("Bulk AI command queued to run now")
 
 
+def _revoke_ai_agent_tasks(cmd_id=None):
+    """Revoke (terminate) queued/active Celery AI runner tasks. If cmd_id is
+    given, only tasks for that bulk command; otherwise all AI runner tasks.
+    Returns the number of tasks revoked."""
+    from tacticalrmm.celery import app
+
+    names = (
+        "run_bulk_ai_agent",
+        "run_bulk_ai_command",
+        "run_ai_task",
+    )
+    revoked = 0
+    try:
+        insp = app.control.inspect(timeout=8)
+        buckets = []
+        for getter in (insp.active, insp.reserved, insp.scheduled):
+            try:
+                buckets.append(getter() or {})
+            except Exception:
+                pass
+        for bucket in buckets:
+            for _worker, tasks in bucket.items():
+                for t in tasks:
+                    tname = t.get("name", "") or ""
+                    if not any(tname.endswith(n) for n in names):
+                        continue
+                    if cmd_id is not None:
+                        args = t.get("args") or []
+                        # run_bulk_ai_agent(cmd_id, agent_pk, ...) / run_bulk_ai_command(cmd_id)
+                        if not (isinstance(args, list) and args and args[0] == cmd_id):
+                            continue
+                    app.control.revoke(t["id"], terminate=True, signal="SIGTERM")
+                    revoked += 1
+    except Exception:
+        pass
+    return revoked
+
+
+def _abort_bridge_runs(run_ids=None, all_runs=False):
+    """Tell the bridge to abort in-flight headless runs (stops LLM spend)."""
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    payload = {"all": True} if all_runs else {"run_ids": list(run_ids or [])}
+    try:
+        r = requests.post(f"{bridge}/pi/run/abort", json=payload, timeout=15)
+        return r.json()
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+class StopBulkAICommand(APIView):
+    """Kill switch for one bulk AI command: disable it, revoke its queued/active
+    Celery tasks, abort its in-flight bridge runs, and mark running rows stopped."""
+
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def post(self, request, pk):
+        cmd = get_object_or_404(BulkAICommand, pk=pk)
+        # 1) stop it from (re)dispatching
+        cmd.enabled = False
+        cmd.next_run = None
+        cmd.save(update_fields=["enabled", "next_run"])
+        # 2) revoke queued/active celery runner tasks for this command
+        revoked = _revoke_ai_agent_tasks(cmd_id=pk)
+        # 3) abort in-flight bridge runs + mark rows stopped
+        running = AITaskRun.objects.filter(bulk_id=pk, status="running")
+        run_ids = list(running.values_list("run_id", flat=True))
+        bridge = _abort_bridge_runs(run_ids=run_ids)
+        stopped = running.update(
+            status="error",
+            summary="Stopped by operator",
+            finished_at=djangotime.now(),
+        )
+        return Response(
+            {
+                "detail": f"Stopped '{cmd.name}': disabled, {revoked} queued tasks revoked, "
+                f"{bridge.get('aborted', 0)} live runs aborted, {stopped} rows marked stopped.",
+                "revoked": revoked,
+                "aborted": bridge.get("aborted", 0),
+                "stopped": stopped,
+            }
+        )
+
+
+class StopAllAIRuns(APIView):
+    """Emergency stop: abort ALL in-flight AI runs (bulk + scheduled) and revoke
+    all queued AI runner tasks. Does NOT disable schedules (use per-command stop
+    for that) - purely halts current spend."""
+
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def post(self, request):
+        from core.tasks import ai_kill_set
+
+        # set the global kill flag first so any queued backlog no-ops on execute
+        ai_kill_set(seconds=900)
+        revoked = _revoke_ai_agent_tasks(cmd_id=None)
+        bridge = _abort_bridge_runs(all_runs=True)
+        stopped = AITaskRun.objects.filter(status="running").update(
+            status="error",
+            summary="Stopped by operator (emergency stop)",
+            finished_at=djangotime.now(),
+        )
+        return Response(
+            {
+                "detail": f"Emergency stop: {revoked} queued tasks revoked, "
+                f"{bridge.get('aborted', 0)} live runs aborted, {stopped} rows marked stopped.",
+                "revoked": revoked,
+                "aborted": bridge.get("aborted", 0),
+                "stopped": stopped,
+            }
+        )
+
+
 class PreviewBulkAITargets(APIView):
     """Return how many/which online agents a target selection would hit."""
 
@@ -1232,6 +1345,7 @@ class PreviewBulkAITargets(APIView):
         tmp.mon_type = request.data.get("mon_type", "all")
         tmp.os_type = request.data.get("os_type", "all")
         tmp.filters = request.data.get("filters") or []
+        tmp.filter_match = request.data.get("filter_match", "any")
 
         agent_ids = request.data.get("agent_ids") or []
 
@@ -1243,9 +1357,14 @@ class PreviewBulkAITargets(APIView):
 
         tmp.agents = _AgentsProxy()
         agents = _resolve_bulk_targets(tmp)
+        from core.tasks import _bulk_max_agents
+
+        cap = _bulk_max_agents()
         return Response(
             {
                 "online_count": len(agents),
+                "cap": cap,
+                "over_cap": len(agents) > cap,
                 "agents": [
                     {
                         "hostname": a.hostname,

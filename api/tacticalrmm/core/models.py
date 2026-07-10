@@ -852,8 +852,13 @@ class BulkAICommand(BaseAuditModel):
 
     # targets (mirrors bulk command); target also supports "filter"
     target = models.CharField(max_length=20, default="all")  # all/client/site/agents/filter
-    # dynamic filter rules for target=="filter": list of {field, op, value}
+    # dynamic filter rules for target=="filter". New shape: a list of GROUPS,
+    # each {match: "all"|"any", conditions: [{field, op, value}, ...]}. Old shape
+    # (a flat list of {field, op, value}) is still accepted and treated as one
+    # AND group. Groups are combined using filter_match below.
     filters = models.JSONField(default=list, blank=True)
+    # how to combine the filter GROUPS: "all" = AND, "any" = OR.
+    filter_match = models.CharField(max_length=8, default="any")
     client = models.ForeignKey(
         "clients.Client", null=True, blank=True, on_delete=models.SET_NULL
     )

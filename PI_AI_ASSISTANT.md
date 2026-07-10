@@ -108,6 +108,14 @@ POST /core/ai/models/      {"provider":1,"model_id":"claude-sonnet-4-5",
 
 - **Use Pi.dev AI Assistant** (`can_use_ai`) — required to open chats and to see /
   manage scheduled tasks.
+- **Allow write (mutating) actions** (`can_use_ai_mutate`) — when **off**, that
+  role's AI sessions are **read-only**: the write-only tools (run script, kill
+  process, reboot) are removed, and `run_command_on_device` refuses commands that
+  look destructive (a best-effort classifier covering `rm`/`dd`/`systemctl`
+  start-stop/package installs/`reboot`/PowerShell `Remove-`/`Set-`/`Stop-`, etc.).
+  The chat shows a **read-only** badge. Superusers always have write rights. The
+  hard guarantee is at the tool level; the command classifier is a strong
+  guardrail, not a sandbox.
 - **Allow auto-approve of device actions** (`can_use_ai_autoapprove`) — lets that
   role toggle auto-approve in a chat.
 - **Allowed AI models** — multiselect; empty = the global default only.
@@ -282,11 +290,21 @@ or on a schedule. Offline agents are skipped at run time.
 - **Targeting** mirrors Bulk Command: **All / Client / Site / Agents / Filter**.
   - The Agents picker lists machines with their **client / site** shown faded,
     and filters as you type (by hostname, client, or site).
-  - **Filter** mode builds dynamic rules (a `+` adds conditions, all ANDed):
-    e.g. *client contains "Lehigh" AND hostname contains "VM"*. Fields: hostname,
-    client, site, description, OS, platform, monitoring type. Operators: contains,
-    does-not-contain, equals, does-not-equal, starts-with. A live preview shows
-    how many online devices match.
+  - **Filter** mode is a grouped **AND/OR rule builder**: build one or more
+    **groups** of conditions; within a group the conditions are combined by the
+    group's own **ALL (AND) / ANY (OR)** selector, and the groups are combined by
+    a top-level **ALL / ANY** selector. Example:
+    *( client contains "Acme" AND platform = windows ) OR ( site contains "DC" )*.
+    Fields: hostname, client, site, description, OS, platform, monitoring type,
+    and **installed software (name)**. Operators: contains, does-not-contain,
+    equals, does-not-equal, starts-with. A live preview shows how many online
+    devices match.
+    - **Installed software** matches a case-insensitive substring against each
+      machine's software inventory list — e.g. *software contains "online
+      backup"* finds every machine with a matching installed program. (Only
+      contains / does-not-contain are meaningful for software.)
+    - Legacy flat filters (all-AND) from before this change are auto-migrated to
+      a single AND group, so existing commands keep working.
   - Type/OS quick filters apply to All/Client/Site targets.
 - **When to run**: **Now** (one-shot — runs on the online targets then disables
   itself, kept with its results) or **Scheduled** (Every N hours / Daily / Weekly
@@ -302,11 +320,59 @@ Endpoints (`BulkAIPerms` = `can_use_ai` + `can_run_bulk`):
 ```
 GET/POST     /core/ai/bulk/           ,  PUT/DELETE /core/ai/bulk/<id>/
 POST         /core/ai/bulk/<id>/run/  (run now)
+POST         /core/ai/bulk/<id>/stop/ (kill switch: disable + abort in-flight)
+POST         /core/ai/stop-all/       (emergency: abort ALL in-flight AI runs)
 POST         /core/ai/bulk/preview/   (count online agents a target would hit)
 ```
 
 Scheduler: `dispatch_due_bulk_ai_commands` (beat, every minute) fans a due
 command out to `run_bulk_ai_agent` per online target.
+
+### 7.1 Safe targeting (fail-closed) + hard cap
+
+Targeting **fails closed**: a target that doesn't establish a real constraint
+resolves to **zero** agents, never the whole fleet. Specifically a `filter`
+target with no effective conditions (empty, blank values, or unknown fields), a
+`client`/`site` target with no client/site set, or an unknown target all match
+**nothing**. Only an explicit **All** target hits every agent. (This closes a
+fail-open bug where an empty/ineffective filter silently fanned out to every
+agent.)
+
+On top of that, a **hard safety cap** limits how many agents a single bulk
+command may run on (default **250**, override `PI_BULK_MAX_AGENTS` in
+`local_settings.py`). If a run resolves to more than the cap it is **refused**
+at run time (logged to the Debug Log) rather than fanning out. The command
+dialog's live preview turns red and disables Save when the current target would
+exceed the cap.
+
+### 7.2 Kill switch (stop runaway spend)
+
+Because the LLM work runs **server-side on the bridge**, cancelling a Celery task
+alone does not stop token spend — the bridge keeps working. The kill switch acts
+at every layer:
+
+- **Per-command Stop** (⏹ on each row, or `POST /core/ai/bulk/<id>/stop/`):
+  disables the command, revokes its queued/active Celery tasks, aborts its
+  in-flight bridge runs, and marks running rows *"Stopped by operator"*.
+- **Emergency stop** (toolbar button, or `POST /core/ai/stop-all/`): aborts
+  **every** in-flight AI run (bulk + scheduled) and revokes all AI runner tasks.
+  Schedules are left enabled (use per-command Stop to pause one).
+- **Bridge** exposes `POST /pi/run/abort` (`{run_ids:[...]}` or `{all:true}`),
+  which calls `session.abort()` on the matching headless runs — stopping LLM
+  spend immediately. `GET /pi/health` reports `active_runs`.
+
+**Draining the queued backlog.** A large fan-out leaves hundreds of per-agent
+tasks sitting in the broker queue that Celery's `revoke`/`inspect` cannot reach.
+Two mechanisms handle this so a stop actually stops:
+
+- Each runner task (`run_bulk_ai_agent`, `run_ai_task`) **re-checks at execution
+  time** whether its command/task is still enabled and whether a global
+  emergency-stop flag is set; if so it **no-ops** (no LLM call, no alert). So a
+  disabled command's queued backlog drains harmlessly.
+- **Emergency stop** sets a redis **kill flag** (`pi_ai_kill_until`, ~15 min TTL)
+  that makes *every* queued runner task no-op on execute — draining the entire
+  backlog fast regardless of broker state. The flag auto-expires; per-command
+  Stop relies on the disabled-check instead.
 
 ## 8. Company-wide view (Client / Site)
 

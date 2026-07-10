@@ -152,17 +152,28 @@ async function startChat(ws, blob) {
     });
   }
 
+  // Read-only session unless the operator's role grants mutate rights.
+  const readonly = !blob.allow_mutating;
   const { tools, mutating, machines: toolMachines } = buildTools({
     machines,
     gate: requestApproval,
+    readonly,
   });
+
+  const roNotice = readonly
+    ? "\n\nREAD-ONLY SESSION: You may only INSPECT; do not attempt to change anything. " +
+      "The write tools (run script, kill process, reboot) are unavailable, and " +
+      "run_command_on_device will refuse commands that appear to modify the system. " +
+      "Use read-only/diagnostic commands only; if a change is needed, tell the operator " +
+      "they need an account with AI write (mutate) rights."
+    : "";
 
   // Resource loader for system prompt override
   const loader = new DefaultResourceLoader({
     agentDir: CONFIG.sessionsRoot,
     cwd: CONFIG.sessionsRoot,
     systemPromptOverride: () =>
-      multi ? systemPromptMulti(toolMachines) : systemPrompt(facts),
+      (multi ? systemPromptMulti(toolMachines) : systemPrompt(facts)) + roNotice,
   });
   await loader.reload();
 
@@ -277,6 +288,7 @@ async function startChat(ws, blob) {
       })),
       require_approval: blob.require_approval,
       autoapprove_allowed: blob.autoapprove_allowed,
+      read_only: readonly,
       history: session.messages,
     }),
   );
@@ -414,6 +426,10 @@ async function startChat(ws, blob) {
 }
 
 // ---- Headless run (scheduled AI tasks) -------------------------------------
+// In-flight headless runs by run_id, so an operator can abort them (kill
+// switch) and stop LLM token spend immediately.
+const activeRuns = new Map();
+
 async function runHeadless(blob) {
   const facts = blob.device_facts;
   const agentId = blob.agent_id;
@@ -469,6 +485,7 @@ async function runHeadless(blob) {
     agentDir: CONFIG.sessionsRoot,
     cwd: CONFIG.sessionsRoot,
   });
+  if (runId) activeRuns.set(runId, session);
 
   // Stream progress to the live buffer as the agent works.
   let textBuf = "";
@@ -507,12 +524,14 @@ async function runHeadless(blob) {
     await session.prompt(blob.prompt);
   } catch (e) {
     unsub();
+    if (runId) activeRuns.delete(runId);
     session.dispose();
     live.status = "error";
     await pushLive({ type: "status", text: `Run failed: ${e?.message || e}` });
     return { status: "error", summary: `Run failed: ${e?.message || e}`, transcript: "" };
   }
   unsub();
+  if (runId) activeRuns.delete(runId);
 
   // Build a readable transcript of assistant text + tool calls.
   const lines = [];
@@ -553,7 +572,33 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (url.pathname === "/pi/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true }));
+    res.end(JSON.stringify({ ok: true, active_runs: activeRuns.size }));
+    return;
+  }
+  // Kill switch: abort in-flight headless runs (stops LLM spend now).
+  // Body: { run_ids: [...] } to target specific runs, or { all: true }.
+  if (url.pathname === "/pi/run/abort" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      let ids = [];
+      let all = false;
+      try {
+        const j = JSON.parse(body || "{}");
+        ids = Array.isArray(j.run_ids) ? j.run_ids : [];
+        all = !!j.all;
+      } catch { /* ignore */ }
+      let aborted = 0;
+      for (const [rid, sess] of [...activeRuns.entries()]) {
+        if (all || ids.includes(rid)) {
+          try { await sess.abort(); aborted++; } catch { /* best effort */ }
+          activeRuns.delete(rid);
+        }
+      }
+      log("run_abort", all ? "ALL" : ids.join(","), `aborted=${aborted} remaining=${activeRuns.size}`);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, aborted, active: activeRuns.size }));
+    });
     return;
   }
   // Headless one-shot run for scheduled AI tasks (called by Django/celery).

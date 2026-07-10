@@ -239,6 +239,10 @@ class BulkAICommandSerializer(serializers.ModelSerializer):
             base = f"Site: {obj.site.name}"
         elif obj.target == "agents":
             base = f"{agent_count} selected agents"
+        elif obj.target == "filter":
+            groups = obj.filters or []
+            n = len(groups)
+            base = f"Filter ({n} group{'s' if n != 1 else ''})"
         else:
             base = "All agents"
         extra = []

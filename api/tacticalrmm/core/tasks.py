@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import nats
 from django.conf import settings
+from redis import from_url
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Prefetch
@@ -868,6 +869,10 @@ def run_ai_task(task_id, triggered_by="schedule"):
     except AITask.DoesNotExist:
         return "not found"
 
+    # Stop-guard: emergency stop or a disabled task drains the backlog as no-ops.
+    if ai_killed() or not getattr(task, "enabled", True):
+        return "skipped (stopped)"
+
     run_id = uuid.uuid4().hex
     run = AITaskRun.objects.create(
         task=task, agent=task.agent, run_id=run_id,
@@ -924,45 +929,143 @@ _BULK_FILTER_FIELDS = {
     "operating_system": "operating_system",
     "plat": "plat",
     "monitoring_type": "monitoring_type",
+    # installed software: JSON list on the related InstalledSoftware row.
+    # Matched as a case-insensitive substring against the software list
+    # (so "contains 'online backup'" finds any machine with a matching entry).
+    "software": "installedsoftware__software",
 }
 
 
-def _apply_bulk_filters(q, filters):
-    """AND together a list of {field, op, value} conditions onto a queryset."""
-    for f in filters or []:
-        field = _BULK_FILTER_FIELDS.get(f.get("field"))
-        op = f.get("op", "contains")
-        value = f.get("value", "")
-        if not field or value == "":
-            continue
-        if op == "contains":
-            q = q.filter(**{f"{field}__icontains": value})
-        elif op == "not_contains":
-            q = q.exclude(**{f"{field}__icontains": value})
-        elif op == "equals":
-            q = q.filter(**{f"{field}__iexact": value})
-        elif op == "not_equals":
-            q = q.exclude(**{f"{field}__iexact": value})
-        elif op == "startswith":
-            q = q.filter(**{f"{field}__istartswith": value})
-    return q
+def _condition_q(cond):
+    """Turn one {field, op, value} condition into a Q object (or None).
+    Negations use ~Q so they compose correctly inside OR groups."""
+    from django.db.models import Q
+
+    key = cond.get("field")
+    field = _BULK_FILTER_FIELDS.get(key)
+    op = cond.get("op", "contains")
+    value = cond.get("value", "")
+    if not field or value == "":
+        return None
+    # Installed software is a JSON list on a related row; only substring
+    # matching is meaningful, so all positive ops become icontains and the
+    # negative ops become its negation.
+    if key == "software":
+        base = Q(**{f"{field}__icontains": value})
+        return ~base if op in ("not_contains", "not_equals") else base
+    if op == "contains":
+        return Q(**{f"{field}__icontains": value})
+    if op == "not_contains":
+        return ~Q(**{f"{field}__icontains": value})
+    if op == "equals":
+        return Q(**{f"{field}__iexact": value})
+    if op == "not_equals":
+        return ~Q(**{f"{field}__iexact": value})
+    if op == "startswith":
+        return Q(**{f"{field}__istartswith": value})
+    return None
+
+
+def _normalize_filter_groups(filters):
+    """Accept both the new grouped shape and the legacy flat shape.
+    Legacy: [{field,op,value}, ...] -> a single AND group.
+    New:    [{match, conditions:[...]}, ...]."""
+    filters = filters or []
+    if not filters:
+        return []
+    first = filters[0]
+    if isinstance(first, dict) and "conditions" not in first and (
+        "field" in first or "op" in first or "value" in first
+    ):
+        return [{"match": "all", "conditions": filters}]
+    return filters
+
+
+def _group_q(group):
+    match = (group.get("match") or "all").lower()
+    qs = [q for q in (_condition_q(c) for c in group.get("conditions", [])) if q is not None]
+    if not qs:
+        return None
+    combined = qs[0]
+    for q in qs[1:]:
+        combined = (combined & q) if match == "all" else (combined | q)
+    return combined
+
+
+def _apply_bulk_filters(q, filters, group_match="any"):
+    """Combine filter GROUPS onto a queryset.
+    Within a group conditions are AND/OR'd by the group's own match; the groups
+    themselves are AND/OR'd by group_match ("all"=AND, "any"=OR)."""
+    groups = _normalize_filter_groups(filters)
+    gqs = [gq for gq in (_group_q(g) for g in groups) if gq is not None]
+    if not gqs:
+        return q.none()  # no effective conditions -> match nothing (fail closed)
+    gm = (group_match or "any").lower()
+    combined = gqs[0]
+    for gq in gqs[1:]:
+        combined = (combined & gq) if gm == "all" else (combined | gq)
+    # OR across joined fields (client/site names) can duplicate rows
+    return q.filter(combined).distinct()
+
+
+def _has_effective_conditions(filters):
+    """True only if at least one filter condition has a known field AND a
+    non-empty value. Used to fail CLOSED: a filter target with nothing
+    effective must match NOTHING, never every agent."""
+    for g in _normalize_filter_groups(filters):
+        for c in g.get("conditions", []) or []:
+            if _BULK_FILTER_FIELDS.get(c.get("field")) and (c.get("value", "") != ""):
+                return True
+    return False
+
+
+# Hard safety cap: a single bulk AI command may never fan out to more than this
+# many agents (guards against accidental/mis-scoped targets running up huge LLM
+# spend). Override in local_settings.py with PI_BULK_MAX_AGENTS.
+def _bulk_max_agents():
+    try:
+        return int(getattr(settings, "PI_BULK_MAX_AGENTS", 250))
+    except (TypeError, ValueError):
+        return 250
 
 
 def _resolve_bulk_targets(cmd):
-    """Resolve a bulk command's target selection to a list of ONLINE agents."""
+    """Resolve a bulk command's target selection to a list of ONLINE agents.
+
+    FAILS CLOSED: any target that does not establish a real constraint resolves
+    to ZERO agents. Only an explicit target=='all' matches every agent. This
+    prevents an empty/mis-scoped filter or a missing client/site from silently
+    fanning out to the entire fleet.
+    """
     from agents.models import Agent
     from tacticalrmm.constants import AgentMonType, AgentPlat, AGENT_STATUS_ONLINE
 
     q = Agent.objects.select_related("site__client").defer("services", "wmi_detail")
-    if cmd.target == "client" and cmd.client_id:
+    target = cmd.target
+    if target == "all":
+        pass  # explicit whole-fleet target
+    elif target == "client":
+        if not cmd.client_id:
+            return []
         q = q.filter(site__client_id=cmd.client_id)
-    elif cmd.target == "site" and cmd.site_id:
+    elif target == "site":
+        if not cmd.site_id:
+            return []
         q = q.filter(site_id=cmd.site_id)
-    elif cmd.target == "agents":
-        q = q.filter(pk__in=cmd.agents.values_list("pk", flat=True))
-    elif cmd.target == "filter":
-        q = _apply_bulk_filters(q, getattr(cmd, "filters", None) or [])
-    # target == "all" -> no client/site filter
+    elif target == "agents":
+        pks = list(cmd.agents.values_list("pk", flat=True))
+        if not pks:
+            return []
+        q = q.filter(pk__in=pks)
+    elif target == "filter":
+        filters = getattr(cmd, "filters", None) or []
+        if not _has_effective_conditions(filters):
+            return []  # empty/ineffective filter -> match nothing (fail closed)
+        q = _apply_bulk_filters(
+            q, filters, getattr(cmd, "filter_match", None) or "any"
+        )
+    else:
+        return []  # unknown target -> fail closed
 
     if cmd.mon_type == "servers":
         q = q.filter(monitoring_type=AgentMonType.SERVER)
@@ -1079,6 +1182,35 @@ def run_bulk_ai_command(cmd_id, triggered_by="bulk"):
         return "not found"
 
     agents = _resolve_bulk_targets(cmd)
+
+    # Hard safety cap: never fan out to more than the cap. Guards against an
+    # accidental/mis-scoped target running up huge LLM spend across the fleet.
+    cap = _bulk_max_agents()
+    if len(agents) > cap:
+        from logs.models import DebugLog
+
+        msg = (
+            f"Bulk AI command '{cmd.name}' (id={cmd.pk}) resolved {len(agents)} "
+            f"agents which exceeds the safety cap of {cap}; REFUSING to run. "
+            f"Narrow the target/filter, or raise PI_BULK_MAX_AGENTS in "
+            f"local_settings.py to intentionally allow more."
+        )
+        try:
+            DebugLog.error(message=msg)
+        except Exception:
+            pass
+        cmd.last_run = djangotime.now()
+        cmd.last_run_count = 0
+        fields = ["last_run", "last_run_count", "next_run"]
+        if cmd.run_mode == "now":
+            cmd.enabled = False
+            cmd.next_run = None
+            fields.append("enabled")
+        else:
+            cmd.next_run = _compute_bulk_next_run(cmd)
+        cmd.save(update_fields=fields)
+        return f"REFUSED: {len(agents)} agents exceeds cap {cap}"
+
     for agent in agents:
         run_bulk_ai_agent.delay(cmd.pk, agent.pk, triggered_by)
 
@@ -1096,11 +1228,53 @@ def run_bulk_ai_command(cmd_id, triggered_by="bulk"):
     return f"queued {len(agents)} agents"
 
 
+# Global emergency-stop flag (redis). While set, ALL queued AI runner tasks
+# no-op instead of calling the LLM - this drains a large backlog that Celery's
+# revoke/inspect can't reach (tasks still sitting in the broker queue).
+_AI_KILL_KEY = "pi_ai_kill_until"
+
+
+def ai_kill_set(seconds=900):
+    from time import time
+
+    try:
+        with from_url(
+            f"redis://{settings.REDIS_HOST}:6379", decode_responses=True
+        ) as conn:
+            conn.set(_AI_KILL_KEY, str(int(time()) + int(seconds)), ex=int(seconds))
+    except Exception:
+        pass
+
+
+def ai_kill_clear():
+    try:
+        with from_url(
+            f"redis://{settings.REDIS_HOST}:6379", decode_responses=True
+        ) as conn:
+            conn.delete(_AI_KILL_KEY)
+    except Exception:
+        pass
+
+
+def ai_killed():
+    from time import time
+
+    try:
+        with from_url(
+            f"redis://{settings.REDIS_HOST}:6379", decode_responses=True
+        ) as conn:
+            raw = conn.get(_AI_KILL_KEY)
+        return bool(raw) and time() < float(raw)
+    except Exception:
+        return False
+
+
 @app.task
 def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk"):
     """Run a bulk command's prompt on one agent, recording an AITaskRun."""
     import uuid
 
+    from redis import from_url  # noqa: F811
     from agents.models import Agent
     from core.models import BulkAICommand, AITaskRun
 
@@ -1109,6 +1283,11 @@ def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk"):
         agent = Agent.objects.select_related("site__client").get(pk=agent_pk)
     except (BulkAICommand.DoesNotExist, Agent.DoesNotExist):
         return "not found"
+
+    # Stop-guard: re-check at execution time so a disabled command or an active
+    # emergency-stop drains the queued backlog without any LLM calls or alerts.
+    if not cmd.enabled or ai_killed():
+        return "skipped (stopped)"
 
     model = _resolve_ai_model(cmd.model)
     if not model:

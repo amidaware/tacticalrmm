@@ -68,6 +68,7 @@ export function buildTools({
   gate,
   includeReport = false,
   readonly = false,
+  jobRef = null,
 }) {
   const machines = (machinesIn && machinesIn.length
     ? machinesIn
@@ -383,7 +384,10 @@ export function buildTools({
       " mail settings Tactical RMM uses for alerts). Use this when the operator asks" +
       " for results, findings, or alerts to be emailed (e.g. to alerts@ or support@)." +
       " Write a clear subject and put the full findings in the body. Only send email" +
-      " when the operator/task instructions ask for it.",
+      " when the operator/task instructions ask for it." +
+      " The From address defaults to a unique job-associated address on the server's" +
+      " mail domain; only set from_address if the operator explicitly wants a specific" +
+      " sender.",
     parameters: Type.Object({
       to: Type.String({
         description:
@@ -392,12 +396,30 @@ export function buildTools({
       }),
       subject: Type.String({ description: "Email subject line" }),
       body: Type.String({ description: "Plain-text email body with the full details" }),
+      from_address: Type.Optional(
+        Type.String({
+          description:
+            "Optional sender. A full address (with '@') is used as-is; a bare word" +
+            " is used as the local part on the server's mail domain. Leave empty to" +
+            " auto-generate a unique job-associated sender on the server's domain.",
+        }),
+      ),
+      from_name: Type.Optional(
+        Type.String({ description: "Optional sender display name" }),
+      ),
     }),
     execute: async (_id, p, signal) => {
       const ok = await gate(`Send email to ${p.to}: "${p.subject}"`);
       if (!ok) return denied();
       const out = await trmm.sendEmail(
-        { to: p.to, subject: p.subject, body: p.body },
+        {
+          to: p.to,
+          subject: p.subject,
+          body: p.body,
+          from_address: p.from_address,
+          from_name: p.from_name,
+          job_ref: jobRef,
+        },
         { signal },
       );
       return text(typeof out === "string" ? out : JSON.stringify(out));

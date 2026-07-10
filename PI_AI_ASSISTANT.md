@@ -208,6 +208,14 @@ Guardrails: the model is instructed to **never email unless asked**, recipients
 are validated (1–10 addresses, comma-separated), and every send is written to
 the TRMM Debug Log with the requesting user.
 
+**From address.** By default the sender is a unique **job-associated** address on
+the server's mail domain — `pi-<run_id>@<smtp-domain>` for scheduled/bulk runs,
+`pi-<random>@<smtp-domain>` for chats (domain taken from the configured SMTP
+`From`). You can override per send via the tool's `from_address`: a bare word
+becomes `<word>@<smtp-domain>`, and a full `name@domain` is used verbatim
+(plus an optional `from_name` display name). Note that a full custom address on
+a domain your relay isn't authorized for may be rejected/SPF-failed.
+
 ### 6.1 AI History
 
 Device view → **AI History** tab shows a unified log of AI activity on that
@@ -314,6 +322,18 @@ or on a schedule. Offline agents are skipped at run time.
 Each per-device execution is recorded as an `AITaskRun` tagged to the bulk
 command, so it appears in that device's **AI History** (§6.1) with a
 **"Bulk: <name>"** source, and raises alerts per the threshold.
+
+- **Exclude individual machines**: the target preview lists every matched
+  computer with a checkbox — untick any to exclude it from the run even though
+  it matches (stored as `exclude_agent_ids`). The live count shows
+  "will run on N (X excluded of Y matched)".
+- **View results**: the results button opens a computers-left / results-right
+  viewer showing the **last run per computer** (hostname + **client/site** so
+  same-named servers are distinguishable) with its summary and full transcript.
+  (`GET /core/ai/bulk/<id>/results/`.)
+- **Double-click** a row to edit; **Run now** works even on a **disabled /
+  one-shot** command (a "now" command disables itself after running, but Run now
+  re-dispatches it — it clears the per-command stop flag and fans out again).
 
 Endpoints (`BulkAIPerms` = `can_use_ai` + `can_run_bulk`):
 

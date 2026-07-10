@@ -38,6 +38,7 @@ urlpatterns = [
     path("ai/bulk/", views.GetAddBulkAICommand.as_view()),
     path("ai/bulk/<int:pk>/", views.UpdateDeleteBulkAICommand.as_view()),
     path("ai/bulk/<int:pk>/run/", views.RunBulkAICommandNow.as_view()),
+    path("ai/bulk/<int:pk>/results/", views.BulkAICommandResults.as_view()),
     path("ai/bulk/<int:pk>/stop/", views.StopBulkAICommand.as_view()),
     path("ai/stop-all/", views.StopAllAIRuns.as_view()),
     path("ai/bulk/preview/", views.PreviewBulkAITargets.as_view()),

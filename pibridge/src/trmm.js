@@ -100,6 +100,11 @@ export const trmm = {
   getTasks: (agentId, opts) => req("GET", `/agents/${agentId}/tasks/`, null, opts),
   reboot: (agentId, opts) => req("POST", `/agents/${agentId}/reboot/`, null, opts),
   // Send an email via the RMM server's configured SMTP (TRMM: POST /core/ai/email/)
-  sendEmail: ({ to, subject, body }, opts) =>
-    req("POST", `/core/ai/email/`, { to, subject, body }, opts),
+  sendEmail: ({ to, subject, body, from_address, from_name, job_ref }, opts) =>
+    req(
+      "POST",
+      `/core/ai/email/`,
+      { to, subject, body, from_address, from_name, job_ref },
+      opts,
+    ),
 };

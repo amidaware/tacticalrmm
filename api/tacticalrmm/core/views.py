@@ -1124,19 +1124,67 @@ class AISendEmail(APIView):
         if not subject or not body:
             return notify_error("Both subject and body are required.")
 
+        # ---- From address -------------------------------------------------
+        # Rules:
+        #  - full address given (has '@')  -> used verbatim ("whatever we want")
+        #  - local part only given         -> <localpart>@<smtp domain>
+        #  - nothing given                 -> pi-<job_ref|random>@<smtp domain>
+        # The domain always defaults to the SMTP from-address domain so mail
+        # stays aligned with the configured/authorized sending domain.
+        import re
+        import secrets
+
+        smtp_domain = (core.smtp_from_email or "").split("@")[-1].strip()
+        raw_from = str(request.data.get("from_address") or "").strip()
+        from_name = request.data.get("from_name")
+        if from_name is not None:
+            from_name = str(from_name)[:120]
+
+        if raw_from and "@" in raw_from:
+            from_address = raw_from
+        else:
+            if raw_from:
+                local = raw_from
+            else:
+                job_ref = str(request.data.get("job_ref") or "").strip()
+                base = job_ref or secrets.token_hex(4)
+                local = f"pi-{base}"
+            # sanitize local part to valid email-local characters
+            local = re.sub(r"[^A-Za-z0-9._+-]", "", local)[:64] or f"pi-{secrets.token_hex(4)}"
+            if not smtp_domain:
+                return notify_error(
+                    "SMTP from-address has no domain configured; cannot build a From address."
+                )
+            from_address = f"{local}@{smtp_domain}"
+
+        try:
+            validate_email(from_address)
+        except ValidationError:
+            return notify_error(f"Invalid From address: {from_address}")
+
         # test=True makes send_mail return the REAL smtp error on failure
         # (with test=False it always returns ok); behavior is otherwise identical.
         msg, ok = core.send_mail(
-            subject, body, override_recipients=recipients, test=True
+            subject,
+            body,
+            override_recipients=recipients,
+            override_from=from_address,
+            override_from_name=from_name,
+            test=True,
         )
         if not ok:
             return notify_error(f"Email send failed: {msg}")
 
         DebugLog.info(
-            message=f"AI assistant sent email to {', '.join(recipients)}: {subject} "
-            f"(requested by {request.user.username})"
+            message=f"AI assistant sent email to {', '.join(recipients)} from {from_address}: "
+            f"{subject} (requested by {request.user.username})"
         )
-        return Response({"ok": True, "detail": f"Email sent to {', '.join(recipients)}"})
+        return Response(
+            {
+                "ok": True,
+                "detail": f"Email sent to {', '.join(recipients)} from {from_address}",
+            }
+        )
 
 
 class GetAddBulkAICommand(APIView):
@@ -1214,6 +1262,33 @@ class RunBulkAICommandNow(APIView):
         return Response("Bulk AI command queued to run now")
 
 
+class BulkAICommandResults(APIView):
+    """Latest run per agent for one bulk command (computers-left / results-right
+    viewer). Scoped to the agents the caller may see."""
+
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def get(self, request, pk):
+        from agents.models import Agent
+
+        get_object_or_404(BulkAICommand, pk=pk)
+        permitted = Agent.objects.filter_by_role(request.user)  # type: ignore
+        runs = (
+            AITaskRun.objects.filter(bulk_id=pk, agent__in=permitted)
+            .select_related("agent__site__client")
+            .order_by("agent_id", "-started_at")
+        )
+        seen = set()
+        latest = []
+        for r in runs:
+            if r.agent_id in seen:
+                continue
+            seen.add(r.agent_id)
+            latest.append(r)
+        latest.sort(key=lambda r: (r.agent.hostname.lower() if r.agent else ""))
+        return Response(AITaskRunSerializer(latest, many=True).data)
+
+
 def _revoke_ai_agent_tasks(cmd_id=None):
     """Revoke (terminate) queued/active Celery AI runner tasks. If cmd_id is
     given, only tasks for that bulk command; otherwise all AI runner tasks.
@@ -1270,11 +1345,15 @@ class StopBulkAICommand(APIView):
     permission_classes = [IsAuthenticated, BulkAIPerms]
 
     def post(self, request, pk):
+        from core.tasks import cmd_stop_set
+
         cmd = get_object_or_404(BulkAICommand, pk=pk)
         # 1) stop it from (re)dispatching
         cmd.enabled = False
         cmd.next_run = None
         cmd.save(update_fields=["enabled", "next_run"])
+        # set the per-command stop flag so any queued backlog no-ops on execute
+        cmd_stop_set(pk)
         # 2) revoke queued/active celery runner tasks for this command
         revoked = _revoke_ai_agent_tasks(cmd_id=pk)
         # 3) abort in-flight bridge runs + mark rows stopped
@@ -1346,6 +1425,10 @@ class PreviewBulkAITargets(APIView):
         tmp.os_type = request.data.get("os_type", "all")
         tmp.filters = request.data.get("filters") or []
         tmp.filter_match = request.data.get("filter_match", "any")
+        # resolve the FULL matched set (ignore exclusions) so the UI can show
+        # every match with an exclude checkbox; we mark/count exclusions below.
+        tmp.exclude_agent_ids = []
+        exclude_ids = set(request.data.get("exclude_agent_ids") or [])
 
         agent_ids = request.data.get("agent_ids") or []
 
@@ -1360,16 +1443,21 @@ class PreviewBulkAITargets(APIView):
         from core.tasks import _bulk_max_agents
 
         cap = _bulk_max_agents()
+        effective = [a for a in agents if a.agent_id not in exclude_ids]
         return Response(
             {
-                "online_count": len(agents),
+                "online_count": len(effective),  # after exclusions (what will run)
+                "matched_count": len(agents),  # before exclusions
+                "excluded_count": len(agents) - len(effective),
                 "cap": cap,
-                "over_cap": len(agents) > cap,
+                "over_cap": len(effective) > cap,
                 "agents": [
                     {
+                        "agent_id": a.agent_id,
                         "hostname": a.hostname,
                         "client": a.client.name,
                         "site": a.site.name,
+                        "excluded": a.agent_id in exclude_ids,
                     }
                     for a in agents[:500]
                 ],

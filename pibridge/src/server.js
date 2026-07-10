@@ -462,6 +462,7 @@ async function runHeadless(blob) {
     gate: () => Promise.resolve(true),
     includeReport: true,
     readonly: !blob.allow_mutating,
+    jobRef: runId,  // scheduled/bulk run id -> job-associated From address
   });
 
   const loader = new DefaultResourceLoader({

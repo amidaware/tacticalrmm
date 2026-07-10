@@ -286,6 +286,8 @@ class CoreSettings(BaseAuditModel):
         attachment_extension: Optional[str] = None,
         alert_template: "Optional[AlertTemplate]" = None,
         override_recipients: Optional[List[str]] = [],
+        override_from: Optional[str] = None,
+        override_from_name: Optional[str] = None,
         test: bool = False,
     ) -> tuple[str, bool]:
         if test and not self.email_is_configured:
@@ -294,8 +296,11 @@ class CoreSettings(BaseAuditModel):
         elif not self.email_is_configured:
             return "SMTP messaging not configured.", False
 
-        # override email from if alert_template is passed and is set
-        if alert_template and alert_template.email_from:
+        # override email from: explicit override wins, then alert_template, then
+        # the configured SMTP from address.
+        if override_from:
+            from_address = override_from
+        elif alert_template and alert_template.email_from:
             from_address = alert_template.email_from
         else:
             from_address = self.smtp_from_email
@@ -316,9 +321,14 @@ class CoreSettings(BaseAuditModel):
             msg["Subject"] = subject
             msg["Date"] = formatdate(localtime=True)
 
-            if self.smtp_from_name:
+            display_name = (
+                override_from_name
+                if override_from_name is not None
+                else self.smtp_from_name
+            )
+            if display_name:
                 msg["From"] = Address(
-                    display_name=self.smtp_from_name, addr_spec=from_address
+                    display_name=display_name, addr_spec=from_address
                 )
             else:
                 msg["From"] = from_address
@@ -859,6 +869,9 @@ class BulkAICommand(BaseAuditModel):
     filters = models.JSONField(default=list, blank=True)
     # how to combine the filter GROUPS: "all" = AND, "any" = OR.
     filter_match = models.CharField(max_length=8, default="any")
+    # agent_ids explicitly excluded from the resolved target set, even if they
+    # match the filter/client/site/all selection.
+    exclude_agent_ids = models.JSONField(default=list, blank=True)
     client = models.ForeignKey(
         "clients.Client", null=True, blank=True, on_delete=models.SET_NULL
     )

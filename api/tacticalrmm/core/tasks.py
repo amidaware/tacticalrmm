@@ -869,8 +869,9 @@ def run_ai_task(task_id, triggered_by="schedule"):
     except AITask.DoesNotExist:
         return "not found"
 
-    # Stop-guard: emergency stop or a disabled task drains the backlog as no-ops.
-    if ai_killed() or not getattr(task, "enabled", True):
+    # Stop-guard: emergency stop drains the backlog as no-ops. (The scheduler
+    # already gates on enabled; an explicit Run Now must still execute.)
+    if ai_killed():
         return "skipped (stopped)"
 
     run_id = uuid.uuid4().hex
@@ -1075,8 +1076,15 @@ def _resolve_bulk_targets(cmd):
     if cmd.os_type in (AgentPlat.WINDOWS, AgentPlat.LINUX, AgentPlat.DARWIN):
         q = q.filter(plat=cmd.os_type)
 
-    # skip offline agents
-    return [a for a in q if a.status == AGENT_STATUS_ONLINE]
+    # per-machine exclusions: drop specific agents even if they matched
+    exclude = set(getattr(cmd, "exclude_agent_ids", None) or [])
+
+    # skip offline agents and excluded agents
+    return [
+        a
+        for a in q
+        if a.status == AGENT_STATUS_ONLINE and a.agent_id not in exclude
+    ]
 
 
 def _compute_schedule(
@@ -1181,6 +1189,10 @@ def run_bulk_ai_command(cmd_id, triggered_by="bulk"):
     except BulkAICommand.DoesNotExist:
         return "not found"
 
+    # a fresh dispatch clears any prior per-command stop (so a disabled/one-shot
+    # command can always be re-run manually)
+    cmd_stop_clear(cmd_id)
+
     agents = _resolve_bulk_targets(cmd)
 
     # Hard safety cap: never fan out to more than the cap. Guards against an
@@ -1256,6 +1268,45 @@ def ai_kill_clear():
         pass
 
 
+# Per-command stop flag (redis). Set by the per-command Stop action to drain
+# that command's queued backlog. Distinct from a command being disabled/spent
+# (a one-shot "now" command disables itself after running) - an explicit Run Now
+# CLEARS this flag and re-dispatches, so disabled/one-shot commands can always
+# be run again manually.
+def _cmd_stop_key(cmd_id):
+    return f"pi_ai_cmd_stop:{cmd_id}"
+
+
+def cmd_stop_set(cmd_id, seconds=3600):
+    try:
+        with from_url(
+            f"redis://{settings.REDIS_HOST}:6379", decode_responses=True
+        ) as conn:
+            conn.set(_cmd_stop_key(cmd_id), "1", ex=int(seconds))
+    except Exception:
+        pass
+
+
+def cmd_stop_clear(cmd_id):
+    try:
+        with from_url(
+            f"redis://{settings.REDIS_HOST}:6379", decode_responses=True
+        ) as conn:
+            conn.delete(_cmd_stop_key(cmd_id))
+    except Exception:
+        pass
+
+
+def cmd_stopped(cmd_id):
+    try:
+        with from_url(
+            f"redis://{settings.REDIS_HOST}:6379", decode_responses=True
+        ) as conn:
+            return bool(conn.get(_cmd_stop_key(cmd_id)))
+    except Exception:
+        return False
+
+
 def ai_killed():
     from time import time
 
@@ -1284,9 +1335,12 @@ def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk"):
     except (BulkAICommand.DoesNotExist, Agent.DoesNotExist):
         return "not found"
 
-    # Stop-guard: re-check at execution time so a disabled command or an active
-    # emergency-stop drains the queued backlog without any LLM calls or alerts.
-    if not cmd.enabled or ai_killed():
+    # Stop-guard: re-check at execution time so an emergency-stop or a
+    # per-command Stop drains the queued backlog with no LLM calls or alerts.
+    # NOTE: we intentionally do NOT skip merely because the command is disabled
+    # - a one-shot command disables itself after running, but an explicit Run
+    # Now must still execute. Draining is driven by the stop flags instead.
+    if ai_killed() or cmd_stopped(cmd_id):
         return "skipped (stopped)"
 
     model = _resolve_ai_model(cmd.model)

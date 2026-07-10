@@ -147,6 +147,59 @@ Example prompts:
 - *"List the docker containers and tell me if any are unhealthy."*
 - *"The disk is filling up — find the biggest directories under /var."*
 
+### 5.1 Multi-machine mode
+
+One conversation can drive **several machines at once** (2–8). In the chat
+toolbar click **Multi-machine** to open the setup dialog:
+
+- each row = one machine: a filterable **machine picker** (grouped by
+  client/site) plus a free-text **role prompt** describing what that machine
+  *is* — e.g. `primary Proxmox node`, `second cluster node`,
+  `Proxmox Backup Server`;
+- **+ / −** buttons add or remove rows (duplicates are rejected);
+- the machine the chat was opened on is pre-seeded as the first row.
+
+What changes under the hood:
+
+- the session token carries the whole machine set; **permissions are enforced
+  per-agent** at session creation (`can_use_ai` + per-agent access for every
+  machine);
+- every device-facing tool gains a **required `machine` parameter** — the model
+  must name its target (hostnames deduped `#2` on collision) and physically
+  cannot reach anything outside the session's set;
+- the system prompt lists each machine's facts **and your role note**, plus
+  coordination rules (announce the target machine before acting, verify both
+  sides of cross-machine steps, never mix up outputs);
+- approval prompts are prefixed with the target, e.g.
+  `[pve-node2] Run on device [/bin/bash]: ...`;
+- mixed Windows/Linux sets work — shell semantics resolve per target machine.
+
+Typical uses: *"join these two Proxmox nodes into a cluster"*, *"pair this PVE
+host with its Proxmox Backup Server and configure the datastore + backup job"*,
+*"compare why app-server-a is slow but app-server-b isn't"*.
+
+In an existing multi chat the button reads **Machines** — you can adjust the
+set and apply (starts a new chat with the new machine set). Multi-machine
+history is stored under the *first* machine's AI History tab, named
+`Multi: host1 + host2`.
+
+### 5.2 Emailing results (chat & tasks)
+
+The assistant has a `send_email` tool that delivers plain-text mail through the
+**SMTP settings TRMM already uses for alerting** (Settings → Global Settings →
+Email Alerts) — nothing extra to configure. Just ask:
+
+- *"...and email a summary to alerts@example.com"* (chat — sending is a gated
+  action, so you Approve it like any command unless auto-approve is on);
+- scheduled task prompt: *"Verify last night's backups; if anything failed,
+  email the details to support@example.com."* (unattended runs send without
+  approval — and the tool stays available even in read-only task mode, since
+  emailing isn't a device mutation).
+
+Guardrails: the model is instructed to **never email unless asked**, recipients
+are validated (1–10 addresses, comma-separated), and every send is written to
+the TRMM Debug Log with the requesting user.
+
 ### 6.1 AI History
 
 Device view → **AI History** tab shows a unified log of AI activity on that
@@ -157,6 +210,11 @@ device, with a **Source** column:
 - **Task: <name>** — a scheduled task run; **View** shows its transcript.
 - **Bulk: <name>** — a run from a Bulk AI Command (§7); **View** shows its
   transcript.
+
+UX niceties: **double-click a row** to trigger its default action (Continue for
+chats, View for runs); long summaries are ellipsis-capped with a hover tooltip
+showing the full text, and rows stay single-line so the table's horizontal
+scrollbar is reliably available in narrow panes.
 
 Chat sessions persist per `agent_id`; task/bulk runs come from `AITaskRun`.
 
@@ -266,10 +324,23 @@ Device-scoped (Knox auth, `PiPerms`):
 
 ```
 POST   /agents/<agent_id>/pi/session/     → { token, url, model_id, allowed_models, ... }
+POST   /agents/pi/multisession/           { machines: [{agent_id, role}], model_id? }
+                                          → { token, machines, ... }   (multi-machine chat)
 GET    /agents/<agent_id>/pi/history/     → { sessions: [...] }
 DELETE /agents/<agent_id>/pi/history/     { "session_id": "..." }
 WS     /pi/ws/<token>/                    (via the bridge)
 ```
+
+AI email (X-API-KEY service auth — called by the bridge's `send_email` tool):
+
+```
+POST   /core/ai/email/    { to, subject, body }   → { ok, detail }
+```
+
+`to` accepts comma/semicolon-separated addresses (max 10, each validated).
+Requires the AI module enabled and SMTP configured; uses
+`CoreSettings.send_mail()` with `override_recipients` so it inherits the exact
+alerting SMTP config. Each send is recorded in the Debug Log.
 
 Provider / model config (Knox auth, core-settings admin
 `can_view/edit_core_settings`):
@@ -305,12 +376,27 @@ WS   /pi/ws/<token>/         (interactive chat)
 
 ## 10. Reliability & troubleshooting
 
-Several safeguards keep a chat or task from appearing "stuck":
+Several safeguards guarantee a chat or task can never wedge:
 
+- **Transport timeout on every device call** — every bridge→TRMM REST call is
+  bounded (`120s` default; `command timeout + 30s` for command/script runs) and
+  wired to the turn's abort signal. If the device agent or API stops
+  responding, the tool call **settles with a descriptive `STALLED:` error that
+  is fed back to the model mid-turn**, so the AI knows the action hung and can
+  retry with a smaller/different approach instead of the conversation hanging
+  forever. The **Stop** button also cancels in-flight HTTP calls immediately.
 - **Command timeout guard** — on Linux, `run_command_on_device` wraps the command
   in `timeout`, so a hung command (e.g. a stuck Proxmox `qm list`/pmxcfs) is
   terminated and returns partial output plus a clear note instead of blocking the
   session.
+- **Turn-stall watchdog (bridge)** — if a streaming turn emits no events for
+  `TURN_STALL_MS` (default 180s) **while no tool is executing** (a dead LLM
+  stream), the bridge force-aborts the turn and tells the operator to resend.
+  Long-running tool calls don't trip it — they're already bounded by their own
+  transport timeouts.
+- **nginx `uwsgi_read_timeout 940s`** on the API server block, so AI-issued
+  commands may legitimately run up to the tool maximum (900s device-side)
+  without being 504'd mid-flight.
 - **Chat stall watchdog** — the chat window shows an elapsed timer while working,
   and after ~45s with no activity it warns that the model/device may be slow and
   offers a **Stop** button.
@@ -356,4 +442,7 @@ TRMM_API_KEY=<service key, auto-created by setup.sh>
 PI_SESSIONS_ROOT=/opt/pi-trmm-bridge/sessions
 IDLE_TIMEOUT_MS=1800000
 MAX_SESSIONS=10
+# optional tuning:
+# TURN_STALL_MS=180000        # abort a silent LLM stream after this (0 = off)
+# WATCHDOG_INTERVAL_MS=30000  # how often the stall watchdog checks
 ```

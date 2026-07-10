@@ -1641,6 +1641,205 @@ class AgentTerminalDefaults(APIView):
         )
 
 
+def _pi_allowed_models(user):
+    """Enabled AI models this user may use (superuser: all; else role allowlist
+    falling back to the global default). Returns a list of AIModel."""
+    from core.models import AIModel
+
+    is_super = user.is_superuser or (user.role and user.role.is_superuser)
+    enabled_models = AIModel.objects.filter(
+        enabled=True, provider__enabled=True
+    ).select_related("provider")
+    if is_super:
+        return list(enabled_models)
+    role = user.role
+    role_models = (
+        role.ai_allowed_models.filter(
+            enabled=True, provider__enabled=True
+        ).select_related("provider")
+        if role
+        else AIModel.objects.none()
+    )
+    allowed = list(role_models)
+    if not allowed:
+        allowed = [m for m in enabled_models if m.is_default]
+    return allowed
+
+
+def _pi_device_facts(agent):
+    return {
+        "agent_id": agent.agent_id,
+        "hostname": agent.hostname,
+        "client": agent.client.name,
+        "site": agent.site.name,
+        "operating_system": agent.operating_system,
+        "plat": agent.plat,
+        "goarch": agent.goarch,
+        "public_ip": agent.public_ip,
+        "logged_in_username": agent.logged_in_username,
+        "last_logged_in_user": agent.last_logged_in_user,
+        "description": agent.description,
+        "agent_version": agent.version,
+        "monitoring_type": agent.monitoring_type,
+        "last_seen": str(agent.last_seen) if agent.last_seen else None,
+    }
+
+
+def _pi_model_dict(m):
+    # safe for the browser (no api key)
+    return {
+        "provider": m.provider.name,
+        "model_id": m.model_id,
+        "display_name": m.display_name,
+        "thinking_level": m.thinking_level,
+        "base_url": m.provider.base_url,
+    }
+
+
+class PiMultiSession(APIView):
+    """Create a Pi.dev AI session spanning MULTIPLE agents (multi-machine mode).
+
+    Body: {machines: [{agent_id, role}], model_id?, resume_session?}
+    Each machine carries an operator-written 'role' note (e.g. 'primary Proxmox
+    node', 'PBS backup server') so the AI knows what each box is for. Perms are
+    enforced per-agent, same as the single-machine session.
+    """
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    MAX_MACHINES = 8
+    MAX_ROLE_LEN = 400
+
+    def post(self, request):
+        from agents.pi_session import create_pi_session
+        from tacticalrmm.permissions import _has_perm_on_agent
+
+        core = CoreSettings.objects.first()
+        user = request.user
+        is_super = user.is_superuser or (user.role and user.role.is_superuser)
+
+        machines_in = request.data.get("machines") or []
+        if not isinstance(machines_in, list) or not (
+            2 <= len(machines_in) <= self.MAX_MACHINES
+        ):
+            return notify_error(
+                f"Select between 2 and {self.MAX_MACHINES} machines for multi-machine mode."
+            )
+        agent_ids = [str((m or {}).get("agent_id") or "") for m in machines_in]
+        if "" in agent_ids:
+            return notify_error("Every machine row needs an agent selected.")
+        if len(set(agent_ids)) != len(agent_ids):
+            return notify_error("The same machine was selected more than once.")
+
+        for aid in agent_ids:
+            if not _has_perm_on_agent(user, aid):
+                return notify_error(
+                    "You do not have permission on one of the selected agents."
+                )
+
+        agents_by_id = {
+            a.agent_id: a
+            for a in Agent.objects.select_related("site__client")
+            .defer(*AGENT_DEFER)
+            .filter(agent_id__in=agent_ids)
+        }
+        if len(agents_by_id) != len(agent_ids):
+            return notify_error("One of the selected agents no longer exists.")
+
+        allowed = _pi_allowed_models(user)
+        if not allowed:
+            return notify_error(
+                "No AI models are available for your role. Ask an admin to "
+                "configure providers/models and grant access."
+            )
+        default_model = next((m for m in allowed if m.is_default), allowed[0])
+        req_id = request.data.get("model_id")
+        chosen = default_model
+        if req_id:
+            match = next((m for m in allowed if m.model_id == req_id), None)
+            if not match:
+                return notify_error("Requested model is not permitted for your role.")
+            chosen = match
+
+        def model_dict_full(m):
+            return {**_pi_model_dict(m), "api_key": m.provider.api_key}
+
+        machines = []
+        for m in machines_in:
+            agent = agents_by_id[str(m["agent_id"])]
+            role = str((m or {}).get("role") or "").strip()[: self.MAX_ROLE_LEN]
+            machines.append(
+                {
+                    "agent_id": agent.agent_id,
+                    "hostname": agent.hostname,
+                    "role": role,
+                    "device_facts": _pi_device_facts(agent),
+                }
+            )
+
+        hostnames = " + ".join(mm["hostname"] for mm in machines)
+        blob = {
+            "multi": True,
+            "machines": machines,
+            # compat fields (history keying, logging, single-machine codepaths)
+            "agent_id": machines[0]["agent_id"],
+            "hostname": hostnames,
+            "device_facts": machines[0]["device_facts"],
+            "username": user.username,
+            "provider": chosen.provider.name,
+            "model_id": chosen.model_id,
+            "thinking_level": chosen.thinking_level,
+            "base_url": chosen.provider.base_url,
+            "api_key": chosen.provider.api_key,
+            "allowed_models": [model_dict_full(m) for m in allowed],
+            "require_approval": bool(core.ai_require_approval),
+            "autoapprove_allowed": bool(
+                is_super or (user.role and user.role.can_use_ai_autoapprove)
+            ),
+            "persist_history": bool(core.ai_persist_history),
+            "resume_session": request.data.get("resume_session") or None,
+        }
+
+        token = create_pi_session(data=blob)
+
+        for mm in machines:
+            AuditLog.audit_mesh_session(
+                username=user.username,
+                agent=agents_by_id[mm["agent_id"]],
+                debug_info={
+                    "ip": request._client_ip,
+                    "feature": "pi_ai_multi",
+                    "machines": hostnames,
+                    "model": f"{blob['provider']}/{blob['model_id']}",
+                },
+            )
+
+        return Response(
+            {
+                "token": token,
+                "url": f"/pichat/multi?token={token}",
+                "hostname": hostnames,
+                "client": "Multi-machine",
+                "site": f"{len(machines)} machines",
+                "machines": [
+                    {
+                        "agent_id": mm["agent_id"],
+                        "hostname": mm["hostname"],
+                        "role": mm["role"],
+                        "client": mm["device_facts"]["client"],
+                        "site": mm["device_facts"]["site"],
+                    }
+                    for mm in machines
+                ],
+                "model_id": chosen.model_id,
+                "model_display": chosen.display_name,
+                "allowed_models": [_pi_model_dict(m) for m in allowed],
+                "require_approval": blob["require_approval"],
+                "autoapprove_allowed": blob["autoapprove_allowed"],
+            }
+        )
+
+
 class AgentPiSession(APIView):
     """Create a short-lived Pi.dev AI assistant session bound to one agent.
 

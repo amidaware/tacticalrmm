@@ -1069,6 +1069,76 @@ class AITaskRunLive(APIView):
         )
 
 
+class AISendEmail(APIView):
+    """Send a plain-text email through the RMM server's configured SMTP.
+
+    Called by the pi-trmm-bridge (X-API-KEY service auth) on behalf of the AI
+    assistant (chat or scheduled AI task) when the operator asks for results
+    to be emailed. Uses the exact same SMTP settings as TRMM alerting.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    MAX_RECIPIENTS = 10
+    MAX_SUBJECT = 200
+    MAX_BODY = 100_000
+
+    def post(self, request):
+        from django.core.exceptions import ValidationError
+        from django.core.validators import validate_email
+
+        from logs.models import DebugLog
+
+        core = get_core_settings()
+        if not core.ai_module_enabled:
+            return notify_error("AI module is disabled.")
+        if not core.email_is_configured:
+            return notify_error(
+                "SMTP is not configured in TRMM global settings (Settings > Global Settings > Email Alerts)."
+            )
+
+        raw_to = request.data.get("to") or ""
+        if isinstance(raw_to, str):
+            recipients = [
+                e.strip()
+                for e in raw_to.replace(";", ",").split(",")
+                if e.strip()
+            ]
+        elif isinstance(raw_to, list):
+            recipients = [str(e).strip() for e in raw_to if str(e).strip()]
+        else:
+            recipients = []
+
+        if not recipients or len(recipients) > self.MAX_RECIPIENTS:
+            return notify_error(
+                f"Provide between 1 and {self.MAX_RECIPIENTS} recipient email addresses."
+            )
+        for e in recipients:
+            try:
+                validate_email(e)
+            except ValidationError:
+                return notify_error(f"Invalid email address: {e}")
+
+        subject = str(request.data.get("subject") or "").strip()[: self.MAX_SUBJECT]
+        body = str(request.data.get("body") or "")[: self.MAX_BODY]
+        if not subject or not body:
+            return notify_error("Both subject and body are required.")
+
+        # test=True makes send_mail return the REAL smtp error on failure
+        # (with test=False it always returns ok); behavior is otherwise identical.
+        msg, ok = core.send_mail(
+            subject, body, override_recipients=recipients, test=True
+        )
+        if not ok:
+            return notify_error(f"Email send failed: {msg}")
+
+        DebugLog.info(
+            message=f"AI assistant sent email to {', '.join(recipients)}: {subject} "
+            f"(requested by {request.user.username})"
+        )
+        return Response({"ok": True, "detail": f"Email sent to {', '.join(recipients)}"})
+
+
 class GetAddBulkAICommand(APIView):
     permission_classes = [IsAuthenticated, BulkAIPerms]
 

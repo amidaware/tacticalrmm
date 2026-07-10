@@ -778,7 +778,9 @@ server {
     location / {
         uwsgi_pass  tacticalrmm;
         include     /etc/nginx/uwsgi_params;
-        uwsgi_read_timeout 300s;
+        # 940s: AI run_command_on_device allows up to 900s device-side + margin,
+        # so long-running AI-issued commands don't get 504'd mid-flight.
+        uwsgi_read_timeout 940s;
         uwsgi_ignore_client_abort on;
     }
 }

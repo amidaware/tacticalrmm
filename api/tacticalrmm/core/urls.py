@@ -32,6 +32,7 @@ urlpatterns = [
     path("ai/tasks/", views.GetAddAITask.as_view()),
     path("ai/tasks/<int:pk>/", views.UpdateDeleteAITask.as_view()),
     path("ai/tasks/<int:pk>/run/", views.RunAITaskNow.as_view()),
+    path("ai/email/", views.AISendEmail.as_view()),
     path("ai/runs/", views.AITaskRuns.as_view()),
     path("ai/runs/<str:run_id>/live/", views.AITaskRunLive.as_view()),
     path("ai/bulk/", views.GetAddBulkAICommand.as_view()),

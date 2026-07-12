@@ -206,6 +206,7 @@ class AITaskRunSerializer(serializers.ModelSerializer):
     hostname = serializers.SerializerMethodField()
     client = serializers.SerializerMethodField()
     site = serializers.SerializerMethodField()
+    device_id = serializers.SerializerMethodField()
 
     class Meta:
         model = AITaskRun
@@ -222,6 +223,10 @@ class AITaskRunSerializer(serializers.ModelSerializer):
     def get_site(self, obj) -> str:
         a = obj.get_agent()
         return a.site.name if a else ""
+
+    def get_device_id(self, obj) -> str:
+        a = obj.get_agent()
+        return a.agent_id if a else ""
 
 
 class BulkAICommandSerializer(serializers.ModelSerializer):

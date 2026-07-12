@@ -869,6 +869,50 @@ class AIAvailableModels(APIView):
             return Response({"models": [], "error": str(e)})
 
 
+class HelpdeskAssist(APIView):
+    """AI helper that interviews the admin and drafts the helpdesk POLICY +
+    helpdesk.js code. Stateless; the client replays the conversation each call."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
+        import requests as _requests
+        from django.conf import settings as dj_settings
+        from core.tasks import _resolve_ai_model
+
+        core = get_core_settings()
+        model = _resolve_ai_model(None)
+        if not model:
+            return Response(
+                {
+                    "reply": "No enabled AI model / default is configured. Add a provider "
+                    "and model (and mark one default) above first."
+                }
+            )
+        trmm_base_url = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None)
+            else ""
+        )
+        payload = {
+            "provider": model.provider.name,
+            "model_id": model.model_id,
+            "api_key": model.provider.api_key,
+            "thinking_level": model.thinking_level,
+            "trmm_base_url": trmm_base_url,
+            "base_url": core.ai_helpdesk_api_base_url or "",
+            "current_policy": core.ai_helpdesk_prompt or "",
+            "current_code": core.ai_helpdesk_code or "",
+            "messages": request.data.get("messages") or [],
+        }
+        bridge = getattr(dj_settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.post(f"{bridge}/pi/assist", json=payload, timeout=300)
+            return Response(r.json())
+        except Exception as e:
+            return Response({"reply": f"(bridge error: {e})"})
+
+
 class GetAddAIModel(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
 
@@ -934,7 +978,9 @@ class GetAddAITask(APIView):
             data["agent"] = agent.pk
         serializer = AITaskSerializer(data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-        obj = serializer.save()
+        obj = serializer.save(
+            created_by=request.user.username, modified_by=request.user.username
+        )
         _apply_once_schedule(obj)
         return Response("ok")
 
@@ -979,7 +1025,7 @@ class UpdateDeleteAITask(APIView):
             raise PermissionDenied()
         serializer = AITaskSerializer(instance=task, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        obj = serializer.save()
+        obj = serializer.save(modified_by=request.user.username)
         _apply_once_schedule(obj)
         return Response("ok")
 
@@ -1021,6 +1067,8 @@ class AITaskRuns(APIView):
         task_id = request.query_params.get("task_id")
         bulk_id = request.query_params.get("bulk_id")
         agent_id = request.query_params.get("agent_id")
+        client_id = request.query_params.get("client")
+        site_id = request.query_params.get("site")
         if task_id:
             qs = qs.filter(task_id=task_id)
         elif bulk_id:
@@ -1029,7 +1077,53 @@ class AITaskRuns(APIView):
             qs = qs.filter(
                 Q(agent__agent_id=agent_id) | Q(task__agent__agent_id=agent_id)
             )
-        return Response(AITaskRunSerializer(qs[:200], many=True).data)
+        elif client_id:
+            qs = qs.filter(
+                Q(agent__site__client_id=client_id)
+                | Q(task__agent__site__client_id=client_id)
+            )
+        elif site_id:
+            qs = qs.filter(
+                Q(agent__site_id=site_id) | Q(task__agent__site_id=site_id)
+            )
+        return Response(AITaskRunSerializer(qs[:500], many=True).data)
+
+
+class AIHistoryScope(APIView):
+    """Aggregated chat-session history for a whole client or site (every machine
+    under it), so an operator can review all AI activity in one place."""
+
+    permission_classes = [IsAuthenticated, AITaskPerms]
+
+    def get(self, request):
+        import requests as _requests
+        from agents.models import Agent
+
+        permitted = Agent.objects.filter_by_role(request.user)  # type: ignore
+        client_id = request.query_params.get("client")
+        site_id = request.query_params.get("site")
+        if client_id:
+            agents = permitted.filter(site__client_id=client_id)
+        elif site_id:
+            agents = permitted.filter(site_id=site_id)
+        else:
+            return Response({"sessions": []})
+        amap = {a.agent_id: a.hostname for a in agents}
+        if not amap:
+            return Response({"sessions": []})
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.get(
+                f"{bridge}/pi/history_bulk",
+                params={"agent_ids": ",".join(amap.keys())},
+                timeout=20,
+            )
+            data = r.json()
+        except Exception:
+            data = {"sessions": []}
+        for s in data.get("sessions", []):
+            s["hostname"] = amap.get(s.get("agent_id"), "")
+        return Response(data)
 
 
 class AITaskRunLive(APIView):
@@ -1212,7 +1306,9 @@ class GetAddBulkAICommand(APIView):
 
         serializer = BulkAICommandSerializer(data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-        cmd = serializer.save()
+        cmd = serializer.save(
+            created_by=request.user.username, modified_by=request.user.username
+        )
         if agent_ids:
             cmd.agents.set(Agent.objects.filter(agent_id__in=agent_ids))
         _arm_bulk_next_run(cmd)
@@ -1240,7 +1336,7 @@ class UpdateDeleteBulkAICommand(APIView):
         agent_ids = data.pop("agent_ids", None)
         serializer = BulkAICommandSerializer(instance=cmd, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-        cmd = serializer.save()
+        cmd = serializer.save(modified_by=request.user.username)
         if agent_ids is not None:
             cmd.agents.set(Agent.objects.filter(agent_id__in=agent_ids))
         _arm_bulk_next_run(cmd)

@@ -121,6 +121,21 @@ class CoreSettings(BaseAuditModel):
     ai_module_enabled = models.BooleanField(default=False)
     ai_persist_history = models.BooleanField(default=True)
     ai_require_approval = models.BooleanField(default=True)
+    # Admin-authored policy text injected into every AI session's system prompt
+    # (chat + scheduled runs). Documents WHEN to open helpdesk tickets AND HOW
+    # (the ticketing API calls themselves) - fully dynamic, no code changes to
+    # switch ticketing systems.
+    ai_helpdesk_prompt = models.TextField(blank=True, default="")
+    # Generic ticketing API access for the helpdesk_api_request tool. The AI
+    # writes {{HELPDESK_API_KEY}} in request bodies; the bridge substitutes the
+    # real key server-side (the key is never placed in the AI's context).
+    ai_helpdesk_api_base_url = models.CharField(max_length=255, blank=True, default="")
+    ai_helpdesk_api_key = models.CharField(max_length=255, blank=True, default="")
+    # Admin-authored JS integration ("helpdesk.js") defining deterministic
+    # operations (create_ticket, reply, note, submit_report, ...) for ANY
+    # ticketing system. Runs on the bridge; the AI calls the operations by name.
+    # This is the "precise code" companion to the natural-language policy above.
+    ai_helpdesk_code = models.TextField(blank=True, default="")
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)
@@ -777,6 +792,9 @@ class AITaskRun(models.Model):
         "agents.Agent", related_name="ai_runs", on_delete=models.CASCADE, null=True, blank=True
     )
     run_id = models.CharField(max_length=64, unique=True)  # correlates live progress
+    # groups all per-machine runs of a single bulk dispatch, so a finalizer can
+    # compile ONE combined report after the whole batch finishes.
+    batch_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     triggered_by = models.CharField(max_length=20, default="schedule")  # schedule|manual|bulk
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -833,6 +851,10 @@ class BulkAICommand(BaseAuditModel):
 
     name = models.CharField(max_length=255)
     prompt = models.TextField()
+    # Optional: when set, after the whole batch finishes a single finalizer run
+    # compiles ONE combined report (given every machine's result) following this
+    # instruction + the HELPDESK POLICY. Empty = no combined report.
+    report_prompt = models.TextField(blank=True, default="")
     model = models.ForeignKey(
         "core.AIModel", null=True, blank=True, on_delete=models.SET_NULL
     )

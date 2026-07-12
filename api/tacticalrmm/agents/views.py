@@ -1680,6 +1680,7 @@ def _pi_device_facts(agent):
         "last_logged_in_user": agent.last_logged_in_user,
         "description": agent.description,
         "agent_version": agent.version,
+        "device_url": (f"{settings.CORS_ORIGIN_WHITELIST[0]}/agents/{agent.agent_id}" if getattr(settings, "CORS_ORIGIN_WHITELIST", None) else ""),
         "monitoring_type": agent.monitoring_type,
         "last_seen": str(agent.last_seen) if agent.last_seen else None,
     }
@@ -1801,6 +1802,12 @@ class PiMultiSession(APIView):
             ),
             "persist_history": bool(core.ai_persist_history),
             "resume_session": request.data.get("resume_session") or None,
+            "helpdesk_prompt": core.ai_helpdesk_prompt or "",
+            "helpdesk_api": {
+                "base_url": core.ai_helpdesk_api_base_url or "",
+                "api_key": core.ai_helpdesk_api_key or "",
+            },
+            "helpdesk_code": core.ai_helpdesk_code or "",
         }
 
         token = create_pi_session(data=blob)
@@ -1932,6 +1939,7 @@ class AgentPiSession(APIView):
             "last_logged_in_user": agent.last_logged_in_user,
             "description": agent.description,
             "agent_version": agent.version,
+            "device_url": (f"{settings.CORS_ORIGIN_WHITELIST[0]}/agents/{agent.agent_id}" if getattr(settings, "CORS_ORIGIN_WHITELIST", None) else ""),
             "monitoring_type": agent.monitoring_type,
             "last_seen": str(agent.last_seen) if agent.last_seen else None,
         }
@@ -1952,6 +1960,12 @@ class AgentPiSession(APIView):
             "allow_mutating": bool(is_super or (user.role and user.role.can_use_ai_mutate)),
             "persist_history": bool(core.ai_persist_history),
             "resume_session": request.data.get("resume_session") or None,
+            "helpdesk_prompt": core.ai_helpdesk_prompt or "",
+            "helpdesk_api": {
+                "base_url": core.ai_helpdesk_api_base_url or "",
+                "api_key": core.ai_helpdesk_api_key or "",
+            },
+            "helpdesk_code": core.ai_helpdesk_code or "",
         }
 
         token = create_pi_session(data=blob)

@@ -792,6 +792,7 @@ def _run_prompt_on_agent(*, agent, model, prompt, allow_mutating, run_id):
         "last_logged_in_user": agent.last_logged_in_user,
         "description": agent.description,
         "agent_version": agent.version,
+        "device_url": (f"{settings.CORS_ORIGIN_WHITELIST[0]}/agents/{agent.agent_id}" if getattr(settings, "CORS_ORIGIN_WHITELIST", None) else ""),
     }
     payload = {
         "agent_id": agent.agent_id,
@@ -803,6 +804,12 @@ def _run_prompt_on_agent(*, agent, model, prompt, allow_mutating, run_id):
         "prompt": prompt,
         "allow_mutating": allow_mutating,
         "run_id": run_id,
+        "helpdesk_prompt": get_core_settings().ai_helpdesk_prompt or "",
+        "helpdesk_api": {
+            "base_url": get_core_settings().ai_helpdesk_api_base_url or "",
+            "api_key": get_core_settings().ai_helpdesk_api_key or "",
+        },
+        "helpdesk_code": get_core_settings().ai_helpdesk_code or "",
     }
     bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
     run_timeout = getattr(settings, "PI_RUN_TIMEOUT", 3600)
@@ -829,6 +836,99 @@ def _run_prompt_on_agent(*, agent, model, prompt, allow_mutating, run_id):
         )
     except Exception as e:
         return ("error", f"Bridge error: {e}", "")
+
+
+def _run_report_on_bridge(*, model, prompt, run_id):
+    """Run the end-of-batch combined-report session on the bridge (/pi/report).
+    No device; the model compiles ONE report from the provided results via the
+    helpdesk API. Returns (status, summary, output)."""
+    import requests as _requests
+
+    core = get_core_settings()
+    payload = {
+        "provider": model.provider.name,
+        "model_id": model.model_id,
+        "api_key": model.provider.api_key,
+        "thinking_level": model.thinking_level,
+        "prompt": prompt,
+        "run_id": run_id,
+        "helpdesk_prompt": core.ai_helpdesk_prompt or "",
+        "helpdesk_api": {
+            "base_url": core.ai_helpdesk_api_base_url or "",
+            "api_key": core.ai_helpdesk_api_key or "",
+        },
+        "helpdesk_code": core.ai_helpdesk_code or "",
+    }
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    run_timeout = getattr(settings, "PI_RUN_TIMEOUT", 3600)
+    try:
+        r = _requests.post(f"{bridge}/pi/report", json=payload, timeout=(10, run_timeout))
+        data = r.json()
+        return (data.get("status", "error"), data.get("summary", ""), data.get("transcript", ""))
+    except Exception as e:
+        return ("error", f"Report bridge call failed: {e}", "")
+
+
+@app.task
+def finalize_bulk_report(agent_results, cmd_id, batch_id):
+    """Chord callback: after every per-machine run of a batch finishes, compile
+    ONE combined report (given all machine results) if the command defines a
+    report_prompt. agent_results is the list of per-agent task returns (unused;
+    the source of truth is the AITaskRun rows for this batch)."""
+    import uuid
+
+    from core.models import BulkAICommand, AITaskRun
+
+    try:
+        cmd = BulkAICommand.objects.select_related("model").get(pk=cmd_id)
+    except BulkAICommand.DoesNotExist:
+        return "not found"
+    if not (cmd.report_prompt or "").strip():
+        return "no report configured"
+    if ai_killed():
+        return "skipped (stopped)"
+
+    runs = list(
+        AITaskRun.objects.filter(bulk=cmd, batch_id=batch_id, agent__isnull=False)
+        .select_related("agent", "agent__site__client")
+    )
+    if not runs:
+        return "no runs"
+
+    lines = []
+    for r in runs:
+        a = r.agent
+        host = a.hostname if a else "?"
+        try:
+            client = a.client.name if a else ""
+        except Exception:
+            client = ""
+        lines.append(
+            f"- {host} | client={client} | status={r.status} | {(r.summary or '').strip()[:400]}"
+        )
+    digest = "\n".join(lines)
+
+    model = _resolve_ai_model(cmd.model)
+    if not model:
+        return "no model"
+
+    run_id = uuid.uuid4().hex
+    run = AITaskRun.objects.create(
+        bulk=cmd, agent=None, run_id=run_id, batch_id=batch_id,
+        triggered_by="report", status="running",
+    )
+    prompt = (
+        cmd.report_prompt
+        + f"\n\nPER-MACHINE RESULTS ({len(runs)} machines checked in this batch):\n"
+        + digest
+    )
+    status, summary, output = _run_report_on_bridge(model=model, prompt=prompt, run_id=run_id)
+    run.status = status
+    run.summary = summary[:5000] if summary else ""
+    run.output = output[:50000] if output else ""
+    run.finished_at = djangotime.now()
+    run.save()
+    return status
 
 
 def _ai_alert(agent, label, status, summary, alert_threshold):
@@ -1223,8 +1323,21 @@ def run_bulk_ai_command(cmd_id, triggered_by="bulk"):
         cmd.save(update_fields=fields)
         return f"REFUSED: {len(agents)} agents exceeds cap {cap}"
 
-    for agent in agents:
-        run_bulk_ai_agent.delay(cmd.pk, agent.pk, triggered_by)
+    import uuid as _uuid
+
+    batch_id = _uuid.uuid4().hex
+    if (cmd.report_prompt or "").strip() and agents:
+        # run all machines, THEN one finalizer compiles a single combined report
+        from celery import chord
+
+        header = [
+            run_bulk_ai_agent.s(cmd.pk, agent.pk, triggered_by, batch_id)
+            for agent in agents
+        ]
+        chord(header)(finalize_bulk_report.s(cmd.pk, batch_id))
+    else:
+        for agent in agents:
+            run_bulk_ai_agent.delay(cmd.pk, agent.pk, triggered_by, batch_id)
 
     cmd.last_run = djangotime.now()
     cmd.last_run_count = len(agents)
@@ -1321,7 +1434,7 @@ def ai_killed():
 
 
 @app.task
-def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk"):
+def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk", batch_id=None):
     """Run a bulk command's prompt on one agent, recording an AITaskRun."""
     import uuid
 
@@ -1349,7 +1462,8 @@ def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk"):
 
     run_id = uuid.uuid4().hex
     run = AITaskRun.objects.create(
-        bulk=cmd, agent=agent, run_id=run_id, triggered_by=triggered_by, status="running"
+        bulk=cmd, agent=agent, run_id=run_id, batch_id=batch_id,
+        triggered_by=triggered_by, status="running",
     )
     status, summary, output = _run_prompt_on_agent(
         agent=agent, model=model, prompt=cmd.prompt,

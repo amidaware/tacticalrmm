@@ -87,6 +87,22 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_ai_session(
+        username: str, agent: "Agent", debug_info: Dict[Any, Any] = {}
+    ) -> None:
+        # Distinct from a remote-control session: opening a Pi AI assistant chat
+        # is NOT a mesh/VNC connection to the device.
+        AuditLog.objects.create(
+            username=username,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.AI_SESSION,
+            message=f"{username} started a Pi AI assistant session on {agent.hostname}.",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
     def audit_raw_command(
         username: str,
         agent: "Agent",

@@ -397,12 +397,16 @@ class WebVNC(APIView):
         uri = get_mesh_ws_url()
         ms = MeshSync(uri)
 
+        # Optional ?addr=<ip> relays VNC to a device on the agent's LAN (through
+        # the agent) instead of the agent's own VNC -- reuses MeshCentral's
+        # bundled noVNC viewer + meshrelay, so no extra client/deps are needed.
+        tcpaddr = request.query_params.get("addr") or None
         payload = {
             "action": "getcookie",
             "name": None,
             "nodeid": f"node//{agent.hex_mesh_node_id}",
             "tag": "novnc",
-            "tcpaddr": None,
+            "tcpaddr": tcpaddr,
             "tcpport": int(port),
         }
         cookie_ret = ms.mesh_action(payload=payload, wait=True)
@@ -414,7 +418,7 @@ class WebVNC(APIView):
             + "%2F"
             + "meshrelay.ashx%3Fauth%3D"
             + cookie_ret["cookie"]  # type: ignore
-            + f"&show_dot=1&l=en&resize=scale&name={agent.hostname}"
+            + f"&show_dot=1&l=en&resize=scale&name={tcpaddr or agent.hostname}"
         )
 
         ret = {
@@ -1797,8 +1801,15 @@ class PiMultiSession(APIView):
             "autoapprove_allowed": bool(
                 is_super or (user.role and user.role.can_use_ai_autoapprove)
             ),
-            "allow_mutating": bool(
+            # mutate_allowed = may this session EVER write (role/super).
+            # allow_mutating = initial state; a read_only request (e.g. AI Resolve)
+            # starts read-only but can be toggled to write if mutate_allowed.
+            "mutate_allowed": bool(
                 is_super or (user.role and user.role.can_use_ai_mutate)
+            ),
+            "allow_mutating": bool(
+                (is_super or (user.role and user.role.can_use_ai_mutate))
+                and not request.data.get("read_only")
             ),
             "persist_history": bool(core.ai_persist_history),
             "resume_session": request.data.get("resume_session") or None,
@@ -1813,7 +1824,7 @@ class PiMultiSession(APIView):
         token = create_pi_session(data=blob)
 
         for mm in machines:
-            AuditLog.audit_mesh_session(
+            AuditLog.audit_ai_session(
                 username=user.username,
                 agent=agents_by_id[mm["agent_id"]],
                 debug_info={
@@ -1957,7 +1968,11 @@ class AgentPiSession(APIView):
             "device_facts": device_facts,
             "require_approval": bool(core.ai_require_approval),
             "autoapprove_allowed": bool(is_super or (user.role and user.role.can_use_ai_autoapprove)),
-            "allow_mutating": bool(is_super or (user.role and user.role.can_use_ai_mutate)),
+            "mutate_allowed": bool(is_super or (user.role and user.role.can_use_ai_mutate)),
+            "allow_mutating": bool(
+                (is_super or (user.role and user.role.can_use_ai_mutate))
+                and not request.data.get("read_only")
+            ),
             "persist_history": bool(core.ai_persist_history),
             "resume_session": request.data.get("resume_session") or None,
             "helpdesk_prompt": core.ai_helpdesk_prompt or "",
@@ -1970,7 +1985,7 @@ class AgentPiSession(APIView):
 
         token = create_pi_session(data=blob)
 
-        AuditLog.audit_mesh_session(
+        AuditLog.audit_ai_session(
             username=user.username,
             agent=agent,
             debug_info={

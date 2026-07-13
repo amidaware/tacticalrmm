@@ -10,7 +10,7 @@ import {
   createAgentSession,
 } from "@earendil-works/pi-coding-agent";
 import { CONFIG } from "./config.js";
-import { buildTools } from "./tools.js";
+import { buildTools, buildReportTools } from "./tools.js";
 import * as history from "./history.js";
 
 const redis = new Redis(CONFIG.redisUrl);
@@ -41,7 +41,10 @@ You are STRICTLY scoped to this single device. All of your tools act only on it:
 - agent version: ${facts.agent_version}
 - logged-in user: ${facts.logged_in_username || facts.last_logged_in_user || "unknown"}
 - public IP: ${facts.public_ip || "unknown"}
-- description: ${facts.description || "(none)"}
+- description: ${facts.description || "(none)"}${facts.device_url ? `
+- this device's page in RMM (deep link for logged-in techs): ${facts.device_url}` : ""}
+
+When a helpdesk ticket is opened for this device, a deep link to this device page is added automatically into the main ticket body. If you ever need to reference the device link yourself, use the URL above verbatim - do NOT ask the operator for the base URL, and never invent one.
 
 How your shell access works (IMPORTANT):
 - You effectively have console/root shell access to this device via run_command_on_device. Use it as if you were sitting at the machine's terminal.
@@ -107,6 +110,24 @@ Rules:
 - Be concise and practical. These are real production machines.`;
 }
 
+// Admin-authored helpdesk policy (Global Settings -> Pi.dev AI -> Helpdesk
+// prompt). Injected into every session's system prompt when set; guides WHEN
+// and HOW the model should use the create_ticket tool. Routing guarantees
+// (partner/team/dedup) stay inside the tool itself.
+function helpdeskSection(blob, clientName) {
+  const p = (blob.helpdesk_prompt || "").trim();
+  if (!p) return "";
+  const generic = !!(blob.helpdesk_api?.base_url && blob.helpdesk_api?.api_key);
+  const toolNote = generic
+    ? `Tickets are created with the helpdesk_api_request tool following the API flow ` +
+      `documented above EXACTLY. Never invent customer details` +
+      (clientName ? `; this session's client is "${clientName}"` : "") + `.`
+    : `To open a ticket use the create_ticket tool. The customer contact/team are ` +
+      `resolved automatically${clientName ? ` for this session's client ("${clientName}")` : ""}; ` +
+      `never invent customer details.`;
+  return `\n\nHELPDESK POLICY (admin-defined):\n${p}\n${toolNote}`;
+}
+
 // ---- WebSocket session lifecycle -------------------------------------------
 async function startChat(ws, blob) {
   const facts = blob.device_facts;
@@ -152,28 +173,46 @@ async function startChat(ws, blob) {
     });
   }
 
-  // Read-only session unless the operator's role grants mutate rights.
-  const readonly = !blob.allow_mutating;
+  // mutateAllowed = the operator's role can write at all. readonly = the current
+  // (toggleable) state; an "AI Resolve" session starts read-only but the operator
+  // can flip write mode on if their role allows it.
+  const mutateAllowed = !!blob.mutate_allowed;
+  let readonly = !blob.allow_mutating;
+  if (!mutateAllowed) readonly = true; // can never write
   const { tools, mutating, machines: toolMachines } = buildTools({
     machines,
     gate: requestApproval,
-    readonly,
+    mutateAllowed,
+    isReadonly: () => readonly,
+    helpdeskApi: blob.helpdesk_api || null,
+    helpdeskCode: blob.helpdesk_code || "",
   });
 
-  const roNotice = readonly
-    ? "\n\nREAD-ONLY SESSION: You may only INSPECT; do not attempt to change anything. " +
+  let roNotice = "";
+  if (!mutateAllowed) {
+    roNotice =
+      "\n\nREAD-ONLY SESSION: You may only INSPECT; do not attempt to change anything. " +
       "The write tools (run script, kill process, reboot) are unavailable, and " +
       "run_command_on_device will refuse commands that appear to modify the system. " +
       "Use read-only/diagnostic commands only; if a change is needed, tell the operator " +
-      "they need an account with AI write (mutate) rights."
-    : "";
+      "they need an account with AI write (mutate) rights.";
+  } else if (readonly) {
+    roNotice =
+      "\n\nThis session STARTS in READ-ONLY mode: only inspect and gather information; " +
+      "do not change anything yet. When asked to resolve an issue, investigate read-only " +
+      "and propose a few concrete fix OPTIONS (with exact steps and pros/cons) for the " +
+      "operator to choose. The operator can enable write mode later to apply a fix; only " +
+      "then should you make changes.";
+  }
 
   // Resource loader for system prompt override
   const loader = new DefaultResourceLoader({
     agentDir: CONFIG.sessionsRoot,
     cwd: CONFIG.sessionsRoot,
     systemPromptOverride: () =>
-      (multi ? systemPromptMulti(toolMachines) : systemPrompt(facts)) + roNotice,
+      (multi ? systemPromptMulti(toolMachines) : systemPrompt(facts)) +
+      roNotice +
+      helpdeskSection(blob, facts?.client),
   });
   await loader.reload();
 
@@ -289,6 +328,7 @@ async function startChat(ws, blob) {
       require_approval: blob.require_approval,
       autoapprove_allowed: blob.autoapprove_allowed,
       read_only: readonly,
+      mutate_allowed: mutateAllowed,
       history: session.messages,
     }),
   );
@@ -355,6 +395,13 @@ async function startChat(ws, blob) {
         case "set_autoapprove":
           autoApprove = !!msg.value && blob.autoapprove_allowed;
           ws.send(JSON.stringify({ type: "autoapprove_state", value: autoApprove }));
+          break;
+        case "set_readonly":
+          // operator toggles read-only <-> write; only honored if the role can write
+          if (mutateAllowed) {
+            readonly = !!msg.value;
+          }
+          ws.send(JSON.stringify({ type: "readonly_state", value: readonly }));
           break;
         case "set_model": {
           const allowed = (blob.allowed_models || []).find(
@@ -457,12 +504,14 @@ async function runHeadless(blob) {
   }
 
   // Unattended: auto-approve everything (no operator). readonly unless allow_mutating.
-  const { tools, verdict } = buildTools({
-    machines: [{ agentId, hostname: facts.hostname, plat: facts.plat }],
+  const { tools, verdict, helpdeskState } = buildTools({
+    machines: [{ agentId, hostname: facts.hostname, plat: facts.plat, facts }],
     gate: () => Promise.resolve(true),
     includeReport: true,
-    readonly: !blob.allow_mutating,
+    readonly: !blob.allow_mutating, // fixed for unattended runs
     jobRef: runId,  // scheduled/bulk run id -> job-associated From address
+    helpdeskApi: blob.helpdesk_api || null,
+    helpdeskCode: blob.helpdesk_code || "",
   });
 
   const loader = new DefaultResourceLoader({
@@ -470,7 +519,8 @@ async function runHeadless(blob) {
     cwd: CONFIG.sessionsRoot,
     systemPromptOverride: () =>
       systemPrompt(facts) +
-      `\n\nSCHEDULED CHECK MODE:\n- You are running unattended on a schedule. There is no human to chat with.\n- Investigate the request using your tools, then call report_result EXACTLY ONCE with your verdict.\n- status='ok' if healthy, 'warning' for minor/degraded issues, 'alert' for serious problems.\n- Do not ask questions; make a determination from the evidence.${blob.allow_mutating ? "" : "\n- You are in READ-ONLY mode: do not attempt to change the system; only diagnose."}`,
+      `\n\nSCHEDULED CHECK MODE:\n- You are running unattended on a schedule. There is no human to chat with.\n- Investigate the request using your tools, then call report_result EXACTLY ONCE with your verdict.\n- status='ok' if healthy, 'warning' for minor/degraded issues, 'alert' for serious problems.\n- Do not ask questions; make a determination from the evidence.${blob.allow_mutating ? "" : "\n- You are in READ-ONLY mode: do not attempt to change the system; only diagnose."}` +
+      helpdeskSection(blob, facts?.client),
   });
   await loader.reload();
 
@@ -560,12 +610,224 @@ async function runHeadless(blob) {
     summary: verdict.summary || finalText.slice(0, 200) || "(no summary)",
     details: verdict.details || "",
     transcript: lines.join("\n").slice(0, 50000),
+    ticket_error: !!(helpdeskState && helpdeskState.error),
+    ticket_error_detail: (helpdeskState && helpdeskState.detail) || "",
   };
 
   live.status = result.status;
   live.summary = result.summary;
   await pushLive({ type: "done", text: result.summary });
   return result;
+}
+
+// ---- Report run (end-of-batch finalizer) -----------------------------------
+// No device access. Given every machine's result (already in blob.prompt), the
+// model compiles ONE combined report via the helpdesk API per the policy.
+async function runReport(blob) {
+  const runId = blob.run_id || null;
+  const live = { status: "running", started: new Date().toISOString(), events: [] };
+  async function pushLive(ev) {
+    live.events.push({ t: new Date().toISOString(), ...ev });
+    if (live.events.length > 200) live.events.shift();
+    if (runId) {
+      try { await redis.set(`pi_run:${runId}`, JSON.stringify(live), "EX", 3600); } catch { /* best effort */ }
+    }
+  }
+  await pushLive({ type: "status", text: "Compiling combined report" });
+
+  const authStorage = AuthStorage.create();
+  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
+  const modelRegistry = ModelRegistry.inMemory(authStorage);
+  const model = modelRegistry.find(blob.provider, blob.model_id);
+  if (!model) return { status: "error", summary: `Model not found: ${blob.provider}/${blob.model_id}`, transcript: "" };
+
+  const { tools, verdict, helpdeskState } = buildReportTools({
+    helpdeskApi: blob.helpdesk_api || null,
+    helpdeskCode: blob.helpdesk_code || "",
+  });
+
+  const loader = new DefaultResourceLoader({
+    agentDir: CONFIG.sessionsRoot,
+    cwd: CONFIG.sessionsRoot,
+    systemPromptOverride: () =>
+      `You are compiling ONE combined status report for a fleet of machines. You have ` +
+      `NO device access - every machine's result is in the user message. Do NOT invent ` +
+      `data. Compose the ENTIRE report as a single HTML body, then call submit_report ` +
+      `EXACTLY ONCE with partner_id, team_id, subject and that body. submit_report handles ` +
+      `create-vs-update and de-duplication itself - never call it more than once, and never ` +
+      `write the report in pieces. After it returns, call report_result once and stop.`,
+  });
+  await loader.reload();
+
+  const { session } = await createAgentSession({
+    model,
+    thinkingLevel: blob.thinking_level || "medium",
+    authStorage,
+    modelRegistry,
+    noTools: "builtin",
+    customTools: tools,
+    resourceLoader: loader,
+    sessionManager: SessionManager.inMemory(),
+    agentDir: CONFIG.sessionsRoot,
+    cwd: CONFIG.sessionsRoot,
+  });
+  if (runId) activeRuns.set(runId, session);
+
+  const unsub = session.subscribe((event) => {
+    if (event.type === "tool_execution_start")
+      pushLive({ type: "tool_start", tool: event.toolName, args: event.args ? JSON.stringify(event.args).slice(0, 300) : "" });
+  });
+  try {
+    await session.prompt(blob.prompt);
+  } catch (e) {
+    unsub(); session.dispose(); if (runId) activeRuns.delete(runId);
+    return { status: "error", summary: `Report run failed: ${e?.message || e}`, transcript: "" };
+  }
+  unsub();
+  const lines = [];
+  for (const m of session.messages) {
+    if (m.role === "assistant") for (const c of m.content || []) {
+      if (c.type === "text" && c.text?.trim()) lines.push(c.text.trim());
+      else if (c.type === "toolCall") lines.push(`» ${c.name}(${JSON.stringify(c.arguments).slice(0, 200)})`);
+    }
+  }
+  session.dispose();
+  if (runId) activeRuns.delete(runId);
+  const result = {
+    status: verdict.status || "ok",
+    summary: verdict.summary || "report compiled",
+    details: verdict.details || "",
+    transcript: lines.join("\n").slice(0, 50000),
+    ticket_error: !!(helpdeskState && helpdeskState.error),
+    ticket_error_detail: (helpdeskState && helpdeskState.detail) || "",
+  };
+  live.status = result.status; live.summary = result.summary;
+  await pushLive({ type: "done", text: result.summary });
+  return result;
+}
+
+// ---- Helpdesk setup assistant (Global Settings "Use AI to Help Create These") -
+// A device-less chat that helps an admin author the helpdesk POLICY + helpdesk.js
+// code. Stateless per call: the client replays the whole conversation.
+function assistSystemPrompt(baseUrl, policy, code, trmmUrl) {
+  return (
+    `You are an expert integration engineer helping an MSP admin configure the Pi AI ` +
+    `helpdesk/ticketing integration for Tactical RMM. Pi turns issues it finds on devices into ` +
+    `correctly-attributed tickets in the admin's OWN ticketing/ERP system. You help produce TWO ` +
+    `artifacts:\n` +
+    `1) POLICY (natural language): WHEN to open/reply/note/close/assign tickets, WHICH operations ` +
+    `to call, plus tone and formatting rules.\n` +
+    `2) helpdesk.js (JavaScript): deterministic functions (exports.operations) that call the ` +
+    `admin's ticketing API. Reliability-critical logic (dedup, HTML rendering, reply-vs-note, ` +
+    `templated emails, close, assign) lives HERE in code; judgment lives in the POLICY.\n\n` +
+    `helpdesk.js contract (runs sandboxed on the bridge):\n` +
+    `- In scope: helpdesk = { baseUrl, apiKey, context }, fetch, console, URL, URLSearchParams, ` +
+    `TextEncoder, TextDecoder, Buffer, atob, btoa, setTimeout, JSON.\n` +
+    `- helpdesk.context (single-device sessions) = { deviceUrl, hostname, client, site, agentId }.\n` +
+    `- Define exports.operations = { async op(args) {...} }. Optional exports.meta = { op: "desc" } ` +
+    `and exports.mutating = [ops needing approval]. Each op returns JSON (or { error }); apiKey is ` +
+    `scrubbed from results. The AI invokes ops via one tool: helpdesk_call({ operation, args, summary }).\n\n` +
+    `INTERVIEW THE ADMIN - ask a FEW focused questions at a time (not a wall of text); skip anything ` +
+    `already answered by the current policy/code below. Cover:\n\n` +
+    `A. TICKETING SYSTEM - Which product/vendor (e.g. Zendesk, Freshdesk, HaloPSA, ConnectWise, ` +
+    `Autotask, Zammad, osTicket, Odoo, custom)? API style (REST / JSON-RPC / GraphQL)? Confirm the ` +
+    `API base URL (currently: ${baseUrl || "none set"}). Auth method (API-key header, bearer token, ` +
+    `login+key, basic)? The API key is entered separately and stays server-side.\n\n` +
+    `B. WHO THE TICKET BELONGS TO (customer/requester resolution) - How should Pi decide which ` +
+    `customer/company a ticket is filed under? Discuss: match the DEVICE'S CLIENT NAME to a company/` +
+    `account/organization record; look up by a contact email/domain; a fixed mapping; or always one ` +
+    `account. What happens when there is NO confident match - file to a catch-all/internal account ` +
+    `and flag it in the body? (Never guess between two real customers.)\n\n` +
+    `C. CREATING TICKETS - Required fields (subject/summary field name, description/body field)? ` +
+    `Does the body accept HTML? Which team/queue/group should new tickets land in? Priority/category ` +
+    `defaults? Include a clickable DEVICE LINK in the body (recommended; Pi supplies ` +
+    `helpdesk.context.deviceUrl automatically)?\n\n` +
+    `D. FORMATTING / READABILITY - Do you want Pi to render commands and terminal/log output as ` +
+    `COLORIZED HTML "terminal cards" in the ticket (dark background; commands highlighted; failures/` +
+    `errors red; healthy/OK green; warnings amber; "=== section ===" headers blue)? It makes ` +
+    `diagnostics far easier to read. Any brand colors, or prefer a light theme? If the body field is ` +
+    `plain-text only, fall back to clean monospaced text.\n\n` +
+    `E. REPLYING TO THE CUSTOMER (reply_to_ticket - customer-visible & emailed) - Should Pi send ` +
+    `customer-facing replies? Do you use an outbound EMAIL TEMPLATE (for consistent branding/header/` +
+    `footer)? If so, how is it identified (template id/name) and how is the message injected? What ` +
+    `exact SIGN-OFF/signature + phone should every reply end with? Confirm Pi must NEVER promise ` +
+    `specific dates/dispatch times (generic acknowledgement + next steps only).\n\n` +
+    `F. INTERNAL NOTES (add_note) - Should Pi post internal, staff-only notes (not visible to the ` +
+    `customer)? How does your system distinguish a public reply from a private note?\n\n` +
+    `G. LIFECYCLE & ASSIGNMENT - Which should Pi be allowed to do (each becomes an operation)? ` +
+    `(1) OPEN/create tickets; (2) CLOSE/resolve (which status/stage = closed?); (3) ASSIGN to a ` +
+    `TECHNICIAN/agent (staff identified by name, login, or email?); (4) set/attach the END-USER / ` +
+    `requester CONTACT on the ticket; (5) change team/queue; (6) set priority; (7) READ a ticket ` +
+    `back (get_ticket: subject, status, assignee, recent conversation) before acting. List which to enable.\n\n` +
+    `H. DUPLICATES - For recurring findings Pi should UPDATE the existing open ticket, not open a ` +
+    `new one. How to match it - a stable reference key written into the body, a custom field, or an ` +
+    `external-id field your API supports?\n\n` +
+    `I. COMBINED REPORTS (optional) - For bulk/scheduled runs across many devices, do you want ONE ` +
+    `combined summary ticket at the end of a batch (submit_report) instead of many individual tickets?\n\n` +
+    `WHEN YOU HAVE ENOUGH: produce BOTH artifacts, implementing ONLY the operations the admin ` +
+    `enabled. Use plain fetch, defensive error handling, small helpers (an esc()/HTML builder; a ` +
+    `login/token helper if needed). If they enabled colorized output, include a toHtml() that turns ` +
+    `fenced code blocks into INLINE-styled terminal cards (inline styles only, so they survive email ` +
+    `clients & HTML sanitizers). If they use a reply template, implement reply_to_ticket to render ` +
+    `through that template and inject the message, and bake the required sign-off into the reply ` +
+    `logic or the POLICY.\n\n` +
+    `TACTICAL RMM BASE URL (this install): ${trmmUrl || "(unknown)"} - do NOT ask for it. ` +
+    `Single-device sessions get helpdesk.context.deviceUrl = ${trmmUrl || "https://rmm.example.com"}/agents/<agent_id>; ` +
+    `create_ticket should append that link into the ticket body (customer-visible is intended and ` +
+    `fine - non-logged-in users just hit the login page).\n\n` +
+    `OUTPUT FORMAT: normal prose for questions/discussion. When proposing artifacts to apply, put ` +
+    `them at the END using EXACTLY these fences (omit a block you are not changing):\n` +
+    `===POLICY START===\n<full policy>\n===POLICY END===\n` +
+    `===CODE START===\n<full helpdesk.js>\n===CODE END===\n` +
+    `Keep any chat text before the blocks brief.\n\n` +
+    `CURRENT TICKETING API BASE URL: ${baseUrl || "(none set)"}\n` +
+    `CURRENT POLICY:\n${policy || "(empty)"}\n\n` +
+    `CURRENT helpdesk.js:\n${code || "(empty)"}`
+  );
+}
+
+async function runAssist(blob) {
+  const authStorage = AuthStorage.create();
+  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
+  const modelRegistry = ModelRegistry.inMemory(authStorage);
+  const model = modelRegistry.find(blob.provider, blob.model_id);
+  if (!model) return { reply: `(model not found: ${blob.provider}/${blob.model_id})` };
+
+  const loader = new DefaultResourceLoader({
+    agentDir: CONFIG.sessionsRoot,
+    cwd: CONFIG.sessionsRoot,
+    systemPromptOverride: () =>
+      assistSystemPrompt(blob.base_url, blob.current_policy, blob.current_code, blob.trmm_base_url),
+  });
+  await loader.reload();
+  const { session } = await createAgentSession({
+    model,
+    thinkingLevel: blob.thinking_level || "medium",
+    authStorage,
+    modelRegistry,
+    noTools: "builtin",
+    customTools: [],
+    resourceLoader: loader,
+    sessionManager: SessionManager.inMemory(),
+    agentDir: CONFIG.sessionsRoot,
+    cwd: CONFIG.sessionsRoot,
+  });
+  const convo = (blob.messages || [])
+    .map((m) => `${(m.role || "user").toUpperCase()}: ${m.content}`)
+    .join("\n\n");
+  try {
+    await session.prompt(convo + "\n\nRespond as the ASSISTANT now.");
+  } catch (e) {
+    session.dispose();
+    return { reply: `(error: ${e?.message || e})` };
+  }
+  const reply = session.messages
+    .filter((m) => m.role === "assistant")
+    .flatMap((m) => (m.content || []).filter((c) => c.type === "text").map((c) => c.text))
+    .join("\n")
+    .trim();
+  session.dispose();
+  return { reply: reply || "(no response)" };
 }
 
 // ---- HTTP (health + history) -----------------------------------------------
@@ -618,6 +880,38 @@ const server = http.createServer(async (req, res) => {
     });
     return;
   }
+  // Helpdesk setup assistant (called by Django on behalf of an admin).
+  if (url.pathname === "/pi/assist" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const result = await runAssist(JSON.parse(body || "{}"));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ reply: `(error: ${String(e?.message || e)})` }));
+      }
+    });
+    return;
+  }
+  // End-of-batch combined report (called by Django/celery finalizer).
+  if (url.pathname === "/pi/report" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const result = await runReport(JSON.parse(body || "{}"));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "error", summary: String(e?.message || e), transcript: "" }));
+      }
+    });
+    return;
+  }
   // List models available for a set of provider keys (called by Django).
   if (url.pathname === "/pi/models" && req.method === "POST") {
     let body = "";
@@ -648,6 +942,20 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ models: [], error: String(e?.message || e) }));
       }
     });
+    return;
+  }
+  // Aggregated chat history across many agents (for client/site AI History review).
+  if (url.pathname === "/pi/history_bulk" && req.method === "GET") {
+    const ids = (url.searchParams.get("agent_ids") || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const sessions = [];
+    for (const aid of ids) {
+      for (const s of history.listSessions(aid)) sessions.push({ ...s, agent_id: aid });
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ sessions }));
     return;
   }
   const histMatch = url.pathname.match(/^\/pi\/history\/([^/]+)\/?$/);

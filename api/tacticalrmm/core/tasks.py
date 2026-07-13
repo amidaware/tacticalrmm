@@ -820,6 +820,7 @@ def _run_prompt_on_agent(*, agent, model, prompt, allow_mutating, run_id):
             data.get("status", "error"),
             data.get("summary", ""),
             data.get("transcript", ""),
+            bool(data.get("ticket_error")),
         )
     except _requests.exceptions.Timeout:
         recovered = _recover_ai_run_from_redis(run_id)
@@ -828,14 +829,16 @@ def _run_prompt_on_agent(*, agent, model, prompt, allow_mutating, run_id):
                 recovered["status"],
                 recovered.get("summary") or "(recovered after HTTP timeout)",
                 recovered.get("transcript") or "",
+                bool(recovered.get("ticket_error")),
             )
         return (
             "error",
             f"Run exceeded PI_RUN_TIMEOUT ({run_timeout}s) and did not finish.",
             "",
+            False,
         )
     except Exception as e:
-        return ("error", f"Bridge error: {e}", "")
+        return ("error", f"Bridge error: {e}", "", False)
 
 
 def _run_report_on_bridge(*, model, prompt, run_id):
@@ -864,9 +867,14 @@ def _run_report_on_bridge(*, model, prompt, run_id):
     try:
         r = _requests.post(f"{bridge}/pi/report", json=payload, timeout=(10, run_timeout))
         data = r.json()
-        return (data.get("status", "error"), data.get("summary", ""), data.get("transcript", ""))
+        return (
+            data.get("status", "error"),
+            data.get("summary", ""),
+            data.get("transcript", ""),
+            bool(data.get("ticket_error")),
+        )
     except Exception as e:
-        return ("error", f"Report bridge call failed: {e}", "")
+        return ("error", f"Report bridge call failed: {e}", "", True)
 
 
 @app.task
@@ -922,13 +930,43 @@ def finalize_bulk_report(agent_results, cmd_id, batch_id):
         + f"\n\nPER-MACHINE RESULTS ({len(runs)} machines checked in this batch):\n"
         + digest
     )
-    status, summary, output = _run_report_on_bridge(model=model, prompt=prompt, run_id=run_id)
+    status, summary, output, ticket_error = _run_report_on_bridge(
+        model=model, prompt=prompt, run_id=run_id
+    )
     run.status = status
     run.summary = summary[:5000] if summary else ""
     run.output = output[:50000] if output else ""
     run.finished_at = djangotime.now()
     run.save()
+    # Only surface a TRMM alert if the combined report itself failed to file.
+    if ticket_error or status == "error":
+        _ai_alert_gated(
+            runs[0].agent if runs else None,
+            f"{cmd.name} (report)",
+            status,
+            f"combined report NOT filed: {summary}",
+            "alert",
+            True,
+        )
     return status
+
+
+def _ai_alert_gated(agent, label, status, summary, alert_threshold, ticket_error):
+    """Alerting policy for AI tasks/bulk. When CoreSettings.ai_alerts_only_on_ticket_error
+    is set, suppress the normal warning/alert TRMM alerts (tickets handle those) and
+    raise a TRMM alert ONLY if the AI failed to file its ticket, or the run errored."""
+    core = get_core_settings()
+    if getattr(core, "ai_alerts_only_on_ticket_error", False):
+        if ticket_error or status == "error":
+            _ai_alert(
+                agent,
+                label,
+                "alert",
+                f"[ACTION NEEDED: ticket NOT filed] {summary}",
+                "alert",
+            )
+        return
+    _ai_alert(agent, label, status, summary, alert_threshold)
 
 
 def _ai_alert(agent, label, status, summary, alert_threshold):
@@ -989,7 +1027,7 @@ def run_ai_task(task_id, triggered_by="schedule"):
         run.status = "error"; run.summary = msg; run.finished_at = djangotime.now(); run.save()
         return "no model"
 
-    status, summary, output = _run_prompt_on_agent(
+    status, summary, output, ticket_error = _run_prompt_on_agent(
         agent=task.agent, model=model, prompt=task.prompt,
         allow_mutating=task.allow_mutating, run_id=run_id,
     )
@@ -1016,7 +1054,7 @@ def run_ai_task(task_id, triggered_by="schedule"):
     run.finished_at = djangotime.now()
     run.save()
 
-    _ai_alert(task.agent, task.name, status, summary, task.alert_threshold)
+    _ai_alert_gated(task.agent, task.name, status, summary, task.alert_threshold, ticket_error)
     return f"{status}"
 
 
@@ -1465,7 +1503,7 @@ def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk", batch_id=None):
         bulk=cmd, agent=agent, run_id=run_id, batch_id=batch_id,
         triggered_by=triggered_by, status="running",
     )
-    status, summary, output = _run_prompt_on_agent(
+    status, summary, output, ticket_error = _run_prompt_on_agent(
         agent=agent, model=model, prompt=cmd.prompt,
         allow_mutating=cmd.allow_mutating, run_id=run_id,
     )
@@ -1475,5 +1513,5 @@ def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk", batch_id=None):
     run.finished_at = djangotime.now()
     run.save()
 
-    _ai_alert(agent, cmd.name, status, summary, cmd.alert_threshold)
+    _ai_alert_gated(agent, cmd.name, status, summary, cmd.alert_threshold, ticket_error)
     return f"{status}"

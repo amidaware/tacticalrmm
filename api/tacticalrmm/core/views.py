@@ -41,6 +41,20 @@ from tacticalrmm.permissions import (
     _has_perm_on_site,
 )
 
+
+def _can_manage_all_ai(user) -> bool:
+    """Superusers, or roles with can_manage_all_ai_tasks, may edit/delete AI
+    tasks & bulk commands created by other users and outside their agent scope."""
+    if getattr(user, "is_superuser", False):
+        return True
+    role = getattr(user, "role", None)
+    if not role:
+        return False
+    return bool(
+        getattr(role, "is_superuser", False)
+        or getattr(role, "can_manage_all_ai_tasks", False)
+    )
+
 from .models import (
     AIModel,
     AIProvider,
@@ -1031,7 +1045,11 @@ class UpdateDeleteAITask(APIView):
 
     def delete(self, request, pk):
         task = get_object_or_404(AITask.objects.select_related("agent"), pk=pk)
-        if not _has_perm_on_agent(request.user, task.agent.agent_id):
+        # own-scope agent access OR the elevated "manage all AI tasks" permission
+        if not (
+            _can_manage_all_ai(request.user)
+            or _has_perm_on_agent(request.user, task.agent.agent_id)
+        ):
             raise PermissionDenied()
         task.delete()
         return Response("ok")

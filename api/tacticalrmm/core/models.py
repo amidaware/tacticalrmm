@@ -136,6 +136,10 @@ class CoreSettings(BaseAuditModel):
     # ticketing system. Runs on the bridge; the AI calls the operations by name.
     # This is the "precise code" companion to the natural-language policy above.
     ai_helpdesk_code = models.TextField(blank=True, default="")
+    # When True, scheduled AI tasks & bulk AI commands do NOT raise a TRMM alert
+    # on warning/alert verdicts (tickets are the notification channel); a TRMM
+    # alert is raised ONLY if the AI could not file its ticket (or the run errored).
+    ai_alerts_only_on_ticket_error = models.BooleanField(default=False)
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)

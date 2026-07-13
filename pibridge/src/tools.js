@@ -1,6 +1,7 @@
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { trmm } from "./trmm.js";
+import { loadHelpdesk } from "./helpdesk-runtime.js";
 
 // Best-effort classification of a shell/powershell command as "mutating" (i.e.
 // it changes the system) so a READ-ONLY session can refuse it. This is a
@@ -67,9 +68,28 @@ export function buildTools({
   plat,
   gate,
   includeReport = false,
-  readonly = false,
+  // Whether this session is allowed to write at all (role/super). When false the
+  // write-only tools are removed entirely (hard read-only).
+  mutateAllowed = true,
+  // Live read-only state. Even when mutateAllowed, the operator can start (and
+  // toggle) read-only; write tools + destructive run_command refuse while true.
+  // Back-compat: callers may pass `readonly` (fixed) instead.
+  readonly = undefined,
+  isReadonly = undefined,
   jobRef = null,
+  // Global-Settings-defined ticketing API: {base_url, api_key}. When set, the
+  // generic helpdesk_api_request tool is exposed (and the legacy env-based
+  // create_ticket is not). The admin HELPDESK POLICY prompt documents usage.
+  helpdeskApi = null,
+  helpdeskCode = "",
 }) {
+  if (readonly !== undefined && isReadonly === undefined) {
+    // fixed read-only (headless): map onto the new model
+    mutateAllowed = !readonly;
+    isReadonly = () => readonly;
+  }
+  if (isReadonly === undefined) isReadonly = () => !mutateAllowed;
+  const hardReadonly = !mutateAllowed;
   const machines = (machinesIn && machinesIn.length
     ? machinesIn
     : [{ agentId, hostname: "", plat, role: "" }]
@@ -103,6 +123,13 @@ export function buildTools({
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   const denied = () =>
     text("The operator DENIED this action. Do not retry it; ask what to do instead.");
+  const roDenied = () =>
+    text(
+      "This session is currently READ-ONLY, so this action is not allowed right now. " +
+        (mutateAllowed
+          ? "Tell the operator they can toggle write mode on to apply changes."
+          : "An operator with write (mutate) rights must make changes."),
+    );
 
   // Resolve the `machine` param to a machine entry, or throw a model-friendly error.
   function target(p) {
@@ -206,13 +233,13 @@ export function buildTools({
       const win = m.plat === "windows";
       const shell = win ? (p.shell === "cmd" ? "cmd" : "powershell") : "/bin/bash";
       const timeout = p.timeout && p.timeout > 0 ? Math.min(p.timeout, 900) : 60;
-      if (readonly) {
+      if (isReadonly()) {
         const hit = mutatingMatch(p.command, win);
         if (hit) {
           return text(
-            `BLOCKED: this is a READ-ONLY AI session, but the command appears to modify the system ` +
-              `(matched "${hit}"). Only read-only/diagnostic commands are permitted. Do not retry a ` +
-              `mutating command; an operator with write (mutate) rights must make changes.`,
+            `BLOCKED: this session is currently READ-ONLY, but the command appears to modify the system ` +
+              `(matched "${hit}"). Only read-only/diagnostic commands are permitted right now. ` +
+              `${mutateAllowed ? "The operator can enable write mode to apply changes." : "An operator with write (mutate) rights must make changes."}`,
           );
         }
       }
@@ -272,6 +299,7 @@ export function buildTools({
       timeout: Type.Optional(Type.Number({ description: "Seconds (default 90)" })),
     }),
     execute: async (_id, p, signal) => {
+      if (isReadonly()) return roDenied();
       const m = target(p);
       const timeout = p.timeout && p.timeout > 0 ? Math.min(p.timeout, 900) : 90;
       const ok = await gateFor(m, `Run library script #${p.script_id} on device`);
@@ -307,6 +335,7 @@ export function buildTools({
     description: `Kill a process on ${forThis} by PID.`,
     parameters: params({ pid: Type.Number({ description: "Process id to kill" }) }),
     execute: async (_id, p, signal) => {
+      if (isReadonly()) return roDenied();
       const m = target(p);
       const ok = await gateFor(m, `Kill process PID ${p.pid} on device`);
       if (!ok) return denied();
@@ -368,6 +397,7 @@ export function buildTools({
     description: multi ? "Reboot the targeted machine now." : "Reboot THIS device now.",
     parameters: params({}),
     execute: async (_id, p, signal) => {
+      if (isReadonly()) return roDenied();
       const m = target(p);
       const ok = await gateFor(m, `REBOOT the device now`);
       if (!ok) return denied();
@@ -426,6 +456,87 @@ export function buildTools({
     },
   });
 
+  // Deterministic, system-AGNOSTIC ticketing. The integration is defined by the
+  // admin in Global Settings -> "Helpdesk Integration Code" (helpdesk.js), which
+  // exports named operations (create_ticket, reply_to_ticket, add_note,
+  // submit_report, resolve_customer, ...). This tool lets the model invoke those
+  // operations by name; ALL API mechanics live in that code. The policy prompt
+  // documents WHEN to use each operation and with what args.
+  // Single-device sessions expose a deep link to the device so the integration
+  // can put a "jump to device" link in the ticket (multi-device -> ambiguous, omit).
+  const hdContext =
+    machines.length === 1
+      ? {
+          deviceUrl: machines[0]?.facts?.device_url || "",
+          hostname: machines[0]?.hostname || machines[0]?.facts?.hostname || "",
+          client: machines[0]?.facts?.client || "",
+          site: machines[0]?.facts?.site || "",
+          agentId: machines[0]?.agentId || "",
+        }
+      : {};
+  let hd = null, hdError = "";
+  try { hd = loadHelpdesk(helpdeskCode, helpdeskApi, hdContext); }
+  catch (e) { hdError = e.message; }
+  const hdOps = hd ? hd.names : [];
+  // Tracks whether a ticketing operation actually FAILED (API/exception), so the
+  // headless caller can raise an RMM alert only in that (shouldn't-happen) case.
+  const helpdeskState = { error: false, detail: "" };
+  const opList = hdOps
+    .map((n) => `  - ${n}${hd.meta[n] ? ": " + hd.meta[n] : ""}`)
+    .join("\n");
+  const helpdesk_call = defineTool({
+    name: "helpdesk_call",
+    label: "Helpdesk operation",
+    description:
+      "Perform a helpdesk/ticketing operation (create ticket, reply to the " +
+      "customer, add an internal note, look up a customer, etc.). Exactly WHEN " +
+      "and HOW to use each operation (and its args) is defined in the HELPDESK " +
+      "POLICY in your instructions - follow it. Available operations:\n" +
+      (opList || "  (none configured)"),
+    parameters: Type.Object({
+      operation: Type.String({ description: "Operation name (one listed above)" }),
+      args: Type.Optional(
+        Type.String({
+          description:
+            "JSON object of arguments for the operation, e.g. " +
+            '{"ticket":"TICKET/123","message":"..."}',
+        }),
+      ),
+      summary: Type.String({
+        description: "One-line summary of what this does (shown to the operator for approval)",
+      }),
+    }),
+    execute: async (_id, p) => {
+      if (!hd)
+        return text(
+          `Helpdesk integration code is not configured or failed to load${hdError ? ": " + hdError : ""}.`,
+        );
+      const op = String(p.operation || "").trim();
+      if (!hd.operations[op])
+        return text(`Unknown helpdesk operation "${op}". Available: ${hdOps.join(", ")}.`);
+      let args = {};
+      if (p.args) {
+        try { args = JSON.parse(p.args); }
+        catch (e) { return text(`args must be valid JSON: ${e.message}`); }
+      }
+      if (hd.mutating.has(op)) {
+        const ok = await gate(`Helpdesk: ${p.summary || op}`);
+        if (!ok) return denied();
+      }
+      try {
+        const result = await hd.operations[op](args);
+        let out = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+        if (hd.apiKey) out = out.split(hd.apiKey).join("***");
+        return text(out || "(done)");
+      } catch (e) {
+        let msg = e && e.message ? e.message : String(e);
+        if (hd.apiKey) msg = msg.split(hd.apiKey).join("***");
+        helpdeskState.error = true; helpdeskState.detail = `${op}: ${msg}`;
+        return text(`Helpdesk operation "${op}" failed: ${msg}`);
+      }
+    },
+  });
+
   // For scheduled/unattended runs: a tool the AI calls once to report its verdict.
   const report_result = defineTool({
     name: "report_result",
@@ -462,11 +573,11 @@ export function buildTools({
     reboot_device,
     send_email,
   ];
+  if (hd) tools.push(helpdesk_call);
   if (anyWindows) tools.push(get_event_logs);
 
-  if (readonly) {
-    // unattended without mutation rights: keep diagnostics + run_command (admin-authored
-    // prompt) but drop the destructive actions.
+  if (hardReadonly) {
+    // no mutate rights at all: drop the destructive actions entirely.
     const drop = new Set(["run_script_on_device", "kill_process", "reboot_device"]);
     tools = tools.filter((t) => !drop.has(t.name));
   }
@@ -479,7 +590,96 @@ export function buildTools({
     "kill_process",
     "reboot_device",
     "send_email",
+    "helpdesk_call",
   ]);
 
-  return { tools, mutating, verdict, machines };
+  return { tools, mutating, verdict, machines, helpdeskState };
+}
+
+// ---------------------------------------------------------------------------
+// Report mode: no device access. Used by the end-of-batch finalizer to compile
+// ONE combined report. Exposes a DETERMINISTIC submit_report tool (single call,
+// atomic create-or-update - no LLM API orchestration) + report_result. This is
+// deliberately NOT the free-form helpdesk_api_request: a fixed-format fleet
+// report must never fan out into dozens of calls or duplicate tickets.
+export function buildReportTools({ helpdeskCode, helpdeskApi } = {}) {
+  const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
+  const verdict = { status: null, summary: "", details: "" };
+  let hd = null, hdError = "";
+  try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
+  catch (e) { hdError = e.message; }
+  const helpdeskState = { error: false, detail: "" };
+
+  const submit_report = defineTool({
+    name: "submit_report",
+    label: "Submit combined report",
+    description:
+      "Create or update THE single combined report ticket. Call this EXACTLY ONCE" +
+      " with the entire report composed in the body. If a ticket with the same" +
+      " subject already exists for this customer, your body is appended as one" +
+      " update note; otherwise one new ticket is created. Do NOT call it more than" +
+      " once and do NOT try to write the report any other way.",
+    parameters: Type.Object({
+      partner_id: Type.Number({
+        description: "Customer res.partner id for the report (from your instructions)",
+      }),
+      team_id: Type.Optional(
+        Type.Number({ description: "Helpdesk team id (from your instructions)" }),
+      ),
+      subject: Type.String({ description: "Exact ticket subject" }),
+      body: Type.String({
+        description:
+          "The COMPLETE report as HTML, covering every machine in one string" +
+          " (headline counts, then failing, warning, OK, not-installed sections).",
+      }),
+    }),
+    execute: async (_id, p) => {
+      if (!hd || !hd.operations.submit_report) {
+        helpdeskState.error = true;
+        helpdeskState.detail = `submit_report unavailable${hdError ? ": " + hdError : ""}`;
+        return text(
+          `Report integration (submit_report) is not available${hdError ? ": " + hdError : ""}.`,
+        );
+      }
+      try {
+        const r = await hd.operations.submit_report({
+          subject: p.subject,
+          body: p.body,
+          partner_id: p.partner_id,
+          team_id: p.team_id,
+        });
+        let out = typeof r === "string" ? r : JSON.stringify(r);
+        if (hd.apiKey) out = out.split(hd.apiKey).join("***");
+        return text(`${out}. Do not call submit_report again.`);
+      } catch (e) {
+        let msg = e && e.message ? e.message : String(e);
+        if (hd.apiKey) msg = msg.split(hd.apiKey).join("***");
+        helpdeskState.error = true; helpdeskState.detail = `submit_report: ${msg}`;
+        return text(`Report submit failed: ${msg}`);
+      }
+    },
+  });
+
+  const report_result = defineTool({
+    name: "report_result",
+    label: "Report result",
+    description:
+      "Call this EXACTLY ONCE at the end to report the outcome of building the" +
+      " combined report. status='ok' if the report ticket was created/updated," +
+      " 'warning' if partial, 'alert' if it failed. summary is a one-line headline.",
+    parameters: Type.Object({
+      status: Type.String({ description: "'ok' | 'warning' | 'alert'" }),
+      summary: Type.String({ description: "One-line headline" }),
+      details: Type.Optional(Type.String({ description: "Supporting details" })),
+    }),
+    execute: async (_id, p) => {
+      const s = (p.status || "").toLowerCase();
+      verdict.status = ["ok", "warning", "alert"].includes(s) ? s : "ok";
+      verdict.summary = p.summary || "";
+      verdict.details = p.details || "";
+      return text("Result recorded.");
+    },
+  });
+
+  return { tools: [submit_report, report_result], verdict, helpdeskState };
 }

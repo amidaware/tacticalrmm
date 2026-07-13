@@ -132,6 +132,9 @@ class Role(BaseAuditModel):
     # process, reboot) are removed and run_command_on_device refuses commands
     # that look destructive. Superusers always have mutate rights.
     can_use_ai_mutate = models.BooleanField(default=False)
+    # Manage/delete AI tasks & bulk AI commands created by OTHER users, and on
+    # agents outside this role's normal scope. Superusers always have this.
+    can_manage_all_ai_tasks = models.BooleanField(default=False)
     ai_allowed_models = models.ManyToManyField(
         "core.AIModel", related_name="role_ai_models", blank=True
     )

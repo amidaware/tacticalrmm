@@ -573,8 +573,10 @@ export function buildTools({
       "Pi runs start with this context. Record ONLY stable, reusable facts that make " +
       "future work faster: the device's role/purpose, key install paths, service/" +
       "container names, disk/volume layout, where credentials live (NOT the secrets " +
-      "themselves), vendor/model quirks, and fixes that worked. One or two sentences " +
-      "per note. Do NOT save transient state, secrets, or personal data.",
+      "themselves), vendor/model quirks, and fixes that worked. Keep each note to ONE " +
+      "SHORT line (~200 chars max - the server truncates longer notes). Be terse; prefer " +
+      "updating an existing fact over piling on near-duplicates. Do NOT save transient " +
+      "state, secrets, or personal data.",
     parameters: params({
       note: Type.String({ description: "One concise, durable fact about this device." }),
     }),

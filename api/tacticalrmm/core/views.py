@@ -1363,7 +1363,10 @@ class AIDeviceNote(APIView):
     """
 
     permission_classes = [IsAuthenticated]
-    MAX_NOTES = 12000
+    # Keep device memory BRIEF so it never clogs the AI prompt: each note is one
+    # short line, and the whole blob is bounded (oldest entries drop first).
+    MAX_NOTES = 1500  # total characters kept per device
+    MAX_NOTE_LEN = 200  # max characters per single note (longer is truncated)
 
     def _agent(self, request):
         from agents.models import Agent
@@ -1382,31 +1385,41 @@ class AIDeviceNote(APIView):
             return err
         return Response({"agent_id": agent.agent_id, "notes": agent.ai_notes or ""})
 
+    @staticmethod
+    def _body(line):
+        # the note text, ignoring any leading "[date] " prefix
+        line = line.strip()
+        return (line.split("] ", 1)[-1] if line.startswith("[") else line).strip().lower()
+
     def post(self, request):
         agent, err = self._agent(request)
         if err:
             return err
-        note = str(request.data.get("note") or "").strip()
+        # Enforce brevity: collapse ALL whitespace/newlines to one line, then cap.
+        note = " ".join(str(request.data.get("note") or "").split()).strip()
+        note = note[: self.MAX_NOTE_LEN].strip()
         if not note:
             return notify_error("note is required.")
-        entry = f"[{djangotime.now().strftime('%Y-%m-%d %H:%M UTC')}] {note}"
         existing = (agent.ai_notes or "").strip()
-        combined = (existing + "\n\n" + entry) if existing else entry
-        if len(combined) > self.MAX_NOTES:
-            parts = combined.split("\n\n")
-            while len(parts) > 1 and len("\n\n".join(parts)) > self.MAX_NOTES:
-                parts.pop(0)
-            combined = "\n\n".join(parts)
-        agent.ai_notes = combined
+        lines = [ln for ln in existing.splitlines() if ln.strip()]
+        # skip near-duplicates (same text ignoring the [date] prefix)
+        if note.lower() in {self._body(ln) for ln in lines}:
+            return Response({"ok": True, "notes": existing, "skipped": "duplicate"})
+        lines.append(f"[{djangotime.now().strftime('%Y-%m-%d')}] {note}")
+        # bound the total; drop oldest lines first until within the cap
+        while len(lines) > 1 and len("\n".join(lines)) > self.MAX_NOTES:
+            lines.pop(0)
+        agent.ai_notes = "\n".join(lines)[-self.MAX_NOTES:]
         agent.save(update_fields=["ai_notes"])
-        return Response({"ok": True, "notes": combined})
+        return Response({"ok": True, "notes": agent.ai_notes})
 
     def put(self, request):
         agent, err = self._agent(request)
         if err:
             return err
-        notes = str(request.data.get("notes") or "")[: self.MAX_NOTES]
-        agent.ai_notes = notes.strip()
+        # human-curated edit: keep line structure but enforce the same total cap
+        notes = str(request.data.get("notes") or "").strip()[: self.MAX_NOTES]
+        agent.ai_notes = notes
         agent.save(update_fields=["ai_notes"])
         return Response({"ok": True, "notes": agent.ai_notes})
 

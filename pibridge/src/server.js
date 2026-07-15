@@ -95,7 +95,8 @@ function deviceMemorySection(notes) {
     `- Use the save_device_note tool to record DURABLE facts that will make future ` +
     `runs on this device faster: its role/purpose, key paths, service/container names, ` +
     `disk layout, vendor quirks, and fixes that worked. Do NOT save secrets or transient state.\n` +
-    `- Save a note whenever you learn something non-obvious worth remembering.`;
+    `- Keep each note to ONE short line and avoid repeating what's already saved - this memory ` +
+    `is capped and rides along in every future prompt, so be terse.`;
   if (!n) {
     return guidance + `\n- No notes saved for this device yet.`;
   }
@@ -167,7 +168,8 @@ function multiDeviceMemorySection(machines) {
     `\n\nDEVICE MEMORY (persists across runs): use save_device_note (with the ` +
     `'machine' param) to record DURABLE, reusable facts about a machine (role, key ` +
     `paths, service names, disk layout, quirks, fixes) so future runs start with ` +
-    `context. Never save secrets or transient state.`;
+    `context. Keep each note to ONE short line, avoid duplicates, and never save ` +
+    `secrets or transient state (the memory is capped and rides along in every prompt).`;
   if (!blocks.length) return guidance;
   return (
     `\n\nWHAT PI ALREADY KNOWS ABOUT THESE MACHINES (saved notes from prior runs - ` +

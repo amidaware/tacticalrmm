@@ -35,6 +35,7 @@ urlpatterns = [
     path("ai/tasks/<int:pk>/", views.UpdateDeleteAITask.as_view()),
     path("ai/tasks/<int:pk>/run/", views.RunAITaskNow.as_view()),
     path("ai/email/", views.AISendEmail.as_view()),
+    path("ai/device-note/", views.AIDeviceNote.as_view()),
     path("ai/runs/", views.AITaskRuns.as_view()),
     path("ai/history-scope/", views.AIHistoryScope.as_view()),
     path("ai/runs/<str:run_id>/live/", views.AITaskRunLive.as_view()),

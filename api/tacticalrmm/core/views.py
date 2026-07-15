@@ -1349,6 +1349,68 @@ class AISendEmail(APIView):
         )
 
 
+class AIDeviceNote(APIView):
+    """Durable per-device memory for Pi.dev AI.
+
+    - GET  ?agent_id=<id>    -> {"notes": "..."}  (UI view + bridge session start)
+    - POST {agent_id, note}  -> append ONE timestamped note (pi-trmm-bridge
+                                save_device_note tool)
+    - PUT  {agent_id, notes} -> replace the whole notes blob (UI editor)
+
+    The notes are injected into the AI's system prompt so future runs start with
+    context saved during earlier runs (device roles, key paths, quirks, fixes).
+    Bounded so the prompt stays small; oldest entries are dropped first.
+    """
+
+    permission_classes = [IsAuthenticated]
+    MAX_NOTES = 12000
+
+    def _agent(self, request):
+        from agents.models import Agent
+
+        agent_id = request.data.get("agent_id") or request.query_params.get("agent_id")
+        if not agent_id:
+            return None, notify_error("agent_id is required.")
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        if not _has_perm_on_agent(request.user, agent.agent_id):
+            raise PermissionDenied()
+        return agent, None
+
+    def get(self, request):
+        agent, err = self._agent(request)
+        if err:
+            return err
+        return Response({"agent_id": agent.agent_id, "notes": agent.ai_notes or ""})
+
+    def post(self, request):
+        agent, err = self._agent(request)
+        if err:
+            return err
+        note = str(request.data.get("note") or "").strip()
+        if not note:
+            return notify_error("note is required.")
+        entry = f"[{djangotime.now().strftime('%Y-%m-%d %H:%M UTC')}] {note}"
+        existing = (agent.ai_notes or "").strip()
+        combined = (existing + "\n\n" + entry) if existing else entry
+        if len(combined) > self.MAX_NOTES:
+            parts = combined.split("\n\n")
+            while len(parts) > 1 and len("\n\n".join(parts)) > self.MAX_NOTES:
+                parts.pop(0)
+            combined = "\n\n".join(parts)
+        agent.ai_notes = combined
+        agent.save(update_fields=["ai_notes"])
+        return Response({"ok": True, "notes": combined})
+
+    def put(self, request):
+        agent, err = self._agent(request)
+        if err:
+            return err
+        notes = str(request.data.get("notes") or "")[: self.MAX_NOTES]
+        agent.ai_notes = notes.strip()
+        agent.save(update_fields=["ai_notes"])
+        return Response({"ok": True, "notes": agent.ai_notes})
+
+
 class GetAddBulkAICommand(APIView):
     permission_classes = [IsAuthenticated, BulkAIPerms]
 

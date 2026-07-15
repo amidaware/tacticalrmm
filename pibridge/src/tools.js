@@ -563,6 +563,32 @@ export function buildTools({
     },
   });
 
+  // Durable per-device memory. NOT gated and allowed in read-only mode: it writes
+  // to the device's Pi.dev memory in RMM, never to the device itself.
+  const save_device_note = defineTool({
+    name: "save_device_note",
+    label: "Save device note",
+    description:
+      "Save a durable note about " + forThis + " to its Pi.dev memory so FUTURE " +
+      "Pi runs start with this context. Record ONLY stable, reusable facts that make " +
+      "future work faster: the device's role/purpose, key install paths, service/" +
+      "container names, disk/volume layout, where credentials live (NOT the secrets " +
+      "themselves), vendor/model quirks, and fixes that worked. One or two sentences " +
+      "per note. Do NOT save transient state, secrets, or personal data.",
+    parameters: params({
+      note: Type.String({ description: "One concise, durable fact about this device." }),
+    }),
+    execute: async (_id, p, signal) => {
+      const m = target(p);
+      try {
+        await trmm.saveDeviceNote(m.agentId, p.note, { signal });
+        return text("Saved to device memory.");
+      } catch (e) {
+        return text("Could not save device note: " + (e?.message || e));
+      }
+    },
+  });
+
   let tools = [
     get_device_details,
     run_command_on_device,
@@ -575,6 +601,7 @@ export function buildTools({
     get_tasks,
     reboot_device,
     send_email,
+    save_device_note,
   ];
   if (hd) tools.push(helpdesk_call);
   if (anyWindows) tools.push(get_event_logs);

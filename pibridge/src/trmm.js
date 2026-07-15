@@ -107,4 +107,9 @@ export const trmm = {
       { to, subject, body, from_address, from_name, job_ref },
       opts,
     ),
+  // Append one durable note to a device's Pi.dev AI memory (TRMM: POST
+  // /core/ai/device-note/ { agent_id, note }). Surfaced to future runs in the
+  // system prompt.
+  saveDeviceNote: (agentId, note, opts) =>
+    req("POST", `/core/ai/device-note/`, { agent_id: agentId, note }, opts),
 };

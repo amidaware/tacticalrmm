@@ -28,6 +28,7 @@ urlpatterns = [
     path("ai/providers/<int:pk>/", views.UpdateDeleteAIProvider.as_view()),
     path("ai/available-models/", views.AIAvailableModels.as_view()),
     path("ai/helpdesk-assist/", views.HelpdeskAssist.as_view()),
+    path("ai/prompt-assist/", views.AIPromptAssist.as_view()),
     path("ai/models/", views.GetAddAIModel.as_view()),
     path("ai/models/<int:pk>/", views.UpdateDeleteAIModel.as_view()),
     path("ai/tasks/", views.GetAddAITask.as_view()),

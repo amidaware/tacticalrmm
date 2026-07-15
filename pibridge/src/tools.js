@@ -98,6 +98,9 @@ export function buildTools({
     hostname: m.hostname || "",
     plat: m.plat,
     role: m.role || "",
+    // preserve device_facts so the helpdesk context (deviceUrl for the ticket
+    // "jump to device" link, client/site) survives into hdContext below.
+    facts: m.facts || null,
   }));
   const multi = machines.length > 1;
 

@@ -927,6 +927,56 @@ class HelpdeskAssist(APIView):
             return Response({"reply": f"(bridge error: {e})"})
 
 
+class AIPromptAssist(APIView):
+    """AI helper that interviews the admin and drafts the PROMPT for an AI task or
+    Bulk AI command (and, for bulk, the combined-report instruction). Stateless;
+    the client replays the conversation each call."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        import requests as _requests
+        from django.conf import settings as dj_settings
+        from core.tasks import _resolve_ai_model
+
+        core = get_core_settings()
+        model = _resolve_ai_model(None)
+        if not model:
+            return Response(
+                {
+                    "reply": "No enabled AI model / default is configured. Ask an admin to "
+                    "add a provider and model (and mark one default) in Global Settings."
+                }
+            )
+        trmm_base_url = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None)
+            else ""
+        )
+        payload = {
+            "mode": "task_prompt",
+            "kind": "bulk" if request.data.get("kind") == "bulk" else "single",
+            "provider": model.provider.name,
+            "model_id": model.model_id,
+            "api_key": model.provider.api_key,
+            "thinking_level": model.thinking_level,
+            "trmm_base_url": trmm_base_url,
+            "helpdesk_enabled": bool(
+                (core.ai_helpdesk_code or "").strip()
+                and (core.ai_helpdesk_api_base_url or "").strip()
+            ),
+            "current_prompt": request.data.get("current_prompt") or "",
+            "current_report": request.data.get("current_report") or "",
+            "messages": request.data.get("messages") or [],
+        }
+        bridge = getattr(dj_settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.post(f"{bridge}/pi/assist", json=payload, timeout=300)
+            return Response(r.json())
+        except Exception as e:
+            return Response({"reply": f"(bridge error: {e})"})
+
+
 class GetAddAIModel(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
 

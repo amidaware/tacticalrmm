@@ -19,6 +19,29 @@ function log(...a) {
   console.log(new Date().toISOString(), ...a);
 }
 
+// Provider/API errors often arrive wrapped, e.g.
+//   "Compaction failed: Summarization failed: 400 {\"type\":\"error\",
+//    \"error\":{\"message\":\"You have reached your specified API usage limits...\"}}"
+// Operators need the human-readable message (usage-limit notices, rate limits,
+// bad-key, etc.) surfaced in the run result - not a raw blob. This digs the
+// inner error.message out of any embedded JSON and keeps the HTTP status.
+function apiErrorMessage(e) {
+  const raw = String((e && e.message) || e || "").trim();
+  const i = raw.indexOf("{");
+  const k = raw.lastIndexOf("}");
+  if (i !== -1 && k > i) {
+    try {
+      const obj = JSON.parse(raw.slice(i, k + 1));
+      const msg = (obj && obj.error && obj.error.message) || (obj && obj.message);
+      if (msg) {
+        const status = (raw.slice(0, i).match(/\b(\d{3})\b/) || [])[1];
+        return status ? `${status}: ${msg}` : String(msg);
+      }
+    } catch { /* not JSON - fall through to raw */ }
+  }
+  return raw;
+}
+
 async function getTokenBlob(token) {
   const raw = await redis.get(`${CONFIG.sessionPrefix}${token}`);
   return raw ? JSON.parse(raw) : null;
@@ -454,7 +477,7 @@ async function startChat(ws, blob) {
           break;
       }
     } catch (e) {
-      ws.send(JSON.stringify({ type: "error", message: String(e?.message || e) }));
+      ws.send(JSON.stringify({ type: "error", message: apiErrorMessage(e) }));
     }
   });
 
@@ -578,8 +601,9 @@ async function runHeadless(blob) {
     if (runId) activeRuns.delete(runId);
     session.dispose();
     live.status = "error";
-    await pushLive({ type: "status", text: `Run failed: ${e?.message || e}` });
-    return { status: "error", summary: `Run failed: ${e?.message || e}`, transcript: "" };
+    const msg = apiErrorMessage(e);
+    await pushLive({ type: "status", text: `Run failed: ${msg}` });
+    return { status: "error", summary: `Run failed: ${msg}`, transcript: "" };
   }
   unsub();
   if (runId) activeRuns.delete(runId);
@@ -681,7 +705,7 @@ async function runReport(blob) {
     await session.prompt(blob.prompt);
   } catch (e) {
     unsub(); session.dispose(); if (runId) activeRuns.delete(runId);
-    return { status: "error", summary: `Report run failed: ${e?.message || e}`, transcript: "" };
+    return { status: "error", summary: `Report run failed: ${apiErrorMessage(e)}`, transcript: "" };
   }
   unsub();
   const lines = [];
@@ -786,6 +810,79 @@ function assistSystemPrompt(baseUrl, policy, code, trmmUrl) {
   );
 }
 
+function taskPromptAssistSystemPrompt(kind, currentPrompt, currentReport, helpdeskEnabled, trmmUrl) {
+  const isBulk = kind === "bulk";
+  return (
+    `You are an expert assistant helping a Tactical RMM admin WRITE THE INSTRUCTIONS for an ` +
+    `AI automation. The admin's instructions are handed verbatim to Pi (an AI agent) which then ` +
+    `runs ${isBulk ? "ONCE PER TARGETED DEVICE across many machines" : "on a SINGLE device on a schedule"}. ` +
+    `Your job is to interview the admin about what they want to accomplish, then produce a clear, ` +
+    `safe, unambiguous PROMPT` +
+    (isBulk
+      ? ` and (if they want one) a COMBINED REPORT instruction that runs ONCE after all devices ` +
+        `finish, given every device's individual result, to compile a single summary/ticket.`
+      : `.`) +
+    `\n\n` +
+    `WHAT PI CAN DO ON THE DEVICE (so you scope the instructions realistically):\n` +
+    `- Run shell / PowerShell / bash commands on the device and read their output.\n` +
+    `- Inspect system state: services, processes, disks/volumes, event logs, network, installed ` +
+    `software, hardware/SMART, updates, users, scheduled tasks, etc.\n` +
+    `- Make changes when explicitly instructed (restart a service, clear a path, set a config) - ` +
+    `but ONLY if the admin asks for changes; default to READ-ONLY/diagnose unless told otherwise.\n` +
+    (helpdeskEnabled
+      ? `- File / update HELPDESK TICKETS (a ticketing integration is configured). Pi can open a ` +
+        `ticket, add notes, reply to the customer, dedupe, and (for bulk) file one combined report ticket.\n`
+      : `- (No helpdesk/ticketing integration is configured, so do NOT instruct Pi to open tickets ` +
+        `unless the admin sets that up in Global Settings first.)\n`) +
+    `\n` +
+    `INTERVIEW THE ADMIN - ask a FEW focused questions at a time (skip anything already answered ` +
+    `by the current draft below):\n` +
+    `1. GOAL: What are you trying to accomplish in plain language? (e.g. "check disk health", ` +
+    `"make sure the backup service is running", "find machines low on disk", "audit local admins".)\n` +
+    `2. SCOPE/OS: Windows, Linux, or mixed? Any assumptions about the device (server vs workstation)?\n` +
+    `3. WHAT TO CHECK/DO: The concrete steps or checks. What commands/areas should Pi look at?\n` +
+    `4. READ-ONLY vs CHANGES: Should Pi only diagnose/report, or also FIX/change things? If it may ` +
+    `change things, exactly what is it allowed to do (and what must it NEVER touch)?\n` +
+    `5. WHAT COUNTS AS A PROBLEM: The threshold/condition that makes this a finding (e.g. "<10% free", ` +
+    `"service not Running", "SMART not PASSED").\n` +
+    `6. OUTPUT: What should Pi report per device, and how concise? Should it include the exact ` +
+    `command output/evidence?\n` +
+    (helpdeskEnabled
+      ? `7. TICKETS: On a problem, should Pi open/update a helpdesk ticket? Only on problems, or always? ` +
+        `Anything specific for the ticket subject/body?\n`
+      : ``) +
+    (isBulk
+      ? `8. COMBINED REPORT: After ALL devices run, do you want ONE combined summary (and/or a single ` +
+        `ticket) instead of per-device output? If yes: what should it contain - e.g. a table of every ` +
+        `device + status, only the problem machines, an overall "all healthy" line, counts, next steps? ` +
+        `Should it open exactly ONE ticket for the whole batch?\n`
+      : ``) +
+    `\n` +
+    `WRITING GUIDELINES for the instructions you produce:\n` +
+    `- Write them as a direct instruction TO Pi ("Check whether... If X, then... Report..."), not as ` +
+    `a description. Be specific and deterministic; avoid vague adjectives.\n` +
+    `- State the OS assumptions and the exact conditions that define a problem.\n` +
+    `- Be explicit about read-only vs allowed changes, and require confirmation-free, safe commands.\n` +
+    `- Tell Pi to keep output concise and to include evidence (key command output) for any finding.\n` +
+    (isBulk
+      ? `- The PER-DEVICE prompt must make sense running independently on each machine. The COMBINED ` +
+        `REPORT instruction is separate and receives all devices' results - tell it how to aggregate ` +
+        `(summary line + per-device status; highlight only problems; optionally one ticket).\n`
+      : ``) +
+    `\n` +
+    `OUTPUT FORMAT: normal prose for questions/discussion. When proposing the final instructions, put ` +
+    `them at the END using EXACTLY these fences (omit a block you are not proposing):\n` +
+    `===PROMPT START===\n<the per-device instruction>\n===PROMPT END===\n` +
+    (isBulk
+      ? `===REPORT START===\n<the combined report instruction, or omit this block entirely if no ` +
+        `combined report is wanted>\n===REPORT END===\n`
+      : ``) +
+    `Keep any chat text before the blocks brief.\n\n` +
+    `CURRENT DRAFT ${isBulk ? "(per-device) PROMPT" : "PROMPT"}:\n${currentPrompt || "(empty)"}\n` +
+    (isBulk ? `\nCURRENT COMBINED REPORT INSTRUCTION:\n${currentReport || "(empty)"}\n` : ``)
+  );
+}
+
 async function runAssist(blob) {
   const authStorage = AuthStorage.create();
   authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
@@ -797,7 +894,15 @@ async function runAssist(blob) {
     agentDir: CONFIG.sessionsRoot,
     cwd: CONFIG.sessionsRoot,
     systemPromptOverride: () =>
-      assistSystemPrompt(blob.base_url, blob.current_policy, blob.current_code, blob.trmm_base_url),
+      blob.mode === "task_prompt"
+        ? taskPromptAssistSystemPrompt(
+            blob.kind,
+            blob.current_prompt,
+            blob.current_report,
+            blob.helpdesk_enabled,
+            blob.trmm_base_url,
+          )
+        : assistSystemPrompt(blob.base_url, blob.current_policy, blob.current_code, blob.trmm_base_url),
   });
   await loader.reload();
   const { session } = await createAgentSession({
@@ -819,7 +924,7 @@ async function runAssist(blob) {
     await session.prompt(convo + "\n\nRespond as the ASSISTANT now.");
   } catch (e) {
     session.dispose();
-    return { reply: `(error: ${e?.message || e})` };
+    return { reply: `(error: ${apiErrorMessage(e)})` };
   }
   const reply = session.messages
     .filter((m) => m.role === "assistant")
@@ -875,7 +980,7 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify(result));
       } catch (e) {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "error", summary: String(e?.message || e), transcript: "" }));
+        res.end(JSON.stringify({ status: "error", summary: apiErrorMessage(e), transcript: "" }));
       }
     });
     return;
@@ -891,7 +996,7 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify(result));
       } catch (e) {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ reply: `(error: ${String(e?.message || e)})` }));
+        res.end(JSON.stringify({ reply: `(error: ${apiErrorMessage(e)})` }));
       }
     });
     return;
@@ -907,7 +1012,7 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify(result));
       } catch (e) {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "error", summary: String(e?.message || e), transcript: "" }));
+        res.end(JSON.stringify({ status: "error", summary: apiErrorMessage(e), transcript: "" }));
       }
     });
     return;
@@ -1028,7 +1133,7 @@ server.on("upgrade", async (req, socket, head) => {
     });
     startChat(ws, blob).catch((e) => {
       try {
-        ws.send(JSON.stringify({ type: "error", message: String(e?.message || e) }));
+        ws.send(JSON.stringify({ type: "error", message: apiErrorMessage(e) }));
         ws.close();
       } catch {}
       log("startChat error", String(e?.stack || e));

@@ -307,6 +307,7 @@ class CoreSettings(BaseAuditModel):
         override_recipients: Optional[List[str]] = [],
         override_from: Optional[str] = None,
         override_from_name: Optional[str] = None,
+        html_body: Optional[str] = None,
         test: bool = False,
     ) -> tuple[str, bool]:
         if test and not self.email_is_configured:
@@ -354,6 +355,11 @@ class CoreSettings(BaseAuditModel):
 
             msg["To"] = email_recipients
             msg.set_content(body)
+            # When an HTML body is supplied, send multipart/alternative so HTML-
+            # capable clients render the HTML while others fall back to the plain
+            # text set above. Callers pass fully-formed HTML (inline styles).
+            if html_body:
+                msg.add_alternative(html_body, subtype="html")
 
             if attachment:
                 match attachment_type:

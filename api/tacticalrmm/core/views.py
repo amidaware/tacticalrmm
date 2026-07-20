@@ -1283,6 +1283,9 @@ class AISendEmail(APIView):
 
         subject = str(request.data.get("subject") or "").strip()[: self.MAX_SUBJECT]
         body = str(request.data.get("body") or "")[: self.MAX_BODY]
+        # Optional HTML body -> sent as multipart/alternative (plain `body` is the
+        # fallback). The AI supplies fully-formed HTML with INLINE styles.
+        html_body = str(request.data.get("html") or "")[: self.MAX_BODY] or None
         if not subject or not body:
             return notify_error("Both subject and body are required.")
 
@@ -1332,6 +1335,7 @@ class AISendEmail(APIView):
             override_recipients=recipients,
             override_from=from_address,
             override_from_name=from_name,
+            html_body=html_body,
             test=True,
         )
         if not ok:

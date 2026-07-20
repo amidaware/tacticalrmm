@@ -413,11 +413,16 @@ export function buildTools({
     name: "send_email",
     label: "Send email",
     description:
-      "Send a plain-text email through the RMM server's configured SMTP (the same" +
-      " mail settings Tactical RMM uses for alerts). Use this when the operator asks" +
-      " for results, findings, or alerts to be emailed (e.g. to alerts@ or support@)." +
-      " Write a clear subject and put the full findings in the body. Only send email" +
-      " when the operator/task instructions ask for it." +
+      "Send an email through the RMM server's configured SMTP (the same mail settings" +
+      " Tactical RMM uses for alerts). Use this when the operator asks for results," +
+      " findings, or alerts to be emailed (e.g. to alerts@ or support@). Write a clear" +
+      " subject and put the full findings in the body. Only send email when the" +
+      " operator/task instructions ask for it." +
+      " For a nicely FORMATTED email, also pass `html` (a full HTML body); it is sent" +
+      " as multipart/alternative with `body` as the plain-text fallback, so ALWAYS" +
+      " provide a readable plain-text `body` too. IMPORTANT: email clients strip" +
+      " <style> blocks and external CSS - use INLINE styles only (style=\"...\" on each" +
+      " element), a table-based layout, and no <script>. Do NOT put HTML tags in `body`." +
       " The From address defaults to a unique job-associated address on the server's" +
       " mail domain; only set from_address if the operator explicitly wants a specific" +
       " sender.",
@@ -428,7 +433,14 @@ export function buildTools({
           " (e.g. 'alerts@example.com' or 'alerts@example.com, support@example.com')",
       }),
       subject: Type.String({ description: "Email subject line" }),
-      body: Type.String({ description: "Plain-text email body with the full details" }),
+      body: Type.String({ description: "Plain-text email body with the full details (also the fallback for HTML clients). No HTML tags here." }),
+      html: Type.Optional(
+        Type.String({
+          description:
+            "Optional full HTML body for a formatted email. Use INLINE styles only" +
+            " (email clients strip <style>/external CSS); table-based layout; no <script>.",
+        }),
+      ),
       from_address: Type.Optional(
         Type.String({
           description:
@@ -449,6 +461,7 @@ export function buildTools({
           to: p.to,
           subject: p.subject,
           body: p.body,
+          html: p.html,
           from_address: p.from_address,
           from_name: p.from_name,
           job_ref: jobRef,

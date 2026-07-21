@@ -852,3 +852,51 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
     verdict, hd, hdError,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Decision chat (the "Johnny 5 Need Input!" link). A tech answers the AI's
+// question; the AI continues on the TICKET only - it can call any helpdesk
+// operation (read the ticket, reply, note, close/cancel, clear the tag, update
+// the AI KB) and look up devices, but has NO device shell access (that's Phase 3).
+export function buildDecisionTools({ helpdeskCode, helpdeskApi } = {}) {
+  const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
+  let hd = null, hdError = "";
+  try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
+  catch (e) { hdError = e.message; }
+  const opList = hd ? hd.names.map((n) => `  - ${n}${hd.meta[n] ? ": " + hd.meta[n] : ""}`).join("\n") : "";
+
+  const helpdesk_call = defineTool({
+    name: "helpdesk_call",
+    label: "Helpdesk operation",
+    description:
+      "Perform a ticketing operation on THIS ticket (read it, reply to the customer, " +
+      "add an internal note, close/cancel, clear the 'Johnny 5 Need Input!' tag, update " +
+      "the company AI KB, resolve the customer, etc.). Available operations:\n" + (opList || "  (none)"),
+    parameters: Type.Object({
+      operation: Type.String({ description: "Operation name (one of the list above)" }),
+      args: Type.Optional(Type.Object({}, { additionalProperties: true, description: "Arguments object for the operation" })),
+    }),
+    execute: async (_id, p) => {
+      if (!hd || !hd.operations[p.operation]) return text(`operation ${p.operation} not available`);
+      try { const out = await hd.operations[p.operation](p.args || {}); return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 20000)); }
+      catch (e) { return text(`${p.operation} failed: ${e?.message || e}`); }
+    },
+  });
+
+  const find_devices = defineTool({
+    name: "find_devices",
+    label: "Find device(s)",
+    description: "Find the RMM client + a user's device(s) by company (domain/name) + username. READ-ONLY.",
+    parameters: Type.Object({
+      domain: Type.Optional(Type.String()),
+      company_name: Type.Optional(Type.String()),
+      username: Type.Optional(Type.String()),
+    }),
+    execute: async (_id, p) => {
+      try { return text(JSON.stringify(await trmm.resolveDevices({ domain: p.domain, company_name: p.company_name, username: p.username })).slice(0, 20000)); }
+      catch (e) { return text(`find_devices failed: ${e?.message || e}`); }
+    },
+  });
+
+  return { tools: [helpdesk_call, find_devices], hd, hdError };
+}

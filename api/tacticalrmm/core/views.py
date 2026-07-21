@@ -1428,6 +1428,76 @@ class AIDeviceNote(APIView):
         return Response({"ok": True, "notes": agent.ai_notes})
 
 
+class AIDecisionView(APIView):
+    """The 'Johnny 5 Need Input!' decision chat. GET returns the thread; POST adds
+    the tech's message, runs one AI turn on the bridge (which can act on the ticket),
+    appends the reply, and returns it."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, token):
+        from core.models import AIDecisionRequest
+
+        d = get_object_or_404(AIDecisionRequest, token=token)
+        return Response({
+            "ticket_ref": d.ticket_ref, "question": d.question, "context": d.context,
+            "messages": d.messages, "status": d.status,
+        })
+
+    def post(self, request, token):
+        import requests as _requests
+        from django.conf import settings as dj_settings
+        from django.utils import timezone as _tz
+
+        from core.models import AIDecisionRequest
+        from core.tasks import _resolve_ai_model
+
+        d = get_object_or_404(AIDecisionRequest, token=token)
+        action = request.data.get("action")
+        if action == "close":
+            d.status = "closed"
+            d.save(update_fields=["status", "updated"])
+            return Response({"status": d.status, "messages": d.messages})
+
+        msg = str(request.data.get("message") or "").strip()
+        if not msg:
+            return notify_error("message is required.")
+        core = get_core_settings()
+        model = _resolve_ai_model(None)
+        if not model:
+            return notify_error("No enabled AI model/default configured.")
+        messages = list(d.messages or [])
+        messages.append({"role": "user", "content": msg, "ts": _tz.now().isoformat()})
+        bridge = getattr(dj_settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.post(
+                f"{bridge}/pi/decision",
+                json={
+                    "ticket_ref": d.ticket_ref, "question": d.question, "context": d.context,
+                    "messages": messages,
+                    "provider": model.provider.name, "model_id": model.model_id,
+                    "api_key": model.provider.api_key, "thinking_level": model.thinking_level,
+                    "helpdesk_api": {
+                        "base_url": core.ai_helpdesk_api_base_url or "",
+                        "api_key": core.ai_helpdesk_api_key or "",
+                    },
+                    "helpdesk_code": core.ai_helpdesk_code or "",
+                },
+                timeout=(10, 300),
+            )
+            data = r.json()
+        except Exception as e:
+            return notify_error(f"AI bridge error: {e}")
+        if data.get("error"):
+            return notify_error(f"AI error: {data['error']}")
+        reply = data.get("reply") or "(no reply)"
+        messages.append({"role": "assistant", "content": reply, "ts": _tz.now().isoformat()})
+        d.messages = messages
+        d.status = "answered"
+        d.save(update_fields=["messages", "status", "updated"])
+        return Response({"reply": reply, "messages": d.messages, "status": d.status})
+
+
 class AIResolveDevices(APIView):
     """Link an Odoo company (+ optional requester username) to the RMM client and
     the user's device(s). Called by the pi-trmm-bridge during ticket resolution.

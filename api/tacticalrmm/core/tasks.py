@@ -1662,6 +1662,14 @@ def triage_ai_ticket(state_pk):
     st.status = "triaging"
     st.save(update_fields=["status"])
     scope = _ai_ticket_scope_conf(core)
+    from django.utils.crypto import get_random_string
+
+    decision_token = get_random_string(32)
+    base_url = (
+        settings.CORS_ORIGIN_WHITELIST[0]
+        if getattr(settings, "CORS_ORIGIN_WHITELIST", None) else ""
+    )
+    decision_url = f"{base_url}/ai-decision/{decision_token}" if base_url else ""
     bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
     run_timeout = getattr(settings, "PI_RUN_TIMEOUT", 3600)
     try:
@@ -1679,6 +1687,7 @@ def triage_ai_ticket(state_pk):
                 "act_enabled": bool(core.ai_ticket_act_on_alerts),
                 "act_domains": scope["act_domains"],
                 "act_clients": scope["act_clients"],
+                "decision_url": decision_url,
                 "helpdesk_api": {
                     "base_url": core.ai_helpdesk_api_base_url or "",
                     "api_key": core.ai_helpdesk_api_key or "",
@@ -1708,5 +1717,30 @@ def triage_ai_ticket(state_pk):
         st.summary = (data.get("summary") or "")[:5000]
         st.proposed_action = (data.get("proposed_action") or "")[:5000]
         st.error_detail = ""
+        # Persist the decision request so the "Johnny 5 Need Input!" link works.
+        if action == "needs_input" and decision_url:
+            from core.models import AIDecisionRequest
+            from django.utils import timezone as _tz
+
+            AIDecisionRequest.objects.update_or_create(
+                token=decision_token,
+                defaults={
+                    "ticket_ref": st.ticket_ref,
+                    "question": st.proposed_action,
+                    "context": {
+                        "client": data.get("client") or "",
+                        "affected_device": data.get("affected_device") or "",
+                        "classification": st.classification,
+                        "summary": st.summary,
+                        "requester": st.requester,
+                    },
+                    "messages": [{
+                        "role": "assistant",
+                        "content": st.proposed_action or st.summary,
+                        "ts": _tz.now().isoformat(),
+                    }],
+                    "status": "open",
+                },
+            )
     st.save()
     return f"{st.ticket_ref}: {st.status} {st.classification}"

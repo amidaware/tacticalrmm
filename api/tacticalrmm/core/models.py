@@ -990,3 +990,27 @@ class AITicketState(models.Model):
 
     def __str__(self) -> str:
         return f"{self.ticket_ref} [{self.status}]"
+
+
+class AIDecisionRequest(models.Model):
+    """A pending 'Johnny 5 Need Input!' decision. Created when triage flags a ticket
+    as needing a human call. The token backs a deep link (the tech is already logged
+    into RMM) that opens a chat where they answer and the AI continues on the ticket.
+    Stateless chat: the whole thread is replayed to the bridge each turn."""
+
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    ticket_ref = models.CharField(max_length=100)
+    question = models.TextField(blank=True, default="")
+    # {client, affected_device, classification, summary, requester}
+    context = models.JSONField(default=dict, blank=True)
+    # [{"role": "assistant"|"user", "content": "...", "ts": "..."}]
+    messages = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=20, default="open")  # open | answered | closed
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["status"])]
+
+    def __str__(self) -> str:
+        return f"decision {self.ticket_ref} [{self.status}]"

@@ -1534,8 +1534,16 @@ def _ai_ticket_scope_conf(core):
     except Exception:
         conf = {}
     return {
-        "domains": [d.strip().lower() for d in conf.get("work_regular_ticket_if_requester_domain_in", []) if d.strip()],
-        "alerts_always": bool(conf.get("always_work_alert_tickets", True)),
+        # Look at (triage) everything eligible (unassigned or bot-assigned), any domain.
+        "look_at_all": bool(conf.get("look_at_all_unassigned", conf.get("look_at_all", False))),
+        # Only these domains get AUTO-ACTIONED (cancel/claim/tag); others are look-only.
+        "act_domains": [d.strip().lower() for d in conf.get("auto_action_domains", []) if d.strip()],
+        # Resolved-client names that also authorise auto-action (covers infra alerts
+        # with no requester domain, e.g. monitoring alerts for a test client).
+        "act_clients": [c.strip() for c in conf.get("auto_action_clients", []) if c.strip()],
+        # Back-compat: an explicit look-list still triaged when look_at_all is false.
+        "look_domains": [d.strip().lower() for d in conf.get("work_regular_ticket_if_requester_domain_in", []) if d.strip()],
+        "alerts_always": bool(conf.get("always_look_at_alerts", conf.get("always_work_alert_tickets", True))),
         "alert_subject_prefixes": [p for p in (conf.get("alert_ticket_match", {}) or {}).get("subject_starts_with", []) if p],
         "alert_from_domains": [d.strip().lower() for d in (conf.get("alert_ticket_match", {}) or {}).get("from_email_domains", []) if d.strip()],
     }
@@ -1550,10 +1558,14 @@ def _ticket_is_alert(t, scope):
 
 
 def _ticket_in_scope(t, scope, is_alert):
+    # Triage scope = which tickets we LOOK AT. Acting is decided separately.
+    if scope["look_at_all"]:
+        return True
     if is_alert:
         return scope["alerts_always"]
     dom = ((t.get("requester_email") or "").split("@")[-1] or "").lower()
-    return bool(dom and dom in scope["domains"])
+    return bool(dom and dom in scope["look_domains"])
+
 
 
 @app.task
@@ -1649,6 +1661,7 @@ def triage_ai_ticket(state_pk):
 
     st.status = "triaging"
     st.save(update_fields=["status"])
+    scope = _ai_ticket_scope_conf(core)
     bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
     run_timeout = getattr(settings, "PI_RUN_TIMEOUT", 3600)
     try:
@@ -1663,7 +1676,9 @@ def triage_ai_ticket(state_pk):
                 "api_key": model.provider.api_key,
                 "thinking_level": model.thinking_level,
                 "triage_prompt": core.ai_ticket_triage_prompt or "",
-                "act_on_alerts": bool(core.ai_ticket_act_on_alerts),
+                "act_enabled": bool(core.ai_ticket_act_on_alerts),
+                "act_domains": scope["act_domains"],
+                "act_clients": scope["act_clients"],
                 "helpdesk_api": {
                     "base_url": core.ai_helpdesk_api_base_url or "",
                     "api_key": core.ai_helpdesk_api_key or "",

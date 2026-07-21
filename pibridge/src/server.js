@@ -828,7 +828,8 @@ async function runTicketTriage(blob) {
       `   - list_kb_articles(partner_id) and get_kb_article to read that company's procedures.\n` +
       `3. submit_triage EXACTLY ONCE: classification, summary, and the proposed_action (referencing the\n` +
       `   client/device/KB you found). Set needs_input=true if a human must decide first (ambiguous,\n` +
-      `   can't identify the device or customer, or anything risky). Fill client/affected_device when known.\n` +
+      `   can't identify the device or customer, or anything risky). ALWAYS fill the client field with the\n` +
+      `   resolved company name when you identify it, and affected_device when known.\n` +
       `You do NOT change devices or reply to customers - a human reviews your draft. Then stop.` +
       (blob.requester_email ? `\n\nRequester email: ${blob.requester_email}` : "") +
       (admin ? `\n\nTRIAGE POLICY (admin-defined):\n${admin}` : ""),
@@ -866,11 +867,36 @@ async function runTicketTriage(blob) {
   // are CANCELLED and actionable ones are CLAIMED; everything else stays a shadow
   // note. Regular/unknown tickets are never auto-actioned here.
   const cls = verdict.classification;
-  const act = !!blob.act_on_alerts && !!blob.is_alert;
+  // act = allowed to take ACTIONS on this ticket. Decided AFTER resolution so it
+  // covers infra alerts with no requester domain: true when actions are enabled AND
+  // (the requester's domain OR the resolved client) is an auto-action test client.
+  const reqDom = ((blob.requester_email || "").split("@")[1] || "").toLowerCase();
+  const actDomains = (blob.act_domains || []).map((d) => String(d).toLowerCase());
+  const actClients = (blob.act_clients || []).map((c) => String(c).toLowerCase().trim());
+  const inActDom = !!reqDom && actDomains.includes(reqDom);
+  // Match the resolved client either in the structured field or anywhere the AI named
+  // it (summary/plan) - models don't always fill the structured field for alerts.
+  const hay = `${verdict.client} ${verdict.affected_device} ${verdict.summary} ${verdict.proposed_action}`.toLowerCase();
+  const inActClient = (!!verdict.client && actClients.includes(verdict.client.toLowerCase().trim()))
+    || actClients.some((c) => c.length > 3 && hay.includes(c));
+  const act = !!blob.act_enabled && (inActDom || inActClient);
   const ctx = (verdict.client ? `Client: ${verdict.client}\n` : "") +
               (verdict.affected_device ? `Device: ${verdict.affected_device}\n` : "");
   let action = "none";
   try {
+    // Look-only tickets (not an auto-action client): shadow note only, no changes.
+    if (!act) {
+      if (blob.post_shadow_note !== false && hd.operations.add_note)
+        await hd.operations.add_note({
+          ticket: blob.ticket_ref,
+          message:
+            `PI.DEV AI TRIAGE (look-only - no action taken)\n` +
+            `Classification: ${cls}${verdict.needs_input ? " (would need human input)" : ""}\n${ctx}` +
+            `Summary: ${verdict.summary}\n` +
+            `Would do: ${verdict.proposed_action}`,
+        });
+      return { ...verdict, action: "shadow_note" };
+    }
     // Needs a human decision -> tag it and post the draft, never auto-act.
     if (verdict.needs_input && hd.operations.set_needs_input_tag) {
       try { await hd.operations.set_needs_input_tag({ ticket: blob.ticket_ref }); } catch (e) { /* tag best-effort */ }
@@ -884,7 +910,7 @@ async function runTicketTriage(blob) {
         });
       return { ...verdict, action: "needs_input" };
     }
-    if (act && cls === "alert_clean" && hd.operations.cancel_ticket) {
+    if (cls === "alert_clean" && hd.operations.cancel_ticket) {
       await hd.operations.cancel_ticket({
         ticket: blob.ticket_ref,
         reason:
@@ -893,7 +919,7 @@ async function runTicketTriage(blob) {
           `Reason: ${verdict.proposed_action}`,
       });
       action = "cancelled";
-    } else if (act && cls === "alert_actionable" && hd.operations.claim_ticket) {
+    } else if (cls === "alert_actionable" && hd.operations.claim_ticket) {
       await hd.operations.claim_ticket({ ticket: blob.ticket_ref });
       if (hd.operations.add_note)
         await hd.operations.add_note({

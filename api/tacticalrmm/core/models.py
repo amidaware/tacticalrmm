@@ -158,6 +158,10 @@ class CoreSettings(BaseAuditModel):
     # actionable, what info to draft, etc). System-specific rules live here,
     # not in shipped code.
     ai_ticket_triage_prompt = models.TextField(blank=True, default="")
+    # Admin-editable behavior prompt for the "Johnny 5 Need Input!" decision chat
+    # (routing, completion policy, device-fix/email rules, etc.). Dynamic bits stay in
+    # code; this is the editable policy. Empty = use the built-in default.
+    ai_ticket_decision_prompt = models.TextField(blank=True, default="")
     # Phase 2: when True the AI ACTS on alert tickets (not just shadow notes):
     # non-actionable alerts (e.g. successful backups) are moved to Cancelled via
     # the helpdesk.js cancel_ticket op; actionable alerts are claimed (assigned to

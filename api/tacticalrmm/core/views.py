@@ -1477,6 +1477,7 @@ class AIDecisionView(APIView):
                     "messages": messages,
                     "allow_device_changes": bool(request.data.get("allow_device_changes")),
                     "allow_customer_reply": bool(request.data.get("allow_customer_reply")),
+                    "decision_prompt": core.ai_ticket_decision_prompt or "",
                     "provider": model.provider.name, "model_id": model.model_id,
                     "api_key": model.provider.api_key, "thinking_level": model.thinking_level,
                     "helpdesk_api": {

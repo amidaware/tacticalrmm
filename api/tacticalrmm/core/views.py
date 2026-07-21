@@ -1469,12 +1469,18 @@ class AIDecisionView(APIView):
         messages = list(d.messages or [])
         messages.append({"role": "user", "content": msg, "ts": _tz.now().isoformat()})
         bridge = getattr(dj_settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        base_url = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None) else ""
+        )
+        decision_url = f"{base_url}/ai-decision/{token}" if base_url else ""
         try:
             r = _requests.post(
                 f"{bridge}/pi/decision",
                 json={
                     "token": token,
                     "ticket_ref": d.ticket_ref, "question": d.question, "context": d.context,
+                    "decision_url": decision_url,
                     "messages": messages,
                     "allow_device_changes": bool(request.data.get("allow_device_changes")),
                     "allow_customer_reply": bool(request.data.get("allow_customer_reply")),

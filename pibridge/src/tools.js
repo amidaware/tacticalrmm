@@ -967,17 +967,41 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allow
     description:
       "Perform a ticketing operation on THIS ticket (read it, reply to the customer, " +
       "add an internal note, close/cancel, clear the 'Johnny 5 Need Input!' tag, update " +
-      "the company AI KB, resolve the customer, etc.). Available operations:\n" + (opList || "  (none)"),
+      "the company AI KB, resolve the customer, etc.). Available operations:\n" + (opList || "  (none)") +
+      "\n\nThis chat is already bound to this ticket - you do NOT need to pass a ticket id; it is added " +
+      "automatically. Field names: add_note and reply_to_ticket use 'message'; resolve_ticket uses " +
+      "'internal_note' (review note) + 'customer_html' (the HTML customer reply); close_ticket uses " +
+      "'reason'; set_ticket_company uses 'company_partner_id'; KB ops use 'partner_id'/'title'/'content'.",
     parameters: Type.Object({
       operation: Type.String({ description: "Operation name (one of the list above)" }),
-      args: Type.Optional(Type.Object({}, { additionalProperties: true, description: "Arguments object for the operation" })),
+      message: Type.Optional(Type.String({ description: "Customer reply text (reply_to_ticket) OR internal note text (add_note)" })),
+      internal_note: Type.Optional(Type.String({ description: "resolve_ticket: internal review note" })),
+      customer_html: Type.Optional(Type.String({ description: "resolve_ticket: the HTML customer reply (inline styles)" })),
+      reason: Type.Optional(Type.String({ description: "close_ticket / cancel reason" })),
+      cancel: Type.Optional(Type.Boolean({ description: "resolve_ticket: true to cancel instead of close" })),
+      company_partner_id: Type.Optional(Type.Number({ description: "set_ticket_company: correct company partner_id" })),
+      partner_id: Type.Optional(Type.Number({ description: "KB ops: the company partner_id" })),
+      article_id: Type.Optional(Type.Number({ description: "get_kb_article: article id" })),
+      title: Type.Optional(Type.String({ description: "KB article title" })),
+      content: Type.Optional(Type.String({ description: "KB article content" })),
+      name: Type.Optional(Type.String({ description: "find_company: company name" })),
+      domain: Type.Optional(Type.String({ description: "resolve_client_by_domain: email domain" })),
+      email: Type.Optional(Type.String({ description: "requester email" })),
+      args: Type.Optional(Type.Object({}, { additionalProperties: true, description: "Any other operation-specific arguments" })),
     }),
     execute: async (_id, p) => {
       if (!hd || !hd.operations[p.operation]) return text(`operation ${p.operation} not available`);
       // Customer-email gate: reply_to_ticket only when the tech approved it this turn.
       if (p.operation === "reply_to_ticket" && !allowCustomerReply)
         return text("Customer email is NOT approved this turn. Draft the reply text for the technician to review and ask them to enable 'Allow sending customer email' before you send it.");
-      try { const out = await hd.operations[p.operation](p.args || {}); return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 20000)); }
+      // Merge the named params + free-form args, then ALWAYS inject this ticket's ref
+      // so a read/write can never fail with 'ticket not found: undefined'.
+      const args = { ...(p.args || {}) };
+      for (const k of ["message", "internal_note", "customer_html", "reason", "cancel",
+        "company_partner_id", "partner_id", "article_id", "title", "content", "name", "domain", "email"])
+        if (p[k] !== undefined && args[k] === undefined) args[k] = p[k];
+      if (ticketRef && args.ticket === undefined && args.ticket_ref === undefined) args.ticket = ticketRef;
+      try { const out = await hd.operations[p.operation](args); return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 20000)); }
       catch (e) { return text(`${p.operation} failed: ${e?.message || e}`); }
     },
   });

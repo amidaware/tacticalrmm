@@ -1662,6 +1662,7 @@ def triage_ai_ticket(state_pk):
                 "api_key": model.provider.api_key,
                 "thinking_level": model.thinking_level,
                 "triage_prompt": core.ai_ticket_triage_prompt or "",
+                "act_on_alerts": bool(core.ai_ticket_act_on_alerts),
                 "helpdesk_api": {
                     "base_url": core.ai_helpdesk_api_base_url or "",
                     "api_key": core.ai_helpdesk_api_key or "",
@@ -1681,7 +1682,11 @@ def triage_ai_ticket(state_pk):
         st.status = "error"
         st.error_detail = str(data["error"])[:2000]
     else:
-        st.status = "triaged"
+        action = data.get("action") or "shadow_note"
+        st.status = {
+            "cancelled": "cancelled_clean",
+            "claimed": "actionable_claimed",
+        }.get(action, "triaged")
         st.classification = (data.get("classification") or "unknown")[:40]
         st.summary = (data.get("summary") or "")[:5000]
         st.proposed_action = (data.get("proposed_action") or "")[:5000]

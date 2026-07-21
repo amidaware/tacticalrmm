@@ -853,23 +853,50 @@ async function runTicketTriage(blob) {
   if (!verdict.classification)
     return { error: "model did not call submit_triage" };
 
-  // Post the shadow note (staff-only) deterministically - exactly one, marked.
-  let notePosted = false;
-  if (blob.post_shadow_note !== false && hd.operations.add_note) {
-    const note =
-      `PI.DEV AI TRIAGE (SHADOW MODE - no action taken)\n` +
-      `Classification: ${verdict.classification}\n` +
-      `Summary: ${verdict.summary}\n` +
-      `Would do: ${verdict.proposed_action}\n` +
-      `(Phase 1 pilot: the AI only drafts; a human decides.)`;
-    try {
-      await hd.operations.add_note({ ticket: blob.ticket_ref, message: note });
-      notePosted = true;
-    } catch (e) {
-      return { ...verdict, note_posted: false, error: `shadow note failed: ${e?.message || e}` };
+  // Deterministic action (the model never acts - code does, based on its verdict).
+  // Phase 2: when act_on_alerts is on AND this is an alert, non-actionable alerts
+  // are CANCELLED and actionable ones are CLAIMED; everything else stays a shadow
+  // note. Regular/unknown tickets are never auto-actioned here.
+  const cls = verdict.classification;
+  const act = !!blob.act_on_alerts && !!blob.is_alert;
+  let action = "none";
+  try {
+    if (act && cls === "alert_clean" && hd.operations.cancel_ticket) {
+      await hd.operations.cancel_ticket({
+        ticket: blob.ticket_ref,
+        reason:
+          `PI.DEV AI - auto-cancelled (non-actionable alert)\n` +
+          `Summary: ${verdict.summary}\n` +
+          `Reason: ${verdict.proposed_action}`,
+      });
+      action = "cancelled";
+    } else if (act && cls === "alert_actionable" && hd.operations.claim_ticket) {
+      await hd.operations.claim_ticket({ ticket: blob.ticket_ref });
+      if (hd.operations.add_note)
+        await hd.operations.add_note({
+          ticket: blob.ticket_ref,
+          message:
+            `PI.DEV AI - actionable alert, claimed for work\n` +
+            `Summary: ${verdict.summary}\n` +
+            `Plan: ${verdict.proposed_action}`,
+        });
+      action = "claimed";
+    } else if (blob.post_shadow_note !== false && hd.operations.add_note) {
+      await hd.operations.add_note({
+        ticket: blob.ticket_ref,
+        message:
+          `PI.DEV AI TRIAGE (SHADOW MODE - no action taken)\n` +
+          `Classification: ${cls}\n` +
+          `Summary: ${verdict.summary}\n` +
+          `Would do: ${verdict.proposed_action}\n` +
+          `(Pilot: the AI only drafts; a human decides.)`,
+      });
+      action = "shadow_note";
     }
+  } catch (e) {
+    return { ...verdict, action: "error", error: `action failed: ${e?.message || e}` };
   }
-  return { ...verdict, note_posted: notePosted };
+  return { ...verdict, action };
 }
 
 // ---- Helpdesk setup assistant (Global Settings "Use AI to Help Create These") -

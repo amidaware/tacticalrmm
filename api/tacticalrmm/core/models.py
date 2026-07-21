@@ -158,6 +158,11 @@ class CoreSettings(BaseAuditModel):
     # actionable, what info to draft, etc). System-specific rules live here,
     # not in shipped code.
     ai_ticket_triage_prompt = models.TextField(blank=True, default="")
+    # Phase 2: when True the AI ACTS on alert tickets (not just shadow notes):
+    # non-actionable alerts (e.g. successful backups) are moved to Cancelled via
+    # the helpdesk.js cancel_ticket op; actionable alerts are claimed (assigned to
+    # the AI bot) and annotated, left open for work. When False = shadow only.
+    ai_ticket_act_on_alerts = models.BooleanField(default=False)
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)

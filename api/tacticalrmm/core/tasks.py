@@ -1516,3 +1516,175 @@ def run_bulk_ai_agent(cmd_id, agent_pk, triggered_by="bulk", batch_id=None):
 
     _ai_alert_gated(agent, cmd.name, status, summary, cmd.alert_threshold, ticket_error)
     return f"{status}"
+
+
+# ---------------------------------------------------------------------------
+# AI ticket automation (helpdesk-agnostic add-on).
+# Phase 1 = SHADOW mode: poll the helpdesk via the admin-defined helpdesk.js
+# (list_open_tickets op), scope-limit deterministically, and for each in-scope
+# NEW ticket run a triage session that only CLASSIFIES and posts a staff-only
+# internal note draft. No closes, no replies, no device actions.
+# ---------------------------------------------------------------------------
+
+def _ai_ticket_scope_conf(core):
+    import json
+
+    try:
+        conf = json.loads(core.ai_ticket_scope or "{}")
+    except Exception:
+        conf = {}
+    return {
+        "domains": [d.strip().lower() for d in conf.get("work_regular_ticket_if_requester_domain_in", []) if d.strip()],
+        "alerts_always": bool(conf.get("always_work_alert_tickets", True)),
+        "alert_subject_prefixes": [p for p in (conf.get("alert_ticket_match", {}) or {}).get("subject_starts_with", []) if p],
+        "alert_from_domains": [d.strip().lower() for d in (conf.get("alert_ticket_match", {}) or {}).get("from_email_domains", []) if d.strip()],
+    }
+
+
+def _ticket_is_alert(t, scope):
+    subj = (t.get("subject") or "").strip()
+    dom = ((t.get("requester_email") or "").split("@")[-1] or "").lower()
+    if any(subj.startswith(p) for p in scope["alert_subject_prefixes"]):
+        return True
+    return bool(dom and dom in scope["alert_from_domains"])
+
+
+def _ticket_in_scope(t, scope, is_alert):
+    if is_alert:
+        return scope["alerts_always"]
+    dom = ((t.get("requester_email") or "").split("@")[-1] or "").lower()
+    return bool(dom and dom in scope["domains"])
+
+
+@app.task
+def poll_helpdesk_tickets():
+    """Beat task (~90s): list open tickets via helpdesk.js, reconcile against
+    AITicketState, enqueue triage for new in-scope tickets. First-ever poll
+    baselines the existing backlog WITHOUT triaging it (no note spam)."""
+    import requests as _requests
+
+    from core.models import AITicketState
+    from logs.models import DebugLog
+
+    core = get_core_settings()
+    if not (core.ai_module_enabled and core.ai_ticket_automation_enabled):
+        return "disabled"
+    if not ((core.ai_helpdesk_code or "").strip() and (core.ai_helpdesk_api_base_url or "").strip()):
+        return "no helpdesk integration configured"
+
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    try:
+        r = _requests.post(
+            f"{bridge}/pi/tickets/poll",
+            json={
+                "helpdesk_api": {
+                    "base_url": core.ai_helpdesk_api_base_url or "",
+                    "api_key": core.ai_helpdesk_api_key or "",
+                },
+                "helpdesk_code": core.ai_helpdesk_code or "",
+            },
+            timeout=(10, 120),
+        )
+        data = r.json()
+    except Exception as e:
+        DebugLog.error(message=f"AI ticket poll failed: {e}")
+        return f"poll error: {e}"
+    if data.get("error"):
+        DebugLog.error(message=f"AI ticket poll failed: {data['error']}")
+        return f"poll error: {data['error']}"
+
+    tickets = data.get("tickets") or []
+    scope = _ai_ticket_scope_conf(core)
+    baseline = not AITicketState.objects.exists()
+    seen, enqueued = 0, 0
+    for t in tickets:
+        ref = str(t.get("ref") or "").strip()
+        if not ref:
+            continue
+        seen += 1
+        is_alert = _ticket_is_alert(t, scope)
+        in_scope = _ticket_in_scope(t, scope, is_alert)
+        st, created = AITicketState.objects.get_or_create(
+            ticket_ref=ref,
+            defaults={
+                "subject": (t.get("subject") or "")[:400],
+                "requester": (t.get("requester_email") or "")[:255],
+                "is_alert": is_alert,
+                "last_change_seen": str(t.get("write_date") or "")[:64],
+                "status": (
+                    "baseline" if baseline
+                    else ("new" if in_scope else "skipped_out_of_scope")
+                ),
+            },
+        )
+        if created and st.status == "new":
+            triage_ai_ticket.delay(st.pk)
+            enqueued += 1
+    return f"seen {seen}, enqueued {enqueued}{' (baseline)' if baseline else ''}"
+
+
+@app.task
+def triage_ai_ticket(state_pk):
+    """Run ONE shadow triage session for a ticket: classify + post a staff-only
+    internal note of what the AI would do. Never closes/replies/touches devices."""
+    import requests as _requests
+
+    from core.models import AITicketState
+
+    core = get_core_settings()
+    if not (core.ai_module_enabled and core.ai_ticket_automation_enabled):
+        return "disabled"
+    try:
+        st = AITicketState.objects.get(pk=state_pk)
+    except AITicketState.DoesNotExist:
+        return "gone"
+    if st.status not in ("new", "error"):
+        return f"skip status={st.status}"
+    model = _resolve_ai_model(None)
+    if not model:
+        st.status = "error"
+        st.error_detail = "no enabled AI model/default configured"
+        st.save(update_fields=["status", "error_detail"])
+        return st.error_detail
+
+    st.status = "triaging"
+    st.save(update_fields=["status"])
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    run_timeout = getattr(settings, "PI_RUN_TIMEOUT", 3600)
+    try:
+        r = _requests.post(
+            f"{bridge}/pi/ticket-triage",
+            json={
+                "ticket_ref": st.ticket_ref,
+                "is_alert": st.is_alert,
+                "provider": model.provider.name,
+                "model_id": model.model_id,
+                "api_key": model.provider.api_key,
+                "thinking_level": model.thinking_level,
+                "triage_prompt": core.ai_ticket_triage_prompt or "",
+                "helpdesk_api": {
+                    "base_url": core.ai_helpdesk_api_base_url or "",
+                    "api_key": core.ai_helpdesk_api_key or "",
+                },
+                "helpdesk_code": core.ai_helpdesk_code or "",
+            },
+            timeout=(10, min(run_timeout, 900)),
+        )
+        data = r.json()
+    except Exception as e:
+        st.status = "error"
+        st.error_detail = f"bridge error: {e}"
+        st.save(update_fields=["status", "error_detail"])
+        return st.error_detail
+
+    if data.get("error"):
+        st.status = "error"
+        st.error_detail = str(data["error"])[:2000]
+    else:
+        st.status = "triaged"
+        st.classification = (data.get("classification") or "unknown")[:40]
+        st.summary = (data.get("summary") or "")[:5000]
+        st.proposed_action = (data.get("proposed_action") or "")[:5000]
+        st.error_detail = ""
+    st.save()
+    return f"{st.ticket_ref}: {st.status} {st.classification}"

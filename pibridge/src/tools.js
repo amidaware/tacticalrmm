@@ -728,3 +728,70 @@ export function buildReportTools({ helpdeskCode, helpdeskApi } = {}) {
 
   return { tools: [submit_report, report_result], verdict, helpdeskState };
 }
+
+// ---------------------------------------------------------------------------
+// Ticket-triage mode (SHADOW, Phase 1): NO device access, NO mutating helpdesk
+// ops. The model may READ the ticket (get_ticket) and must then call
+// submit_triage exactly once with its classification + draft. The staff-only
+// shadow note is posted DETERMINISTICALLY by the caller afterwards - the model
+// cannot close, reply, assign, or touch anything.
+export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
+  const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
+  const verdict = { classification: "", summary: "", proposed_action: "" };
+  let hd = null, hdError = "";
+  try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
+  catch (e) { hdError = e.message; }
+
+  const get_ticket = defineTool({
+    name: "get_ticket",
+    label: "Read ticket",
+    description:
+      "Read the ticket's subject, description/body, requester and recent messages." +
+      " Use this first to see what the ticket actually says.",
+    parameters: Type.Object({
+      ticket: Type.String({ description: "Ticket reference (id or number) to read" }),
+    }),
+    execute: async (_id, p, signal) => {
+      if (!hd) return text("Helpdesk integration failed to load: " + hdError);
+      const op = hd.operations.get_ticket;
+      if (!op) return text("This helpdesk integration defines no get_ticket operation.");
+      try {
+        const out = await op({ ticket: p.ticket });
+        return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 30000));
+      } catch (e) {
+        return text("get_ticket failed: " + (e?.message || e));
+      }
+    },
+  });
+
+  const submit_triage = defineTool({
+    name: "submit_triage",
+    label: "Submit triage verdict",
+    description:
+      "Record your triage verdict for THIS ticket. Call EXACTLY ONCE, then stop." +
+      " classification: alert_clean (informational/successful alert - nothing to do)," +
+      " alert_actionable (alert that needs work), regular (a human/customer request)," +
+      " or unknown. proposed_action = what you WOULD do (this is shadow mode - a" +
+      " human reviews your draft; you cannot act).",
+    parameters: Type.Object({
+      classification: Type.String({
+        description: "One of: alert_clean | alert_actionable | regular | unknown",
+      }),
+      summary: Type.String({ description: "1-2 sentence summary of what the ticket is" }),
+      proposed_action: Type.String({
+        description:
+          "Concise draft of what you would do (e.g. 'move to AI Closed - successful" +
+          " backup, nothing actionable' or 'investigate low disk on X, then reply')",
+      }),
+    }),
+    execute: async (_id, p) => {
+      const c = (p.classification || "").toLowerCase().trim();
+      verdict.classification = ["alert_clean", "alert_actionable", "regular", "unknown"].includes(c) ? c : "unknown";
+      verdict.summary = p.summary || "";
+      verdict.proposed_action = p.proposed_action || "";
+      return text("Triage recorded. Stop now.");
+    },
+  });
+
+  return { tools: [get_ticket, submit_triage], verdict, hd, hdError };
+}

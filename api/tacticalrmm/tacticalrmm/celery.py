@@ -85,6 +85,11 @@ app.conf.beat_schedule = {
         "task": "core.tasks.dispatch_due_bulk_ai_commands",
         "schedule": crontab(),
     },
+    # AI ticket automation poller (no-op unless enabled in Global Settings)
+    "poll-helpdesk-tickets": {
+        "task": "core.tasks.poll_helpdesk_tickets",
+        "schedule": timedelta(seconds=90.0),
+    },
 }
 
 

@@ -140,6 +140,24 @@ class CoreSettings(BaseAuditModel):
     # on warning/alert verdicts (tickets are the notification channel); a TRMM
     # alert is raised ONLY if the AI could not file its ticket (or the run errored).
     ai_alerts_only_on_ticket_error = models.BooleanField(default=False)
+    # ---- Ticket automation (helpdesk-agnostic add-on) ----------------------
+    # Master kill switch for the autonomous ticket-triage pipeline. When False
+    # the poller does nothing. Phase 1 = SHADOW mode: the AI only classifies
+    # tickets and posts a staff-only internal note of what it WOULD do.
+    ai_ticket_automation_enabled = models.BooleanField(default=False)
+    # JSON scope limiter (editable on the fly). Shape:
+    #   {"work_regular_ticket_if_requester_domain_in": ["example.com"],
+    #    "always_work_alert_tickets": true,
+    #    "alert_ticket_match": {"subject_starts_with": ["[Alert]"],
+    #                            "from_email_domains": []}}
+    # Regular tickets are only triaged when the requester's email domain is
+    # allow-listed; alert tickets are always in scope while the flag is true.
+    ai_ticket_scope = models.TextField(blank=True, default="")
+    # Admin-authored triage behavior prompt (like ai_helpdesk_prompt): defines
+    # how to classify THIS deployment's tickets (what's a clean alert vs
+    # actionable, what info to draft, etc). System-specific rules live here,
+    # not in shipped code.
+    ai_ticket_triage_prompt = models.TextField(blank=True, default="")
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)
@@ -926,3 +944,39 @@ class BulkAICommand(BaseAuditModel):
         from .serializers import BulkAICommandSerializer
 
         return BulkAICommandSerializer(obj).data
+
+
+class AITicketState(models.Model):
+    """Per-ticket state for the helpdesk-agnostic AI ticket automation.
+
+    One row per helpdesk ticket the poller has seen. This is the internal
+    dedup/audit record ("which tickets have we looked at"); human-visible
+    ownership stays in the helpdesk itself. ticket_ref is a string so any
+    ticketing system's id/number works.
+
+    Phase 1 (SHADOW): the AI only classifies and posts a staff-only internal
+    note draft; statuses beyond that exist for later phases.
+    """
+
+    ticket_ref = models.CharField(max_length=100, unique=True)
+    subject = models.CharField(max_length=400, blank=True, default="")
+    requester = models.CharField(max_length=255, blank=True, default="")
+    is_alert = models.BooleanField(default=False)
+    # new | baseline | skipped_out_of_scope | triaging | triaged | error
+    # (later phases: claimed, awaiting_customer, working, resolved, escalated, handed_off)
+    status = models.CharField(max_length=30, default="new")
+    # alert_clean | alert_actionable | regular | unknown
+    classification = models.CharField(max_length=40, blank=True, default="")
+    summary = models.TextField(blank=True, default="")
+    proposed_action = models.TextField(blank=True, default="")
+    # helpdesk-side last-change marker we processed (write_date or similar)
+    last_change_seen = models.CharField(max_length=64, blank=True, default="")
+    error_detail = models.TextField(blank=True, default="")
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["status"])]
+
+    def __str__(self) -> str:
+        return f"{self.ticket_ref} [{self.status}]"

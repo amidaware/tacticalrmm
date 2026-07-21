@@ -938,6 +938,8 @@ async function runTicketTriage(blob) {
   const act = !!blob.act_enabled && (inActDom || inActClient);
   const ctx = (verdict.client ? `Client: ${verdict.client}\n` : "") +
               (verdict.affected_device ? `Device: ${verdict.affected_device}\n` : "");
+  // ALWAYS include a chat link on every ticket the AI touches so a human can jump in.
+  const chatLink = blob.decision_url ? `\n\n\u27a1 Chat with me to continue this ticket: ${blob.decision_url}` : "";
   let action = "none";
   try {
     // Look-only tickets (not an auto-action client): shadow note only, no changes.
@@ -949,7 +951,7 @@ async function runTicketTriage(blob) {
             `PI.DEV AI TRIAGE (look-only - no action taken)\n` +
             `Classification: ${cls}${verdict.needs_input ? " (would need human input)" : ""}\n${ctx}` +
             `Summary: ${verdict.summary}\n` +
-            `Would do: ${verdict.proposed_action}`,
+            `Would do: ${verdict.proposed_action}` + chatLink,
         });
       return { ...verdict, action: "shadow_note" };
     }
@@ -973,7 +975,7 @@ async function runTicketTriage(blob) {
         reason:
           `PI.DEV AI - auto-cancelled (non-actionable alert)\n` +
           `Summary: ${verdict.summary}\n` +
-          `Reason: ${verdict.proposed_action}`,
+          `Reason: ${verdict.proposed_action}` + chatLink,
       });
       action = "cancelled";
     } else if (cls === "alert_actionable" && hd.operations.claim_ticket) {
@@ -984,7 +986,7 @@ async function runTicketTriage(blob) {
           message:
             `PI.DEV AI - actionable alert, claimed for work\n${ctx}` +
             `Summary: ${verdict.summary}\n` +
-            `Plan: ${verdict.proposed_action}`,
+            `Plan: ${verdict.proposed_action}` + chatLink,
         });
       action = "claimed";
     } else if (blob.post_shadow_note !== false && hd.operations.add_note) {
@@ -995,7 +997,7 @@ async function runTicketTriage(blob) {
           `Classification: ${cls}\n${ctx}` +
           `Summary: ${verdict.summary}\n` +
           `Would do: ${verdict.proposed_action}\n` +
-          `(Pilot: the AI only drafts; a human decides.)`,
+          `(Pilot: the AI only drafts; a human decides.)` + chatLink,
       });
       action = "shadow_note";
     }

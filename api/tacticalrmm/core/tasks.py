@@ -1748,9 +1748,9 @@ def triage_ai_ticket(state_pk, force=False):
         st.summary = (data.get("summary") or "")[:5000]
         st.proposed_action = (data.get("proposed_action") or "")[:5000]
         st.error_detail = ""
-        # Persist the decision request so the "Johnny 5 Need Input!" link works.
-        # Reuse the existing thread (append), or create one; never lose prior history.
-        if action == "needs_input" and decision_url:
+        # Persist the chat thread for EVERY triaged ticket (we post a chat link on
+        # every note now), reusing the durable per-ticket thread; never lose history.
+        if decision_url:
             from django.utils import timezone as _tz
 
             entry = {"role": "assistant", "content": st.proposed_action or st.summary,

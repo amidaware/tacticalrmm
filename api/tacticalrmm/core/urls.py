@@ -37,6 +37,8 @@ urlpatterns = [
     path("ai/email/", views.AISendEmail.as_view()),
     path("ai/device-note/", views.AIDeviceNote.as_view()),
     path("ai/resolve-devices/", views.AIResolveDevices.as_view()),
+    path("ai/schedule-action/", views.AIScheduleAction.as_view()),
+    path("ai/schedule-action/<int:pk>/", views.AIScheduleAction.as_view()),
     path("ai/decision/<str:token>/", views.AIDecisionView.as_view()),
     path("ai/runs/", views.AITaskRuns.as_view()),
     path("ai/history-scope/", views.AIHistoryScope.as_view()),

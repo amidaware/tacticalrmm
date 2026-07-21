@@ -1498,6 +1498,64 @@ class AIDecisionView(APIView):
         return Response({"reply": reply, "messages": d.messages, "status": d.status})
 
 
+class AIScheduleAction(APIView):
+    """Create/list AI scheduled actions (run once at a due time). Human-directed for
+    now - NOT created automatically by triage."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from core.models import AIScheduledAction
+
+        rows = AIScheduledAction.objects.select_related("agent").order_by("run_at")[:200]
+        return Response([{
+            "id": r.id, "ticket_ref": r.ticket_ref,
+            "agent": r.agent.hostname if r.agent else None,
+            "agent_id": r.agent.agent_id if r.agent else None,
+            "action": r.action, "run_at": r.run_at.isoformat(),
+            "status": r.status, "allow_mutating": r.allow_mutating,
+            "created_by": r.created_by, "result": r.result,
+        } for r in rows])
+
+    def post(self, request):
+        from django.utils import timezone as djangotime
+        from django.utils.dateparse import parse_datetime
+
+        from agents.models import Agent
+        from core.models import AIScheduledAction
+
+        raw = str(request.data.get("run_at") or "").strip()
+        run_at = parse_datetime(raw)
+        if not run_at:
+            return notify_error("run_at must be an ISO 8601 datetime (e.g. 2026-07-22T07:00:00Z).")
+        if djangotime.is_naive(run_at):
+            run_at = djangotime.make_aware(run_at, djangotime.get_current_timezone())
+        action = str(request.data.get("action") or "").strip()
+        if not action:
+            return notify_error("action is required.")
+        agent = None
+        aid = request.data.get("agent_id")
+        if aid:
+            agent = Agent.objects.filter(agent_id=aid).first()
+            if not agent:
+                return notify_error(f"agent not found: {aid}")
+        obj = AIScheduledAction.objects.create(
+            agent=agent, ticket_ref=(request.data.get("ticket_ref") or "")[:100],
+            action=action, run_at=run_at,
+            allow_mutating=bool(request.data.get("allow_mutating", True)),
+            created_by=getattr(request.user, "username", "")[:150],
+        )
+        return Response({"id": obj.id, "run_at": obj.run_at.isoformat(), "status": obj.status})
+
+    def delete(self, request, pk=None):
+        from core.models import AIScheduledAction
+
+        pk = pk or request.data.get("id")
+        obj = get_object_or_404(AIScheduledAction, pk=pk)
+        obj.delete()
+        return Response({"ok": True})
+
+
 class AIResolveDevices(APIView):
     """Link an Odoo company (+ optional requester username) to the RMM client and
     the user's device(s). Called by the pi-trmm-bridge during ticket resolution.

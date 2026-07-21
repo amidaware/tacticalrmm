@@ -1014,3 +1014,30 @@ class AIDecisionRequest(models.Model):
 
     def __str__(self) -> str:
         return f"decision {self.ticket_ref} [{self.status}]"
+
+
+class AIScheduledAction(models.Model):
+    """A future AI action to run at a specific time (e.g. patch in a maintenance
+    window). A cheap celery-beat dispatcher fires it ONCE when due - the LLM never
+    polls the clock. On success the row is deleted; on failure it's kept for review.
+    NOT created automatically by triage (human-directed for now)."""
+
+    agent = models.ForeignKey(
+        "agents.Agent", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="ai_scheduled_actions",
+    )
+    ticket_ref = models.CharField(max_length=100, blank=True, default="")
+    action = models.TextField()  # instruction for what to do at run time
+    run_at = models.DateTimeField()
+    status = models.CharField(max_length=20, default="scheduled")  # scheduled|running|done|error|cancelled
+    allow_mutating = models.BooleanField(default=True)
+    created_by = models.CharField(max_length=150, blank=True, default="")
+    result = models.TextField(blank=True, default="")
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["status", "run_at"])]
+
+    def __str__(self) -> str:
+        return f"scheduled {self.action[:30]} @ {self.run_at} [{self.status}]"

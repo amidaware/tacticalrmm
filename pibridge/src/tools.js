@@ -858,7 +858,7 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
 // question; the AI continues on the TICKET only - it can call any helpdesk
 // operation (read the ticket, reply, note, close/cancel, clear the tag, update
 // the AI KB) and look up devices, but has NO device shell access (that's Phase 3).
-export function buildDecisionTools({ helpdeskCode, helpdeskApi } = {}) {
+export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
@@ -898,5 +898,30 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi } = {}) {
     },
   });
 
-  return { tools: [helpdesk_call, find_devices], hd, hdError };
+  const schedule_action = defineTool({
+    name: "schedule_action",
+    label: "Schedule an action",
+    description:
+      "Schedule work to run AUTOMATICALLY at a specific time (e.g. a maintenance window). " +
+      "ONLY use this when the technician explicitly asks to schedule something - never on your " +
+      "own. The job runs ONCE at run_at on the given device, updates the ticket, then removes " +
+      "itself. Confirm the device, time, and action with the tech first.",
+    parameters: Type.Object({
+      agent_id: Type.String({ description: "Target device agent_id (from find_devices)" }),
+      run_at: Type.String({ description: "ISO 8601 datetime, e.g. 2026-07-22T07:00:00Z (UTC) or with offset" }),
+      action: Type.String({ description: "Exactly what to do at that time (clear, specific)" }),
+      allow_mutating: Type.Optional(Type.Boolean({ description: "Allow changes on the device (default true)" })),
+    }),
+    execute: async (_id, p) => {
+      try {
+        const out = await trmm.scheduleAction({
+          agent_id: p.agent_id, ticket_ref: ticketRef || "", action: p.action,
+          run_at: p.run_at, allow_mutating: p.allow_mutating !== false,
+        });
+        return text(JSON.stringify(out));
+      } catch (e) { return text("schedule_action failed: " + (e?.message || e)); }
+    },
+  });
+
+  return { tools: [helpdesk_call, find_devices, schedule_action], hd, hdError };
 }

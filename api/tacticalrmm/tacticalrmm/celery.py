@@ -90,6 +90,10 @@ app.conf.beat_schedule = {
         "task": "core.tasks.poll_helpdesk_tickets",
         "schedule": timedelta(seconds=90.0),
     },
+    "dispatch-due-ai-scheduled-actions": {
+        "task": "core.tasks.dispatch_due_ai_scheduled_actions",
+        "schedule": timedelta(seconds=60.0),
+    },
 }
 
 

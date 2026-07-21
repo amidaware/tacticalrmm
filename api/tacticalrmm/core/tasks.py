@@ -1744,3 +1744,75 @@ def triage_ai_ticket(state_pk):
             )
     st.save()
     return f"{st.ticket_ref}: {st.status} {st.classification}"
+
+
+# ---------------------------------------------------------------------------
+# AI scheduled actions: run a future AI action ONCE at its due time. A cheap
+# beat dispatcher (a DB timestamp check - no LLM) fires it; execution reuses the
+# device-run path so the AI can do the work AND update the ticket. Deleted on
+# success; kept (status=error) on failure for review.
+# ---------------------------------------------------------------------------
+
+@app.task
+def dispatch_due_ai_scheduled_actions():
+    """Beat (~1 min): enqueue any scheduled AI actions whose time has come."""
+    from django.utils import timezone as djangotime
+
+    from core.models import AIScheduledAction
+
+    core = get_core_settings()
+    if not core.ai_module_enabled:
+        return "ai disabled"
+    now = djangotime.now()
+    due = list(
+        AIScheduledAction.objects.filter(status="scheduled", run_at__lte=now).values_list("pk", flat=True)[:20]
+    )
+    for pk in due:
+        run_ai_scheduled_action.delay(pk)
+    return f"dispatched {len(due)}"
+
+
+@app.task
+def run_ai_scheduled_action(pk):
+    """Execute one due scheduled action on its device, update the ticket, then
+    delete the job (or mark error)."""
+    from core.models import AIScheduledAction
+
+    act = AIScheduledAction.objects.filter(pk=pk).first()
+    if not act or act.status != "scheduled":
+        return "skip"
+    act.status = "running"
+    act.save(update_fields=["status", "updated"])
+    model = _resolve_ai_model(None)
+    if not model:
+        act.status = "error"
+        act.result = "no enabled AI model/default configured"
+        act.save(update_fields=["status", "result", "updated"])
+        return act.result
+    if not act.agent:
+        act.status = "error"
+        act.result = "scheduled action has no target device"
+        act.save(update_fields=["status", "result", "updated"])
+        return act.result
+
+    prompt = act.action
+    if act.ticket_ref:
+        prompt += (
+            f"\n\nThis is scheduled work for {act.ticket_ref}. When finished, update that ticket "
+            f"via the helpdesk with exactly what you did (add a note; reply to the customer only if "
+            f"appropriate), then close it: an [Alert] ticket -> cancel_ticket, otherwise "
+            f"ai_close_ticket. Never delete data."
+        )
+    status, summary, output, ticket_error = _run_prompt_on_agent(
+        agent=act.agent, model=model, prompt=prompt,
+        allow_mutating=act.allow_mutating, run_id=f"sched-{act.pk}",
+    )
+    if status == "error":
+        act.status = "error"
+        act.result = (summary or "run error")[:5000]
+        act.save(update_fields=["status", "result", "updated"])
+        return f"error: {summary}"
+    # success -> delete the job (user preference: remove on completion)
+    ref = act.ticket_ref
+    act.delete()
+    return f"done + deleted (ticket {ref or 'n/a'}): {(summary or '')[:120]}"

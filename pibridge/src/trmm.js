@@ -116,4 +116,7 @@ export const trmm = {
   // client and the user's device(s). (TRMM: POST /core/ai/resolve-devices/)
   resolveDevices: ({ domain, company_name, username }, opts) =>
     req("POST", `/core/ai/resolve-devices/`, { domain, company_name, username }, opts),
+  // Schedule a future AI action (runs once at run_at). TRMM: POST /core/ai/schedule-action/
+  scheduleAction: ({ agent_id, ticket_ref, action, run_at, allow_mutating }, opts) =>
+    req("POST", `/core/ai/schedule-action/`, { agent_id, ticket_ref, action, run_at, allow_mutating }, opts),
 };

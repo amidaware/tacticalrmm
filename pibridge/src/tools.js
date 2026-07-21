@@ -1056,6 +1056,26 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allow
     },
   });
 
+  const save_device_note = defineTool({
+    name: "save_device_note",
+    label: "Save device note",
+    description:
+      "Save a durable, DEVICE-SPECIFIC fact to a machine's Pi.dev memory (the per-device notes in " +
+      "RMM) so future Pi runs on THAT device start with this context. Use this - NOT the KB - for " +
+      "anything tied to one machine: its role/purpose, disk/volume/pool layout, service/container " +
+      "names, install paths, hardware quirks, and fixes that worked on it. Get agent_id from " +
+      "find_devices. Keep each note to ONE short line (~200 chars). Never save secrets, transient " +
+      "state, or personal data.",
+    parameters: Type.Object({
+      agent_id: Type.String({ description: "Target device agent_id (from find_devices)" }),
+      note: Type.String({ description: "One concise, durable fact about this device." }),
+    }),
+    execute: async (_id, p, signal) => {
+      try { await trmm.saveDeviceNote(p.agent_id, p.note, { signal }); return text("Saved to device memory."); }
+      catch (e) { return text("Could not save device note: " + (e?.message || e)); }
+    },
+  });
+
   const schedule_action = defineTool({
     name: "schedule_action",
     label: "Schedule an action",
@@ -1108,5 +1128,5 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allow
     },
   });
 
-  return { tools: [helpdesk_call, find_devices, run_device_command, schedule_action, send_email, ...webTools()], hd, hdError };
+  return { tools: [helpdesk_call, find_devices, run_device_command, save_device_note, schedule_action, send_email, ...webTools()], hd, hdError };
 }

@@ -60,7 +60,7 @@ function decisionToolLabel(name, args) {
   const map = {
     get_ticket: "Reading the ticket", resolve_client: "Looking up the customer",
     find_devices: "Finding the device(s)", list_kb_articles: "Checking the knowledge base",
-    get_kb_article: "Reading a KB article", run_device_command: "Running a command on the device",
+    get_kb_article: "Reading a KB article", save_device_note: "Saving a device note", run_device_command: "Running a command on the device",
     web_search: "Searching the web", web_fetch: "Reading a web page",
     send_email: "Sending an email", schedule_action: "Scheduling an action",
   };
@@ -85,6 +85,9 @@ const DEFAULT_DECISION_POLICY =
   `RESEARCH: use web_search/web_fetch for how-to steps or vendor docs, then draft clear steps.\n` +
   `DEVICE FIXING: run_device_command diagnoses/fixes. Non-disruptive fixes run freely; reboots / service-stops / data-loss are REFUSED unless device changes are approved this turn. Diagnose read-only first, explain what you'll change, then do it. Never delete data.\n` +
   `EMAIL: send_email is for INTERNAL/STAFF/VENDOR mail (purchase recommendations, parts orders). For CUSTOMER communication use reply_to_ticket / resolve_ticket so it stays on the ticket thread.\n` +
+  `MEMORY - TWO SEPARATE STORES, do not mix them:\n` +
+  `  - save_device_note = DEVICE-SPECIFIC facts about ONE machine (its role, disk/volume/pool layout, service/container names, hardware quirks, a fix that worked on it, how to verify its health). Anything tied to a specific host goes here, NOT the KB.\n` +
+  `  - upsert_ai_kb_article = GENERAL guidance for working with this CLIENT (their standards/preferences, key contacts, naming conventions, recurring procedures that apply across their fleet). Never put a specific device's history or one-off event into the KB.\n` +
   `SCHEDULING: only when the tech asks, use schedule_action (device agent_id, ISO 8601 run_at, instruction) - it runs once at that time and updates the ticket.\n` +
   `CONTENT RULE: reply_to_ticket / resolve_ticket / add_note MUST contain the ACTUAL written text - never call them with empty content (empty messages are rejected, so a blank reply can never reach the customer).\n` +
   `COMPLETION POLICY: NEVER close a ticket a person filed without telling the customer. To FINISH a worked ticket, use resolve_ticket with (1) internal_note = a review of what was done, and (2) customer_html = a polished, friendly HTML reply (inline styles) confirming it's resolved + next steps. For a pure monitoring alert with NO human requester, internal_note only (or cancel=true for junk).\n` +

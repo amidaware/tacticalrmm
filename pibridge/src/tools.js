@@ -1044,5 +1044,32 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allow
     },
   });
 
-  return { tools: [helpdesk_call, find_devices, run_device_command, schedule_action, ...webTools()], hd, hdError };
+  const send_email = defineTool({
+    name: "send_email",
+    label: "Send email",
+    description:
+      "Send an email through the RMM server's SMTP (the same mail Pi.dev uses everywhere). Use this " +
+      "for INTERNAL / STAFF / VENDOR email - e.g. sending a purchase recommendation to procurement, a " +
+      "heads-up to a colleague, or a parts order. For CUSTOMER communication ABOUT the ticket use " +
+      "reply_to_ticket / resolve_ticket instead (keeps it on the ticket thread). Supports HTML with " +
+      "inline styles plus a plain-text fallback.",
+    parameters: Type.Object({
+      to: Type.String({ description: "Recipient email address(es), comma-separated" }),
+      subject: Type.String({ description: "Subject line" }),
+      body: Type.String({ description: "Plain-text body (also the fallback for HTML clients)" }),
+      html: Type.Optional(Type.String({ description: "Optional HTML body (inline styles only)" })),
+      from_name: Type.Optional(Type.String({ description: "Optional sender display name" })),
+    }),
+    execute: async (_id, p, signal) => {
+      try {
+        const out = await trmm.sendEmail(
+          { to: p.to, subject: p.subject, body: p.body, html: p.html, from_name: p.from_name },
+          { signal },
+        );
+        return text(typeof out === "string" ? out : JSON.stringify(out));
+      } catch (e) { return text("send_email failed: " + (e?.message || e)); }
+    },
+  });
+
+  return { tools: [helpdesk_call, find_devices, run_device_command, schedule_action, send_email, ...webTools()], hd, hdError };
 }

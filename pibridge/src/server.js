@@ -1035,6 +1035,9 @@ async function runDecisionChat(blob) {
       `RESEARCH: use web_search / web_fetch to look up how-to steps or vendor docs (e.g. how to accept a` +
       ` Google Drive shared link), then draft clear steps - reply to the customer (if approved) or add a` +
       ` staff note for a tech. Use find_devices with the requester's username AND full person_name; for a server/infra device named in the ticket, pass its hostname (e.g. pve245).\n` +
+      `EMAIL: use send_email for INTERNAL/STAFF/VENDOR email (e.g. send a purchase recommendation or parts` +
+      ` order to procurement) - it goes through the RMM SMTP. For CUSTOMER communication about the ticket` +
+      ` use reply_to_ticket / resolve_ticket instead so it stays on the ticket thread.\n` +
       `DEVICE FIXING: use run_device_command (with an agent_id from find_devices) to DIAGNOSE and FIX.` +
       ` Non-disruptive fixes run freely; reboots/service-stops/data-loss are refused unless the tech` +
       ` approved disruptive changes this turn (${blob.allow_device_changes ? "APPROVED now" : "NOT approved now"}).` +

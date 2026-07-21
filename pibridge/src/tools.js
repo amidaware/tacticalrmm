@@ -737,10 +737,15 @@ export function buildReportTools({ helpdeskCode, helpdeskApi } = {}) {
 // cannot close, reply, assign, or touch anything.
 export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
-  const verdict = { classification: "", summary: "", proposed_action: "" };
+  const verdict = { classification: "", summary: "", proposed_action: "", needs_input: false, client: "", affected_device: "" };
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
   catch (e) { hdError = e.message; }
+  const hdcall = async (op, args) => {
+    if (!hd || !hd.operations[op]) return text(`operation ${op} not available`);
+    try { const out = await hd.operations[op](args); return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 20000)); }
+    catch (e) { return text(`${op} failed: ${e?.message || e}`); }
+  };
 
   const get_ticket = defineTool({
     name: "get_ticket",
@@ -764,6 +769,55 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
     },
   });
 
+  const resolve_client = defineTool({
+    name: "resolve_client",
+    label: "Resolve customer company",
+    description:
+      "Find the customer COMPANY (Odoo partner) from the requester's email or domain" +
+      " (best-match roll-up). Use for regular tickets to know which client it's for.",
+    parameters: Type.Object({
+      email: Type.Optional(Type.String({ description: "Requester email" })),
+      domain: Type.Optional(Type.String({ description: "Email domain (if no email)" })),
+    }),
+    execute: async (_id, p) => hdcall("resolve_client_by_domain", { email: p.email, domain: p.domain }),
+  });
+
+  const find_devices = defineTool({
+    name: "find_devices",
+    label: "Find the user's device(s)",
+    description:
+      "Given the customer company (domain/name) and optionally the requester's" +
+      " username (email local part), find the matching RMM client and the user's" +
+      " device(s) + candidate devices. READ-ONLY.",
+    parameters: Type.Object({
+      domain: Type.Optional(Type.String()),
+      company_name: Type.Optional(Type.String()),
+      username: Type.Optional(Type.String({ description: "Requester username or email" })),
+    }),
+    execute: async (_id, p) => {
+      try {
+        const out = await trmm.resolveDevices({ domain: p.domain, company_name: p.company_name, username: p.username });
+        return text(JSON.stringify(out).slice(0, 20000));
+      } catch (e) { return text(`find_devices failed: ${e?.message || e}`); }
+    },
+  });
+
+  const list_kb_articles = defineTool({
+    name: "list_kb_articles",
+    label: "List company KB articles",
+    description: "List the company's IT knowledge-base article titles (by partner_id). Read the relevant one before proposing steps.",
+    parameters: Type.Object({ partner_id: Type.Number() }),
+    execute: async (_id, p) => hdcall("list_kb_articles", { partner_id: p.partner_id }),
+  });
+
+  const get_kb_article = defineTool({
+    name: "get_kb_article",
+    label: "Read a KB article",
+    description: "Read one knowledge-base article's content (procedures for this company).",
+    parameters: Type.Object({ id: Type.Number() }),
+    execute: async (_id, p) => hdcall("get_kb_article", { id: p.id }),
+  });
+
   const submit_triage = defineTool({
     name: "submit_triage",
     label: "Submit triage verdict",
@@ -771,27 +825,30 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
       "Record your triage verdict for THIS ticket. Call EXACTLY ONCE, then stop." +
       " classification: alert_clean (informational/successful alert - nothing to do)," +
       " alert_actionable (alert that needs work), regular (a human/customer request)," +
-      " or unknown. proposed_action = what you WOULD do (this is shadow mode - a" +
-      " human reviews your draft; you cannot act).",
+      " or unknown. Set needs_input=true if a human must decide before anything can" +
+      " safely proceed (ambiguous, can't identify the device/customer, risky).",
     parameters: Type.Object({
-      classification: Type.String({
-        description: "One of: alert_clean | alert_actionable | regular | unknown",
-      }),
+      classification: Type.String({ description: "alert_clean | alert_actionable | regular | unknown" }),
       summary: Type.String({ description: "1-2 sentence summary of what the ticket is" }),
-      proposed_action: Type.String({
-        description:
-          "Concise draft of what you would do (e.g. 'move to AI Closed - successful" +
-          " backup, nothing actionable' or 'investigate low disk on X, then reply')",
-      }),
+      proposed_action: Type.String({ description: "Concise draft of what you would do (with the client/device/KB you found)" }),
+      needs_input: Type.Optional(Type.Boolean({ description: "true if a human decision is required first" })),
+      client: Type.Optional(Type.String({ description: "Resolved customer/RMM client, if known" })),
+      affected_device: Type.Optional(Type.String({ description: "The device this concerns, if identified" })),
     }),
     execute: async (_id, p) => {
       const c = (p.classification || "").toLowerCase().trim();
       verdict.classification = ["alert_clean", "alert_actionable", "regular", "unknown"].includes(c) ? c : "unknown";
       verdict.summary = p.summary || "";
       verdict.proposed_action = p.proposed_action || "";
+      verdict.needs_input = !!p.needs_input;
+      verdict.client = p.client || "";
+      verdict.affected_device = p.affected_device || "";
       return text("Triage recorded. Stop now.");
     },
   });
 
-  return { tools: [get_ticket, submit_triage], verdict, hd, hdError };
+  return {
+    tools: [get_ticket, resolve_client, find_devices, list_kb_articles, get_kb_article, submit_triage],
+    verdict, hd, hdError,
+  };
 }

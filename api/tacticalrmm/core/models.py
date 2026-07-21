@@ -163,6 +163,11 @@ class CoreSettings(BaseAuditModel):
     # the helpdesk.js cancel_ticket op; actionable alerts are claimed (assigned to
     # the AI bot) and annotated, left open for work. When False = shadow only.
     ai_ticket_act_on_alerts = models.BooleanField(default=False)
+    # Optional overrides for Odoo-company -> RMM-client linking when fuzzy name
+    # matching isn't confident (acronyms, renames). JSON:
+    #   {"by_domain": {"example.com": "RMM Client Name"},
+    #    "by_company": {"Odoo Company Name": "RMM Client Name"}}
+    ai_ticket_client_map = models.TextField(blank=True, default="")
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)

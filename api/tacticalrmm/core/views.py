@@ -1428,6 +1428,130 @@ class AIDeviceNote(APIView):
         return Response({"ok": True, "notes": agent.ai_notes})
 
 
+class AIResolveDevices(APIView):
+    """Link an Odoo company (+ optional requester username) to the RMM client and
+    the user's device(s). Called by the pi-trmm-bridge during ticket resolution.
+
+    Body: {domain?, company_name?, username?}
+    Returns: {rmm_client, match_method, confidence, agents:[...], candidates:[...]}
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    _STOP = {"the", "and", "inc", "llc", "pc", "co", "company", "corp",
+             "group", "of", "services", "service", "pa", "ltd", "lp"}
+
+    @classmethod
+    def _toks(cls, s):
+        import re
+        return {t for t in re.sub(r"[^a-z0-9 ]", " ", (s or "").lower()).split()
+                if t and t not in cls._STOP}
+
+    @staticmethod
+    def _norm(s):
+        import re
+        return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+    def _find_client(self, domain, company_name):
+        import json
+
+        from clients.models import Client
+
+        core = get_core_settings()
+        try:
+            cmap = json.loads(core.ai_ticket_client_map or "{}")
+        except Exception:
+            cmap = {}
+        clients = list(Client.objects.all())
+        by_name = {self._norm(c.name): c for c in clients}
+        # 1) explicit override (domain then company)
+        ov = (cmap.get("by_domain", {}) or {}).get((domain or "").lower()) \
+            or (cmap.get("by_company", {}) or {}).get(company_name or "")
+        if ov and self._norm(ov) in by_name:
+            return by_name[self._norm(ov)], "override", 1.0
+        # 2) exact normalized name match
+        if company_name and self._norm(company_name) in by_name:
+            return by_name[self._norm(company_name)], "exact_name", 1.0
+        # 3) fuzzy token overlap (fraction of the RMM client's tokens covered)
+        ct = self._toks(company_name)
+        best, score = None, 0.0
+        if ct:
+            for c in clients:
+                rt = self._toks(c.name)
+                if not rt:
+                    continue
+                inter = len(rt & ct)
+                if not inter:
+                    continue
+                s = inter / max(len(rt), len(ct))
+                if s > score:
+                    best, score = c, s
+        if best and score >= 0.6:
+            return best, "fuzzy", round(score, 2)
+        return None, "none", 0.0
+
+    def post(self, request):
+        from agents.models import Agent
+
+        domain = (request.data.get("domain") or "").strip().lower()
+        company_name = (request.data.get("company_name") or "").strip()
+        username = (request.data.get("username") or "").strip()
+        if username and "@" in username:
+            username = username.split("@", 1)[0]
+        if username and "\\" in username:
+            username = username.split("\\", 1)[-1]
+
+        client, method, confidence = self._find_client(domain, company_name)
+        if not client:
+            return Response({
+                "rmm_client": None, "match_method": "none", "confidence": 0.0,
+                "agents": [], "candidates": [],
+                "note": "No confident RMM client match; add an override in ai_ticket_client_map or ask a human.",
+            })
+
+        base_url = (settings.CORS_ORIGIN_WHITELIST[0]
+                    if getattr(settings, "CORS_ORIGIN_WHITELIST", None) else "")
+
+        def _agent_dict(a):
+            return {
+                "agent_id": a.agent_id,
+                "hostname": a.hostname,
+                "os": a.operating_system,
+                "plat": a.plat,
+                "logged_in_user": a.logged_in_username,
+                "last_user": a.last_logged_in_user,
+                "last_seen": str(a.last_seen) if a.last_seen else None,
+                "online": a.status == "online" if hasattr(a, "status") else None,
+                "device_url": f"{base_url}/agents/{a.agent_id}" if base_url else "",
+            }
+
+        agents = list(
+            Agent.objects.filter(site__client=client)
+            .select_related("site", "site__client")
+            .only("agent_id", "hostname", "operating_system", "plat",
+                  "logged_in_username", "last_logged_in_user", "last_seen", "site")
+        )
+        matched = []
+        if username:
+            u = username.lower()
+            for a in agents:
+                li = (a.logged_in_username or "").split("\\")[-1].lower()
+                lu = (a.last_logged_in_user or "").split("\\")[-1].lower()
+                if u and (u == li or u == lu):
+                    matched.append(a)
+        # candidates = client's agents (cap), so a human/AI can pick if no exact user match
+        candidates = agents[:50]
+        return Response({
+            "rmm_client": client.name,
+            "match_method": method,
+            "confidence": confidence,
+            "username_searched": username or None,
+            "agents": [_agent_dict(a) for a in matched],
+            "candidates": [_agent_dict(a) for a in candidates],
+            "agent_count": len(agents),
+        })
+
+
 class GetAddBulkAICommand(APIView):
     permission_classes = [IsAuthenticated, BulkAIPerms]
 

@@ -1657,6 +1657,7 @@ def triage_ai_ticket(state_pk):
             json={
                 "ticket_ref": st.ticket_ref,
                 "is_alert": st.is_alert,
+                "requester_email": st.requester or "",
                 "provider": model.provider.name,
                 "model_id": model.model_id,
                 "api_key": model.provider.api_key,
@@ -1686,6 +1687,7 @@ def triage_ai_ticket(state_pk):
         st.status = {
             "cancelled": "cancelled_clean",
             "claimed": "actionable_claimed",
+            "needs_input": "needs_input",
         }.get(action, "triaged")
         st.classification = (data.get("classification") or "unknown")[:40]
         st.summary = (data.get("summary") or "")[:5000]

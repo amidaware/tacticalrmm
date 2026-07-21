@@ -112,4 +112,8 @@ export const trmm = {
   // system prompt.
   saveDeviceNote: (agentId, note, opts) =>
     req("POST", `/core/ai/device-note/`, { agent_id: agentId, note }, opts),
+  // Link an Odoo company (domain/name) + optional requester username to the RMM
+  // client and the user's device(s). (TRMM: POST /core/ai/resolve-devices/)
+  resolveDevices: ({ domain, company_name, username }, opts) =>
+    req("POST", `/core/ai/resolve-devices/`, { domain, company_name, username }, opts),
 };

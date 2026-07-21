@@ -1475,6 +1475,8 @@ class AIDecisionView(APIView):
                 json={
                     "ticket_ref": d.ticket_ref, "question": d.question, "context": d.context,
                     "messages": messages,
+                    "allow_device_changes": bool(request.data.get("allow_device_changes")),
+                    "allow_customer_reply": bool(request.data.get("allow_customer_reply")),
                     "provider": model.provider.name, "model_id": model.model_id,
                     "api_key": model.provider.api_key, "thinking_level": model.thinking_level,
                     "helpdesk_api": {
@@ -1618,11 +1620,37 @@ class AIResolveDevices(APIView):
             return best, "fuzzy", round(score, 2)
         return None, "none", 0.0
 
+    @staticmethod
+    def _nuser(s):
+        import re
+        s = (s or "").split("\\")[-1].split("@")[0]
+        return re.sub(r"[^a-z0-9]", "", s.lower())
+
+    def _name_candidates(self, username, person_name):
+        """Normalized login-name guesses from the email local part + the person's
+        display name (handles KatlynKumernitsky vs 'Katlyn Kumernitsky', kkumernitsky,
+        katlyn.kumernitsky, kumernitsky, etc.)."""
+        import re
+
+        cands = set()
+        if username:
+            cands.add(self._nuser(username))
+        parts = [p for p in re.split(r"[^A-Za-z0-9]+", person_name or "") if p]
+        if parts:
+            first, last = parts[0].lower(), parts[-1].lower()
+            cands.update({
+                self._nuser(person_name), first + last, last + first,
+                first[:1] + last, last + first[:1], first + last[:1], last,
+            })
+        return {c for c in cands if len(c) >= 4}
+
     def post(self, request):
         from agents.models import Agent
 
         domain = (request.data.get("domain") or "").strip().lower()
         company_name = (request.data.get("company_name") or "").strip()
+        person_name = (request.data.get("person_name") or "").strip()
+        hostname = (request.data.get("hostname") or "").strip()
         username = (request.data.get("username") or "").strip()
         if username and "@" in username:
             username = username.split("@", 1)[0]
@@ -1659,14 +1687,30 @@ class AIResolveDevices(APIView):
             .only("agent_id", "hostname", "operating_system", "plat",
                   "logged_in_username", "last_logged_in_user", "last_seen", "site")
         )
+        cands = self._name_candidates(username, person_name)
         matched = []
-        if username:
-            u = username.lower()
+        if cands:
             for a in agents:
-                li = (a.logged_in_username or "").split("\\")[-1].lower()
-                lu = (a.last_logged_in_user or "").split("\\")[-1].lower()
-                if u and (u == li or u == lu):
+                keys = {self._nuser(a.logged_in_username), self._nuser(a.last_logged_in_user)}
+                keys.discard("")
+                # strong match: a normalized login equals one of our name candidates
+                if keys & cands:
                     matched.append(a)
+
+        # Hostname lookup - the right way to find a SERVER/infra device named in a
+        # ticket (e.g. pve245). Search within the client first, then globally.
+        host_matches = []
+        if hostname:
+            hl = hostname.lower()
+            host_matches = [a for a in agents if hl in (a.hostname or "").lower()]
+            if not host_matches:
+                extra = (
+                    Agent.objects.filter(hostname__icontains=hostname)
+                    .select_related("site", "site__client")
+                    .only("agent_id", "hostname", "operating_system", "plat",
+                          "logged_in_username", "last_logged_in_user", "last_seen", "site")[:20]
+                )
+                host_matches = list(extra)
         # candidates = client's agents (cap), so a human/AI can pick if no exact user match
         candidates = agents[:50]
         return Response({
@@ -1674,6 +1718,9 @@ class AIResolveDevices(APIView):
             "match_method": method,
             "confidence": confidence,
             "username_searched": username or None,
+            "name_candidates": sorted(cands),
+            "hostname_searched": hostname or None,
+            "hostname_matches": [_agent_dict(a) for a in host_matches],
             "agents": [_agent_dict(a) for a in matched],
             "candidates": [_agent_dict(a) for a in candidates],
             "agent_count": len(agents),

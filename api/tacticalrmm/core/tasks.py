@@ -1798,10 +1798,11 @@ def run_ai_scheduled_action(pk):
     prompt = act.action
     if act.ticket_ref:
         prompt += (
-            f"\n\nThis is scheduled work for {act.ticket_ref}. When finished, update that ticket "
-            f"via the helpdesk with exactly what you did (add a note; reply to the customer only if "
-            f"appropriate), then close it: an [Alert] ticket -> cancel_ticket, otherwise "
-            f"ai_close_ticket. Never delete data."
+            f"\n\nThis is scheduled work for {act.ticket_ref}. When finished, FINISH the ticket via the "
+            f"helpdesk resolve_ticket operation with (1) internal_note = a review of exactly what you "
+            f"did, and (2) customer_html = a polished, friendly HTML reply (inline styles) telling the "
+            f"customer it's resolved and what was done. For a pure monitoring alert with no human "
+            f"requester, internal_note only (or cancel=true for junk). Never delete data."
         )
     status, summary, output, ticket_error = _run_prompt_on_agent(
         agent=act.agent, model=model, prompt=prompt,

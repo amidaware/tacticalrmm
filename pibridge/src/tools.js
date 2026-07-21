@@ -3,6 +3,67 @@ import { Type } from "typebox";
 import { trmm } from "./trmm.js";
 import { loadHelpdesk } from "./helpdesk-runtime.js";
 
+// --- Web research (the bridge host has internet) -----------------------------
+function _stripHtml(h) {
+  return String(h || "")
+    .replace(/&amp;/g, "&").replace(/&#x27;/g, "'").replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ")
+    .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+async function _webSearch(query, n = 6) {
+  const res = await fetch("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query), {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; PiDevAI/1.0)" },
+  });
+  const html = await res.text();
+  const links = [], snips = [];
+  let m;
+  const linkRe = /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+  const snipRe = /class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+  while ((m = linkRe.exec(html))) {
+    let url = m[1];
+    const u = url.match(/uddg=([^&]+)/);
+    if (u) url = decodeURIComponent(u[1]);
+    links.push({ url, title: _stripHtml(m[2]) });
+  }
+  while ((m = snipRe.exec(html))) snips.push(_stripHtml(m[1]));
+  return links.slice(0, n).map((l, i) => ({ ...l, snippet: snips[i] || "" }));
+}
+async function _webFetch(url) {
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; PiDevAI/1.0)" }, redirect: "follow" });
+  let html = await res.text();
+  html = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
+  return _stripHtml(html).slice(0, 9000);
+}
+export function webTools() {
+  const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
+  const web_search = defineTool({
+    name: "web_search",
+    label: "Web search",
+    description:
+      "Search the web for how-to steps, vendor documentation, or error lookups (e.g. 'how to " +
+      "accept a Google Drive shared link'). Returns top results with titles, URLs and snippets; " +
+      "use web_fetch to read a promising page before you write instructions.",
+    parameters: Type.Object({ query: Type.String({ description: "Search query" }) }),
+    execute: async (_id, p) => {
+      try {
+        const r = await _webSearch(p.query);
+        return text(r.map((x, i) => `${i + 1}. ${x.title}\n   ${x.url}\n   ${x.snippet}`).join("\n\n") || "(no results)");
+      } catch (e) { return text("web_search failed: " + (e?.message || e)); }
+    },
+  });
+  const web_fetch = defineTool({
+    name: "web_fetch",
+    label: "Fetch web page",
+    description: "Fetch a URL and return its readable text (to read a how-to/doc page found via web_search).",
+    parameters: Type.Object({ url: Type.String({ description: "URL to fetch" }) }),
+    execute: async (_id, p) => {
+      try { return text(await _webFetch(p.url)); }
+      catch (e) { return text("web_fetch failed: " + (e?.message || e)); }
+    },
+  });
+  return [web_search, web_fetch];
+}
+
 // Best-effort classification of a shell/powershell command as "mutating" (i.e.
 // it changes the system) so a READ-ONLY session can refuse it. This is a
 // guardrail, not a sandbox: arbitrary shell can be obfuscated. The hard
@@ -737,7 +798,7 @@ export function buildReportTools({ helpdeskCode, helpdeskApi } = {}) {
 // cannot close, reply, assign, or touch anything.
 export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
-  const verdict = { classification: "", summary: "", proposed_action: "", needs_input: false, client: "", affected_device: "" };
+  const verdict = { classification: "", summary: "", proposed_action: "", needs_input: false, can_help: false, client: "", affected_device: "" };
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
   catch (e) { hdError = e.message; }
@@ -793,10 +854,12 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
       domain: Type.Optional(Type.String()),
       company_name: Type.Optional(Type.String()),
       username: Type.Optional(Type.String({ description: "Requester username or email" })),
+      person_name: Type.Optional(Type.String({ description: "Requester FULL NAME from the ticket contact - greatly improves matching (e.g. 'Katlyn Kumernitsky' matches login KatlynKumernitsky)" })),
+      hostname: Type.Optional(Type.String({ description: "A device/server HOSTNAME named in the ticket (e.g. pve245) - the right way to find servers/infrastructure" })),
     }),
     execute: async (_id, p) => {
       try {
-        const out = await trmm.resolveDevices({ domain: p.domain, company_name: p.company_name, username: p.username });
+        const out = await trmm.resolveDevices({ domain: p.domain, company_name: p.company_name, username: p.username, person_name: p.person_name, hostname: p.hostname });
         return text(JSON.stringify(out).slice(0, 20000));
       } catch (e) { return text(`find_devices failed: ${e?.message || e}`); }
     },
@@ -832,6 +895,7 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
       summary: Type.String({ description: "1-2 sentence summary of what the ticket is" }),
       proposed_action: Type.String({ description: "Concise draft of what you would do (with the client/device/KB you found)" }),
       needs_input: Type.Optional(Type.Boolean({ description: "true if a human decision is required first" })),
+      can_help: Type.Optional(Type.Boolean({ description: "true if you (an AI IT tech with device access, ticket tools and the company KB) can realistically resolve or make real progress on this" })),
       client: Type.Optional(Type.String({ description: "Resolved customer/RMM client, if known" })),
       affected_device: Type.Optional(Type.String({ description: "The device this concerns, if identified" })),
     }),
@@ -841,6 +905,7 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
       verdict.summary = p.summary || "";
       verdict.proposed_action = p.proposed_action || "";
       verdict.needs_input = !!p.needs_input;
+      verdict.can_help = !!p.can_help;
       verdict.client = p.client || "";
       verdict.affected_device = p.affected_device || "";
       return text("Triage recorded. Stop now.");
@@ -848,7 +913,7 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
   });
 
   return {
-    tools: [get_ticket, resolve_client, find_devices, list_kb_articles, get_kb_article, submit_triage],
+    tools: [get_ticket, resolve_client, find_devices, list_kb_articles, get_kb_article, ...webTools(), submit_triage],
     verdict, hd, hdError,
   };
 }
@@ -858,7 +923,25 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
 // question; the AI continues on the TICKET only - it can call any helpdesk
 // operation (read the ticket, reply, note, close/cancel, clear the tag, update
 // the AI KB) and look up devices, but has NO device shell access (that's Phase 3).
-export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef } = {}) {
+// Destructive/disruptive command patterns: reboots, service STOP/disable (downtime),
+// and data-loss/format. These need explicit approval in the decision chat; everything
+// else (diagnostics + non-disruptive fixes like restarting a stuck spooler) is allowed.
+const DESTRUCTIVE = [
+  /\b(reboot|shutdown|halt|poweroff|telinit|init\s+[06])\b/i,
+  /\bRestart-Computer\b/i, /\bStop-Computer\b/i, /\bshutdown(\.exe)?\b/i,
+  /\brm\s+-|\brmdir\b|\bunlink\b|\bshred\b|\bmkfs|\bfdisk\b|\bparted\b|\bwipefs\b|\bdd\s+if=|\btruncate\b/i,
+  /\bRemove-Item\b/i, /\bFormat-Volume\b/i, /\bformat\b(?!-)/i, /\bdiskpart\b/i,
+  /\b(del|erase)\s+\/|\bdel\s+\S|\berase\s+\S/i,
+  /\bsystemctl\s+(stop|disable|mask)\b/i, /\bservice\s+\S+\s+stop\b/i,
+  /\bStop-Service\b/i, /\bnet(\.exe)?\s+stop\b/i, /\bsc(\.exe)?\s+(stop|delete|config)\b/i,
+  /\b(qm|pct)\s+(stop|destroy|delete|rollback)\b/i, /\bzpool\s+(destroy|detach|remove|offline)\b/i,
+];
+function isDestructive(cmd) {
+  const c = String(cmd || "");
+  return DESTRUCTIVE.some((re) => re.test(c));
+}
+
+export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allowDeviceChanges, allowCustomerReply } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
@@ -878,8 +961,44 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef } = {}
     }),
     execute: async (_id, p) => {
       if (!hd || !hd.operations[p.operation]) return text(`operation ${p.operation} not available`);
+      // Customer-email gate: reply_to_ticket only when the tech approved it this turn.
+      if (p.operation === "reply_to_ticket" && !allowCustomerReply)
+        return text("Customer email is NOT approved this turn. Draft the reply text for the technician to review and ask them to enable 'Allow sending customer email' before you send it.");
       try { const out = await hd.operations[p.operation](p.args || {}); return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 20000)); }
       catch (e) { return text(`${p.operation} failed: ${e?.message || e}`); }
+    },
+  });
+
+  const run_device_command = defineTool({
+    name: "run_device_command",
+    label: "Run device command",
+    description:
+      "Run a command on a device to DIAGNOSE or FIX an issue (Phase 3). Get the agent_id from " +
+      "find_devices. Non-disruptive commands (diagnostics, restarting a stuck service like the " +
+      "print spooler, clearing a stuck queue, re-adding a printer) run freely. Anything " +
+      "DESTRUCTIVE/DISRUPTIVE - reboots, stopping/disabling a service (downtime), deleting data, " +
+      "formatting - is REFUSED unless the technician has approved changes this turn. NEVER delete " +
+      "data. Prefer read-only diagnosis first.",
+    parameters: Type.Object({
+      agent_id: Type.String({ description: "Target device agent_id (from find_devices)" }),
+      shell: Type.String({ description: "powershell | cmd | bash" }),
+      command: Type.String({ description: "The command to run" }),
+      timeout: Type.Optional(Type.Number({ description: "Seconds (default 45)" })),
+    }),
+    execute: async (_id, p, signal) => {
+      if (isDestructive(p.command) && !allowDeviceChanges)
+        return text(
+          "REFUSED: that command is destructive/disruptive (reboot, service stop, or data loss). " +
+          "It needs approval - ask the technician to enable 'Allow disruptive changes' this turn, " +
+          "or schedule it with schedule_action. Non-disruptive fixes are allowed without approval.",
+        );
+      try {
+        const out = await trmm.sendCmd(p.agent_id, {
+          shell: p.shell || "powershell", cmd: p.command,
+          timeout: p.timeout && p.timeout > 0 ? p.timeout : 45,
+        }, { signal });
+        return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 20000));
+      } catch (e) { return text("run_device_command failed: " + (e?.message || e)); }
     },
   });
 
@@ -891,9 +1010,11 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef } = {}
       domain: Type.Optional(Type.String()),
       company_name: Type.Optional(Type.String()),
       username: Type.Optional(Type.String()),
+      person_name: Type.Optional(Type.String({ description: "Requester full name (improves matching)" })),
+      hostname: Type.Optional(Type.String({ description: "A device/server HOSTNAME named in the ticket (e.g. pve245) - the right way to find servers/infrastructure" })),
     }),
     execute: async (_id, p) => {
-      try { return text(JSON.stringify(await trmm.resolveDevices({ domain: p.domain, company_name: p.company_name, username: p.username })).slice(0, 20000)); }
+      try { return text(JSON.stringify(await trmm.resolveDevices({ domain: p.domain, company_name: p.company_name, username: p.username, person_name: p.person_name, hostname: p.hostname })).slice(0, 20000)); }
       catch (e) { return text(`find_devices failed: ${e?.message || e}`); }
     },
   });
@@ -923,5 +1044,5 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef } = {}
     },
   });
 
-  return { tools: [helpdesk_call, find_devices, schedule_action], hd, hdError };
+  return { tools: [helpdesk_call, find_devices, run_device_command, schedule_action, ...webTools()], hd, hdError };
 }

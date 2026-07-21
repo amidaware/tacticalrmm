@@ -965,8 +965,10 @@ async function runTicketTriage(blob) {
   // it (summary/plan) - models don't always fill the structured field for alerts.
   const hay = `${verdict.client} ${verdict.affected_device} ${verdict.summary} ${verdict.proposed_action}`.toLowerCase();
   const inActClient = (!!verdict.client && actClients.includes(verdict.client.toLowerCase().trim()))
-    || actClients.some((c) => c.length > 3 && hay.includes(c));
-  const act = !!blob.act_enabled && (inActDom || inActClient);
+    || actClients.some((c) => c !== "*" && c.length > 3 && hay.includes(c));
+  // Wildcard: a single "*" in either list means EVERYONE/EVERYTHING (act on all).
+  const actAll = actDomains.includes("*") || actClients.includes("*");
+  const act = !!blob.act_enabled && (actAll || inActDom || inActClient);
   const ctx = (verdict.client ? `Client: ${verdict.client}\n` : "") +
               (verdict.affected_device ? `Device: ${verdict.affected_device}\n` : "");
   // ALWAYS include a chat link on every ticket the AI touches so a human can jump in.

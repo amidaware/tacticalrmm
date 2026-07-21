@@ -1664,7 +1664,12 @@ def triage_ai_ticket(state_pk):
     scope = _ai_ticket_scope_conf(core)
     from django.utils.crypto import get_random_string
 
-    decision_token = get_random_string(32)
+    from core.models import AIDecisionRequest
+
+    # ONE durable chat thread per ticket: reuse an existing thread's token (any
+    # status) so close->reopen keeps the full history under the same link.
+    _existing = AIDecisionRequest.objects.filter(ticket_ref=st.ticket_ref).order_by("-updated").first()
+    decision_token = _existing.token if _existing else get_random_string(32)
     base_url = (
         settings.CORS_ORIGIN_WHITELIST[0]
         if getattr(settings, "CORS_ORIGIN_WHITELIST", None) else ""
@@ -1718,30 +1723,26 @@ def triage_ai_ticket(state_pk):
         st.proposed_action = (data.get("proposed_action") or "")[:5000]
         st.error_detail = ""
         # Persist the decision request so the "Johnny 5 Need Input!" link works.
+        # Reuse the existing thread (append), or create one; never lose prior history.
         if action == "needs_input" and decision_url:
-            from core.models import AIDecisionRequest
             from django.utils import timezone as _tz
 
-            AIDecisionRequest.objects.update_or_create(
-                token=decision_token,
-                defaults={
-                    "ticket_ref": st.ticket_ref,
-                    "question": st.proposed_action,
-                    "context": {
-                        "client": data.get("client") or "",
-                        "affected_device": data.get("affected_device") or "",
-                        "classification": st.classification,
-                        "summary": st.summary,
-                        "requester": st.requester,
-                    },
-                    "messages": [{
-                        "role": "assistant",
-                        "content": st.proposed_action or st.summary,
-                        "ts": _tz.now().isoformat(),
-                    }],
-                    "status": "open",
-                },
-            )
+            entry = {"role": "assistant", "content": st.proposed_action or st.summary,
+                     "ts": _tz.now().isoformat()}
+            ctx = {"client": data.get("client") or "", "affected_device": data.get("affected_device") or "",
+                   "classification": st.classification, "summary": st.summary, "requester": st.requester}
+            dr = AIDecisionRequest.objects.filter(token=decision_token).first()
+            if dr:
+                dr.status = "open"
+                dr.question = st.proposed_action or dr.question
+                dr.context = ctx
+                dr.messages = (dr.messages or []) + [entry]
+                dr.save()
+            else:
+                AIDecisionRequest.objects.create(
+                    token=decision_token, ticket_ref=st.ticket_ref,
+                    question=st.proposed_action, context=ctx, messages=[entry], status="open",
+                )
     st.save()
     return f"{st.ticket_ref}: {st.status} {st.classification}"
 

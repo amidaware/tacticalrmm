@@ -826,12 +826,15 @@ async function runTicketTriage(blob) {
       ` person_name; for a SERVER/infra device named in the ticket pass its hostname e.g. pve245),` +
       ` list_kb_articles,` +
       ` and web_search as needed to judge feasibility.\n` +
-      `3. submit_triage ONCE. Set can_help=TRUE if chatting could make real progress - INCLUDING:` +
-      ` fixing a device/software/config issue, diagnosing, identifying/confirming the user's machine,` +
-      ` answering a how-to by researching it (web_search/web_fetch) and drafting steps, or gathering` +
-      ` missing info from the user. Set can_help=FALSE only when a chat genuinely can't help: pure` +
-      ` purchasing/billing with no IT action, physical/hardware-RMA work, spam, or a duplicate.` +
-      ` When unsure, lean TRUE. Fill client/affected_device/summary/proposed_action. Assessment only - do NOT act.` +
+      `3. submit_triage ONCE. Set can_help=TRUE if chatting could make ANY real progress - INCLUDING:` +
+      ` fixing a device/software/config issue, diagnosing, running checks/tests (e.g. a long SMART test),` +
+      ` monitoring, drafting a customer/tech communication or a replacement/action plan, scheduling work,` +
+      ` identifying the machine, researching a how-to (web_search) and drafting steps, or gathering info.` +
+      ` A remaining PHYSICAL step (e.g. swapping a disk, on-site work) does NOT make it can_help=false as` +
+      ` long as you can still add value (verify/monitor status, run tests, draft the plan + a customer` +
+      ` note, schedule it). Set can_help=FALSE ONLY when a chat genuinely adds nothing: spam, an exact` +
+      ` duplicate, or a pure purchasing/billing request with no IT or communication component. When in` +
+      ` doubt, choose TRUE. Fill client/affected_device/summary/proposed_action. Assessment only - do NOT act.` +
       (blob.requester_email ? `\n\nRequester email: ${blob.requester_email}` : "") +
       (admin ? `\n\nCONTEXT (triage policy):\n${admin}` : "")
     ) : (

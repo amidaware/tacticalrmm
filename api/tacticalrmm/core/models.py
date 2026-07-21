@@ -989,6 +989,8 @@ class AITicketState(models.Model):
     # non-AI author (customer/tech) appears - the resume loop.
     last_message_id = models.PositiveBigIntegerField(default=0)
     assignee_seen = models.CharField(max_length=120, blank=True, default="")
+    # One-time company/contact correction done; then leave the partner alone.
+    partner_checked = models.BooleanField(default=False)
     error_detail = models.TextField(blank=True, default="")
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)

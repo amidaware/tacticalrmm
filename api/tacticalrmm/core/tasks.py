@@ -1719,6 +1719,7 @@ def triage_ai_ticket(state_pk, force=False):
                 "act_domains": scope["act_domains"],
                 "act_clients": scope["act_clients"],
                 "decision_url": decision_url,
+                "correct_partner": not st.partner_checked,
                 "helpdesk_api": {
                     "base_url": core.ai_helpdesk_api_base_url or "",
                     "api_key": core.ai_helpdesk_api_key or "",
@@ -1748,6 +1749,10 @@ def triage_ai_ticket(state_pk, force=False):
         st.summary = (data.get("summary") or "")[:5000]
         st.proposed_action = (data.get("proposed_action") or "")[:5000]
         st.error_detail = ""
+        # One-time company/contact correction done (or company confidently resolved)
+        # -> don't re-correct on later re-triages (respect manual edits).
+        if data.get("company_resolved"):
+            st.partner_checked = True
         # Persist the chat thread for EVERY triaged ticket (we post a chat link on
         # every note now), reusing the durable per-ticket thread; never lose history.
         if decision_url:

@@ -1473,6 +1473,7 @@ class AIDecisionView(APIView):
             r = _requests.post(
                 f"{bridge}/pi/decision",
                 json={
+                    "token": token,
                     "ticket_ref": d.ticket_ref, "question": d.question, "context": d.context,
                     "messages": messages,
                     "allow_device_changes": bool(request.data.get("allow_device_changes")),
@@ -1557,6 +1558,37 @@ class AIScheduleAction(APIView):
         obj = get_object_or_404(AIScheduledAction, pk=pk)
         obj.delete()
         return Response({"ok": True})
+
+
+class AIDecisionStatus(APIView):
+    """Live progress for an in-flight decision-chat turn (what the AI is doing now).
+    The bridge writes step events to redis (pi_decision:<token>); we read them."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, token):
+        import json as _json
+
+        from redis import from_url
+
+        raw = None
+        try:
+            with from_url(f"redis://{settings.REDIS_HOST}") as conn:
+                raw = conn.get(f"pi_decision:{token}")
+        except Exception:
+            raw = None
+        if not raw:
+            return Response({"status": "idle", "events": []})
+        try:
+            live = _json.loads(raw)
+        except Exception:
+            return Response({"status": "idle", "events": []})
+        events = [
+            {"type": e.get("type"), "label": e.get("label"), "tool": e.get("tool"),
+             "isError": e.get("isError")}
+            for e in (live.get("events") or [])
+        ][-15:]
+        return Response({"status": live.get("status", "running"), "events": events})
 
 
 class AIResolveDevices(APIView):

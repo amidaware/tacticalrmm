@@ -798,7 +798,7 @@ export function buildReportTools({ helpdeskCode, helpdeskApi } = {}) {
 // cannot close, reply, assign, or touch anything.
 export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
-  const verdict = { classification: "", summary: "", proposed_action: "", needs_input: false, can_help: false, client: "", affected_device: "" };
+  const verdict = { classification: "", summary: "", proposed_action: "", needs_input: false, can_help: false, client: "", affected_device: "", company_partner_id: 0 };
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
   catch (e) { hdError = e.message; }
@@ -865,6 +865,17 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
     },
   });
 
+  const find_company = defineTool({
+    name: "find_company",
+    label: "Find company",
+    description:
+      "Find the customer COMPANY (res.partner) by NAME. Use this when the company must be inferred" +
+      " from the subject/device (e.g. a server named FBA-FS22-1 -> FarmerBoy AG) and there's no" +
+      " requester email domain. Returns the company partner_id to put in submit_triage.company_partner_id.",
+    parameters: Type.Object({ name: Type.String({ description: "Company name" }) }),
+    execute: async (_id, p) => hdcall("find_company", { name: p.name }),
+  });
+
   const list_kb_articles = defineTool({
     name: "list_kb_articles",
     label: "List company KB articles",
@@ -897,6 +908,7 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
       needs_input: Type.Optional(Type.Boolean({ description: "true if a human decision is required first" })),
       can_help: Type.Optional(Type.Boolean({ description: "true if you (an AI IT tech with device access, ticket tools and the company KB) can realistically resolve or make real progress on this" })),
       client: Type.Optional(Type.String({ description: "Resolved customer/RMM client, if known" })),
+      company_partner_id: Type.Optional(Type.Number({ description: "The resolved CUSTOMER COMPANY's Odoo partner_id (from find_company/resolve_client) - so the ticket can be attributed to the right company. 0 if unknown." })),
       affected_device: Type.Optional(Type.String({ description: "The device this concerns, if identified" })),
     }),
     execute: async (_id, p) => {
@@ -907,13 +919,14 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
       verdict.needs_input = !!p.needs_input;
       verdict.can_help = !!p.can_help;
       verdict.client = p.client || "";
+      verdict.company_partner_id = Number(p.company_partner_id) || 0;
       verdict.affected_device = p.affected_device || "";
       return text("Triage recorded. Stop now.");
     },
   });
 
   return {
-    tools: [get_ticket, resolve_client, find_devices, list_kb_articles, get_kb_article, ...webTools(), submit_triage],
+    tools: [get_ticket, resolve_client, find_company, find_devices, list_kb_articles, get_kb_article, ...webTools(), submit_triage],
     verdict, hd, hdError,
   };
 }

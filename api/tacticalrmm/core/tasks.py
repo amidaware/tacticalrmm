@@ -1616,6 +1616,9 @@ def poll_helpdesk_tickets():
         seen += 1
         is_alert = _ticket_is_alert(t, scope)
         in_scope = _ticket_in_scope(t, scope, is_alert)
+        last_msg = int(t.get("last_msg_id") or 0)
+        msg_from_bot = bool(t.get("last_msg_bot"))
+        assignee = str(t.get("assignee_id") or "")
         st, created = AITicketState.objects.get_or_create(
             ticket_ref=ref,
             defaults={
@@ -1623,22 +1626,45 @@ def poll_helpdesk_tickets():
                 "requester": (t.get("requester_email") or "")[:255],
                 "is_alert": is_alert,
                 "last_change_seen": str(t.get("write_date") or "")[:64],
+                "last_message_id": last_msg,
+                "assignee_seen": assignee,
                 "status": (
                     "baseline" if baseline
                     else ("new" if in_scope else "skipped_out_of_scope")
                 ),
             },
         )
-        if created and st.status == "new":
-            triage_ai_ticket.delay(st.pk)
+        if baseline:
+            continue
+        if created:
+            if st.status == "new":
+                triage_ai_ticket.delay(st.pk)
+                enqueued += 1
+            continue
+        # ---- re-engage loop: existing ticket. Re-triage when there's NEW activity
+        # from a non-AI author (customer/tech reply, or a tech handing it back).
+        if st.status == "triaging":
+            continue  # in progress
+        new_activity = last_msg > (st.last_message_id or 0) and not msg_from_bot
+        # advance markers (also past the AI's own messages -> no self-loop)
+        st.last_message_id = max(last_msg, st.last_message_id or 0)
+        st.assignee_seen = assignee
+        st.is_alert = is_alert
+        st.last_change_seen = str(t.get("write_date") or "")[:64]
+        if new_activity and in_scope:
+            st.status = "new"
+            st.save()
+            triage_ai_ticket.delay(st.pk, force=True)
             enqueued += 1
+        else:
+            st.save()
     return f"seen {seen}, enqueued {enqueued}{' (baseline)' if baseline else ''}"
 
 
 @app.task
-def triage_ai_ticket(state_pk):
-    """Run ONE shadow triage session for a ticket: classify + post a staff-only
-    internal note of what the AI would do. Never closes/replies/touches devices."""
+def triage_ai_ticket(state_pk, force=False):
+    """Run ONE triage session for a ticket. force=True re-triages a ticket that was
+    already handled (used by the re-engage loop when a customer/tech replies)."""
     import requests as _requests
 
     from core.models import AITicketState
@@ -1650,7 +1676,7 @@ def triage_ai_ticket(state_pk):
         st = AITicketState.objects.get(pk=state_pk)
     except AITicketState.DoesNotExist:
         return "gone"
-    if st.status not in ("new", "error"):
+    if not force and st.status not in ("new", "error"):
         return f"skip status={st.status}"
     model = _resolve_ai_model(None)
     if not model:

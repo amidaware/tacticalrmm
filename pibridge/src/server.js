@@ -1044,6 +1044,9 @@ async function runDecisionChat(blob) {
       ` Never delete data. Diagnose read-only first, explain what you'll change, then do it.\n` +
       `CUSTOMER EMAIL is ${blob.allow_customer_reply ? "APPROVED" : "NOT approved"} this turn - ` +
       `${blob.allow_customer_reply ? "you may reply_to_ticket if appropriate" : "draft replies for review only; do NOT send"}.\n` +
+      `CONTENT RULE: when you reply_to_ticket / resolve_ticket / add_note, the message (customer_html /` +
+      ` internal_note) MUST contain the ACTUAL written text - never call these with empty content` +
+      ` (the system rejects empty messages, so a blank reply can never reach the customer).\n` +
       `COMPLETION POLICY (important): NEVER close/resolve a ticket a person filed without telling the` +
       ` customer. To FINISH a worked ticket, call helpdesk_call resolve_ticket with (1) internal_note =` +
       ` a concise REVIEW of what was done, and (2) customer_html = a polished, friendly HTML reply` +

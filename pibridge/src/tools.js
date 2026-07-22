@@ -1014,12 +1014,12 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate 
     name: "run_device_command",
     label: "Run device command",
     description:
-      "Run a command on a device to DIAGNOSE or FIX an issue (Phase 3). Get the agent_id from " +
-      "find_devices. Non-disruptive commands (diagnostics, restarting a stuck service like the " +
-      "print spooler, clearing a stuck queue, re-adding a printer) run freely. Anything " +
-      "DESTRUCTIVE/DISRUPTIVE - reboots, stopping/disabling a service (downtime), deleting data, " +
-      "formatting - is REFUSED unless the technician has approved changes this turn. NEVER delete " +
-      "data. Prefer read-only diagnosis first.",
+      "Run a command on a device to DIAGNOSE or FIX an issue. Get the agent_id from find_devices. " +
+      "READ-ONLY/diagnostic commands run freely. ANY command that MODIFIES the device (installing, " +
+      "changing config, restarting/stopping a service, editing files, reboots, deleting data, etc.) " +
+      "requires Write mode: it is BLOCKED while the chat is read-only, and needs the technician's " +
+      "approval when Write mode is on (unless Auto-approve is enabled). NEVER delete data. Always " +
+      "diagnose read-only first.",
     parameters: Type.Object({
       agent_id: Type.String({ description: "Target device agent_id (from find_devices)" }),
       shell: Type.String({ description: "powershell | cmd | bash" }),
@@ -1027,9 +1027,16 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate 
       timeout: Type.Optional(Type.Number({ description: "Seconds (default 45)" })),
     }),
     execute: async (_id, p, signal) => {
-      if (isDestructive(p.command)) {
-        const g = gate ? await gate("device", `Run a DISRUPTIVE command on ${p.agent_id}:\n\n${p.command}`) : { ok: false, reason: "no approval channel available." };
-        if (!g.ok) return text("REFUSED: " + (g.reason || "the technician did not approve that disruptive command."));
+      // Gate ANY command that would MODIFY the device (not just "destructive" ones) -
+      // same rule as the device chat: in read-only (Write mode off) it's blocked; with
+      // Write mode on it needs approval (unless Auto-approve). Pure read-only diagnostics
+      // run freely.
+      const win = (p.shell || "powershell") !== "bash";
+      if (mutatingMatch(p.command, win)) {
+        const g = gate
+          ? await gate("device", `Run a command that MODIFIES ${p.agent_id} [${p.shell || "powershell"}]:\n\n${p.command}`)
+          : { ok: false, reason: "no approval channel available." };
+        if (!g.ok) return text("REFUSED: " + (g.reason || "the technician did not approve that change."));
       }
       try {
         const out = await trmm.sendCmd(p.agent_id, {

@@ -1743,6 +1743,7 @@ def triage_ai_ticket(state_pk, force=False):
         st.status = {
             "cancelled": "cancelled_clean",
             "claimed": "actionable_claimed",
+            "flagged_actionable": "actionable_unassigned",
             "needs_input": "needs_input",
         }.get(action, "triaged")
         st.classification = (data.get("classification") or "unknown")[:40]

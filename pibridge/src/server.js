@@ -987,6 +987,23 @@ async function runTicketTriage(blob) {
     } catch (e) { company_corrected = { error: String(e?.message || e) }; }
   }
   try {
+    // Clean, non-actionable alerts are auto-cancelled for EVERYONE when "Act on alerts"
+    // is enabled - this is zero-risk (no device touched, no customer contacted); it just
+    // clears noise (backup/monitoring "success"/"OK" reports). REAL work (fixing a device,
+    // claiming an actionable alert, replying to a customer) still requires the ticket to
+    // belong to an auto-action client. The cancel note always states WHY.
+    if (!verdict.needs_input && cls === "alert_clean" && blob.act_enabled && hd.operations.cancel_ticket) {
+      await hd.operations.cancel_ticket({
+        ticket: blob.ticket_ref,
+        reason:
+          `PI.DEV AI - auto-cancelled (clean, non-actionable alert)\n${ctx}` +
+          `Summary: ${verdict.summary}\n` +
+          `Why no action is needed: ${verdict.proposed_action}\n` +
+          `Policy: clean informational alerts (backup/monitoring "success"/"OK"/"completed" reports) ` +
+          `are auto-closed for all clients - there is nothing to fix and no customer awaiting a reply.` + chatLink,
+      });
+      return { ...verdict, action: "cancelled", company_resolved, company_corrected };
+    }
     // Look-only tickets (not an auto-action client): shadow note only, no changes.
     if (!act) {
       if (blob.post_shadow_note !== false && hd.operations.add_note)

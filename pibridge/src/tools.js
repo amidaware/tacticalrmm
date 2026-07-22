@@ -954,7 +954,7 @@ function isDestructive(cmd) {
   return DESTRUCTIVE.some((re) => re.test(c));
 }
 
-export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allowDeviceChanges, allowCustomerReply, gate } = {}) {
+export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
@@ -995,12 +995,8 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allow
       // inline (exactly like a device-command approval); in the legacy POST mode we
       // fall back to the per-turn allowCustomerReply flag.
       if (p.operation === "reply_to_ticket") {
-        if (gate) {
-          const ok = await gate(`Send this reply to the customer on ${ticketRef}:\n\n${(p.message || "").slice(0, 800)}`);
-          if (!ok) return text("Customer reply NOT approved by the technician. Leave it as a draft.");
-        } else if (!allowCustomerReply) {
-          return text("Customer email is NOT approved this turn. Draft the reply text for the technician to review and ask them to enable 'Allow sending customer email' before you send it.");
-        }
+        const g = gate ? await gate("email", `Send this reply to the customer on ${ticketRef}:\n\n${(p.message || "").slice(0, 800)}`) : { ok: false, reason: "no approval channel available." };
+        if (!g.ok) return text(g.reason || "Customer reply not approved. Leave it as a draft.");
       }
       // Merge the named params + free-form args, then ALWAYS inject this ticket's ref
       // so a read/write can never fail with 'ticket not found: undefined'.
@@ -1032,16 +1028,8 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allow
     }),
     execute: async (_id, p, signal) => {
       if (isDestructive(p.command)) {
-        if (gate) {
-          const ok = await gate(`Run a DISRUPTIVE command on ${p.agent_id}:\n\n${p.command}`);
-          if (!ok) return text("REFUSED: the technician did not approve that disruptive command. Try a non-disruptive approach or ask again with justification.");
-        } else if (!allowDeviceChanges) {
-          return text(
-            "REFUSED: that command is destructive/disruptive (reboot, service stop, or data loss). " +
-            "It needs approval - ask the technician to enable 'Allow disruptive changes' this turn, " +
-            "or schedule it with schedule_action. Non-disruptive fixes are allowed without approval.",
-          );
-        }
+        const g = gate ? await gate("device", `Run a DISRUPTIVE command on ${p.agent_id}:\n\n${p.command}`) : { ok: false, reason: "no approval channel available." };
+        if (!g.ok) return text("REFUSED: " + (g.reason || "the technician did not approve that disruptive command."));
       }
       try {
         const out = await trmm.sendCmd(p.agent_id, {

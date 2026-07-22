@@ -55,27 +55,6 @@ function shellNoteFor(plat) {
 }
 
 // Friendly, human-readable label for what the AI is doing (for live updates).
-function decisionToolLabel(name, args) {
-  const op = (args && args.operation) || "";
-  const map = {
-    get_ticket: "Reading the ticket", resolve_client: "Looking up the customer",
-    find_devices: "Finding the device(s)", list_kb_articles: "Checking the knowledge base",
-    get_kb_article: "Reading a KB article", save_device_note: "Saving a device note", run_device_command: "Running a command on the device",
-    web_search: "Searching the web", web_fetch: "Reading a web page",
-    send_email: "Sending an email", schedule_action: "Scheduling an action",
-  };
-  if (name === "helpdesk_call") {
-    const opm = {
-      reply_to_ticket: "Replying to the customer", resolve_ticket: "Resolving & replying to the customer",
-      add_note: "Adding an internal note", cancel_ticket: "Cancelling the ticket",
-      ai_close_ticket: "Closing the ticket", clear_needs_input_tag: "Clearing the tag",
-      set_needs_input_tag: "Flagging for input", upsert_ai_kb_article: "Updating the knowledge base",
-      resolve_customer: "Looking up the customer", get_ticket: "Reading the ticket",
-    };
-    return opm[op] || ("Helpdesk: " + (op || ""));
-  }
-  return map[name] || name;
-}
 
 // Built-in default for the decision-chat POLICY. Admins can override it in Global
 // Settings (ai_ticket_decision_prompt); this is the fallback when that's empty.
@@ -592,6 +571,24 @@ async function startDecisionChat(ws, blob) {
   const ticketRef = blob.ticket_ref || "";
   const histKey = `decision:${ticketRef}`;
   const ctx = blob.context || {};
+  // Prior thread (triage note + any earlier chat) so a fresh session isn't blank
+  // and the AI has continuity.
+  const prior = Array.isArray(blob.prior_messages) ? blob.prior_messages : [];
+  const priorHist = prior.map((m) => (m.role === "assistant"
+    ? { role: "assistant", content: [{ type: "text", text: String(m.content || "") }] }
+    : { role: "user", content: String(m.content || "") }));
+  const priorText = prior.length
+    ? "\nCONVERSATION SO FAR (the triage note + any earlier chat - continue from here, do not repeat it):\n" +
+      prior.map((m) => `${m.role === "assistant" ? "PI" : "TECH"}: ${String(m.content || "").slice(0, 1200)}`).join("\n") + "\n"
+    : "";
+
+  // Controls (mirror the device chat): Write mode, Auto-approve, Allow customer email.
+  const mutateAllowed = blob.mutate_allowed !== false;
+  let readonly = !(blob.allow_mutating !== false); // default: Write mode ON
+  if (!mutateAllowed) readonly = true;
+  const autoapproveAllowed = !!blob.autoapprove_allowed;
+  let autoApprove = false;
+  let allowEmail = blob.allow_email !== false; // default: ON
 
   const authStorage = AuthStorage.create();
   authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
@@ -609,12 +606,27 @@ async function startDecisionChat(ws, blob) {
       ws.send(JSON.stringify({ type: "approval_request", id, summary }));
     });
   }
+  // Kind-based gate honoring the toggles: device changes need Write mode; customer
+  // email needs the email toggle; Auto-approve skips the prompt for both.
+  async function gate(kind, summary) {
+    if (kind === "device") {
+      if (readonly) return { ok: false, reason: "the chat is in READ-ONLY mode - switch on Write mode to make device changes." };
+      if (autoApprove) return { ok: true };
+      return { ok: await requestApproval(summary) };
+    }
+    if (kind === "email") {
+      if (!allowEmail) return { ok: false, reason: "customer email is turned OFF - enable 'Allow customer email' to send it; otherwise leave it as a draft." };
+      if (autoApprove) return { ok: true };
+      return { ok: await requestApproval(summary) };
+    }
+    return { ok: true };
+  }
 
   const { tools, hd, hdError } = buildDecisionTools({
     helpdeskApi: blob.helpdesk_api || null,
     helpdeskCode: blob.helpdesk_code || "",
     ticketRef,
-    gate: requestApproval,
+    gate,
   });
   if (!hd) { ws.send(JSON.stringify({ type: "error", message: `helpdesk.js failed to load: ${hdError}` })); ws.close(); return; }
 
@@ -627,7 +639,8 @@ async function startDecisionChat(ws, blob) {
       `- Client: ${ctx.client || "(unknown)"}\n- Affected device: ${ctx.affected_device || "(unknown)"}\n` +
       `- Classification: ${ctx.classification || ""}\n- Summary: ${ctx.summary || ""}\n` +
       (blob.question ? `- Your original question for the tech: ${blob.question}\n` : "") +
-      `\nDisruptive device commands and customer replies require the technician's approval (they'll get a prompt); non-disruptive diagnostics run freely.\n\n` +
+      `\nControls the tech sets in this window: Write mode (device changes), Auto-approve (skip prompts), Allow customer email. When not auto-approved, disruptive device commands and customer replies pop an approval to the tech; non-disruptive diagnostics run freely.\n` +
+      priorText + `\n` +
       (String(blob.decision_prompt || "").trim() || DEFAULT_DECISION_POLICY),
   });
   await loader.reload();
@@ -685,8 +698,9 @@ async function startDecisionChat(ws, blob) {
     multi: false, machines: [],
     model: { provider: blob.provider, model_id: blob.model_id, display: model.name },
     allowed_models: (blob.allowed_models || []).map((m) => ({ provider: m.provider, model_id: m.model_id, display_name: m.display_name, thinking_level: m.thinking_level, base_url: m.base_url })),
-    require_approval: true, autoapprove_allowed: false, read_only: false, mutate_allowed: true,
-    history: session.messages,
+    require_approval: true, autoapprove_allowed: autoapproveAllowed, read_only: readonly, mutate_allowed: mutateAllowed,
+    allow_email: allowEmail,
+    history: [...priorHist, ...session.messages],
   }));
 
   let idleTimer;
@@ -714,6 +728,18 @@ async function startDecisionChat(ws, blob) {
           ws.send(JSON.stringify({ type: "model_changed", model_id: allowed.model_id, display: nm.name }));
           break;
         }
+        case "set_autoapprove":
+          autoApprove = !!msg.value && autoapproveAllowed;
+          ws.send(JSON.stringify({ type: "autoapprove_state", value: autoApprove }));
+          break;
+        case "set_readonly":
+          if (mutateAllowed) readonly = !!msg.value;
+          ws.send(JSON.stringify({ type: "readonly_state", value: readonly }));
+          break;
+        case "set_allow_email":
+          allowEmail = !!msg.value;
+          ws.send(JSON.stringify({ type: "allow_email_state", value: allowEmail }));
+          break;
         case "approve":
         case "deny": {
           const resolve = pendingApprovals.get(msg.id);
@@ -1234,97 +1260,6 @@ async function runTicketTriage(blob) {
   return { ...verdict, action, company_resolved, company_corrected };
 }
 
-// ---- Decision chat ("Johnny 5 Need Input!") --------------------------------
-// A tech answers the AI's question about a ticket; the AI continues ON THE TICKET
-// (reply/note/close/cancel/clear-tag/KB), no device shell. Stateless: the whole
-// thread is replayed each turn.
-async function runDecisionChat(blob) {
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
-  if (!model) return { error: `Model not found: ${blob.provider}/${blob.model_id}` };
-
-  const { tools, hd, hdError } = buildDecisionTools({
-    helpdeskApi: blob.helpdesk_api || null,
-    helpdeskCode: blob.helpdesk_code || "",
-    ticketRef: blob.ticket_ref || "",
-    allowDeviceChanges: !!blob.allow_device_changes,
-    allowCustomerReply: !!blob.allow_customer_reply,
-  });
-  if (!hd) return { error: `helpdesk.js failed to load: ${hdError}` };
-
-  const ctx = blob.context || {};
-  const loader = new DefaultResourceLoader({
-    agentDir: CONFIG.sessionsRoot,
-    cwd: CONFIG.sessionsRoot,
-    systemPromptOverride: () =>
-      // Dynamic framing (kept in code - references live ticket/gate values):
-      `You are Pi, continuing to work helpdesk ticket ${blob.ticket_ref} with a technician who is` +
-      ` giving you the input you asked for.\n` +
-      `What you already found:\n` +
-      `- Client: ${ctx.client || "(unknown)"}\n- Affected device: ${ctx.affected_device || "(unknown)"}\n` +
-      `- Classification: ${ctx.classification || ""}\n- Summary: ${ctx.summary || ""}\n` +
-      `- Your original question: ${blob.question || ""}\n` +
-      `APPROVAL THIS TURN: device changes = ${blob.allow_device_changes ? "APPROVED" : "NOT approved"}; ` +
-      `customer email = ${blob.allow_customer_reply ? "APPROVED" : "NOT approved"}.\n\n` +
-      // Editable POLICY (Global Settings -> ai_ticket_decision_prompt; falls back to built-in):
-      (String(blob.decision_prompt || "").trim() || DEFAULT_DECISION_POLICY),
-  });
-  await loader.reload();
-  const { session } = await createAgentSession({
-    model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
-    noTools: "builtin", customTools: tools, resourceLoader: loader,
-    sessionManager: SessionManager.inMemory(), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
-  });
-  // Live progress -> redis, so the chat window can show what the AI is doing.
-  const liveKey = blob.token ? `pi_decision:${blob.token}` : null;
-  const live = { status: "running", events: [], started: Date.now() };
-  async function pushLive(ev) {
-    live.events.push({ t: Date.now(), ...ev });
-    if (live.events.length > 60) live.events.shift();
-    if (liveKey) { try { await redis.set(liveKey, JSON.stringify(live), "EX", 900); } catch { /* best effort */ } }
-  }
-  await pushLive({ type: "status", label: "Thinking\u2026" });
-  // Track whether the AI posted to THIS ticket's chatter this turn, so we can re-add
-  // the 'Chat with me' link last (Odoo chatter is newest-first -> keeps it on top).
-  let postedToTicket = false;
-  const CHATTER_OPS = new Set(["reply_to_ticket", "add_note", "resolve_ticket"]);
-  const unsub = session.subscribe((event) => {
-    if (event.type === "tool_execution_start") {
-      if (event.toolName === "helpdesk_call" && CHATTER_OPS.has(event.args?.operation)) postedToTicket = true;
-      pushLive({ type: "tool", tool: event.toolName, label: decisionToolLabel(event.toolName, event.args) });
-    } else if (event.type === "tool_execution_end")
-      pushLive({ type: "tool_done", tool: event.toolName, isError: !!event.isError });
-  });
-  const convo = (blob.messages || [])
-    .map((m) => `${(m.role || "user") === "assistant" ? "PI" : "TECH"}: ${m.content}`)
-    .join("\n\n");
-  try {
-    await session.prompt(`${convo}\n\nRespond to the technician now (and take any ticket action their answer enables).`);
-  } catch (e) {
-    unsub(); session.dispose();
-    if (liveKey) { live.status = "error"; try { await redis.set(liveKey, JSON.stringify(live), "EX", 60); } catch {} }
-    return { error: apiErrorMessage(e) };
-  }
-  unsub();
-  // Re-post the chat link as the newest chatter entry so it stays at the top in Odoo.
-  if (postedToTicket && blob.decision_url && hd?.operations?.add_note) {
-    try {
-      await hd.operations.add_note({
-        ticket: blob.ticket_ref,
-        message: `\u27a1 Chat with me to continue this ticket: ${blob.decision_url}`,
-      });
-    } catch { /* best-effort; never fail the turn over the convenience link */ }
-  }
-  if (liveKey) { live.status = "done"; try { await redis.set(liveKey, JSON.stringify(live), "EX", 30); } catch {} }
-  const reply = session.messages
-    .filter((m) => m.role === "assistant")
-    .flatMap((m) => (m.content || []).filter((c) => c.type === "text").map((c) => c.text))
-    .join("\n").trim();
-  session.dispose();
-  return { reply: reply || "(no reply)" };
-}
 
 // ---- Helpdesk setup assistant (Global Settings "Use AI to Help Create These") -
 // A device-less chat that helps an admin author the helpdesk POLICY + helpdesk.js
@@ -1636,22 +1571,6 @@ const server = http.createServer(async (req, res) => {
     req.on("end", async () => {
       try {
         const result = await runTicketTriage(JSON.parse(body || "{}"));
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(result));
-      } catch (e) {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: apiErrorMessage(e) }));
-      }
-    });
-    return;
-  }
-  // Decision chat turn ("Johnny 5 Need Input!", called by Django).
-  if (url.pathname === "/pi/decision" && req.method === "POST") {
-    let body = "";
-    req.on("data", (c) => (body += c));
-    req.on("end", async () => {
-      try {
-        const result = await runDecisionChat(JSON.parse(body || "{}"));
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
       } catch (e) {

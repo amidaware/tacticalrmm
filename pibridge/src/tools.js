@@ -954,7 +954,7 @@ function isDestructive(cmd) {
   return DESTRUCTIVE.some((re) => re.test(c));
 }
 
-export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allowDeviceChanges, allowCustomerReply } = {}) {
+export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allowDeviceChanges, allowCustomerReply, gate } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
@@ -991,9 +991,17 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allow
     }),
     execute: async (_id, p) => {
       if (!hd || !hd.operations[p.operation]) return text(`operation ${p.operation} not available`);
-      // Customer-email gate: reply_to_ticket only when the tech approved it this turn.
-      if (p.operation === "reply_to_ticket" && !allowCustomerReply)
-        return text("Customer email is NOT approved this turn. Draft the reply text for the technician to review and ask them to enable 'Allow sending customer email' before you send it.");
+      // Customer-email gate. In WS mode (gate provided) we ask the tech for approval
+      // inline (exactly like a device-command approval); in the legacy POST mode we
+      // fall back to the per-turn allowCustomerReply flag.
+      if (p.operation === "reply_to_ticket") {
+        if (gate) {
+          const ok = await gate(`Send this reply to the customer on ${ticketRef}:\n\n${(p.message || "").slice(0, 800)}`);
+          if (!ok) return text("Customer reply NOT approved by the technician. Leave it as a draft.");
+        } else if (!allowCustomerReply) {
+          return text("Customer email is NOT approved this turn. Draft the reply text for the technician to review and ask them to enable 'Allow sending customer email' before you send it.");
+        }
+      }
       // Merge the named params + free-form args, then ALWAYS inject this ticket's ref
       // so a read/write can never fail with 'ticket not found: undefined'.
       const args = { ...(p.args || {}) };
@@ -1023,12 +1031,18 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, allow
       timeout: Type.Optional(Type.Number({ description: "Seconds (default 45)" })),
     }),
     execute: async (_id, p, signal) => {
-      if (isDestructive(p.command) && !allowDeviceChanges)
-        return text(
-          "REFUSED: that command is destructive/disruptive (reboot, service stop, or data loss). " +
-          "It needs approval - ask the technician to enable 'Allow disruptive changes' this turn, " +
-          "or schedule it with schedule_action. Non-disruptive fixes are allowed without approval.",
-        );
+      if (isDestructive(p.command)) {
+        if (gate) {
+          const ok = await gate(`Run a DISRUPTIVE command on ${p.agent_id}:\n\n${p.command}`);
+          if (!ok) return text("REFUSED: the technician did not approve that disruptive command. Try a non-disruptive approach or ask again with justification.");
+        } else if (!allowDeviceChanges) {
+          return text(
+            "REFUSED: that command is destructive/disruptive (reboot, service stop, or data loss). " +
+            "It needs approval - ask the technician to enable 'Allow disruptive changes' this turn, " +
+            "or schedule it with schedule_action. Non-disruptive fixes are allowed without approval.",
+          );
+        }
+      }
       try {
         const out = await trmm.sendCmd(p.agent_id, {
           shell: p.shell || "powershell", cmd: p.command,

@@ -1508,6 +1508,89 @@ class AIDecisionView(APIView):
         return Response({"reply": reply, "messages": d.messages, "status": d.status})
 
 
+class AIDecisionSession(APIView):
+    """Mint a short-lived, STATEFUL streaming decision-chat session (WebSocket) for a
+    ticket - the same machinery as the device chat, so it never blocks a web worker
+    and keeps its full context across turns. Returns a pi-bridge session token."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, token):
+        from django.conf import settings as dj_settings
+
+        from agents.pi_session import create_pi_session
+        from core.models import AIDecisionRequest, AIModel
+        from core.tasks import _resolve_ai_model
+
+        d = get_object_or_404(AIDecisionRequest, token=token)
+        core = get_core_settings()
+        user = request.user
+        is_super = user.is_superuser or (user.role and user.role.is_superuser)
+        enabled = AIModel.objects.filter(enabled=True, provider__enabled=True).select_related("provider")
+        if is_super:
+            allowed = list(enabled)
+        else:
+            role = user.role
+            allowed = list(
+                role.ai_allowed_models.filter(enabled=True, provider__enabled=True).select_related("provider")
+                if role else AIModel.objects.none()
+            ) or [m for m in enabled if m.is_default]
+        if not allowed:
+            return notify_error("No AI models are available. Ask an admin to configure providers/models.")
+        chosen = next((m for m in allowed if m.is_default), allowed[0])
+        req_id = request.data.get("model_id")
+        if req_id:
+            match = next((m for m in allowed if m.model_id == req_id), None)
+            if not match:
+                return notify_error("Requested model is not permitted for your role.")
+            chosen = match
+
+        def mdict(m, full=False):
+            base = {"provider": m.provider.name, "model_id": m.model_id,
+                    "display_name": m.display_name, "thinking_level": m.thinking_level,
+                    "base_url": m.provider.base_url}
+            return {**base, "api_key": m.provider.api_key} if full else base
+
+        base_url = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None) else ""
+        )
+        blob = {
+            "kind": "decision",
+            "ticket_ref": d.ticket_ref,
+            "decision_url": f"{base_url}/ai-decision/{token}" if base_url else "",
+            "question": d.question,
+            "context": d.context,
+            "username": user.username,
+            "provider": chosen.provider.name,
+            "model_id": chosen.model_id,
+            "thinking_level": chosen.thinking_level,
+            "base_url": chosen.provider.base_url,
+            "api_key": chosen.provider.api_key,
+            "allowed_models": [mdict(m, full=True) for m in allowed],
+            "decision_prompt": core.ai_ticket_decision_prompt or "",
+            "helpdesk_api": {
+                "base_url": core.ai_helpdesk_api_base_url or "",
+                "api_key": core.ai_helpdesk_api_key or "",
+            },
+            "helpdesk_code": core.ai_helpdesk_code or "",
+            "persist_history": True,
+        }
+        pi_token = create_pi_session(data=blob)
+        return Response({
+            "token": pi_token,
+            "ticket_ref": d.ticket_ref,
+            "hostname": f"Ticket {d.ticket_ref}",
+            "client": (d.context or {}).get("client") or "",
+            "site": (d.context or {}).get("affected_device") or "",
+            "model_id": chosen.model_id,
+            "model_display": chosen.display_name,
+            "allowed_models": [mdict(m) for m in allowed],
+            "require_approval": True,
+            "autoapprove_allowed": False,
+        })
+
+
 class AIScheduleAction(APIView):
     """Create/list AI scheduled actions (run once at a due time). Human-directed for
     now - NOT created automatically by triage."""

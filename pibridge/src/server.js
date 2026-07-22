@@ -583,6 +583,159 @@ async function startChat(ws, blob) {
   log("chat started", agentId, sessionId, `${blob.provider}/${blob.model_id}`);
 }
 
+// ---- Decision chat (stateful, streaming - the "Johnny 5" ticket chat) ------
+// Works exactly like the device chat (startChat): a persistent WebSocket-backed
+// agent session that keeps its full context + tool results across turns, streams
+// live activity, and gates disruptive device commands / customer replies through
+// the same approval UX. Session is persisted per TICKET so reconnects resume it.
+async function startDecisionChat(ws, blob) {
+  const ticketRef = blob.ticket_ref || "";
+  const histKey = `decision:${ticketRef}`;
+  const ctx = blob.context || {};
+
+  const authStorage = AuthStorage.create();
+  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
+  for (const m of blob.allowed_models || []) if (m.api_key) authStorage.setRuntimeApiKey(m.provider, m.api_key);
+  const modelRegistry = ModelRegistry.inMemory(authStorage);
+  const model = modelRegistry.find(blob.provider, blob.model_id);
+  if (!model) { ws.send(JSON.stringify({ type: "error", message: `Model not found: ${blob.provider}/${blob.model_id}` })); ws.close(); return; }
+
+  // Approval gating (disruptive device commands + customer replies).
+  const pendingApprovals = new Map();
+  function requestApproval(summary) {
+    const id = randomUUID();
+    return new Promise((resolve) => {
+      pendingApprovals.set(id, resolve);
+      ws.send(JSON.stringify({ type: "approval_request", id, summary }));
+    });
+  }
+
+  const { tools, hd, hdError } = buildDecisionTools({
+    helpdeskApi: blob.helpdesk_api || null,
+    helpdeskCode: blob.helpdesk_code || "",
+    ticketRef,
+    gate: requestApproval,
+  });
+  if (!hd) { ws.send(JSON.stringify({ type: "error", message: `helpdesk.js failed to load: ${hdError}` })); ws.close(); return; }
+
+  const loader = new DefaultResourceLoader({
+    agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+    systemPromptOverride: () =>
+      `You are Pi, an AI helpdesk technician working ONE ticket (${ticketRef}) live with a technician in a chat.\n` +
+      `This chat is STATEFUL: everything you learn and run stays in context for the whole conversation - never repeat work you've already done; build on it.\n` +
+      `What triage already found:\n` +
+      `- Client: ${ctx.client || "(unknown)"}\n- Affected device: ${ctx.affected_device || "(unknown)"}\n` +
+      `- Classification: ${ctx.classification || ""}\n- Summary: ${ctx.summary || ""}\n` +
+      (blob.question ? `- Your original question for the tech: ${blob.question}\n` : "") +
+      `\nDisruptive device commands and customer replies require the technician's approval (they'll get a prompt); non-disruptive diagnostics run freely.\n\n` +
+      (String(blob.decision_prompt || "").trim() || DEFAULT_DECISION_POLICY),
+  });
+  await loader.reload();
+
+  // Persist per ticket: resume the latest session for this ticket if one exists.
+  let sessionManager;
+  try {
+    const idx = history.readIndex(histKey);
+    const latest = Object.entries(idx).sort((a, b) => String(b[1].last_activity || "").localeCompare(String(a[1].last_activity || "")))[0];
+    if (latest && latest[1]?.file) { try { sessionManager = SessionManager.open(latest[1].file); } catch { sessionManager = null; } }
+  } catch { /* no history yet */ }
+  if (!sessionManager) sessionManager = SessionManager.create(CONFIG.sessionsRoot);
+
+  const { session } = await createAgentSession({
+    model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
+    noTools: "builtin", customTools: tools, resourceLoader: loader,
+    sessionManager, agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+  });
+  const sessionId = session.sessionId;
+  history.recordSession(histKey, sessionId, {
+    file: session.sessionFile,
+    name: `Ticket ${ticketRef}`,
+    started: history.readIndex(histKey)[sessionId]?.started || new Date().toISOString(),
+    last_activity: new Date().toISOString(),
+    model: `${blob.provider}/${blob.model_id}`, user: blob.username,
+  });
+
+  let lastActivity = Date.now(), toolsInFlight = 0, postedToTicket = false;
+  const CHATTER_OPS = new Set(["reply_to_ticket", "add_note", "resolve_ticket"]);
+  const unsubscribe = session.subscribe((event) => {
+    lastActivity = Date.now();
+    if (event.type === "tool_execution_start") {
+      toolsInFlight++;
+      if (event.toolName === "helpdesk_call" && CHATTER_OPS.has(event.args?.operation)) postedToTicket = true;
+      log("tool>", histKey, sessionId, event.toolName, JSON.stringify(event.args || {}).slice(0, 200));
+    } else if (event.type === "tool_execution_end") {
+      toolsInFlight = Math.max(0, toolsInFlight - 1);
+      log("tool<", histKey, sessionId, event.toolName, event.isError ? "ERROR" : "ok");
+    } else if (event.type === "agent_end") {
+      log("agent_end", histKey, sessionId);
+      const last = session.messages.filter((m) => m.role === "assistant").slice(-1)[0];
+      const t = last?.content?.find?.((c) => c.type === "text")?.text;
+      history.touchSession(histKey, sessionId, t || "");
+      // Keep the chat link at the top of the Odoo chatter after any post.
+      if (postedToTicket && blob.decision_url && hd?.operations?.add_note) {
+        postedToTicket = false;
+        hd.operations.add_note({ ticket: ticketRef, message: `\u27a1 Chat with me to continue this ticket: ${blob.decision_url}` }).catch(() => {});
+      }
+    }
+    try { ws.send(JSON.stringify({ type: "agent_event", event })); } catch {}
+  });
+
+  ws.send(JSON.stringify({
+    type: "ready", session_id: sessionId, hostname: `Ticket ${ticketRef}`,
+    multi: false, machines: [],
+    model: { provider: blob.provider, model_id: blob.model_id, display: model.name },
+    allowed_models: (blob.allowed_models || []).map((m) => ({ provider: m.provider, model_id: m.model_id, display_name: m.display_name, thinking_level: m.thinking_level, base_url: m.base_url })),
+    require_approval: true, autoapprove_allowed: false, read_only: false, mutate_allowed: true,
+    history: session.messages,
+  }));
+
+  let idleTimer;
+  const resetIdle = () => { clearTimeout(idleTimer); idleTimer = setTimeout(() => { try { ws.close(); } catch {} }, CONFIG.idleTimeoutMs); };
+  resetIdle();
+
+  ws.on("message", async (raw) => {
+    resetIdle();
+    let msg; try { msg = JSON.parse(raw.toString()); } catch { return; }
+    try {
+      switch (msg.type) {
+        case "prompt":
+          if (session.isStreaming) await session.prompt(msg.message, { streamingBehavior: "steer" });
+          else await session.prompt(msg.message);
+          break;
+        case "steer": await session.steer(msg.message); break;
+        case "abort": await session.abort(); break;
+        case "set_model": {
+          const allowed = (blob.allowed_models || []).find((m) => m.model_id === msg.model_id);
+          if (!allowed) { ws.send(JSON.stringify({ type: "error", message: `Model not permitted: ${msg.model_id}` })); break; }
+          const nm = modelRegistry.find(allowed.provider, allowed.model_id);
+          if (!nm) { ws.send(JSON.stringify({ type: "error", message: `Model not found: ${allowed.model_id}` })); break; }
+          await session.setModel(nm);
+          if (allowed.thinking_level) { try { session.setThinkingLevel(allowed.thinking_level); } catch {} }
+          ws.send(JSON.stringify({ type: "model_changed", model_id: allowed.model_id, display: nm.name }));
+          break;
+        }
+        case "approve":
+        case "deny": {
+          const resolve = pendingApprovals.get(msg.id);
+          if (resolve) { pendingApprovals.delete(msg.id); resolve(msg.type === "approve"); }
+          break;
+        }
+        default: break;
+      }
+    } catch (e) { ws.send(JSON.stringify({ type: "error", message: apiErrorMessage(e) })); }
+  });
+
+  ws.on("close", () => {
+    clearTimeout(idleTimer);
+    unsubscribe();
+    for (const [, resolve] of pendingApprovals) resolve(false);
+    pendingApprovals.clear();
+    try { session.dispose(); } catch {}
+    log("decision chat closed", histKey, sessionId);
+  });
+  log("decision chat started", histKey, sessionId, `${blob.provider}/${blob.model_id}`);
+}
+
 // ---- Headless run (scheduled AI tasks) -------------------------------------
 // In-flight headless runs by run_id, so an operator can abort them (kill
 // switch) and stop LLM token spend immediately.
@@ -1622,7 +1775,8 @@ server.on("upgrade", async (req, socket, head) => {
       clearInterval(hb);
       activeSessions--;
     });
-    startChat(ws, blob).catch((e) => {
+    const start = blob.kind === "decision" ? startDecisionChat : startChat;
+    start(ws, blob).catch((e) => {
       try {
         ws.send(JSON.stringify({ type: "error", message: apiErrorMessage(e) }));
         ws.close();

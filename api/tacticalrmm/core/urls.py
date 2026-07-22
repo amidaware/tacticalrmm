@@ -41,6 +41,7 @@ urlpatterns = [
     path("ai/schedule-action/<int:pk>/", views.AIScheduleAction.as_view()),
     path("ai/decision/<str:token>/", views.AIDecisionView.as_view()),
     path("ai/decision/<str:token>/status/", views.AIDecisionStatus.as_view()),
+    path("ai/decision/<str:token>/session/", views.AIDecisionSession.as_view()),
     path("ai/runs/", views.AITaskRuns.as_view()),
     path("ai/history-scope/", views.AIHistoryScope.as_view()),
     path("ai/runs/<str:run_id>/live/", views.AITaskRunLive.as_view()),

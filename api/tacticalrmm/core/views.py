@@ -1447,8 +1447,31 @@ class AITicketConsole(APIView):
         for d in AIDecisionRequest.objects.order_by("id").values("ticket_ref", "token", "context"):
             toks[d["ticket_ref"]] = d["token"]
             ctxs[d["ticket_ref"]] = d["context"] or {}
+        states = list(AITicketState.objects.order_by("-updated")[:500])
+        # Batch-fetch the current Odoo stage for these tickets (one bridge call).
+        stages = {}
+        try:
+            import requests as _requests
+
+            core = get_core_settings()
+            bridge = getattr(dj_settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+            resp = _requests.post(
+                f"{bridge}/pi/ticket-stages",
+                json={
+                    "refs": [s.ticket_ref for s in states],
+                    "helpdesk_api": {
+                        "base_url": core.ai_helpdesk_api_base_url or "",
+                        "api_key": core.ai_helpdesk_api_key or "",
+                    },
+                    "helpdesk_code": core.ai_helpdesk_code or "",
+                },
+                timeout=(5, 30),
+            )
+            stages = (resp.json() or {}).get("stages") or {}
+        except Exception:
+            stages = {}
         rows = []
-        for st in AITicketState.objects.order_by("-updated")[:500]:
+        for st in states:
             ctx = ctxs.get(st.ticket_ref, {})
             tok = toks.get(st.ticket_ref)
             rows.append({
@@ -1458,6 +1481,7 @@ class AITicketConsole(APIView):
                 "device": ctx.get("affected_device") or "",
                 "requester": st.requester,
                 "status": st.status,
+                "odoo_status": stages.get(st.ticket_ref, ""),
                 "classification": st.classification,
                 "is_alert": st.is_alert,
                 "summary": st.summary,

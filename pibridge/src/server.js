@@ -1000,6 +1000,16 @@ async function runReport(blob) {
 // ---- Ticket automation (helpdesk-agnostic add-on) ---------------------------
 // Poll: list open tickets via the admin-defined helpdesk.js op. The bridge is a
 // thin pass-through; scope filtering happens deterministically in Django.
+// Batch-fetch current Odoo stages for a set of ticket refs (Ticket Console column).
+async function runTicketStages(blob) {
+  let hd;
+  try { hd = loadHelpdesk(blob.helpdesk_code || "", blob.helpdesk_api || {}); }
+  catch (e) { return { error: `helpdesk.js failed to load: ${e?.message || e}` }; }
+  if (!hd || !hd.operations.get_ticket_stages) return { stages: {} };
+  try { return { stages: await hd.operations.get_ticket_stages({ refs: blob.refs || [] }) }; }
+  catch (e) { return { error: `get_ticket_stages failed: ${e?.message || e}`, stages: {} }; }
+}
+
 async function runTicketPoll(blob) {
   let hd;
   try {
@@ -1615,6 +1625,22 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: apiErrorMessage(e) }));
+      }
+    });
+    return;
+  }
+  // Batch Odoo stages for the Ticket Console.
+  if (url.pathname === "/pi/ticket-stages" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const result = await runTicketStages(JSON.parse(body || "{}"));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: apiErrorMessage(e), stages: {} }));
       }
     });
     return;

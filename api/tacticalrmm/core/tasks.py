@@ -1806,6 +1806,60 @@ def dispatch_due_ai_scheduled_actions():
 
 
 @app.task
+def attempt_ai_ticket_resolve(ticket_ref):
+    """Ticket Console 'auto-resolve': run a one-shot, READ-ONLY AI attempt on the
+    ticket (no customer email, no close, no disruptive changes). The AI posts an
+    internal note (RESOLVED-pending-sign-off + draft reply, OR the exact human steps);
+    we also append its output to the decision thread so the console shows it."""
+    import requests as _requests
+
+    from core.models import AIDecisionRequest, AITicketState
+
+    core = get_core_settings()
+    if not (core.ai_module_enabled and (core.ai_helpdesk_code or "").strip()):
+        return "disabled"
+    st = AITicketState.objects.filter(ticket_ref=ticket_ref).first()
+    dr = AIDecisionRequest.objects.filter(ticket_ref=ticket_ref).order_by("-id").first()
+    model = _resolve_ai_model(None)
+    if not model:
+        return "no model"
+    ctx = (dr.context if dr else None) or {"summary": (st.summary if st else "")}
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    try:
+        r = _requests.post(
+            f"{bridge}/pi/ticket-resolve",
+            json={
+                "ticket_ref": ticket_ref, "context": ctx,
+                "decision_prompt": core.ai_ticket_decision_prompt or "",
+                "provider": model.provider.name, "model_id": model.model_id,
+                "api_key": model.provider.api_key, "thinking_level": model.thinking_level,
+                "helpdesk_api": {
+                    "base_url": core.ai_helpdesk_api_base_url or "",
+                    "api_key": core.ai_helpdesk_api_key or "",
+                },
+                "helpdesk_code": core.ai_helpdesk_code or "",
+            },
+            timeout=(10, 600),
+        )
+        data = r.json()
+    except Exception as e:
+        return f"resolve error: {e}"
+    out = data.get("output") or (f"(error) {data['error']}" if data.get("error") else "(no output)")
+    if dr:
+        from django.utils import timezone as _tz
+
+        dr.messages = (dr.messages or []) + [
+            {"role": "assistant", "content": out, "ts": _tz.now().isoformat()}
+        ]
+        dr.status = "open"
+        dr.save(update_fields=["messages", "status", "updated"])
+    if st:
+        st.proposed_action = (out or "")[:5000]
+        st.save(update_fields=["proposed_action", "updated"])
+    return "ok"
+
+
+@app.task
 def run_ai_scheduled_action(pk):
     """Execute one due scheduled action on its device, update the ticket, then
     delete the job (or mark error)."""

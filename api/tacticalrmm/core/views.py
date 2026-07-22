@@ -1428,6 +1428,75 @@ class AIDeviceNote(APIView):
         agent.ai_notes = notes
         agent.save(update_fields=["ai_notes"])
         return Response({"ok": True, "notes": agent.ai_notes})
+class AITicketConsole(APIView):
+    """Pi AI Ticket Console (Tools menu): list every ticket the AI has touched,
+    newest-worked first, with what it did + the link to open its chat."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request):
+        from django.conf import settings as dj_settings
+
+        from core.models import AIDecisionRequest, AITicketState
+
+        base = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None) else ""
+        )
+        toks, ctxs = {}, {}
+        for d in AIDecisionRequest.objects.order_by("id").values("ticket_ref", "token", "context"):
+            toks[d["ticket_ref"]] = d["token"]
+            ctxs[d["ticket_ref"]] = d["context"] or {}
+        rows = []
+        for st in AITicketState.objects.order_by("-updated")[:500]:
+            ctx = ctxs.get(st.ticket_ref, {})
+            tok = toks.get(st.ticket_ref)
+            rows.append({
+                "ticket_ref": st.ticket_ref,
+                "subject": st.subject,
+                "client": ctx.get("client") or "",
+                "device": ctx.get("affected_device") or "",
+                "requester": st.requester,
+                "status": st.status,
+                "classification": st.classification,
+                "is_alert": st.is_alert,
+                "summary": st.summary,
+                "proposed_action": st.proposed_action,
+                "updated": st.updated.isoformat() if st.updated else "",
+                "token": tok,
+                "decision_url": (f"{base}/ai-decision/{tok}" if (base and tok) else ""),
+            })
+        return Response(rows)
+
+
+class AITicketConsoleItem(APIView):
+    """Detail for one ticket (what the AI did = the decision thread) + auto-resolve."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request, ticket_ref):
+        from core.models import AIDecisionRequest, AITicketState
+
+        st = get_object_or_404(AITicketState, ticket_ref=ticket_ref)
+        dr = AIDecisionRequest.objects.filter(ticket_ref=ticket_ref).order_by("-id").first()
+        return Response({
+            "ticket_ref": st.ticket_ref, "subject": st.subject, "status": st.status,
+            "classification": st.classification, "summary": st.summary,
+            "proposed_action": st.proposed_action, "is_alert": st.is_alert,
+            "messages": (dr.messages if dr else []) or [],
+            "context": (dr.context if dr else {}) or {},
+        })
+
+    def post(self, request, ticket_ref):
+        # Kick off a read-only AI auto-resolve attempt (writes an internal note).
+        from core.models import AITicketState
+        from core.tasks import attempt_ai_ticket_resolve
+
+        get_object_or_404(AITicketState, ticket_ref=ticket_ref)
+        attempt_ai_ticket_resolve.delay(ticket_ref)
+        return Response({"queued": True})
+
+
 class AIDecisionSession(APIView):
     """Mint a short-lived, STATEFUL streaming decision-chat session (WebSocket) for a
     ticket - the same machinery as the device chat, so it never blocks a web worker

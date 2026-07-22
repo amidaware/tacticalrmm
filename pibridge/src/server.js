@@ -1018,6 +1018,61 @@ async function runTicketPoll(blob) {
   }
 }
 
+// Headless AUTO-RESOLVE attempt (from the Ticket Console). One-shot agent run in
+// ASSESS/write-output mode: read-only diagnostics + safe non-destructive checks only.
+// It never emails the customer, never closes/cancels, never makes disruptive changes
+// (those need a human in the console). It finishes by posting ONE internal note that
+// either says "RESOLVED pending sign-off (+ draft reply)" or "NEEDS A HUMAN: <steps>".
+async function runTicketResolve(blob) {
+  const ticketRef = blob.ticket_ref || "";
+  const ctx = blob.context || {};
+  const authStorage = AuthStorage.create();
+  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
+  const modelRegistry = ModelRegistry.inMemory(authStorage);
+  const model = modelRegistry.find(blob.provider, blob.model_id);
+  if (!model) return { error: `Model not found: ${blob.provider}/${blob.model_id}` };
+  // Hard backstop: deny disruptive device commands AND customer email in this mode.
+  const gate = async (kind) => ({
+    ok: false,
+    reason: kind === "device"
+      ? "auto-resolve is read-only; a human must approve disruptive changes in the console."
+      : "auto-resolve does not email customers; put the draft reply in your note and a human will send it.",
+  });
+  const { tools, hd, hdError } = buildDecisionTools({
+    helpdeskApi: blob.helpdesk_api || null, helpdeskCode: blob.helpdesk_code || "", ticketRef, gate,
+  });
+  if (!hd) return { error: `helpdesk.js failed to load: ${hdError}` };
+  const loader = new DefaultResourceLoader({
+    agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+    systemPromptOverride: () =>
+      `You are Pi, attempting to AUTO-RESOLVE helpdesk ticket ${ticketRef} with NO human present.\n` +
+      `Client: ${ctx.client || "(unknown)"}; Device: ${ctx.affected_device || "(unknown)"}; Summary: ${ctx.summary || ""}\n` +
+      `STRICT RULES for this run:\n` +
+      `- Run READ-ONLY diagnostics and SAFE, non-destructive checks/fixes only.\n` +
+      `- Do NOT reply to or email the customer. Do NOT close, cancel, or resolve the ticket. Do NOT make disruptive changes (reboots, service stops, data loss). Those all require a human in the console.\n` +
+      `- Finish by calling add_note EXACTLY ONCE with one of:\n` +
+      `    RESOLVED (pending human sign-off): <what you verified/did> + a ready-to-send DRAFT customer reply.\n` +
+      `    NEEDS A HUMAN: <exactly what must be done, concrete step-by-step>.\n` +
+      `Be specific and technical; cite the evidence you gathered.\n\n` +
+      (String(blob.decision_prompt || "").trim() || DEFAULT_DECISION_POLICY),
+  });
+  await loader.reload();
+  const { session } = await createAgentSession({
+    model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
+    noTools: "builtin", customTools: tools, resourceLoader: loader,
+    sessionManager: SessionManager.inMemory(), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+  });
+  try {
+    await session.prompt(`Attempt to auto-resolve ${ticketRef} now. Investigate read-only, then post your single internal note.`);
+  } catch (e) { session.dispose(); return { error: apiErrorMessage(e) }; }
+  const output = session.messages
+    .filter((m) => m.role === "assistant")
+    .flatMap((m) => (m.content || []).filter((c) => c.type === "text").map((c) => c.text))
+    .join("\n").trim();
+  session.dispose();
+  return { output: output || "(no output)" };
+}
+
 // Triage ONE ticket in SHADOW mode: the model reads the ticket + classifies via
 // submit_triage; we then post the staff-only internal note DETERMINISTICALLY
 // (exactly one, consistent format). The model has no mutating tools at all.
@@ -1544,6 +1599,22 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "error", summary: apiErrorMessage(e), transcript: "" }));
+      }
+    });
+    return;
+  }
+  // Headless auto-resolve attempt from the Ticket Console (called by celery task).
+  if (url.pathname === "/pi/ticket-resolve" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const result = await runTicketResolve(JSON.parse(body || "{}"));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: apiErrorMessage(e) }));
       }
     });
     return;

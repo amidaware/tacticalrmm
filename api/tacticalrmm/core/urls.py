@@ -40,6 +40,8 @@ urlpatterns = [
     path("ai/schedule-action/", views.AIScheduleAction.as_view()),
     path("ai/schedule-action/<int:pk>/", views.AIScheduleAction.as_view()),
     path("ai/decision/<str:token>/session/", views.AIDecisionSession.as_view()),
+    path("ai/ticket-console/", views.AITicketConsole.as_view()),
+    path("ai/ticket-console/<path:ticket_ref>/", views.AITicketConsoleItem.as_view()),
     path("ai/runs/", views.AITaskRuns.as_view()),
     path("ai/history-scope/", views.AIHistoryScope.as_view()),
     path("ai/runs/<str:run_id>/live/", views.AITaskRunLive.as_view()),

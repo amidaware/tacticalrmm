@@ -18,6 +18,8 @@ from rest_framework import status as drf_status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
+
+from agents.permissions import PiPerms
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -1431,7 +1433,8 @@ class AIDecisionSession(APIView):
     ticket - the same machinery as the device chat, so it never blocks a web worker
     and keeps its full context across turns. Returns a pi-bridge session token."""
 
-    permission_classes = [IsAuthenticated]
+    # Same access model as the device chat: requires the AI module + can_use_ai.
+    permission_classes = [IsAuthenticated, PiPerms]
 
     def post(self, request, token):
         from django.conf import settings as dj_settings
@@ -1444,6 +1447,10 @@ class AIDecisionSession(APIView):
         core = get_core_settings()
         user = request.user
         is_super = user.is_superuser or (user.role and user.role.is_superuser)
+        # Write mode uses the SAME permission as the device chat (can_use_ai_mutate);
+        # auto-approve uses can_use_ai_autoapprove. Superusers get both.
+        mut = bool(is_super or (user.role and user.role.can_use_ai_mutate))
+        aa = bool(is_super or (user.role and user.role.can_use_ai_autoapprove))
         enabled = AIModel.objects.filter(enabled=True, provider__enabled=True).select_related("provider")
         if is_super:
             allowed = list(enabled)
@@ -1478,9 +1485,9 @@ class AIDecisionSession(APIView):
             "ticket_ref": d.ticket_ref,
             "decision_url": f"{base_url}/ai-decision/{token}" if base_url else "",
             # Controls shown in the window (mirror the device chat).
-            "mutate_allowed": bool(is_super or (user.role and user.role.can_use_ai_mutate)),
-            "allow_mutating": True,   # Write mode ON by default (disruptive still needs approval)
-            "autoapprove_allowed": bool(is_super or (user.role and user.role.can_use_ai_autoapprove)),
+            "mutate_allowed": mut,
+            "allow_mutating": False,  # Write mode OFF by default - tech must enable it (needs can_use_ai_mutate)
+            "autoapprove_allowed": aa,
             "allow_email": True,      # Allow customer email ON by default
             "require_approval": True,
             "question": d.question,
@@ -1517,7 +1524,7 @@ class AIDecisionSession(APIView):
             "model_display": chosen.display_name,
             "allowed_models": [mdict(m) for m in allowed],
             "require_approval": True,
-            "autoapprove_allowed": False,
+            "autoapprove_allowed": aa,
         })
 
 

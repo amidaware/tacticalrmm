@@ -665,6 +665,30 @@ export function buildTools({
     },
   });
 
+  const schedule_action = defineTool({
+    name: "schedule_action",
+    label: "Schedule an action",
+    description:
+      "Schedule work to run AUTOMATICALLY at a specific time on " + forThis + " (e.g. a maintenance " +
+      "window). The job runs ONCE at run_at, then removes itself and reports back. Confirm the exact " +
+      "time and action with the operator first. run_at is ISO 8601 (UTC 'Z' or with offset).",
+    parameters: params({
+      run_at: Type.String({ description: "ISO 8601 datetime, e.g. 2026-07-24T07:00:00Z" }),
+      action: Type.String({ description: "Exactly what to do at that time (clear and specific)" }),
+      allow_mutating: Type.Optional(Type.Boolean({ description: "Allow changes on the device (default true)" })),
+    }),
+    execute: async (_id, p) => {
+      const m = target(p);
+      try {
+        const out = await trmm.scheduleAction({
+          agent_id: m.agentId, ticket_ref: "", action: p.action,
+          run_at: p.run_at, allow_mutating: p.allow_mutating !== false,
+        });
+        return text(typeof out === "string" ? out : JSON.stringify(out));
+      } catch (e) { return text("schedule_action failed: " + (e?.message || e)); }
+    },
+  });
+
   let tools = [
     get_device_details,
     run_command_on_device,
@@ -678,13 +702,15 @@ export function buildTools({
     reboot_device,
     send_email,
     save_device_note,
+    schedule_action,
   ];
   if (hd) tools.push(helpdesk_call);
   if (anyWindows) tools.push(get_event_logs);
 
   if (hardReadonly) {
-    // no mutate rights at all: drop the destructive actions entirely.
-    const drop = new Set(["run_script_on_device", "kill_process", "reboot_device"]);
+    // no mutate rights at all: drop the destructive actions entirely (a scheduled
+    // action could run changes later, so drop it too for read-only-only users).
+    const drop = new Set(["run_script_on_device", "kill_process", "reboot_device", "schedule_action"]);
     tools = tools.filter((t) => !drop.has(t.name));
   }
   if (includeReport) tools.push(report_result);
@@ -697,6 +723,7 @@ export function buildTools({
     "reboot_device",
     "send_email",
     "helpdesk_call",
+    "schedule_action",
   ]);
 
   return { tools, mutating, verdict, machines, helpdeskState };

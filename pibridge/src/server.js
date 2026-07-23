@@ -1243,14 +1243,17 @@ async function runTicketTriage(blob) {
   // REGULAR tickets -> company + Primary Support Contact (a person who gets replies).
   // ALERT tickets -> the COMPANY only (never a customer individual, so a reply can't
   // email a person about monitoring noise). One-time; respects later manual edits.
-  const isAlertTicket = cls === "alert_clean" || cls === "alert_actionable" || !!blob.is_alert;
+  // Only CLEAN alerts (auto-cancelled monitoring noise, never replied to) attribute to the
+  // COMPANY level. Actionable alerts + regular tickets are real work that a human/AI will
+  // reply to, so they route to the company's Primary Support Contact when one is set.
+  const companyLevelOnly = cls === "alert_clean";
   let company_resolved = false, company_corrected = null;
   if (blob.correct_partner && verdict.company_partner_id && hd.operations.set_ticket_company) {
     company_resolved = true;
     try {
       company_corrected = await hd.operations.set_ticket_company({
         ticket: blob.ticket_ref, company_partner_id: verdict.company_partner_id,
-        company_level_only: isAlertTicket,
+        company_level_only: companyLevelOnly,
       });
     } catch (e) { company_corrected = { error: String(e?.message || e) }; }
   }

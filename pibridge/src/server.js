@@ -1149,8 +1149,8 @@ async function runTicketTriage(blob) {
       `   - find_devices with that company + the requester's username (email local part) AND the person's\n` +
       `     FULL NAME -> the RMM client and the user's device(s). Get the name from the email SIGNATURE /\n` +
       `     body, not just the ticket contact: the sender may submit on behalf of someone else or from a\n` +
-      `     shared mailbox (e.g. sent by ssohaney@ but signed 'George Eshak' -> pass username=ssohaney AND\n` +
-      `     person_name='George Eshak'). Pass BOTH so either matches. If several devices match, note it.\n` +
+      `     shared mailbox (e.g. sent by jdoe@ but signed 'Jane Smith' -> pass username=jdoe AND\n` +
+      `     person_name='Jane Smith'). Pass BOTH so either matches. If several devices match, note it.\n` +
       `   - A PERIPHERAL is NOT the device to look up: a printer/scanner/copier (e.g. a Toshiba e-studio)\n` +
       `     is almost never an RMM agent - do NOT report 'device not found' for it. The issue (driver,\n` +
       `     spooler, rendering) lives on the USER'S PC, so resolve THAT workstation instead.\n` +

@@ -1470,6 +1470,29 @@ class AITicketConsole(APIView):
             stages = (resp.json() or {}).get("stages") or {}
         except Exception:
             stages = {}
+
+        # RECONCILE against Odoo (source of truth): if a ticket is Cancelled/Closed/Done
+        # in Odoo but our AI status doesn't reflect a matching terminal state, sync it -
+        # so the console never shows a closed ticket as "needs input" etc.
+        def _terminal(stage):
+            s = (stage or "").lower()
+            if "cancel" in s:
+                return "cancelled", {"cancelled", "cancelled_clean"}
+            if "closed" in s:  # Closed + AI Closed
+                return "closed", {"closed", "resolved"}
+            if "done" in s or "billing" in s:
+                return "done", {"done", "closed"}
+            return None, None
+
+        reconciled = []
+        for st in states:
+            canon, ok_set = _terminal(stages.get(st.ticket_ref, ""))
+            if canon and st.status not in ok_set:
+                st.status = canon
+                reconciled.append(st)
+        if reconciled:
+            AITicketState.objects.bulk_update(reconciled, ["status"])
+
         rows = []
         for st in states:
             ctx = ctxs.get(st.ticket_ref, {})

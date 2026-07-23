@@ -1087,6 +1087,28 @@ async function runTicketResolve(blob) {
   return { output: output || "(no output)" };
 }
 
+// Render a clean, readable internal note (HTML) instead of one dense run-on line:
+// a bold header, bold field labels, section spacing, a rule separator, and a styled
+// chat link. toHtml() passes this through untouched; toText() gives a plain fallback.
+function fmtNote({ heading, sub, rows, sections, footer, chatUrl, chatLabel }) {
+  // idempotent escape: collapse any pre-existing entities first so a value that's
+  // already escaped (e.g. "A &amp; B") doesn't become "A &amp;amp; B".
+  const e = (s) => String(s == null ? "" : s)
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const hr = '<hr style="border:none;border-top:1px solid #d5d5d5;margin:8px 0"/>';
+  let h = '<div style="font-family:Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.55;color:#1f2937">';
+  h += '<div style="font-weight:700;color:#0b5cad">\uD83E\uDD16 ' + e(heading);
+  if (sub) h += ' <span style="font-weight:400;color:#8a8a8a">\u2014 ' + e(sub) + '</span>';
+  h += '</div>' + hr;
+  for (const [k, v] of (rows || [])) if (v) h += '<div><b>' + e(k) + ':</b> ' + e(v) + '</div>';
+  for (const [k, v] of (sections || [])) if (v) h += '<div style="margin-top:8px"><b>' + e(k) + '</b><br/>' + e(v).replace(/\n/g, "<br/>") + '</div>';
+  if (footer) h += '<div style="margin-top:8px;color:#8a8a8a;font-size:12px">' + e(footer) + '</div>';
+  if (chatUrl) h += hr + '<div>\u27A1 <a href="' + chatUrl + '" style="color:#0b5cad;font-weight:600;text-decoration:none">' + e(chatLabel || "Chat with me to continue this ticket") + '</a></div>';
+  h += '</div>';
+  return h;
+}
+
 // Triage ONE ticket in SHADOW mode: the model reads the ticket + classifies via
 // submit_triage; we then post the staff-only internal note DETERMINISTICALLY
 // (exactly one, consistent format). The model has no mutating tools at all.
@@ -1287,12 +1309,14 @@ async function runTicketTriage(blob) {
     if (!verdict.needs_input && cls === "alert_clean" && blob.act_enabled && hd.operations.cancel_ticket) {
       await hd.operations.cancel_ticket({
         ticket: blob.ticket_ref,
-        reason:
-          `PI.DEV AI - auto-cancelled (clean, non-actionable alert)\n${ctx}` +
-          `Summary: ${verdict.summary}\n` +
-          `Why no action is needed: ${verdict.proposed_action}\n` +
-          `Policy: clean informational alerts (backup/monitoring "success"/"OK"/"completed" reports) ` +
-          `are auto-closed for all clients - there is nothing to fix and no customer awaiting a reply.` + chatLink,
+        reason: fmtNote({
+          heading: "Pi.dev AI \u2014 Auto-cancelled",
+          sub: "clean, non-actionable alert",
+          rows: [["Client", verdict.client], ["Device", verdict.affected_device]],
+          sections: [["Summary", verdict.summary], ["Why no action is needed", verdict.proposed_action]],
+          footer: "Policy: clean informational alerts (backup/monitoring success/OK/completed reports) are auto-closed for all clients - nothing to fix and no customer awaiting a reply.",
+          chatUrl: blob.decision_url,
+        }),
       });
       return { ...verdict, action: "cancelled", company_resolved, company_corrected };
     }
@@ -1301,11 +1325,13 @@ async function runTicketTriage(blob) {
       if (blob.post_shadow_note !== false && hd.operations.add_note)
         await hd.operations.add_note({
           ticket: blob.ticket_ref,
-          message:
-            `PI.DEV AI TRIAGE (look-only - no action taken)\n` +
-            `Classification: ${cls}${verdict.needs_input ? " (would need human input)" : ""}\n${ctx}` +
-            `Summary: ${verdict.summary}\n` +
-            `Would do: ${verdict.proposed_action}` + chatLink,
+          message: fmtNote({
+            heading: "Pi.dev AI \u2014 Triage",
+            sub: "look-only - no action taken",
+            rows: [["Classification", cls], ["Client", verdict.client], ["Device", verdict.affected_device]],
+            sections: [["Summary", verdict.summary], ["Recommendation", verdict.proposed_action]],
+            chatUrl: blob.decision_url,
+          }),
         });
       await standDown();
       return { ...verdict, action: "shadow_note", company_resolved, company_corrected };
@@ -1316,11 +1342,13 @@ async function runTicketTriage(blob) {
       if (hd.operations.add_note)
         await hd.operations.add_note({
           ticket: blob.ticket_ref,
-          message:
-            `PI.DEV AI - needs a human decision (tagged "Johnny 5 Need Input!")\n` +
-            `Classification: ${cls}\n${ctx}Summary: ${verdict.summary}\n` +
-            `Why/what's needed: ${verdict.proposed_action}` +
-            (blob.decision_url ? `\n\n\u27a1 Give input (opens a chat with the AI): ${blob.decision_url}` : ""),
+          message: fmtNote({
+            heading: "Pi.dev AI \u2014 Needs a human decision",
+            sub: 'tagged "Johnny 5 Need Input!"',
+            rows: [["Classification", cls], ["Client", verdict.client], ["Device", verdict.affected_device]],
+            sections: [["Summary", verdict.summary], ["What's needed", verdict.proposed_action]],
+            chatUrl: blob.decision_url, chatLabel: "Give input (opens a chat with the AI)",
+          }),
         });
       await releaseIfMine();
       return { ...verdict, action: "needs_input", company_resolved, company_corrected };
@@ -1341,22 +1369,27 @@ async function runTicketTriage(blob) {
       // once a tech directs it in the chat - can pick it up and work it to completion.
       await hd.operations.add_note({
         ticket: blob.ticket_ref,
-        message:
-          `PI.DEV AI - actionable alert (needs work; left UNASSIGNED for a human)\n${ctx}` +
-          `Summary: ${verdict.summary}\n` +
-          `Suggested plan: ${verdict.proposed_action}` + chatLink,
+        message: fmtNote({
+          heading: "Pi.dev AI \u2014 Actionable alert",
+          sub: "needs work; left UNASSIGNED for a human",
+          rows: [["Client", verdict.client], ["Device", verdict.affected_device]],
+          sections: [["Summary", verdict.summary], ["Suggested plan", verdict.proposed_action]],
+          chatUrl: blob.decision_url,
+        }),
       });
       await standDown();
       action = "flagged_actionable";
     } else if (blob.post_shadow_note !== false && hd.operations.add_note) {
       await hd.operations.add_note({
         ticket: blob.ticket_ref,
-        message:
-          `PI.DEV AI TRIAGE (SHADOW MODE - no action taken)\n` +
-          `Classification: ${cls}\n${ctx}` +
-          `Summary: ${verdict.summary}\n` +
-          `Would do: ${verdict.proposed_action}\n` +
-          `(Pilot: the AI only drafts; a human decides.)` + chatLink,
+        message: fmtNote({
+          heading: "Pi.dev AI \u2014 Triage",
+          sub: "shadow mode - no action taken",
+          rows: [["Classification", cls], ["Client", verdict.client], ["Device", verdict.affected_device]],
+          sections: [["Summary", verdict.summary], ["Would do", verdict.proposed_action]],
+          footer: "Pilot: the AI only drafts; a human decides.",
+          chatUrl: blob.decision_url,
+        }),
       });
       await standDown();
       action = "shadow_note";

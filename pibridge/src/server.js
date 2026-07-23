@@ -705,6 +705,23 @@ async function startDecisionChat(ws, blob) {
     history: [...priorHist, ...session.messages],
   }));
 
+  // As soon as the tech actually STARTS TALKING to this chat (first prompt), assign
+  // the ticket to them (matched by their RMM email/login to an Odoo user). Only takes
+  // over an unassigned or bot-owned ticket - never steals from another human. Runs once.
+  let assignAttempted = false;
+  async function assignWorkingUser() {
+    if (assignAttempted) return; assignAttempted = true;
+    if (!blob.user_email && !blob.user_display && !blob.username) return;
+    if (!hd?.operations?.assign_to_working_user) return;
+    try {
+      const r = await hd.operations.assign_to_working_user({
+        ticket: ticketRef, email: blob.user_email || "", name: blob.user_display || blob.username || "",
+      });
+      log("decision assign", histKey, JSON.stringify(r || {}).slice(0, 180));
+      if (r?.ok && r?.assignee) { try { ws.send(JSON.stringify({ type: "info", message: `Ticket assigned to ${r.assignee}` })); } catch {} }
+    } catch (e) { log("decision assign err", histKey, String(e).slice(0, 180)); }
+  }
+
   let idleTimer;
   const resetIdle = () => { clearTimeout(idleTimer); idleTimer = setTimeout(() => { try { ws.close(); } catch {} }, CONFIG.idleTimeoutMs); };
   resetIdle();
@@ -715,6 +732,7 @@ async function startDecisionChat(ws, blob) {
     try {
       switch (msg.type) {
         case "prompt":
+          assignWorkingUser(); // fire-and-forget: claim the ticket for the working tech on first message
           if (session.isStreaming) await session.prompt(msg.message, { streamingBehavior: "steer" });
           else await session.prompt(msg.message);
           break;

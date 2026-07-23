@@ -1624,6 +1624,10 @@ class AIDecisionSession(APIView):
             "question": d.question,
             "context": d.context,
             "username": user.username,
+            # Identity of the tech working this chat, so the bridge can assign the
+            # ticket to them (matched to an Odoo user) as soon as they start talking.
+            "user_email": getattr(user, "email", "") or "",
+            "user_display": (user.get_full_name() if hasattr(user, "get_full_name") else "") or user.username,
             "provider": chosen.provider.name,
             "model_id": chosen.model_id,
             "thinking_level": chosen.thinking_level,

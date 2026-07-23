@@ -1918,3 +1918,108 @@ def run_ai_scheduled_action(pk):
     ref = act.ticket_ref
     act.delete()
     return f"done + deleted (ticket {ref or 'n/a'}): {(summary or '')[:120]}"
+
+
+# ---------------------------------------------------------------------------
+# AI Procedures miner: learn reusable, helpdesk-agnostic PROCEDURES (symptom ->
+# root cause -> fix -> verify) from how tickets actually get closed. First run
+# backfills `ai_procedures_backfill_days`; later runs are incremental since
+# last_mined. Fully gated by Global Settings; a no-op unless enabled. The LLM
+# distillation happens in the bridge (/pi/mine-procedures); this task owns the
+# window, the schedule gate, and the dedup/merge into AIProcedure rows.
+# ---------------------------------------------------------------------------
+
+def _procedure_confidence(p):
+    """Cheap, transparent confidence: approved + seen a few times = high. This is what
+    later gates auto-resolution (only high-confidence, approved procedures qualify)."""
+    n = p.occurrence_count or 1
+    if p.status == "approved" and n >= 3:
+        return "high"
+    if n >= 3 or p.status == "approved":
+        return "medium"
+    return "low"
+
+
+@app.task
+def mine_ticket_procedures(force=False):
+    from datetime import timedelta
+
+    import requests as _requests
+    from django.utils import timezone as djangotime
+
+    from core.models import AIProcedure
+
+    core = get_core_settings()
+    if not (core.ai_module_enabled and core.ai_procedures_enabled and core.ai_procedures_mining_enabled):
+        return "disabled"
+    if not (core.ai_helpdesk_code or "").strip():
+        return "no helpdesk integration configured"
+    now = djangotime.now()
+    interval = timedelta(hours=max(1, core.ai_procedures_interval_hours or 24))
+    if not force and core.ai_procedures_last_mined and (now - core.ai_procedures_last_mined) < interval:
+        return "not due"
+    since = core.ai_procedures_last_mined or (now - timedelta(days=max(1, core.ai_procedures_backfill_days or 120)))
+    model = _resolve_ai_model(None)
+    if not model:
+        return "no model"
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    run_timeout = getattr(settings, "PI_RUN_TIMEOUT", 3600)
+    try:
+        r = _requests.post(
+            f"{bridge}/pi/mine-procedures",
+            json={
+                "since": since.isoformat(),
+                "provider": model.provider.name,
+                "model_id": model.model_id,
+                "api_key": model.provider.api_key,
+                "thinking_level": model.thinking_level,
+                "mining_prompt": core.ai_procedures_mining_prompt or "",
+                "helpdesk_api": {
+                    "base_url": core.ai_helpdesk_api_base_url or "",
+                    "api_key": core.ai_helpdesk_api_key or "",
+                },
+                "helpdesk_code": core.ai_helpdesk_code or "",
+            },
+            timeout=(10, min(run_timeout, 1800)),
+        )
+        data = r.json()
+    except Exception as e:
+        return f"bridge error: {e}"
+    if data.get("error"):
+        return f"miner error: {str(data['error'])[:300]}"
+    procs = data.get("procedures") or []
+    created = updated = 0
+    for p in procs:
+        title = (p.get("title") or "").strip()
+        if not title:
+            continue
+        cat = (p.get("category") or "").strip()[:100]
+        refs = [str(x) for x in (p.get("source_ticket_refs") or [])]
+        # dedup/merge: same title (case-insensitive) within the same category
+        existing = AIProcedure.objects.filter(title__iexact=title, category__iexact=cat).first()
+        if existing:
+            merged = list(dict.fromkeys((existing.source_ticket_refs or []) + refs))
+            existing.source_ticket_refs = merged
+            existing.occurrence_count = max(existing.occurrence_count, len(merged) or existing.occurrence_count)
+            existing.last_seen = now
+            # only FILL BLANKS - never overwrite a human's edits to an existing procedure
+            for f in ("symptom", "root_cause", "fix", "verification", "applies_to"):
+                if not getattr(existing, f) and p.get(f):
+                    setattr(existing, f, p.get(f))
+            existing.confidence = _procedure_confidence(existing)
+            existing.save()
+            updated += 1
+        else:
+            obj = AIProcedure.objects.create(
+                title=title[:300], category=cat, applies_to=(p.get("applies_to") or "")[:400],
+                symptom=p.get("symptom") or "", root_cause=p.get("root_cause") or "",
+                fix=p.get("fix") or "", verification=p.get("verification") or "",
+                source_ticket_refs=refs, occurrence_count=max(1, len(refs)),
+                first_seen=now, last_seen=now, origin="ai_mined", status="draft",
+            )
+            obj.confidence = _procedure_confidence(obj)
+            obj.save(update_fields=["confidence"])
+            created += 1
+    core.ai_procedures_last_mined = now
+    core.save(update_fields=["ai_procedures_last_mined"])
+    return f"mined {created} new / {updated} updated (since {since.date()})"

@@ -94,6 +94,12 @@ app.conf.beat_schedule = {
         "task": "core.tasks.dispatch_due_ai_scheduled_actions",
         "schedule": timedelta(seconds=60.0),
     },
+    # AI Procedures miner. Runs often but SELF-GATES on the editable interval +
+    # enabled flags in Global Settings, so the real cadence is set by the admin.
+    "mine-ticket-procedures": {
+        "task": "core.tasks.mine_ticket_procedures",
+        "schedule": crontab(minute="*/30"),
+    },
 }
 
 

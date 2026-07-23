@@ -1559,6 +1559,96 @@ class AITicketConsoleItem(APIView):
         return Response({"queued": True})
 
 
+class AIProcedures(APIView):
+    """The AI Procedures library (RMM-native, helpdesk-agnostic). GET lists/searches;
+    POST creates a procedure. Editable from the Ticket Console 'Procedures' view."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request):
+        from django.db.models import Q
+
+        from core.models import AIProcedure
+        from core.serializers import AIProcedureSerializer
+
+        qs = AIProcedure.objects.all()
+        q = (request.query_params.get("q") or "").strip()
+        cat = (request.query_params.get("category") or "").strip()
+        status_f = (request.query_params.get("status") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(title__icontains=q) | Q(symptom__icontains=q) | Q(fix__icontains=q)
+                | Q(applies_to__icontains=q) | Q(root_cause__icontains=q) | Q(category__icontains=q)
+            )
+        if cat:
+            qs = qs.filter(category__iexact=cat)
+        if status_f:
+            qs = qs.filter(status=status_f)
+        cats = sorted(
+            c for c in AIProcedure.objects.exclude(category="").values_list("category", flat=True).distinct()
+        )
+        return Response({
+            "procedures": AIProcedureSerializer(qs[:1000], many=True).data,
+            "categories": cats,
+            "total": AIProcedure.objects.count(),
+        })
+
+    def post(self, request):
+        from core.serializers import AIProcedureSerializer
+
+        data = dict(request.data)
+        data.setdefault("origin", "human")
+        data["updated_by"] = request.user.username
+        ser = AIProcedureSerializer(data=data)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+
+class AIProcedureDetail(APIView):
+    """Get / update / delete ONE procedure (used by the Console editor)."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def _obj(self, pk):
+        from core.models import AIProcedure
+
+        return get_object_or_404(AIProcedure, pk=pk)
+
+    def get(self, request, pk):
+        from core.serializers import AIProcedureSerializer
+
+        return Response(AIProcedureSerializer(self._obj(pk)).data)
+
+    def put(self, request, pk):
+        from core.serializers import AIProcedureSerializer
+
+        obj = self._obj(pk)
+        data = dict(request.data)
+        data["updated_by"] = request.user.username
+        ser = AIProcedureSerializer(obj, data=data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+    def delete(self, request, pk):
+        self._obj(pk).delete()
+        return Response({"deleted": True})
+
+
+class AIProceduresMineNow(APIView):
+    """Manually trigger a procedure-mining run now (respects the backfill/incremental
+    window). Handy for a first backfill without waiting for the schedule."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        from core.tasks import mine_ticket_procedures
+
+        mine_ticket_procedures.delay(force=True)
+        return Response({"queued": True})
+
+
 class AIDecisionSession(APIView):
     """Mint a short-lived, STATEFUL streaming decision-chat session (WebSocket) for a
     ticket - the same machinery as the device chat, so it never blocks a web worker

@@ -159,8 +159,9 @@ class CoreSettings(BaseAuditModel):
     # not in shipped code.
     ai_ticket_triage_prompt = models.TextField(blank=True, default="")
     # Admin-editable behavior prompt for the "Johnny 5 Need Input!" decision chat
-    # (routing, completion policy, device-fix/email rules, etc.). Dynamic bits stay in
-    # code; this is the editable policy. Empty = use the built-in default.
+    # (routing, completion policy, device-fix/email rules, etc.). The dynamic bits
+    # (ticket ref, resolved context, per-turn approval status) stay in code; this
+    # is the editable policy appended to them. Empty = use the built-in default.
     ai_ticket_decision_prompt = models.TextField(blank=True, default="")
     # Phase 2: when True the AI ACTS on alert tickets (not just shadow notes):
     # non-actionable alerts (e.g. successful backups) are moved to Cancelled via
@@ -172,6 +173,16 @@ class CoreSettings(BaseAuditModel):
     #   {"by_domain": {"example.com": "RMM Client Name"},
     #    "by_company": {"Odoo Company Name": "RMM Client Name"}}
     ai_ticket_client_map = models.TextField(blank=True, default="")
+    # AI Procedures / knowledge-mining. Builds a reusable, helpdesk-agnostic PROCEDURE
+    # library (symptom -> root cause -> fix -> verify) by learning how tickets actually
+    # get closed: a backfill of the last `backfill_days` on first run, then incremental.
+    # Everything editable in Global Settings; the miner is a no-op unless enabled.
+    ai_procedures_enabled = models.BooleanField(default=False)
+    ai_procedures_mining_enabled = models.BooleanField(default=False)
+    ai_procedures_interval_hours = models.PositiveIntegerField(default=24)
+    ai_procedures_backfill_days = models.PositiveIntegerField(default=120)
+    ai_procedures_mining_prompt = models.TextField(blank=True, default="")
+    ai_procedures_last_mined = models.DateTimeField(null=True, blank=True)
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)
@@ -985,11 +996,12 @@ class AITicketState(models.Model):
     proposed_action = models.TextField(blank=True, default="")
     # helpdesk-side last-change marker we processed (write_date or similar)
     last_change_seen = models.CharField(max_length=64, blank=True, default="")
-    # Highest helpdesk message id processed. Re-triage when a NEWER message from a
-    # non-AI author (customer/tech) appears - the resume loop.
+    # Highest helpdesk message id we've processed. Re-triage happens when a NEWER
+    # message from a non-AI author (customer/tech) appears - the resume loop.
     last_message_id = models.PositiveBigIntegerField(default=0)
     assignee_seen = models.CharField(max_length=120, blank=True, default="")
-    # One-time company/contact correction done; then leave the partner alone.
+    # Whether we've done the one-time company/contact correction on this ticket.
+    # After the first check we leave the partner alone (respect manual edits).
     partner_checked = models.BooleanField(default=False)
     # When the AI last actually TRIAGED/worked this ticket (distinct from `updated`,
     # which auto-bumps on any bookkeeping save). Drives the console's "Last worked".
@@ -1003,6 +1015,54 @@ class AITicketState(models.Model):
 
     def __str__(self) -> str:
         return f"{self.ticket_ref} [{self.status}]"
+
+
+class AIProcedure(models.Model):
+    """A reusable, helpdesk-AGNOSTIC troubleshooting PROCEDURE: symptom -> root cause
+    -> fix -> verification, plus the vendor/app keywords it applies to.
+
+    Built by the AI (mining how closed tickets were resolved + capturing its own
+    resolutions) and fully editable by humans in the Ticket Console. This is the
+    compounding knowledge asset that later gates confident auto-resolution: a match to
+    an APPROVED, high-occurrence procedure is what makes unattended handling safe.
+
+    Lives in the RMM DB (not the helpdesk) on purpose - it must outlive any one
+    ticketing system and carry structured fields the AI can match + score against.
+    """
+
+    ORIGIN = (
+        ("ai_mined", "AI mined from closed tickets"),
+        ("ai_resolution", "AI captured on resolve"),
+        ("human", "Human authored"),
+    )
+    STATUS = (("draft", "Draft"), ("approved", "Approved"), ("retired", "Retired"))
+
+    title = models.CharField(max_length=300)
+    category = models.CharField(max_length=100, blank=True, default="")
+    # space/comma-separated vendor/app/os keywords used for matching
+    # (e.g. "toshiba mfp printer pcl excel")
+    applies_to = models.CharField(max_length=400, blank=True, default="")
+    symptom = models.TextField(blank=True, default="")
+    root_cause = models.TextField(blank=True, default="")
+    fix = models.TextField(blank=True, default="")
+    verification = models.TextField(blank=True, default="")
+    occurrence_count = models.PositiveIntegerField(default=1)
+    source_ticket_refs = models.JSONField(default=list, blank=True)
+    first_seen = models.DateTimeField(null=True, blank=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
+    confidence = models.CharField(max_length=10, default="low")  # low | medium | high
+    origin = models.CharField(max_length=20, choices=ORIGIN, default="ai_mined")
+    status = models.CharField(max_length=10, choices=STATUS, default="draft")
+    updated_by = models.CharField(max_length=120, blank=True, default="")
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["category"]), models.Index(fields=["status"])]
+        ordering = ["-updated"]
+
+    def __str__(self) -> str:
+        return f"{self.title} [{self.status}]"
 
 
 class AIDecisionRequest(models.Model):

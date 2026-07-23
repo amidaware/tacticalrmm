@@ -10,7 +10,7 @@ import {
   createAgentSession,
 } from "@earendil-works/pi-coding-agent";
 import { CONFIG } from "./config.js";
-import { buildTools, buildReportTools, buildTicketTriageTools, buildDecisionTools } from "./tools.js";
+import { buildTools, buildReportTools, buildTicketTriageTools, buildDecisionTools, buildProcedureMiningTools } from "./tools.js";
 import { loadHelpdesk } from "./helpdesk-runtime.js";
 import * as history from "./history.js";
 
@@ -1048,6 +1048,63 @@ async function runTicketPoll(blob) {
   }
 }
 
+// Default policy for the Procedures miner - editable in Global Settings
+// (ai_procedures_mining_prompt); this is the fallback when that box is empty.
+const DEFAULT_MINING_PROMPT =
+  `You are Pi, mining a batch of recently-CLOSED helpdesk tickets to build a library of REUSABLE, ` +
+  `CLIENT-AGNOSTIC troubleshooting PROCEDURES - how a type of problem gets fixed, so future tickets ` +
+  `(and the AI) can reuse it.\n` +
+  `You will be given closed tickets with their conversation/resolution. For each DISTINCT, GENERIC ` +
+  `problem pattern you can see was actually resolved, distill: title, category (Printers, Email, ` +
+  `QuickBooks, Backups, Active Directory, Networking, Microsoft 365, etc.), applies_to keywords, ` +
+  `symptom, root_cause, fix (the exact steps that worked), verification.\n` +
+  `RULES:\n` +
+  `- MERGE tickets that are the same underlying problem into ONE procedure; list all their refs in source_ticket_refs.\n` +
+  `- SKIP: tickets with no useful resolution, pure monitoring/backup noise, spam/junk, and purely CLIENT-SPECIFIC facts (a client's VPN/firewall/contact details are NOT a procedure).\n` +
+  `- Write client-agnostic steps: no client names, no people, no secrets.\n` +
+  `- Be conservative: only record a procedure when the resolution is actually clear from the thread. Quality over quantity.\n` +
+  `Call submit_procedures EXACTLY ONCE with the full array, then stop.`;
+
+// Mine reusable procedures from recently-closed tickets. Pre-fetches the closed
+// tickets via helpdesk.js (list_closed_tickets), then runs ONE model turn whose only
+// tool is submit_procedures. Returns the distilled procedures for the Django task to
+// dedup/merge into AIProcedure rows.
+async function runProcedureMining(blob) {
+  const hd = loadHelpdesk(blob.helpdesk_code || "", blob.helpdesk_api || null);
+  if (!hd || !hd.operations.list_closed_tickets)
+    return { error: "helpdesk.js defines no list_closed_tickets operation", procedures: [] };
+  const tickets = await hd.operations.list_closed_tickets({ since: blob.since, limit: 200 });
+  if (!Array.isArray(tickets) || !tickets.length) return { procedures: [], scanned: 0 };
+
+  const authStorage = AuthStorage.create();
+  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
+  const modelRegistry = ModelRegistry.inMemory(authStorage);
+  const model = modelRegistry.find(blob.provider, blob.model_id);
+  if (!model) return { error: `Model not found: ${blob.provider}/${blob.model_id}`, procedures: [] };
+
+  const { tools, collected } = buildProcedureMiningTools();
+  const loader = new DefaultResourceLoader({
+    agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+    systemPromptOverride: () => (String(blob.mining_prompt || "").trim() || DEFAULT_MINING_PROMPT),
+  });
+  await loader.reload();
+  const { session } = await createAgentSession({
+    model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
+    noTools: "builtin", customTools: tools, resourceLoader: loader,
+    sessionManager: SessionManager.create(CONFIG.sessionsRoot), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+  });
+  const compact = tickets.map((t) => ({
+    ref: t.ref, subject: t.subject, company: t.company, assignee: t.assignee,
+    thread: (t.messages || []).map((m) => `${m.author} (${m.type}): ${m.text}`).join("\n").slice(0, 3000),
+  }));
+  const prompt =
+    `Here are ${compact.length} recently-closed tickets with their conversation/resolution. Distill the ` +
+    `reusable, client-agnostic procedures they teach, then call submit_procedures ONCE.\n\n` +
+    JSON.stringify(compact).slice(0, 180000);
+  try { await session.prompt(prompt); } finally { try { session.dispose(); } catch {} }
+  return { procedures: collected.procedures || [], scanned: tickets.length };
+}
+
 // Headless AUTO-RESOLVE attempt (from the Ticket Console). One-shot agent run in
 // ASSESS/write-output mode: read-only diagnostics + safe non-destructive checks only.
 // It never emails the customer, never closes/cancels, never makes disruptive changes
@@ -1721,6 +1778,22 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: apiErrorMessage(e) }));
+      }
+    });
+    return;
+  }
+  // AI Procedures miner: distill reusable procedures from recently-closed tickets.
+  if (url.pathname === "/pi/mine-procedures" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const result = await runProcedureMining(JSON.parse(body || "{}"));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: apiErrorMessage(e), procedures: [] }));
       }
     });
     return;

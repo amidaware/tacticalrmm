@@ -842,6 +842,39 @@ export function buildReportTools({ helpdeskCode, helpdeskApi } = {}) {
 // submit_triage exactly once with its classification + draft. The staff-only
 // shadow note is posted DETERMINISTICALLY by the caller afterwards - the model
 // cannot close, reply, assign, or touch anything.
+// Tools for the AI Procedures miner: ONE tool, submit_procedures, which captures the
+// reusable procedures the model distilled from a batch of closed tickets.
+export function buildProcedureMiningTools() {
+  const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
+  const collected = { procedures: [] };
+  const submit_procedures = defineTool({
+    name: "submit_procedures",
+    label: "Submit mined procedures",
+    description:
+      "Record the reusable, CLIENT-AGNOSTIC troubleshooting procedures you distilled from the closed " +
+      "tickets. Call EXACTLY ONCE with an array. Each procedure is a GENERIC problem pattern (not a " +
+      "one-off), with the steps that actually resolved it. SKIP tickets with no useful resolution, " +
+      "pure monitoring noise, or purely client-specific facts (those are not procedures).",
+    parameters: Type.Object({
+      procedures: Type.Array(Type.Object({
+        title: Type.String({ description: "Short searchable title, e.g. 'Toshiba MFP prints garbled from Excel'" }),
+        category: Type.String({ description: "Topic bucket, e.g. Printers, Email, QuickBooks, Backups, Active Directory, Networking, Microsoft 365" }),
+        applies_to: Type.Optional(Type.String({ description: "Vendor/app/OS keywords for matching, e.g. 'toshiba mfp pcl excel print'" })),
+        symptom: Type.String({ description: "The observable problem" }),
+        root_cause: Type.Optional(Type.String({ description: "What it actually was" })),
+        fix: Type.String({ description: "The exact steps that resolved it" }),
+        verification: Type.Optional(Type.String({ description: "How to confirm it is fixed" })),
+        source_ticket_refs: Type.Optional(Type.Array(Type.String({ description: "Ticket ref(s) this came from" }))),
+      })),
+    }),
+    execute: async (_id, p) => {
+      collected.procedures = Array.isArray(p.procedures) ? p.procedures : [];
+      return text(`Recorded ${collected.procedures.length} procedures.`);
+    },
+  });
+  return { tools: [submit_procedures], collected };
+}
+
 export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   const verdict = { classification: "", summary: "", proposed_action: "", needs_input: false, can_help: false, client: "", affected_device: "", company_partner_id: 0 };

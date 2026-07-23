@@ -174,6 +174,15 @@ class AIModelSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class AIProcedureSerializer(serializers.ModelSerializer):
+    class Meta:
+        from core.models import AIProcedure
+
+        model = AIProcedure
+        fields = "__all__"
+        read_only_fields = ("created", "updated")
+
+
 class AIProviderSerializer(serializers.ModelSerializer):
     models = AIModelSerializer(many=True, read_only=True)
     api_key_set = serializers.SerializerMethodField()

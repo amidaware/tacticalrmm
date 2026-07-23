@@ -1776,12 +1776,35 @@ class AIResolveDevices(APIView):
         if username and "\\" in username:
             username = username.split("\\", 1)[-1]
 
+        # A device hostname may arrive as an FQDN (pve241.sunnydellfood.local) - the
+        # agent's hostname is the SHORT name (pve241), so match on that.
+        short_host = hostname.split(".")[0].strip() if hostname else ""
+
         client, method, confidence = self._find_client(domain, company_name)
+
+        # FALLBACK: if the company name/domain didn't resolve but we have a device
+        # hostname, find the AGENT by hostname - the agent's client IS the company.
+        # (This is the reliable path for host-named alerts, e.g. a Proxmox backup report
+        #  for pve241.sunnydellfood.local -> the pve241 agent -> its RMM client.)
+        if not client and short_host:
+            ha = list(
+                Agent.objects.filter(hostname__iexact=short_host)
+                .select_related("site", "site__client")[:20]
+            ) or list(
+                Agent.objects.filter(hostname__icontains=short_host)
+                .select_related("site", "site__client")[:20]
+            )
+            client_ids = {a.site.client_id for a in ha if a.site_id}
+            if ha and len(client_ids) == 1:
+                client = ha[0].site.client
+                method, confidence = "hostname", 0.9
+
         if not client:
             return Response({
                 "rmm_client": None, "match_method": "none", "confidence": 0.0,
                 "agents": [], "candidates": [],
-                "note": "No confident RMM client match; add an override in ai_ticket_client_map or ask a human.",
+                "hostname_searched": hostname or None,
+                "note": "No RMM client match by company name, domain, or device hostname; add an override in ai_ticket_client_map or ask a human.",
             })
 
         base_url = (settings.CORS_ORIGIN_WHITELIST[0]
@@ -1820,11 +1843,11 @@ class AIResolveDevices(APIView):
         # ticket (e.g. pve245). Search within the client first, then globally.
         host_matches = []
         if hostname:
-            hl = hostname.lower()
+            hl = (short_host or hostname).lower()
             host_matches = [a for a in agents if hl in (a.hostname or "").lower()]
             if not host_matches:
                 extra = (
-                    Agent.objects.filter(hostname__icontains=hostname)
+                    Agent.objects.filter(hostname__icontains=short_host or hostname)
                     .select_related("site", "site__client")
                     .only("agent_id", "hostname", "operating_system", "plat",
                           "logged_in_username", "last_logged_in_user", "last_seen", "site")[:20]

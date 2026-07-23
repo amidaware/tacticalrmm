@@ -1471,6 +1471,13 @@ class AITicketConsole(APIView):
         except Exception:
             stages = {}
 
+        # stages[ref] is {stage, assignee} (older builds returned a bare stage string).
+        def _stage(ref):
+            v = stages.get(ref)
+            if isinstance(v, dict):
+                return v.get("stage", ""), v.get("assignee", ""), bool(v.get("assignee_is_bot"))
+            return (v or ""), "", False
+
         # RECONCILE against Odoo (source of truth): if a ticket is Cancelled/Closed/Done
         # in Odoo but our AI status doesn't reflect a matching terminal state, sync it -
         # so the console never shows a closed ticket as "needs input" etc.
@@ -1486,7 +1493,7 @@ class AITicketConsole(APIView):
 
         reconciled = []
         for st in states:
-            canon, ok_set = _terminal(stages.get(st.ticket_ref, ""))
+            canon, ok_set = _terminal(_stage(st.ticket_ref)[0])
             if canon and st.status not in ok_set:
                 st.status = canon
                 reconciled.append(st)
@@ -1504,7 +1511,9 @@ class AITicketConsole(APIView):
                 "device": ctx.get("affected_device") or "",
                 "requester": st.requester,
                 "status": st.status,
-                "odoo_status": stages.get(st.ticket_ref, ""),
+                "odoo_status": _stage(st.ticket_ref)[0],
+                "assigned_to": _stage(st.ticket_ref)[1],
+                "assigned_to_bot": _stage(st.ticket_ref)[2],
                 "classification": st.classification,
                 "is_alert": st.is_alert,
                 "summary": st.summary,

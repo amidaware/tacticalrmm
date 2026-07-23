@@ -1151,9 +1151,15 @@ async function runTicketTriage(blob) {
       `     devices match, note that a human/customer must pick.\n` +
       `   - list_kb_articles(partner_id) and get_kb_article to read that company's procedures.\n` +
       `3. submit_triage EXACTLY ONCE: classification, summary, and the proposed_action (referencing the\n` +
-      `   client/device/KB you found). Set needs_input=true if a human must decide first (ambiguous,\n` +
-      `   can't identify the device or customer, or anything risky). ALWAYS fill the client field with the\n` +
-      `   resolved company name when you identify it, and affected_device when known.\n` +
+      `   client/device/KB you found). ALWAYS fill the client field with the resolved company name and\n` +
+      `   affected_device when known.\n` +
+      `   needs_input vs LEAVE-ALONE: set needs_input=true ONLY when YOU need a human to decide something\n` +
+      `   before you can do IT/technical work (ambiguous, can't identify the device/customer, or risky).\n` +
+      `   Do NOT tag for input when the ticket simply isn't an AI/IT matter (sales, billing, purchasing,\n` +
+      `   account-management, a general conversation) OR a human is already actively replying to the\n` +
+      `   customer - those should be LEFT ALONE: set needs_input=false AND can_help=false and note briefly\n` +
+      `   that it's a human/non-IT matter with nothing for you to do. Only flag Johnny 5 when you are\n` +
+      `   genuinely blocked waiting on a decision to proceed.\n` +
       `You do NOT change devices or reply to customers - a human reviews your draft. Then stop.` +
       (blob.requester_email ? `\n\nRequester email: ${blob.requester_email}` : "") +
       (admin ? `\n\nTRIAGE POLICY (admin-defined):\n${admin}` : "")

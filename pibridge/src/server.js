@@ -1146,9 +1146,14 @@ async function runTicketTriage(blob) {
       `     OWN MSP/internal company (find_company with the MSP name given in the triage policy below),\n` +
       `     never to a client that only appears as one line in it. If every actionable item already has its\n` +
       `     own ticket, classify it alert_clean (a rollup to close).\n` +
-      `   - find_devices with that company + the requester's username (email local part) AND their full\n` +
-      `     person_name (from the ticket contact) -> the RMM client and the user's device(s). If several\n` +
-      `     devices match, note that a human/customer must pick.\n` +
+      `   - find_devices with that company + the requester's username (email local part) AND the person's\n` +
+      `     FULL NAME -> the RMM client and the user's device(s). Get the name from the email SIGNATURE /\n` +
+      `     body, not just the ticket contact: the sender may submit on behalf of someone else or from a\n` +
+      `     shared mailbox (e.g. sent by ssohaney@ but signed 'George Eshak' -> pass username=ssohaney AND\n` +
+      `     person_name='George Eshak'). Pass BOTH so either matches. If several devices match, note it.\n` +
+      `   - A PERIPHERAL is NOT the device to look up: a printer/scanner/copier (e.g. a Toshiba e-studio)\n` +
+      `     is almost never an RMM agent - do NOT report 'device not found' for it. The issue (driver,\n` +
+      `     spooler, rendering) lives on the USER'S PC, so resolve THAT workstation instead.\n` +
       `   - list_kb_articles(partner_id) and get_kb_article to read that company's procedures.\n` +
       `3. submit_triage EXACTLY ONCE: classification, summary, and the proposed_action (referencing the\n` +
       `   client/device/KB you found). ALWAYS fill the client field with the resolved company name and\n` +

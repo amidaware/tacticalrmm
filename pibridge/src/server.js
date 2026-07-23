@@ -1153,13 +1153,16 @@ async function runTicketTriage(blob) {
       `3. submit_triage EXACTLY ONCE: classification, summary, and the proposed_action (referencing the\n` +
       `   client/device/KB you found). ALWAYS fill the client field with the resolved company name and\n` +
       `   affected_device when known.\n` +
-      `   needs_input vs LEAVE-ALONE: set needs_input=true ONLY when YOU need a human to decide something\n` +
-      `   before you can do IT/technical work (ambiguous, can't identify the device/customer, or risky).\n` +
-      `   Do NOT tag for input when the ticket simply isn't an AI/IT matter (sales, billing, purchasing,\n` +
-      `   account-management, a general conversation) OR a human is already actively replying to the\n` +
-      `   customer - those should be LEFT ALONE: set needs_input=false AND can_help=false and note briefly\n` +
-      `   that it's a human/non-IT matter with nothing for you to do. Only flag Johnny 5 when you are\n` +
-      `   genuinely blocked waiting on a decision to proceed.\n` +
+      `   needs_input vs LEAVE-ALONE: set needs_input=true ONLY when there IS a real, understood IT issue\n` +
+      `   and you are BLOCKED waiting on a human tech's DECISION to proceed (a risky/disruptive change\n` +
+      `   needs sign-off, or you must choose among several candidate devices). Do NOT tag Johnny 5 when:\n` +
+      `   the ticket isn't an AI/IT matter (sales, billing, purchasing, account-management, a general\n` +
+      `   conversation); a human is already actively replying; OR there is NO clear, actionable IT request\n` +
+      `   at all - junk, an ambiguous/forwarded email fragment, unclear content, nothing named to diagnose\n` +
+      `   or fix. All of those are LEAVE-ALONE: set needs_input=false AND can_help=false and note briefly\n` +
+      `   why. NEVER create a Johnny 5 just because the content is vague, empty, or you can't tell what's\n` +
+      `   being asked - that is not a tech decision. (If it's a real customer who may need help, you may\n` +
+      `   note that a human could ask them to clarify - but do not tag it Johnny 5.)\n` +
       `You do NOT change devices or reply to customers - a human reviews your draft. Then stop.` +
       (blob.requester_email ? `\n\nRequester email: ${blob.requester_email}` : "") +
       (admin ? `\n\nTRIAGE POLICY (admin-defined):\n${admin}` : "")

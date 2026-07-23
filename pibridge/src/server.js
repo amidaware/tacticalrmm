@@ -1262,6 +1262,12 @@ async function runTicketTriage(blob) {
   const releaseIfMine = async () => {
     if (hd.operations.release_ticket) { try { await hd.operations.release_ticket({ ticket: blob.ticket_ref }); } catch { /* best-effort */ } }
   };
+  // Stand down = release (if bot-owned) AND clear any 'Johnny 5 Need Input!' tag, because
+  // this outcome does NOT need human input (input is no longer required / never was).
+  const standDown = async () => {
+    await releaseIfMine();
+    if (hd.operations.clear_needs_input_tag) { try { await hd.operations.clear_needs_input_tag({ ticket: blob.ticket_ref }); } catch { /* best-effort */ } }
+  };
   try {
     // Clean, non-actionable alerts are auto-cancelled for EVERYONE when "Act on alerts"
     // is enabled - this is zero-risk (no device touched, no customer contacted); it just
@@ -1291,7 +1297,7 @@ async function runTicketTriage(blob) {
             `Summary: ${verdict.summary}\n` +
             `Would do: ${verdict.proposed_action}` + chatLink,
         });
-      await releaseIfMine();
+      await standDown();
       return { ...verdict, action: "shadow_note", company_resolved, company_corrected };
     }
     // Needs a human decision -> tag it and post the draft, never auto-act.
@@ -1330,7 +1336,7 @@ async function runTicketTriage(blob) {
           `Summary: ${verdict.summary}\n` +
           `Suggested plan: ${verdict.proposed_action}` + chatLink,
       });
-      await releaseIfMine();
+      await standDown();
       action = "flagged_actionable";
     } else if (blob.post_shadow_note !== false && hd.operations.add_note) {
       await hd.operations.add_note({
@@ -1342,7 +1348,7 @@ async function runTicketTriage(blob) {
           `Would do: ${verdict.proposed_action}\n` +
           `(Pilot: the AI only drafts; a human decides.)` + chatLink,
       });
-      await releaseIfMine();
+      await standDown();
       action = "shadow_note";
     }
   } catch (e) {

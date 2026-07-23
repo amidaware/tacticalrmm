@@ -1950,14 +1950,19 @@ def mine_ticket_procedures(force=False):
     from core.models import AIProcedure
 
     core = get_core_settings()
-    if not (core.ai_module_enabled and core.ai_procedures_enabled and core.ai_procedures_mining_enabled):
+    # Library must be enabled. The SCHEDULED run also needs mining_enabled + interval;
+    # a manual force=True run (the 'Mine now' button) bypasses both - the admin asked for it.
+    if not (core.ai_module_enabled and core.ai_procedures_enabled):
         return "disabled"
     if not (core.ai_helpdesk_code or "").strip():
         return "no helpdesk integration configured"
     now = djangotime.now()
-    interval = timedelta(hours=max(1, core.ai_procedures_interval_hours or 24))
-    if not force and core.ai_procedures_last_mined and (now - core.ai_procedures_last_mined) < interval:
-        return "not due"
+    if not force:
+        if not core.ai_procedures_mining_enabled:
+            return "scheduled mining disabled"
+        interval = timedelta(hours=max(1, core.ai_procedures_interval_hours or 24))
+        if core.ai_procedures_last_mined and (now - core.ai_procedures_last_mined) < interval:
+            return "not due"
     since = core.ai_procedures_last_mined or (now - timedelta(days=max(1, core.ai_procedures_backfill_days or 120)))
     model = _resolve_ai_model(None)
     if not model:

@@ -1072,37 +1072,63 @@ const DEFAULT_MINING_PROMPT =
 async function runProcedureMining(blob) {
   const hd = loadHelpdesk(blob.helpdesk_code || "", blob.helpdesk_api || null);
   if (!hd || !hd.operations.list_closed_tickets)
-    return { error: "helpdesk.js defines no list_closed_tickets operation", procedures: [] };
-  const tickets = await hd.operations.list_closed_tickets({ since: blob.since, limit: 200 });
-  if (!Array.isArray(tickets) || !tickets.length) return { procedures: [], scanned: 0 };
+    return { error: "helpdesk.js defines no list_closed_tickets operation", procedures: [], mined: [] };
+  // 1) Cheap: list closed tickets in the look-back window (refs + change markers only).
+  const light = await hd.operations.list_closed_tickets({
+    since: blob.since, since_days: blob.since_days, limit: 2000, light: true,
+  });
+  if (!Array.isArray(light) || !light.length) return { procedures: [], scanned: 0, mined: [] };
+  // 2) Dedup ledger: only mine tickets we've NEVER looked at, or that CHANGED since we
+  //    last did (write_date newer than what we recorded). Never re-process unchanged ones.
+  const seen = blob.seen || {};
+  const changed = light.filter((t) => !(t.ref in seen) || String(t.write_date || "") > String(seen[t.ref] || ""));
+  if (!changed.length) return { procedures: [], scanned: light.length, mined: [] };
+  const batch = changed.slice(0, 200); // cap per run; the rest are picked up next run (still "changed")
+  // 3) Fetch full threads ONLY for the to-mine tickets.
+  const tickets = await hd.operations.list_closed_tickets({ refs: batch.map((t) => t.ref) });
+  if (!Array.isArray(tickets) || !tickets.length)
+    return { procedures: [], scanned: light.length, mined: [] };
 
   const authStorage = AuthStorage.create();
   authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
   const modelRegistry = ModelRegistry.inMemory(authStorage);
   const model = modelRegistry.find(blob.provider, blob.model_id);
-  if (!model) return { error: `Model not found: ${blob.provider}/${blob.model_id}`, procedures: [] };
+  if (!model) return { error: `Model not found: ${blob.provider}/${blob.model_id}`, procedures: [], mined: [] };
 
-  const { tools, collected } = buildProcedureMiningTools();
-  const loader = new DefaultResourceLoader({
-    agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
-    systemPromptOverride: () => (String(blob.mining_prompt || "").trim() || DEFAULT_MINING_PROMPT),
-  });
-  await loader.reload();
-  const { session } = await createAgentSession({
-    model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
-    noTools: "builtin", customTools: tools, resourceLoader: loader,
-    sessionManager: SessionManager.create(CONFIG.sessionsRoot), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
-  });
-  const compact = tickets.map((t) => ({
-    ref: t.ref, subject: t.subject, company: t.company, assignee: t.assignee,
-    thread: (t.messages || []).map((m) => `${m.author} (${m.type}): ${m.text}`).join("\n").slice(0, 3000),
-  }));
-  const prompt =
-    `Here are ${compact.length} recently-closed tickets with their conversation/resolution. Distill the ` +
-    `reusable, client-agnostic procedures they teach, then call submit_procedures ONCE.\n\n` +
-    JSON.stringify(compact).slice(0, 180000);
-  try { await session.prompt(prompt); } finally { try { session.dispose(); } catch {} }
-  return { procedures: collected.procedures || [], scanned: tickets.length };
+  // Process in CHUNKS so the model actually READS every ticket (one giant prompt just
+  // gets truncated and most tickets are ignored). Each chunk is its own short session.
+  const CHUNK = 25;
+  const allProcedures = [];
+  log("mine-procedures", `window=${light.length} changed=${changed.length} mining=${batch.length} in chunks of ${CHUNK}`);
+  for (let i = 0; i < tickets.length; i += CHUNK) {
+    const chunk = tickets.slice(i, i + CHUNK);
+    const { tools, collected } = buildProcedureMiningTools();
+    const loader = new DefaultResourceLoader({
+      agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+      systemPromptOverride: () => (String(blob.mining_prompt || "").trim() || DEFAULT_MINING_PROMPT),
+    });
+    await loader.reload();
+    const { session } = await createAgentSession({
+      model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
+      noTools: "builtin", customTools: tools, resourceLoader: loader,
+      sessionManager: SessionManager.create(CONFIG.sessionsRoot), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+    });
+    const compact = chunk.map((t) => ({
+      ref: t.ref, subject: t.subject, company: t.company, assignee: t.assignee,
+      thread: (t.messages || []).map((m) => `${m.author} (${m.type}): ${m.text}`).join("\n").slice(0, 3000),
+    }));
+    const prompt =
+      `Here are ${compact.length} recently-closed tickets with their conversation/resolution. Distill the ` +
+      `reusable, client-agnostic procedures they teach, then call submit_procedures ONCE.\n\n` +
+      JSON.stringify(compact).slice(0, 160000);
+    try { await session.prompt(prompt); } catch (e) { log("mine-chunk error", String(e).slice(0, 160)); }
+    finally { try { session.dispose(); } catch {} }
+    for (const p of (collected.procedures || [])) allProcedures.push(p);
+  }
+  // Report which tickets we looked at (ref + change marker) so Django updates the dedup
+  // ledger - even ones that yielded no procedure count as "looked at" (won't re-scan).
+  const mined = batch.map((t) => ({ ref: t.ref, write_date: t.write_date || "" }));
+  return { procedures: allProcedures, scanned: light.length, mined };
 }
 
 // Headless AUTO-RESOLVE attempt (from the Ticket Console). One-shot agent run in

@@ -1947,7 +1947,7 @@ def mine_ticket_procedures(force=False):
     import requests as _requests
     from django.utils import timezone as djangotime
 
-    from core.models import AIProcedure
+    from core.models import AIMinedTicket, AIProcedure
 
     core = get_core_settings()
     # Library must be enabled. The SCHEDULED run also needs mining_enabled + interval;
@@ -1963,7 +1963,9 @@ def mine_ticket_procedures(force=False):
         interval = timedelta(hours=max(1, core.ai_procedures_interval_hours or 24))
         if core.ai_procedures_last_mined and (now - core.ai_procedures_last_mined) < interval:
             return "not due"
-    since = core.ai_procedures_last_mined or (now - timedelta(days=max(1, core.ai_procedures_backfill_days or 120)))
+    # Always look back over the configured window; the per-ticket dedup ledger (below)
+    # decides what actually gets mined, so re-scanning is cheap and never double-processes.
+    since = now - timedelta(days=max(1, core.ai_procedures_backfill_days or 120))
     model = _resolve_ai_model(None)
     if not model:
         return "no model"
@@ -1974,6 +1976,9 @@ def mine_ticket_procedures(force=False):
             f"{bridge}/pi/mine-procedures",
             json={
                 "since": since.isoformat(),
+                # Dedup ledger: {ticket_ref: last_change_seen}. The bridge mines only
+                # tickets that are new or changed since we last looked at them.
+                "seen": dict(AIMinedTicket.objects.values_list("ticket_ref", "last_change_seen")),
                 "provider": model.provider.name,
                 "model_id": model.model_id,
                 "api_key": model.provider.api_key,
@@ -2025,6 +2030,15 @@ def mine_ticket_procedures(force=False):
             obj.confidence = _procedure_confidence(obj)
             obj.save(update_fields=["confidence"])
             created += 1
+    # Update the dedup ledger for EVERY ticket we looked at this run (even if it
+    # produced no procedure), so unchanged tickets are skipped next time.
+    for m in (data.get("mined") or []):
+        ref = m.get("ref")
+        if ref:
+            AIMinedTicket.objects.update_or_create(
+                ticket_ref=ref, defaults={"last_change_seen": m.get("write_date") or ""}
+            )
     core.ai_procedures_last_mined = now
     core.save(update_fields=["ai_procedures_last_mined"])
-    return f"mined {created} new / {updated} updated (since {since.date()})"
+    looked = len(data.get("mined") or [])
+    return f"mined {created} new / {updated} updated from {looked} changed tickets (window since {since.date()})"

@@ -1065,6 +1065,20 @@ class AIProcedure(models.Model):
         return f"{self.title} [{self.status}]"
 
 
+class AIMinedTicket(models.Model):
+    """Dedup ledger for the Procedures miner: which closed tickets we've already learned
+    from, and the ticket's change marker (write_date) at that time. A ticket is only
+    re-mined when it has CHANGED after the last time we looked at it - so repeat runs
+    never re-process unchanged tickets (no token waste, no duplicate procedures)."""
+
+    ticket_ref = models.CharField(max_length=100, unique=True)
+    last_change_seen = models.CharField(max_length=64, blank=True, default="")
+    mined_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.ticket_ref
+
+
 class AIDecisionRequest(models.Model):
     """A pending 'Johnny 5 Need Input!' decision. Created when triage flags a ticket
     as needing a human call. The token backs a deep link (the tech is already logged

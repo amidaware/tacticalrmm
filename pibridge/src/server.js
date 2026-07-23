@@ -1153,16 +1153,18 @@ async function runTicketTriage(blob) {
       `3. submit_triage EXACTLY ONCE: classification, summary, and the proposed_action (referencing the\n` +
       `   client/device/KB you found). ALWAYS fill the client field with the resolved company name and\n` +
       `   affected_device when known.\n` +
-      `   needs_input vs LEAVE-ALONE: set needs_input=true ONLY when there IS a real, understood IT issue\n` +
-      `   and you are BLOCKED waiting on a human tech's DECISION to proceed (a risky/disruptive change\n` +
-      `   needs sign-off, or you must choose among several candidate devices). Do NOT tag Johnny 5 when:\n` +
-      `   the ticket isn't an AI/IT matter (sales, billing, purchasing, account-management, a general\n` +
-      `   conversation); a human is already actively replying; OR there is NO clear, actionable IT request\n` +
-      `   at all - junk, an ambiguous/forwarded email fragment, unclear content, nothing named to diagnose\n` +
-      `   or fix. All of those are LEAVE-ALONE: set needs_input=false AND can_help=false and note briefly\n` +
-      `   why. NEVER create a Johnny 5 just because the content is vague, empty, or you can't tell what's\n` +
-      `   being asked - that is not a tech decision. (If it's a real customer who may need help, you may\n` +
-      `   note that a human could ask them to clarify - but do not tag it Johnny 5.)\n` +
+      `   needs_input (Johnny 5) means: YOU can do the work, but need a human's DECISION/approval FIRST\n` +
+      `   and would then proceed (e.g. a risky/disruptive change needs sign-off, or you must choose among\n` +
+      `   several candidate devices). Set needs_input=true ONLY in that case. Do NOT tag Johnny 5 when:\n` +
+      `   (a) the ticket isn't an AI/IT matter (sales, billing, purchasing, account-management, a general\n` +
+      `   conversation); (b) a human is already actively replying; (c) there is NO clear, actionable IT\n` +
+      `   request - junk, an ambiguous/forwarded fragment, unclear content; OR (d) the work fundamentally\n` +
+      `   REQUIRES A HUMAN and you cannot do it remotely - physical/on-site work, hardware swaps, phone/fax\n` +
+      `   lines, telco/ISP/carrier or vendor coordination, anything with no device you can act on. All of\n` +
+      `   those are LEAVE-ALONE: set needs_input=false AND can_help=false, write your assessment + a clear\n` +
+      `   recommendation for the technician, and leave it for a human - no Johnny 5 tag. Johnny 5 is NEVER\n` +
+      `   'a human must do this instead of me' and NEVER for vague/empty content; it is only 'I'm ready to\n` +
+      `   act, waiting on a human decision.'\n` +
       `You do NOT change devices or reply to customers - a human reviews your draft. Then stop.` +
       (blob.requester_email ? `\n\nRequester email: ${blob.requester_email}` : "") +
       (admin ? `\n\nTRIAGE POLICY (admin-defined):\n${admin}` : "")

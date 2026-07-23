@@ -1776,7 +1776,7 @@ class AIResolveDevices(APIView):
         if username and "\\" in username:
             username = username.split("\\", 1)[-1]
 
-        # A device hostname may arrive as an FQDN (pve241.sunnydellfood.local) - the
+        # A device hostname may arrive as an FQDN (pve241.acme.local) - the
         # agent's hostname is the SHORT name (pve241), so match on that.
         short_host = hostname.split(".")[0].strip() if hostname else ""
 
@@ -1785,7 +1785,7 @@ class AIResolveDevices(APIView):
         # FALLBACK: if the company name/domain didn't resolve but we have a device
         # hostname, find the AGENT by hostname - the agent's client IS the company.
         # (This is the reliable path for host-named alerts, e.g. a Proxmox backup report
-        #  for pve241.sunnydellfood.local -> the pve241 agent -> its RMM client.)
+        #  for pve241.acme.local -> the pve241 agent -> its RMM client.)
         if not client and short_host:
             ha = list(
                 Agent.objects.filter(hostname__iexact=short_host)

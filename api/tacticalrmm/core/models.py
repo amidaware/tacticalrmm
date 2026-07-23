@@ -159,9 +159,8 @@ class CoreSettings(BaseAuditModel):
     # not in shipped code.
     ai_ticket_triage_prompt = models.TextField(blank=True, default="")
     # Admin-editable behavior prompt for the "Johnny 5 Need Input!" decision chat
-    # (routing, completion policy, device-fix/email rules, etc.). The dynamic bits
-    # (ticket ref, resolved context, per-turn approval status) stay in code; this
-    # is the editable policy appended to them. Empty = use the built-in default.
+    # (routing, completion policy, device-fix/email rules, etc.). Dynamic bits stay in
+    # code; this is the editable policy. Empty = use the built-in default.
     ai_ticket_decision_prompt = models.TextField(blank=True, default="")
     # Phase 2: when True the AI ACTS on alert tickets (not just shadow notes):
     # non-actionable alerts (e.g. successful backups) are moved to Cancelled via
@@ -986,12 +985,11 @@ class AITicketState(models.Model):
     proposed_action = models.TextField(blank=True, default="")
     # helpdesk-side last-change marker we processed (write_date or similar)
     last_change_seen = models.CharField(max_length=64, blank=True, default="")
-    # Highest helpdesk message id we've processed. Re-triage happens when a NEWER
-    # message from a non-AI author (customer/tech) appears - the resume loop.
+    # Highest helpdesk message id processed. Re-triage when a NEWER message from a
+    # non-AI author (customer/tech) appears - the resume loop.
     last_message_id = models.PositiveBigIntegerField(default=0)
     assignee_seen = models.CharField(max_length=120, blank=True, default="")
-    # Whether we've done the one-time company/contact correction on this ticket.
-    # After the first check we leave the partner alone (respect manual edits).
+    # One-time company/contact correction done; then leave the partner alone.
     partner_checked = models.BooleanField(default=False)
     # When the AI last actually TRIAGED/worked this ticket (distinct from `updated`,
     # which auto-bumps on any bookkeeping save). Drives the console's "Last worked".

@@ -665,6 +665,24 @@ export function buildTools({
     },
   });
 
+  const get_device_notes = defineTool({
+    name: "get_device_notes",
+    label: "Read device notes",
+    description:
+      "Read the durable Pi.dev memory notes already saved on " + forThis + " (its role, disk/volume " +
+      "layout, service/container names, vendor quirks, and past fixes). Use this to recall what's " +
+      "already known about the machine before diagnosing.",
+    parameters: params({}),
+    execute: async (_id, p, signal) => {
+      const m = target(p);
+      try {
+        const out = await trmm.getDeviceNotes(m.agentId, { signal });
+        const notes = (out && out.notes) || "";
+        return text(notes ? notes : "(no device notes saved yet)");
+      } catch (e) { return text("Could not read device notes: " + (e?.message || e)); }
+    },
+  });
+
   const schedule_action = defineTool({
     name: "schedule_action",
     label: "Schedule an action",
@@ -702,6 +720,7 @@ export function buildTools({
     reboot_device,
     send_email,
     save_device_note,
+    get_device_notes,
     schedule_action,
   ];
   if (hd) tools.push(helpdesk_call);
@@ -1097,6 +1116,25 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate,
     },
   });
 
+  const get_device_notes = defineTool({
+    name: "get_device_notes",
+    label: "Read device notes",
+    description:
+      "Read the durable Pi.dev memory notes already saved on a device (its role, disk/volume layout, " +
+      "service/container names, vendor quirks, and past fixes). Get agent_id from find_devices. Use " +
+      "this to recall what's already known about a machine before diagnosing or acting.",
+    parameters: Type.Object({
+      agent_id: Type.String({ description: "Target device agent_id (from find_devices)" }),
+    }),
+    execute: async (_id, p, signal) => {
+      try {
+        const out = await trmm.getDeviceNotes(p.agent_id, { signal });
+        const notes = (out && out.notes) || "";
+        return text(notes ? notes : "(no device notes saved yet)");
+      } catch (e) { return text("Could not read device notes: " + (e?.message || e)); }
+    },
+  });
+
   const save_device_note = defineTool({
     name: "save_device_note",
     label: "Save device note",
@@ -1169,5 +1207,5 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate,
     },
   });
 
-  return { tools: [helpdesk_call, find_devices, run_device_command, save_device_note, schedule_action, send_email, ...webTools()], hd, hdError };
+  return { tools: [helpdesk_call, find_devices, run_device_command, save_device_note, get_device_notes, schedule_action, send_email, ...webTools()], hd, hdError };
 }

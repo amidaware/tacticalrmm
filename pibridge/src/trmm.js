@@ -112,6 +112,9 @@ export const trmm = {
   // system prompt.
   saveDeviceNote: (agentId, note, opts) =>
     req("POST", `/core/ai/device-note/`, { agent_id: agentId, note }, opts),
+  // Read a device's existing Pi.dev AI memory notes (GET /core/ai/device-note/?agent_id=).
+  getDeviceNotes: (agentId, opts) =>
+    req("GET", `/core/ai/device-note/?agent_id=${encodeURIComponent(agentId)}`, null, opts),
   // Link an Odoo company (domain/name) + optional requester username to the RMM
   // client and the user's device(s). (TRMM: POST /core/ai/resolve-devices/)
   resolveDevices: ({ domain, company_name, username, person_name, hostname }, opts) =>

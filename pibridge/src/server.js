@@ -1221,14 +1221,18 @@ async function runTicketTriage(blob) {
   const chatLink = blob.decision_url ? `\n\n\u27a1 Chat with me to continue this ticket: ${blob.decision_url}` : "";
   let action = "none";
   // First-look company/contact correction: if the AI resolved the customer company
-  // and we haven't checked this ticket yet, attribute it to the right company +
-  // Primary Support Contact (or standard email). One-time; respects later manual edits.
+  // and we haven't checked this ticket yet, attribute it to the right company.
+  // REGULAR tickets -> company + Primary Support Contact (a person who gets replies).
+  // ALERT tickets -> the COMPANY only (never a customer individual, so a reply can't
+  // email a person about monitoring noise). One-time; respects later manual edits.
+  const isAlertTicket = cls === "alert_clean" || cls === "alert_actionable" || !!blob.is_alert;
   let company_resolved = false, company_corrected = null;
   if (blob.correct_partner && verdict.company_partner_id && hd.operations.set_ticket_company) {
     company_resolved = true;
     try {
       company_corrected = await hd.operations.set_ticket_company({
         ticket: blob.ticket_ref, company_partner_id: verdict.company_partner_id,
+        company_level_only: isAlertTicket,
       });
     } catch (e) { company_corrected = { error: String(e?.message || e) }; }
   }

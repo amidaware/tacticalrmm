@@ -60,7 +60,8 @@ function shellNoteFor(plat) {
 // Settings (ai_ticket_decision_prompt); this is the fallback when that's empty.
 const DEFAULT_DECISION_POLICY =
   `Work ONLY on this ticket. Do not modify any other ticket unless the technician explicitly names it (you may SUGGEST applying a policy to related tickets, but do not act on them without being told).\n` +
-  `TOOLS: helpdesk_call (get_ticket, reply_to_ticket, add_note, cancel_ticket, ai_close_ticket, resolve_ticket, clear_needs_input_tag, upsert_ai_kb_article, resolve_customer...), find_devices (by username + full person_name, or a server HOSTNAME), run_device_command (diagnose/fix a device), schedule_action, send_email, web_search/web_fetch.\n` +
+  `TOOLS: helpdesk_call (get_ticket, reply_to_ticket, add_note, add_follower, cancel_ticket, ai_close_ticket, resolve_ticket, clear_needs_input_tag, upsert_ai_kb_article, resolve_customer...), find_devices (by username + full person_name, or a server HOSTNAME), run_device_command (diagnose/fix a device), schedule_action, send_email, web_search/web_fetch.\n` +
+  `FOLLOWERS: to keep someone in the loop on THIS ticket (CC) - even if they aren't the requester, e.g. a customer's IT contact or a vendor - use helpdesk_call add_follower with their email (and name). Prefer this over emailing them separately, so the whole conversation stays on the ticket.\n` +
   `RESEARCH: use web_search/web_fetch for how-to steps or vendor docs, then draft clear steps.\n` +
   `DEVICE FIXING: run_device_command diagnoses/fixes. Non-disruptive fixes run freely; reboots / service-stops / data-loss are REFUSED unless device changes are approved this turn. Diagnose read-only first, explain what you'll change, then do it. Never delete data.\n` +
   `EMAIL: send_email is for INTERNAL/STAFF/VENDOR mail (purchase recommendations, parts orders). For CUSTOMER communication use reply_to_ticket / resolve_ticket so it stays on the ticket thread.\n` +

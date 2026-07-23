@@ -897,7 +897,7 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
     label: "Find company",
     description:
       "Find the customer COMPANY (res.partner) by NAME. Use this when the company must be inferred" +
-      " from the subject/device (e.g. a server named FBA-FS22-1 -> FarmerBoy AG) and there's no" +
+      " from the subject/device (e.g. a server named ACME-SQL01 -> Acme Corp) and there's no" +
       " requester email domain. Returns the company partner_id to put in submit_triage.company_partner_id.",
     parameters: Type.Object({ name: Type.String({ description: "Company name" }) }),
     execute: async (_id, p) => hdcall("find_company", { name: p.name }),
@@ -981,7 +981,8 @@ function isDestructive(cmd) {
   return DESTRUCTIVE.some((re) => re.test(c));
 }
 
-export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate } = {}) {
+export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate, blockOps } = {}) {
+  const blocked = new Set(blockOps || []);
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
@@ -1018,6 +1019,10 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate 
     }),
     execute: async (_id, p) => {
       if (!hd || !hd.operations[p.operation]) return text(`operation ${p.operation} not available`);
+      // Hard code-level block (used by headless auto-resolve): these must be done by a
+      // human in the console, never by an unattended run.
+      if (blocked.has(p.operation))
+        return text(`'${p.operation}' is NOT allowed in this mode - a human must do that in the console. Put your recommendation in an internal note instead.`);
       // Customer-email gate. In WS mode (gate provided) we ask the tech for approval
       // inline (exactly like a device-command approval); in the legacy POST mode we
       // fall back to the per-turn allowCustomerReply flag.

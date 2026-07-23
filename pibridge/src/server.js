@@ -1051,6 +1051,9 @@ async function runTicketResolve(blob) {
   });
   const { tools, hd, hdError } = buildDecisionTools({
     helpdeskApi: blob.helpdesk_api || null, helpdeskCode: blob.helpdesk_code || "", ticketRef, gate,
+    // Unattended run: hard-block closing/cancelling/resolving/claiming the ticket - a human
+    // must do those in the console. (reply_to_ticket + disruptive device cmds are gated above.)
+    blockOps: ["resolve_ticket", "close_ticket", "cancel_ticket", "ai_close_ticket", "claim_ticket"],
   });
   if (!hd) return { error: `helpdesk.js failed to load: ${hdError}` };
   const loader = new DefaultResourceLoader({
@@ -1131,7 +1134,7 @@ async function runTicketTriage(blob) {
       `2. Determine the CUSTOMER COMPANY for EVERY ticket, and link it up:\n` +
       `   - resolve_client with the requester email/domain -> the company partner_id; if there's no\n` +
       `     requester email (e.g. a monitoring/backup alert), infer the company from the subject/device\n` +
-      `     (e.g. server FBA-FS22-1 -> FarmerBoy AG) and use find_company(name) to get its partner_id.\n` +
+      `     (e.g. server ACME-SQL01 -> Acme Corp) and use find_company(name) to get its partner_id.\n` +
       `   - ALWAYS put the resolved company's partner_id in submit_triage.company_partner_id so the\n` +
       `     ticket is attributed to the correct company + its Primary Support Contact (done automatically).\n` +
       `   - FLEET-WIDE / MULTI-CLIENT DIGEST: if ONE ticket is a rollup reporting on SEVERAL different\n` +

@@ -1770,8 +1770,8 @@ class AIResolveDevices(APIView):
 
     def _name_candidates(self, username, person_name):
         """Normalized login-name guesses from the email local part + the person's
-        display name (handles KatlynKumernitsky vs 'Katlyn Kumernitsky', kkumernitsky,
-        katlyn.kumernitsky, kumernitsky, etc.)."""
+        display name (handles JaneSmith vs 'Jane Smith', jsmith,
+        jane.smith, smith, etc.)."""
         import re
 
         cands = set()
@@ -1799,8 +1799,8 @@ class AIResolveDevices(APIView):
         if username and "\\" in username:
             username = username.split("\\", 1)[-1]
 
-        # A device hostname may arrive as an FQDN (pve241.acme.local) - the
-        # agent's hostname is the SHORT name (pve241), so match on that.
+        # A device hostname may arrive as an FQDN (pve01.acme.local) - the
+        # agent's hostname is the SHORT name (pve01), so match on that.
         short_host = hostname.split(".")[0].strip() if hostname else ""
 
         client, method, confidence = self._find_client(domain, company_name)
@@ -1808,7 +1808,7 @@ class AIResolveDevices(APIView):
         # FALLBACK: if the company name/domain didn't resolve but we have a device
         # hostname, find the AGENT by hostname - the agent's client IS the company.
         # (This is the reliable path for host-named alerts, e.g. a Proxmox backup report
-        #  for pve241.acme.local -> the pve241 agent -> its RMM client.)
+        #  for pve01.acme.local -> the pve01 agent -> its RMM client.)
         if not client and short_host:
             ha = list(
                 Agent.objects.filter(hostname__iexact=short_host)
@@ -1863,7 +1863,7 @@ class AIResolveDevices(APIView):
                     matched.append(a)
 
         # Hostname lookup - the right way to find a SERVER/infra device named in a
-        # ticket (e.g. pve245). Search within the client first, then globally.
+        # ticket (e.g. pve01). Search within the client first, then globally.
         host_matches = []
         if hostname:
             hl = (short_host or hostname).lower()

@@ -881,8 +881,8 @@ export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {
       domain: Type.Optional(Type.String()),
       company_name: Type.Optional(Type.String()),
       username: Type.Optional(Type.String({ description: "Requester username or email" })),
-      person_name: Type.Optional(Type.String({ description: "Requester FULL NAME from the ticket contact - greatly improves matching (e.g. 'Katlyn Kumernitsky' matches login KatlynKumernitsky)" })),
-      hostname: Type.Optional(Type.String({ description: "A device/server HOSTNAME named in the ticket (e.g. pve245) - the right way to find servers/infrastructure" })),
+      person_name: Type.Optional(Type.String({ description: "Requester FULL NAME from the ticket contact - greatly improves matching (e.g. 'Jane Smith' matches login JaneSmith)" })),
+      hostname: Type.Optional(Type.String({ description: "A device/server HOSTNAME named in the ticket (e.g. pve01) - the right way to find servers/infrastructure" })),
     }),
     execute: async (_id, p) => {
       try {
@@ -1089,7 +1089,7 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate,
       company_name: Type.Optional(Type.String()),
       username: Type.Optional(Type.String()),
       person_name: Type.Optional(Type.String({ description: "Requester full name (improves matching)" })),
-      hostname: Type.Optional(Type.String({ description: "A device/server HOSTNAME named in the ticket (e.g. pve245) - the right way to find servers/infrastructure" })),
+      hostname: Type.Optional(Type.String({ description: "A device/server HOSTNAME named in the ticket (e.g. pve01) - the right way to find servers/infrastructure" })),
     }),
     execute: async (_id, p) => {
       try { return text(JSON.stringify(await trmm.resolveDevices({ domain: p.domain, company_name: p.company_name, username: p.username, person_name: p.person_name, hostname: p.hostname })).slice(0, 20000)); }

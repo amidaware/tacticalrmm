@@ -1646,18 +1646,29 @@ def poll_helpdesk_tickets():
         if st.status == "triaging":
             continue  # in progress
         new_activity = last_msg > (st.last_message_id or 0) and not msg_from_bot
-        # advance markers (also past the AI's own messages -> no self-loop)
-        st.last_message_id = max(last_msg, st.last_message_id or 0)
+        # advance markers (also past the AI's own messages -> no self-loop). Only save
+        # when something actually changed, so a dormant ticket isn't re-written (and its
+        # "last worked" timestamp isn't bumped) on every poll.
+        new_lmid = max(last_msg, st.last_message_id or 0)
+        new_lcs = str(t.get("write_date") or "")[:64]
+        changed = (
+            new_lmid != (st.last_message_id or 0)
+            or st.assignee_seen != assignee
+            or st.is_alert != is_alert
+            or st.last_change_seen != new_lcs
+        )
+        st.last_message_id = new_lmid
         st.assignee_seen = assignee
         st.is_alert = is_alert
-        st.last_change_seen = str(t.get("write_date") or "")[:64]
+        st.last_change_seen = new_lcs
         if new_activity and in_scope:
             st.status = "new"
             st.save()
             triage_ai_ticket.delay(st.pk, force=True)
             enqueued += 1
-        else:
-            st.save()
+        elif changed:
+            # bookkeeping only - do NOT bump the AI "last worked" (updated/last_triaged)
+            st.save(update_fields=["last_message_id", "assignee_seen", "is_alert", "last_change_seen"])
     return f"seen {seen}, enqueued {enqueued}{' (baseline)' if baseline else ''}"
 
 
@@ -1775,6 +1786,9 @@ def triage_ai_ticket(state_pk, force=False):
                     token=decision_token, ticket_ref=st.ticket_ref,
                     question=st.proposed_action, context=ctx, messages=[entry], status="open",
                 )
+    # Mark when the AI actually worked this ticket (drives the console's "Last worked").
+    from django.utils import timezone as _tznow
+    st.last_triaged = _tznow.now()
     st.save()
     return f"{st.ticket_ref}: {st.status} {st.classification}"
 

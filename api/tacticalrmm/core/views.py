@@ -1447,7 +1447,13 @@ class AITicketConsole(APIView):
         for d in AIDecisionRequest.objects.order_by("id").values("ticket_ref", "token", "context"):
             toks[d["ticket_ref"]] = d["token"]
             ctxs[d["ticket_ref"]] = d["context"] or {}
-        states = list(AITicketState.objects.order_by("-updated")[:500])
+        from django.db.models.functions import Coalesce
+
+        # Newest-worked first, by when the AI actually triaged/acted (not bookkeeping saves).
+        states = list(
+            AITicketState.objects.annotate(worked=Coalesce("last_triaged", "updated"))
+            .order_by("-worked")[:500]
+        )
         # Batch-fetch the current Odoo stage for these tickets (one bridge call).
         stages = {}
         try:
@@ -1518,7 +1524,7 @@ class AITicketConsole(APIView):
                 "is_alert": st.is_alert,
                 "summary": st.summary,
                 "proposed_action": st.proposed_action,
-                "updated": st.updated.isoformat() if st.updated else "",
+                "updated": (st.last_triaged or st.updated).isoformat() if (st.last_triaged or st.updated) else "",
                 "token": tok,
                 "decision_url": (f"{base}/ai-decision/{tok}" if (base and tok) else ""),
             })

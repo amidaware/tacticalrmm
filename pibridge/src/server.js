@@ -1289,17 +1289,19 @@ async function runTicketTriage(blob) {
   // ALWAYS include a chat link on every ticket the AI touches so a human can jump in.
   const chatLink = blob.decision_url ? `\n\n\u27a1 Chat with me to continue this ticket: ${blob.decision_url}` : "";
   let action = "none";
-  // First-look company/contact correction: if the AI resolved the customer company
-  // and we haven't checked this ticket yet, attribute it to the right company.
-  // REGULAR tickets -> company + Primary Support Contact (a person who gets replies).
-  // ALERT tickets -> the COMPANY only (never a customer individual, so a reply can't
-  // email a person about monitoring noise). One-time; respects later manual edits.
-  // Only CLEAN alerts (auto-cancelled monitoring noise, never replied to) attribute to the
-  // COMPANY level. Actionable alerts + regular tickets are real work that a human/AI will
-  // reply to, so they route to the company's Primary Support Contact when one is set.
+  // First-look company/contact correction - ONLY for AUTOMATION-originated tickets
+  // (monitoring/backup ALERTS and AI-task device reports). We NEVER recategorize a
+  // ticket a PERSON filed (classification "regular"/"unknown"): whoever they came in
+  // as IS the requester we reply to, and swapping them for the company's support
+  // contact silently loses the real person (e.g. Jane Smith -> support@acme lost Jane).
+  //   alert_clean      -> COMPANY only (monitoring noise, never emails an individual)
+  //   alert_actionable -> COMPANY + Primary Support Contact (real work, gets a reply)
+  //   regular/unknown  -> LEFT AS-IS (human filed it; respect the requester)
+  // One-time per ticket (partner_checked); respects later manual edits.
+  const isAutomationTicket = cls === "alert_clean" || cls === "alert_actionable";
   const companyLevelOnly = cls === "alert_clean";
   let company_resolved = false, company_corrected = null;
-  if (blob.correct_partner && verdict.company_partner_id && hd.operations.set_ticket_company) {
+  if (isAutomationTicket && blob.correct_partner && verdict.company_partner_id && hd.operations.set_ticket_company) {
     company_resolved = true;
     try {
       company_corrected = await hd.operations.set_ticket_company({

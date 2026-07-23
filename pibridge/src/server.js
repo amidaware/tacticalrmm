@@ -1134,6 +1134,12 @@ async function runTicketTriage(blob) {
       `     (e.g. server FBA-FS22-1 -> FarmerBoy AG) and use find_company(name) to get its partner_id.\n` +
       `   - ALWAYS put the resolved company's partner_id in submit_triage.company_partner_id so the\n` +
       `     ticket is attributed to the correct company + its Primary Support Contact (done automatically).\n` +
+      `   - FLEET-WIDE / MULTI-CLIENT DIGEST: if ONE ticket is a rollup reporting on SEVERAL different\n` +
+      `     clients or hosts in a single message (e.g. a backup/monitoring summary listing many companies),\n` +
+      `     it is an INTERNAL MSP monitoring digest - NOT any one customer's ticket. Attribute it to your\n` +
+      `     OWN MSP/internal company (find_company with the MSP name given in the triage policy below),\n` +
+      `     never to a client that only appears as one line in it. If every actionable item already has its\n` +
+      `     own ticket, classify it alert_clean (a rollup to close).\n` +
       `   - find_devices with that company + the requester's username (email local part) AND their full\n` +
       `     person_name (from the ticket contact) -> the RMM client and the user's device(s). If several\n` +
       `     devices match, note that a human/customer must pick.\n` +

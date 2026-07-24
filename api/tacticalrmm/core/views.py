@@ -1675,6 +1675,23 @@ class AIProceduresMiningStatus(APIView):
         return Response(data or {"running": False, "phase": "idle", "log": []})
 
 
+class AIProceduresMiningStop(APIView):
+    """Request the running miner to stop gracefully (it finishes the current ticket and
+    exits between companies). Sets a Redis flag the bridge checks each loop."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        from redis import from_url
+
+        try:
+            with from_url(f"redis://{settings.REDIS_HOST}:6379", decode_responses=True) as conn:
+                conn.set("pi_mining:stop", "1", ex=3600)
+        except Exception:
+            return notify_error("Could not reach Redis to signal stop.")
+        return Response({"stopping": True})
+
+
 class AIDecisionSession(APIView):
     """Mint a short-lived, STATEFUL streaming decision-chat session (WebSocket) for a
     ticket - the same machinery as the device chat, so it never blocks a web worker

@@ -868,6 +868,7 @@ export function buildProcedureMiningTools() {
         fix: Type.String({ description: "The exact steps that resolved it" }),
         verification: Type.Optional(Type.String({ description: "How to confirm it is fixed" })),
         source_ticket_refs: Type.Optional(Type.Array(Type.String({ description: "Ticket ref(s) this came from" }))),
+        update_code: Type.Optional(Type.String({ description: "If this matches an EXISTING procedure from the provided list, put its 7-digit code here (e.g. 0000042) to UPDATE it instead of creating a duplicate. Omit to create new." })),
       })),
       company_kb_entry: Type.Optional(Type.String({ description: "Client-specific knowledge for THIS company's KB (not generic). Empty if none." })),
     }),

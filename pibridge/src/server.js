@@ -1087,7 +1087,17 @@ function miningProgress() {
 // tickets are never re-processed, and streams live progress to Redis for the UI.
 async function runProcedureMining(blob) {
   const { prog, flush, say } = miningProgress();
+  await redis.del("pi_mining:stop").catch(() => {}); // clear any stale stop request
+  const stopRequested = async () => { try { return !!(await redis.get("pi_mining:stop")); } catch { return false; } };
   const finishErr = (msg) => { prog.running = false; prog.phase = "error"; say(msg); flush(); return { error: msg, procedures: [], mined: [] }; };
+  // Compact list of existing procedures so the model can UPDATE a match (set update_code)
+  // instead of creating a near-duplicate.
+  const existingList = Array.isArray(blob.existing) ? blob.existing : [];
+  const existingStr = existingList.length
+    ? "EXISTING PROCEDURES - if a ticket matches one of these, set that procedure's update_code " +
+      "(the 7-digit code) instead of creating a new one:\n" +
+      existingList.map((e) => `  ${e.code} [${e.category || ""}] ${e.title}`).join("\n").slice(0, 60000) + "\n\n"
+    : "";
   const hd = loadHelpdesk(blob.helpdesk_code || "", blob.helpdesk_api || null);
   if (!hd || !hd.operations.list_closed_tickets) return finishErr("helpdesk.js defines no list_closed_tickets operation");
   say("Listing closed tickets in the window\u2026");
@@ -1117,8 +1127,10 @@ async function runProcedureMining(blob) {
   const CHUNK = 25;
   const allProcedures = [];
   const mined = [];
+  let stopped = false;
   prog.phase = "mining"; flush();
   for (const k of coKeys) {
+    if (await stopRequested()) { stopped = true; say("\u23F9 Stop requested \u2014 finishing up."); break; }
     const co = byCo[k];
     prog.current_company = co.name; flush();
     say(`\u25B6 ${co.name} (${co.refs.length} ticket${co.refs.length === 1 ? "" : "s"})`);
@@ -1144,9 +1156,11 @@ async function runProcedureMining(blob) {
         ref: t.ref, subject: t.subject, thread: (t.messages || []).map((m) => `${m.author} (${m.type}): ${m.text}`).join("\n").slice(0, 3000),
       }));
       const prompt =
-        `Company: ${co.name}\nHere are ${compact.length} of this company's recently-closed tickets with ` +
-        `their conversation/resolution. Extract client-agnostic procedures AND a client-specific KB note ` +
-        `for this company, then call submit_analysis ONCE.\n\n` + JSON.stringify(compact).slice(0, 150000);
+        `Company: ${co.name}\n` + existingStr +
+        `Here are ${compact.length} of this company's recently-closed tickets with their conversation/` +
+        `resolution. Extract client-agnostic procedures (UPDATE an existing one via update_code when it ` +
+        `matches) AND a client-specific KB note for this company, then call submit_analysis ONCE.\n\n` +
+        JSON.stringify(compact).slice(0, 150000);
       try { await session.prompt(prompt); } catch (e) { say(`  ! model error: ${String(e).slice(0, 100)}`); }
       finally { try { session.dispose(); } catch {} }
       const procs = collected.procedures || [];
@@ -1167,10 +1181,11 @@ async function runProcedureMining(blob) {
     for (const r of co.refs) mined.push({ ref: r.ref, write_date: r.write_date || "" });
     prog.done = mined.length; flush();
   }
-  prog.running = false; prog.phase = "done"; prog.current_company = "";
-  say(`Done: ${allProcedures.length} procedures + ${prog.kb_updates} company KB update(s) from ${mined.length} tickets.`);
+  await redis.del("pi_mining:stop").catch(() => {});
+  prog.running = false; prog.phase = stopped ? "stopped" : "done"; prog.current_company = "";
+  say(`${stopped ? "Stopped" : "Done"}: ${allProcedures.length} procedures + ${prog.kb_updates} company KB update(s) from ${mined.length} tickets.`);
   flush();
-  return { procedures: allProcedures, scanned: light.length, mined };
+  return { procedures: allProcedures, scanned: light.length, mined, stopped };
 }
 
 // Headless AUTO-RESOLVE attempt (from the Ticket Console). One-shot agent run in

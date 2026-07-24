@@ -45,6 +45,7 @@ urlpatterns = [
     path("ai/procedures/", views.AIProcedures.as_view()),
     path("ai/procedures/mine-now/", views.AIProceduresMineNow.as_view()),
     path("ai/procedures/mining-status/", views.AIProceduresMiningStatus.as_view()),
+    path("ai/procedures/mining-stop/", views.AIProceduresMiningStop.as_view()),
     path("ai/procedures/<int:pk>/", views.AIProcedureDetail.as_view()),
     path("ai/runs/", views.AITaskRuns.as_view()),
     path("ai/history-scope/", views.AIHistoryScope.as_view()),

@@ -1929,6 +1929,31 @@ def run_ai_scheduled_action(pk):
 # window, the schedule gate, and the dedup/merge into AIProcedure rows.
 # ---------------------------------------------------------------------------
 
+def _match_existing_procedure(title, cat, update_code):
+    """Find the procedure this mined item should UPDATE (if any): explicit code first,
+    then exact title+category, then a fuzzy title match within the same category."""
+    import difflib
+
+    from core.models import AIProcedure
+
+    if update_code:
+        digits = "".join(ch for ch in str(update_code) if ch.isdigit())
+        if digits:
+            t = AIProcedure.objects.filter(id=int(digits)).first()
+            if t:
+                return t
+    t = AIProcedure.objects.filter(title__iexact=title, category__iexact=cat).first()
+    if t:
+        return t
+    best, best_r = None, 0.0
+    tl = title.lower()
+    for cand in AIProcedure.objects.filter(category__iexact=cat).only("id", "title"):
+        r = difflib.SequenceMatcher(None, tl, (cand.title or "").lower()).ratio()
+        if r > best_r:
+            best, best_r = cand, r
+    return best if best_r >= 0.82 else None
+
+
 def _procedure_confidence(p):
     """Cheap, transparent confidence: approved + seen a few times = high. This is what
     later gates auto-resolution (only high-confidence, approved procedures qualify)."""
@@ -1979,6 +2004,12 @@ def mine_ticket_procedures(force=False):
                 # Dedup ledger: {ticket_ref: last_change_seen}. The bridge mines only
                 # tickets that are new or changed since we last looked at them.
                 "seen": dict(AIMinedTicket.objects.values_list("ticket_ref", "last_change_seen")),
+                # Existing procedures so the model can UPDATE a match (via update_code)
+                # instead of creating a near-duplicate.
+                "existing": [
+                    {"code": f"{p['id']:07d}", "title": p["title"], "category": p["category"]}
+                    for p in AIProcedure.objects.values("id", "title", "category")[:1500]
+                ],
                 "provider": model.provider.name,
                 "model_id": model.model_id,
                 "api_key": model.provider.api_key,
@@ -2005,8 +2036,10 @@ def mine_ticket_procedures(force=False):
             continue
         cat = (p.get("category") or "").strip()[:100]
         refs = [str(x) for x in (p.get("source_ticket_refs") or [])]
-        # dedup/merge: same title (case-insensitive) within the same category
-        existing = AIProcedure.objects.filter(title__iexact=title, category__iexact=cat).first()
+        # dedup/merge target: (1) the model's explicit update_code, (2) exact title+cat,
+        # (3) fuzzy title within the same category - so we UPDATE a similar procedure
+        # instead of piling on near-duplicates.
+        existing = _match_existing_procedure(title, cat, p.get("update_code"))
         if existing:
             merged = list(dict.fromkeys((existing.source_ticket_refs or []) + refs))
             existing.source_ticket_refs = merged

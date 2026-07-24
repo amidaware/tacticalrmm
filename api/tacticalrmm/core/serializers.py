@@ -175,12 +175,19 @@ class AIModelSerializer(serializers.ModelSerializer):
 
 
 class AIProcedureSerializer(serializers.ModelSerializer):
+    # Human-friendly 7-digit reference (0000001, 0000002, ...) = the row id zero-padded,
+    # so a procedure can be named in a sentence without ambiguity.
+    code = serializers.SerializerMethodField()
+
     class Meta:
         from core.models import AIProcedure
 
         model = AIProcedure
         fields = "__all__"
         read_only_fields = ("created", "updated")
+
+    def get_code(self, obj) -> str:
+        return f"{obj.id:07d}" if obj.id else ""
 
 
 class AIProviderSerializer(serializers.ModelSerializer):

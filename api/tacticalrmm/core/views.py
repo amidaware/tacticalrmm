@@ -1576,10 +1576,14 @@ class AIProcedures(APIView):
         cat = (request.query_params.get("category") or "").strip()
         status_f = (request.query_params.get("status") or "").strip()
         if q:
-            qs = qs.filter(
+            cond = (
                 Q(title__icontains=q) | Q(symptom__icontains=q) | Q(fix__icontains=q)
                 | Q(applies_to__icontains=q) | Q(root_cause__icontains=q) | Q(category__icontains=q)
             )
+            # allow searching by the 7-digit code (with or without leading zeros)
+            if q.strip().isdigit():
+                cond |= Q(id=int(q.strip()))
+            qs = qs.filter(cond)
         if cat:
             qs = qs.filter(category__iexact=cat)
         if status_f:

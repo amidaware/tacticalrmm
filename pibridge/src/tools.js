@@ -846,33 +846,38 @@ export function buildReportTools({ helpdeskCode, helpdeskApi } = {}) {
 // reusable procedures the model distilled from a batch of closed tickets.
 export function buildProcedureMiningTools() {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
-  const collected = { procedures: [] };
-  const submit_procedures = defineTool({
-    name: "submit_procedures",
-    label: "Submit mined procedures",
+  const collected = { procedures: [], company_kb_entry: "" };
+  const submit_analysis = defineTool({
+    name: "submit_analysis",
+    label: "Submit mined analysis",
     description:
-      "Record the reusable, CLIENT-AGNOSTIC troubleshooting procedures you distilled from the closed " +
-      "tickets. Call EXACTLY ONCE with an array. Each procedure is a GENERIC problem pattern (not a " +
-      "one-off), with the steps that actually resolved it. SKIP tickets with no useful resolution, " +
-      "pure monitoring noise, or purely client-specific facts (those are not procedures).",
+      "Record what you learned from THIS company's closed tickets. Call EXACTLY ONCE with:\n" +
+      "1) procedures = reusable, CLIENT-AGNOSTIC troubleshooting procedures (generic problem patterns " +
+      "with the steps that actually resolved them). SKIP tickets with no clear resolution, monitoring " +
+      "noise, or client-specific facts.\n" +
+      "2) company_kb_entry = a concise note of CLIENT-SPECIFIC knowledge for THIS company only " +
+      "(recurring issues at this client, their environment/standards/quirks, key systems) - or empty " +
+      "string if nothing client-specific is worth remembering. NEVER put secrets here.",
     parameters: Type.Object({
       procedures: Type.Array(Type.Object({
         title: Type.String({ description: "Short searchable title, e.g. 'Toshiba MFP prints garbled from Excel'" }),
         category: Type.String({ description: "Topic bucket, e.g. Printers, Email, QuickBooks, Backups, Active Directory, Networking, Microsoft 365" }),
-        applies_to: Type.Optional(Type.String({ description: "Vendor/app/OS keywords for matching, e.g. 'toshiba mfp pcl excel print'" })),
+        applies_to: Type.Optional(Type.String({ description: "Vendor/app/OS keywords for matching" })),
         symptom: Type.String({ description: "The observable problem" }),
         root_cause: Type.Optional(Type.String({ description: "What it actually was" })),
         fix: Type.String({ description: "The exact steps that resolved it" }),
         verification: Type.Optional(Type.String({ description: "How to confirm it is fixed" })),
         source_ticket_refs: Type.Optional(Type.Array(Type.String({ description: "Ticket ref(s) this came from" }))),
       })),
+      company_kb_entry: Type.Optional(Type.String({ description: "Client-specific knowledge for THIS company's KB (not generic). Empty if none." })),
     }),
     execute: async (_id, p) => {
       collected.procedures = Array.isArray(p.procedures) ? p.procedures : [];
-      return text(`Recorded ${collected.procedures.length} procedures.`);
+      collected.company_kb_entry = String(p.company_kb_entry || "").trim();
+      return text(`Recorded ${collected.procedures.length} procedures${collected.company_kb_entry ? " + a company KB note" : ""}.`);
     },
   });
-  return { tools: [submit_procedures], collected };
+  return { tools: [submit_analysis], collected };
 }
 
 export function buildTicketTriageTools({ helpdeskCode, helpdeskApi } = {}) {

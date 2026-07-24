@@ -1051,83 +1051,125 @@ async function runTicketPoll(blob) {
 // Default policy for the Procedures miner - editable in Global Settings
 // (ai_procedures_mining_prompt); this is the fallback when that box is empty.
 const DEFAULT_MINING_PROMPT =
-  `You are Pi, mining a batch of recently-CLOSED helpdesk tickets to build a library of REUSABLE, ` +
-  `CLIENT-AGNOSTIC troubleshooting PROCEDURES - how a type of problem gets fixed, so future tickets ` +
-  `(and the AI) can reuse it.\n` +
-  `You will be given closed tickets with their conversation/resolution. For each DISTINCT, GENERIC ` +
-  `problem pattern you can see was actually resolved, distill: title, category (Printers, Email, ` +
-  `QuickBooks, Backups, Active Directory, Networking, Microsoft 365, etc.), applies_to keywords, ` +
-  `symptom, root_cause, fix (the exact steps that worked), verification.\n` +
+  `You are Pi, mining a batch of recently-CLOSED helpdesk tickets FOR ONE COMPANY to build two things:\n` +
+  `1) a library of REUSABLE, CLIENT-AGNOSTIC troubleshooting PROCEDURES (how a type of problem gets\n` +
+  `   fixed, reusable at ANY client), and\n` +
+  `2) a short CLIENT-SPECIFIC KB note for THIS company (its recurring issues, environment, standards,\n` +
+  `   key systems) - the stuff that only matters for this one client.\n` +
+  `For each procedure distill: title, category (Printers, Email, QuickBooks, Backups, Active Directory,\n` +
+  `Networking, Microsoft 365, etc.), applies_to keywords, symptom, root_cause, fix (the exact steps\n` +
+  `that worked), verification.\n` +
   `RULES:\n` +
+  `- RESOLUTION QUALITY GATE: only create a procedure when the ticket shows a CLEAR resolution - the\n` +
+  `  tech (or customer) actually stated what fixed it, with real steps. If a ticket was closed with no\n` +
+  `  real reason, no steps, just "closed/resolved/done", auto-reply only, or the fix is unclear, DO NOT\n` +
+  `  make a procedure from it. A bad/empty close is not knowledge.\n` +
   `- MERGE tickets that are the same underlying problem into ONE procedure; list all their refs in source_ticket_refs.\n` +
-  `- SKIP: tickets with no useful resolution, pure monitoring/backup noise, spam/junk, and purely CLIENT-SPECIFIC facts (a client's VPN/firewall/contact details are NOT a procedure).\n` +
-  `- Write client-agnostic steps: no client names, no people, no secrets.\n` +
-  `- Be conservative: only record a procedure when the resolution is actually clear from the thread. Quality over quantity.\n` +
-  `Call submit_procedures EXACTLY ONCE with the full array, then stop.`;
+  `- SKIP monitoring/backup noise and spam/junk entirely.\n` +
+  `- Procedures must be client-agnostic: no client names, people, or secrets. Client-specific details\n` +
+  `  go in company_kb_entry instead (still never secrets - note WHERE they live, not the value).\n` +
+  `- Be conservative: quality over quantity. It is fine to return an empty procedures list.\n` +
+  `Call submit_analysis EXACTLY ONCE (procedures + company_kb_entry), then stop.`;
 
-// Mine reusable procedures from recently-closed tickets. Pre-fetches the closed
-// tickets via helpdesk.js (list_closed_tickets), then runs ONE model turn whose only
-// tool is submit_procedures. Returns the distilled procedures for the Django task to
-// dedup/merge into AIProcedure rows.
+// Live mining progress -> Redis (key `pi_mining`), so the Procedures window can show a
+// real-time view of exactly what's being looked at. One run at a time.
+const MINING_KEY = "pi_mining";
+function miningProgress() {
+  const prog = { running: true, started: new Date().toISOString(), phase: "listing",
+    window: 0, to_mine: 0, done: 0, companies: 0, current_company: "", procedures_found: 0, kb_updates: 0, log: [] };
+  const flush = () => { prog.updated = new Date().toISOString(); redis.set(MINING_KEY, JSON.stringify(prog), "EX", 3600).catch(() => {}); };
+  const say = (line) => { prog.log.push({ t: new Date().toISOString(), line }); if (prog.log.length > 400) prog.log = prog.log.slice(-400); flush(); };
+  return { prog, flush, say };
+}
+
+// Mine recently-closed tickets, GROUPED BY COMPANY, to build (a) client-agnostic
+// procedures and (b) each company's Odoo KB. Reads the dedup ledger so unchanged
+// tickets are never re-processed, and streams live progress to Redis for the UI.
 async function runProcedureMining(blob) {
+  const { prog, flush, say } = miningProgress();
+  const finishErr = (msg) => { prog.running = false; prog.phase = "error"; say(msg); flush(); return { error: msg, procedures: [], mined: [] }; };
   const hd = loadHelpdesk(blob.helpdesk_code || "", blob.helpdesk_api || null);
-  if (!hd || !hd.operations.list_closed_tickets)
-    return { error: "helpdesk.js defines no list_closed_tickets operation", procedures: [], mined: [] };
-  // 1) Cheap: list closed tickets in the look-back window (refs + change markers only).
-  const light = await hd.operations.list_closed_tickets({
-    since: blob.since, since_days: blob.since_days, limit: 2000, light: true,
-  });
-  if (!Array.isArray(light) || !light.length) return { procedures: [], scanned: 0, mined: [] };
-  // 2) Dedup ledger: only mine tickets we've NEVER looked at, or that CHANGED since we
-  //    last did (write_date newer than what we recorded). Never re-process unchanged ones.
+  if (!hd || !hd.operations.list_closed_tickets) return finishErr("helpdesk.js defines no list_closed_tickets operation");
+  say("Listing closed tickets in the window\u2026");
+  const light = await hd.operations.list_closed_tickets({ since: blob.since, since_days: blob.since_days, limit: 3000, light: true });
+  if (!Array.isArray(light) || !light.length) { prog.running = false; prog.phase = "done"; say("No closed tickets in window."); flush(); return { procedures: [], scanned: 0, mined: [] }; }
+  prog.window = light.length; flush();
+  // Dedup ledger: only new/changed tickets.
   const seen = blob.seen || {};
   const changed = light.filter((t) => !(t.ref in seen) || String(t.write_date || "") > String(seen[t.ref] || ""));
-  if (!changed.length) return { procedures: [], scanned: light.length, mined: [] };
-  const batch = changed.slice(0, 200); // cap per run; the rest are picked up next run (still "changed")
-  // 3) Fetch full threads ONLY for the to-mine tickets.
-  const tickets = await hd.operations.list_closed_tickets({ refs: batch.map((t) => t.ref) });
-  if (!Array.isArray(tickets) || !tickets.length)
-    return { procedures: [], scanned: light.length, mined: [] };
+  prog.to_mine = changed.length;
+  say(`${light.length} in window; ${changed.length} new/changed to mine.`);
+  if (!changed.length) { prog.running = false; prog.phase = "done"; say("Nothing new to mine \u2014 all caught up."); flush(); return { procedures: [], scanned: light.length, mined: [] }; }
+  const batch = changed.slice(0, 250); // per-run cap; rest picked up next run
+  // Group by company (partner_id) so each company is analysed as a whole.
+  const byCo = {};
+  for (const t of batch) { const k = String(t.partner_id || 0); (byCo[k] || (byCo[k] = { name: t.company || "(no company)", partner_id: t.partner_id || null, refs: [] })).refs.push(t); }
+  const coKeys = Object.keys(byCo);
+  prog.companies = coKeys.length;
+  say(`Mining ${batch.length} tickets across ${coKeys.length} companies.`);
 
   const authStorage = AuthStorage.create();
   authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
   const modelRegistry = ModelRegistry.inMemory(authStorage);
   const model = modelRegistry.find(blob.provider, blob.model_id);
-  if (!model) return { error: `Model not found: ${blob.provider}/${blob.model_id}`, procedures: [], mined: [] };
+  if (!model) return finishErr(`Model not found: ${blob.provider}/${blob.model_id}`);
 
-  // Process in CHUNKS so the model actually READS every ticket (one giant prompt just
-  // gets truncated and most tickets are ignored). Each chunk is its own short session.
   const CHUNK = 25;
   const allProcedures = [];
-  log("mine-procedures", `window=${light.length} changed=${changed.length} mining=${batch.length} in chunks of ${CHUNK}`);
-  for (let i = 0; i < tickets.length; i += CHUNK) {
-    const chunk = tickets.slice(i, i + CHUNK);
-    const { tools, collected } = buildProcedureMiningTools();
-    const loader = new DefaultResourceLoader({
-      agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
-      systemPromptOverride: () => (String(blob.mining_prompt || "").trim() || DEFAULT_MINING_PROMPT),
-    });
-    await loader.reload();
-    const { session } = await createAgentSession({
-      model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
-      noTools: "builtin", customTools: tools, resourceLoader: loader,
-      sessionManager: SessionManager.create(CONFIG.sessionsRoot), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
-    });
-    const compact = chunk.map((t) => ({
-      ref: t.ref, subject: t.subject, company: t.company, assignee: t.assignee,
-      thread: (t.messages || []).map((m) => `${m.author} (${m.type}): ${m.text}`).join("\n").slice(0, 3000),
-    }));
-    const prompt =
-      `Here are ${compact.length} recently-closed tickets with their conversation/resolution. Distill the ` +
-      `reusable, client-agnostic procedures they teach, then call submit_procedures ONCE.\n\n` +
-      JSON.stringify(compact).slice(0, 160000);
-    try { await session.prompt(prompt); } catch (e) { log("mine-chunk error", String(e).slice(0, 160)); }
-    finally { try { session.dispose(); } catch {} }
-    for (const p of (collected.procedures || [])) allProcedures.push(p);
+  const mined = [];
+  prog.phase = "mining"; flush();
+  for (const k of coKeys) {
+    const co = byCo[k];
+    prog.current_company = co.name; flush();
+    say(`\u25B6 ${co.name} (${co.refs.length} ticket${co.refs.length === 1 ? "" : "s"})`);
+    let tickets = [];
+    try { tickets = await hd.operations.list_closed_tickets({ refs: co.refs.map((r) => r.ref) }); }
+    catch (e) { say(`  ! failed to fetch threads: ${String(e).slice(0, 100)}`); }
+    const coKbParts = [];
+    for (let i = 0; i < tickets.length; i += CHUNK) {
+      const chunk = tickets.slice(i, i + CHUNK);
+      say(`  \u2026analysing ${chunk.map((t) => t.ref).join(", ")}`);
+      const { tools, collected } = buildProcedureMiningTools();
+      const loader = new DefaultResourceLoader({
+        agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+        systemPromptOverride: () => (String(blob.mining_prompt || "").trim() || DEFAULT_MINING_PROMPT),
+      });
+      await loader.reload();
+      const { session } = await createAgentSession({
+        model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
+        noTools: "builtin", customTools: tools, resourceLoader: loader,
+        sessionManager: SessionManager.create(CONFIG.sessionsRoot), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+      });
+      const compact = chunk.map((t) => ({
+        ref: t.ref, subject: t.subject, thread: (t.messages || []).map((m) => `${m.author} (${m.type}): ${m.text}`).join("\n").slice(0, 3000),
+      }));
+      const prompt =
+        `Company: ${co.name}\nHere are ${compact.length} of this company's recently-closed tickets with ` +
+        `their conversation/resolution. Extract client-agnostic procedures AND a client-specific KB note ` +
+        `for this company, then call submit_analysis ONCE.\n\n` + JSON.stringify(compact).slice(0, 150000);
+      try { await session.prompt(prompt); } catch (e) { say(`  ! model error: ${String(e).slice(0, 100)}`); }
+      finally { try { session.dispose(); } catch {} }
+      const procs = collected.procedures || [];
+      for (const p of procs) allProcedures.push(p);
+      prog.procedures_found = allProcedures.length;
+      if (collected.company_kb_entry) coKbParts.push(collected.company_kb_entry);
+      if (procs.length) say(`  + ${procs.length} procedure${procs.length === 1 ? "" : "s"}`);
+      flush();
+    }
+    // Write client-specific findings to THIS company's Odoo KB ONCE (combined), not per
+    // chunk - keeps the KB article tidy instead of piling on repeated blocks.
+    if (coKbParts.length && co.partner_id && hd.operations.upsert_ai_kb_article) {
+      try {
+        await hd.operations.upsert_ai_kb_article({ partner_id: co.partner_id, company_name: co.name, entry: coKbParts.join(" ") });
+        prog.kb_updates++; say(`  + KB note saved for ${co.name}`);
+      } catch (e) { say(`  ! KB write failed: ${String(e).slice(0, 100)}`); }
+    }
+    for (const r of co.refs) mined.push({ ref: r.ref, write_date: r.write_date || "" });
+    prog.done = mined.length; flush();
   }
-  // Report which tickets we looked at (ref + change marker) so Django updates the dedup
-  // ledger - even ones that yielded no procedure count as "looked at" (won't re-scan).
-  const mined = batch.map((t) => ({ ref: t.ref, write_date: t.write_date || "" }));
+  prog.running = false; prog.phase = "done"; prog.current_company = "";
+  say(`Done: ${allProcedures.length} procedures + ${prog.kb_updates} company KB update(s) from ${mined.length} tickets.`);
+  flush();
   return { procedures: allProcedures, scanned: light.length, mined };
 }
 

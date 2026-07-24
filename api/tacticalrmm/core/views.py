@@ -1653,6 +1653,28 @@ class AIProceduresMineNow(APIView):
         return Response({"queued": True})
 
 
+class AIProceduresMiningStatus(APIView):
+    """Live status of the procedure miner (written to Redis by the bridge as it runs),
+    so the Procedures window can show what's being looked at in real time."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request):
+        import json as _json
+
+        from redis import from_url
+
+        data = None
+        try:
+            with from_url(f"redis://{settings.REDIS_HOST}:6379", decode_responses=True) as conn:
+                raw = conn.get("pi_mining")
+            if raw:
+                data = _json.loads(raw)
+        except Exception:
+            data = None
+        return Response(data or {"running": False, "phase": "idle", "log": []})
+
+
 class AIDecisionSession(APIView):
     """Mint a short-lived, STATEFUL streaming decision-chat session (WebSocket) for a
     ticket - the same machinery as the device chat, so it never blocks a web worker

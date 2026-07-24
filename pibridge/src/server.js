@@ -1664,13 +1664,34 @@ function taskPromptAssistSystemPrompt(kind, currentPrompt, currentReport, helpde
     `- Run shell / PowerShell / bash commands on the device and read their output.\n` +
     `- Inspect system state: services, processes, disks/volumes, event logs, network, installed ` +
     `software, hardware/SMART, updates, users, scheduled tasks, etc.\n` +
+    `- Work DIRECTLY on this box via the RMM agent - so for anything ON this device it does NOT need ` +
+    `the admin to supply API tokens, URLs, or credentials. It can run local CLIs, 'docker ps'/'docker ` +
+    `exec', read local config/log files, query a local database, or call a localhost API itself. Only ` +
+    `ask the admin for access details for REMOTE / off-box third-party systems it must reach.\n` +
+    `- PERSISTENT PER-DEVICE MEMORY (built in): Pi loads its prior notes for this device with the ` +
+    `get_device_notes tool at the start of a run and saves durable facts with save_device_note at the ` +
+    `end. Use it for baselines, the access method it figured out last time, thresholds it confirmed, ` +
+    `naming quirks - so it never re-researches the same thing. NEVER tell the admin to invent a file ` +
+    `path or storage location; memory is built in.\n` +
+    `- RESEARCH unknowns itself with web_search / web_fetch. If the admin doesn't know a best-practice ` +
+    `value/threshold, Pi can look up vendor guidance, decide, and SAVE the chosen values to memory - ` +
+    `don't force the admin to supply numbers they don't have.\n` +
     `- Make changes when explicitly instructed (restart a service, clear a path, set a config) - ` +
     `but ONLY if the admin asks for changes; default to READ-ONLY/diagnose unless told otherwise.\n` +
     (helpdeskEnabled
-      ? `- File / update HELPDESK TICKETS (a ticketing integration is configured). Pi can open a ` +
-        `ticket, add notes, reply to the customer, dedupe, and (for bulk) file one combined report ticket.\n`
+      ? `- FILE / UPDATE HELPDESK TICKETS (a ticketing integration is configured). Pi can list open ` +
+        `tickets, find an existing one by subject to dedupe, add a note/update it, reply to the customer, ` +
+        `create a new ticket, and (for bulk) file one combined report ticket. Ticketing plumbing is built ` +
+        `in - you do NOT need to ask the admin how tickets work or how to store/search them.\n`
       : `- (No helpdesk/ticketing integration is configured, so do NOT instruct Pi to open tickets ` +
         `unless the admin sets that up in Global Settings first.)\n`) +
+    `\n` +
+    `DO NOT re-ask about PLATFORM PLUMBING you already have: device memory (and where to store it), ` +
+    `on-box API tokens/credentials, or ticket mechanics/dedupe. Assume those work. Interview the admin ` +
+    `only about the DOMAIN: the goal, scope, what counts as a problem, thresholds (or let Pi research ` +
+    `them), and what changes (if any) are allowed. When you write the instructions, reference the REAL ` +
+    `mechanisms by name (get_device_notes/save_device_note for memory; list/create/update tickets for ` +
+    `ticketing) instead of inventing files or asking the admin to wire anything up.\n` +
     `\n` +
     `INTERVIEW THE ADMIN - ask a FEW focused questions at a time (skip anything already answered ` +
     `by the current draft below):\n` +
@@ -1701,6 +1722,10 @@ function taskPromptAssistSystemPrompt(kind, currentPrompt, currentReport, helpde
     `- State the OS assumptions and the exact conditions that define a problem.\n` +
     `- Be explicit about read-only vs allowed changes, and require confirmation-free, safe commands.\n` +
     `- Tell Pi to keep output concise and to include evidence (key command output) for any finding.\n` +
+    `- If the task should improve across runs (baselines, week-over-week trends, or the access method/` +
+    `commands it discovered), tell Pi to LOAD get_device_notes first and SAVE new durable facts with ` +
+    `save_device_note at the end - never a hand-rolled file. For tickets, tell it to find an existing ` +
+    `(open) ticket by subject and update/dedupe it or create a new one - don't describe storage mechanics.\n` +
     (isBulk
       ? `- The PER-DEVICE prompt must make sense running independently on each machine. The COMBINED ` +
         `REPORT instruction is separate and receives all devices' results - tell it how to aggregate ` +

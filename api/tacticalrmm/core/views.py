@@ -1477,6 +1477,19 @@ class AITicketConsole(APIView):
         except Exception:
             stages = {}
 
+        # A ticket DELETED in Odoo won't come back in the stage batch. If we got a real
+        # batch (at least one stage resolved), drop our stale rows for any requested ref
+        # that's missing - so the console never shows a deleted ticket. If the batch is
+        # empty (fetch failed / helpdesk not configured) we touch nothing (safe).
+        if stages:
+            present = set(stages.keys())
+            deleted_refs = [s.ticket_ref for s in states if s.ticket_ref not in present]
+            if deleted_refs:
+                dset = set(deleted_refs)
+                AITicketState.objects.filter(ticket_ref__in=deleted_refs).delete()
+                AIDecisionRequest.objects.filter(ticket_ref__in=deleted_refs).delete()
+                states = [s for s in states if s.ticket_ref not in dset]
+
         # stages[ref] is {stage, assignee} (older builds returned a bare stage string).
         def _stage(ref):
             v = stages.get(ref)

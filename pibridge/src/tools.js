@@ -861,7 +861,7 @@ export function buildProcedureMiningTools() {
     parameters: Type.Object({
       procedures: Type.Array(Type.Object({
         title: Type.String({ description: "Short searchable title, e.g. 'Toshiba MFP prints garbled from Excel'" }),
-        category: Type.String({ description: "Topic bucket, e.g. Printers, Email, QuickBooks, Backups, Active Directory, Networking, Microsoft 365" }),
+        category: Type.String({ description: "Pick ONE from EXACTLY: Active Directory, Microsoft 365, Email, Security, Networking, Phones/VoIP, Printers, Backups, Hardware, Software, QuickBooks, Cloud Applications, Desktop Support, General. Never invent or combine." }),
         applies_to: Type.Optional(Type.String({ description: "Vendor/app/OS keywords for matching" })),
         symptom: Type.String({ description: "The observable problem" }),
         root_cause: Type.Optional(Type.String({ description: "What it actually was" })),

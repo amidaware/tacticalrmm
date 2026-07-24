@@ -2034,7 +2034,9 @@ def mine_ticket_procedures(force=False):
         title = (p.get("title") or "").strip()
         if not title:
             continue
-        cat = (p.get("category") or "").strip()[:100]
+        from core.models import normalize_procedure_category
+
+        cat = normalize_procedure_category(p.get("category"))[:100]
         refs = [str(x) for x in (p.get("source_ticket_refs") or [])]
         # dedup/merge target: (1) the model's explicit update_code, (2) exact title+cat,
         # (3) fuzzy title within the same category - so we UPDATE a similar procedure

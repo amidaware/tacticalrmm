@@ -1591,18 +1591,24 @@ class AIProcedures(APIView):
         cats = sorted(
             c for c in AIProcedure.objects.exclude(category="").values_list("category", flat=True).distinct()
         )
+        from core.models import PROCEDURE_CATEGORIES
+
         return Response({
             "procedures": AIProcedureSerializer(qs[:1000], many=True).data,
             "categories": cats,
+            "all_categories": PROCEDURE_CATEGORIES,
             "total": AIProcedure.objects.count(),
         })
 
     def post(self, request):
+        from core.models import normalize_procedure_category
         from core.serializers import AIProcedureSerializer
 
         data = dict(request.data)
         data.setdefault("origin", "human")
         data["updated_by"] = request.user.username
+        if data.get("category") is not None:
+            data["category"] = normalize_procedure_category(data.get("category"))
         ser = AIProcedureSerializer(data=data)
         ser.is_valid(raise_exception=True)
         ser.save()
@@ -1630,6 +1636,10 @@ class AIProcedureDetail(APIView):
         obj = self._obj(pk)
         data = dict(request.data)
         data["updated_by"] = request.user.username
+        if data.get("category") is not None:
+            from core.models import normalize_procedure_category
+
+            data["category"] = normalize_procedure_category(data.get("category"))
         ser = AIProcedureSerializer(obj, data=data, partial=True)
         ser.is_valid(raise_exception=True)
         ser.save()

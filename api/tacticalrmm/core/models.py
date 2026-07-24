@@ -1017,6 +1017,54 @@ class AITicketState(models.Model):
         return f"{self.ticket_ref} [{self.status}]"
 
 
+# Canonical procedure categories. The miner + the UI pick from this fixed list so the
+# category taxonomy can't fragment into near-duplicates ("Email" vs "Email / Security").
+PROCEDURE_CATEGORIES = [
+    "Active Directory", "Microsoft 365", "Email", "Security", "Networking", "Phones/VoIP",
+    "Printers", "Backups", "Hardware", "Software", "QuickBooks", "Cloud Applications",
+    "Desktop Support", "General",
+]
+_PROC_CAT_ALIASES = {
+    "active directory / microsoft 365": "Active Directory",
+    "microsoft 365 / email": "Microsoft 365",
+    "email / security": "Email", "email/security": "Email",
+    "networking / voip": "Networking", "networking/voip": "Networking",
+    "backups/performance": "Backups", "backups / performance": "Backups",
+    "software/licensing": "Software", "software / licensing": "Software",
+    "general it / asset management": "General", "general it": "General", "asset management": "General",
+    "phones/voip": "Phones/VoIP", "phones / voip": "Phones/VoIP", "voip": "Phones/VoIP", "phones": "Phones/VoIP",
+    "m365": "Microsoft 365", "office 365": "Microsoft 365", "o365": "Microsoft 365",
+    "printer": "Printers", "printing": "Printers",
+    "backup": "Backups", "ad": "Active Directory",
+}
+
+
+def normalize_procedure_category(cat):
+    """Map a free-form category to the canonical taxonomy so the list stays tidy."""
+    import re as _re
+
+    c = (cat or "").strip()
+    if not c:
+        return "General"
+    key = c.lower()
+    canon_lower = {x.lower(): x for x in PROCEDURE_CATEGORIES}
+    if key in canon_lower:
+        return canon_lower[key]
+    if key in _PROC_CAT_ALIASES:
+        return _PROC_CAT_ALIASES[key]
+    # try the first segment before a separator ("Email / Security" -> "Email")
+    first = _re.split(r"[/,;|]", c)[0].strip().lower()
+    if first in canon_lower:
+        return canon_lower[first]
+    if first in _PROC_CAT_ALIASES:
+        return _PROC_CAT_ALIASES[first]
+    # last resort: a canonical name contained in the text
+    for low, canon in canon_lower.items():
+        if low in key:
+            return canon
+    return c  # unknown - keep trimmed as-is
+
+
 class AIProcedure(models.Model):
     """A reusable, helpdesk-AGNOSTIC troubleshooting PROCEDURE: symptom -> root cause
     -> fix -> verification, plus the vendor/app keywords it applies to.

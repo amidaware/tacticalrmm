@@ -1056,9 +1056,11 @@ const DEFAULT_MINING_PROMPT =
   `   fixed, reusable at ANY client), and\n` +
   `2) a short CLIENT-SPECIFIC KB note for THIS company (its recurring issues, environment, standards,\n` +
   `   key systems) - the stuff that only matters for this one client.\n` +
-  `For each procedure distill: title, category (Printers, Email, QuickBooks, Backups, Active Directory,\n` +
-  `Networking, Microsoft 365, etc.), applies_to keywords, symptom, root_cause, fix (the exact steps\n` +
-  `that worked), verification.\n` +
+  `For each procedure distill: title, category, applies_to keywords, symptom, root_cause, fix (the exact\n` +
+  `steps that worked), verification.\n` +
+  `CATEGORY - pick the SINGLE best-fit from EXACTLY this list (never invent or combine categories):\n` +
+  `  Active Directory | Microsoft 365 | Email | Security | Networking | Phones/VoIP | Printers |\n` +
+  `  Backups | Hardware | Software | QuickBooks | Cloud Applications | Desktop Support | General\n` +
   `RULES:\n` +
   `- RESOLUTION QUALITY GATE: only create a procedure when the ticket shows a CLEAR resolution - the\n` +
   `  tech (or customer) actually stated what fixed it, with real steps. If a ticket was closed with no\n` +

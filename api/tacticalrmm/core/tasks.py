@@ -1966,7 +1966,7 @@ def _procedure_confidence(p):
 
 
 @app.task
-def mine_ticket_procedures(force=False):
+def mine_ticket_procedures(force=False, chain=False):
     from datetime import timedelta
 
     import requests as _requests
@@ -2076,4 +2076,12 @@ def mine_ticket_procedures(force=False):
     core.ai_procedures_last_mined = now
     core.save(update_fields=["ai_procedures_last_mined"])
     looked = len(data.get("mined") or [])
-    return f"mined {created} new / {updated} updated from {looked} changed tickets (window since {since.date()})"
+    # Self-chain: if this was a chained/forced backfill and there are still tickets left
+    # in the window (and the user didn't hit Stop), queue the next batch automatically.
+    more = bool(data.get("more")) and not data.get("stopped")
+    if (force or chain) and more:
+        mine_ticket_procedures.apply_async(kwargs={"force": True, "chain": True}, countdown=8)
+    return (
+        f"mined {created} new / {updated} updated from {looked} changed tickets "
+        f"(window since {since.date()}){'; chaining next batch' if ((force or chain) and more) else ''}"
+    )

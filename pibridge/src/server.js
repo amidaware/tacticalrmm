@@ -1184,10 +1184,12 @@ async function runProcedureMining(blob) {
     prog.done = mined.length; flush();
   }
   await redis.del("pi_mining:stop").catch(() => {});
+  const more = !stopped && changed.length > batch.length; // still tickets left in the window
   prog.running = false; prog.phase = stopped ? "stopped" : "done"; prog.current_company = "";
-  say(`${stopped ? "Stopped" : "Done"}: ${allProcedures.length} procedures + ${prog.kb_updates} company KB update(s) from ${mined.length} tickets.`);
+  prog.more = more;
+  say(`${stopped ? "Stopped" : "Done"}: ${allProcedures.length} procedures + ${prog.kb_updates} company KB update(s) from ${mined.length} tickets.${more ? " More remain \u2014 continuing." : ""}`);
   flush();
-  return { procedures: allProcedures, scanned: light.length, mined, stopped };
+  return { procedures: allProcedures, scanned: light.length, mined, stopped, more };
 }
 
 // Headless AUTO-RESOLVE attempt (from the Ticket Console). One-shot agent run in

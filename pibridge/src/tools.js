@@ -109,6 +109,33 @@ function mutatingMatch(command, isWindows) {
   return null;
 }
 
+// PRIVILEGED (identity/access) command patterns - creating/removing users, group/
+// permission changes, licenses, mailbox delegates, password/MFA resets. These require
+// an APPROVED support contact's authorization (never auto-run for an unauthorized
+// requester), enforced deterministically in run_device_command.
+const PRIVILEGED_PATTERNS = [
+  // Active Directory
+  /\bnew-aduser\b/i, /\bremove-aduser\b/i, /\bset-aduser\b/i, /\benable-adaccount\b/i, /\bdisable-adaccount\b/i,
+  /\bnew-adgroup\b/i, /\b(add|remove)-adgroupmember\b/i, /\bset-adaccountpassword\b/i, /\bunlock-adaccount\b/i,
+  // Local accounts / groups
+  /\bnew-localuser\b/i, /\bremove-localuser\b/i, /\bset-localuser\b/i, /\b(add|remove)-localgroupmember\b/i,
+  /\bnet\s+user\s+\S+.*\/(add|delete|active)/i, /\bnet\s+localgroup\b.*\/(add|delete)/i,
+  /\bdsadd\b/i, /\bdsrm\b/i, /\bdsmod\s+user\b/i,
+  // Microsoft 365 / Entra / Exchange Online
+  /\bnew-msoluser\b/i, /\bset-msoluser(password)?\b/i, /\bnew-mguser\b/i, /\b(update|set)-mguser\b/i,
+  /\bnew-azureaduser\b/i, /\bset-azureaduser\b/i, /\b(add|remove)-azureadgroupmember\b/i, /\b(add|remove)-mggroupmember\b/i,
+  /\bnew-mailbox\b/i, /\bset-mailbox\b/i, /\b(add|remove)-mailboxpermission\b/i, /\b(add|remove)-recipientpermission\b/i,
+  /\bset-msolusslicense\b/i, /\bset-mguserlicense\b/i, /\b(set|update)-mguserlicense\b/i,
+  // Passwords / MFA (someone else's)
+  /\b(set|reset)-\w*password\b/i, /\bset-msolusermfa\b/i, /\b(set|update)-mfa\b/i,
+  // ACL / share permission changes
+  /\bset-acl\b/i, /\bicacls\b.*\/(grant|deny|remove)/i, /\bcacls\b.*\/(g|d|e)/i,
+];
+export function privilegedMatch(command) {
+  const s = String(command || "");
+  return PRIVILEGED_PATTERNS.some((re) => re.test(s));
+}
+
 // Builds the device-scoped toolset.
 //
 // Single-machine mode (machines.length === 1): identical behavior/shape to the
@@ -1117,6 +1144,26 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate,
       timeout: Type.Optional(Type.Number({ description: "Seconds (default 45)" })),
     }),
     execute: async (_id, p, signal) => {
+      // ALWAYS-ON privileged-action gate (identity/access): adding/removing users,
+      // permission/group changes, licenses, mailbox delegates, password/MFA resets can
+      // ONLY run when the ticket requester is an APPROVED support contact for the company
+      // (Primary/Secondary Support Contact in Odoo). This is deterministic and applies
+      // even in Write mode / Auto-approve - no exceptions.
+      if (privilegedMatch(p.command)) {
+        let authz = null;
+        try { if (hd?.operations?.check_support_authorization) authz = await hd.operations.check_support_authorization({ ticket: ticketRef }); } catch { /* verify below */ }
+        if (!authz || !authz.authorized) {
+          return text(
+            "BLOCKED - PRIVILEGED identity/access change (add/remove user, permissions, group membership, " +
+            "licenses, mailbox delegate, or password/MFA). This can only be performed when an APPROVED " +
+            "support contact authorizes it. " +
+            (authz
+              ? `Requester "${authz.requester}" is NOT an authorized support contact for ${authz.company}. Authorized contacts: ${(authz.authorized_contacts || []).join("; ") || "none set in Odoo"}. `
+              : "Authorization could not be verified. ") +
+            "Get an authorized support contact to request or approve this FIRST, then proceed.",
+          );
+        }
+      }
       // Gate ANY command that would MODIFY the device (not just "destructive" ones) -
       // same rule as the device chat: in read-only (Write mode off) it's blocked; with
       // Write mode on it needs approval (unless Auto-approve). Pure read-only diagnostics

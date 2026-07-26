@@ -106,6 +106,13 @@ app.conf.beat_schedule = {
         "task": "core.tasks.run_ai_runtime_update",
         "schedule": timedelta(minutes=5),
     },
+    # An operation with no capability class is denied by product code. That is correct but
+    # silent, so the system raises an internal notice ticket instead of relying on anyone
+    # remembering to look. Hourly is plenty: the ticket is deduped per day.
+    "ai-capability-health": {
+        "task": "core.tasks.check_ai_capability_health",
+        "schedule": crontab(minute=23),
+    },
     "dispatch-due-ai-scheduled-actions": {
         "task": "core.tasks.dispatch_due_ai_scheduled_actions",
         "schedule": timedelta(seconds=60.0),

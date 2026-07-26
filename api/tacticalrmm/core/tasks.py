@@ -790,7 +790,7 @@ def _resolve_ai_model(model):
     )
 
 
-def _run_prompt_on_agent(*, agent, model, prompt, allow_mutating, run_id):
+def _run_prompt_on_agent(*, agent, model, prompt, allow_mutating, run_id, reply_register="none"):
     """Execute one headless AI run on an agent via the bridge. Returns
     (status, summary, output)."""
     import requests as _requests
@@ -821,6 +821,9 @@ def _run_prompt_on_agent(*, agent, model, prompt, allow_mutating, run_id):
         "prompt": prompt,
         "allow_mutating": allow_mutating,
         "run_id": run_id,
+        # Per-task authorisation to contact the customer. Absent/none => the unattended
+        # surface holds no `customer` capability and a reply is refused in code.
+        "reply_register": reply_register or "none",
         "helpdesk_prompt": get_core_settings().ai_helpdesk_prompt or "",
         "helpdesk_api": {
             "base_url": get_core_settings().ai_helpdesk_api_base_url or "",
@@ -1047,6 +1050,7 @@ def run_ai_task(task_id, triggered_by="schedule"):
     status, summary, output, ticket_error = _run_prompt_on_agent(
         agent=task.agent, model=model, prompt=task.prompt,
         allow_mutating=task.allow_mutating, run_id=run_id,
+        reply_register=getattr(task, "reply_register", "none"),
     )
 
     task.last_run = djangotime.now()
@@ -1908,6 +1912,99 @@ def triage_ai_ticket(state_pk, force=False):
 # device-run path so the AI can do the work AND update the ticket. Deleted on
 # success; kept (status=error) on failure for review.
 # ---------------------------------------------------------------------------
+
+@app.task
+def check_ai_capability_health():
+    """Warn - as a ticket - when a helpdesk operation has no capability class.
+
+    Product code denies any operation the integration declares as mutating but leaves
+    unclassified (see capabilities.js). That is the correct default, but it is SILENT:
+    adding an operation to helpdesk.js, or losing exports.opClasses in an edit, produces
+    no symptom until enforcement blocks a working feature. That happened for real - an
+    edit wiped every tag and two deployment-authored operations became unclassified with
+    nothing to show for it.
+
+    Relying on someone remembering to check the settings panel first is the same class of
+    safety as a prompt that says "do not close tickets" - it works until it doesn't. So the
+    system says so itself, as an internal notice ticket, which is never auto-closed.
+
+    Deliberately does NOT weaken the deny: the operation stays denied. It only makes the
+    consequence visible.
+    """
+    import requests as _requests
+
+    from core.models import CoreSettings
+
+    core = CoreSettings.objects.first()
+    if not core or not core.ai_module_enabled:
+        return "ai module disabled"
+    if not ((core.ai_helpdesk_code or "").strip() and (core.ai_helpdesk_api_base_url or "").strip()):
+        return "no helpdesk integration configured"
+
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    hd_api = {
+        "base_url": core.ai_helpdesk_api_base_url or "",
+        "api_key": core.ai_helpdesk_api_key or "",
+    }
+    try:
+        caps = _requests.post(
+            f"{bridge}/pi/helpdesk-caps",
+            json={"helpdesk_code": core.ai_helpdesk_code or "", "helpdesk_api": hd_api},
+            timeout=(5, 60),
+        ).json()
+    except Exception as e:
+        return f"capability check unavailable: {e}"
+    if not caps.get("ok"):
+        return f"capability check failed: {str(caps.get('error'))[:200]}"
+
+    unclassified = caps.get("unclassified") or []
+    mode = caps.get("mode") or "warn"
+    if not unclassified:
+        return f"ok - {caps.get('total')} operation(s) classified, mode={mode}"
+
+    # Enforcing => those operations are being refused right now. Warning => they will be
+    # the moment enforcement is switched on, which is exactly when it must not surprise us.
+    enforcing = mode == "enforce"
+    day = djangotime.now().strftime("%Y-%m-%d")
+    subject = (
+        "[Pi.dev AI] Helpdesk operations are being DENIED - unclassified capability"
+        if enforcing else
+        "[Pi.dev AI] Helpdesk operations have no capability class - will be denied when enforced"
+    )
+    body = (
+        ("<p><b>These helpdesk operations are being refused right now</b> because they carry no "
+         "capability class:</p>" if enforcing else
+         "<p>These helpdesk operations carry no capability class. Nothing is blocked today "
+         "(capability enforcement is in warn mode), but they <b>will be refused</b> as soon as it "
+         "is switched on:</p>")
+        + "<ul>" + "".join(f"<li><code>{o}</code></li>" for o in unclassified) + "</ul>"
+        + "<p>Fix: add each one to <code>exports.opClasses</code> in the Helpdesk Integration "
+        "Code (Global Settings), e.g. <code>exports.opClasses = { my_op: \"create\" }</code>. "
+        "Valid classes: read, create, note, knowledge, customer, close, routing. "
+        "Global Settings &rarr; <b>Check capabilities</b> shows the current state.</p>"
+        f"<p>Operations classified: {caps.get('total', 0) - len(unclassified)} of "
+        f"{caps.get('total', 0)}. Enforcement mode: <b>{mode}</b>.</p>"
+    )
+    try:
+        _requests.post(
+            f"{bridge}/pi/helpdesk-op",
+            json={
+                "operation": "create_ticket",
+                "args": {
+                    "subject": subject,
+                    "body": body,
+                    # One rolling ticket per day per state, so a hourly check cannot spam.
+                    "dedup_key": f"pi-caps-unclassified-{mode}-{day}",
+                },
+                "helpdesk_api": hd_api,
+                "helpdesk_code": core.ai_helpdesk_code or "",
+            },
+            timeout=(5, 60),
+        )
+    except Exception as e:
+        DebugLog.error(message=f"capability health notice could not be filed: {e}")
+    return f"{len(unclassified)} unclassified ({mode}): {', '.join(unclassified)}"
+
 
 @app.task
 def dispatch_due_ai_scheduled_actions():

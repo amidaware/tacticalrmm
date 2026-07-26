@@ -175,6 +175,10 @@ export function buildTools({
   // practice: an unrecognised surface denies every mutating helpdesk class, so a new
   // call site cannot quietly inherit full ticket authority by omitting it.
   surface = null,
+  // Classes explicitly authorised for THIS run by whoever configured it (e.g. an AI task
+  // whose author declared a reply register). Intersected with capabilities.GRANTABLE, so
+  // this can only ever add `customer` - never closing or routing authority.
+  grants = [],
 }) {
   if (readonly !== undefined && isReadonly === undefined) {
     // fixed read-only (headless): map onto the new model
@@ -594,7 +598,7 @@ export function buildTools({
   // authority it does not have. This is NOT the control - execute() re-checks, because
   // the model can name an operation it was never shown.
   const hdVisible = hd
-    ? allowedOps({ surface, names: hdOps, opClasses: hd.opClasses, mutating: hd.mutating })
+    ? allowedOps({ surface, names: hdOps, opClasses: hd.opClasses, mutating: hd.mutating, grants })
     : [];
   const opList = hdVisible
     .map((n) => `  - ${n}${hd.meta[n] ? ": " + hd.meta[n] : ""}`)
@@ -631,7 +635,7 @@ export function buildTools({
         return text(`Unknown helpdesk operation "${op}". Available: ${hdVisible.join(", ")}.`);
       // Capability check (ISSUES.md F1). Default-deny: an operation the deployment
       // declares mutating but does not classify is refused here.
-      const cap = gateOp({ surface, op, opClasses: hd.opClasses, mutating: hd.mutating, ref: jobRef });
+      const cap = gateOp({ surface, op, opClasses: hd.opClasses, mutating: hd.mutating, grants, ref: jobRef });
       if (!cap.allowed && cap.enforced)
         return text(
           `Not permitted on this surface: ${cap.reason}. ` +

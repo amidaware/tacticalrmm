@@ -104,12 +104,25 @@ export function classSource(op, opClasses) {
   return "unclassified";
 }
 
+// Classes that an explicit per-run authorisation may ADD to a surface. Deliberately a
+// whitelist of one: a task-level field can authorise contacting the customer, and can
+// never grant closing or routing authority no matter what it asks for. MANDATE 4.8 keeps
+// closing with a human; this hole is only as wide as it has to be.
+export const GRANTABLE = ["customer"];
+
 // THE decision. Returns { allowed, cls, reason }.
 //
 // An unknown surface denies every mutating class - fail safe, and it means a new
 // endpoint cannot invent its own permission model by forgetting to declare itself.
-export function checkOp({ surface, op, opClasses, mutating }) {
-  const allowedClasses = SURFACE_CLASSES[surface];
+//
+// `grants` are classes explicitly authorised for THIS run by the person who configured it
+// (e.g. an AI task whose author declared a reply register). They are intersected with
+// GRANTABLE, so an unexpected value cannot widen authority.
+export function checkOp({ surface, op, opClasses, mutating, grants }) {
+  const granted = (grants || []).filter((g) => GRANTABLE.includes(g));
+  const allowedClasses = SURFACE_CLASSES[surface]
+    ? [...SURFACE_CLASSES[surface], ...granted]
+    : undefined;
   const isMutating = mutating ? mutating.has(op) : true; // unknown -> assume mutating
   let cls = classOf(op, opClasses);
 
@@ -156,6 +169,6 @@ export function gateOp(ctx) {
 // the model, so it is not shown authority it does not have. Enforcement still happens
 // at execute time: filtering the description is not a control, since the model can
 // name an operation it was never shown.
-export function allowedOps({ surface, names, opClasses, mutating }) {
-  return (names || []).filter((op) => checkOp({ surface, op, opClasses, mutating }).allowed);
+export function allowedOps({ surface, names, opClasses, mutating, grants }) {
+  return (names || []).filter((op) => checkOp({ surface, op, opClasses, mutating, grants }).allowed);
 }

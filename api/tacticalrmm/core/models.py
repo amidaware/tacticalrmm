@@ -874,6 +874,16 @@ class AITask(BaseAuditModel):
     enabled = models.BooleanField(default=True)
     allow_mutating = models.BooleanField(default=False)
 
+    # Whether THIS task may email the customer, and how technical that email should be.
+    # Unattended runs hold no `customer` capability by default (see capabilities.js): an
+    # AI task cannot contact a customer unless whoever authored it says so here.
+    #   none      - no customer email at all (default)
+    #   general   - findings and impact in plain language, no engineering internals
+    #   technical - full engineering detail; suits project/build engagements
+    # How technical to be is the author's judgement, not the model's, and not a global
+    # policy - hence per task.
+    reply_register = models.CharField(max_length=10, default="none")  # none|general|technical
+
     # run mode: "now" = one-shot (disables after run), "schedule" = recurring
     run_mode = models.CharField(max_length=20, default="schedule")  # now|schedule
     schedule_type = models.CharField(

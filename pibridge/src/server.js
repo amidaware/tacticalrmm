@@ -25,6 +25,48 @@ function log(...a) {
   console.log(new Date().toISOString(), ...a);
 }
 
+// Instructions for an unattended run about contacting the customer. The CAPABILITY to do
+// so is enforced in code (capabilities.js grants `customer` only when a register is
+// declared); this only tells the model HOW to write when it is permitted, and states the
+// one thing it must never include at any register.
+//
+// The credential floor is not a matter of tone: ticket email gets forwarded, mirrored into
+// portals and archived outside either party's control, so naming where credentials live
+// carries risk with no benefit to the reader (ISSUES.md I13).
+function replyRegisterSection(register) {
+  const FLOOR =
+    "\n- NEVER include, at any level of detail: the path or filename of a credentials/secret" +
+    " file, its permissions or ownership, where credentials are stored, or how access to a" +
+    " system is obtained. Say what could not be checked and why, not where the secret lives." +
+    " e.g. write \"we do not yet have read-only switch credentials in place on our monitoring" +
+    " host\" - never the file path.";
+  if (register === "none") {
+    return (
+      "\n\nCUSTOMER CONTACT: NOT PERMITTED on this run.\n" +
+      "- You may NOT email or reply to the customer. That capability is not granted here and" +
+      " the attempt will be refused.\n" +
+      "- Put everything you would have told them in an INTERNAL NOTE instead; a technician" +
+      " decides whether it goes out."
+    );
+  }
+  const tone =
+    register === "technical"
+      ? "- Register: TECHNICAL. Full engineering detail is appropriate - figures, interface and" +
+        " port names, timings, what was measured and how. Assume the reader is a participant in" +
+        " this work and wants specifics."
+      : "- Register: GENERAL. Findings and their impact in plain language. No engineering" +
+        " internals, no command output, no hostnames of our own infrastructure.";
+  return (
+    "\n\nCUSTOMER CONTACT: PERMITTED on this run (the person who configured this task" +
+    " authorised it).\n" + tone +
+    "\n- State what is outstanding on OUR side plainly if it is relevant - that is honest" +
+    " transparency, not a failing." +
+    "\n- Do NOT commit to a date, a price, or work that is not already agreed." +
+    "\n- Write to the customer, not to a colleague: no \"a technician needs to...\" phrasing." +
+    FLOOR
+  );
+}
+
 // How much of a tool call to record, for both the durable log and the stored
 // transcript. MANDATE 4.9 requires every automatic decision to be reconstructable,
 // and the audit-critical calls are helpdesk operations - they are what we said to a
@@ -860,13 +902,24 @@ async function runHeadless(blob) {
     return { status: "error", summary: `Model not found: ${blob.provider}/${blob.model_id}`, transcript: "" };
   }
 
+  // How technical a customer reply may be, declared per task by whoever authored it.
+  // "none" (the default) means this run holds no customer-contact capability at all.
+  const replyRegister = ["general", "technical"].includes(String(blob.reply_register || "none"))
+    ? String(blob.reply_register)
+    : "none";
+
   // Unattended: auto-approve everything (no operator). readonly unless allow_mutating.
   const { tools, verdict, helpdeskState } = buildTools({
     machines: [{ agentId, hostname: facts.hostname, plat: facts.plat, facts }],
     gate: () => Promise.resolve(true),
-    // No human present, so no customer contact and no closing authority. This is the
-    // surface ISSUES.md F1 was about: it used to hold all 28 operations.
+    // No human present, so no closing authority and - unless the task's author explicitly
+    // declared a reply register - no customer contact either. This is the surface
+    // ISSUES.md F1 was about: it used to hold the entire operation list.
     surface: "unattended",
+    // Per-task authorisation (ISSUES.md W2). A task whose author declared a register may
+    // email the customer; everything else may not. capabilities.GRANTABLE caps this at
+    // `customer`, so a task can never grant itself closing authority.
+    grants: replyRegister === "none" ? [] : ["customer"],
     includeReport: true,
     readonly: !blob.allow_mutating, // fixed for unattended runs
     jobRef: runId,  // scheduled/bulk run id -> job-associated From address
@@ -880,6 +933,7 @@ async function runHeadless(blob) {
     systemPromptOverride: () =>
       systemPrompt(facts) +
       `\n\nSCHEDULED CHECK MODE:\n- You are running unattended on a schedule. There is no human to chat with.\n- Investigate the request using your tools, then call report_result EXACTLY ONCE with your verdict.\n- status='ok' if healthy, 'warning' for minor/degraded issues, 'alert' for serious problems.\n- Do not ask questions; make a determination from the evidence.${blob.allow_mutating ? "" : "\n- You are in READ-ONLY mode: do not attempt to change the system; only diagnose."}` +
+      replyRegisterSection(replyRegister) +
       helpdeskSection(blob, facts?.client),
   });
   await loader.reload();

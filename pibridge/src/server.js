@@ -1,23 +1,42 @@
 import http from "node:http";
+import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import Redis from "ioredis";
 import { WebSocketServer } from "ws";
 import {
-  AuthStorage,
-  ModelRegistry,
   SessionManager,
   DefaultResourceLoader,
   createAgentSession,
 } from "@earendil-works/pi-coding-agent";
 import { CONFIG } from "./config.js";
 import { buildTools, buildReportTools, buildTicketTriageTools, buildDecisionTools, buildProcedureMiningTools } from "./tools.js";
+import { classOf, classSource, allowedOps, SURFACE_CLASSES, CLASSES, CAPS_MODE } from "./capabilities.js";
 import { loadHelpdesk } from "./helpdesk-runtime.js";
+import { loadVerifiers, matchVerifier, inspectVerifiers } from "./verifier-runtime.js";
+import { trmm } from "./trmm.js";
 import * as history from "./history.js";
+import { buildCatalog, registerModels, MODELS_JSON } from "./models-catalog.js";
+import { piRuntime, piGeneration, piSelfTest } from "./pi-runtime.js";
 
 const redis = new Redis(CONFIG.redisUrl);
 
+
 function log(...a) {
   console.log(new Date().toISOString(), ...a);
+}
+
+// How much of a tool call to record, for both the durable log and the stored
+// transcript. MANDATE 4.9 requires every automatic decision to be reconstructable,
+// and the audit-critical calls are helpdesk operations - they are what we said to a
+// customer (a reply body runs 5-8k characters, so the old 300-char cap recorded
+// none of it). Those are kept IN FULL. Everything else stays capped so one long
+// device command cannot dominate a transcript.
+// One helper, used in both places, so the log and the transcript cannot drift apart.
+function auditArgs(toolName, args, cap = 300) {
+  let s;
+  try { s = typeof args === "string" ? args : JSON.stringify(args || {}); }
+  catch { s = "(unserialisable args)"; }
+  return toolName === "helpdesk_call" ? s : s.slice(0, cap);
 }
 
 // Provider/API errors often arrive wrapped, e.g.
@@ -244,13 +263,11 @@ async function startChat(ws, blob) {
 
   // Auth + model. Register keys for the initial provider AND every allowed
   // model's provider so the operator can switch models mid-session.
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  for (const m of blob.allowed_models || []) {
-    if (m.api_key) authStorage.setRuntimeApiKey(m.provider, m.api_key);
-  }
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
+  const keys = { [blob.provider]: blob.api_key };
+  for (const m of blob.allowed_models || []) if (m.api_key) keys[m.provider] = m.api_key;
+  const rt = await piRuntime(keys);
+  const modelRegistry = rt;                       // .findModel() below; kept name for diff clarity
+  const model = rt.findModel(blob.provider, blob.model_id);
   if (!model) {
     ws.send(JSON.stringify({ type: "error", message: `Model not found: ${blob.provider}/${blob.model_id}` }));
     ws.close();
@@ -279,6 +296,7 @@ async function startChat(ws, blob) {
   const { tools, mutating, machines: toolMachines } = buildTools({
     machines,
     gate: requestApproval,
+    surface: "device_chat",   // human watching; approves each mutating call
     mutateAllowed,
     isReadonly: () => readonly,
     helpdeskApi: blob.helpdesk_api || null,
@@ -332,8 +350,7 @@ async function startChat(ws, blob) {
   const { session } = await createAgentSession({
     model,
     thinkingLevel: blob.thinking_level || "medium",
-    authStorage,
-    modelRegistry,
+    ...rt.sessionOpts,
     noTools: "builtin",
     customTools: tools,
     resourceLoader: loader,
@@ -513,7 +530,7 @@ async function startChat(ws, blob) {
             );
             break;
           }
-          const newModel = modelRegistry.find(allowed.provider, allowed.model_id);
+          const newModel = modelRegistry.findModel(allowed.provider, allowed.model_id);
           if (!newModel) {
             ws.send(
               JSON.stringify({
@@ -597,11 +614,11 @@ async function startDecisionChat(ws, blob) {
   let autoApprove = false;
   let allowEmail = blob.allow_email !== false; // default: ON
 
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  for (const m of blob.allowed_models || []) if (m.api_key) authStorage.setRuntimeApiKey(m.provider, m.api_key);
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
+  const keys = { [blob.provider]: blob.api_key };
+  for (const m of blob.allowed_models || []) if (m.api_key) keys[m.provider] = m.api_key;
+  const rt = await piRuntime(keys);
+  const modelRegistry = rt;
+  const model = rt.findModel(blob.provider, blob.model_id);
   if (!model) { ws.send(JSON.stringify({ type: "error", message: `Model not found: ${blob.provider}/${blob.model_id}` })); ws.close(); return; }
 
   // Approval gating (disruptive device commands + customer replies).
@@ -613,8 +630,16 @@ async function startDecisionChat(ws, blob) {
       ws.send(JSON.stringify({ type: "approval_request", id, summary }));
     });
   }
-  // Kind-based gate honoring the toggles: device changes need Write mode; customer
-  // email needs the email toggle; Auto-approve skips the prompt for both.
+  // Kind-based gate honoring the toggles. Device changes need Write mode and may be
+  // auto-approved. Contacting a customer and closing a ticket may NOT: those two ask a
+  // human every time, whatever the toggles say.
+  //
+  // Why (ISSUES.md D2/I7): MANDATE 4.8 states "the model never decides that a ticket may
+  // be closed". Granting the decision chat `close` authority is only compatible with that
+  // because a human approves at the time - so if Auto-approve could skip that prompt, the
+  // model would be closing on its own authority. Same reasoning for an irreversible
+  // outbound customer email. This mirrors the identity/access gate, which already applies
+  // "EVEN in Write mode / Auto-approve".
   async function gate(kind, summary) {
     if (kind === "device") {
       if (readonly) return { ok: false, reason: "the chat is in READ-ONLY mode - switch on Write mode to make device changes." };
@@ -623,7 +648,12 @@ async function startDecisionChat(ws, blob) {
     }
     if (kind === "email") {
       if (!allowEmail) return { ok: false, reason: "customer email is turned OFF - enable 'Allow customer email' to send it; otherwise leave it as a draft." };
-      if (autoApprove) return { ok: true };
+      // Deliberately NOT auto-approvable.
+      return { ok: await requestApproval(summary) };
+    }
+    if (kind === "close") {
+      if (readonly) return { ok: false, reason: "the chat is in READ-ONLY mode - switch on Write mode to close or cancel a ticket." };
+      // Deliberately NOT auto-approvable - MANDATE 4.8.
       return { ok: await requestApproval(summary) };
     }
     return { ok: true };
@@ -634,6 +664,7 @@ async function startDecisionChat(ws, blob) {
     helpdeskCode: blob.helpdesk_code || "",
     ticketRef,
     gate,
+    surface: "decision_chat",   // human driving the ticket; approves each mutating call
   });
   if (!hd) { ws.send(JSON.stringify({ type: "error", message: `helpdesk.js failed to load: ${hdError}` })); ws.close(); return; }
 
@@ -662,7 +693,7 @@ async function startDecisionChat(ws, blob) {
   if (!sessionManager) sessionManager = SessionManager.create(CONFIG.sessionsRoot);
 
   const { session } = await createAgentSession({
-    model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
+    model, thinkingLevel: blob.thinking_level || "medium", ...rt.sessionOpts,
     noTools: "builtin", customTools: tools, resourceLoader: loader,
     sessionManager, agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
   });
@@ -694,7 +725,19 @@ async function startDecisionChat(ws, blob) {
       // Keep the chat link at the top of the Odoo chatter after any post.
       if (postedToTicket && blob.decision_url && hd?.operations?.add_note) {
         postedToTicket = false;
-        hd.operations.add_note({ ticket: ticketRef, message: `\u27a1 Chat with me to continue this ticket: ${blob.decision_url}` }).catch(() => {});
+        const latest = (t || "").replace(/```[\s\S]*?```/g, "").replace(/[#*`_>|]/g, "")
+          .replace(/\n{2,}/g, "\n").trim().slice(0, 500);
+        hd.operations.add_note({
+          ticket: ticketRef,
+          message: fmtNote({
+            heading: "Pi.dev AI \u2014 working this ticket",
+            sub: "interactive session",
+            sections: latest ? [["Latest update", latest]] : null,
+            footer: "This ticket is being worked live in the Pi.dev decision chat. Click below to continue the conversation, add findings, or approve the next step.",
+            chatUrl: blob.decision_url,
+            chatLabel: "Chat with me to continue this ticket",
+          }),
+        }).catch(() => {});
       }
     }
     try { ws.send(JSON.stringify({ type: "agent_event", event })); } catch {}
@@ -746,7 +789,7 @@ async function startDecisionChat(ws, blob) {
         case "set_model": {
           const allowed = (blob.allowed_models || []).find((m) => m.model_id === msg.model_id);
           if (!allowed) { ws.send(JSON.stringify({ type: "error", message: `Model not permitted: ${msg.model_id}` })); break; }
-          const nm = modelRegistry.find(allowed.provider, allowed.model_id);
+          const nm = modelRegistry.findModel(allowed.provider, allowed.model_id);
           if (!nm) { ws.send(JSON.stringify({ type: "error", message: `Model not found: ${allowed.model_id}` })); break; }
           await session.setModel(nm);
           if (allowed.thinking_level) { try { session.setThinkingLevel(allowed.thinking_level); } catch {} }
@@ -810,10 +853,9 @@ async function runHeadless(blob) {
   }
   await pushLive({ type: "status", text: `Starting on ${facts.hostname}` });
 
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
+  const rt = await piRuntime({ [blob.provider]: blob.api_key });
+  const modelRegistry = rt;
+  const model = rt.findModel(blob.provider, blob.model_id);
   if (!model) {
     return { status: "error", summary: `Model not found: ${blob.provider}/${blob.model_id}`, transcript: "" };
   }
@@ -822,6 +864,9 @@ async function runHeadless(blob) {
   const { tools, verdict, helpdeskState } = buildTools({
     machines: [{ agentId, hostname: facts.hostname, plat: facts.plat, facts }],
     gate: () => Promise.resolve(true),
+    // No human present, so no customer contact and no closing authority. This is the
+    // surface ISSUES.md F1 was about: it used to hold all 28 operations.
+    surface: "unattended",
     includeReport: true,
     readonly: !blob.allow_mutating, // fixed for unattended runs
     jobRef: runId,  // scheduled/bulk run id -> job-associated From address
@@ -842,8 +887,7 @@ async function runHeadless(blob) {
   const { session } = await createAgentSession({
     model,
     thinkingLevel: blob.thinking_level || "medium",
-    authStorage,
-    modelRegistry,
+    ...rt.sessionOpts,
     noTools: "builtin",
     customTools: tools,
     resourceLoader: loader,
@@ -857,6 +901,10 @@ async function runHeadless(blob) {
   let textBuf = "";
   const unsub = session.subscribe((event) => {
     if (event.type === "tool_execution_start") {
+      // Durable audit line. Unattended runs previously logged NOTHING (only a Redis
+      // live buffer with EX 3600), so the one surface that approves its own actions
+      // was the only one with no record - see ISSUES.md I1.
+      log("tool>", `run:${runId || "-"}`, agentId, event.toolName, auditArgs(event.toolName, event.args));
       pushLive({
         type: "tool_start",
         tool: event.toolName,
@@ -906,7 +954,7 @@ async function runHeadless(blob) {
     if (m.role === "assistant") {
       for (const c of m.content || []) {
         if (c.type === "text" && c.text?.trim()) lines.push(c.text.trim());
-        else if (c.type === "toolCall") lines.push(`» ${c.name}(${JSON.stringify(c.arguments).slice(0, 300)})`);
+        else if (c.type === "toolCall") lines.push(`» ${c.name}(${auditArgs(c.name, c.arguments)})`);
       }
     } else if (m.role === "toolResult") {
       const t = (m.content || []).filter((x) => x.type === "text").map((x) => x.text).join("\n");
@@ -925,7 +973,9 @@ async function runHeadless(blob) {
     status: verdict.status || "ok",
     summary: verdict.summary || finalText.slice(0, 200) || "(no summary)",
     details: verdict.details || "",
-    transcript: lines.join("\n").slice(0, 50000),
+    // Raised from 50k: outbound customer bodies are now recorded in full (I10), and
+    // a run posting several of them would otherwise lose the tail of its own audit.
+    transcript: lines.join("\n").slice(0, 200000),
     ticket_error: !!(helpdeskState && helpdeskState.error),
     ticket_error_detail: (helpdeskState && helpdeskState.detail) || "",
   };
@@ -951,10 +1001,9 @@ async function runReport(blob) {
   }
   await pushLive({ type: "status", text: "Compiling combined report" });
 
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
+  const rt = await piRuntime({ [blob.provider]: blob.api_key });
+  const modelRegistry = rt;
+  const model = rt.findModel(blob.provider, blob.model_id);
   if (!model) return { status: "error", summary: `Model not found: ${blob.provider}/${blob.model_id}`, transcript: "" };
 
   const { tools, verdict, helpdeskState } = buildReportTools({
@@ -978,8 +1027,7 @@ async function runReport(blob) {
   const { session } = await createAgentSession({
     model,
     thinkingLevel: blob.thinking_level || "medium",
-    authStorage,
-    modelRegistry,
+    ...rt.sessionOpts,
     noTools: "builtin",
     customTools: tools,
     resourceLoader: loader,
@@ -1004,7 +1052,7 @@ async function runReport(blob) {
   for (const m of session.messages) {
     if (m.role === "assistant") for (const c of m.content || []) {
       if (c.type === "text" && c.text?.trim()) lines.push(c.text.trim());
-      else if (c.type === "toolCall") lines.push(`» ${c.name}(${JSON.stringify(c.arguments).slice(0, 200)})`);
+      else if (c.type === "toolCall") lines.push(`» ${c.name}(${auditArgs(c.name, c.arguments, 200)})`);
     }
   }
   session.dispose();
@@ -1075,6 +1123,13 @@ const DEFAULT_MINING_PROMPT =
   `- SKIP monitoring/backup noise and spam/junk entirely.\n` +
   `- Procedures must be client-agnostic: no client names, people, or secrets. Client-specific details\n` +
   `  go in company_kb_entry instead (still never secrets - note WHERE they live, not the value).\n` +
+  `- LIVE TECH SESSIONS: some tickets include a "tech_session" - the actual ai-decision chat where a\n` +
+  `  technician and Pi worked the ticket live: the tech's instructions (TECH:), Pi's replies (PI:), the\n` +
+  `  EXACT device commands run (RAN <tool> \u00bb <command>) and their outputs (OUT[...]: ...). This is the\n` +
+  `  RICHEST source of truth - prefer it over the email thread. Pull the concrete diagnostic + fix\n` +
+  `  COMMANDS that actually worked (real command lines) into fix/verification, capture environment facts\n` +
+  `  (hostname->role, domains, share paths, standards) into company_kb_entry, and note dead-end/failed\n` +
+  `  commands so the procedure steers around them. Still keep procedures client-agnostic.\n` +
   `- Be conservative: quality over quantity. It is fine to return an empty procedures list.\n` +
   `Call submit_analysis EXACTLY ONCE (procedures + company_kb_entry), then stop.`;
 
@@ -1087,6 +1142,56 @@ function miningProgress() {
   const flush = () => { prog.updated = new Date().toISOString(); redis.set(MINING_KEY, JSON.stringify(prog), "EX", 3600).catch(() => {}); };
   const say = (line) => { prog.log.push({ t: new Date().toISOString(), line }); if (prog.log.length > 400) prog.log = prog.log.slice(-400); flush(); };
   return { prog, flush, say };
+}
+
+// Flatten ONE decision-chat session .jsonl into a readable transcript: the tech's
+// messages, Pi's replies, and the EXACT device commands run + their outputs. This is
+// the richest record of what actually fixed a ticket (far better than the email thread).
+function flattenSessionFile(file, cap = 9000) {
+  let raw;
+  try { raw = fs.readFileSync(file, "utf8"); } catch { return ""; }
+  const out = [];
+  for (const line of raw.split("\n")) {
+    const s = line.trim(); if (!s) continue;
+    let o; try { o = JSON.parse(s); } catch { continue; }
+    if (o.type !== "message") continue;
+    const m = o.message || {}; const role = m.role; let c = m.content;
+    if (typeof c === "string") c = [{ type: "text", text: c }];
+    if (!Array.isArray(c)) continue;
+    for (const it of c) {
+      const t = it && it.type;
+      if (t === "text") {
+        const tx = String(it.text || "").trim(); if (!tx) continue;
+        if (role === "user") out.push("TECH: " + tx.slice(0, 800));
+        else if (role === "assistant") out.push("PI: " + tx.slice(0, 800));
+        else if (role === "toolResult" || role === "tool") out.push("  OUT[" + (m.toolName || "") + "]: " + tx.replace(/\s+/g, " ").slice(0, 500));
+      } else if (t === "toolCall" || t === "tool_use" || t === "tool_call") {
+        const a = it.arguments || it.input || it.args || {};
+        let arg = a.command || a.cmd || a.query || a.hostname || a.username || "";
+        if (a.operation) arg = a.operation + (a.message ? ": " + String(a.message).slice(0, 160) : "");
+        out.push("  RAN " + (it.name || "tool") + (arg ? " \u00bb " + String(arg).replace(/\s+/g, " ").slice(0, 260) : ""));
+      } else if (t === "tool_result" || t === "tool_output") {
+        const cont = it.content; const tx = typeof cont === "string" ? cont : JSON.stringify(cont);
+        out.push("  OUT: " + String(tx).replace(/\s+/g, " ").slice(0, 500));
+      }
+    }
+  }
+  return out.join("\n").slice(0, cap);
+}
+
+// Pull the live ai-decision transcript(s) for a ticket ref (e.g. "TICKET/58982"),
+// oldest-first, so the miner can learn from what the technician actually did.
+function decisionTranscript(ref) {
+  try {
+    const idx = history.readIndex(`decision:${ref}`);
+    const sessions = Object.values(idx || {})
+      .filter((v) => v && v.file)
+      .sort((a, b) => String(a.last_activity || "").localeCompare(String(b.last_activity || "")));
+    if (!sessions.length) return "";
+    const parts = [];
+    for (const s of sessions) { const f = flattenSessionFile(s.file); if (f) parts.push(f); }
+    return parts.join("\n---\n").slice(0, 12000);
+  } catch { return ""; }
 }
 
 // Mine recently-closed tickets, GROUPED BY COMPANY, to build (a) client-agnostic
@@ -1125,10 +1230,9 @@ async function runProcedureMining(blob) {
   prog.companies = coKeys.length;
   say(`Mining ${batch.length} tickets across ${coKeys.length} companies.`);
 
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
+  const rt = await piRuntime({ [blob.provider]: blob.api_key });
+  const modelRegistry = rt;
+  const model = rt.findModel(blob.provider, blob.model_id);
   if (!model) return finishErr(`Model not found: ${blob.provider}/${blob.model_id}`);
 
   const CHUNK = 25;
@@ -1155,13 +1259,20 @@ async function runProcedureMining(blob) {
       });
       await loader.reload();
       const { session } = await createAgentSession({
-        model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
+        model, thinkingLevel: blob.thinking_level || "medium", ...rt.sessionOpts,
         noTools: "builtin", customTools: tools, resourceLoader: loader,
         sessionManager: SessionManager.create(CONFIG.sessionsRoot), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
       });
-      const compact = chunk.map((t) => ({
-        ref: t.ref, subject: t.subject, thread: (t.messages || []).map((m) => `${m.author} (${m.type}): ${m.text}`).join("\n").slice(0, 3000),
-      }));
+      const compact = chunk.map((t) => {
+        const tech = decisionTranscript(t.ref);
+        return {
+          ref: t.ref, subject: t.subject,
+          thread: (t.messages || []).map((m) => `${m.author} (${m.type}): ${m.text}`).join("\n").slice(0, 3000),
+          ...(tech ? { tech_session: tech } : {}),
+        };
+      });
+      const withSessions = compact.filter((c) => c.tech_session).length;
+      if (withSessions) say(`  \u2605 ${withSessions} of these had a live tech session (ai-decision chat) - learning from what the tech actually ran`);
       const prompt =
         `Company: ${co.name}\n` + existingStr +
         `Here are ${compact.length} of this company's recently-closed tickets with their conversation/` +
@@ -1205,10 +1316,9 @@ async function runProcedureMining(blob) {
 async function runTicketResolve(blob) {
   const ticketRef = blob.ticket_ref || "";
   const ctx = blob.context || {};
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
+  const rt = await piRuntime({ [blob.provider]: blob.api_key });
+  const modelRegistry = rt;
+  const model = rt.findModel(blob.provider, blob.model_id);
   if (!model) return { error: `Model not found: ${blob.provider}/${blob.model_id}` };
   // Hard backstop: deny disruptive device commands AND customer email in this mode.
   const gate = async (kind) => ({
@@ -1221,7 +1331,7 @@ async function runTicketResolve(blob) {
     helpdeskApi: blob.helpdesk_api || null, helpdeskCode: blob.helpdesk_code || "", ticketRef, gate,
     // Unattended run: hard-block closing/cancelling/resolving/claiming the ticket - a human
     // must do those in the console. (reply_to_ticket + disruptive device cmds are gated above.)
-    blockOps: ["resolve_ticket", "close_ticket", "cancel_ticket", "ai_close_ticket", "claim_ticket"],
+    surface: "auto_resolve",   // read-only investigation + internal note; never closes or emails
   });
   if (!hd) return { error: `helpdesk.js failed to load: ${hdError}` };
   const loader = new DefaultResourceLoader({
@@ -1240,7 +1350,7 @@ async function runTicketResolve(blob) {
   });
   await loader.reload();
   const { session } = await createAgentSession({
-    model, thinkingLevel: blob.thinking_level || "medium", authStorage, modelRegistry,
+    model, thinkingLevel: blob.thinking_level || "medium", ...rt.sessionOpts,
     noTools: "builtin", customTools: tools, resourceLoader: loader,
     sessionManager: SessionManager.inMemory(), agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
   });
@@ -1277,14 +1387,183 @@ function fmtNote({ heading, sub, rows, sections, footer, chatUrl, chatLabel }) {
   return h;
 }
 
+// ---- ALERT VERIFIERS ------------------------------------------------------
+// How a machine states its own fully-qualified name, per shell. Used to make a
+// candidate device prove it is the host an alert actually came from. A rule may
+// override this with `identity` for anything unusual (appliances, containers).
+const IDENTITY_CMD = {
+  "/bin/bash": "hostname -f",
+  "/bin/sh": "hostname -f",
+  powershell: "[System.Net.Dns]::GetHostEntry($env:COMPUTERNAME).HostName",
+  cmd: "echo %COMPUTERNAME%.%USERDNSDOMAIN%",
+};
+
+// Prove a machine-generated alert before acting on it. An admin-authored rule
+// (verifiers.js in Global Settings) says which alerts it owns, which HOST holds the
+// truth, what READ-ONLY evidence to gather, and - in code - what that evidence means.
+// The language model is deliberately not involved in the ruling: a "cancel this
+// ticket" decision has to be reproducible and auditable, so it is code + evidence.
+async function runAlertVerify(blob) {
+  const ref = blob.ticket_ref || "";
+  const dryRun = blob.dry_run !== false; // default SAFE: report, don't act
+  const hd = loadHelpdesk(blob.helpdesk_code || "", blob.helpdesk_api || null);
+  if (!hd || !hd.operations.get_ticket) return { matched: false, error: "helpdesk.js defines no get_ticket" };
+  let loaded;
+  try { loaded = loadVerifiers(blob.verifier_code || ""); }
+  catch (e) { return { matched: false, error: `verifiers.js failed to load: ${e?.message || e}` }; }
+  if (!loaded) return { matched: false, skipped: "no verifiers configured" };
+
+  // Read the ticket. Alert payloads usually arrive as the first inbound MESSAGE
+  // rather than the description field, so match against both.
+  let info = {}, msgs = [];
+  try { const g = await hd.operations.get_ticket({ ticket: ref }); info = g.ticket || {}; msgs = g.messages || []; }
+  catch (e) { return { matched: false, error: `get_ticket failed: ${e?.message || e}` }; }
+  const subject = String(info.email_subject || info.name || "");
+  const body = [String(info.description || ""), ...msgs.map((m) => m.text || "")].join("\n");
+  const company = Array.isArray(info.partner_id) ? info.partner_id[1] : "";
+  const ticket = { ref, subject, body, company };
+
+  const v = matchVerifier(loaded, ticket);
+  if (!v) return { matched: false };
+  const vname = v.name || "(unnamed)";
+  const out = { matched: true, verifier: vname, dry_run: dryRun };
+
+  // Which machine holds the truth?
+  let host = "";
+  try { host = String((typeof v.host === "function" ? v.host(ticket) : "") || "").trim(); } catch { /* rule bug */ }
+  if (!host) return { ...out, action: "human", reason: "could not determine which host to inspect from the alert" };
+  out.host = host;
+
+  // Resolve host -> RMM agent. Searching WITHIN the ticket's company first is what
+  // disambiguates the many clients that reuse hostnames (vm241 / vm242 / pve242...).
+  // OWNERSHIP is non-negotiable for an automatic verdict. Hostname lookup falls back
+  // to a GLOBAL search and names like vm241/pve242 are reused across many customers,
+  // so a hostname hit is NOT proof we found THIS customer's machine. Judging one
+  // client's ticket from another client's box would be wrong AND a data leak.
+  const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  let agent = null, rmmClient = "", foreign = "";
+  // Company-name variants: helpdesks commonly file as "Company, Contact Person", which
+  // matches no RMM client on its own - so also try the part before the comma.
+  const variants = [];
+  if (company) {
+    variants.push(company);
+    const base = company.split(",")[0].trim();
+    if (base && base !== company) variants.push(base);
+  }
+  variants.push("");
+  // The alert's FQDN carries the customer's own domain (host.customer.local), which is
+  // often a far better key than the helpdesk's company name - and it is what the
+  // by_domain client map is keyed on.
+  const fqdnDomain = host.includes(".") ? host.split(".").slice(1).join(".") : "";
+  for (const cn of variants) {
+    let r = null;
+    try { r = await trmm.resolveDevices({ hostname: host.split(".")[0], company_name: cn, domain: fqdnDomain }); } catch { continue; }
+    const hits = r?.hostname_matches || [];
+    if (!hits.length) continue;
+    const rc = r?.rmm_client || "";
+    const owned = norm(rc) ? hits.find((h) => norm(h.client) === norm(rc)) : null;
+    if (owned) { agent = owned; rmmClient = owned.client; break; }
+    // Unique name in the whole estate and no client to compare against: still usable,
+    // because the on-box FQDN check below has to agree before any verdict is trusted.
+    if (hits.length === 1 && !norm(rc)) { agent = hits[0]; rmmClient = hits[0].client; break; }
+    if (!foreign) foreign = hits.map((h) => h.client).filter(Boolean).slice(0, 3).join(", ");
+  }
+  // GENERIC DISAMBIGUATION - let the machine prove who it is.
+  // Alerts are routinely filed under a generic monitoring contact rather than the
+  // customer, so there may be NO usable company name, and short hostnames (vm242,
+  // pve01) repeat across clients. Rather than depend on a hand-maintained mapping,
+  // ask each same-named candidate for its own FQDN and accept ONLY the one that
+  // reports exactly the FQDN the alert came from. Read-only, self-proving, and it
+  // needs no per-customer configuration.
+  if (!agent?.agent_id && host.includes(".")) {
+    // The probe must work on whatever the rule targets, so it is derived from the
+    // rule's own shell (and fully overridable via `identity`) rather than assuming Linux.
+    const probeShell = v.shell || "/bin/bash";
+    const probeCmd = String(v.identity || IDENTITY_CMD[probeShell] || IDENTITY_CMD["/bin/bash"]);
+    let cands = [];
+    try {
+      const r = await trmm.resolveDevices({ hostname: host.split(".")[0], company_name: company, domain: fqdnDomain });
+      cands = (r?.ambiguous_matches || []).concat(r?.hostname_matches || []);
+    } catch { /* nothing to probe */ }
+    for (const cand of cands.slice(0, 10)) {
+      if (!cand?.agent_id) continue;
+      let who = "";
+      try {
+        const res = await trmm.sendCmd(cand.agent_id, {
+          shell: probeShell, cmd: probeCmd, timeout: 20,
+        });
+        who = String(typeof res === "string" ? res : JSON.stringify(res)).trim().replace(/^"|"$/g, "").trim();
+      } catch { continue; }
+      if (who.toLowerCase() === host.toLowerCase()) {
+        agent = cand; rmmClient = cand.client || "";
+        out.identified_by = "fqdn_probe";
+        if (!foreign) foreign = "";
+        break;
+      }
+    }
+  }
+  if (!agent?.agent_id) {
+    return { ...out, action: "human",
+      reason: `${host} could not be confirmed as a device belonging to ${company || "this customer"}` +
+        (foreign ? ` - the machine(s) with that name in RMM belong to ${foreign}, so nothing was inspected` :
+                   " (not found in RMM)") +
+        `. Onboard the host or map the customer to its RMM client before automating this alert.` };
+  }
+  out.agent_id = agent.agent_id;
+  out.agent_client = rmmClient;
+
+  // READ-ONLY evidence gathering.
+  let stdout = "";
+  try {
+    const r = await trmm.sendCmd(agent.agent_id, {
+      shell: v.shell || "/bin/bash", cmd: String(v.script || ""), timeout: v.timeout || 60,
+    });
+    stdout = typeof r === "string" ? r : JSON.stringify(r);
+  } catch (e) {
+    return { ...out, action: "human", reason: `evidence script failed on ${host}: ${String(e?.message || e).slice(0, 200)}` };
+  }
+
+  // THE RULING - the admin's rule, in code, from the evidence.
+  let verdict = {};
+  try { verdict = v.verdict({ stdout, ticket, host, agent }) || {}; }
+  catch (e) { return { ...out, action: "human", reason: `verdict rule threw: ${String(e?.message || e).slice(0, 200)}` }; }
+  const action = ["noise", "actionable", "human"].includes(verdict.action) ? verdict.action : "human";
+  out.action = action;
+  out.reason = String(verdict.reason || "").slice(0, 2000);
+  out.detail = String(verdict.detail || "").slice(0, 8000);
+
+  const label = { noise: "No action needed (verified)", actionable: "REAL problem (verified)", human: "Needs a human" }[action];
+  const willCancel = action === "noise" && !dryRun;
+  const note = fmtNote({
+    heading: `Pi.dev AI \u2014 Verified: ${vname}`,
+    sub: dryRun ? "dry run \u2014 nothing changed" : "automatic",
+    rows: [["Host inspected", `${host}${agent.hostname && agent.hostname !== host ? ` (${agent.hostname})` : ""}`],
+           ["Verdict", label],
+           ["Outcome", willCancel ? "Cancelling this ticket" : dryRun && action === "noise" ? "WOULD cancel this ticket (dry run)" : "Left open for a human"]],
+    sections: [["Why", out.reason], ["Evidence", out.detail]],
+    footer: "Verified on the device by reading its live state - not inferred from the alert text.",
+    chatUrl: blob.decision_url || "",
+  });
+
+  try {
+    if (willCancel && hd.operations.cancel_ticket) {
+      await hd.operations.cancel_ticket({ ticket: ref, reason: note });
+      out.cancelled = true;
+    } else if (hd.operations.add_note) {
+      await hd.operations.add_note({ ticket: ref, message: note });
+      out.noted = true;
+    }
+  } catch (e) { out.post_error = String(e?.message || e).slice(0, 300); }
+  return out;
+}
+
 // Triage ONE ticket in SHADOW mode: the model reads the ticket + classifies via
 // submit_triage; we then post the staff-only internal note DETERMINISTICALLY
 // (exactly one, consistent format). The model has no mutating tools at all.
 async function runTicketTriage(blob) {
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
+  const rt = await piRuntime({ [blob.provider]: blob.api_key });
+  const modelRegistry = rt;
+  const model = rt.findModel(blob.provider, blob.model_id);
   if (!model) return { error: `Model not found: ${blob.provider}/${blob.model_id}` };
 
   const { tools, verdict, hd, hdError } = buildTicketTriageTools({
@@ -1370,8 +1649,7 @@ async function runTicketTriage(blob) {
   const { session } = await createAgentSession({
     model,
     thinkingLevel: blob.thinking_level || "medium",
-    authStorage,
-    modelRegistry,
+    ...rt.sessionOpts,
     noTools: "builtin",
     customTools: tools,
     resourceLoader: loader,
@@ -1383,7 +1661,12 @@ async function runTicketTriage(blob) {
     await session.prompt(
       `Triage ticket ${blob.ticket_ref}${blob.is_alert ? " (detected as an ALERT ticket)" : ""}` +
       `${blob.requester_email ? " from " + blob.requester_email : ""}.` +
-      ` Read it, link it up (client/device/KB) if it's regular or actionable, then submit_triage once.`,
+      ` Read it, link it up (client/device/KB) if it's regular or actionable, then submit_triage once.` +
+      // Facts already proven by reading the device itself. These outrank anything the
+      // alert text claims (alerts routinely say "successful" for a no-op run).
+      (blob.verified_fact
+        ? `\n\nON-BOX VERIFICATION (already gathered live from the device - TRUST THIS OVER THE ALERT TEXT): ${blob.verified_fact}`
+        : ""),
     );
   } catch (e) {
     session.dispose();
@@ -1400,13 +1683,13 @@ async function runTicketTriage(blob) {
       try {
         await hd.operations.add_note({
           ticket: blob.ticket_ref,
-          message:
-            `PI.DEV AI - I think I can help with this.\n` +
-            (verdict.client ? `Client: ${verdict.client}\n` : "") +
-            (verdict.affected_device ? `Device: ${verdict.affected_device}\n` : "") +
-            `What I see: ${verdict.summary}\n` +
-            `What I'd do: ${verdict.proposed_action}\n\n` +
-            `\u27a1 Chat with me to work this ticket: ${blob.decision_url}`,
+          message: fmtNote({
+            heading: "Pi.dev AI \u2014 I think I can help with this",
+            rows: [["Client", verdict.client], ["Device", verdict.affected_device]],
+            sections: [["What I see", verdict.summary], ["What I'd do", verdict.proposed_action]],
+            chatUrl: blob.decision_url,
+            chatLabel: "Chat with me to work this ticket",
+          }),
         });
       } catch (e) { return { ...verdict, action: "assess", note_error: String(e?.message || e) }; }
     }
@@ -1476,7 +1759,9 @@ async function runTicketTriage(blob) {
     // clears noise (backup/monitoring "success"/"OK" reports). REAL work (fixing a device,
     // claiming an actionable alert, replying to a customer) still requires the ticket to
     // belong to an auto-action client. The cancel note always states WHY.
-    if (!verdict.needs_input && cls === "alert_clean" && blob.act_enabled && hd.operations.cancel_ticket) {
+    // forbid_cancel: an alert verifier already PROVED on the device that this is a real
+    // problem (or could not prove otherwise). Evidence outranks the model's read of the text.
+    if (!verdict.needs_input && cls === "alert_clean" && blob.act_enabled && !blob.forbid_cancel && hd.operations.cancel_ticket) {
       await hd.operations.cancel_ticket({
         ticket: blob.ticket_ref,
         reason: fmtNote({
@@ -1523,7 +1808,7 @@ async function runTicketTriage(blob) {
       await releaseIfMine();
       return { ...verdict, action: "needs_input", company_resolved, company_corrected };
     }
-    if (cls === "alert_clean" && hd.operations.cancel_ticket) {
+    if (cls === "alert_clean" && !blob.forbid_cancel && hd.operations.cancel_ticket) {
       await hd.operations.cancel_ticket({
         ticket: blob.ticket_ref,
         reason:
@@ -1750,10 +2035,9 @@ function taskPromptAssistSystemPrompt(kind, currentPrompt, currentReport, helpde
 }
 
 async function runAssist(blob) {
-  const authStorage = AuthStorage.create();
-  authStorage.setRuntimeApiKey(blob.provider, blob.api_key);
-  const modelRegistry = ModelRegistry.inMemory(authStorage);
-  const model = modelRegistry.find(blob.provider, blob.model_id);
+  const rt = await piRuntime({ [blob.provider]: blob.api_key });
+  const modelRegistry = rt;
+  const model = rt.findModel(blob.provider, blob.model_id);
   if (!model) return { reply: `(model not found: ${blob.provider}/${blob.model_id})` };
 
   const loader = new DefaultResourceLoader({
@@ -1774,8 +2058,7 @@ async function runAssist(blob) {
   const { session } = await createAgentSession({
     model,
     thinkingLevel: blob.thinking_level || "medium",
-    authStorage,
-    modelRegistry,
+    ...rt.sessionOpts,
     noTools: "builtin",
     customTools: [],
     resourceLoader: loader,
@@ -1948,6 +2231,113 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   // Ticket automation: SHADOW-triage one ticket (called by celery worker).
+  // Invoke ONE named helpdesk.js operation directly, deterministically, with no model
+  // involved. This is how SYSTEM-level events (not ticket work) reach the helpdesk: the
+  // deployment's own JS decides what the ticket says, who it is filed against and how it
+  // dedupes, so a new kind of system alert needs no new product code. Caller is Django
+  // over localhost - code, never an LLM.
+  if (url.pathname === "/pi/helpdesk-op" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const blob = JSON.parse(body || "{}");
+        const hd = loadHelpdesk(blob.helpdesk_code || "", blob.helpdesk_api || null);
+        if (!hd) throw new Error("helpdesk.js failed to load or is not configured");
+        const op = String(blob.operation || "");
+        const fn = hd.operations[op];
+        if (typeof fn !== "function") {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: `helpdesk.js defines no operation "${op}"`, available: hd.names }));
+          return;
+        }
+        const result = await fn(blob.args || {});
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, result }));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: apiErrorMessage(e) }));
+      }
+    });
+    return;
+  }
+  // Inspect the helpdesk integration's CAPABILITY TAGS for the settings UI. Runs no
+  // operation - it only loads helpdesk.js and reports how each operation is classified
+  // and WHERE that classification came from.
+  //
+  // Why this exists (ISSUES.md F1): product code denies any operation the deployment
+  // declares mutating but leaves unclassified. That is the correct default, but it is
+  // silent - an edit to helpdesk.js that adds an operation, or drops exports.opClasses,
+  // only shows up when enforce mode blocks a working feature. This makes it visible in
+  // the UI first. (Observed for real: a helpdesk.js edit wiped exports.opClasses and two
+  // deployment-authored operations became unclassified without any visible symptom.)
+  if (url.pathname === "/pi/helpdesk-caps" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      try {
+        const blob = JSON.parse(body || "{}");
+        const hd = loadHelpdesk(blob.helpdesk_code || "", blob.helpdesk_api || null);
+        if (!hd) throw new Error("helpdesk.js failed to load or is not configured");
+        const ops = hd.names.map((op) => ({
+          op,
+          mutating: hd.mutating.has(op),
+          class: classOf(op, hd.opClasses),
+          source: classSource(op, hd.opClasses),
+        }));
+        const surfaces = {};
+        for (const s of Object.keys(SURFACE_CLASSES)) {
+          surfaces[s] = allowedOps({ surface: s, names: hd.names, opClasses: hd.opClasses, mutating: hd.mutating });
+        }
+        const unclassified = ops.filter((o) => !o.class).map((o) => o.op);
+        const guessed = ops.filter((o) => o.source === "name-guess").map((o) => o.op);
+        const invalid = ops.filter((o) => o.source === "invalid").map((o) => o.op);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          ok: true, mode: CAPS_MODE, classes: CLASSES,
+          total: ops.length, ops, surfaces,
+          unclassified, guessed, invalid,
+          // Denied-and-unclassified is the actionable set: these WILL fail in enforce mode.
+          warning: unclassified.length
+            ? `${unclassified.length} operation(s) are not classified and will be DENIED once enforcement is on: ${unclassified.join(", ")}`
+            : "",
+        }));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: apiErrorMessage(e) }));
+      }
+    });
+    return;
+  }
+  // Inspect/validate a verifier rule set for the settings UI (runs nothing).
+  if (url.pathname === "/pi/verify-lint" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      let out;
+      try { out = inspectVerifiers(JSON.parse(body || "{}").code || ""); }
+      catch (e) { out = { ok: false, error: apiErrorMessage(e), rules: [] }; }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(out));
+    });
+    return;
+  }
+  // Verify a machine-generated alert against the device before anyone acts on it.
+  if (url.pathname === "/pi/verify-alert" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const result = await runAlertVerify(JSON.parse(body || "{}"));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ matched: false, error: apiErrorMessage(e) }));
+      }
+    });
+    return;
+  }
   if (url.pathname === "/pi/ticket-triage" && req.method === "POST") {
     let body = "";
     req.on("data", (c) => (body += c));
@@ -1964,34 +2354,165 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   // List models available for a set of provider keys (called by Django).
+  // Model discovery. `probe: true` (default) ASKS EACH PROVIDER what it serves today and
+  // merges that with what the installed pi can run; every row says which side it came from
+  // (source) and whether pi can actually run it (usable). Set probe:false for the old
+  // package-only listing (used by UI dropdowns that just need "what can I pick now").
   if (url.pathname === "/pi/models" && req.method === "POST") {
     let body = "";
     req.on("data", (c) => (body += c));
     req.on("end", async () => {
       try {
-        const { providers } = JSON.parse(body || "{}");
-        const auth = AuthStorage.create();
-        for (const p of providers || []) {
-          if (p.api_key) auth.setRuntimeApiKey(p.name, p.api_key);
+        const { providers, probe } = JSON.parse(body || "{}");
+        const keys = {};
+        for (const p of providers || []) if (p.api_key) keys[p.name] = p.api_key;
+        const registry = await piRuntime(keys);
+        if (probe === false) {
+          const enabledNames = new Set((providers || []).map((p) => p.name));
+          const models = registry.listModels()
+            .filter((m) => enabledNames.has(m.provider))
+            .map((m) => ({ ...m, source: "builtin", usable: true }));
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ models, probed: false }));
+          return;
         }
-        const registry = ModelRegistry.inMemory(auth);
-        const avail = await registry.getAvailable();
-        const enabledNames = new Set((providers || []).map((p) => p.name));
-        const models = avail
-          .filter((m) => enabledNames.has(m.provider))
-          .map((m) => ({
-            provider: m.provider,
-            model_id: m.id,
-            display_name: m.name,
-            reasoning: !!m.reasoning,
-            context_window: m.contextWindow,
-          }));
+        const { models, provider_errors, provider_live } = await buildCatalog(providers || [], registry);
+        const nUnusable = models.filter((m) => !m.usable).length;
+        log("models", `probed ${models.length} models, ${nUnusable} not runnable by pi`,
+            Object.keys(provider_errors).length ? `errors=${JSON.stringify(provider_errors)}` : "");
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ models }));
+        res.end(JSON.stringify({ models, probed: true, provider_errors, provider_live, models_json: MODELS_JSON }));
       } catch (e) {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ models: [], error: String(e?.message || e) }));
       }
+    });
+    return;
+  }
+  // Make provider models that the installed pi does not know about RUNNABLE, by writing
+  // them into models.json (validated against the provider first). This is what stops a
+  // brand-new model from being unusable until someone upgrades the npm package.
+  if (url.pathname === "/pi/models/register" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const { providers, models } = JSON.parse(body || "{}");
+        const keys = {};
+        for (const p of providers || []) if (p.api_key) keys[p.name] = p.api_key;
+        const out = await registerModels(providers || [], await piRuntime(keys), models || []);
+        if (out.registered?.length)
+          log("models_register", out.registered.map((m) => `${m.provider}/${m.model_id}`).join(","));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(out));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(e?.message || e) }));
+      }
+    });
+    return;
+  }
+  // TEXT-ONLY analysis. No tools, no device access, no ticket writes: the caller supplies
+  // an admin-authored prompt plus a digest that CODE computed, and gets prose back. Used by
+  // the daily report's executive summary - the model interprets, it never counts.
+  if (url.pathname === "/pi/analyze" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const blob = JSON.parse(body || "{}");
+        const rt = await piRuntime({ [blob.provider]: blob.api_key });
+        const model = rt.findModel(blob.provider, blob.model_id);
+        if (!model) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: `model not found: ${blob.provider}/${blob.model_id}` }));
+          return;
+        }
+        const loader = new DefaultResourceLoader({
+          agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+          systemPromptOverride: () => String(blob.system_prompt || "You are a concise analyst."),
+        });
+        await loader.reload();
+        const { session } = await createAgentSession({
+          model, thinkingLevel: blob.thinking_level || "medium", ...rt.sessionOpts,
+          noTools: "all", resourceLoader: loader,
+          sessionManager: SessionManager.inMemory(),
+          agentDir: CONFIG.sessionsRoot, cwd: CONFIG.sessionsRoot,
+        });
+        try {
+          await session.prompt(String(blob.content || ""));
+        } catch (e) {
+          session.dispose();
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: apiErrorMessage(e) }));
+          return;
+        }
+        const text = session.messages
+          .filter((m) => m.role === "assistant")
+          .map((m) => (m.content || []).filter((c) => c.type === "text").map((c) => c.text).join(""))
+          .join("\n").trim();
+        session.dispose();
+        log("analyze", `${blob.provider}/${blob.model_id}`, `${text.length} chars out`);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ text }));
+      } catch (e) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: String(e?.message || e) }));
+      }
+    });
+    return;
+  }
+  // Installed versions - what the scheduled updater compares against the registry.
+  if (url.pathname === "/pi/version") {
+    let pkg = {};
+    try {
+      pkg = JSON.parse(fs.readFileSync(
+        "/opt/pi-trmm-bridge/node_modules/@earendil-works/pi-coding-agent/package.json", "utf-8"));
+    } catch (e) { pkg = { error: String(e?.message || e) }; }
+    let generation = "unknown";
+    try { generation = await piGeneration(); } catch { /* reported as unknown */ }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      pi_version: pkg.version || null,
+      runtime_generation: generation,
+      pi_error: pkg.error || null,
+      node_version: process.version,
+      started_at: new Date(Date.now() - Math.round(process.uptime() * 1000)).toISOString(),
+      uptime_seconds: Math.round(process.uptime()),
+      models_json: MODELS_JSON,
+    }));
+    return;
+  }
+  // "Is it safe to restart me?" - the quiescence gate for the scheduled updater. A restart
+  // kills live chats and in-flight headless runs, so the updater waits for all of this to
+  // reach zero rather than interrupting work.
+  if (url.pathname === "/pi/busy") {
+    let mining = false;
+    try { const m = await redis.get(MINING_KEY); mining = !!(m && JSON.parse(m)?.running); } catch { /* redis optional here */ }
+    const busy = activeRuns.size > 0 || activeSessions > 0 || mining;
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ busy, active_runs: activeRuns.size, active_sessions: activeSessions, mining }));
+    return;
+  }
+  // Graceful self-restart: the unit is Restart=always, so exiting cleanly is how the
+  // bridge picks up a new package or new code. Refuses while work is in flight unless
+  // explicitly forced, and never needs root.
+  if (url.pathname === "/pi/restart" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      let force = false;
+      try { force = !!JSON.parse(body || "{}").force; } catch { /* empty body = not forced */ }
+      if (!force && (activeRuns.size > 0 || activeSessions > 0)) {
+        res.writeHead(409, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, reason: "busy",
+          active_runs: activeRuns.size, active_sessions: activeSessions }));
+        return;
+      }
+      log("restart", `requested (force=${force}, runs=${activeRuns.size}, sessions=${activeSessions}) - exiting for systemd`);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, restarting: true }));
+      setTimeout(() => process.exit(0), 250);   // let the response flush first
     });
     return;
   }

@@ -2,6 +2,7 @@ import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { trmm } from "./trmm.js";
 import { loadHelpdesk } from "./helpdesk-runtime.js";
+import { gateOp, allowedOps, CAPS_MODE } from "./capabilities.js";
 
 // --- Web research (the bridge host has internet) -----------------------------
 function _stripHtml(h) {
@@ -170,6 +171,10 @@ export function buildTools({
   // create_ticket is not). The admin HELPDESK POLICY prompt documents usage.
   helpdeskApi = null,
   helpdeskCode = "",
+  // WHICH capability surface this toolset is for (see capabilities.js). Required in
+  // practice: an unrecognised surface denies every mutating helpdesk class, so a new
+  // call site cannot quietly inherit full ticket authority by omitting it.
+  surface = null,
 }) {
   if (readonly !== undefined && isReadonly === undefined) {
     // fixed read-only (headless): map onto the new model
@@ -585,7 +590,13 @@ export function buildTools({
   // Tracks whether a ticketing operation actually FAILED (API/exception), so the
   // headless caller can raise an RMM alert only in that (shouldn't-happen) case.
   const helpdeskState = { error: false, detail: "" };
-  const opList = hdOps
+  // Only advertise operations this surface may actually use, so the model is not shown
+  // authority it does not have. This is NOT the control - execute() re-checks, because
+  // the model can name an operation it was never shown.
+  const hdVisible = hd
+    ? allowedOps({ surface, names: hdOps, opClasses: hd.opClasses, mutating: hd.mutating })
+    : [];
+  const opList = hdVisible
     .map((n) => `  - ${n}${hd.meta[n] ? ": " + hd.meta[n] : ""}`)
     .join("\n");
   const helpdesk_call = defineTool({
@@ -617,7 +628,15 @@ export function buildTools({
         );
       const op = String(p.operation || "").trim();
       if (!hd.operations[op])
-        return text(`Unknown helpdesk operation "${op}". Available: ${hdOps.join(", ")}.`);
+        return text(`Unknown helpdesk operation "${op}". Available: ${hdVisible.join(", ")}.`);
+      // Capability check (ISSUES.md F1). Default-deny: an operation the deployment
+      // declares mutating but does not classify is refused here.
+      const cap = gateOp({ surface, op, opClasses: hd.opClasses, mutating: hd.mutating, ref: jobRef });
+      if (!cap.allowed && cap.enforced)
+        return text(
+          `Not permitted on this surface: ${cap.reason}. ` +
+            `Do not retry it. If a person needs to authorise this, say so in an internal note instead.`,
+        );
       let args = {};
       if (p.args) {
         try { args = JSON.parse(p.args); }
@@ -1066,13 +1085,18 @@ function isDestructive(cmd) {
   return DESTRUCTIVE.some((re) => re.test(c));
 }
 
-export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate, blockOps } = {}) {
-  const blocked = new Set(blockOps || []);
+export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate, surface = null } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
   catch (e) { hdError = e.message; }
-  const opList = hd ? hd.names.map((n) => `  - ${n}${hd.meta[n] ? ": " + hd.meta[n] : ""}`).join("\n") : "";
+  // Replaces the old `blockOps` name list (ISSUES.md I6): that hardcoded five
+  // deployment-authored operation NAMES in product code, so a deployment naming its
+  // operations differently got no protection at all - and it failed OPEN.
+  const hdVisible = hd
+    ? allowedOps({ surface, names: hd.names, opClasses: hd.opClasses, mutating: hd.mutating })
+    : [];
+  const opList = hd ? hdVisible.map((n) => `  - ${n}${hd.meta[n] ? ": " + hd.meta[n] : ""}`).join("\n") : "";
 
   const helpdesk_call = defineTool({
     name: "helpdesk_call",
@@ -1104,16 +1128,26 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate,
     }),
     execute: async (_id, p) => {
       if (!hd || !hd.operations[p.operation]) return text(`operation ${p.operation} not available`);
-      // Hard code-level block (used by headless auto-resolve): these must be done by a
-      // human in the console, never by an unattended run.
-      if (blocked.has(p.operation))
-        return text(`'${p.operation}' is NOT allowed in this mode - a human must do that in the console. Put your recommendation in an internal note instead.`);
+      // Capability check, by CLASS rather than by operation name (ISSUES.md F1/I6).
+      const cap = gateOp({ surface, op: p.operation, opClasses: hd.opClasses, mutating: hd.mutating, ref: ticketRef });
+      if (!cap.allowed && cap.enforced)
+        return text(`'${p.operation}' is NOT allowed in this mode: ${cap.reason}. A human must do that in the console. Put your recommendation in an internal note instead.`);
       // Customer-email gate. In WS mode (gate provided) we ask the tech for approval
       // inline (exactly like a device-command approval); in the legacy POST mode we
       // fall back to the per-turn allowCustomerReply flag.
       if (p.operation === "reply_to_ticket") {
         const g = gate ? await gate("email", `Send this reply to the customer on ${ticketRef}:\n\n${(p.message || "").slice(0, 800)}`) : { ok: false, reason: "no approval channel available." };
         if (!g.ok) return text(g.reason || "Customer reply not approved. Leave it as a draft.");
+      }
+      // Closing a ticket asks a human EVERY time - never auto-approvable (ISSUES.md
+      // D2/I7). MANDATE 4.8: "the model never decides that a ticket may be closed"; this
+      // surface only holds `close` authority because a human approves it at the time.
+      if (cap.cls === "close") {
+        const why = (p.internal_note || p.reason || p.customer_html || p.message || "").slice(0, 800);
+        const g = gate
+          ? await gate("close", `${p.cancel ? "CANCEL" : "CLOSE"} ${ticketRef} via ${p.operation}${why ? ":\n\n" + why : ""}`)
+          : { ok: false, reason: "no approval channel available." };
+        if (!g.ok) return text(g.reason || "Closing this ticket was not approved. Leave your recommendation in an internal note instead.");
       }
       // Merge the named params + free-form args, then ALWAYS inject this ticket's ref
       // so a read/write can never fail with 'ticket not found: undefined'.

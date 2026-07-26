@@ -22,6 +22,12 @@
 //   };
 //   exports.meta = { create_ticket: "Create a new ticket", ... };   // optional
 //   exports.mutating = ["create_ticket","reply_to_ticket","add_note","submit_report"]; // optional
+//   // Capability class per operation - what AUTHORITY it carries. Product code maps
+//   // surfaces to allowed classes (see capabilities.js); anything declared mutating
+//   // but left unclassified is DENIED on unattended surfaces (default deny).
+//   // One of: read | create | note | knowledge | customer | close | routing
+//   exports.opClasses = { create_ticket: "create", reply_to_ticket: "customer",
+//                         cancel_ticket: "close", add_note: "note", ... };  // optional but recommended
 import vm from "node:vm";
 
 export function loadHelpdesk(code, config, context) {
@@ -66,6 +72,9 @@ export function loadHelpdesk(code, config, context) {
     names,
     meta: ex.meta || {},
     mutating: new Set(ex.mutating || names), // default: treat all as mutating (safe)
+    // Capability tags. Absent -> product code falls back to its name-based default
+    // classifier, and anything it cannot classify is denied where authority matters.
+    opClasses: ex.opClasses || {},
     apiKey: sandbox.helpdesk.apiKey,
   };
 }

@@ -183,6 +183,85 @@ class CoreSettings(BaseAuditModel):
     ai_procedures_backfill_days = models.PositiveIntegerField(default=120)
     ai_procedures_mining_prompt = models.TextField(blank=True, default="")
     ai_procedures_last_mined = models.DateTimeField(null=True, blank=True)
+
+    # ALERT VERIFIERS - deterministic "prove it before you act" layer for machine-
+    # generated alert tickets. An admin-authored code box (like ai_helpdesk_code)
+    # defines rules: match the ticket -> name the host to inspect -> run a READ-ONLY
+    # evidence script on it -> return a verdict in CODE (never the LLM). A verdict of
+    # "noise" auto-cancels with the evidence attached; "actionable" keeps the ticket
+    # open and states exactly what is wrong. dry_run (default ON) posts what it WOULD
+    # do without changing anything, so a new rule can be proven safe before it acts.
+    ai_verifiers_enabled = models.BooleanField(default=False)
+    ai_verifiers_dry_run = models.BooleanField(default=True)
+    ai_verifier_code = models.TextField(blank=True, default="")
+
+    # MODEL CATALOG WATCH - providers add and retire models constantly. On a schedule we
+    # re-read what each enabled provider actually offers, diff it against the last
+    # snapshot, and hand the difference to the deployment's own helpdesk code so it can
+    # raise a ticket. What that ticket says is NOT defined here; only the diff is.
+    # The important case is a model we have CONFIGURED disappearing upstream, because
+    # every task pointed at it will start failing.
+    ai_model_catalog_enabled = models.BooleanField(default=False)
+    ai_model_catalog_interval_hours = models.PositiveIntegerField(default=24)
+    ai_model_catalog = models.TextField(blank=True, default="")  # JSON snapshot
+    ai_model_catalog_checked = models.DateTimeField(null=True, blank=True)
+    # A model the provider serves but the installed AI runtime does not know about is
+    # available-but-not-runnable. When this is on, discovery registers it with the runtime
+    # so it can be selected the same day, instead of waiting for a package upgrade.
+    ai_model_autoregister = models.BooleanField(default=True)
+
+    # SCHEDULED RUNTIME UPDATE - upgrading the AI runtime restarts the bridge, which drops
+    # live chats and in-flight background runs. So it happens (a) only inside a window an
+    # operator chose, and (b) only once nothing is running. If the new version is not
+    # compatible with this deployment it is rolled back automatically and reported.
+    ai_runtime_update_enabled = models.BooleanField(default=False)
+    ai_runtime_update_time = models.CharField(max_length=5, blank=True, default="03:30")
+    # Blank = every day. Otherwise comma-separated weekdays, Monday=0 ("0,3" = Mon+Thu).
+    ai_runtime_update_days = models.CharField(max_length=32, blank=True, default="")
+    # How long to keep waiting for the system to go quiet before giving up for today.
+    ai_runtime_update_max_wait_minutes = models.PositiveIntegerField(default=180)
+    # "latest", or a pinned version such as "0.82.1".
+    ai_runtime_update_target = models.CharField(max_length=32, blank=True, default="latest")
+    ai_runtime_update_last_run = models.DateTimeField(null=True, blank=True)
+    ai_runtime_update_last_result = models.TextField(blank=True, default="")
+    ai_runtime_update_last_version = models.CharField(max_length=32, blank=True, default="")
+    # A version that already failed the compatibility probe here. It is not retried - a
+    # nightly window would otherwise reinstall, fail and roll back every single night.
+    # Cleared automatically as soon as a different version becomes available.
+    ai_runtime_update_blocked_version = models.CharField(max_length=32, blank=True, default="")
+
+    # DAILY ACTIVITY REPORT - what happened on tickets in the last N hours, by EVERYONE
+    # (staff, customers and the AI), emailed on a schedule with a direct link per ticket.
+    # Deliberately not AI-only: the point is a single daily picture of the desk.
+    ai_daily_report_enabled = models.BooleanField(default=False)
+    ai_daily_report_time = models.CharField(max_length=5, blank=True, default="07:00")
+    ai_daily_report_hours = models.PositiveIntegerField(default=24)
+    # Comma-separated. Blank falls back to the SMTP alert recipients.
+    ai_daily_report_recipients = models.TextField(blank=True, default="")
+    # True = every helpdesk team, not just the ones the AI works.
+    ai_daily_report_all_teams = models.BooleanField(default=True)
+    ai_daily_report_last_run = models.DateTimeField(null=True, blank=True)
+    ai_daily_report_last_result = models.TextField(blank=True, default="")
+    # HANDLING-TIME ESTIMATION. Nothing here is a timesheet: this deployment records no
+    # real time against tickets, so time is DERIVED from the activity log - each actor's
+    # timestamps are grouped into work sessions and priced. Every knob is exposed so the
+    # numbers can be argued with and tuned rather than trusted blindly.
+    ai_report_session_gap_minutes = models.PositiveIntegerField(default=30)
+    ai_report_minutes_per_message = models.PositiveIntegerField(default=4)
+    ai_report_min_session_minutes = models.PositiveIntegerField(default=5)
+    ai_report_max_session_minutes = models.PositiveIntegerField(default=90)
+    # How far back to look for "how long does a human usually take on this kind of
+    # ticket", which is what AI time-saved is measured against.
+    ai_report_baseline_days = models.PositiveIntegerField(default=14)
+    # Fallback minutes per ticket class when there is no human sample to learn from.
+    # EXECUTIVE SUMMARY. The numbers are computed in code; the model only interprets them.
+    # This prompt is what an operator changes to steer that interpretation - what to praise,
+    # what to flag, which standards matter - without touching code.
+    ai_daily_report_ai_summary = models.BooleanField(default=True)
+    ai_daily_report_prompt = models.TextField(blank=True, default="")
+    ai_report_fallback_minutes = models.TextField(
+        blank=True, default='{"alert_clean": 4, "alert_actionable": 15, "regular": 25, "unknown": 10}'
+    )
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)

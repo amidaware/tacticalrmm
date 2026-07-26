@@ -90,6 +90,22 @@ app.conf.beat_schedule = {
         "task": "core.tasks.poll_helpdesk_tickets",
         "schedule": timedelta(seconds=90.0),
     },
+    "refresh-ai-model-catalog": {
+        "task": "core.tasks.refresh_ai_model_catalog",
+        "schedule": crontab(minute=17, hour="*/6"),
+    },
+    # Ticks often; the task itself decides whether it is inside the operator's window and
+    # whether the system is idle enough to restart the bridge. A busy tick just waits.
+    # Ticks often; the task itself decides whether it is time to send and whether it
+    # already sent today.
+    "ai-daily-ticket-report": {
+        "task": "core.tasks.send_daily_ticket_report",
+        "schedule": timedelta(minutes=5),
+    },
+    "ai-runtime-update-window": {
+        "task": "core.tasks.run_ai_runtime_update",
+        "schedule": timedelta(minutes=5),
+    },
     "dispatch-due-ai-scheduled-actions": {
         "task": "core.tasks.dispatch_due_ai_scheduled_actions",
         "schedule": timedelta(seconds=60.0),

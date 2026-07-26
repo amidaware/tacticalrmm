@@ -861,8 +861,10 @@ class UpdateDeleteAIProvider(APIView):
 
 
 class AIAvailableModels(APIView):
-    """Ask the pi-trmm-bridge which models are actually available for the
-    currently-configured provider API keys."""
+    """Which models can be attached right now. Asks each provider what it actually
+    serves today (so a model released this morning is offered), and marks anything the
+    installed runtime cannot yet run - those become runnable on the next catalog check,
+    or immediately if autoregister is on."""
 
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
 
@@ -876,13 +878,22 @@ class AIAvailableModels(APIView):
             if p.api_key
         ]
         bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        probe = request.query_params.get("probe", "1") not in ("0", "false", "False")
         try:
             r = _requests.post(
-                f"{bridge}/pi/models", json={"providers": providers}, timeout=15
+                f"{bridge}/pi/models",
+                json={"providers": providers, "probe": probe},
+                timeout=(10, 120 if probe else 20),
             )
-            return Response(r.json())
+            data = r.json()
         except Exception as e:
             return Response({"models": [], "error": str(e)})
+        # Retired models stay in the runtime's bundled list for years; do not offer them
+        # as new attachments. (live_at_provider is None when discovery could not answer -
+        # keep those, since we cannot prove anything either way.)
+        models = [m for m in (data.get("models") or []) if m.get("live_at_provider") is not False]
+        data["models"] = models
+        return Response(data)
 
 
 class HelpdeskAssist(APIView):
@@ -1998,11 +2009,33 @@ class AIResolveDevices(APIView):
                 method, confidence = "hostname", 0.9
 
         if not client:
+            # The company didn't resolve AND the hostname is ambiguous (the same name
+            # exists at several clients). Still hand back those candidates WITH the client
+            # each one belongs to, so an automated caller can disambiguate on its own -
+            # e.g. by asking each candidate for its own FQDN - instead of dead-ending.
+            # Returning them is not an assertion that any of them is the right device.
+            amb = []
+            if short_host:
+                amb = list(
+                    Agent.objects.filter(hostname__iexact=short_host)
+                    .select_related("site", "site__client")[:20]
+                ) or list(
+                    Agent.objects.filter(hostname__icontains=short_host)
+                    .select_related("site", "site__client")[:20]
+                )
             return Response({
                 "rmm_client": None, "match_method": "none", "confidence": 0.0,
                 "agents": [], "candidates": [],
                 "hostname_searched": hostname or None,
-                "note": "No RMM client match by company name, domain, or device hostname; add an override in ai_ticket_client_map or ask a human.",
+                "ambiguous_matches": [
+                    {"agent_id": a.agent_id, "hostname": a.hostname,
+                     "client": a.client.name if a.client else "",
+                     "site": a.site.name if a.site_id else ""}
+                    for a in amb
+                ],
+                "note": "No RMM client match by company name, domain, or device hostname. "
+                        "ambiguous_matches lists devices sharing this hostname across clients - "
+                        "confirm identity on the device before trusting any of them.",
             })
 
         base_url = (settings.CORS_ORIGIN_WHITELIST[0]
@@ -2012,6 +2045,11 @@ class AIResolveDevices(APIView):
             return {
                 "agent_id": a.agent_id,
                 "hostname": a.hostname,
+                # Which client this device actually belongs to. Callers that act
+                # automatically MUST check this: hostname lookups fall back to a
+                # global search, and reused names (vm01, pve01) are extremely common,
+                # so a match is not proof the device is this customer's.
+                "client": a.client.name if a.client else "",
                 "os": a.operating_system,
                 "plat": a.plat,
                 "logged_in_user": a.logged_in_username,
@@ -2345,3 +2383,181 @@ class PreviewBulkAITargets(APIView):
                 ],
             }
         )
+
+
+class AIVerifierLint(APIView):
+    """Validate an alert-verifier rule set without running it: lists each rule (name,
+    shell, enabled, parked) and anything structurally wrong, so rules can be authored
+    in Global Settings without trial and error."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        import requests as _requests
+
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        code = request.data.get("code")
+        if code is None:
+            code = get_core_settings().ai_verifier_code or ""
+        try:
+            r = _requests.post(f"{bridge}/pi/verify-lint", json={"code": code}, timeout=(5, 30))
+            return Response(r.json())
+        except Exception as e:
+            return Response({"ok": False, "error": f"bridge error: {e}", "rules": []})
+
+
+class AIHelpdeskCaps(APIView):
+    """Report how each helpdesk operation is CLASSIFIED and which surfaces may use it.
+
+    Runs no operation. Product code denies any operation the integration declares as
+    mutating but leaves unclassified - the safe default, but a silent one: adding an
+    operation to helpdesk.js, or dropping exports.opClasses, otherwise only surfaces when
+    enforcement blocks a working feature. This makes it visible in Global Settings first.
+    """
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        import requests as _requests
+
+        core = get_core_settings()
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        code = request.data.get("code")
+        if code is None:
+            code = core.ai_helpdesk_code or ""
+        if not code.strip():
+            return Response({"ok": False, "error": "no helpdesk integration code configured"})
+        try:
+            r = _requests.post(
+                f"{bridge}/pi/helpdesk-caps",
+                json={
+                    "helpdesk_code": code,
+                    "helpdesk_api": {
+                        "base_url": core.ai_helpdesk_api_base_url or "",
+                        "api_key": core.ai_helpdesk_api_key or "",
+                    },
+                },
+                timeout=(5, 60),
+            )
+            return Response(r.json())
+        except Exception as e:
+            return Response({"ok": False, "error": f"bridge error: {e}", "ops": []})
+
+
+class AIVerifierTest(APIView):
+    """Dry-run a verifier against ONE real ticket and return the verdict + evidence.
+    ALWAYS forced dry_run, so testing can never cancel a ticket - it only inspects the
+    device read-only and reports what the rule would decide."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        import requests as _requests
+
+        core = get_core_settings()
+        ref = (request.data.get("ticket_ref") or "").strip()
+        if not ref:
+            return Response({"error": "ticket_ref required"}, status=status.HTTP_400_BAD_REQUEST)
+        code = request.data.get("code")
+        if code is None:
+            code = core.ai_verifier_code or ""
+        if not code.strip():
+            return Response({"error": "no verifier code to test"}, status=status.HTTP_400_BAD_REQUEST)
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.post(
+                f"{bridge}/pi/verify-alert",
+                json={
+                    "ticket_ref": ref,
+                    "verifier_code": code,
+                    "dry_run": True,  # hard-forced: a test must never change a ticket
+                    "helpdesk_api": {
+                        "base_url": core.ai_helpdesk_api_base_url or "",
+                        "api_key": core.ai_helpdesk_api_key or "",
+                    },
+                    "helpdesk_code": core.ai_helpdesk_code or "",
+                },
+                timeout=(10, 420),
+            )
+            return Response(r.json())
+        except Exception as e:
+            return Response({"matched": False, "error": f"bridge error: {e}"})
+
+
+class AIModelCatalogRefresh(APIView):
+    """Re-read what each enabled provider currently offers, diff it against the last
+    snapshot, and let helpdesk.js report any change. Returns the run summary."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
+        from core.tasks import refresh_ai_model_catalog
+
+        result = refresh_ai_model_catalog(force=True)
+        core = get_core_settings()
+        return Response({
+            "result": result,
+            "checked": core.ai_model_catalog_checked,
+        })
+
+
+class AIRuntimeStatus(APIView):
+    """What the AI runtime is now, what it could be, and whether an update could run
+    right this second. Read-only - safe to poll from the settings screen."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def get(self, request):
+        from core.tasks import (
+            _runtime_busy,
+            _runtime_installed_version,
+            _runtime_latest_version,
+        )
+
+        core = get_core_settings()
+        installed, ierr = _runtime_installed_version()
+        latest, lerr = _runtime_latest_version(core.ai_runtime_update_target)
+        busy, detail = _runtime_busy()
+        return Response({
+            "installed": installed,
+            "installed_error": ierr,
+            "latest": latest,
+            "latest_error": lerr,
+            "update_available": bool(installed and latest and installed != latest),
+            "busy": busy,
+            "busy_detail": detail,
+            "last_run": core.ai_runtime_update_last_run,
+            "last_result": core.ai_runtime_update_last_result,
+            "last_version": core.ai_runtime_update_last_version,
+        })
+
+
+class AIDailyReportSendNow(APIView):
+    """Build and email the activity report immediately, ignoring the schedule."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
+        from core.tasks import send_daily_ticket_report
+
+        result = send_daily_ticket_report(force=True)
+        core = get_core_settings()
+        return Response({"result": result, "last_run": core.ai_daily_report_last_run})
+
+
+class AIRuntimeUpdateNow(APIView):
+    """Run the update immediately, ignoring the time window. Everything else still
+    applies: it refuses while work is in flight, probes compatibility, and rolls back."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
+        from core.tasks import run_ai_runtime_update
+
+        result = run_ai_runtime_update(force=True)
+        core = get_core_settings()
+        return Response({
+            "result": result,
+            "last_run": core.ai_runtime_update_last_run,
+            "last_version": core.ai_runtime_update_last_version,
+        })

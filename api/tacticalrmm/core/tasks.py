@@ -1914,6 +1914,155 @@ def triage_ai_ticket(state_pk, force=False):
 # ---------------------------------------------------------------------------
 
 @app.task
+def report_caps_enforcement_readiness(send_email=True):
+    """Decide - and report by email - whether ticket-permission ENFORCEMENT is safe to turn on.
+
+    The permission system ships in warn mode: limits are computed and logged but nothing is
+    refused. Turning enforcement on is a one-way-feeling change, and two of the things that
+    can go wrong were found by accident rather than design:
+
+      * an integration edit can leave an operation unclassified, which enforcement then
+        refuses - silently breaking a working feature
+      * a task that legitimately emails customers without a declared reply register would
+        stop being able to, which nearly broke a customer report we had decided to keep
+
+    So this runs the pre-flight checks deterministically, gathers what warn mode actually
+    observed overnight, and mails a GO / NO-GO with the evidence. It deliberately does NOT
+    flip anything: the mode lives in the bridge's environment, and changing it needs a
+    bridge restart, which is not something to do unattended off the back of a report.
+    """
+    import re as _re
+
+    import requests as _requests
+
+    from core.models import AITask, AITaskRun, CoreSettings
+
+    core = CoreSettings.objects.first()
+    if not core or not core.ai_module_enabled:
+        return "ai module disabled"
+
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    hd_api = {"base_url": core.ai_helpdesk_api_base_url or "",
+              "api_key": core.ai_helpdesk_api_key or ""}
+    checks, blockers = [], []
+
+    # ---- 1. every operation classified -------------------------------------------------
+    mode = "unknown"
+    try:
+        caps = _requests.post(f"{bridge}/pi/helpdesk-caps",
+                              json={"helpdesk_code": core.ai_helpdesk_code or "", "helpdesk_api": hd_api},
+                              timeout=(5, 60)).json()
+        mode = caps.get("mode") or "unknown"
+        unclassified = caps.get("unclassified") or []
+        guessed = caps.get("guessed") or []
+        if unclassified:
+            blockers.append(f"{len(unclassified)} operation(s) have no capability class and would be "
+                            f"REFUSED: {', '.join(unclassified)}")
+            checks.append(("Every operation classified", False, ", ".join(unclassified)))
+        else:
+            checks.append(("Every operation classified", True,
+                           f"{caps.get('total')} classified"
+                           + (f", {len(guessed)} from the built-in name map" if guessed else ", all declared")))
+    except Exception as e:
+        blockers.append(f"could not read capability state: {e}")
+        checks.append(("Every operation classified", False, str(e)[:120]))
+
+    # ---- 2. tasks that email customers have declared a register ------------------------
+    bad = []
+    for t in AITask.objects.filter(enabled=True):
+        wants = "reply_to_ticket" in (t.prompt or "")
+        if wants and getattr(t, "reply_register", "none") == "none":
+            bad.append(f"task {t.pk}")
+    if bad:
+        blockers.append("these enabled tasks ask to email a customer but declare no reply "
+                        f"register, so the email would be refused: {', '.join(bad)}")
+        checks.append(("Customer-emailing tasks authorised", False, ", ".join(bad)))
+    else:
+        declared = [t.pk for t in AITask.objects.filter(enabled=True)
+                    if getattr(t, "reply_register", "none") != "none"]
+        checks.append(("Customer-emailing tasks authorised", True,
+                       f"{len(declared)} task(s) authorised, rest none"))
+
+    # ---- 3. what warn mode actually observed -------------------------------------------
+    observed = {}
+    try:
+        cutoff = (djangotime.now() - timedelta(hours=24)).strftime("%Y-%m-%dT%H:")
+        with open("/var/log/pi-trmm-bridge.log", "r", errors="ignore") as fh:
+            for line in fh:
+                if "caps_warn>" not in line and "caps_deny>" not in line:
+                    continue
+                if line[:14] < cutoff[:14]:
+                    continue
+                m = _re.search(r"surface=(\S+) op=(\S+) class=(\S+)", line)
+                if m:
+                    observed[(m.group(1), m.group(2), m.group(3))] = observed.get(
+                        (m.group(1), m.group(2), m.group(3)), 0) + 1
+    except Exception as e:
+        observed = {}
+        checks.append(("Warn-mode observations readable", False, str(e)[:120]))
+    if observed:
+        detail = "; ".join(f"{op} ({cls}) on {sur} x{n}" for (sur, op, cls), n in observed.items())
+        blockers.append(f"warn mode saw operations that enforcement WOULD refuse: {detail}")
+        checks.append(("Nothing refused in warn mode", False, detail))
+    else:
+        checks.append(("Nothing refused in warn mode", True, "no caps_warn entries in the last 24h"))
+
+    # ---- 4. duplicate-dispatch fix still holding ---------------------------------------
+    try:
+        since = djangotime.now() - timedelta(hours=24)
+        runs = AITaskRun.objects.filter(started_at__gte=since, triggered_by="schedule")
+        per = {}
+        for r in runs:
+            per.setdefault((r.task_id, r.started_at.strftime("%Y-%m-%d %H")), []).append(r.id)
+        dupes = {k: v for k, v in per.items() if len(v) > 1}
+        if dupes:
+            checks.append(("One dispatch per scheduled slot", False,
+                           f"{len(dupes)} slot(s) dispatched more than once"))
+            blockers.append("a scheduled task dispatched more than once in a slot - the duplicate "
+                            "dispatch fix may have regressed")
+        else:
+            checks.append(("One dispatch per scheduled slot", True,
+                           f"{runs.count()} scheduled run(s) in 24h, none duplicated"))
+    except Exception as e:
+        checks.append(("One dispatch per scheduled slot", False, str(e)[:120]))
+
+    ready = not blockers
+    verdict = "GO - safe to enable enforcement" if ready else "NO-GO - do not enable enforcement yet"
+    if mode == "enforce":
+        verdict = "Already enforcing - nothing to do"
+
+    if send_email and core.email_is_configured:
+        rows = "".join(
+            f'<tr><td style="padding:5px 10px;border:1px solid #ddd">{"PASS" if ok else "FAIL"}</td>'
+            f'<td style="padding:5px 10px;border:1px solid #ddd">{name}</td>'
+            f'<td style="padding:5px 10px;border:1px solid #ddd;color:#555">{det}</td></tr>'
+            for name, ok, det in checks)
+        blk = ("<ul>" + "".join(f"<li>{b}</li>" for b in blockers) + "</ul>") if blockers else               "<p>Nothing is blocking it.</p>"
+        html = (
+            f'<div style="font-family:-apple-system,Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.5">'
+            f'<h2 style="font-size:17px">Ticket-permission enforcement: {verdict}</h2>'
+            f'<p>The AI\'s ticket permissions are currently <b>{mode}</b>. In <i>warn</i> mode the limits '
+            f'are worked out and logged but nothing is actually refused; in <i>enforce</i> mode they are real.</p>'
+            f'<table style="border-collapse:collapse;font-size:13px">'
+            f'<tr style="background:#f0f0f0"><th style="padding:5px 10px;border:1px solid #ddd">Check</th>'
+            f'<th style="padding:5px 10px;border:1px solid #ddd">What it means</th>'
+            f'<th style="padding:5px 10px;border:1px solid #ddd">Detail</th></tr>{rows}</table>'
+            f'<h3 style="font-size:15px">What would stop us</h3>{blk}'
+            f'<p style="color:#555;font-size:12.5px">This report decides nothing on its own. To enable '
+            f'enforcement, set PI_CAPS_MODE=enforce in the bridge environment and restart the bridge; '
+            f'to reverse it, remove the line and restart. Sent automatically each morning while the '
+            f'decision is outstanding.</p></div>')
+        try:
+            core.send_mail(f"Pi.dev AI - enforcement readiness: {verdict}",
+                           _re.sub(r"<[^>]+>", "", html),
+                           override_recipients=["chris@blueuc.com"], html_body=html)
+        except Exception as e:
+            DebugLog.error(message=f"enforcement readiness email failed: {e}")
+
+    return f"{verdict} | mode={mode} | blockers={len(blockers)}"
+
+
+@app.task
 def check_ai_capability_health():
     """Warn - as a ticket - when a helpdesk operation has no capability class.
 

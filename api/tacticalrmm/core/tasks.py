@@ -2052,10 +2052,18 @@ def report_caps_enforcement_readiness(send_email=True):
             f'enforcement, set PI_CAPS_MODE=enforce in the bridge environment and restart the bridge; '
             f'to reverse it, remove the line and restart. Sent automatically each morning while the '
             f'decision is outstanding.</p></div>')
+        # Recipients are configuration, never hardcoded: product code must carry no
+        # customer or operator identifiers (MANDATE 4.12). Reuse the daily report's
+        # recipient list, falling back to the standard alert recipients.
+        rcpt = [x.strip() for x in (core.ai_daily_report_recipients or "").replace(";", ",").split(",") if x.strip()]
+        if not rcpt:
+            rcpt = list(core.email_alert_recipients or [])
+        if not rcpt:
+            return f"{verdict} | mode={mode} | blockers={len(blockers)} (no email recipients configured)"
         try:
             core.send_mail(f"Pi.dev AI - enforcement readiness: {verdict}",
                            _re.sub(r"<[^>]+>", "", html),
-                           override_recipients=["chris@blueuc.com"], html_body=html)
+                           override_recipients=rcpt, html_body=html)
         except Exception as e:
             DebugLog.error(message=f"enforcement readiness email failed: {e}")
 

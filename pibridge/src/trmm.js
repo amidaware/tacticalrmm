@@ -110,6 +110,16 @@ export const trmm = {
   // Append one durable note to a device's Pi.dev AI memory (TRMM: POST
   // /core/ai/device-note/ { agent_id, note }). Surfaced to future runs in the
   // system prompt.
+  // AI Procedures library (RMM-native). The bridge may only ever create DRAFTS - see
+  // save_procedure in tools.js for why.
+  saveProcedure: (proc, opts) => req("POST", `/core/ai/procedures/`, proc, opts),
+  // Credit an AI-performed ticket action to the human who drove it (see AIActionCredit).
+  creditAction: (credit, opts) => req("POST", `/core/ai/action-credit/`, credit, opts),
+  // Work ledger: one entry per burst of real work, posted as the session ends.
+  logWork: (entry, opts) => req("POST", `/core/ai/work-entry/`, entry, opts),
+  listProcedures: ({ q } = {}, opts) =>
+    req("GET", `/core/ai/procedures/${q ? `?q=${encodeURIComponent(q)}` : ""}`, null, opts),
+
   saveDeviceNote: (agentId, note, opts) =>
     req("POST", `/core/ai/device-note/`, { agent_id: agentId, note }, opts),
   // Read a device's existing Pi.dev AI memory notes (GET /core/ai/device-note/?agent_id=).

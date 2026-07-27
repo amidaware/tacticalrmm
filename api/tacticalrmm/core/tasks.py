@@ -1781,12 +1781,169 @@ def triage_ai_ticket(state_pk, force=False):
     bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
     run_timeout = getattr(settings, "PI_RUN_TIMEOUT", 3600)
 
+    # ---- KNOWN CONDITIONS (procedure-driven) -------------------------------
+    # Ask the approved PROCEDURES first: does one of them declare how to recognise this,
+    # and what it is? A match is a deterministic ruling from human-approved data - no model
+    # call, and the same answer every time the same notification arrives. This is where
+    # vendor knowledge lives; product code holds no vendor names.
+    #
+    # Recurrence is the point: a daily notification about an unchanged condition is not new
+    # work. First sighting becomes the tracker and stays open for a human; identical repeats
+    # are cancelled against that tracker, with a note, and never reach the model.
+    condition_note = ""
+    if (core.ai_helpdesk_code or "").strip():
+        try:
+            from core.ai_conditions import find_condition, record_occurrence
+
+            _hd_api = {
+                "base_url": core.ai_helpdesk_api_base_url or "",
+                "api_key": core.ai_helpdesk_api_key or "",
+            }
+
+            def _hd_op(operation, args):
+                return _requests.post(
+                    f"{bridge}/pi/helpdesk-op",
+                    json={"operation": operation, "args": args,
+                          "helpdesk_api": _hd_api, "helpdesk_code": core.ai_helpdesk_code or ""},
+                    timeout=(5, 90),
+                ).json()
+
+            _g = _hd_op("get_ticket", {"ticket": st.ticket_ref}).get("result") or {}
+            _tk = _g.get("ticket") or {}
+
+            # ---- WHO SHOULD A REPLY REACH? -------------------------------------
+            # A monitoring robot files most alerts, and the mail gateway invents a contact
+            # for it. Left alone, that contact IS the ticket's addressee, so any reply -
+            # now or months later, by a human or by us - emails the backup server instead
+            # of the customer. Observed live: an advisory would have gone to
+            # <product>@<customer-domain>, a mailbox no person reads.
+            #
+            # Rule (owner's, 2026-07-26): an alert must sit on the COMPANY, not on the
+            # machine that sent it - UNLESS the requester is a real person who filed it,
+            # in which case they stay the contact and nothing is touched. Company level,
+            # never a named individual, so a reply cannot land on someone personally about
+            # monitoring noise; the helpdesk then routes to the primary support contact if
+            # one is configured, else the company address.
+            #
+            # Conservative by construction: it only moves a ticket from a gateway-created
+            # mailbox to the company that helpdesk ALREADY filed it under. It never guesses
+            # a company, never moves between companies, and never touches a human's ticket.
+            _pid = (_tk.get("partner_id") or [None])[0] if isinstance(_tk.get("partner_id"), list) else None
+            if (_tk.get("partner_is_gateway_contact") and _tk.get("partner_company_id")
+                    and not _tk.get("partner_is_company")
+                    # A parentless gateway contact is its own commercial partner. There is
+                    # no company to move it to, and "re-addressing" it to itself would be a
+                    # no-op with a misleading note. Leave it for identity resolution (F4).
+                    and _tk.get("partner_company_id") != _pid):
+                try:
+                    _rr = _hd_op("set_ticket_company", {
+                        "ticket": st.ticket_ref,
+                        "company_partner_id": _tk["partner_company_id"],
+                        "company_level_only": True,
+                    }).get("result") or {}
+                    if _rr.get("changed"):
+                        _hd_op("add_note", {"ticket": st.ticket_ref, "message": (
+                            "Re-addressed automatically: this alert arrived from "
+                            f"{_tk.get('partner_email') or 'a monitoring mailbox'}, which is a "
+                            "mailbox the mail gateway created for an unknown sender, not a person. "
+                            f"The ticket now sits on the company ({_tk.get('partner_company_name')}) "
+                            "so that any reply reaches the customer's real contact rather than the "
+                            "machine that sent the alert. No reply has been sent, and none is sent "
+                            "for an alert unless the condition actually requires the customer to do "
+                            "something."
+                        )})
+                        # Re-read: the addressee changed, and everything below keys off it.
+                        _g = _hd_op("get_ticket", {"ticket": st.ticket_ref}).get("result") or {}
+                        _tk = _g.get("ticket") or _tk
+                except Exception as e:
+                    DebugLog.error(message=f"could not re-address {st.ticket_ref}: {e}")
+            _subject = str(_tk.get("email_subject") or st.subject or "")
+            _body = "\n".join([str(_tk.get("description") or "")]
+                              + [str(m.get("text") or "") for m in (_g.get("messages") or [])])
+            _partner = _tk.get("partner_id")
+            _customer_key = (_partner[1] if isinstance(_partner, list) and len(_partner) > 1
+                             else str(_partner or ""))
+            hit = find_condition(subject=_subject, body=_body, sender=st.requester or "")
+            if hit:
+                ident = hit.get("identity") or {}
+                dec = record_occurrence(
+                    hit, ticket_ref=st.ticket_ref,
+                    customer_key=_customer_key or (st.requester or ""),
+                    host=ident.get("host", ""),
+                )
+                row = dec["row"]
+                # Did a human close the tracker since last time? That is a decision - read
+                # it as one, instead of suppressing duplicates against a dead ticket.
+                if dec["action"] == "suppress" and row.tracker_ref:
+                    try:
+                        from core.ai_conditions import mute_if_tracker_gone
+                        _stages = _hd_op("get_ticket_stages", {"tickets": [row.tracker_ref]}).get("result") or {}
+                        _st_rows = _stages if isinstance(_stages, list) else _stages.get("tickets") or []
+                        _stage = ""
+                        for _r in _st_rows:
+                            if isinstance(_r, dict) and _r.get("ref") == row.tracker_ref:
+                                _stage = str(_r.get("stage") or "")
+                        if _stage:
+                            mute_if_tracker_gone(row, tracker_stage=_stage)
+                    except Exception as e:
+                        DebugLog.error(message=f"tracker-stage check failed for {row.tracker_ref}: {e}")
+                if dec["action"] == "suppress":
+                    note = (
+                        f"Known condition - suppressed automatically.\n\n"
+                        f"This is the same condition already tracked on {row.tracker_ref}: "
+                        f"\"{hit['title']}\" on {row.host or 'this system'}. "
+                        f"Occurrence {row.occurrences} of this condition; {row.suppressed} "
+                        f"notification(s) suppressed so far. Nothing new has happened and the "
+                        f"customer has already been advised, so this duplicate is cancelled "
+                        f"instead of being worked again.\n\n"
+                        f"The condition itself is NOT closed - it stays open on {row.tracker_ref} "
+                        f"until it stops recurring or a human resolves it. Matched by the approved "
+                        f"procedure \"{hit['title']}\" (condition key: {hit['condition_key']}); "
+                        f"no AI judgement was involved in this decision."
+                    )
+                    try:
+                        _hd_op("cancel_ticket", {"ticket": st.ticket_ref, "reason": note})
+                    except Exception as e:
+                        DebugLog.error(message=f"known-condition suppress could not cancel {st.ticket_ref}: {e}")
+                    st.status = "suppressed_known"
+                    st.classification = "alert_clean"
+                    st.summary = f"Known condition already tracked on {row.tracker_ref}: {hit['title']}"
+                    st.proposed_action = (
+                        f"No action - duplicate notification of a tracked condition "
+                        f"(occurrence {row.occurrences}). See {row.tracker_ref}."
+                    )
+                    st.error_detail = ""
+                    st.save(update_fields=["status", "classification", "summary",
+                                           "proposed_action", "error_detail"])
+                    return f"suppressed-known ({hit['condition_key']} -> {row.tracker_ref})"
+                # First sighting, or it came back after being resolved: this ticket is the
+                # tracker. Hand the model the ruling and the runbook, and forbid a cancel -
+                # a customer-side gap must not be dismissed as a clean alert.
+                _needs_customer = hit["disposition"] == "customer_action"
+                condition_note = (
+                    ("CUSTOMER MUST ACT: this condition is only fixable on the customer's side, "
+                     "so ONE advisory to them is warranted (and only one - repeats are suppressed).\n"
+                     if _needs_customer else
+                     "NO CUSTOMER CONTACT: this condition does not require the customer to do "
+                     "anything. Do NOT reply to them. Record what you find and leave it for us.\n") +
+                    f"[known condition] {hit['title']} (key: {hit['condition_key']}, "
+                    f"ruling: {hit['disposition']}, matched deterministically by an approved "
+                    f"procedure - not by you). Host: {ident.get('host') or 'not stated'}. "
+                    f"This is occurrence {row.occurrences} and THIS ticket is the tracker.\n"
+                    f"FIX (follow it, do not invent your own):\n{hit['fix']}\n"
+                    f"VERIFY:\n{hit['verification']}"
+                )[:6000]
+        except Exception as e:
+            DebugLog.error(message=f"condition engine skipped for {st.ticket_ref}: {e}")
+
     # ---- ALERT VERIFIERS ---------------------------------------------------
     # Before the model is asked to judge a machine-generated alert from its TEXT, go
     # look at the machine. An admin rule (verifiers.js) gathers read-only evidence and
     # rules on it in code. A proven-harmless alert is cancelled here and never costs an
     # LLM call; a proven-real one is pinned open so triage cannot later dismiss it.
     verified_fact, forbid_cancel = "", False
+    if condition_note:
+        verified_fact, forbid_cancel = condition_note, True
     if core.ai_verifiers_enabled and (core.ai_verifier_code or "").strip():
         try:
             vres = _requests.post(
@@ -1823,7 +1980,11 @@ def triage_ai_ticket(state_pk, force=False):
             # Anything not proven harmless must never be auto-cancelled downstream.
             if act in ("actionable", "human"):
                 forbid_cancel = True
-            verified_fact = f"[{vres.get('verifier')}] verdict={act} on {vres.get('host') or '?'} - {reason}"[:4000]
+            # Keep a procedure's deterministic ruling if there is one: it is human-approved
+            # data about this exact condition, so it outranks a device verifier's summary
+            # rather than being overwritten by it.
+            _vf = f"[{vres.get('verifier')}] verdict={act} on {vres.get('host') or '?'} - {reason}"
+            verified_fact = (condition_note + "\n\n" + _vf)[:6000] if condition_note else _vf[:4000]
 
     try:
         r = _requests.post(
@@ -1931,6 +2092,7 @@ def report_caps_enforcement_readiness(send_email=True):
     flip anything: the mode lives in the bridge's environment, and changing it needs a
     bridge restart, which is not something to do unattended off the back of a report.
     """
+    import datetime as _dt
     import re as _re
 
     import requests as _requests
@@ -1984,9 +2146,13 @@ def report_caps_enforcement_readiness(send_email=True):
                        f"{len(declared)} task(s) authorised, rest none"))
 
     # ---- 3. what warn mode actually observed -------------------------------------------
+    # A check that cannot be EVALUATED is a blocker, not a pass. The first version of this
+    # swallowed a NameError here and then reported "no caps_warn entries in the last 24h" -
+    # a GO verdict built on a check that had actually crashed. Same rule as the rest of the
+    # system: unproven never routes to a green light.
     observed = {}
     try:
-        cutoff = (djangotime.now() - timedelta(hours=24)).strftime("%Y-%m-%dT%H:")
+        cutoff = (djangotime.now() - _dt.timedelta(hours=24)).strftime("%Y-%m-%dT%H:")
         with open("/var/log/pi-trmm-bridge.log", "r", errors="ignore") as fh:
             for line in fh:
                 if "caps_warn>" not in line and "caps_deny>" not in line:
@@ -1997,19 +2163,26 @@ def report_caps_enforcement_readiness(send_email=True):
                 if m:
                     observed[(m.group(1), m.group(2), m.group(3))] = observed.get(
                         (m.group(1), m.group(2), m.group(3)), 0) + 1
+        if observed:
+            detail = "; ".join(f"{op} ({cls}) on {sur} x{n}" for (sur, op, cls), n in observed.items())
+            blockers.append(f"warn mode saw operations that enforcement WOULD refuse: {detail}")
+            checks.append(("Nothing refused in warn mode", False, detail))
+        else:
+            checks.append(("Nothing refused in warn mode", True,
+                           "no warn entries in the last 24h"))
     except Exception as e:
-        observed = {}
-        checks.append(("Warn-mode observations readable", False, str(e)[:120]))
-    if observed:
-        detail = "; ".join(f"{op} ({cls}) on {sur} x{n}" for (sur, op, cls), n in observed.items())
-        blockers.append(f"warn mode saw operations that enforcement WOULD refuse: {detail}")
-        checks.append(("Nothing refused in warn mode", False, detail))
-    else:
-        checks.append(("Nothing refused in warn mode", True, "no caps_warn entries in the last 24h"))
+        blockers.append(f"could not determine what warn mode observed, so readiness is unproven: {e}")
+        checks.append(("Nothing refused in warn mode", False, f"CHECK FAILED: {str(e)[:110]}"))
 
     # ---- 4. duplicate-dispatch fix still holding ---------------------------------------
+    # Deliberately a SHORT window. Duplicate dispatch recurs on every slot, so a few hours
+    # is enough to catch a regression - while a 24h window straddles the day the fix was
+    # deployed and reports historical duplicates as a live problem. That is exactly what the
+    # first version did: it blocked on 9 duplicated dispatches from a slot that ran hours
+    # before the fix existed.
+    DISPATCH_WINDOW_H = 6
     try:
-        since = djangotime.now() - timedelta(hours=24)
+        since = djangotime.now() - _dt.timedelta(hours=DISPATCH_WINDOW_H)
         runs = AITaskRun.objects.filter(started_at__gte=since, triggered_by="schedule")
         per = {}
         for r in runs:
@@ -2020,11 +2193,15 @@ def report_caps_enforcement_readiness(send_email=True):
                            f"{len(dupes)} slot(s) dispatched more than once"))
             blockers.append("a scheduled task dispatched more than once in a slot - the duplicate "
                             "dispatch fix may have regressed")
+        elif runs.count() == 0:
+            checks.append(("One dispatch per scheduled slot", True,
+                           f"no scheduled runs in the last {DISPATCH_WINDOW_H}h - nothing to contradict it"))
         else:
             checks.append(("One dispatch per scheduled slot", True,
-                           f"{runs.count()} scheduled run(s) in 24h, none duplicated"))
+                           f"{runs.count()} scheduled run(s) in {DISPATCH_WINDOW_H}h, none duplicated"))
     except Exception as e:
-        checks.append(("One dispatch per scheduled slot", False, str(e)[:120]))
+        blockers.append(f"could not verify the duplicate-dispatch fix, so readiness is unproven: {e}")
+        checks.append(("One dispatch per scheduled slot", False, f"CHECK FAILED: {str(e)[:110]}"))
 
     ready = not blockers
     verdict = "GO - safe to enable enforcement" if ready else "NO-GO - do not enable enforcement yet"
@@ -2117,7 +2294,16 @@ def check_ai_capability_health():
     unclassified = caps.get("unclassified") or []
     mode = caps.get("mode") or "warn"
     if not unclassified:
-        return f"ok - {caps.get('total')} operation(s) classified, mode={mode}"
+        # STAND DOWN. A watchdog that can only raise its hand teaches people to ignore it:
+        # the notice for an already-fixed condition sat open in the support queue with no
+        # indication it was stale. When the condition clears, the check retracts its OWN
+        # notice - a code-owned decision on code-owned evidence, the same shape as the alert
+        # verifiers, and it only ever touches tickets this check itself filed.
+        cleared = _retract_capability_notices(bridge, hd_api, core, caps)
+        return (
+            f"ok - {caps.get('total')} operation(s) classified, mode={mode}"
+            + (f"; retracted {cleared} stale notice(s)" if cleared else "")
+        )
 
     # Enforcing => those operations are being refused right now. Warning => they will be
     # the moment enforcement is switched on, which is exactly when it must not surprise us.
@@ -2163,6 +2349,285 @@ def check_ai_capability_health():
     return f"{len(unclassified)} unclassified ({mode}): {', '.join(unclassified)}"
 
 
+def _retract_capability_notices(bridge, hd_api, core, caps) -> int:
+    """Close any open capability-health notice, now that nothing is unclassified.
+
+    Deliberately narrow: it matches ONLY the subject this task files, and only tickets that
+    are still open. It posts the evidence (what is now classified, and when) before closing,
+    so the audit trail shows why it stood down rather than the ticket just vanishing.
+    """
+    import requests as _requests
+
+    def op(operation, args):
+        return _requests.post(
+            f"{bridge}/pi/helpdesk-op",
+            json={
+                "operation": operation,
+                "args": args,
+                "helpdesk_api": hd_api,
+                "helpdesk_code": core.ai_helpdesk_code or "",
+            },
+            timeout=(5, 60),
+        ).json()
+
+    MARKERS = (
+        "[Pi.dev AI] Helpdesk operations have no capability class",
+        "[Pi.dev AI] Helpdesk operations are being DENIED",
+    )
+    try:
+        listing = op("list_open_tickets", {})
+    except Exception as e:
+        DebugLog.error(message=f"capability notice retraction could not list tickets: {e}")
+        return 0
+    rows = listing.get("result") if isinstance(listing, dict) else None
+    if not isinstance(rows, list):
+        rows = listing if isinstance(listing, list) else []
+
+    total = caps.get("total", 0)
+    when = djangotime.now().strftime("%Y-%m-%d %H:%M %Z")
+    cleared = 0
+    # list_open_tickets is deployment-authored: it returns {ref, subject, internal_notice, ...}.
+    #
+    # NOTE a deliberate, narrow exception to "product code must never auto-close an internal
+    # notice" (helpdesk.js, from ISSUES.md I14): that rule exists because a GENERIC auto-close
+    # once cancelled notices meant for humans. This is not generic - it is one check closing
+    # the one notice it filed itself, keyed to its own subject, once its own evidence says the
+    # condition is gone. Recorded in ISSUES.md rather than left as silent drift.
+    for t in rows:
+        subject = str((t or {}).get("subject") or "")
+        ref = (t or {}).get("ref")
+        if not ref or not any(subject.startswith(m) for m in MARKERS):
+            continue
+        reason = (
+            f"Condition cleared - retracting this notice automatically. All {total} helpdesk "
+            f"operation(s) now carry a capability class as of {when}, so nothing will be denied "
+            f"when enforcement is on. Verified by core.tasks.check_ai_capability_health against "
+            f"the live integration code; no human action is needed. This ticket was raised by "
+            f"the same check and is closed by it."
+        )
+        try:
+            op("close_ticket", {"ticket": ref, "reason": reason})
+            cleared += 1
+        except Exception as e:
+            DebugLog.error(message=f"could not retract capability notice {ref}: {e}")
+    return cleared
+
+
+@app.task
+def send_open_ticket_review(force=False, recipients_override=None, hours=None,
+                            stamp_core=True, options=None):
+    """The 09:00 review: every open ticket, bucketed by what could be done about it.
+
+    Ticks often and self-gates on the configured time, same pattern as the activity brief,
+    so the schedule is set in Global Settings rather than in code.
+    """
+    from datetime import timedelta
+
+    import requests as _requests
+    from django.utils import timezone as djangotime
+
+    from core.ticket_review import classify, gather_facts, render_html
+
+    core = get_core_settings()
+    if not core.ai_module_enabled:
+        return "ai module disabled"
+    if not (core.ai_helpdesk_code or "").strip():
+        return "no helpdesk integration configured"
+
+    # "09:00" must mean 09:00 to the person reading it, not 09:00 UTC. Django TIME_ZONE here
+    # is UTC, so honour the deployment's configured zone (CoreSettings.default_time_zone) -
+    # otherwise a New York MSP asking for a 9am review gets it at 5am, decides the feature is
+    # broken, and turns it off.
+    try:
+        import zoneinfo
+        _tz = zoneinfo.ZoneInfo(core.default_time_zone or "UTC")
+    except Exception:
+        _tz = djangotime.get_current_timezone()
+    now = djangotime.now().astimezone(_tz)
+    # Same as the activity report: the schedule owns cadence, this owns content.
+
+    def _finish(msg):
+        if stamp_core:
+            core.ai_ticket_review_last_run = djangotime.now()
+            core.ai_ticket_review_last_result = msg[:1000]
+            core.save(update_fields=["ai_ticket_review_last_run", "ai_ticket_review_last_result"])
+        return msg
+
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    ledger_note = _refresh_ledger_before_report(48)
+    try:
+        r = _requests.post(
+            f"{bridge}/pi/helpdesk-op",
+            json={"operation": "list_open_tickets",
+                  "args": {"all_assignees": bool((options or {}).get(
+                      "include_assigned", core.ai_ticket_review_include_assigned)),
+                      "teams": (options or {}).get("team_ids") or None},
+                  "helpdesk_api": {"base_url": core.ai_helpdesk_api_base_url or "",
+                                   "api_key": core.ai_helpdesk_api_key or ""},
+                  "helpdesk_code": core.ai_helpdesk_code or ""},
+            timeout=(10, 180),
+        ).json()
+    except Exception as e:
+        return _finish(f"could not list open tickets: {e}")
+    rows = r.get("result")
+    if r.get("error") or not isinstance(rows, list):
+        return _finish(f"could not list open tickets: {str(r.get('error'))[:300]}")
+    # Normalise the deployment's row shape onto what the review expects.
+    tickets = [{
+        "ref": x.get("ref"), "id": x.get("id"), "url": x.get("url", ""),
+        "subject": x.get("subject", ""), "partner": x.get("partner", ""),
+        "requester_email": x.get("requester_email", ""), "stage": x.get("stage", ""),
+        "assignee": x.get("assignee", ""), "created": x.get("created", ""),
+        "team": x.get("team", ""), "body": x.get("body", ""),
+        "last_msg_bot": x.get("last_msg_bot", False),
+        "internal_notice": x.get("internal_notice", False),
+    } for x in rows if x.get("ref")]
+    if not tickets:
+        return _finish("no open tickets")
+
+    facts = gather_facts(tickets)
+    verdict = classify(facts, core, options=options)
+    body_html = render_html(facts, verdict["items"], by=verdict["by"])
+
+    rcpt = recipients_override or [
+        x.strip() for x in (core.ai_ticket_review_recipients or "").replace(";", ",").split(",")
+        if x.strip()
+    ]
+    if not rcpt:
+        return _finish("no recipients configured for the open-ticket review")
+    msg, ok = core.send_mail(
+        subject=f"Open ticket review - {len(tickets)} open, what can come off the board",
+        body="This report is HTML with links - view it in an HTML-capable client.",
+        html_body=body_html,
+        override_recipients=rcpt,
+    )
+    return _finish(f"{'sent' if ok else 'FAILED'} to {', '.join(rcpt)} - {len(tickets)} tickets, bucketing by {verdict['by']}; {ledger_note}"
+                   + ("" if ok else f" - {msg}"))
+
+
+@app.task
+def dispatch_ai_report_schedules():
+    """Run whichever operator-defined reports are due. Ticks often; the schedule decides.
+
+    Each schedule is checked against its own most recent occurrence rather than a fixed clock
+    slot, so a report is sent once per occurrence, a missed window is picked up late instead of
+    skipped in silence, and a five-minute tick cannot send the same email twelve times.
+    """
+    import zoneinfo
+    from datetime import timedelta
+
+    from django.utils import timezone as djangotime
+
+    from core.models import AIReportSchedule, CoreSettings
+
+    core = CoreSettings.objects.first()
+    if not core or not core.ai_module_enabled:
+        return "ai module disabled"
+    try:
+        tz = zoneinfo.ZoneInfo(core.default_time_zone or "UTC")
+    except Exception:
+        tz = djangotime.get_current_timezone()
+    now = djangotime.now().astimezone(tz)
+
+    GRACE = timedelta(hours=2)
+    ran = []
+    for sch in AIReportSchedule.objects.filter(enabled=True):
+        due = sch.due_at(now)
+        if not due or now < due or now > due + GRACE:
+            continue
+        if sch.last_run and sch.last_run.astimezone(tz) >= due:
+            continue
+        rcpt = sch.recipients or ""
+        opts = sch.options if isinstance(sch.options, dict) else {}
+        try:
+            if sch.kind == "open_tickets":
+                res = send_open_ticket_review(
+                    force=True, recipients_override=[x.strip() for x in rcpt.replace(";", ",").split(",") if x.strip()],
+                    hours=sch.effective_window_hours, stamp_core=False, options=opts)
+            else:
+                res = send_daily_ticket_report(
+                    force=True, hours=sch.effective_window_hours,
+                    recipients_override=rcpt, stamp_core=False, options=opts)
+        except Exception as e:
+            res = f"FAILED: {str(e)[:300]}"
+            DebugLog.error(message=f"scheduled report '{sch.name}' failed: {e}")
+        sch.last_run = djangotime.now()
+        sch.last_result = str(res)[:1000]
+        sch.save(update_fields=["last_run", "last_result"])
+        ran.append(f"{sch.name}: {str(res)[:80]}")
+    return "; ".join(ran) if ran else "nothing due"
+
+
+@app.task
+def stand_down_resolved_conditions():
+    """Close the tracker for a known condition that has stopped recurring.
+
+    The mirror image of suppression, and the half that makes suppression honest: if the
+    system is allowed to stop filing tickets about a condition because it is already
+    tracked, it must also notice when the condition goes away and say so. Otherwise the
+    tracker becomes another permanently-open ticket nobody trusts.
+
+    Evidence-based and code-owned: "the notification has not arrived for N days", where N
+    comes from the procedure's own repeat_policy. Nothing is inferred about WHY it stopped -
+    the note says exactly what was observed.
+    """
+    from django.utils import timezone as djangotime
+
+    import requests as _requests
+
+    from core.models import AIKnownCondition, CoreSettings
+
+    core = CoreSettings.objects.first()
+    if not core or not core.ai_module_enabled or not (core.ai_helpdesk_code or "").strip():
+        return "disabled"
+
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    hd_api = {"base_url": core.ai_helpdesk_api_base_url or "",
+              "api_key": core.ai_helpdesk_api_key or ""}
+    now = djangotime.now()
+    closed = 0
+
+    for row in AIKnownCondition.objects.filter(state__in=("advising", "advised")).select_related("procedure"):
+        pol = (row.procedure.repeat_policy if row.procedure and isinstance(row.procedure.repeat_policy, dict) else {})
+        days = int(pol.get("resolve_after_days") or 0)
+        if days <= 0 or not row.tracker_ref:
+            continue
+        quiet_for = (now - row.last_seen).days
+        if quiet_for < days:
+            continue
+        reason = (
+            f"Condition appears resolved - closing this tracker automatically.\n\n"
+            f"\"{row.procedure.title if row.procedure else row.condition_key}\" on "
+            f"{row.host or 'this system'} has not been reported again for {quiet_for} day(s) "
+            f"(threshold: {days}). Over its life it was notified {row.occurrences} time(s), of "
+            f"which {row.suppressed} duplicate notification(s) were suppressed against this "
+            f"ticket.\n\n"
+            f"What was observed: the notification stopped arriving. That is consistent with the "
+            f"fix having been applied, but it was not verified on the device - if you need proof, "
+            f"check it directly. If the notification returns, a new tracker is opened "
+            f"automatically and this decision is revisited."
+        )
+        try:
+            r = _requests.post(
+                f"{bridge}/pi/helpdesk-op",
+                json={"operation": "close_ticket",
+                      "args": {"ticket": row.tracker_ref, "reason": reason},
+                      "helpdesk_api": hd_api, "helpdesk_code": core.ai_helpdesk_code or ""},
+                timeout=(5, 60),
+            ).json()
+            if r.get("error"):
+                DebugLog.error(message=f"stand-down could not close {row.tracker_ref}: {r['error']}")
+                continue
+        except Exception as e:
+            DebugLog.error(message=f"stand-down could not close {row.tracker_ref}: {e}")
+            continue
+        row.state = "resolved"
+        row.save(update_fields=["state"])
+        closed += 1
+
+    return f"stood down {closed} condition(s)" if closed else "nothing to stand down"
+
+
 @app.task
 def dispatch_due_ai_scheduled_actions():
     """Beat (~1 min): enqueue any scheduled AI actions whose time has come."""
@@ -2190,6 +2655,7 @@ def attempt_ai_ticket_resolve(ticket_ref):
     we also append its output to the decision thread so the console shows it."""
     import requests as _requests
 
+    from core.ai_match import match_procedures as _match_procs
     from core.models import AIDecisionRequest, AITicketState
 
     core = get_core_settings()
@@ -2208,6 +2674,16 @@ def attempt_ai_ticket_resolve(ticket_ref):
             json={
                 "ticket_ref": ticket_ref, "context": ctx,
                 "decision_prompt": core.ai_ticket_decision_prompt or "",
+                # Same reply standard + matched runbooks as the interactive ticket chat:
+                # an auto-resolve DRAFT has to be send-ready, so it needs the standard it
+                # will be judged against.
+                "helpdesk_prompt": core.ai_helpdesk_prompt or "",
+                "procedures": _match_procs(
+                    ticket_ref,
+                    (ctx or {}).get("subject", ""),
+                    (ctx or {}).get("summary", ""),
+                    (ctx or {}).get("proposed_action", ""),
+                ),
                 "provider": model.provider.name, "model_id": model.model_id,
                 "api_key": model.provider.api_key, "thinking_level": model.thinking_level,
                 "helpdesk_api": {
@@ -3029,9 +3505,43 @@ def _dr_classify(t):
     return "regular"
 
 
-def _dr_estimate(tickets, cfg):
+def _dr_ledger_minutes(hours: int):
+    """MEASURED time per ticket and per person, from the work ledger.
+
+    The estimate below infers time from how many messages someone wrote, which cannot see the
+    AI chats where most of the work now happens - measured against the transcripts it was out
+    by an order of magnitude. So where the ledger has real entries for a ticket in the window,
+    they REPLACE the estimate for that ticket; where it has none (older work, or work that left
+    no trace), the estimate still applies. Every replaced ticket is marked so the report can say
+    which numbers are measured and which are inferred.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone as djangotime
+
+    from core.models import TicketWorkEntry
+
+    since = djangotime.now() - timedelta(hours=max(1, int(hours or 24)))
+    per_ticket = {}
+    for e in (TicketWorkEntry.objects
+              .filter(started_at__gte=since, superseded_by=None)
+              .exclude(ticket_ref="")
+              .only("ticket_ref", "actor_display", "human_minutes", "ai_minutes", "confidence")):
+        d = per_ticket.setdefault(e.ticket_ref, {"human": 0.0, "ai": 0.0, "by_actor": {},
+                                                 "confidences": set(), "entries": 0})
+        d["human"] += float(e.human_minutes or 0)
+        d["ai"] += float(e.ai_minutes or 0)
+        who = e.actor_display or e.actor_username or "?"
+        d["by_actor"][who] = round(d["by_actor"].get(who, 0.0) + float(e.human_minutes or 0), 1)
+        d["confidences"].add(e.confidence)
+        d["entries"] += 1
+    return per_ticket
+
+
+def _dr_estimate(tickets, cfg, ledger=None):
     """Annotate each ticket with per-actor time, complexity and totals. Returns per-actor rollup."""
     actors = {}
+    ledger = ledger or {}
     for t in tickets:
         events = t.get("events") or []
         by_actor = {}
@@ -3070,6 +3580,16 @@ def _dr_estimate(tickets, cfg):
                     a["last"] = en
             if t.get("terminal"):
                 a["closed"] += 1
+        # Measured beats inferred.
+        led = ledger.get(t.get("ref"))
+        if led and led["entries"]:
+            t["actor_minutes"] = dict(led["by_actor"])
+            t["human_minutes"] = round(led["human"], 1)
+            t["ai_minutes"] = round(led["ai"], 1)
+            t["time_source"] = "measured" if led["confidences"] == {"measured"} else "ledger"
+            t["ledger_entries"] = led["entries"]
+        else:
+            t["time_source"] = "estimated"
         t["human_minutes"] = round(t["human_minutes"], 1)
         t["ai_minutes"] = round(t["ai_minutes"], 1)
         t["class"] = _dr_classify(t)
@@ -3273,7 +3793,8 @@ def _dr_quality(tickets, actors):
     return out
 
 
-def _dr_summary_html(data, tickets, actors, quality, value, baselines, sample, cfg, hours, core):
+def _dr_summary_html(data, tickets, actors, quality, value, baselines, sample, cfg, hours, core,
+                     options=None):
     """Ask the model to interpret the computed figures. Falls back to a plain paragraph -
     a summary failing must never cost us the report."""
     import json as _json
@@ -3331,7 +3852,18 @@ def _dr_summary_html(data, tickets, actors, quality, value, baselines, sample, c
         ],
         "tech_reply_excerpts_for_tone_review": (data.get("reply_samples") or [])[:25],
     }
-    prompt = (core.ai_daily_report_prompt or "").strip() or DEFAULT_REPORT_PROMPT
+    # A schedule may carry its own prompt and its own on/off switch, so two reports of the same
+    # type can ask different questions of the same figures.
+    opts = options or {}
+    prompt = (str(opts.get("prompt") or "").strip()
+              or (core.ai_daily_report_prompt or "").strip()
+              or DEFAULT_REPORT_PROMPT)
+    # Additive instructions: the common case is "the default, plus also look at X" - which should
+    # not require retyping (or silently losing) the whole default prompt.
+    extra = str(opts.get("prompt_extra") or "").strip()
+    if extra:
+        prompt += ("\n\nADDITIONAL INSTRUCTIONS FOR THIS REPORT (from whoever scheduled it - "
+                   "follow them in addition to everything above):\n" + extra)
     bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
     try:
         r = _requests.post(
@@ -3461,10 +3993,30 @@ def _dr_tech_detail(actors, tickets, per_tech=15):
     return "".join(h)
 
 
-def _dr_time_value(tickets, actors, baselines, sample, cfg, hours, row_cap=DR_MAX_ROWS):
-    """Bottom-line block: time spent on what closed, and what the AI took off the desk."""
+def _dr_time_value(tickets, actors, baselines, sample, cfg, hours, row_cap=DR_MAX_ROWS, ledger=None):
+    """Bottom-line block: time spent in the window, and what the AI took off the desk.
+
+    It used to total only tickets that CLOSED in the window, which silently discarded every hour
+    spent on work still in progress - the tickets that are open precisely because they are hard.
+    A day of grinding on three unresolved problems showed as zero. Time worked is time worked:
+    the headline counts everything touched, and the split shows how much of it landed.
+    """
     closed = [t for t in tickets if t.get("terminal")]
-    human_total = sum(t.get("human_minutes", 0) for t in closed)
+    open_tix = [t for t in tickets if not t.get("terminal")]
+    human_total = sum(t.get("human_minutes", 0) for t in tickets)
+    human_closed = sum(t.get("human_minutes", 0) for t in closed)
+    human_open = sum(t.get("human_minutes", 0) for t in open_tix)
+    # Work with no ticket attached (device chats, RMM sessions) is still someone's day.
+    off_ticket = 0.0
+    for v in (ledger or {}).values():
+        pass
+    from core.models import TicketWorkEntry
+    from datetime import timedelta
+    from django.utils import timezone as _tz
+    from django.db.models import Sum
+    off_ticket = float(TicketWorkEntry.objects.filter(
+        started_at__gte=_tz.now() - timedelta(hours=max(1, int(hours or 24))),
+        superseded_by=None, ticket_ref="").aggregate(s=Sum("human_minutes"))["s"] or 0)
     ai_total = sum(t.get("ai_minutes", 0) for t in closed)
     ai_only = [t for t in closed if t.get("ai_touched") and t.get("human_minutes", 0) <= 0]
     ai_assisted = [t for t in closed if t.get("ai_touched") and t.get("human_minutes", 0) > 0]
@@ -3486,7 +4038,11 @@ def _dr_time_value(tickets, actors, baselines, sample, cfg, hours, row_cap=DR_MA
     h = ['<h3 style="font-family:Segoe UI,Arial,sans-serif;font-size:15px;color:#1a3c6e;margin:26px 0 4px">'
          f"Time worked on what closed &mdash; and time the AI saved</h3>"]
     h.append('<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%"><tr>')
-    h.append(card("tech time on closed tickets", _dr_fmt_mins(human_total), f"{len(closed)} closed in {hours}h"))
+    h.append(card("tech time, all tickets touched", _dr_fmt_mins(human_total),
+                  f"{_dr_fmt_mins(human_closed)} on the {len(closed)} that closed &middot; "
+                  f"{_dr_fmt_mins(human_open)} still in flight"))
+    if off_ticket:
+        h.append(card("time off-ticket", _dr_fmt_mins(off_ticket), "device chats &amp; RMM sessions"))
     h.append(card("AI time on those tickets", _dr_fmt_mins(ai_total), "machine time, not billable"))
     h.append(card("human time saved by AI", _dr_fmt_mins(saved), f"{len(ai_only)} solo + {len(ai_assisted)} assisted", "#166534"))
     h.append(card("closed with no human at all", len(ai_only), "AI start to finish", "#0b5cad"))
@@ -3550,7 +4106,9 @@ def _dr_time_value(tickets, actors, baselines, sample, cfg, hours, row_cap=DR_MA
             h.append('<div style="font-family:Segoe UI,Arial,sans-serif;font-size:11.5px;color:#888;margin-top:3px">'
                      f"+ {closed_hidden} more closed ticket(s) not listed (highest tech time shown first) &mdash; "
                      "the totals above include every one of them.</div>")
-    return "".join(h), {"human_total": human_total, "ai_total": ai_total, "saved": saved,
+    return "".join(h), {"human_total": human_total, "human_closed": human_closed,
+                        "human_open": human_open, "off_ticket": off_ticket,
+                        "ai_total": ai_total, "saved": saved,
                         "ai_only": len(ai_only), "ai_assisted": len(ai_assisted)}
 
 
@@ -3603,18 +4161,104 @@ def _dr_system_block():
     return "".join(h)
 
 
-def _dr_render(data, hours, cfg, core=None):
+def _dr_actors_from_ledger(actors, ledger, tickets, hours):
+    """Rebuild the per-person rollup from the work ledger, keeping message-only actors.
+
+    Humans: their time, ticket list and session count come from the ledger, because that is
+    where work is recorded. The AI keeps its message-derived figure - it is a measure of
+    machine activity, not of anyone's attention, and is labelled as such in the report.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone as djangotime
+
+    from core.models import TicketWorkEntry
+
+    since = djangotime.now() - timedelta(hours=max(1, int(hours or 24)))
+    refs_in_report = {t.get("ref") for t in tickets}
+    rebuilt = {}
+    for e in (TicketWorkEntry.objects
+              .filter(started_at__gte=since, superseded_by=None)
+              .exclude(actor_display="")
+              .select_related("actor_user")):
+        # Group by the USER, not the label: two spellings of one person must not become two
+        # people in the report, which is exactly what a rename did.
+        name = ((e.actor_user.get_full_name() or e.actor_user.username)
+                if e.actor_user_id else e.actor_display)
+        a = rebuilt.setdefault(name, {"name": name, "kind": "tech", "minutes": 0.0, "sessions": 0,
+                                      "tickets": set(), "closed": 0, "companies": set(),
+                                      "first": None, "last": None, "classes": {},
+                                      "off_ticket_minutes": 0.0, "measured": 0, "inferred": 0})
+        a["minutes"] += float(e.human_minutes or 0)
+        a["sessions"] += 1
+        if e.ticket_ref:
+            a["tickets"].add(e.ticket_ref)
+        else:
+            a["off_ticket_minutes"] += float(e.human_minutes or 0)
+        if e.confidence == "measured":
+            a["measured"] += 1
+        else:
+            a["inferred"] += 1
+        if a["first"] is None or e.started_at < a["first"]:
+            a["first"] = e.started_at
+        if a["last"] is None or e.ended_at > a["last"]:
+            a["last"] = e.ended_at
+
+    # Carry over what the ledger cannot know: closes, companies, and the AI's own activity.
+    from core.work_ledger import staff_users as _staff_users
+    _staff_names = {(u.get_full_name() or un) for un, u in _staff_users().items()}
+    for name, old in (actors or {}).items():
+        if old.get("kind") == "ai":
+            rebuilt[name] = old
+            continue
+        # Customers appear in helpdesk message data too; they do not belong in a section
+        # headed "how the techs are handling tickets".
+        if name not in _staff_names:
+            continue
+        new = rebuilt.get(name)
+        if not new:
+            rebuilt[name] = old          # message-only actor (e.g. worked before the ledger)
+            continue
+        new["closed"] = old.get("closed", 0)
+        new["companies"] = old.get("companies", set())
+        new["classes"] = old.get("classes", {})
+        # A ticket the ledger knows about but the message data does not is still their work.
+        new["tickets"] |= {r for r in old.get("tickets", set()) if r}
+    for a in rebuilt.values():
+        a["minutes"] = round(a["minutes"], 1)
+        a["ledger_only_tickets"] = sorted(r for r in a.get("tickets", set()) if r not in refs_in_report)
+    return rebuilt
+
+
+def _dr_window_label(hours: int) -> str:
+    """"Last 720 Hours" - the window as the person who scheduled it typed it.
+
+    Deliberately NOT re-expressed as "30 days": someone who asked for 720 hours should see 720
+    hours, and a report called "daily" when it covers a month is how a reader mis-reads a figure.
+    """
+    h = max(1, int(hours or 24))
+    return f"Last {h} Hour{'s' if h != 1 else ''}"
+
+
+def _dr_render(data, hours, cfg, core=None, options=None):
     tot = data.get("totals") or {}
     tickets = data.get("tickets") or []
 
     # Derive time from the activity log, then learn what a human normally takes.
-    actors = _dr_estimate(tickets, cfg)
+    ledger = _dr_ledger_minutes(hours)
+    actors = _dr_estimate(tickets, cfg, ledger=ledger)
+    # The per-person table and the per-tech detail were still being built from message
+    # estimates, so a technician who did three hours of work in the AI chat - and therefore
+    # wrote no helpdesk messages himself - showed up as twelve minutes on two tickets. The
+    # ledger is the record of work; it decides these totals.
+    actors = _dr_actors_from_ledger(actors, ledger, tickets, hours)
     baselines, sample = _dr_baselines(data.get("baseline"), cfg, cfg.get("fallback") or {})
     # Long windows would otherwise produce an email the client truncates, which silently
     # hides the tail. Cap the lists instead, and say how many were left out.
     row_cap = DR_MAX_ROWS if hours <= 48 else 15
     per_tech = 15 if hours <= 48 else 5
-    value_html, value = _dr_time_value(tickets, actors, baselines, sample, cfg, hours, row_cap)
+    value_html, value = _dr_time_value(tickets, actors, baselines, sample, cfg, hours, row_cap,
+                                       ledger=ledger)
     quality = _dr_quality(tickets, actors)
 
     def card(label, value_, colour="#1a3c6e"):
@@ -3627,14 +4271,19 @@ def _dr_render(data, hours, cfg, core=None):
     h = ['<div style="max-width:1180px;margin:0 auto;padding:16px;background:#fff">']
     h.append(
         f'<h1 style="font-family:Segoe UI,Arial,sans-serif;font-size:21px;color:#1a3c6e;margin:0 0 2px">'
-        f"Helpdesk daily report &mdash; last {hours} hours</h1>"
+        f"Helpdesk Activity Report &mdash; {_dr_window_label(hours)}</h1>"
         f'<div style="font-family:Segoe UI,Arial,sans-serif;font-size:12px;color:#777;margin-bottom:14px">'
         f'{_dr_esc(data.get("since"))} &rarr; now &middot; scope: {_dr_esc(data.get("scope"))} &middot; '
         f"everyone&rsquo;s activity, techs and AI</div>"
     )
     # Executive summary first: the interpretation, before the evidence.
-    if core is not None and core.ai_daily_report_ai_summary:
-        h.append(_dr_summary_html(data, tickets, actors, quality, value, baselines, sample, cfg, hours, core))
+    _opts = options or {}
+    _want_summary = _opts.get("ai_summary")
+    if _want_summary is None:
+        _want_summary = bool(core is not None and core.ai_daily_report_ai_summary)
+    if core is not None and _want_summary:
+        h.append(_dr_summary_html(data, tickets, actors, quality, value, baselines, sample, cfg,
+                                  hours, core, options=_opts))
 
     h.append('<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%"><tr>')
     h.append(card("touched", tot.get("tickets_with_activity", 0)))
@@ -3643,6 +4292,8 @@ def _dr_render(data, hours, cfg, core=None):
     h.append(card("still open", tot.get("open_now", 0), "#92400e"))
     h.append(card("unassigned", tot.get("unassigned_open", 0), "#b91c1c"))
     h.append(card("tech time", _dr_fmt_mins(value["human_total"])))
+    if value.get("off_ticket"):
+        h.append(card("off-ticket time", _dr_fmt_mins(value["off_ticket"])))
     h.append(card("AI saved", _dr_fmt_mins(value["saved"]), "#166534"))
     h.append(card("no AI involvement", tot.get("untouched_by_ai", 0), "#555"))
     h.append("</tr></table>")
@@ -3678,8 +4329,56 @@ def _dr_render(data, hours, cfg, core=None):
     return "".join(h), value
 
 
+def _refresh_ledger_before_report(hours: int) -> str:
+    """Bring the work ledger up to date before a summary is generated.
+
+    Owner's requirement (2026-07-26): "we are going to want to update the ledger before ANY
+    summary email is sent out". A report that computes its own numbers at send time is how the
+    old estimate drifted from reality unnoticed - the ledger is the single place work is
+    recorded, so it must be current before anything reads it.
+    """
+    try:
+        from core.work_ledger import refresh_from_helpdesk, refresh_from_rmm_audit
+        window = max(24, int(hours or 24) + 24)
+        hd = refresh_from_helpdesk(hours=window, commit=True)
+        # A technician's day is not only tickets: remote sessions and device work in RMM leave no
+        # helpdesk message and no AI transcript, and leaving that source out made a full day of
+        # remote-session work read as four minutes.
+        rm = refresh_from_rmm_audit(hours=window, commit=True)
+        if not hd.get("ok"):
+            DebugLog.error(message=f"ledger refresh failed before report: {hd.get('error')}")
+            return f"ledger refresh failed: {str(hd.get('error'))[:120]}"
+        return (f"ledger +{hd.get('entries_added', 0)} from tickets, "
+                f"+{rm.get('entries_added', 0)} from RMM activity")
+    except Exception as e:
+        DebugLog.error(message=f"ledger refresh raised before report: {e}")
+        return f"ledger refresh error: {str(e)[:120]}"
+
+
+def _ai_driven_by(hours: int) -> dict:
+    """Tickets a HUMAN drove through the AI chat inside the window: {ref: {name, at}}.
+
+    Slightly wider than the report window, because a chat that ran at 23:50 and a close that
+    landed at 00:05 are plainly the same piece of work.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone as djangotime
+
+    from core.models import AIActionCredit
+
+    since = djangotime.now() - timedelta(hours=max(1, int(hours or 24)) + 6)
+    out = {}
+    for c in (AIActionCredit.objects
+              .filter(at__gte=since, surface__in=("decision_chat", "device_chat"))
+              .order_by("at")):
+        out[c.ticket_ref] = {"name": c.actor_display or c.actor_username, "at": c.at.isoformat()}
+    return out
+
+
 @app.task
-def send_daily_ticket_report(force=False, hours=None, recipients_override=None):
+def send_daily_ticket_report(force=False, hours=None, recipients_override=None,
+                            stamp_core=True, options=None):
     """Beat task (ticks every 5 min). Sends once per day at the configured time.
     `hours` overrides the window for an ad-hoc run (e.g. a 14-day catch-up report)."""
     import requests as _requests
@@ -3688,32 +4387,25 @@ def send_daily_ticket_report(force=False, hours=None, recipients_override=None):
     from django.utils import timezone as djangotime
 
     core = get_core_settings()
-    if not (force or (core.ai_module_enabled and core.ai_daily_report_enabled)):
-        return "daily report disabled"
+    if not core.ai_module_enabled:
+        return "ai module disabled"
     if not (core.ai_helpdesk_code or "").strip():
         return "no helpdesk integration configured"
 
-    now = djangotime.localtime()
-    if not force:
-        raw = (core.ai_daily_report_time or "07:00").strip()
-        try:
-            hh, mm = [int(x) for x in raw.split(":")[:2]]
-        except Exception:
-            return "invalid report time - expected HH:MM"
-        start = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
-        if now < start or now > start + timedelta(hours=2):
-            return "outside report window"
-        last = core.ai_daily_report_last_run
-        if last and djangotime.localtime(last) >= start:
-            return "already sent today"
+    # Cadence is no longer this function's business: an AIReportSchedule decides when a report
+    # runs, for what window, and to whom. What remains here is "generate it and send it".
 
     hours = max(1, int(hours or core.ai_daily_report_hours or 24))
+    ledger_note = _refresh_ledger_before_report(hours)
     bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
 
     def _finish(msg):
-        core.ai_daily_report_last_run = djangotime.now()
-        core.ai_daily_report_last_result = msg[:1000]
-        core.save(update_fields=["ai_daily_report_last_run", "ai_daily_report_last_result"])
+        # A schedule-driven run must not stamp the legacy single-report state, or one custom
+        # weekly email would silently cancel the built-in daily one.
+        if stamp_core:
+            core.ai_daily_report_last_run = djangotime.now()
+            core.ai_daily_report_last_result = msg[:1000]
+            core.save(update_fields=["ai_daily_report_last_run", "ai_daily_report_last_result"])
         return msg
 
     try:
@@ -3721,8 +4413,16 @@ def send_daily_ticket_report(force=False, hours=None, recipients_override=None):
             f"{bridge}/pi/helpdesk-op",
             json={
                 "operation": "daily_activity",
-                "args": {"hours": hours, "all_teams": bool(core.ai_daily_report_all_teams),
-                         "baseline_days": core.ai_report_baseline_days or 14},
+                "args": {"hours": hours,
+                         "all_teams": bool((options or {}).get("all_teams", core.ai_daily_report_all_teams)),
+                         "team_ids": (options or {}).get("team_ids") or None,
+                         "baseline_days": core.ai_report_baseline_days or 14,
+                         # WHO ACTUALLY DID IT. Every helpdesk write is performed by the
+                         # integration's API user, so the helpdesk records the bot as the actor
+                         # whether the AI decided alone at 3am or a technician told it to. Our
+                         # own record of interactive sessions is the only place that knows, so
+                         # it is supplied here and the attribution rule stays deployment-side.
+                         "driven_by": _ai_driven_by(hours)},
                 "helpdesk_api": {"base_url": core.ai_helpdesk_api_base_url or "",
                                  "api_key": core.ai_helpdesk_api_key or ""},
                 "helpdesk_code": core.ai_helpdesk_code or "",
@@ -3758,15 +4458,15 @@ def send_daily_ticket_report(force=False, hours=None, recipients_override=None):
         "baseline_days": core.ai_report_baseline_days or 14,
         "fallback": fallback,
     }
-    html, value = _dr_render(data, hours, cfg, core)
+    html, value = _dr_render(data, hours, cfg, core, options=options)
     if data.get("truncated"):
         html = ('<div style="font-family:Segoe UI,Arial,sans-serif;font-size:12.5px;color:#b91c1c;'
                 'border:1px solid #b91c1c;background:#fef2f2;padding:8px;margin-bottom:10px">'
                 "Row cap reached for this window &mdash; the oldest activity in the period is not "
                 "included, so totals below are understated.</div>") + html
-    label = "daily report" if hours <= 24 else f"{round(hours / 24)}-day report"
     subject = (
-        f"Helpdesk {label} — {tot.get('terminal_now', 0)} closed, "
+        f"Helpdesk Activity Report - {_dr_window_label(hours)} — "
+        f"{tot.get('terminal_now', 0)} closed, "
         f"{_dr_fmt_mins(value['human_total'])} tech time, "
         f"{_dr_fmt_mins(value['saved'])} saved by AI "
         f"({tot.get('open_now', 0)} still open, {tot.get('unassigned_open', 0)} unassigned)"

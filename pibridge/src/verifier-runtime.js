@@ -35,6 +35,21 @@
 //     script: "pvesh get /cluster/resources ...",   // READ-ONLY commands only
 //     verdict: (ev) => ({ action: "noise", reason: "...", detail: "..." }),
 //   }];
+//
+// SELF-PROVING rules: set `evidence: "ticket"` when the notification itself states the
+// cause of its own warning (a vendor job report saying "skipped X because Y is disabled").
+// No host resolution and no device script run; `verdict({stdout:"", ticket, host})` is
+// called directly. Use it ONLY where the report is the evidence - never to save a lookup
+// on an alert whose truth lives on the box.
+//
+// RECURRING conditions: a verdict may additionally return
+//   condition_key: "vendor-thing-that-is-wrong"   // stable key for THIS condition
+//   condition_host: "HOSTNAME"                    // which box it is about
+//   advise_once: true                             // default true
+//   fix_summary: "what the customer must do"
+// Product code then owns the repeat policy (tell the customer once, track it, suppress
+// identical repeats against the tracker, stand down when it stops). The rule names the
+// condition; it does not decide the policy.
 import vm from "node:vm";
 
 export function loadVerifiers(code) {

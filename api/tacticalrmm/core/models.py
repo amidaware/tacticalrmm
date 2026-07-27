@@ -262,6 +262,52 @@ class CoreSettings(BaseAuditModel):
     ai_report_fallback_minutes = models.TextField(
         blank=True, default='{"alert_clean": 4, "alert_actionable": 15, "regular": 25, "unknown": 10}'
     )
+
+    # ---- DAILY OPEN-TICKET REVIEW (the 09:00 "what can be taken off the board" report) --
+    # Separate from the activity brief above: that one reports what HAPPENED, this one
+    # reports what COULD BE DONE - every open ticket, bucketed by whether the AI can finish
+    # it, needs one human step, is blocked, or is human-only. Each row links to the ticket
+    # and to its AI chat, so the report is a work queue rather than reading material.
+    ai_ticket_review_enabled = models.BooleanField(default=False)
+    ai_ticket_review_time = models.CharField(max_length=5, default="09:00")
+    ai_ticket_review_recipients = models.CharField(max_length=500, blank=True, default="")
+    # Facts are gathered in code; the model buckets and phrases them. Nothing ACTS on this
+    # output - it is a report for a human - so model judgement is appropriate here in a way
+    # it would not be for a decision that changes a ticket.
+    ai_ticket_review_ai_summary = models.BooleanField(default=True)
+    ai_ticket_review_include_assigned = models.BooleanField(default=True)
+    ai_ticket_review_prompt = models.TextField(blank=True, default="")
+    ai_ticket_review_last_run = models.DateTimeField(null=True, blank=True)
+    ai_ticket_review_last_result = models.CharField(max_length=1000, blank=True, default="")
+
+    # ---- WORK LEDGER: how attention time is derived from event timestamps ----------------
+    # A gap longer than `idle_cap` means the person walked away; they are credited
+    # `away_credit` for picking the thread back up, not the whole gap. Lead-in covers reading
+    # before typing; tail covers reading the final answer.
+    # Renames and duplicate accounts must not fork a person's history. Old username or
+    # helpdesk display name -> canonical RMM username, e.g. {"freddie": "fred"}. Explicit and
+    # reviewable, because guessing at name similarity is how two people become three.
+    ai_work_actor_aliases = models.JSONField(default=dict, blank=True)
+
+    # WHOSE people. Customers have RMM logins of their own - a client admin looking at their own
+    # kit generated audit activity that landed in the work ledger and then appeared in a report
+    # under "how the techs are handling tickets". Being a named human is not the test; working
+    # here is. Blank means "derive it from our own mail domain", which is almost always right.
+    ai_staff_email_domains = models.JSONField(default=list, blank=True)
+    # Escape hatch for a colleague whose login is not on the company domain.
+    ai_staff_extra_usernames = models.JSONField(default=list, blank=True)
+
+    # Work that leaves no timestamps still leaves CONTENT. Three considered replies posted in
+    # the same minute span zero seconds but represent real composition, so the ledger also
+    # values a burst by what was written and read, and keeps whichever estimate is larger.
+    # Composition is slower than typing: it includes thinking, checking facts and formatting.
+    ai_work_compose_chars_per_min = models.PositiveIntegerField(default=200)
+    ai_work_read_chars_per_min = models.PositiveIntegerField(default=900)
+
+    ai_work_idle_cap_minutes = models.PositiveIntegerField(default=15)
+    ai_work_away_credit_minutes = models.PositiveIntegerField(default=2)
+    ai_work_lead_in_minutes = models.PositiveIntegerField(default=2)
+    ai_work_tail_minutes = models.PositiveIntegerField(default=2)
     enable_server_scripts = models.BooleanField(default=True)
     enable_server_webterminal = models.BooleanField(default=False)
     notify_on_info_alerts = models.BooleanField(default=False)
@@ -1194,12 +1240,369 @@ class AIProcedure(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    # ---- DETERMINISTIC HALF -------------------------------------------------
+    # A procedure is not only advice for the model: when it can state, declaratively,
+    # how to RECOGNISE its condition, the engine can rule on that condition without a
+    # model call at all. This is what keeps vendor knowledge as DATA a technician can
+    # read and approve, instead of hand-written rules in a code box that only a developer
+    # can extend (the previous shape: 3 bespoke rules, one product each, growing forever).
+    #
+    # `match` is declarative BY DESIGN - patterns and required phrases, never an
+    # expression to evaluate. A procedure that cannot be reviewed on sight by the person
+    # approving it is not reviewable at all.
+    #   {
+    #     "subject_regex": "^\\[Warning\\]\\s*Backup Configuration Job\\b",
+    #     "body_all":  ["phrase that must appear", ...],      # every one required
+    #     "body_any":  ["fingerprint", ...],                  # at least one required
+    #     "body_none": ["phrase that disqualifies", ...],     # none may appear
+    #     "sender_regex": "",
+    #     "identity": {"host_regex": "Configuration Backup for\\s+([\\w.-]+)"}
+    #   }
+    match = models.JSONField(default=dict, blank=True)
+
+    # Stable identity for a RECURRING condition, so repeats can be recognised as the same
+    # thing rather than as new work. Blank = this procedure is advice only.
+    condition_key = models.CharField(max_length=120, blank=True, default="")
+
+    # What proves it. `notification`: the report states the cause of its own warning, so the
+    # report is the evidence. `device`: run the read-only probe below and judge that.
+    # `none`: advice only, no automatic ruling.
+    EVIDENCE = (("none", "Advice only"), ("notification", "The notification proves it"),
+                ("device", "Read-only probe on the device"))
+    evidence = models.CharField(max_length=20, choices=EVIDENCE, default="none")
+    # {"shell": "powershell", "script": "...", "timeout": 60, "expect_regex": "..."}
+    probe = models.JSONField(default=dict, blank=True)
+
+    # The deterministic ruling once matched. Mirrors the verdicts the alert path already
+    # understands, plus the case this was built for: a real gap the CUSTOMER must close.
+    DISPOSITION = (
+        ("", "None (advice only)"),
+        ("benign", "Proven harmless - may be cancelled"),
+        ("customer_action", "Real, and the customer must act"),
+        ("our_action", "Real, and we must act"),
+        ("needs_human", "Cannot be ruled automatically"),
+    )
+    disposition = models.CharField(max_length=20, choices=DISPOSITION, blank=True, default="")
+
+    # What to do when the SAME condition arrives again.
+    #   {"advise_once": true, "suppress_repeats": true, "resolve_after_days": 7,
+    #    "follow_up_after_days": 14}
+    repeat_policy = models.JSONField(default=dict, blank=True)
+
+    # "How long does this job take WITHOUT AI?" - the baseline for time-saved. Authored by a
+    # human who knows the work: there is no pre-AI timing data to derive it from, so it stays
+    # blank until someone fills it in rather than being invented.
+    baseline_minutes = models.FloatField(null=True, blank=True)
+
+    # Belt: the engine only ACTS (suppresses, cancels) on a procedure whose author ticked
+    # this AND whose status is approved. Default off, so a mined draft can carry a
+    # disposition without that disposition being live.
+    auto_enabled = models.BooleanField(default=False)
+
     class Meta:
-        indexes = [models.Index(fields=["category"]), models.Index(fields=["status"])]
+        indexes = [
+            models.Index(fields=["category"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["condition_key"]),
+        ]
         ordering = ["-updated"]
 
     def __str__(self) -> str:
         return f"{self.title} [{self.status}]"
+
+    @property
+    def is_live_rule(self) -> bool:
+        """May the engine rule on this procedure without asking a model?"""
+        return bool(
+            self.status == "approved"
+            and self.auto_enabled
+            and self.condition_key
+            and self.disposition
+            and isinstance(self.match, dict)
+            and self.match
+        )
+
+
+class AIReportSchedule(models.Model):
+    """A report the operator defined: what it covers, who gets it, and when it runs.
+
+    The two reports that existed were hard-wired - one daily activity brief, one daily open-ticket
+    review, each with its own settings block and its own beat entry. Wanting a weekly or a monthly
+    view, or the same report for a different team, meant a code change. A schedule is data instead:
+    add, edit and delete them, and the dispatcher works out what is due.
+    """
+
+    KIND = (
+        ("activity", "Activity report - what happened"),
+        ("open_tickets", "Open-ticket review - what could be done"),
+    )
+    CADENCE = (
+        ("daily", "Every day"),
+        ("weekdays", "Weekdays only (Mon-Fri)"),
+        ("weekly", "Once a week"),
+        ("monthly", "Once a month"),
+    )
+
+    name = models.CharField(max_length=120)
+    kind = models.CharField(max_length=20, choices=KIND, default="activity")
+    enabled = models.BooleanField(default=True)
+
+    cadence = models.CharField(max_length=12, choices=CADENCE, default="daily")
+    run_at = models.CharField(max_length=5, default="07:55")      # HH:MM, in the deployment's zone
+    weekday = models.PositiveSmallIntegerField(default=0)          # 0=Mon .. 6=Sun, for weekly
+    day_of_month = models.PositiveSmallIntegerField(default=1)     # 1..28, for monthly
+
+    # What period the report covers. Blank follows the cadence (daily 24h, weekly 7d, monthly 30d),
+    # which is what people usually mean, while still allowing "a weekly email about the last 24h".
+    window_hours = models.PositiveIntegerField(null=True, blank=True)
+
+    recipients = models.CharField(max_length=500, blank=True, default="")
+    # Per-report knobs: {"all_teams": true, "include_assigned": true, "ai_summary": true,
+    #                    "team_ids": [1,3], "prompt": "..."}
+    options = models.JSONField(default=dict, blank=True)
+
+    last_run = models.DateTimeField(null=True, blank=True)
+    last_result = models.CharField(max_length=1000, blank=True, default="")
+    created_by = models.CharField(max_length=150, blank=True, default="")
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["kind", "run_at", "name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.get_cadence_display()} {self.run_at})"
+
+    @property
+    def effective_window_hours(self) -> int:
+        if self.window_hours:
+            return int(self.window_hours)
+        return {"daily": 24, "weekdays": 24, "weekly": 24 * 7, "monthly": 24 * 30}.get(self.cadence, 24)
+
+    def due_at(self, now):
+        """The most recent moment this schedule was supposed to fire, at or before `now`.
+
+        Returned rather than a boolean so the caller can also tell whether it has already run for
+        that occurrence - which is what stops a five-minute tick sending the same report twelve
+        times, and what lets a missed window be picked up late rather than skipped silently.
+        """
+        from datetime import timedelta
+
+        try:
+            hh, mm = [int(x) for x in str(self.run_at).split(":")[:2]]
+        except Exception:
+            return None
+        today = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        if self.cadence in ("daily", "weekdays"):
+            occ = today if now >= today else today - timedelta(days=1)
+            if self.cadence == "weekdays":
+                while occ.weekday() > 4:
+                    occ -= timedelta(days=1)
+            return occ
+        if self.cadence == "weekly":
+            occ = today
+            delta = (occ.weekday() - int(self.weekday)) % 7
+            occ -= timedelta(days=delta)
+            if occ > now:
+                occ -= timedelta(days=7)
+            return occ
+        if self.cadence == "monthly":
+            dom = max(1, min(28, int(self.day_of_month or 1)))
+            occ = today.replace(day=dom)
+            if occ > now:
+                occ = (occ.replace(day=1) - timedelta(days=1)).replace(
+                    day=dom, hour=hh, minute=mm, second=0, microsecond=0)
+            return occ
+        return None
+
+
+class TicketWorkEntry(models.Model):
+    """Append-only ledger of WORK DONE - who, on what, for how long, and how we know.
+
+    Why a ledger and not a computed number: the daily brief estimated tech time from a
+    per-message heuristic over helpdesk messages, which cannot see the AI chats where most of
+    the work now happens. Measured against the transcripts it was out by an order of magnitude
+    - one ticket took 35 measured minutes on a day the report claimed 26 minutes in total. A
+    number nobody can reconstruct is worse than no number, so every row carries its own method
+    and evidence.
+
+    Rules (owner's, 2026-07-26):
+      * A human driving an AI session owns that time. The AI was the tool.
+      * PARALLEL WORK COUNTS IN FULL. Three windows for fifteen minutes is forty-five minutes
+        of work, not fifteen - working several tickets at once is throughput, not double
+        counting. Overlap is recorded for visibility, never deducted.
+      * Corrections are new rows (`superseded_by`), never edits, so any past report can be
+        re-derived exactly.
+      * Human minutes and AI minutes are never summed into one figure.
+      * Time saved = an authored baseline for that class of work MINUS the time actually
+        worked, stored apart from the measured columns because it is an estimate.
+    """
+
+    ACTOR_KIND = (
+        ("tech", "Technician working directly"),
+        ("tech_via_ai", "Technician driving the AI"),
+        ("ai_unattended", "AI with nobody driving"),
+    )
+    SURFACE = (
+        ("ticket_chat", "Ticket (AI-decision) chat"),
+        ("device_chat", "Device chat / pichat"),
+        ("helpdesk_direct", "Worked directly in the helpdesk"),
+        ("unattended_task", "Scheduled AI task"),
+        ("verifier", "Alert verifier"),
+        ("condition_engine", "Known-condition engine"),
+        ("rmm_activity", "Working in RMM (remote sessions, device work)"),
+    )
+    CONFIDENCE = (
+        ("measured", "Measured from timestamps"),
+        ("sessionized", "Derived from event bursts"),
+        ("estimated", "Estimated - no duration evidence"),
+    )
+
+    # Blank ticket_ref = real work that was not against a ticket (a device chat where the tech
+    # actually did something). It still counts as time worked; it just has no ticket to bill to.
+    ticket_ref = models.CharField(max_length=100, blank=True, default="", db_index=True)
+    agent_id = models.CharField(max_length=200, blank=True, default="")
+
+    actor_kind = models.CharField(max_length=20, choices=ACTOR_KIND)
+    # IDENTITY IS THE USER ID. A username is a label people change - one rename forked a
+    # technician's history into three fragments and made a full week of his work invisible.
+    # The FK is the join; the two strings below are a readable snapshot of who it was at the
+    # time, kept so a deleted account still shows a name instead of a blank.
+    actor_user = models.ForeignKey("accounts.User", null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name="work_entries")
+    actor_username = models.CharField(max_length=150, blank=True, default="")
+    actor_display = models.CharField(max_length=200, blank=True, default="")
+    surface = models.CharField(max_length=20, choices=SURFACE)
+
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField()
+    human_minutes = models.FloatField(null=True, blank=True)
+    ai_minutes = models.FloatField(default=0)
+
+    confidence = models.CharField(max_length=12, choices=CONFIDENCE, default="estimated")
+    method = models.CharField(max_length=120, blank=True, default="")
+    evidence = models.JSONField(default=dict, blank=True)
+    source = models.CharField(max_length=40, default="live")
+
+    overlaps_ids = models.JSONField(default=list, blank=True)
+    overlap_minutes = models.FloatField(default=0)
+
+    baseline_minutes = models.FloatField(null=True, blank=True)
+    baseline_source = models.CharField(max_length=200, blank=True, default="")
+    saved_minutes = models.FloatField(null=True, blank=True)
+
+    superseded_by = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name="supersedes")
+    note = models.CharField(max_length=400, blank=True, default="")
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ticket_ref", "started_at"]),
+            models.Index(fields=["actor_user", "started_at"]),
+            models.Index(fields=["actor_username", "started_at"]),
+            models.Index(fields=["actor_kind"]),
+        ]
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        who = self.actor_display or self.actor_kind
+        return f"{self.ticket_ref or '(no ticket)'} {who} {self.human_minutes or 0}m [{self.confidence}]"
+
+
+class AIActionCredit(models.Model):
+    """WHO drove an AI action - the human, when there was one.
+
+    Why this exists: the AI performs every helpdesk write as the integration's own API user,
+    so the helpdesk records "closed by BlueCloud-API" whether the AI decided by itself at 3am
+    or a technician sat in the chat and told it to. The daily activity report read that field
+    and credited the bot for work a person did, which is both wrong and demoralising - the
+    owner spotted it immediately ("most of those tickets were NOT completed by the API user, I
+    just did quite a few of them").
+
+    The rule: **if a human drove an interactive session, the human gets the credit** - the AI
+    was the tool, and we already count tool leverage separately as time saved. Unattended runs
+    stay credited to the AI, because there nobody drove anything.
+    """
+
+    SURFACE = (
+        ("decision_chat", "Ticket chat (human driving)"),
+        ("device_chat", "Device chat (human driving)"),
+        ("unattended", "Unattended run (no human)"),
+    )
+
+    ticket_ref = models.CharField(max_length=100, db_index=True)
+    actor_user = models.ForeignKey("accounts.User", null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name="ai_action_credits")
+    actor_username = models.CharField(max_length=150)
+    # Display name as the helpdesk knows the person, so the report can match its own actor rows.
+    actor_display = models.CharField(max_length=200, blank=True, default="")
+    action = models.CharField(max_length=40)          # close | reply | note | other
+    surface = models.CharField(max_length=20, choices=SURFACE, default="decision_chat")
+    session_id = models.CharField(max_length=64, blank=True, default="")
+    at = models.DateTimeField()
+    # How we know. "live" = recorded as it happened; "backfill:<source>" = reconstructed.
+    source = models.CharField(max_length=40, default="live")
+    detail = models.CharField(max_length=400, blank=True, default="")
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["ticket_ref", "at"]), models.Index(fields=["actor_username"])]
+        ordering = ["-at"]
+
+    def __str__(self) -> str:
+        return f"{self.ticket_ref} {self.action} by {self.actor_username} ({self.source})"
+
+
+class AIKnownCondition(models.Model):
+    """Recurrence ledger: one row per (condition, customer, host) we have already seen.
+
+    Why this exists: a recurring machine notification about an UNCHANGED condition is not
+    new work. One Veeam job produced two tickets a day for five days about a setting nobody
+    had been asked to change yet - 20 tickets, no customer contact, and the model re-judged
+    identical text differently on different days. Advising once and then suppressing repeats
+    against a tracker is a decision that must be made in code and be visible afterwards,
+    which is what this row is: the tracker, the count, and when it last recurred.
+
+    Keyed on the condition (from the procedure) plus WHO and WHICH BOX, so two customers -
+    or two backup servers at one customer - are never conflated.
+    """
+
+    STATE = (
+        ("advising", "Waiting for someone to tell the customer"),
+        ("advised", "Customer has been told; repeats are suppressed"),
+        ("resolved", "Stopped recurring"),
+        ("muted", "Deliberately ignored by a human"),
+    )
+
+    condition_key = models.CharField(max_length=120)
+    # Stable-ish customer handle. Deliberately a string: the helpdesk partner may be a
+    # junk auto-created contact, and the RMM client may not be resolvable yet (F4).
+    customer_key = models.CharField(max_length=200, blank=True, default="")
+    host = models.CharField(max_length=200, blank=True, default="")
+
+    procedure = models.ForeignKey(
+        "core.AIProcedure", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="conditions",
+    )
+    tracker_ref = models.CharField(max_length=100, blank=True, default="")
+    state = models.CharField(max_length=20, choices=STATE, default="advising")
+
+    occurrences = models.PositiveIntegerField(default=1)
+    suppressed = models.PositiveIntegerField(default=0)
+    first_seen = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now=True)
+    advised_at = models.DateTimeField(null=True, blank=True)
+    last_ticket_ref = models.CharField(max_length=100, blank=True, default="")
+    detail = models.TextField(blank=True, default="")
+
+    class Meta:
+        unique_together = (("condition_key", "customer_key", "host"),)
+        indexes = [models.Index(fields=["condition_key"]), models.Index(fields=["state"])]
+        ordering = ["-last_seen"]
+
+    def __str__(self) -> str:
+        return f"{self.condition_key} @ {self.customer_key}/{self.host} [{self.state}]"
 
 
 class AIMinedTicket(models.Model):

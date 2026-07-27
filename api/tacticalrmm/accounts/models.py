@@ -20,6 +20,12 @@ class User(AbstractUser, BaseAuditModel):
     block_dashboard_login = models.BooleanField(default=False)
     totp_key = models.CharField(max_length=50, null=True, blank=True)
     dark_mode = models.BooleanField(default=True)
+    # AI chat: remember the operator's Auto-approve choice across windows and refreshes.
+    # It used to live only in the WebSocket connection, so every refresh, every second window
+    # and every reconnect silently reverted it to OFF - which reads as "auto-approve randomly
+    # stops working". The permission to use it is still the role's (can_use_ai_autoapprove);
+    # this is only the remembered preference.
+    ai_autoapprove_default = models.BooleanField(default=False)
     show_community_scripts = models.BooleanField(default=True)
     agent_dblclick_action: "AgentDblClick" = models.CharField(
         max_length=50, choices=AgentDblClick.choices, default=AgentDblClick.EDIT_AGENT

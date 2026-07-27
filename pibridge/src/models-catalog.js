@@ -146,6 +146,53 @@ export async function buildCatalog(providers, registry) {
 }
 
 /**
+ * Drop models.json entries that the installed pi now knows NATIVELY.
+ *
+ * WHY: an entry written by registerModels() is a minimal stub (no `compat`, no
+ * `thinkingLevelMap`, default context/cost). models.json takes precedence over the
+ * built-in table, so once a pi upgrade ships a real definition for that id, the old
+ * stub SHADOWS it and silently downgrades the model. Observed live: a registered
+ * `anthropic/claude-opus-5` stub masked the built-in
+ * `compat.forceAdaptiveThinking`, so every Opus 5 request was rejected by Anthropic
+ * with 400 "thinking.type.enabled is not supported for this model" - the chat just
+ * ended with an empty answer. Registration is meant to be a temporary bridge until
+ * the package catches up, so it must expire by itself.
+ *
+ * @param {(provider:string,id:string)=>Promise<any>} isBuiltin  pi-runtime's builtinModel
+ * @returns {{pruned: string[], file: string, error?: string}}
+ */
+export async function pruneShadowedModels(isBuiltin) {
+  if (!fs.existsSync(MODELS_JSON)) return { pruned: [], file: MODELS_JSON };
+  let conf;
+  try {
+    conf = JSON.parse(fs.readFileSync(MODELS_JSON, "utf-8"));
+  } catch (e) {
+    return { pruned: [], file: MODELS_JSON, error: `${MODELS_JSON} is not valid JSON (${String(e?.message || e)})` };
+  }
+  if (!conf || typeof conf !== "object" || !conf.providers) return { pruned: [], file: MODELS_JSON };
+  const pruned = [];
+  for (const [pname, pconf] of Object.entries(conf.providers)) {
+    if (!pconf || !Array.isArray(pconf.models)) continue;
+    const keep = [];
+    for (const m of pconf.models) {
+      if (!m?.id) continue;
+      // The normal lookup resolves through models.json too, so it would report our own
+      // stub as "known". isBuiltin() asks the package alone.
+      if (await isBuiltin(pname, m.id)) { pruned.push(`${pname}/${m.id}`); continue; }
+      keep.push(m);
+    }
+    pconf.models = keep;
+    if (!pconf.models.length) delete conf.providers[pname];
+  }
+  if (pruned.length) {
+    const tmp = MODELS_JSON + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(conf, null, 2) + "\n");
+    fs.renameSync(tmp, MODELS_JSON);
+  }
+  return { pruned, file: MODELS_JSON };
+}
+
+/**
  * Make provider models that pi does not know natively USABLE, by adding them to
  * models.json under the (built-in) provider - pi inherits api + baseUrl from the
  * provider's built-in models, so no endpoint or key duplication is needed.

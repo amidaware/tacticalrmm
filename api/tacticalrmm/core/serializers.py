@@ -282,3 +282,23 @@ class BulkAICommandSerializer(serializers.ModelSerializer):
         if obj.os_type != "all":
             extra.append(obj.os_type)
         return base + (f" ({', '.join(extra)})" if extra else "")
+
+class AIReportScheduleSerializer(serializers.ModelSerializer):
+    cadence_display = serializers.SerializerMethodField()
+    kind_display = serializers.SerializerMethodField()
+    window_hours_effective = serializers.SerializerMethodField()
+
+    class Meta:
+        from core.models import AIReportSchedule
+
+        model = AIReportSchedule
+        fields = "__all__"
+
+    def get_cadence_display(self, obj):
+        return obj.get_cadence_display()
+
+    def get_kind_display(self, obj):
+        return obj.get_kind_display()
+
+    def get_window_hours_effective(self, obj):
+        return obj.effective_window_hours

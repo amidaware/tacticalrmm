@@ -15,8 +15,8 @@ import { loadHelpdesk } from "./helpdesk-runtime.js";
 import { loadVerifiers, matchVerifier, inspectVerifiers } from "./verifier-runtime.js";
 import { trmm } from "./trmm.js";
 import * as history from "./history.js";
-import { buildCatalog, registerModels, MODELS_JSON } from "./models-catalog.js";
-import { piRuntime, piGeneration, piSelfTest } from "./pi-runtime.js";
+import { buildCatalog, registerModels, pruneShadowedModels, MODELS_JSON } from "./models-catalog.js";
+import { piRuntime, piGeneration, piSelfTest, builtinModel } from "./pi-runtime.js";
 
 const redis = new Redis(CONFIG.redisUrl);
 
@@ -283,7 +283,74 @@ function helpdeskSection(blob, clientName) {
   const fmtNote = ` Customer replies are auto-formatted into clean, branded, email-safe HTML. Put tabular data in a ` +
     `TABLE (markdown | col | col | or an HTML <table>), raw command output in a fenced code block, and ` +
     `use section headings - NEVER space-aligned plain text (it collapses). HTML or markdown both work.`;
-  return `\n\nHELPDESK POLICY (admin-defined):\n${p}\n${toolNote}${fmtNote}`;
+  return `\n\nHELPDESK POLICY (admin-defined):\n${p}\n${toolNote}${fmtNote}${HANDOFF_FLOOR}`;
+}
+
+// A floor under the admin policy, not a restatement of it. This closes the specific
+// failure seen on a live ticket: the model had device access and the exact DMV query in
+// reach, and still told the customer to have their vendor go pull the index definitions
+// themselves. Delegating our own legwork to the customer's vendor is the one thing a
+// hand-off reply must never do, so it is stated in product code rather than left to prose.
+const HANDOFF_FLOOR =
+  `\nNON-NEGOTIABLE - DO OUR OWN LEGWORK: never tell a customer, their DBA or their vendor to ` +
+  `"run X and pull the details" when you have the tools to run X yourself. If the exact artifact ` +
+  `(query result, index definition, config value, log excerpt, firmware version) can be obtained ` +
+  `with the tools you hold, OBTAIN IT and put it in the reply, verbatim. A hand-off reply must be ` +
+  `executable by the other party without further discovery work. If a tool genuinely cannot reach ` +
+  `it, say exactly what is missing and why - do not disguise a gap as an instruction.`;
+
+// Approved procedures matched to this ticket (the RMM's own mined runbooks). Injected so
+// the accumulated knowledge actually steers a reply instead of only being written down.
+function procedureSection(blob) {
+  const procs = Array.isArray(blob.procedures) ? blob.procedures : [];
+  if (!procs.length) return "";
+  const body = procs.map((p, i) =>
+    `${i + 1}. ${p.title}${p.category ? ` [${p.category}]` : ""}` +
+    (p.symptom ? `\n   SYMPTOM: ${p.symptom}` : "") +
+    (p.root_cause ? `\n   ROOT CAUSE: ${p.root_cause}` : "") +
+    (p.fix ? `\n   FIX: ${p.fix}` : "") +
+    (p.verification ? `\n   VERIFY: ${p.verification}` : ""),
+  ).join("\n");
+  return `\n\nAPPROVED PROCEDURES matched to this ticket (our own runbooks, ${procs.length} matched). ` +
+    `Follow them unless the evidence contradicts them; if you deviate, say why in the internal note:\n${body}`;
+}
+
+// ---------------------------------------------------------------------------
+// WORK LEDGER (live). A chat is worked in bursts: type, read, go away, come back. Rather than
+// reconstruct that from a transcript later, record it as it happens - every human turn extends
+// the current burst, a long silence closes it, and closing the socket flushes whatever is open.
+// The rule matches the backfill exactly (same cap, same lead-in/tail) so live and rebuilt rows
+// are directly comparable.
+function makeWorkRecorder({ ticketRef = "", agentId = "", surface, username, sessionId, idleCapMs = 15 * 60 * 1000, leadIn = 2, tail = 2 }) {
+  let burstStart = null, lastTouch = null, turns = 0, tools = 0, flushed = 0;
+  const flush = (reason) => {
+    if (!burstStart || !lastTouch || !turns) { burstStart = null; turns = 0; tools = 0; return; }
+    const span = (lastTouch - burstStart) / 60000;
+    const minutes = Math.round((span + leadIn + tail) * 10) / 10;
+    const entry = {
+      ticket_ref: ticketRef, agent_id: agentId, surface,
+      actor_kind: "tech_via_ai", actor_username: username,
+      started_at: new Date(burstStart).toISOString(), ended_at: new Date(lastTouch).toISOString(),
+      human_minutes: minutes, confidence: "measured",
+      method: `live-burst-split15/lead${leadIn}/tail${tail}`,
+      evidence: { session_id: sessionId, burst: ++flushed, human_turns_in_burst: turns,
+                  tool_calls: tools, raw_span_min: Math.round(span * 10) / 10, closed_by: reason },
+      source: "live",
+    };
+    burstStart = null; turns = 0; tools = 0;
+    trmm.logWork(entry).catch(() => { /* bookkeeping must never break a chat */ });
+  };
+  return {
+    humanTurn() {
+      const now = Date.now();
+      if (burstStart && now - lastTouch > idleCapMs) flush("idle gap");
+      if (!burstStart) burstStart = now;
+      lastTouch = now; turns++;
+    },
+    activity() { if (burstStart) lastTouch = Date.now(); },
+    toolCall() { if (burstStart) { tools++; lastTouch = Date.now(); } },
+    close(reason) { flush(reason || "session closed"); },
+  };
 }
 
 // ---- WebSocket session lifecycle -------------------------------------------
@@ -317,7 +384,11 @@ async function startChat(ws, blob) {
   }
 
   // Approval gating
-  let autoApprove = false; // per-session toggle from client (only if allowed)
+  // Start from the operator's REMEMBERED choice, not from OFF. This flag used to live only
+  // in this WebSocket connection, so a refresh, a second window or a dropped socket silently
+  // turned auto-approve off while the UI still looked on - which is why it "sometimes" did
+  // not work. The role permission still decides whether it may be honoured at all.
+  let autoApprove = !!blob.auto_approve && !!blob.autoapprove_allowed;
   const pendingApprovals = new Map();
   function requestApproval(summary) {
     if (!blob.require_approval) return Promise.resolve(true);
@@ -345,21 +416,33 @@ async function startChat(ws, blob) {
     helpdeskCode: blob.helpdesk_code || "",
   });
 
+  // WHAT READ-ONLY MEANS: it is a DEVICE control. It scopes what you may change on the
+  // machines in this session - nothing else. Ticket work (reply to the customer, internal
+  // note, create a ticket, KB) is governed by its own controls (per-call approval, the
+  // customer-email toggle, and the capability classes in capabilities.js) and is available
+  // in read-only. Saying "do not change anything" made the model refuse to answer a
+  // customer while read-only, which is a prompt-level restriction nobody asked for.
+  const ticketNotice =
+    " Ticket work is NOT affected by read-only: you may still read the ticket, reply to " +
+    "the customer, add internal notes, create tickets and update the KB. Those are ticket " +
+    "actions, not device changes - each one still asks the operator to approve it.";
   let roNotice = "";
   if (!mutateAllowed) {
     roNotice =
-      "\n\nREAD-ONLY SESSION: You may only INSPECT; do not attempt to change anything. " +
-      "The write tools (run script, kill process, reboot) are unavailable, and " +
-      "run_command_on_device will refuse commands that appear to modify the system. " +
-      "Use read-only/diagnostic commands only; if a change is needed, tell the operator " +
-      "they need an account with AI write (mutate) rights.";
+      "\n\nREAD-ONLY ON THE DEVICES: you may only INSPECT the machines in this session; " +
+      "do not attempt to change them. The device write tools (run script, kill process, " +
+      "reboot) are unavailable, and run_command_on_device will refuse commands that appear " +
+      "to modify the system. Use read-only/diagnostic commands only; if a DEVICE change is " +
+      "needed, tell the operator they need an account with AI write (mutate) rights." +
+      ticketNotice;
   } else if (readonly) {
     roNotice =
-      "\n\nThis session STARTS in READ-ONLY mode: only inspect and gather information; " +
-      "do not change anything yet. When asked to resolve an issue, investigate read-only " +
-      "and propose a few concrete fix OPTIONS (with exact steps and pros/cons) for the " +
-      "operator to choose. The operator can enable write mode later to apply a fix; only " +
-      "then should you make changes.";
+      "\n\nThis session STARTS in READ-ONLY mode ON THE DEVICES: inspect and gather " +
+      "information, but do not change the machines yet. When asked to resolve an issue, " +
+      "investigate read-only and propose a few concrete fix OPTIONS (with exact steps and " +
+      "pros/cons) for the operator to choose. The operator can enable write mode later to " +
+      "apply a fix on the device; only then should you change the machine." +
+      ticketNotice;
   }
 
   // Resource loader for system prompt override
@@ -449,6 +532,18 @@ async function startChat(ws, blob) {
       log("agent_end", agentId, sessionId);
     } else if (event.type === "message_update" && event.assistantMessageEvent?.type === "error") {
       log("llm_error", agentId, sessionId, String(event.assistantMessageEvent.reason || ""));
+    } else if (event.type === "message_end" && event.message?.stopReason === "error") {
+      // A provider-level rejection (bad model config, 4xx, quota) arrives as a
+      // finished assistant message with NO content. Without this, the turn just
+      // ends silently: nothing in the log, nothing in the browser. See I17.
+      const why = String(event.message.errorMessage || "unknown provider error");
+      log("llm_error", agentId, sessionId, why.slice(0, 400));
+      try {
+        ws.send(JSON.stringify({
+          type: "error",
+          message: `The model returned no answer - the provider rejected the request: ${why.slice(0, 600)}`,
+        }));
+      } catch {}
     }
     try {
       ws.send(JSON.stringify({ type: "agent_event", event }));
@@ -483,6 +578,8 @@ async function startChat(ws, blob) {
       })),
       require_approval: blob.require_approval,
       autoapprove_allowed: blob.autoapprove_allowed,
+      // Echo the CURRENT state so the UI renders what is actually in force.
+      auto_approve: autoApprove,
       read_only: readonly,
       mutate_allowed: mutateAllowed,
       history: session.messages,
@@ -653,7 +750,8 @@ async function startDecisionChat(ws, blob) {
   let readonly = !(blob.allow_mutating !== false); // default: Write mode ON
   if (!mutateAllowed) readonly = true;
   const autoapproveAllowed = !!blob.autoapprove_allowed;
-  let autoApprove = false;
+  // Same remembered-choice rule as the device chat (see above).
+  let autoApprove = !!blob.auto_approve && !!blob.autoapprove_allowed;
   let allowEmail = blob.allow_email !== false; // default: ON
 
   const keys = { [blob.provider]: blob.api_key };
@@ -672,6 +770,50 @@ async function startDecisionChat(ws, blob) {
       ws.send(JSON.stringify({ type: "approval_request", id, summary }));
     });
   }
+
+  // WHAT THE TECHNICIAN ACTUALLY TYPED, kept verbatim by product code.
+  //
+  // Owner's ruling 2026-07-26: if a tech TELLS the AI to close the ticket, it should just
+  // close it - any tech can close any ticket in one click anyway, so a confirmation prompt
+  // for a decision they just made protects nothing. What MANDATE 4.8 actually forbids is the
+  // MODEL deciding a ticket may be closed. So the two cases are separated here:
+  //
+  //   instructed  -> a human already decided. Close it, and record WHICH sentence authorised it.
+  //   self-directed -> the model's own idea. Ask a human, every time, un-skippable.
+  //
+  // The test runs over the TECH's own turns only. It deliberately does NOT trust the model to
+  // report "the user asked me to" - that would hand the decision back to the model, which is
+  // the whole thing being prevented.
+  const techSaid = [];
+  const CLOSE_INTENT = /\b(close|closing|closed|resolve|resolved|cancel|cancelled|canceled)\b/i;
+  const CLOSE_TARGET = /\b(ticket|it|this|them|out|up)\b/i;
+  const NEGATED = /\b(do ?n'?t|dont|do not|never|no need|hold off|not yet|don'?t yet|before you|wait)\b[^.!?]{0,60}\b(clos|resolv|cancel)/i;
+  // Owner's ruling 2026-07-26 (2): the same applies to customer replies - if a tech tells the
+  // AI to reply, it replies. Kept as a SEPARATE test from closing so the two can diverge
+  // later without one silently authorising the other.
+  const REPLY_INTENT = /\b(reply|replies|respond|response|answer|email them|email him|email her|email the (customer|client|user)|let (them|him|her) know|tell (them|him|her)|send (them|him|her|it)|write back|follow up with|get back to (them|him|her)|update the (customer|client))\b/i;
+  // Stems, not whole words: "just draft a RESPONSE" must be caught by the same rule that
+  // catches "do not RESPOND", and `respond` does not match `response`.
+  const REPLY_NEGATED = /\b(do ?n'?t|dont|do not|never|no need|hold off|not yet|don'?t yet|before you|wait|draft only|just draft|only draft|draft it)\b[^.!?]{0,60}\b(repl|respon|answer|email|tell|send|let them know)/i;
+  function replyAuthorisation() {
+    for (let i = techSaid.length - 1; i >= 0; i--) {
+      const line = String(techSaid[i].text || "");
+      if (REPLY_NEGATED.test(line)) continue;
+      if (REPLY_INTENT.test(line)) return { at: techSaid[i].at, text: line.slice(0, 300) };
+    }
+    return null;
+  }
+  function closeAuthorisation() {
+    // Newest first: the most recent instruction is the operative one.
+    for (let i = techSaid.length - 1; i >= 0; i--) {
+      const line = String(techSaid[i].text || "");
+      if (NEGATED.test(line)) continue;
+      if (CLOSE_INTENT.test(line) && CLOSE_TARGET.test(line)) {
+        return { at: techSaid[i].at, text: line.slice(0, 300) };
+      }
+    }
+    return null;
+  }
   // Kind-based gate honoring the toggles. Device changes need Write mode and may be
   // auto-approved. Contacting a customer and closing a ticket may NOT: those two ask a
   // human every time, whatever the toggles say.
@@ -689,13 +831,33 @@ async function startDecisionChat(ws, blob) {
       return { ok: await requestApproval(summary) };
     }
     if (kind === "email") {
+      // The Allow-customer-email switch still governs absolutely: off means off.
       if (!allowEmail) return { ok: false, reason: "customer email is turned OFF - enable 'Allow customer email' to send it; otherwise leave it as a draft." };
-      // Deliberately NOT auto-approvable.
+      // INSTRUCTED: the tech asked for a reply. That is the authorisation - send it, and record
+      // the sentence that authorised it as an internal note (never in the customer's email).
+      const auth = replyAuthorisation();
+      if (auth) {
+        log("reply authorised by tech", histKey, sessionId, `"${auth.text.slice(0, 120)}"`);
+        return { ok: true, authorised_by: auth };
+      }
+      // SELF-DIRECTED: the model decided to contact the customer on its own. Irreversible, so
+      // a human sees the actual words first. Auto-approve cannot skip this.
       return { ok: await requestApproval(summary) };
     }
     if (kind === "close") {
-      if (readonly) return { ok: false, reason: "the chat is in READ-ONLY mode - switch on Write mode to close or cancel a ticket." };
-      // Deliberately NOT auto-approvable - MANDATE 4.8.
+      // Read-only is a DEVICE control and does not block a ticket action.
+      //
+      // INSTRUCTED: the tech said so in this conversation. That IS the authorisation - no
+      // prompt, whatever the auto-approve toggle says, because a prompt would only ask them
+      // to confirm what they just typed. The authorising sentence is quoted into the ticket
+      // so the record shows who decided and in what words.
+      const auth = closeAuthorisation();
+      if (auth) {
+        log("close authorised by tech", histKey, sessionId, `"${auth.text.slice(0, 120)}"`);
+        return { ok: true, authorised_by: auth };
+      }
+      // SELF-DIRECTED: the model's own idea. This is exactly what MANDATE 4.8 reserves for a
+      // human, so it asks every time and auto-approve can never skip it.
       return { ok: await requestApproval(summary) };
     }
     return { ok: true };
@@ -706,6 +868,12 @@ async function startDecisionChat(ws, blob) {
     helpdeskCode: blob.helpdesk_code || "",
     ticketRef,
     gate,
+    // A human is driving this surface by definition, so their ticket work is credited to
+    // them rather than to the bot that typed it.
+    creditActor: blob.username || "",
+    // A getter, not a value: `sessionId` is assigned below this call, so reading it here
+    // directly would throw (temporal dead zone) the moment a ticket chat opened.
+    creditSession: () => (typeof sessionId === "string" ? sessionId : ""),
     surface: "decision_chat",   // human driving the ticket; approves each mutating call
   });
   if (!hd) { ws.send(JSON.stringify({ type: "error", message: `helpdesk.js failed to load: ${hdError}` })); ws.close(); return; }
@@ -719,9 +887,17 @@ async function startDecisionChat(ws, blob) {
       `- Client: ${ctx.client || "(unknown)"}\n- Affected device: ${ctx.affected_device || "(unknown)"}\n` +
       `- Classification: ${ctx.classification || ""}\n- Summary: ${ctx.summary || ""}\n` +
       (blob.question ? `- Your original question for the tech: ${blob.question}\n` : "") +
-      `\nControls the tech sets in this window: Write mode (device changes), Auto-approve (skip prompts), Allow customer email. When not auto-approved, disruptive device commands and customer replies pop an approval to the tech; non-disruptive diagnostics run freely.\n` +
+      `\nControls the tech sets in this window: Write mode (DEVICE changes only), Auto-approve (skip prompts), Allow customer email. When not auto-approved, disruptive device commands pop an approval to the tech; non-disruptive diagnostics run freely.\n` +
+      `TICKET actions are NOT limited by Write mode - replying, noting, and closing/cancelling this ticket are available in read-only too. Customer replies and closing ALWAYS ask the tech to confirm (Auto-approve never skips those two). So if the tech tells you to close the ticket when you are done, do it: call the close operation and confirm at the prompt - do not tell them to switch modes first.\n` +
       priorText + `\n` +
-      (String(blob.decision_prompt || "").trim() || DEFAULT_DECISION_POLICY),
+      (String(blob.decision_prompt || "").trim() || DEFAULT_DECISION_POLICY) +
+      // The HELPDESK POLICY carries the customer-reply standard (register, formatting,
+      // signature, and the third-party hand-off rules). It was previously injected only
+      // into the DEVICE chat and unattended runs, so the surface that actually answers
+      // tickets never saw it - and produced replies that told the customer's vendor to go
+      // pull the data we already had the tools to pull. Same policy, every reply surface.
+      helpdeskSection(blob, ctx.client) +
+      procedureSection(blob),
   });
   await loader.reload();
 
@@ -749,16 +925,28 @@ async function startDecisionChat(ws, blob) {
   });
 
   let lastActivity = Date.now(), toolsInFlight = 0, postedToTicket = false;
+  const work = makeWorkRecorder({ ticketRef, surface: "ticket_chat",
+    username: blob.username || "", sessionId });
   const CHATTER_OPS = new Set(["reply_to_ticket", "add_note", "resolve_ticket"]);
   const unsubscribe = session.subscribe((event) => {
     lastActivity = Date.now();
     if (event.type === "tool_execution_start") {
       toolsInFlight++;
+      work.toolCall();
       if (event.toolName === "helpdesk_call" && CHATTER_OPS.has(event.args?.operation)) postedToTicket = true;
       log("tool>", histKey, sessionId, event.toolName, JSON.stringify(event.args || {}).slice(0, 200));
     } else if (event.type === "tool_execution_end") {
       toolsInFlight = Math.max(0, toolsInFlight - 1);
       log("tool<", histKey, sessionId, event.toolName, event.isError ? "ERROR" : "ok");
+    } else if (event.type === "message_end" && event.message?.stopReason === "error") {
+      const why = String(event.message.errorMessage || "unknown provider error");
+      log("llm_error", histKey, sessionId, why.slice(0, 400));
+      try {
+        ws.send(JSON.stringify({
+          type: "error",
+          message: `The model returned no answer - the provider rejected the request: ${why.slice(0, 600)}`,
+        }));
+      } catch {}
     } else if (event.type === "agent_end") {
       log("agent_end", histKey, sessionId);
       const last = session.messages.filter((m) => m.role === "assistant").slice(-1)[0];
@@ -790,7 +978,8 @@ async function startDecisionChat(ws, blob) {
     multi: false, machines: [],
     model: { provider: blob.provider, model_id: blob.model_id, display: model.name },
     allowed_models: (blob.allowed_models || []).map((m) => ({ provider: m.provider, model_id: m.model_id, display_name: m.display_name, thinking_level: m.thinking_level, base_url: m.base_url })),
-    require_approval: true, autoapprove_allowed: autoapproveAllowed, read_only: readonly, mutate_allowed: mutateAllowed,
+    require_approval: true, autoapprove_allowed: autoapproveAllowed, auto_approve: autoApprove,
+    read_only: readonly, mutate_allowed: mutateAllowed,
     allow_email: allowEmail,
     history: [...priorHist, ...session.messages],
   }));
@@ -822,11 +1011,18 @@ async function startDecisionChat(ws, blob) {
     try {
       switch (msg.type) {
         case "prompt":
+          // Keep the tech's own words for the close-authorisation test above.
+          techSaid.push({ at: new Date().toISOString(), text: String(msg.message || "") });
+          work.humanTurn();
           assignWorkingUser(); // fire-and-forget: claim the ticket for the working tech on first message
           if (session.isStreaming) await session.prompt(msg.message, { streamingBehavior: "steer" });
           else await session.prompt(msg.message);
           break;
-        case "steer": await session.steer(msg.message); break;
+        case "steer":
+          techSaid.push({ at: new Date().toISOString(), text: String(msg.message || "") });
+          work.humanTurn();
+          await session.steer(msg.message);
+          break;
         case "abort": await session.abort(); break;
         case "set_model": {
           const allowed = (blob.allowed_models || []).find((m) => m.model_id === msg.model_id);
@@ -867,6 +1063,8 @@ async function startDecisionChat(ws, blob) {
     for (const [, resolve] of pendingApprovals) resolve(false);
     pendingApprovals.clear();
     try { session.dispose(); } catch {}
+    // Flush whatever burst was open, so a chat closed mid-thought still records its time.
+    try { work.close("socket closed"); } catch {}
     log("decision chat closed", histKey, sessionId);
   });
   log("decision chat started", histKey, sessionId, `${blob.provider}/${blob.model_id}`);
@@ -1399,8 +1597,13 @@ async function runTicketResolve(blob) {
       `- Finish by calling add_note EXACTLY ONCE with one of:\n` +
       `    RESOLVED (pending human sign-off): <what you verified/did> + a ready-to-send DRAFT customer reply.\n` +
       `    NEEDS A HUMAN: <exactly what must be done, concrete step-by-step>.\n` +
-      `Be specific and technical; cite the evidence you gathered.\n\n` +
-      (String(blob.decision_prompt || "").trim() || DEFAULT_DECISION_POLICY),
+      `Be specific and technical; cite the evidence you gathered.\n` +
+      `- The DRAFT reply you leave in the note must already be send-ready to the standard in the\n` +
+      `  HELPDESK POLICY below - including the exact artifacts a third party would need. A draft\n` +
+      `  that says "the vendor should pull the details" is not a draft, it is a to-do for a human.\n\n` +
+      (String(blob.decision_prompt || "").trim() || DEFAULT_DECISION_POLICY) +
+      helpdeskSection(blob, ctx.client) +
+      procedureSection(blob),
   });
   await loader.reload();
   const { session } = await createAgentSession({
@@ -1485,6 +1688,35 @@ async function runAlertVerify(blob) {
   // Which machine holds the truth?
   let host = "";
   try { host = String((typeof v.host === "function" ? v.host(ticket) : "") || "").trim(); } catch { /* rule bug */ }
+
+  // SELF-PROVING NOTIFICATIONS. Most alerts have to be checked on the box, because the
+  // alert text is a claim. Some are not claims: when a vendor's own job report states the
+  // cause of its own warning ("skipped X because Y is disabled"), the report IS the
+  // evidence, and going to the device adds nothing - it may not even be reachable. Such a
+  // rule declares `evidence: "ticket"` and gets its verdict called with no device round
+  // trip. It is still CODE deciding, from a fixed rule, which is what MANDATE 4.8 asks;
+  // what it cannot do is claim a device was inspected, so the note says so explicitly.
+  if (String(v.evidence || "").toLowerCase() === "ticket") {
+    out.host = host || "(not inspected - self-proving notification)";
+    out.evidence_source = "ticket";
+    let verdict = {};
+    try { verdict = v.verdict({ stdout: "", ticket, host, agent: null }) || {}; }
+    catch (e) { return { ...out, action: "human", reason: `verdict rule threw: ${String(e?.message || e).slice(0, 200)}` }; }
+    const action = ["noise", "actionable", "human"].includes(verdict.action) ? verdict.action : "human";
+    out.action = action;
+    out.reason = String(verdict.reason || "").slice(0, 2000);
+    out.detail = String(verdict.detail || "").slice(0, 8000);
+    // A recurring condition can declare a stable KEY. Product code (not this rule, and not
+    // the model) owns what to do with a repeat - see the known-condition ledger in Django.
+    if (verdict.condition_key) {
+      out.condition_key = String(verdict.condition_key).slice(0, 120);
+      out.condition_host = String(verdict.condition_host || host || "").slice(0, 120);
+      out.advise_once = verdict.advise_once !== false;
+      out.fix_summary = String(verdict.fix_summary || "").slice(0, 4000);
+    }
+    return out;
+  }
+
   if (!host) return { ...out, action: "human", reason: "could not determine which host to inspect from the alert" };
   out.host = host;
 
@@ -2670,6 +2902,15 @@ server.headersTimeout = 0;
 server.timeout = 0;
 server.keepAliveTimeout = 0;
 
-server.listen(CONFIG.port, CONFIG.host, () => {
+server.listen(CONFIG.port, CONFIG.host, async () => {
   log(`pi-trmm-bridge listening on ${CONFIG.host}:${CONFIG.port}`);
+  // Expire registered stubs the installed pi now defines itself, before any session
+  // can pick up a shadowed (downgraded) model definition.
+  try {
+    const r = await pruneShadowedModels(builtinModel);
+    if (r.error) log("models_prune error", r.error);
+    else if (r.pruned.length) log("models_prune", `dropped now-native stubs: ${r.pruned.join(", ")}`);
+  } catch (e) {
+    log("models_prune error", String(e?.message || e));
+  }
 });

@@ -94,14 +94,8 @@ app.conf.beat_schedule = {
         "task": "core.tasks.refresh_ai_model_catalog",
         "schedule": crontab(minute=17, hour="*/6"),
     },
-    # Ticks often; the task itself decides whether it is inside the operator's window and
-    # whether the system is idle enough to restart the bridge. A busy tick just waits.
-    # Ticks often; the task itself decides whether it is time to send and whether it
-    # already sent today.
-    "ai-daily-ticket-report": {
-        "task": "core.tasks.send_daily_ticket_report",
-        "schedule": timedelta(minutes=5),
-    },
+    # ("ai-open-ticket-review" retired 2026-07-26: reports are operator-defined
+    #  schedules now - see AIReportSchedule and dispatch_ai_report_schedules.)
     "ai-runtime-update-window": {
         "task": "core.tasks.run_ai_runtime_update",
         "schedule": timedelta(minutes=5),
@@ -119,6 +113,19 @@ app.conf.beat_schedule = {
     "ai-capability-health": {
         "task": "core.tasks.check_ai_capability_health",
         "schedule": crontab(minute=23),
+    },
+    # The other half of known-condition suppression: notice when a tracked condition stops
+    # recurring and close its tracker with the evidence. Once a day is the right cadence -
+    # the thresholds are in days.
+    # Operator-defined reports (any cadence). Ticks often and each schedule decides whether it
+    # is due, so cadences live in the database instead of in this file.
+    "ai-dispatch-report-schedules": {
+        "task": "core.tasks.dispatch_ai_report_schedules",
+        "schedule": timedelta(minutes=5),
+    },
+    "ai-stand-down-resolved-conditions": {
+        "task": "core.tasks.stand_down_resolved_conditions",
+        "schedule": crontab(minute=17, hour=7),
     },
     "dispatch-due-ai-scheduled-actions": {
         "task": "core.tasks.dispatch_due_ai_scheduled_actions",

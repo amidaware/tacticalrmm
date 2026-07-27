@@ -24,6 +24,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.ai_match import match_procedures
 from core.decorators import monitoring_view, monitoring_view_v2
 from core.tasks import sync_mesh_perms_task
 from core.utils import (
@@ -1583,6 +1584,157 @@ class AITicketConsoleItem(APIView):
         return Response({"queued": True})
 
 
+class AIReportSchedules(APIView):
+    """Operator-defined reports: list and create. The '+' in Global Settings posts here."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request):
+        from core.models import AIReportSchedule
+        from core.serializers import AIReportScheduleSerializer
+
+        return Response(AIReportScheduleSerializer(AIReportSchedule.objects.all(), many=True).data)
+
+    def post(self, request):
+        from core.serializers import AIReportScheduleSerializer
+
+        data = dict(request.data)
+        data["created_by"] = request.user.username
+        ser = AIReportScheduleSerializer(data=data)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+
+class AIReportScheduleDetail(APIView):
+    """Edit, delete, or send one immediately (the 'send now' button)."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def put(self, request, pk):
+        from core.models import AIReportSchedule
+        from core.serializers import AIReportScheduleSerializer
+
+        sch = get_object_or_404(AIReportSchedule, pk=pk)
+        ser = AIReportScheduleSerializer(instance=sch, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+    def delete(self, request, pk):
+        from core.models import AIReportSchedule
+
+        get_object_or_404(AIReportSchedule, pk=pk).delete()
+        return Response("ok")
+
+    def post(self, request, pk):
+        """Send it now, without disturbing its schedule state."""
+        from django.utils import timezone as djangotime
+
+        from core.models import AIReportSchedule
+        from core.tasks import send_daily_ticket_report, send_open_ticket_review
+
+        sch = get_object_or_404(AIReportSchedule, pk=pk)
+        rcpt = sch.recipients or ""
+        opts = sch.options if isinstance(sch.options, dict) else {}
+        to = [x.strip() for x in rcpt.replace(";", ",").split(",") if x.strip()]
+        if not to:
+            return notify_error("This report has no recipients yet.")
+        if sch.kind == "open_tickets":
+            res = send_open_ticket_review(force=True, recipients_override=to,
+                                         hours=sch.effective_window_hours,
+                                         stamp_core=False, options=opts)
+        else:
+            res = send_daily_ticket_report(force=True, hours=sch.effective_window_hours,
+                                          recipients_override=rcpt, stamp_core=False, options=opts)
+        sch.last_run = djangotime.now()
+        sch.last_result = f"manual: {res}"[:1000]
+        sch.save(update_fields=["last_run", "last_result"])
+        return Response(str(res))
+
+
+class AIWorkEntryView(APIView):
+    """Record one burst of work as it happens (see TicketWorkEntry).
+
+    Posted by the bridge when a chat burst ends, so the ledger is current without anyone
+    running a backfill. Idempotent on (ticket/agent, actor, started_at): a retry cannot
+    double-count time.
+    """
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        from django.utils.dateparse import parse_datetime
+
+        from accounts.models import User
+        from core.models import TicketWorkEntry
+
+        d = request.data
+        started = parse_datetime(str(d.get("started_at") or ""))
+        ended = parse_datetime(str(d.get("ended_at") or ""))
+        if not started or not ended:
+            return notify_error("started_at and ended_at are required (ISO 8601)")
+        actor = str(d.get("actor_username") or "").strip()
+        u = User.objects.filter(username=actor).first()
+        ref = str(d.get("ticket_ref") or "")[:100]
+        agent = str(d.get("agent_id") or "")[:200]
+        existing = TicketWorkEntry.objects.filter(
+            ticket_ref=ref, agent_id=agent, actor_username=actor, started_at=started).first()
+        if existing:
+            return Response({"ok": True, "id": existing.id, "deduped": True})
+        row = TicketWorkEntry.objects.create(
+            ticket_ref=ref, agent_id=agent,
+            actor_kind=str(d.get("actor_kind") or "tech_via_ai")[:20],
+            actor_user=u, actor_username=actor[:150],
+            actor_display=((u.get_full_name() or u.username) if u else actor)[:200],
+            surface=str(d.get("surface") or "ticket_chat")[:20],
+            started_at=started, ended_at=ended,
+            human_minutes=d.get("human_minutes"), ai_minutes=d.get("ai_minutes") or 0,
+            confidence=str(d.get("confidence") or "measured")[:12],
+            method=str(d.get("method") or "")[:120],
+            evidence=d.get("evidence") or {},
+            source=str(d.get("source") or "live")[:40],
+            note=str(d.get("note") or "")[:400],
+        )
+        return Response({"ok": True, "id": row.id})
+
+
+class AIActionCreditView(APIView):
+    """Record that a HUMAN drove an AI-performed ticket action.
+
+    Written by the bridge as it happens, because the helpdesk cannot know: every write is
+    performed by the integration's API user, so "closed by the bot" is what gets stored whether
+    the AI acted alone or a technician sat in the chat and directed it. The daily activity report
+    reads this to credit the person instead of the machine.
+    """
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        from django.utils import timezone as djangotime
+
+        from accounts.models import User
+        from core.models import AIActionCredit
+
+        ref = str(request.data.get("ticket_ref") or "").strip()
+        actor = str(request.data.get("actor_username") or "").strip()
+        if not ref or not actor:
+            return notify_error("ticket_ref and actor_username are required")
+        u = User.objects.filter(username=actor).first()
+        row = AIActionCredit.objects.create(
+            ticket_ref=ref[:100],
+            actor_user=u, actor_username=actor[:150],
+            actor_display=((u.get_full_name() or u.username) if u else actor)[:200],
+            action=str(request.data.get("action") or "other")[:40],
+            surface=str(request.data.get("surface") or "decision_chat")[:20],
+            session_id=str(request.data.get("session_id") or "")[:64],
+            at=djangotime.now(),
+            source="live",
+            detail=str(request.data.get("detail") or "")[:400],
+        )
+        return Response({"ok": True, "id": row.id})
+
+
 class AIProcedures(APIView):
     """The AI Procedures library (RMM-native, helpdesk-agnostic). GET lists/searches;
     POST creates a procedure. Editable from the Ticket Console 'Procedures' view."""
@@ -1802,6 +1954,22 @@ class AIDecisionSession(APIView):
             "api_key": chosen.provider.api_key,
             "allowed_models": [mdict(m, full=True) for m in allowed],
             "decision_prompt": core.ai_ticket_decision_prompt or "",
+            # Start the chat in the state the operator last chose, not always OFF. Gated by
+            # the role permission above, so remembering it can never grant it.
+            "auto_approve": bool(aa and getattr(user, "ai_autoapprove_default", False)),
+            # The customer-reply standard lives in the HELPDESK POLICY. The ticket chat is
+            # the surface that actually answers customers, so it must receive it - it did
+            # not, and produced replies below the standard while the policy sat unread.
+            "helpdesk_prompt": core.ai_helpdesk_prompt or "",
+            # Our own approved runbooks that match this ticket (deterministic keyword
+            # match, code-side) so accumulated knowledge steers the answer.
+            "procedures": match_procedures(
+                d.ticket_ref or "",
+                (d.context or {}).get("subject", "") if isinstance(d.context, dict) else "",
+                (d.context or {}).get("summary", "") if isinstance(d.context, dict) else "",
+                (d.context or {}).get("proposed_action", "") if isinstance(d.context, dict) else "",
+                d.question or "",
+            ),
             # The prior thread (triage note + any earlier chat) so a fresh WS session
             # still shows the history and the AI has continuity.
             "prior_messages": [
@@ -1827,6 +1995,7 @@ class AIDecisionSession(APIView):
             "allowed_models": [mdict(m) for m in allowed],
             "require_approval": True,
             "autoapprove_allowed": aa,
+            "auto_approve": bool(aa and getattr(request.user, "ai_autoapprove_default", False)),
         })
 
 

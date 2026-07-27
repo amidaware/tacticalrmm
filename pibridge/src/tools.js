@@ -223,12 +223,16 @@ export function buildTools({
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   const denied = () =>
     text("The operator DENIED this action. Do not retry it; ask what to do instead.");
+  // Read-only is a DEVICE control only: it never blocks ticket work (reply, note,
+  // create, KB) - those have their own approval + customer-email controls.
   const roDenied = () =>
     text(
-      "This session is currently READ-ONLY, so this action is not allowed right now. " +
+      "This session is currently READ-ONLY on the devices, so this DEVICE action is not " +
+        "allowed right now. " +
         (mutateAllowed
-          ? "Tell the operator they can toggle write mode on to apply changes."
-          : "An operator with write (mutate) rights must make changes."),
+          ? "Tell the operator they can toggle write mode on to change the machine."
+          : "An operator with write (mutate) rights must change the machine.") +
+        " Ticket actions (reply, note, create, KB) are unaffected and still available.",
     );
 
   // Resolve the `machine` param to a machine entry, or throw a model-friendly error.
@@ -610,7 +614,9 @@ export function buildTools({
       "Perform a helpdesk/ticketing operation (create ticket, reply to the " +
       "customer, add an internal note, look up a customer, etc.). Exactly WHEN " +
       "and HOW to use each operation (and its args) is defined in the HELPDESK " +
-      "POLICY in your instructions - follow it. Available operations:\n" +
+      "POLICY in your instructions - follow it. These are TICKET actions: they do NOT " +
+      "require the session's Write mode (that controls changes to the DEVICES), but a " +
+      "mutating one still asks the operator to approve it. Available operations:\n" +
       (opList || "  (none configured)"),
     parameters: Type.Object({
       operation: Type.String({ description: "Operation name (one listed above)" }),
@@ -1089,7 +1095,8 @@ function isDestructive(cmd) {
   return DESTRUCTIVE.some((re) => re.test(c));
 }
 
-export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate, surface = null } = {}) {
+export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate, surface = null,
+  creditActor = "", creditSession = "" } = {}) {
   const text = (s) => ({ content: [{ type: "text", text: s }], details: {} });
   let hd = null, hdError = "";
   try { hd = loadHelpdesk(helpdeskCode, helpdeskApi); }
@@ -1139,19 +1146,29 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate,
       // Customer-email gate. In WS mode (gate provided) we ask the tech for approval
       // inline (exactly like a device-command approval); in the legacy POST mode we
       // fall back to the per-turn allowCustomerReply flag.
-      if (p.operation === "reply_to_ticket") {
-        const g = gate ? await gate("email", `Send this reply to the customer on ${ticketRef}:\n\n${(p.message || "").slice(0, 800)}`) : { ok: false, reason: "no approval channel available." };
+      let replyAuth = null;
+      if (cap.cls === "customer") {
+        const g = gate ? await gate("email", `Send this reply to the customer on ${ticketRef}:\n\n${(p.message || p.customer_html || "").slice(0, 800)}`) : { ok: false, reason: "no approval channel available." };
         if (!g.ok) return text(g.reason || "Customer reply not approved. Leave it as a draft.");
+        // Provenance for an outbound email goes in an INTERNAL note, never appended to the
+        // customer's message - the customer must not read our approval plumbing.
+        replyAuth = g.authorised_by || null;
       }
       // Closing a ticket asks a human EVERY time - never auto-approvable (ISSUES.md
       // D2/I7). MANDATE 4.8: "the model never decides that a ticket may be closed"; this
       // surface only holds `close` authority because a human approves it at the time.
+      let closeAuth = null;
       if (cap.cls === "close") {
         const why = (p.internal_note || p.reason || p.customer_html || p.message || "").slice(0, 800);
         const g = gate
           ? await gate("close", `${p.cancel ? "CANCEL" : "CLOSE"} ${ticketRef} via ${p.operation}${why ? ":\n\n" + why : ""}`)
           : { ok: false, reason: "no approval channel available." };
         if (!g.ok) return text(g.reason || "Closing this ticket was not approved. Leave your recommendation in an internal note instead.");
+        // When the close went through on the technician's own instruction rather than a
+        // prompt, the ticket must say so, in their words. Without this the audit trail shows
+        // a ticket closed by the bot with no visible authority - which is the thing the
+        // approval prompt used to provide, and the reason it can safely be skipped.
+        closeAuth = g.authorised_by || null;
       }
       // Merge the named params + free-form args, then ALWAYS inject this ticket's ref
       // so a read/write can never fail with 'ticket not found: undefined'.
@@ -1159,8 +1176,42 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate,
       for (const k of ["message", "internal_note", "customer_html", "reason", "cancel",
         "company_partner_id", "partner_id", "article_id", "title", "content", "name", "domain", "email"])
         if (p[k] !== undefined && args[k] === undefined) args[k] = p[k];
+      if (closeAuth) {
+        const stamp =
+          `\n\n[Closed on the technician's instruction in the AI chat` +
+          `${closeAuth.at ? ` at ${closeAuth.at.slice(11, 16)} UTC` : ""}: ` +
+          `"${String(closeAuth.text).replace(/\s+/g, " ").trim()}"]`;
+        // Attach to whichever field this deployment's operation uses for its note/reason.
+        const field = args.internal_note !== undefined ? "internal_note"
+                    : args.reason !== undefined ? "reason"
+                    : args.message !== undefined ? "message" : "reason";
+        args[field] = String(args[field] || "") + stamp;
+      }
       if (ticketRef && args.ticket === undefined && args.ticket_ref === undefined) args.ticket = ticketRef;
-      try { const out = await hd.operations[p.operation](args); return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 20000)); }
+      try {
+        const out = await hd.operations[p.operation](args);
+        // Record WHO drove this, as it happens. The helpdesk will log the API user as the
+        // actor; this is the only place that knows a person was sitting here directing it.
+        if (creditActor && ["customer", "close", "note", "create", "routing"].includes(cap.cls)) {
+          trmm.creditAction({
+            ticket_ref: ticketRef, actor_username: creditActor,
+            action: cap.cls === "customer" ? "reply" : cap.cls,
+            surface: "decision_chat",
+            session_id: (typeof creditSession === "function" ? creditSession() : creditSession) || "",
+            detail: `${p.operation} via the ticket chat`,
+          }).catch(() => { /* credit is bookkeeping; never fail the operation for it */ });
+        }
+        if (replyAuth && hd.operations.add_note) {
+          // Best-effort: the reply already went out; a failed note must not fail the call.
+          try {
+            await hd.operations.add_note({ ticket: ticketRef, message:
+              `[Customer reply sent on the technician's instruction in the AI chat` +
+              `${replyAuth.at ? ` at ${replyAuth.at.slice(11, 16)} UTC` : ""}: ` +
+              `"${String(replyAuth.text).replace(/\s+/g, " ").trim()}"]` });
+          } catch (e) { /* provenance note is not worth failing the operation over */ }
+        }
+        return text(typeof out === "string" ? out : JSON.stringify(out).slice(0, 20000));
+      }
       catch (e) { return text(`${p.operation} failed: ${e?.message || e}`); }
     },
   });
@@ -1331,5 +1382,101 @@ export function buildDecisionTools({ helpdeskCode, helpdeskApi, ticketRef, gate,
     },
   });
 
-  return { tools: [helpdesk_call, find_devices, run_device_command, save_device_note, get_device_notes, schedule_action, send_email, ...webTools()], hd, hdError };
+  // CAPTURE A PROCEDURE FROM THE WORK JUST DONE.
+  //
+  // Until now procedures were only ever written by the miner, from CLOSED tickets, hours or
+  // days later - so the knowledge captured was whatever survived into the closing notes. The
+  // moment worth capturing is this one: the tech has just explained something, or we have
+  // just worked out what a recurring notification means and what fixes it.
+  //
+  // DRAFT ONLY, and not negotiable: status=draft, auto_enabled=false, origin=ai_resolution.
+  // A procedure that carries a `disposition` can make the engine rule on tickets without a
+  // model call, so nothing the model writes may be live until a human approves it in the
+  // console. The model proposes; a person promotes.
+  const save_procedure = defineTool({
+    name: "save_procedure",
+    label: "Capture a procedure (draft)",
+    description:
+      "Write down what you just learned as a reusable PROCEDURE, so the next occurrence is not" +
+      " solved from scratch. Use it when a ticket taught you something generalisable: a symptom" +
+      " with a real root cause and a fix that worked, or a recurring vendor notification and what" +
+      " it actually means. Keep it CLIENT-AGNOSTIC - no customer names, no one-off device history" +
+      " (use save_device_note for that). It is saved as a DRAFT for a human to approve; you are" +
+      " never creating live automation. If a recurring NOTIFICATION is involved, also fill in the" +
+      " recognition fields so a person can promote it into something the system handles" +
+      " deterministically: match_subject_regex / match_body_all / match_body_any / match_body_none," +
+      " condition_key, and what the right disposition would be.",
+    parameters: Type.Object({
+      title: Type.String({ description: "Short, specific title of the situation" }),
+      category: Type.Optional(Type.String({ description: "e.g. Backup, Microsoft 365, Networking, Printing" })),
+      applies_to: Type.Optional(Type.String({
+        description: "Comma-separated vendor/app/OS keywords AND phrases that identify when this applies",
+      })),
+      symptom: Type.String({ description: "What is observed, in the words it usually arrives in" }),
+      root_cause: Type.Optional(Type.String({ description: "Why it happens" })),
+      fix: Type.String({ description: "The steps that resolve it, specific enough to follow verbatim" }),
+      verification: Type.Optional(Type.String({ description: "How to prove it is actually fixed" })),
+      condition_key: Type.Optional(Type.String({
+        description: "For a RECURRING condition: a stable key, e.g. vendor-thing-that-is-wrong",
+      })),
+      match_subject_regex: Type.Optional(Type.String({ description: "Regex the ticket SUBJECT must match" })),
+      match_body_all: Type.Optional(Type.Array(Type.String(), { description: "Phrases that must ALL appear" })),
+      match_body_any: Type.Optional(Type.Array(Type.String(), { description: "Phrases where at least ONE must appear" })),
+      match_body_none: Type.Optional(Type.Array(Type.String(), { description: "Phrases that disqualify the match" })),
+      identity_host_regex: Type.Optional(Type.String({ description: "Regex with one capture group for the host name" })),
+      suggested_disposition: Type.Optional(Type.String({
+        description: "benign | customer_action | our_action | needs_human - what a match SHOULD mean",
+      })),
+      source_ticket_ref: Type.Optional(Type.String({ description: "The ticket this came from" })),
+    }),
+    execute: async (_id, p) => {
+      const match = {};
+      if (p.match_subject_regex) match.subject_regex = p.match_subject_regex;
+      if (p.match_body_all?.length) match.body_all = p.match_body_all;
+      if (p.match_body_any?.length) match.body_any = p.match_body_any;
+      if (p.match_body_none?.length) match.body_none = p.match_body_none;
+      if (p.identity_host_regex) match.identity = { host_regex: p.identity_host_regex };
+      const DISPOS = ["benign", "customer_action", "our_action", "needs_human"];
+      const body = {
+        title: p.title,
+        category: p.category || "",
+        applies_to: (p.applies_to || "").slice(0, 400),
+        symptom: p.symptom || "",
+        root_cause: p.root_cause || "",
+        fix: p.fix || "",
+        verification: p.verification || "",
+        condition_key: (p.condition_key || "").slice(0, 120),
+        match,
+        // Proposed, not applied: the engine ignores both until a human approves the row and
+        // ticks auto-enable, which is exactly the review step this tool must not skip.
+        disposition: DISPOS.includes(String(p.suggested_disposition)) ? p.suggested_disposition : "",
+        evidence: p.condition_key ? "notification" : "none",
+        repeat_policy: p.condition_key
+          ? { advise_once: true, suppress_repeats: true, resolve_after_days: 7 }
+          : {},
+        auto_enabled: false,
+        status: "draft",
+        origin: "ai_resolution",
+        confidence: "medium",
+        occurrence_count: 1,
+        source_ticket_refs: [p.source_ticket_ref || ticketRef].filter(Boolean),
+      };
+      try {
+        const out = await trmm.saveProcedure(body);
+        const id = out && (out.id || out.pk);
+        return text(
+          `Procedure saved as a DRAFT${id ? ` (id ${id}, code ${String(id).padStart(7, "0")})` : ""}.` +
+          ` It is NOT live: a human reviews it in Ticket Console -> Procedures and approves it there.` +
+          (p.condition_key
+            ? ` Recognition fields were included, so whoever reviews it can promote it into a rule the` +
+              ` system applies deterministically - that promotion is theirs to make, not yours.`
+            : ""),
+        );
+      } catch (e) {
+        return text(`Could not save the procedure: ${String(e?.message || e).slice(0, 300)}`);
+      }
+    },
+  });
+
+  return { tools: [helpdesk_call, find_devices, run_device_command, save_device_note, get_device_notes, schedule_action, send_email, save_procedure, ...webTools()], hd, hdError };
 }

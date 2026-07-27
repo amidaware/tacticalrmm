@@ -77,6 +77,66 @@ app.conf.beat_schedule = {
         "task": "ee.reporting.tasks.scheduled_reports_runner",
         "schedule": crontab(),
     },
+    "dispatch-due-ai-tasks": {
+        "task": "core.tasks.dispatch_due_ai_tasks",
+        "schedule": crontab(),
+    },
+    "dispatch-due-bulk-ai-commands": {
+        "task": "core.tasks.dispatch_due_bulk_ai_commands",
+        "schedule": crontab(),
+    },
+    # AI ticket automation poller (no-op unless enabled in Global Settings)
+    "poll-helpdesk-tickets": {
+        "task": "core.tasks.poll_helpdesk_tickets",
+        "schedule": timedelta(seconds=90.0),
+    },
+    "refresh-ai-model-catalog": {
+        "task": "core.tasks.refresh_ai_model_catalog",
+        "schedule": crontab(minute=17, hour="*/6"),
+    },
+    # ("ai-open-ticket-review" retired 2026-07-26: reports are operator-defined
+    #  schedules now - see AIReportSchedule and dispatch_ai_report_schedules.)
+    "ai-runtime-update-window": {
+        "task": "core.tasks.run_ai_runtime_update",
+        "schedule": timedelta(minutes=5),
+    },
+    # Each morning at 10:00, after the overnight scheduled jobs have run, decide whether
+    # ticket-permission enforcement is safe to switch on and email the verdict with the
+    # evidence. Reports only - it changes nothing by itself. Goes quiet once enforcing.
+    "ai-caps-enforcement-readiness": {
+        "task": "core.tasks.report_caps_enforcement_readiness",
+        "schedule": crontab(minute=0, hour=10),
+    },
+    # An operation with no capability class is denied by product code. That is correct but
+    # silent, so the system raises an internal notice ticket instead of relying on anyone
+    # remembering to look. Hourly is plenty: the ticket is deduped per day.
+    "ai-capability-health": {
+        "task": "core.tasks.check_ai_capability_health",
+        "schedule": crontab(minute=23),
+    },
+    # The other half of known-condition suppression: notice when a tracked condition stops
+    # recurring and close its tracker with the evidence. Once a day is the right cadence -
+    # the thresholds are in days.
+    # Operator-defined reports (any cadence). Ticks often and each schedule decides whether it
+    # is due, so cadences live in the database instead of in this file.
+    "ai-dispatch-report-schedules": {
+        "task": "core.tasks.dispatch_ai_report_schedules",
+        "schedule": timedelta(minutes=5),
+    },
+    "ai-stand-down-resolved-conditions": {
+        "task": "core.tasks.stand_down_resolved_conditions",
+        "schedule": crontab(minute=17, hour=7),
+    },
+    "dispatch-due-ai-scheduled-actions": {
+        "task": "core.tasks.dispatch_due_ai_scheduled_actions",
+        "schedule": timedelta(seconds=60.0),
+    },
+    # AI Procedures miner. Runs often but SELF-GATES on the editable interval +
+    # enabled flags in Global Settings, so the real cadence is set by the admin.
+    "mine-ticket-procedures": {
+        "task": "core.tasks.mine_ticket_procedures",
+        "schedule": crontab(minute="*/30"),
+    },
 }
 
 

@@ -18,10 +18,13 @@ from rest_framework import status as drf_status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
+
+from agents.permissions import PiPerms
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.ai_match import match_procedures
 from core.decorators import monitoring_view, monitoring_view_v2
 from core.tasks import sync_mesh_perms_task
 from core.utils import (
@@ -41,7 +44,26 @@ from tacticalrmm.permissions import (
     _has_perm_on_site,
 )
 
+
+def _can_manage_all_ai(user) -> bool:
+    """Superusers, or roles with can_manage_all_ai_tasks, may edit/delete AI
+    tasks & bulk commands created by other users and outside their agent scope."""
+    if getattr(user, "is_superuser", False):
+        return True
+    role = getattr(user, "role", None)
+    if not role:
+        return False
+    return bool(
+        getattr(role, "is_superuser", False)
+        or getattr(role, "can_manage_all_ai_tasks", False)
+    )
+
 from .models import (
+    AIModel,
+    AIProvider,
+    AITask,
+    AITaskRun,
+    BulkAICommand,
     CodeSignToken,
     CoreSettings,
     CustomField,
@@ -50,6 +72,8 @@ from .models import (
     URLAction,
 )
 from .permissions import (
+    AITaskPerms,
+    BulkAIPerms,
     CodeSignPerms,
     CoreSettingsPerms,
     CustomFieldPerms,
@@ -61,6 +85,11 @@ from .permissions import (
     WebTerminalPerms,
 )
 from .serializers import (
+    AIModelSerializer,
+    AIProviderSerializer,
+    AITaskSerializer,
+    AITaskRunSerializer,
+    BulkAICommandSerializer,
     CodeSignTokenSerializer,
     CoreSettingsSerializer,
     CustomFieldSerializer,
@@ -797,3 +826,1907 @@ class OpenAICodeCompletion(APIView):
             )
 
         return Response(response_data["choices"][0]["message"]["content"])
+
+
+class GetAddAIProvider(APIView):
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def get(self, request):
+        providers = AIProvider.objects.all().prefetch_related("models")
+        return Response(AIProviderSerializer(providers, many=True).data)
+
+    def post(self, request):
+        serializer = AIProviderSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+
+class UpdateDeleteAIProvider(APIView):
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def put(self, request, pk):
+        provider = get_object_or_404(AIProvider, pk=pk)
+        data = request.data.copy()
+        # don't wipe an existing key when the field is left blank on edit
+        if not data.get("api_key"):
+            data.pop("api_key", None)
+        serializer = AIProviderSerializer(instance=provider, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+    def delete(self, request, pk):
+        get_object_or_404(AIProvider, pk=pk).delete()
+        return Response("ok")
+
+
+class AIAvailableModels(APIView):
+    """Which models can be attached right now. Asks each provider what it actually
+    serves today (so a model released this morning is offered), and marks anything the
+    installed runtime cannot yet run - those become runnable on the next catalog check,
+    or immediately if autoregister is on."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def get(self, request):
+        import requests as _requests
+        from django.conf import settings
+
+        providers = [
+            {"name": p.name, "api_key": p.api_key, "base_url": p.base_url}
+            for p in AIProvider.objects.filter(enabled=True)
+            if p.api_key
+        ]
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        probe = request.query_params.get("probe", "1") not in ("0", "false", "False")
+        try:
+            r = _requests.post(
+                f"{bridge}/pi/models",
+                json={"providers": providers, "probe": probe},
+                timeout=(10, 120 if probe else 20),
+            )
+            data = r.json()
+        except Exception as e:
+            return Response({"models": [], "error": str(e)})
+        # Retired models stay in the runtime's bundled list for years; do not offer them
+        # as new attachments. (live_at_provider is None when discovery could not answer -
+        # keep those, since we cannot prove anything either way.)
+        models = [m for m in (data.get("models") or []) if m.get("live_at_provider") is not False]
+        data["models"] = models
+        return Response(data)
+
+
+class HelpdeskAssist(APIView):
+    """AI helper that interviews the admin and drafts the helpdesk POLICY +
+    helpdesk.js code. Stateless; the client replays the conversation each call."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
+        import requests as _requests
+        from django.conf import settings as dj_settings
+        from core.tasks import _resolve_ai_model
+
+        core = get_core_settings()
+        model = _resolve_ai_model(None)
+        if not model:
+            return Response(
+                {
+                    "reply": "No enabled AI model / default is configured. Add a provider "
+                    "and model (and mark one default) above first."
+                }
+            )
+        trmm_base_url = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None)
+            else ""
+        )
+        payload = {
+            "provider": model.provider.name,
+            "model_id": model.model_id,
+            "api_key": model.provider.api_key,
+            "thinking_level": model.thinking_level,
+            "trmm_base_url": trmm_base_url,
+            "base_url": core.ai_helpdesk_api_base_url or "",
+            "current_policy": core.ai_helpdesk_prompt or "",
+            "current_code": core.ai_helpdesk_code or "",
+            "messages": request.data.get("messages") or [],
+        }
+        bridge = getattr(dj_settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.post(f"{bridge}/pi/assist", json=payload, timeout=300)
+            return Response(r.json())
+        except Exception as e:
+            return Response({"reply": f"(bridge error: {e})"})
+
+
+class AIPromptAssist(APIView):
+    """AI helper that interviews the admin and drafts the PROMPT for an AI task or
+    Bulk AI command (and, for bulk, the combined-report instruction). Stateless;
+    the client replays the conversation each call."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        import requests as _requests
+        from django.conf import settings as dj_settings
+        from core.tasks import _resolve_ai_model
+
+        core = get_core_settings()
+        model = _resolve_ai_model(None)
+        if not model:
+            return Response(
+                {
+                    "reply": "No enabled AI model / default is configured. Ask an admin to "
+                    "add a provider and model (and mark one default) in Global Settings."
+                }
+            )
+        trmm_base_url = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None)
+            else ""
+        )
+        payload = {
+            "mode": "task_prompt",
+            "kind": "bulk" if request.data.get("kind") == "bulk" else "single",
+            "provider": model.provider.name,
+            "model_id": model.model_id,
+            "api_key": model.provider.api_key,
+            "thinking_level": model.thinking_level,
+            "trmm_base_url": trmm_base_url,
+            "helpdesk_enabled": bool(
+                (core.ai_helpdesk_code or "").strip()
+                and (core.ai_helpdesk_api_base_url or "").strip()
+            ),
+            "current_prompt": request.data.get("current_prompt") or "",
+            "current_report": request.data.get("current_report") or "",
+            "messages": request.data.get("messages") or [],
+        }
+        bridge = getattr(dj_settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.post(f"{bridge}/pi/assist", json=payload, timeout=300)
+            return Response(r.json())
+        except Exception as e:
+            return Response({"reply": f"(bridge error: {e})"})
+
+
+class GetAddAIModel(APIView):
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def get(self, request):
+        models = AIModel.objects.all().select_related("provider")
+        return Response(AIModelSerializer(models, many=True).data)
+
+    def post(self, request):
+        serializer = AIModelSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+
+class UpdateDeleteAIModel(APIView):
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def put(self, request, pk):
+        model = get_object_or_404(AIModel, pk=pk)
+        serializer = AIModelSerializer(instance=model, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+    def delete(self, request, pk):
+        get_object_or_404(AIModel, pk=pk).delete()
+        return Response("ok")
+
+
+class GetAddAITask(APIView):
+    permission_classes = [IsAuthenticated, AITaskPerms]
+
+    def get(self, request):
+        from agents.models import Agent
+
+        agent_id = request.query_params.get("agent_id")
+        site = request.query_params.get("site")
+        client = request.query_params.get("client")
+        # only tasks on agents this user's role is allowed to see
+        permitted = Agent.objects.filter_by_role(request.user)  # type: ignore
+        qs = AITask.objects.select_related("agent", "agent__site", "model").filter(
+            agent__in=permitted
+        )
+        if agent_id:
+            qs = qs.filter(agent__agent_id=agent_id)
+        elif site:
+            qs = qs.filter(agent__site_id=site)
+        elif client:
+            qs = qs.filter(agent__site__client_id=client)
+        return Response(AITaskSerializer(qs.order_by("agent__hostname", "name"), many=True).data)
+
+    def post(self, request):
+        from agents.models import Agent
+
+        data = request.data.copy()
+        agent_id = data.pop("agent_id", None)
+        if agent_id:
+            if isinstance(agent_id, list):
+                agent_id = agent_id[0]
+            agent = get_object_or_404(Agent, agent_id=agent_id)
+            if not _has_perm_on_agent(request.user, agent.agent_id):
+                raise PermissionDenied()
+            data["agent"] = agent.pk
+        serializer = AITaskSerializer(data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save(
+            created_by=request.user.username, modified_by=request.user.username
+        )
+        _apply_once_schedule(obj)
+        return Response("ok")
+
+
+def _apply_once_schedule(task):
+    """Arm a task's next execution: run_at for one-time, next_run for recurring
+    scheduled, or neither for on-demand 'now' tasks."""
+    import datetime as _dt
+
+    from django.utils import timezone as _tz
+
+    from core.tasks import _compute_task_next_run
+
+    if task.schedule_type == AITask.SCHEDULE_ONCE:
+        if task.run_time:
+            now = _tz.localtime()
+            target = now.replace(
+                hour=task.run_time.hour,
+                minute=task.run_time.minute,
+                second=0,
+                microsecond=0,
+            )
+            if target <= now:
+                target += _dt.timedelta(days=1)
+            task.run_at = target
+        task.next_run = None
+    elif task.run_mode == "now":
+        task.run_at = None
+        task.next_run = None
+    else:  # recurring scheduled (interval/daily/weekly/monthly)
+        task.run_at = None
+        task.next_run = _compute_task_next_run(task)
+    task.save(update_fields=["run_at", "next_run"])
+
+
+class UpdateDeleteAITask(APIView):
+    permission_classes = [IsAuthenticated, AITaskPerms]
+
+    def put(self, request, pk):
+        task = get_object_or_404(AITask.objects.select_related("agent"), pk=pk)
+        if not _has_perm_on_agent(request.user, task.agent.agent_id):
+            raise PermissionDenied()
+        serializer = AITaskSerializer(instance=task, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save(modified_by=request.user.username)
+        _apply_once_schedule(obj)
+        return Response("ok")
+
+    def delete(self, request, pk):
+        task = get_object_or_404(AITask.objects.select_related("agent"), pk=pk)
+        # own-scope agent access OR the elevated "manage all AI tasks" permission
+        if not (
+            _can_manage_all_ai(request.user)
+            or _has_perm_on_agent(request.user, task.agent.agent_id)
+        ):
+            raise PermissionDenied()
+        task.delete()
+        return Response("ok")
+
+
+class RunAITaskNow(APIView):
+    permission_classes = [IsAuthenticated, AITaskPerms]
+
+    def post(self, request, pk):
+        from core.tasks import run_ai_task
+
+        task = get_object_or_404(AITask.objects.select_related("agent"), pk=pk)
+        if not _has_perm_on_agent(request.user, task.agent.agent_id):
+            raise PermissionDenied()
+        run_ai_task.delay(pk, triggered_by="manual")
+        return Response("Task queued to run now")
+
+
+class AITaskRuns(APIView):
+    """List run history for a task, or all recent runs for an agent."""
+
+    permission_classes = [IsAuthenticated, AITaskPerms]
+
+    def get(self, request):
+        from django.db.models import Q
+        from agents.models import Agent
+
+        permitted = Agent.objects.filter_by_role(request.user)  # type: ignore
+        # runs belong to a task (task.agent) or a bulk command (agent set directly)
+        qs = AITaskRun.objects.select_related(
+            "task", "task__agent", "bulk", "agent"
+        ).filter(Q(agent__in=permitted) | Q(task__agent__in=permitted))
+        task_id = request.query_params.get("task_id")
+        bulk_id = request.query_params.get("bulk_id")
+        agent_id = request.query_params.get("agent_id")
+        client_id = request.query_params.get("client")
+        site_id = request.query_params.get("site")
+        if task_id:
+            qs = qs.filter(task_id=task_id)
+        elif bulk_id:
+            qs = qs.filter(bulk_id=bulk_id)
+        elif agent_id:
+            qs = qs.filter(
+                Q(agent__agent_id=agent_id) | Q(task__agent__agent_id=agent_id)
+            )
+        elif client_id:
+            qs = qs.filter(
+                Q(agent__site__client_id=client_id)
+                | Q(task__agent__site__client_id=client_id)
+            )
+        elif site_id:
+            qs = qs.filter(
+                Q(agent__site_id=site_id) | Q(task__agent__site_id=site_id)
+            )
+        return Response(AITaskRunSerializer(qs[:500], many=True).data)
+
+
+class AIHistoryScope(APIView):
+    """Aggregated chat-session history for a whole client or site (every machine
+    under it), so an operator can review all AI activity in one place."""
+
+    permission_classes = [IsAuthenticated, AITaskPerms]
+
+    def get(self, request):
+        import requests as _requests
+        from agents.models import Agent
+
+        permitted = Agent.objects.filter_by_role(request.user)  # type: ignore
+        client_id = request.query_params.get("client")
+        site_id = request.query_params.get("site")
+        if client_id:
+            agents = permitted.filter(site__client_id=client_id)
+        elif site_id:
+            agents = permitted.filter(site_id=site_id)
+        else:
+            return Response({"sessions": []})
+        amap = {a.agent_id: a.hostname for a in agents}
+        if not amap:
+            return Response({"sessions": []})
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.get(
+                f"{bridge}/pi/history_bulk",
+                params={"agent_ids": ",".join(amap.keys())},
+                timeout=20,
+            )
+            data = r.json()
+        except Exception:
+            data = {"sessions": []}
+        for s in data.get("sessions", []):
+            s["hostname"] = amap.get(s.get("agent_id"), "")
+        return Response(data)
+
+
+class AITaskRunLive(APIView):
+    """Return live progress for an in-flight run (from redis, written by the
+    bridge), falling back to the persisted run record when finished."""
+
+    permission_classes = [IsAuthenticated, AITaskPerms]
+
+    def get(self, request, run_id):
+        import json as _json
+
+        from redis import from_url
+
+        live = None
+        try:
+            with from_url(
+                f"redis://{settings.REDIS_HOST}:6379", decode_responses=True
+            ) as conn:
+                raw = conn.get(f"pi_run:{run_id}")
+            if raw:
+                live = _json.loads(raw)
+        except Exception:
+            live = None
+
+        run = AITaskRun.objects.select_related("task__agent", "agent").filter(
+            run_id=run_id
+        ).first()
+        # only expose runs on agents this user is allowed to see
+        run_agent = run.get_agent() if run else None
+        if run_agent and not _has_perm_on_agent(request.user, run_agent.agent_id):
+            raise PermissionDenied()
+        return Response(
+            {
+                "live": live,
+                "run": AITaskRunSerializer(run).data if run else None,
+            }
+        )
+
+
+class AISendEmail(APIView):
+    """Send a plain-text email through the RMM server's configured SMTP.
+
+    Called by the pi-trmm-bridge (X-API-KEY service auth) on behalf of the AI
+    assistant (chat or scheduled AI task) when the operator asks for results
+    to be emailed. Uses the exact same SMTP settings as TRMM alerting.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    MAX_RECIPIENTS = 10
+    MAX_SUBJECT = 200
+    MAX_BODY = 100_000
+
+    def post(self, request):
+        from django.core.exceptions import ValidationError
+        from django.core.validators import validate_email
+
+        from logs.models import DebugLog
+
+        core = get_core_settings()
+        if not core.ai_module_enabled:
+            return notify_error("AI module is disabled.")
+        if not core.email_is_configured:
+            return notify_error(
+                "SMTP is not configured in TRMM global settings (Settings > Global Settings > Email Alerts)."
+            )
+
+        raw_to = request.data.get("to") or ""
+        if isinstance(raw_to, str):
+            recipients = [
+                e.strip()
+                for e in raw_to.replace(";", ",").split(",")
+                if e.strip()
+            ]
+        elif isinstance(raw_to, list):
+            recipients = [str(e).strip() for e in raw_to if str(e).strip()]
+        else:
+            recipients = []
+
+        if not recipients or len(recipients) > self.MAX_RECIPIENTS:
+            return notify_error(
+                f"Provide between 1 and {self.MAX_RECIPIENTS} recipient email addresses."
+            )
+        for e in recipients:
+            try:
+                validate_email(e)
+            except ValidationError:
+                return notify_error(f"Invalid email address: {e}")
+
+        subject = str(request.data.get("subject") or "").strip()[: self.MAX_SUBJECT]
+        body = str(request.data.get("body") or "")[: self.MAX_BODY]
+        # Optional HTML body -> sent as multipart/alternative (plain `body` is the
+        # fallback). The AI supplies fully-formed HTML with INLINE styles.
+        html_body = str(request.data.get("html") or "")[: self.MAX_BODY] or None
+        if not subject or not body:
+            return notify_error("Both subject and body are required.")
+
+        # ---- From address -------------------------------------------------
+        # Rules:
+        #  - full address given (has '@')  -> used verbatim ("whatever we want")
+        #  - local part only given         -> <localpart>@<smtp domain>
+        #  - nothing given                 -> pi-<job_ref|random>@<smtp domain>
+        # The domain always defaults to the SMTP from-address domain so mail
+        # stays aligned with the configured/authorized sending domain.
+        import re
+        import secrets
+
+        smtp_domain = (core.smtp_from_email or "").split("@")[-1].strip()
+        raw_from = str(request.data.get("from_address") or "").strip()
+        from_name = request.data.get("from_name")
+        if from_name is not None:
+            from_name = str(from_name)[:120]
+
+        if raw_from and "@" in raw_from:
+            from_address = raw_from
+        else:
+            if raw_from:
+                local = raw_from
+            else:
+                job_ref = str(request.data.get("job_ref") or "").strip()
+                base = job_ref or secrets.token_hex(4)
+                local = f"pi-{base}"
+            # sanitize local part to valid email-local characters
+            local = re.sub(r"[^A-Za-z0-9._+-]", "", local)[:64] or f"pi-{secrets.token_hex(4)}"
+            if not smtp_domain:
+                return notify_error(
+                    "SMTP from-address has no domain configured; cannot build a From address."
+                )
+            from_address = f"{local}@{smtp_domain}"
+
+        try:
+            validate_email(from_address)
+        except ValidationError:
+            return notify_error(f"Invalid From address: {from_address}")
+
+        # test=True makes send_mail return the REAL smtp error on failure
+        # (with test=False it always returns ok); behavior is otherwise identical.
+        msg, ok = core.send_mail(
+            subject,
+            body,
+            override_recipients=recipients,
+            override_from=from_address,
+            override_from_name=from_name,
+            html_body=html_body,
+            test=True,
+        )
+        if not ok:
+            return notify_error(f"Email send failed: {msg}")
+
+        DebugLog.info(
+            message=f"AI assistant sent email to {', '.join(recipients)} from {from_address}: "
+            f"{subject} (requested by {request.user.username})"
+        )
+        return Response(
+            {
+                "ok": True,
+                "detail": f"Email sent to {', '.join(recipients)} from {from_address}",
+            }
+        )
+
+
+class AIDeviceNote(APIView):
+    """Durable per-device memory for Pi.dev AI.
+
+    - GET  ?agent_id=<id>    -> {"notes": "..."}  (UI view + bridge session start)
+    - POST {agent_id, note}  -> append ONE timestamped note (pi-trmm-bridge
+                                save_device_note tool)
+    - PUT  {agent_id, notes} -> replace the whole notes blob (UI editor)
+
+    The notes are injected into the AI's system prompt so future runs start with
+    context saved during earlier runs (device roles, key paths, quirks, fixes).
+    Bounded so the prompt stays small; oldest entries are dropped first.
+    """
+
+    permission_classes = [IsAuthenticated]
+    # Keep device memory BRIEF so it never clogs the AI prompt: each note is one
+    # short line, and the whole blob is bounded (oldest entries drop first).
+    MAX_NOTES = 1500  # total characters kept per device
+    MAX_NOTE_LEN = 200  # max characters per single note (longer is truncated)
+
+    def _agent(self, request):
+        from agents.models import Agent
+
+        agent_id = request.data.get("agent_id") or request.query_params.get("agent_id")
+        if not agent_id:
+            return None, notify_error("agent_id is required.")
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        if not _has_perm_on_agent(request.user, agent.agent_id):
+            raise PermissionDenied()
+        return agent, None
+
+    def get(self, request):
+        agent, err = self._agent(request)
+        if err:
+            return err
+        return Response({"agent_id": agent.agent_id, "notes": agent.ai_notes or ""})
+
+    @staticmethod
+    def _body(line):
+        # the note text, ignoring any leading "[date] " prefix
+        line = line.strip()
+        return (line.split("] ", 1)[-1] if line.startswith("[") else line).strip().lower()
+
+    def post(self, request):
+        agent, err = self._agent(request)
+        if err:
+            return err
+        # Enforce brevity: collapse ALL whitespace/newlines to one line, then cap.
+        note = " ".join(str(request.data.get("note") or "").split()).strip()
+        note = note[: self.MAX_NOTE_LEN].strip()
+        if not note:
+            return notify_error("note is required.")
+        existing = (agent.ai_notes or "").strip()
+        lines = [ln for ln in existing.splitlines() if ln.strip()]
+        # skip near-duplicates (same text ignoring the [date] prefix)
+        if note.lower() in {self._body(ln) for ln in lines}:
+            return Response({"ok": True, "notes": existing, "skipped": "duplicate"})
+        lines.append(f"[{djangotime.now().strftime('%Y-%m-%d')}] {note}")
+        # bound the total; drop oldest lines first until within the cap
+        while len(lines) > 1 and len("\n".join(lines)) > self.MAX_NOTES:
+            lines.pop(0)
+        agent.ai_notes = "\n".join(lines)[-self.MAX_NOTES:]
+        agent.save(update_fields=["ai_notes"])
+        return Response({"ok": True, "notes": agent.ai_notes})
+
+    def put(self, request):
+        agent, err = self._agent(request)
+        if err:
+            return err
+        # human-curated edit: keep line structure but enforce the same total cap
+        notes = str(request.data.get("notes") or "").strip()[: self.MAX_NOTES]
+        agent.ai_notes = notes
+        agent.save(update_fields=["ai_notes"])
+        return Response({"ok": True, "notes": agent.ai_notes})
+class AITicketConsole(APIView):
+    """Pi AI Ticket Console (Tools menu): list every ticket the AI has touched,
+    newest-worked first, with what it did + the link to open its chat."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request):
+        from django.conf import settings as dj_settings
+
+        from core.models import AIDecisionRequest, AITicketState
+
+        base = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None) else ""
+        )
+        toks, ctxs = {}, {}
+        for d in AIDecisionRequest.objects.order_by("id").values("ticket_ref", "token", "context"):
+            toks[d["ticket_ref"]] = d["token"]
+            ctxs[d["ticket_ref"]] = d["context"] or {}
+        from django.db.models.functions import Coalesce
+
+        # Newest-worked first, by when the AI actually triaged/acted (not bookkeeping saves).
+        states = list(
+            AITicketState.objects.annotate(worked=Coalesce("last_triaged", "updated"))
+            .order_by("-worked")[:500]
+        )
+        # Batch-fetch the current Odoo stage for these tickets (one bridge call).
+        stages = {}
+        try:
+            import requests as _requests
+
+            core = get_core_settings()
+            bridge = getattr(dj_settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+            resp = _requests.post(
+                f"{bridge}/pi/ticket-stages",
+                json={
+                    "refs": [s.ticket_ref for s in states],
+                    "helpdesk_api": {
+                        "base_url": core.ai_helpdesk_api_base_url or "",
+                        "api_key": core.ai_helpdesk_api_key or "",
+                    },
+                    "helpdesk_code": core.ai_helpdesk_code or "",
+                },
+                timeout=(5, 30),
+            )
+            stages = (resp.json() or {}).get("stages") or {}
+        except Exception:
+            stages = {}
+
+        # A ticket DELETED in Odoo won't come back in the stage batch. If we got a real
+        # batch (at least one stage resolved), drop our stale rows for any requested ref
+        # that's missing - so the console never shows a deleted ticket. If the batch is
+        # empty (fetch failed / helpdesk not configured) we touch nothing (safe).
+        if stages:
+            present = set(stages.keys())
+            deleted_refs = [s.ticket_ref for s in states if s.ticket_ref not in present]
+            if deleted_refs:
+                dset = set(deleted_refs)
+                AITicketState.objects.filter(ticket_ref__in=deleted_refs).delete()
+                AIDecisionRequest.objects.filter(ticket_ref__in=deleted_refs).delete()
+                states = [s for s in states if s.ticket_ref not in dset]
+
+        # stages[ref] is {stage, assignee} (older builds returned a bare stage string).
+        def _stage(ref):
+            v = stages.get(ref)
+            if isinstance(v, dict):
+                return v.get("stage", ""), v.get("assignee", ""), bool(v.get("assignee_is_bot"))
+            return (v or ""), "", False
+
+        # RECONCILE against Odoo (source of truth): if a ticket is Cancelled/Closed/Done
+        # in Odoo but our AI status doesn't reflect a matching terminal state, sync it -
+        # so the console never shows a closed ticket as "needs input" etc.
+        def _terminal(stage):
+            s = (stage or "").lower()
+            if "cancel" in s:
+                return "cancelled", {"cancelled", "cancelled_clean"}
+            if "closed" in s:  # Closed + AI Closed
+                return "closed", {"closed", "resolved"}
+            if "done" in s or "billing" in s:
+                return "done", {"done", "closed"}
+            return None, None
+
+        reconciled = []
+        for st in states:
+            canon, ok_set = _terminal(_stage(st.ticket_ref)[0])
+            if canon and st.status not in ok_set:
+                st.status = canon
+                reconciled.append(st)
+        if reconciled:
+            AITicketState.objects.bulk_update(reconciled, ["status"])
+
+        rows = []
+        for st in states:
+            ctx = ctxs.get(st.ticket_ref, {})
+            tok = toks.get(st.ticket_ref)
+            rows.append({
+                "ticket_ref": st.ticket_ref,
+                "subject": st.subject,
+                "client": ctx.get("client") or "",
+                "device": ctx.get("affected_device") or "",
+                "requester": st.requester,
+                "status": st.status,
+                "odoo_status": _stage(st.ticket_ref)[0],
+                "assigned_to": _stage(st.ticket_ref)[1],
+                "assigned_to_bot": _stage(st.ticket_ref)[2],
+                "classification": st.classification,
+                "is_alert": st.is_alert,
+                "summary": st.summary,
+                "proposed_action": st.proposed_action,
+                "updated": (st.last_triaged or st.updated).isoformat() if (st.last_triaged or st.updated) else "",
+                "token": tok,
+                "decision_url": (f"{base}/ai-decision/{tok}" if (base and tok) else ""),
+            })
+        return Response(rows)
+
+
+class AITicketConsoleItem(APIView):
+    """Detail for one ticket (what the AI did = the decision thread) + auto-resolve."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request, ticket_ref):
+        from core.models import AIDecisionRequest, AITicketState
+
+        st = get_object_or_404(AITicketState, ticket_ref=ticket_ref)
+        dr = AIDecisionRequest.objects.filter(ticket_ref=ticket_ref).order_by("-id").first()
+        return Response({
+            "ticket_ref": st.ticket_ref, "subject": st.subject, "status": st.status,
+            "classification": st.classification, "summary": st.summary,
+            "proposed_action": st.proposed_action, "is_alert": st.is_alert,
+            "messages": (dr.messages if dr else []) or [],
+            "context": (dr.context if dr else {}) or {},
+        })
+
+    def post(self, request, ticket_ref):
+        # Kick off a read-only AI auto-resolve attempt (writes an internal note).
+        from core.models import AITicketState
+        from core.tasks import attempt_ai_ticket_resolve
+
+        get_object_or_404(AITicketState, ticket_ref=ticket_ref)
+        attempt_ai_ticket_resolve.delay(ticket_ref)
+        return Response({"queued": True})
+
+
+class AIReportSchedules(APIView):
+    """Operator-defined reports: list and create. The '+' in Global Settings posts here."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request):
+        from core.models import AIReportSchedule
+        from core.serializers import AIReportScheduleSerializer
+
+        return Response(AIReportScheduleSerializer(AIReportSchedule.objects.all(), many=True).data)
+
+    def post(self, request):
+        from core.serializers import AIReportScheduleSerializer
+
+        data = dict(request.data)
+        data["created_by"] = request.user.username
+        ser = AIReportScheduleSerializer(data=data)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+
+class AIReportScheduleDetail(APIView):
+    """Edit, delete, or send one immediately (the 'send now' button)."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def put(self, request, pk):
+        from core.models import AIReportSchedule
+        from core.serializers import AIReportScheduleSerializer
+
+        sch = get_object_or_404(AIReportSchedule, pk=pk)
+        ser = AIReportScheduleSerializer(instance=sch, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+    def delete(self, request, pk):
+        from core.models import AIReportSchedule
+
+        get_object_or_404(AIReportSchedule, pk=pk).delete()
+        return Response("ok")
+
+    def post(self, request, pk):
+        """Send it now, without disturbing its schedule state."""
+        from django.utils import timezone as djangotime
+
+        from core.models import AIReportSchedule
+        from core.tasks import send_daily_ticket_report, send_open_ticket_review
+
+        sch = get_object_or_404(AIReportSchedule, pk=pk)
+        rcpt = sch.recipients or ""
+        opts = sch.options if isinstance(sch.options, dict) else {}
+        to = [x.strip() for x in rcpt.replace(";", ",").split(",") if x.strip()]
+        if not to:
+            return notify_error("This report has no recipients yet.")
+        if sch.kind == "open_tickets":
+            res = send_open_ticket_review(force=True, recipients_override=to,
+                                         hours=sch.effective_window_hours,
+                                         stamp_core=False, options=opts)
+        else:
+            res = send_daily_ticket_report(force=True, hours=sch.effective_window_hours,
+                                          recipients_override=rcpt, stamp_core=False, options=opts)
+        sch.last_run = djangotime.now()
+        sch.last_result = f"manual: {res}"[:1000]
+        sch.save(update_fields=["last_run", "last_result"])
+        return Response(str(res))
+
+
+class AIWorkEntryView(APIView):
+    """Record one burst of work as it happens (see TicketWorkEntry).
+
+    Posted by the bridge when a chat burst ends, so the ledger is current without anyone
+    running a backfill. Idempotent on (ticket/agent, actor, started_at): a retry cannot
+    double-count time.
+    """
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        from django.utils.dateparse import parse_datetime
+
+        from accounts.models import User
+        from core.models import TicketWorkEntry
+
+        d = request.data
+        started = parse_datetime(str(d.get("started_at") or ""))
+        ended = parse_datetime(str(d.get("ended_at") or ""))
+        if not started or not ended:
+            return notify_error("started_at and ended_at are required (ISO 8601)")
+        actor = str(d.get("actor_username") or "").strip()
+        u = User.objects.filter(username=actor).first()
+        ref = str(d.get("ticket_ref") or "")[:100]
+        agent = str(d.get("agent_id") or "")[:200]
+        existing = TicketWorkEntry.objects.filter(
+            ticket_ref=ref, agent_id=agent, actor_username=actor, started_at=started).first()
+        if existing:
+            return Response({"ok": True, "id": existing.id, "deduped": True})
+        row = TicketWorkEntry.objects.create(
+            ticket_ref=ref, agent_id=agent,
+            actor_kind=str(d.get("actor_kind") or "tech_via_ai")[:20],
+            actor_user=u, actor_username=actor[:150],
+            actor_display=((u.get_full_name() or u.username) if u else actor)[:200],
+            surface=str(d.get("surface") or "ticket_chat")[:20],
+            started_at=started, ended_at=ended,
+            human_minutes=d.get("human_minutes"), ai_minutes=d.get("ai_minutes") or 0,
+            confidence=str(d.get("confidence") or "measured")[:12],
+            method=str(d.get("method") or "")[:120],
+            evidence=d.get("evidence") or {},
+            source=str(d.get("source") or "live")[:40],
+            note=str(d.get("note") or "")[:400],
+        )
+        return Response({"ok": True, "id": row.id})
+
+
+class AIActionCreditView(APIView):
+    """Record that a HUMAN drove an AI-performed ticket action.
+
+    Written by the bridge as it happens, because the helpdesk cannot know: every write is
+    performed by the integration's API user, so "closed by the bot" is what gets stored whether
+    the AI acted alone or a technician sat in the chat and directed it. The daily activity report
+    reads this to credit the person instead of the machine.
+    """
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        from django.utils import timezone as djangotime
+
+        from accounts.models import User
+        from core.models import AIActionCredit
+
+        ref = str(request.data.get("ticket_ref") or "").strip()
+        actor = str(request.data.get("actor_username") or "").strip()
+        if not ref or not actor:
+            return notify_error("ticket_ref and actor_username are required")
+        u = User.objects.filter(username=actor).first()
+        row = AIActionCredit.objects.create(
+            ticket_ref=ref[:100],
+            actor_user=u, actor_username=actor[:150],
+            actor_display=((u.get_full_name() or u.username) if u else actor)[:200],
+            action=str(request.data.get("action") or "other")[:40],
+            surface=str(request.data.get("surface") or "decision_chat")[:20],
+            session_id=str(request.data.get("session_id") or "")[:64],
+            at=djangotime.now(),
+            source="live",
+            detail=str(request.data.get("detail") or "")[:400],
+        )
+        return Response({"ok": True, "id": row.id})
+
+
+class AIProcedures(APIView):
+    """The AI Procedures library (RMM-native, helpdesk-agnostic). GET lists/searches;
+    POST creates a procedure. Editable from the Ticket Console 'Procedures' view."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request):
+        from django.db.models import Q
+
+        from core.models import AIProcedure
+        from core.serializers import AIProcedureSerializer
+
+        qs = AIProcedure.objects.all()
+        q = (request.query_params.get("q") or "").strip()
+        cat = (request.query_params.get("category") or "").strip()
+        status_f = (request.query_params.get("status") or "").strip()
+        if q:
+            cond = (
+                Q(title__icontains=q) | Q(symptom__icontains=q) | Q(fix__icontains=q)
+                | Q(applies_to__icontains=q) | Q(root_cause__icontains=q) | Q(category__icontains=q)
+            )
+            # allow searching by the 7-digit code (with or without leading zeros)
+            if q.strip().isdigit():
+                cond |= Q(id=int(q.strip()))
+            qs = qs.filter(cond)
+        if cat:
+            qs = qs.filter(category__iexact=cat)
+        if status_f:
+            qs = qs.filter(status=status_f)
+        cats = sorted(
+            c for c in AIProcedure.objects.exclude(category="").values_list("category", flat=True).distinct()
+        )
+        from core.models import PROCEDURE_CATEGORIES
+
+        return Response({
+            "procedures": AIProcedureSerializer(qs[:1000], many=True).data,
+            "categories": cats,
+            "all_categories": PROCEDURE_CATEGORIES,
+            "total": AIProcedure.objects.count(),
+        })
+
+    def post(self, request):
+        from core.models import normalize_procedure_category
+        from core.serializers import AIProcedureSerializer
+
+        data = dict(request.data)
+        data.setdefault("origin", "human")
+        data["updated_by"] = request.user.username
+        if data.get("category") is not None:
+            data["category"] = normalize_procedure_category(data.get("category"))
+        ser = AIProcedureSerializer(data=data)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+
+class AIProcedureDetail(APIView):
+    """Get / update / delete ONE procedure (used by the Console editor)."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def _obj(self, pk):
+        from core.models import AIProcedure
+
+        return get_object_or_404(AIProcedure, pk=pk)
+
+    def get(self, request, pk):
+        from core.serializers import AIProcedureSerializer
+
+        return Response(AIProcedureSerializer(self._obj(pk)).data)
+
+    def put(self, request, pk):
+        from core.serializers import AIProcedureSerializer
+
+        obj = self._obj(pk)
+        data = dict(request.data)
+        data["updated_by"] = request.user.username
+        if data.get("category") is not None:
+            from core.models import normalize_procedure_category
+
+            data["category"] = normalize_procedure_category(data.get("category"))
+        ser = AIProcedureSerializer(obj, data=data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+    def delete(self, request, pk):
+        self._obj(pk).delete()
+        return Response({"deleted": True})
+
+
+class AIProceduresMineNow(APIView):
+    """Manually trigger a procedure-mining run now (respects the backfill/incremental
+    window). Handy for a first backfill without waiting for the schedule."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        from core.tasks import mine_ticket_procedures
+
+        mine_ticket_procedures.delay(force=True)
+        return Response({"queued": True})
+
+
+class AIProceduresMiningStatus(APIView):
+    """Live status of the procedure miner (written to Redis by the bridge as it runs),
+    so the Procedures window can show what's being looked at in real time."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def get(self, request):
+        import json as _json
+
+        from redis import from_url
+
+        data = None
+        try:
+            with from_url(f"redis://{settings.REDIS_HOST}:6379", decode_responses=True) as conn:
+                raw = conn.get("pi_mining")
+            if raw:
+                data = _json.loads(raw)
+        except Exception:
+            data = None
+        return Response(data or {"running": False, "phase": "idle", "log": []})
+
+
+class AIProceduresMiningStop(APIView):
+    """Request the running miner to stop gracefully (it finishes the current ticket and
+    exits between companies). Sets a Redis flag the bridge checks each loop."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        from redis import from_url
+
+        try:
+            with from_url(f"redis://{settings.REDIS_HOST}:6379", decode_responses=True) as conn:
+                conn.set("pi_mining:stop", "1", ex=3600)
+        except Exception:
+            return notify_error("Could not reach Redis to signal stop.")
+        return Response({"stopping": True})
+
+
+class AIDecisionSession(APIView):
+    """Mint a short-lived, STATEFUL streaming decision-chat session (WebSocket) for a
+    ticket - the same machinery as the device chat, so it never blocks a web worker
+    and keeps its full context across turns. Returns a pi-bridge session token."""
+
+    # Same access model as the device chat: requires the AI module + can_use_ai.
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request, token):
+        from django.conf import settings as dj_settings
+
+        from agents.pi_session import create_pi_session
+        from core.models import AIDecisionRequest, AIModel
+        from core.tasks import _resolve_ai_model
+
+        d = get_object_or_404(AIDecisionRequest, token=token)
+        core = get_core_settings()
+        user = request.user
+        is_super = user.is_superuser or (user.role and user.role.is_superuser)
+        # Write mode uses the SAME permission as the device chat (can_use_ai_mutate);
+        # auto-approve uses can_use_ai_autoapprove. Superusers get both.
+        mut = bool(is_super or (user.role and user.role.can_use_ai_mutate))
+        aa = bool(is_super or (user.role and user.role.can_use_ai_autoapprove))
+        enabled = AIModel.objects.filter(enabled=True, provider__enabled=True).select_related("provider")
+        if is_super:
+            allowed = list(enabled)
+        else:
+            role = user.role
+            allowed = list(
+                role.ai_allowed_models.filter(enabled=True, provider__enabled=True).select_related("provider")
+                if role else AIModel.objects.none()
+            ) or [m for m in enabled if m.is_default]
+        if not allowed:
+            return notify_error("No AI models are available. Ask an admin to configure providers/models.")
+        chosen = next((m for m in allowed if m.is_default), allowed[0])
+        req_id = request.data.get("model_id")
+        if req_id:
+            match = next((m for m in allowed if m.model_id == req_id), None)
+            if not match:
+                return notify_error("Requested model is not permitted for your role.")
+            chosen = match
+
+        def mdict(m, full=False):
+            base = {"provider": m.provider.name, "model_id": m.model_id,
+                    "display_name": m.display_name, "thinking_level": m.thinking_level,
+                    "base_url": m.provider.base_url}
+            return {**base, "api_key": m.provider.api_key} if full else base
+
+        base_url = (
+            dj_settings.CORS_ORIGIN_WHITELIST[0]
+            if getattr(dj_settings, "CORS_ORIGIN_WHITELIST", None) else ""
+        )
+        blob = {
+            "kind": "decision",
+            "ticket_ref": d.ticket_ref,
+            "decision_url": f"{base_url}/ai-decision/{token}" if base_url else "",
+            # Controls shown in the window (mirror the device chat).
+            "mutate_allowed": mut,
+            "allow_mutating": False,  # Write mode OFF by default - tech must enable it (needs can_use_ai_mutate)
+            "autoapprove_allowed": aa,
+            "allow_email": True,      # Allow customer email ON by default
+            "require_approval": True,
+            "question": d.question,
+            "context": d.context,
+            "username": user.username,
+            # Identity of the tech working this chat, so the bridge can assign the
+            # ticket to them (matched to an Odoo user) as soon as they start talking.
+            "user_email": getattr(user, "email", "") or "",
+            "user_display": (user.get_full_name() if hasattr(user, "get_full_name") else "") or user.username,
+            "provider": chosen.provider.name,
+            "model_id": chosen.model_id,
+            "thinking_level": chosen.thinking_level,
+            "base_url": chosen.provider.base_url,
+            "api_key": chosen.provider.api_key,
+            "allowed_models": [mdict(m, full=True) for m in allowed],
+            "decision_prompt": core.ai_ticket_decision_prompt or "",
+            # Start the chat in the state the operator last chose, not always OFF. Gated by
+            # the role permission above, so remembering it can never grant it.
+            "auto_approve": bool(aa and getattr(user, "ai_autoapprove_default", False)),
+            # The customer-reply standard lives in the HELPDESK POLICY. The ticket chat is
+            # the surface that actually answers customers, so it must receive it - it did
+            # not, and produced replies below the standard while the policy sat unread.
+            "helpdesk_prompt": core.ai_helpdesk_prompt or "",
+            # Our own approved runbooks that match this ticket (deterministic keyword
+            # match, code-side) so accumulated knowledge steers the answer.
+            "procedures": match_procedures(
+                d.ticket_ref or "",
+                (d.context or {}).get("subject", "") if isinstance(d.context, dict) else "",
+                (d.context or {}).get("summary", "") if isinstance(d.context, dict) else "",
+                (d.context or {}).get("proposed_action", "") if isinstance(d.context, dict) else "",
+                d.question or "",
+            ),
+            # The prior thread (triage note + any earlier chat) so a fresh WS session
+            # still shows the history and the AI has continuity.
+            "prior_messages": [
+                {"role": m.get("role") or "assistant", "content": str(m.get("content") or "")}
+                for m in (d.messages or [])
+            ],
+            "helpdesk_api": {
+                "base_url": core.ai_helpdesk_api_base_url or "",
+                "api_key": core.ai_helpdesk_api_key or "",
+            },
+            "helpdesk_code": core.ai_helpdesk_code or "",
+            "persist_history": True,
+        }
+        pi_token = create_pi_session(data=blob)
+        return Response({
+            "token": pi_token,
+            "ticket_ref": d.ticket_ref,
+            "hostname": f"Ticket {d.ticket_ref}",
+            "client": (d.context or {}).get("client") or "",
+            "site": (d.context or {}).get("affected_device") or "",
+            "model_id": chosen.model_id,
+            "model_display": chosen.display_name,
+            "allowed_models": [mdict(m) for m in allowed],
+            "require_approval": True,
+            "autoapprove_allowed": aa,
+            "auto_approve": bool(aa and getattr(request.user, "ai_autoapprove_default", False)),
+        })
+
+
+class AIScheduleAction(APIView):
+    """Create/list AI scheduled actions (run once at a due time). Human-directed for
+    now - NOT created automatically by triage."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from core.models import AIScheduledAction
+
+        rows = AIScheduledAction.objects.select_related("agent").order_by("run_at")[:200]
+        return Response([{
+            "id": r.id, "ticket_ref": r.ticket_ref,
+            "agent": r.agent.hostname if r.agent else None,
+            "agent_id": r.agent.agent_id if r.agent else None,
+            "action": r.action, "run_at": r.run_at.isoformat(),
+            "status": r.status, "allow_mutating": r.allow_mutating,
+            "created_by": r.created_by, "result": r.result,
+        } for r in rows])
+
+    def post(self, request):
+        from django.utils import timezone as djangotime
+        from django.utils.dateparse import parse_datetime
+
+        from agents.models import Agent
+        from core.models import AIScheduledAction
+
+        raw = str(request.data.get("run_at") or "").strip()
+        run_at = parse_datetime(raw)
+        if not run_at:
+            return notify_error("run_at must be an ISO 8601 datetime (e.g. 2026-07-22T07:00:00Z).")
+        if djangotime.is_naive(run_at):
+            run_at = djangotime.make_aware(run_at, djangotime.get_current_timezone())
+        action = str(request.data.get("action") or "").strip()
+        if not action:
+            return notify_error("action is required.")
+        agent = None
+        aid = request.data.get("agent_id")
+        if aid:
+            agent = Agent.objects.filter(agent_id=aid).first()
+            if not agent:
+                return notify_error(f"agent not found: {aid}")
+        obj = AIScheduledAction.objects.create(
+            agent=agent, ticket_ref=(request.data.get("ticket_ref") or "")[:100],
+            action=action, run_at=run_at,
+            allow_mutating=bool(request.data.get("allow_mutating", True)),
+            created_by=getattr(request.user, "username", "")[:150],
+        )
+        return Response({"id": obj.id, "run_at": obj.run_at.isoformat(), "status": obj.status})
+
+    def delete(self, request, pk=None):
+        from core.models import AIScheduledAction
+
+        pk = pk or request.data.get("id")
+        obj = get_object_or_404(AIScheduledAction, pk=pk)
+        obj.delete()
+        return Response({"ok": True})
+class AIResolveDevices(APIView):
+    """Link an Odoo company (+ optional requester username) to the RMM client and
+    the user's device(s). Called by the pi-trmm-bridge during ticket resolution.
+
+    Body: {domain?, company_name?, username?}
+    Returns: {rmm_client, match_method, confidence, agents:[...], candidates:[...]}
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    _STOP = {"the", "and", "inc", "llc", "pc", "co", "company", "corp",
+             "group", "of", "services", "service", "pa", "ltd", "lp"}
+
+    @classmethod
+    def _toks(cls, s):
+        import re
+        return {t for t in re.sub(r"[^a-z0-9 ]", " ", (s or "").lower()).split()
+                if t and t not in cls._STOP}
+
+    @staticmethod
+    def _norm(s):
+        import re
+        return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+    def _find_client(self, domain, company_name):
+        import json
+
+        from clients.models import Client
+
+        core = get_core_settings()
+        try:
+            cmap = json.loads(core.ai_ticket_client_map or "{}")
+        except Exception:
+            cmap = {}
+        clients = list(Client.objects.all())
+        by_name = {self._norm(c.name): c for c in clients}
+        # 1) explicit override (domain then company)
+        ov = (cmap.get("by_domain", {}) or {}).get((domain or "").lower()) \
+            or (cmap.get("by_company", {}) or {}).get(company_name or "")
+        if ov and self._norm(ov) in by_name:
+            return by_name[self._norm(ov)], "override", 1.0
+        # 2) exact normalized name match
+        if company_name and self._norm(company_name) in by_name:
+            return by_name[self._norm(company_name)], "exact_name", 1.0
+        # 3) fuzzy token overlap (fraction of the RMM client's tokens covered)
+        ct = self._toks(company_name)
+        best, score = None, 0.0
+        if ct:
+            for c in clients:
+                rt = self._toks(c.name)
+                if not rt:
+                    continue
+                inter = len(rt & ct)
+                if not inter:
+                    continue
+                s = inter / max(len(rt), len(ct))
+                if s > score:
+                    best, score = c, s
+        if best and score >= 0.6:
+            return best, "fuzzy", round(score, 2)
+        return None, "none", 0.0
+
+    @staticmethod
+    def _nuser(s):
+        import re
+        s = (s or "").split("\\")[-1].split("@")[0]
+        return re.sub(r"[^a-z0-9]", "", s.lower())
+
+    def _name_candidates(self, username, person_name):
+        """Normalized login-name guesses from the email local part + the person's
+        display name (handles JaneSmith vs 'Jane Smith', jsmith,
+        jane.smith, smith, etc.)."""
+        import re
+
+        cands = set()
+        if username:
+            cands.add(self._nuser(username))
+        parts = [p for p in re.split(r"[^A-Za-z0-9]+", person_name or "") if p]
+        if parts:
+            first, last = parts[0].lower(), parts[-1].lower()
+            cands.update({
+                self._nuser(person_name), first + last, last + first,
+                first[:1] + last, last + first[:1], first + last[:1], last,
+            })
+        return {c for c in cands if len(c) >= 4}
+
+    def post(self, request):
+        from agents.models import Agent
+
+        domain = (request.data.get("domain") or "").strip().lower()
+        company_name = (request.data.get("company_name") or "").strip()
+        person_name = (request.data.get("person_name") or "").strip()
+        hostname = (request.data.get("hostname") or "").strip()
+        username = (request.data.get("username") or "").strip()
+        if username and "@" in username:
+            username = username.split("@", 1)[0]
+        if username and "\\" in username:
+            username = username.split("\\", 1)[-1]
+
+        # A device hostname may arrive as an FQDN (pve01.acme.local) - the
+        # agent's hostname is the SHORT name (pve01), so match on that.
+        short_host = hostname.split(".")[0].strip() if hostname else ""
+
+        client, method, confidence = self._find_client(domain, company_name)
+
+        # FALLBACK: if the company name/domain didn't resolve but we have a device
+        # hostname, find the AGENT by hostname - the agent's client IS the company.
+        # (This is the reliable path for host-named alerts, e.g. a Proxmox backup report
+        #  for pve01.acme.local -> the pve01 agent -> its RMM client.)
+        if not client and short_host:
+            ha = list(
+                Agent.objects.filter(hostname__iexact=short_host)
+                .select_related("site", "site__client")[:20]
+            ) or list(
+                Agent.objects.filter(hostname__icontains=short_host)
+                .select_related("site", "site__client")[:20]
+            )
+            client_ids = {a.site.client_id for a in ha if a.site_id}
+            if ha and len(client_ids) == 1:
+                client = ha[0].site.client
+                method, confidence = "hostname", 0.9
+
+        if not client:
+            # The company didn't resolve AND the hostname is ambiguous (the same name
+            # exists at several clients). Still hand back those candidates WITH the client
+            # each one belongs to, so an automated caller can disambiguate on its own -
+            # e.g. by asking each candidate for its own FQDN - instead of dead-ending.
+            # Returning them is not an assertion that any of them is the right device.
+            amb = []
+            if short_host:
+                amb = list(
+                    Agent.objects.filter(hostname__iexact=short_host)
+                    .select_related("site", "site__client")[:20]
+                ) or list(
+                    Agent.objects.filter(hostname__icontains=short_host)
+                    .select_related("site", "site__client")[:20]
+                )
+            return Response({
+                "rmm_client": None, "match_method": "none", "confidence": 0.0,
+                "agents": [], "candidates": [],
+                "hostname_searched": hostname or None,
+                "ambiguous_matches": [
+                    {"agent_id": a.agent_id, "hostname": a.hostname,
+                     "client": a.client.name if a.client else "",
+                     "site": a.site.name if a.site_id else ""}
+                    for a in amb
+                ],
+                "note": "No RMM client match by company name, domain, or device hostname. "
+                        "ambiguous_matches lists devices sharing this hostname across clients - "
+                        "confirm identity on the device before trusting any of them.",
+            })
+
+        base_url = (settings.CORS_ORIGIN_WHITELIST[0]
+                    if getattr(settings, "CORS_ORIGIN_WHITELIST", None) else "")
+
+        def _agent_dict(a):
+            return {
+                "agent_id": a.agent_id,
+                "hostname": a.hostname,
+                # Which client this device actually belongs to. Callers that act
+                # automatically MUST check this: hostname lookups fall back to a
+                # global search, and reused names (vm01, pve01) are extremely common,
+                # so a match is not proof the device is this customer's.
+                "client": a.client.name if a.client else "",
+                "os": a.operating_system,
+                "plat": a.plat,
+                "logged_in_user": a.logged_in_username,
+                "last_user": a.last_logged_in_user,
+                "last_seen": str(a.last_seen) if a.last_seen else None,
+                "online": a.status == "online" if hasattr(a, "status") else None,
+                "device_url": f"{base_url}/agents/{a.agent_id}" if base_url else "",
+            }
+
+        agents = list(
+            Agent.objects.filter(site__client=client)
+            .select_related("site", "site__client")
+            .only("agent_id", "hostname", "operating_system", "plat",
+                  "logged_in_username", "last_logged_in_user", "last_seen", "site")
+        )
+        cands = self._name_candidates(username, person_name)
+        matched = []
+        if cands:
+            for a in agents:
+                keys = {self._nuser(a.logged_in_username), self._nuser(a.last_logged_in_user)}
+                keys.discard("")
+                # strong match: a normalized login equals one of our name candidates
+                if keys & cands:
+                    matched.append(a)
+
+        # Hostname lookup - the right way to find a SERVER/infra device named in a
+        # ticket (e.g. pve01). Search within the client first, then globally.
+        host_matches = []
+        if hostname:
+            hl = (short_host or hostname).lower()
+            host_matches = [a for a in agents if hl in (a.hostname or "").lower()]
+            if not host_matches:
+                extra = (
+                    Agent.objects.filter(hostname__icontains=short_host or hostname)
+                    .select_related("site", "site__client")
+                    .only("agent_id", "hostname", "operating_system", "plat",
+                          "logged_in_username", "last_logged_in_user", "last_seen", "site")[:20]
+                )
+                host_matches = list(extra)
+        # candidates = client's agents (cap), so a human/AI can pick if no exact user match
+        candidates = agents[:50]
+        return Response({
+            "rmm_client": client.name,
+            "match_method": method,
+            "confidence": confidence,
+            "username_searched": username or None,
+            "name_candidates": sorted(cands),
+            "hostname_searched": hostname or None,
+            "hostname_matches": [_agent_dict(a) for a in host_matches],
+            "agents": [_agent_dict(a) for a in matched],
+            "candidates": [_agent_dict(a) for a in candidates],
+            "agent_count": len(agents),
+        })
+
+
+class GetAddBulkAICommand(APIView):
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def get(self, request):
+        cmds = BulkAICommand.objects.select_related("model", "client", "site").prefetch_related("agents")
+        return Response(BulkAICommandSerializer(cmds, many=True).data)
+
+    def post(self, request):
+        from agents.models import Agent
+        from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
+
+        data = request.data.copy()
+        agent_ids = data.pop("agent_ids", None) or []
+        if isinstance(agent_ids, str):
+            agent_ids = [agent_ids]
+        # validate target access (mirrors bulk command)
+        if data.get("target") == "client" and data.get("client"):
+            if not _has_perm_on_client(request.user, data["client"]):
+                raise PermissionDenied()
+        elif data.get("target") == "site" and data.get("site"):
+            if not _has_perm_on_site(request.user, data["site"]):
+                raise PermissionDenied()
+
+        serializer = BulkAICommandSerializer(data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        cmd = serializer.save(
+            created_by=request.user.username, modified_by=request.user.username
+        )
+        if agent_ids:
+            cmd.agents.set(Agent.objects.filter(agent_id__in=agent_ids))
+        _arm_bulk_next_run(cmd)
+        return Response("ok")
+
+
+def _arm_bulk_next_run(cmd):
+    from core.tasks import _compute_bulk_next_run
+
+    # only recurring commands get a next_run; "now" ones run on demand
+    cmd.next_run = (
+        _compute_bulk_next_run(cmd) if cmd.run_mode == "schedule" else None
+    )
+    cmd.save(update_fields=["next_run"])
+
+
+class UpdateDeleteBulkAICommand(APIView):
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def put(self, request, pk):
+        from agents.models import Agent
+
+        cmd = get_object_or_404(BulkAICommand, pk=pk)
+        data = request.data.copy()
+        agent_ids = data.pop("agent_ids", None)
+        serializer = BulkAICommandSerializer(instance=cmd, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        cmd = serializer.save(modified_by=request.user.username)
+        if agent_ids is not None:
+            cmd.agents.set(Agent.objects.filter(agent_id__in=agent_ids))
+        _arm_bulk_next_run(cmd)
+        return Response("ok")
+
+    def delete(self, request, pk):
+        get_object_or_404(BulkAICommand, pk=pk).delete()
+        return Response("ok")
+
+
+class RunBulkAICommandNow(APIView):
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def post(self, request, pk):
+        from core.tasks import run_bulk_ai_command
+
+        get_object_or_404(BulkAICommand, pk=pk)
+        run_bulk_ai_command.delay(pk, triggered_by="manual")
+        return Response("Bulk AI command queued to run now")
+
+
+class BulkAICommandResults(APIView):
+    """Latest run per agent for one bulk command (computers-left / results-right
+    viewer). Scoped to the agents the caller may see."""
+
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def get(self, request, pk):
+        from agents.models import Agent
+
+        get_object_or_404(BulkAICommand, pk=pk)
+        permitted = Agent.objects.filter_by_role(request.user)  # type: ignore
+        runs = (
+            AITaskRun.objects.filter(bulk_id=pk, agent__in=permitted)
+            .select_related("agent__site__client")
+            .order_by("agent_id", "-started_at")
+        )
+        seen = set()
+        latest = []
+        for r in runs:
+            if r.agent_id in seen:
+                continue
+            seen.add(r.agent_id)
+            latest.append(r)
+        latest.sort(key=lambda r: (r.agent.hostname.lower() if r.agent else ""))
+        return Response(AITaskRunSerializer(latest, many=True).data)
+
+
+def _revoke_ai_agent_tasks(cmd_id=None):
+    """Revoke (terminate) queued/active Celery AI runner tasks. If cmd_id is
+    given, only tasks for that bulk command; otherwise all AI runner tasks.
+    Returns the number of tasks revoked."""
+    from tacticalrmm.celery import app
+
+    names = (
+        "run_bulk_ai_agent",
+        "run_bulk_ai_command",
+        "run_ai_task",
+    )
+    revoked = 0
+    try:
+        insp = app.control.inspect(timeout=8)
+        buckets = []
+        for getter in (insp.active, insp.reserved, insp.scheduled):
+            try:
+                buckets.append(getter() or {})
+            except Exception:
+                pass
+        for bucket in buckets:
+            for _worker, tasks in bucket.items():
+                for t in tasks:
+                    tname = t.get("name", "") or ""
+                    if not any(tname.endswith(n) for n in names):
+                        continue
+                    if cmd_id is not None:
+                        args = t.get("args") or []
+                        # run_bulk_ai_agent(cmd_id, agent_pk, ...) / run_bulk_ai_command(cmd_id)
+                        if not (isinstance(args, list) and args and args[0] == cmd_id):
+                            continue
+                    app.control.revoke(t["id"], terminate=True, signal="SIGTERM")
+                    revoked += 1
+    except Exception:
+        pass
+    return revoked
+
+
+def _abort_bridge_runs(run_ids=None, all_runs=False):
+    """Tell the bridge to abort in-flight headless runs (stops LLM spend)."""
+    bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+    payload = {"all": True} if all_runs else {"run_ids": list(run_ids or [])}
+    try:
+        r = requests.post(f"{bridge}/pi/run/abort", json=payload, timeout=15)
+        return r.json()
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+class StopBulkAICommand(APIView):
+    """Kill switch for one bulk AI command: disable it, revoke its queued/active
+    Celery tasks, abort its in-flight bridge runs, and mark running rows stopped."""
+
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def post(self, request, pk):
+        from core.tasks import cmd_stop_set
+
+        cmd = get_object_or_404(BulkAICommand, pk=pk)
+        # 1) stop it from (re)dispatching
+        cmd.enabled = False
+        cmd.next_run = None
+        cmd.save(update_fields=["enabled", "next_run"])
+        # set the per-command stop flag so any queued backlog no-ops on execute
+        cmd_stop_set(pk)
+        # 2) revoke queued/active celery runner tasks for this command
+        revoked = _revoke_ai_agent_tasks(cmd_id=pk)
+        # 3) abort in-flight bridge runs + mark rows stopped
+        running = AITaskRun.objects.filter(bulk_id=pk, status="running")
+        run_ids = list(running.values_list("run_id", flat=True))
+        bridge = _abort_bridge_runs(run_ids=run_ids)
+        stopped = running.update(
+            status="error",
+            summary="Stopped by operator",
+            finished_at=djangotime.now(),
+        )
+        return Response(
+            {
+                "detail": f"Stopped '{cmd.name}': disabled, {revoked} queued tasks revoked, "
+                f"{bridge.get('aborted', 0)} live runs aborted, {stopped} rows marked stopped.",
+                "revoked": revoked,
+                "aborted": bridge.get("aborted", 0),
+                "stopped": stopped,
+            }
+        )
+
+
+class StopAllAIRuns(APIView):
+    """Emergency stop: abort ALL in-flight AI runs (bulk + scheduled) and revoke
+    all queued AI runner tasks. Does NOT disable schedules (use per-command stop
+    for that) - purely halts current spend."""
+
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def post(self, request):
+        from core.tasks import ai_kill_set
+
+        # set the global kill flag first so any queued backlog no-ops on execute
+        ai_kill_set(seconds=900)
+        revoked = _revoke_ai_agent_tasks(cmd_id=None)
+        bridge = _abort_bridge_runs(all_runs=True)
+        stopped = AITaskRun.objects.filter(status="running").update(
+            status="error",
+            summary="Stopped by operator (emergency stop)",
+            finished_at=djangotime.now(),
+        )
+        return Response(
+            {
+                "detail": f"Emergency stop: {revoked} queued tasks revoked, "
+                f"{bridge.get('aborted', 0)} live runs aborted, {stopped} rows marked stopped.",
+                "revoked": revoked,
+                "aborted": bridge.get("aborted", 0),
+                "stopped": stopped,
+            }
+        )
+
+
+class PreviewBulkAITargets(APIView):
+    """Return how many/which online agents a target selection would hit."""
+
+    permission_classes = [IsAuthenticated, BulkAIPerms]
+
+    def post(self, request):
+        from core.tasks import _resolve_bulk_targets
+
+        class _Tmp:
+            pass
+
+        tmp = _Tmp()
+        tmp.target = request.data.get("target", "all")
+        tmp.client_id = request.data.get("client")
+        tmp.site_id = request.data.get("site")
+        tmp.mon_type = request.data.get("mon_type", "all")
+        tmp.os_type = request.data.get("os_type", "all")
+        tmp.filters = request.data.get("filters") or []
+        tmp.filter_match = request.data.get("filter_match", "any")
+        # resolve the FULL matched set (ignore exclusions) so the UI can show
+        # every match with an exclude checkbox; we mark/count exclusions below.
+        tmp.exclude_agent_ids = []
+        exclude_ids = set(request.data.get("exclude_agent_ids") or [])
+
+        agent_ids = request.data.get("agent_ids") or []
+
+        class _AgentsProxy:
+            def values_list(self, *a, **k):
+                from agents.models import Agent
+
+                return Agent.objects.filter(agent_id__in=agent_ids).values_list("pk", flat=True)
+
+        tmp.agents = _AgentsProxy()
+        agents = _resolve_bulk_targets(tmp)
+        from core.tasks import _bulk_max_agents
+
+        cap = _bulk_max_agents()
+        effective = [a for a in agents if a.agent_id not in exclude_ids]
+        return Response(
+            {
+                "online_count": len(effective),  # after exclusions (what will run)
+                "matched_count": len(agents),  # before exclusions
+                "excluded_count": len(agents) - len(effective),
+                "cap": cap,
+                "over_cap": len(effective) > cap,
+                "agents": [
+                    {
+                        "agent_id": a.agent_id,
+                        "hostname": a.hostname,
+                        "client": a.client.name,
+                        "site": a.site.name,
+                        "excluded": a.agent_id in exclude_ids,
+                    }
+                    for a in agents[:500]
+                ],
+            }
+        )
+
+
+class AIVerifierLint(APIView):
+    """Validate an alert-verifier rule set without running it: lists each rule (name,
+    shell, enabled, parked) and anything structurally wrong, so rules can be authored
+    in Global Settings without trial and error."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        import requests as _requests
+
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        code = request.data.get("code")
+        if code is None:
+            code = get_core_settings().ai_verifier_code or ""
+        try:
+            r = _requests.post(f"{bridge}/pi/verify-lint", json={"code": code}, timeout=(5, 30))
+            return Response(r.json())
+        except Exception as e:
+            return Response({"ok": False, "error": f"bridge error: {e}", "rules": []})
+
+
+class AIHelpdeskCaps(APIView):
+    """Report how each helpdesk operation is CLASSIFIED and which surfaces may use it.
+
+    Runs no operation. Product code denies any operation the integration declares as
+    mutating but leaves unclassified - the safe default, but a silent one: adding an
+    operation to helpdesk.js, or dropping exports.opClasses, otherwise only surfaces when
+    enforcement blocks a working feature. This makes it visible in Global Settings first.
+    """
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        import requests as _requests
+
+        core = get_core_settings()
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        code = request.data.get("code")
+        if code is None:
+            code = core.ai_helpdesk_code or ""
+        if not code.strip():
+            return Response({"ok": False, "error": "no helpdesk integration code configured"})
+        try:
+            r = _requests.post(
+                f"{bridge}/pi/helpdesk-caps",
+                json={
+                    "helpdesk_code": code,
+                    "helpdesk_api": {
+                        "base_url": core.ai_helpdesk_api_base_url or "",
+                        "api_key": core.ai_helpdesk_api_key or "",
+                    },
+                },
+                timeout=(5, 60),
+            )
+            return Response(r.json())
+        except Exception as e:
+            return Response({"ok": False, "error": f"bridge error: {e}", "ops": []})
+
+
+class AIVerifierTest(APIView):
+    """Dry-run a verifier against ONE real ticket and return the verdict + evidence.
+    ALWAYS forced dry_run, so testing can never cancel a ticket - it only inspects the
+    device read-only and reports what the rule would decide."""
+
+    permission_classes = [IsAuthenticated, PiPerms]
+
+    def post(self, request):
+        import requests as _requests
+
+        core = get_core_settings()
+        ref = (request.data.get("ticket_ref") or "").strip()
+        if not ref:
+            return Response({"error": "ticket_ref required"}, status=status.HTTP_400_BAD_REQUEST)
+        code = request.data.get("code")
+        if code is None:
+            code = core.ai_verifier_code or ""
+        if not code.strip():
+            return Response({"error": "no verifier code to test"}, status=status.HTTP_400_BAD_REQUEST)
+        bridge = getattr(settings, "PI_BRIDGE_URL", "http://127.0.0.1:8787")
+        try:
+            r = _requests.post(
+                f"{bridge}/pi/verify-alert",
+                json={
+                    "ticket_ref": ref,
+                    "verifier_code": code,
+                    "dry_run": True,  # hard-forced: a test must never change a ticket
+                    "helpdesk_api": {
+                        "base_url": core.ai_helpdesk_api_base_url or "",
+                        "api_key": core.ai_helpdesk_api_key or "",
+                    },
+                    "helpdesk_code": core.ai_helpdesk_code or "",
+                },
+                timeout=(10, 420),
+            )
+            return Response(r.json())
+        except Exception as e:
+            return Response({"matched": False, "error": f"bridge error: {e}"})
+
+
+class AIModelCatalogRefresh(APIView):
+    """Re-read what each enabled provider currently offers, diff it against the last
+    snapshot, and let helpdesk.js report any change. Returns the run summary."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
+        from core.tasks import refresh_ai_model_catalog
+
+        result = refresh_ai_model_catalog(force=True)
+        core = get_core_settings()
+        return Response({
+            "result": result,
+            "checked": core.ai_model_catalog_checked,
+        })
+
+
+class AIRuntimeStatus(APIView):
+    """What the AI runtime is now, what it could be, and whether an update could run
+    right this second. Read-only - safe to poll from the settings screen."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def get(self, request):
+        from core.tasks import (
+            _runtime_busy,
+            _runtime_installed_version,
+            _runtime_latest_version,
+        )
+
+        core = get_core_settings()
+        installed, ierr = _runtime_installed_version()
+        latest, lerr = _runtime_latest_version(core.ai_runtime_update_target)
+        busy, detail = _runtime_busy()
+        return Response({
+            "installed": installed,
+            "installed_error": ierr,
+            "latest": latest,
+            "latest_error": lerr,
+            "update_available": bool(installed and latest and installed != latest),
+            "busy": busy,
+            "busy_detail": detail,
+            "last_run": core.ai_runtime_update_last_run,
+            "last_result": core.ai_runtime_update_last_result,
+            "last_version": core.ai_runtime_update_last_version,
+        })
+
+
+class AIDailyReportSendNow(APIView):
+    """Build and email the activity report immediately, ignoring the schedule."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
+        from core.tasks import send_daily_ticket_report
+
+        result = send_daily_ticket_report(force=True)
+        core = get_core_settings()
+        return Response({"result": result, "last_run": core.ai_daily_report_last_run})
+
+
+class AIRuntimeUpdateNow(APIView):
+    """Run the update immediately, ignoring the time window. Everything else still
+    applies: it refuses while work is in flight, probes compatibility, and rolls back."""
+
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
+        from core.tasks import run_ai_runtime_update
+
+        result = run_ai_runtime_update(force=True)
+        core = get_core_settings()
+        return Response({
+            "result": result,
+            "last_run": core.ai_runtime_update_last_run,
+            "last_version": core.ai_runtime_update_last_version,
+        })

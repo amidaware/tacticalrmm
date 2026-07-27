@@ -220,6 +220,7 @@ class AuditActionType(models.TextChoices):
     TASK_RUN = "task_run", "Task Run"
     AGENT_INSTALL = "agent_install", "Agent Install"
     REMOTE_SESSION = "remote_session", "Remote Session"
+    AI_SESSION = "ai_session", "AI Assistant Session"
     EXEC_SCRIPT = "execute_script", "Execute Script"
     EXEC_COMMAND = "execute_command", "Execute Command"
     BULK_ACTION = "bulk_action", "Bulk Action"
@@ -243,6 +244,7 @@ class AuditObjType(models.TextChoices):
     URL_ACTION = "urlaction", "URL Action"
     KEYSTORE = "keystore", "Global Key Store"
     CUSTOM_FIELD = "customfield", "Custom Field"
+    NETDEVICE = "netdevice", "Network Device"
 
 
 class DebugLogLevel(models.TextChoices):

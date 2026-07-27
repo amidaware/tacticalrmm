@@ -95,6 +95,10 @@ class Agent(BaseAuditModel):
         max_length=30, choices=AgentMonType.choices, default=AgentMonType.SERVER
     )
     description = models.CharField(null=True, blank=True, max_length=255)
+    # Distilled per-device memory for Pi.dev AI: durable facts the AI saves across
+    # runs (roles, key paths, quirks, known fixes) and that techs can curate in the
+    # UI. Injected into the AI's system prompt so future runs start with context.
+    ai_notes = models.TextField(blank=True, default="")
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
     overdue_email_alert = models.BooleanField(default=False)
     overdue_text_alert = models.BooleanField(default=False)

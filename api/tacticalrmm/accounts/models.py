@@ -20,6 +20,12 @@ class User(AbstractUser, BaseAuditModel):
     block_dashboard_login = models.BooleanField(default=False)
     totp_key = models.CharField(max_length=50, null=True, blank=True)
     dark_mode = models.BooleanField(default=True)
+    # AI chat: remember the operator's Auto-approve choice across windows and refreshes.
+    # It used to live only in the WebSocket connection, so every refresh, every second window
+    # and every reconnect silently reverted it to OFF - which reads as "auto-approve randomly
+    # stops working". The permission to use it is still the role's (can_use_ai_autoapprove);
+    # this is only the remembered preference.
+    ai_autoapprove_default = models.BooleanField(default=False)
     show_community_scripts = models.BooleanField(default=True)
     agent_dblclick_action: "AgentDblClick" = models.CharField(
         max_length=50, choices=AgentDblClick.choices, default=AgentDblClick.EDIT_AGENT
@@ -125,6 +131,19 @@ class Role(BaseAuditModel):
     can_send_wol = models.BooleanField(default=False)
     can_use_registry = models.BooleanField(default=False)
     can_use_terminal = models.BooleanField(default=False)
+    # Pi.dev AI assistant
+    can_use_ai = models.BooleanField(default=False)
+    can_use_ai_autoapprove = models.BooleanField(default=False)
+    # when False the AI session is read-only: write-only tools (run script, kill
+    # process, reboot) are removed and run_command_on_device refuses commands
+    # that look destructive. Superusers always have mutate rights.
+    can_use_ai_mutate = models.BooleanField(default=False)
+    # Manage/delete AI tasks & bulk AI commands created by OTHER users, and on
+    # agents outside this role's normal scope. Superusers always have this.
+    can_manage_all_ai_tasks = models.BooleanField(default=False)
+    ai_allowed_models = models.ManyToManyField(
+        "core.AIModel", related_name="role_ai_models", blank=True
+    )
 
     # core
     can_list_notes = models.BooleanField(default=False)

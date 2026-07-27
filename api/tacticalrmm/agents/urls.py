@@ -25,6 +25,10 @@ urlpatterns = [
     path("<agent:agent_id>/pendingactions/", PendingActions.as_view()),
     # agent remote background
     path("<agent:agent_id>/meshcentral/", views.AgentMeshCentral.as_view()),
+    # Pi.dev AI assistant
+    path("pi/multisession/", views.PiMultiSession.as_view()),
+    path("<agent:agent_id>/pi/session/", views.AgentPiSession.as_view()),
+    path("<agent:agent_id>/pi/history/", views.AgentPiHistory.as_view()),
     path("<agent:agent_id>/<str:port>/webvnc/", views.WebVNC.as_view()),
     path("<agent:agent_id>/meshcentral/recover/", views.AgentMeshCentral.as_view()),
     path("<agent:agent_id>/processes/", views.AgentProcesses.as_view()),

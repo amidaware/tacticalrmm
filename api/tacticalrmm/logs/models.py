@@ -249,6 +249,82 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_passkey_registered(
+        username: str, debug_info: Dict[Any, Any] = {}
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            object_type=AuditObjType.USER,
+            action=AuditActionType.ADD,
+            message=f"{username} registered a passkey",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
+    def audit_passkey_register_failed(
+        username: str, debug_info: Dict[Any, Any] = {}
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            object_type=AuditObjType.USER,
+            action=AuditActionType.FAILED_LOGIN,
+            message=f"{username} failed to register a passkey",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
+    def audit_passkey_reauth_successful(
+        username: str, debug_info: Dict[Any, Any] = {}
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            object_type=AuditObjType.USER,
+            action=AuditActionType.LOGIN,
+            message=f"{username} completed passkey step-up re-auth",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
+    def audit_passkey_reauth_failed(
+        username: str, debug_info: Dict[Any, Any] = {}
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            object_type=AuditObjType.USER,
+            action=AuditActionType.FAILED_LOGIN,
+            message=f"{username} failed passkey step-up re-auth",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
+    def audit_passkey_deleted(
+        username: str, credential_name: str = "", debug_info: Dict[Any, Any] = {}
+    ) -> None:
+        suffix = f" {credential_name}" if credential_name else ""
+        AuditLog.objects.create(
+            username=username,
+            object_type=AuditObjType.USER,
+            action=AuditActionType.DELETE,
+            message=f"{username} deleted passkey{suffix}",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
+    def audit_passkeys_reset(
+        actor_username: str,
+        target_username: str,
+        count: int,
+        debug_info: Dict[Any, Any] = {},
+    ) -> None:
+        AuditLog.objects.create(
+            username=actor_username,
+            object_type=AuditObjType.USER,
+            action=AuditActionType.DELETE,
+            message=f"{actor_username} reset {count} passkey(s) for {target_username}",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
     def audit_url_action(
         username: str,
         urlaction: "URLAction",

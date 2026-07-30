@@ -1,9 +1,13 @@
+import datetime
+from io import StringIO
 from unittest.mock import patch
 
+from django.core.management import call_command
 from django.test import override_settings
+from django.utils import timezone as djangotime
 from model_bakery import baker, seq
 
-from accounts.models import APIKey, User
+from accounts.models import APIKey, User, WebAuthnChallenge, WebAuthnCredential
 from accounts.serializers import APIKeySerializer
 from tacticalrmm.constants import AgentDblClick, AgentTableTabs, ClientTreeSort
 from tacticalrmm.test import TacticalTestCase
@@ -95,6 +99,10 @@ class TestGetAddUsers(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         assert any(i["username"] == "john" for i in r.json())
+        john = next(i for i in r.json() if i["username"] == "john")
+        self.assertIn("totp_enabled", john)
+        self.assertIn("passkey_count", john)
+        self.assertIn("passkey_last_used_at", john)
 
         assert not any(
             i["username"] == "71AHC-AA813-HH1BC-AAHH5-00013|DESKTOP-TEST123"
@@ -195,8 +203,22 @@ class GetUpdateDeleteUser(TacticalTestCase):
 
     def test_delete(self):
         url = f"/accounts/{self.john.pk}/users/"
+        cred = WebAuthnCredential.objects.create(
+            user=self.john,
+            credential_id="delete-user-passkey",
+            public_key=b"\x01",
+            sign_count=0,
+        )
+        challenge = WebAuthnChallenge.objects.create(
+            user=self.john,
+            challenge="delete-user-challenge",
+            purpose="login",
+            expires_at=djangotime.now() + datetime.timedelta(minutes=5),
+        )
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
+        self.assertFalse(WebAuthnCredential.objects.filter(pk=cred.pk).exists())
+        self.assertFalse(WebAuthnChallenge.objects.filter(pk=challenge.pk).exists())
 
         url = "/accounts/893452/users/"
         r = self.client.delete(url)
@@ -253,11 +275,18 @@ class TestUserAction(TacticalTestCase):
     def test_put(self):
         url = "/accounts/users/reset/"
         data = {"id": self.john.pk}
+        cred = WebAuthnCredential.objects.create(
+            user=self.john,
+            credential_id="admin-reset-passkey",
+            public_key=b"\x01",
+            sign_count=0,
+        )
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
         user = User.objects.get(pk=self.john.pk)
         self.assertEqual(user.totp_key, "")
+        self.assertFalse(WebAuthnCredential.objects.filter(pk=cred.pk).exists())
 
         self.check_not_authenticated("put", url)
 
@@ -313,10 +342,34 @@ class TestUserReset(TacticalTestCase):
 
     def test_reset_2fa(self):
         url = "/accounts/reset2fa/"
+        cred = WebAuthnCredential.objects.create(
+            user=self.john,
+            credential_id="self-reset-passkey",
+            public_key=b"\x01",
+            sign_count=0,
+        )
         r = self.client.put(url)
         self.assertEqual(r.status_code, 200)
+        self.assertFalse(WebAuthnCredential.objects.filter(pk=cred.pk).exists())
 
         self.check_not_authenticated("put", url)
+
+    @patch("accounts.management.commands.reset_2fa.subprocess.run")
+    def test_reset_2fa_command_deletes_passkeys(self, mock_run):
+        cred = WebAuthnCredential.objects.create(
+            user=self.john,
+            credential_id="command-reset-passkey",
+            public_key=b"\x01",
+            sign_count=0,
+        )
+        out = StringIO()
+        call_command("reset_2fa", self.john.username, stdout=out)
+
+        self.john.refresh_from_db()
+        self.assertTrue(self.john.totp_key)
+        self.assertFalse(WebAuthnCredential.objects.filter(pk=cred.pk).exists())
+        self.assertIn("removed 1 passkey", out.getvalue())
+        mock_run.assert_called_once()
 
 
 class TestAPIKeyViews(TacticalTestCase):

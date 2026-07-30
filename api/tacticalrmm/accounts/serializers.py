@@ -8,7 +8,7 @@ from rest_framework.serializers import (
 
 from tacticalrmm.util_settings import get_webdomain
 
-from .models import APIKey, Role, User
+from .models import APIKey, Role, User, WebAuthnCredential
 
 
 class UserUISerializer(ModelSerializer):
@@ -34,6 +34,10 @@ class UserUISerializer(ModelSerializer):
 
 
 class UserSerializer(ModelSerializer):
+    passkey_count = SerializerMethodField()
+    passkey_last_used_at = SerializerMethodField()
+    totp_enabled = SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
@@ -48,7 +52,28 @@ class UserSerializer(ModelSerializer):
             "role",
             "block_dashboard_login",
             "date_format",
+            "totp_enabled",
+            "passkey_count",
+            "passkey_last_used_at",
         ]
+
+    def get_passkey_count(self, obj):
+        if not obj.pk:
+            return 0
+        return obj.webauthn_credentials.count()
+
+    def get_passkey_last_used_at(self, obj):
+        if not obj.pk:
+            return None
+        return (
+            obj.webauthn_credentials.exclude(last_used_at__isnull=True)
+            .order_by("-last_used_at")
+            .values_list("last_used_at", flat=True)
+            .first()
+        )
+
+    def get_totp_enabled(self, obj):
+        return bool(obj.totp_key)
 
 
 class TOTPSetupSerializer(ModelSerializer):
@@ -102,4 +127,19 @@ class APIKeyAuditSerializer(ModelSerializer):
             "name",
             "username",
             "expiration",
+        ]
+
+
+class WebAuthnCredentialAuditSerializer(ModelSerializer):
+    username = ReadOnlyField(source="user.username")
+
+    class Meta:
+        model = WebAuthnCredential
+        fields = [
+            "username",
+            "credential_id",
+            "nickname",
+            "transports",
+            "device_id",
+            "sign_count",
         ]

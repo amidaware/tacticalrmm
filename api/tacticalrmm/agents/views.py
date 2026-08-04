@@ -148,6 +148,7 @@ class GetAgents(APIView):
                     _pending_actions_count=Count(
                         "pendingactions",
                         filter=Q(pendingactions__status=PAStatus.PENDING),
+                        distinct=True,
                     ),
                 )
                 .defer(
@@ -277,10 +278,12 @@ class GetAgentsV2(APIView):
                 _pending_actions_count=Count(
                     "pendingactions",
                     filter=Q(pendingactions__status=PAStatus.PENDING),
+                    distinct=True,
                 ),
                 _checks_failing_count=Count(
                     "checkresults",
                     filter=Q(checkresults__status__in=["failing", "warning"]),
+                    distinct=True,
                 ),
             )
             .defer(*AGENT_DEFER)

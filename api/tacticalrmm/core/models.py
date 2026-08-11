@@ -1,4 +1,5 @@
 import smtplib
+import ssl
 import traceback
 from contextlib import suppress
 from email.headerregistry import Address
@@ -351,10 +352,28 @@ class CoreSettings(BaseAuditModel):
                         filename=f"{attachment_filename}.{ext}",
                     )
 
-            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
+            # Port 465 uses implicit TLS (SMTPS): the socket is wrapped in SSL
+            # the moment the connection is opened, so it must be created with
+            # smtplib.SMTP_SSL. Ports 587/25 open a plaintext connection that is
+            # upgraded in-band with STARTTLS.
+            use_ssl = self.smtp_port == 465
+            if use_ssl:
+                server: smtplib.SMTP = smtplib.SMTP_SSL(
+                    self.smtp_host,
+                    self.smtp_port,
+                    timeout=20,
+                    context=ssl.create_default_context(),
+                )
+            else:
+                server = smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20)
+
+            with server:
                 if self.smtp_requires_auth:
                     server.ehlo()
-                    server.starttls()
+                    # STARTTLS only applies to a plaintext connection; on an
+                    # implicit-TLS (465) socket the channel is already encrypted.
+                    if not use_ssl:
+                        server.starttls()
                     server.login(
                         self.smtp_host_user,
                         self.smtp_host_password,
@@ -369,7 +388,7 @@ class CoreSettings(BaseAuditModel):
                         server.send_message(msg)
                         server.quit()
                     else:
-                        # smtp relay. no auth required
+                        # smtp relay. no auth required (implicit TLS when on 465)
                         server.send_message(msg)
                         server.quit()
 

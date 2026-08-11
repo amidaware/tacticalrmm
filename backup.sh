@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="33"
+SCRIPT_VERSION="34"
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -11,57 +11,57 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 if [ $EUID -eq 0 ]; then
-    echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
-    exit 1
+	echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
+	exit 1
 fi
 
 if [[ $* == *--schedule* ]]; then
-    if ! sudo -n true 2>/dev/null; then
-        echo -ne "${RED}Error: Passwordless sudo is required for scheduling.${NC}\n"
-        exit 1
-    fi
-    
-    (
-        crontab -l 2>/dev/null
-        echo "0 0 * * * /rmm/backup.sh --auto > /dev/null 2>&1"
-    ) | crontab -
+	if ! sudo -n true 2>/dev/null; then
+		echo -ne "${RED}Error: Passwordless sudo is required for scheduling.${NC}\n"
+		exit 1
+	fi
 
-    if [ ! -d /rmmbackups ]; then
-        sudo mkdir /rmmbackups
-    fi
+	(
+		crontab -l 2>/dev/null
+		echo "0 0 * * * /rmm/backup.sh --auto > /dev/null 2>&1"
+	) | crontab -
 
-    if [ ! -d /rmmbackups/daily ]; then
-        sudo mkdir /rmmbackups/daily
-    fi
+	if [ ! -d /rmmbackups ]; then
+		sudo mkdir /rmmbackups
+	fi
 
-    if [ ! -d /rmmbackups/weekly ]; then
-        sudo mkdir /rmmbackups/weekly
-    fi
+	if [ ! -d /rmmbackups/daily ]; then
+		sudo mkdir /rmmbackups/daily
+	fi
 
-    if [ ! -d /rmmbackups/monthly ]; then
-        sudo mkdir /rmmbackups/monthly
-    fi
-    sudo chown ${USER}:${USER} -R /rmmbackups
+	if [ ! -d /rmmbackups/weekly ]; then
+		sudo mkdir /rmmbackups/weekly
+	fi
 
-    printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
-    exit 0
+	if [ ! -d /rmmbackups/monthly ]; then
+		sudo mkdir /rmmbackups/monthly
+	fi
+	sudo chown ${USER}:${USER} -R /rmmbackups
+
+	printf >&2 "${GREEN}Backups setup to run at midnight and rotate.${NC}\n"
+	exit 0
 fi
 
 if [ ! -d /rmmbackups ]; then
-    sudo mkdir /rmmbackups
-    sudo chown ${USER}:${USER} /rmmbackups
+	sudo mkdir /rmmbackups
+	sudo chown ${USER}:${USER} /rmmbackups
 fi
 
 if [ -d /meshcentral/meshcentral-backup ]; then
-    rm -rf /meshcentral/meshcentral-backup/*
+	rm -rf /meshcentral/meshcentral-backup/*
 fi
 
 if [ -d /meshcentral/meshcentral-backups ]; then
-    rm -rf /meshcentral/meshcentral-backups/*
+	rm -rf /meshcentral/meshcentral-backups/*
 fi
 
 if [ -d /meshcentral/meshcentral-coredumps ]; then
-    rm -f /meshcentral/meshcentral-coredumps/*
+	rm -f /meshcentral/meshcentral-coredumps/*
 fi
 
 dt_now=$(date '+%Y_%m_%d__%H_%M_%S')
@@ -85,43 +85,43 @@ pg_dump --no-privileges --no-owner --dbname=postgresql://"${POSTGRES_USER}":"${P
 node /meshcentral/node_modules/meshcentral --dbexport # for import to postgres
 
 if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
-    if ! which jq >/dev/null; then
-        sudo apt-get install -y jq >/dev/null
-    fi
-    MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
-    MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
-    pg_dump --no-privileges --no-owner --dbname=postgresql://"${MESH_POSTGRES_USER}":"${MESH_POSTGRES_PW}"@localhost:5432/meshcentral | gzip -9 >${tmp_dir}/postgres/mesh-db-${dt_now}.psql.gz
+	if ! which jq >/dev/null; then
+		sudo apt-get install -y jq >/dev/null
+	fi
+	MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)
+	MESH_POSTGRES_PW=$(jq '.settings.postgres.password' /meshcentral/meshcentral-data/config.json -r)
+	pg_dump --no-privileges --no-owner --dbname=postgresql://"${MESH_POSTGRES_USER}":"${MESH_POSTGRES_PW}"@localhost:5432/meshcentral | gzip -9 >${tmp_dir}/postgres/mesh-db-${dt_now}.psql.gz
 else
-    mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
+	mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
 fi
 
 tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules --exclude=/meshcentral/meshcentral-recordings /meshcentral
 
 if [ -d /etc/letsencrypt ]; then
-    sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
+	sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
 fi
 
 if [ -d /opt/tactical ]; then
-    sudo tar -czvf ${tmp_dir}/opt/opt-tactical.tar.gz -C /opt/tactical .
+	sudo tar -czvf ${tmp_dir}/opt/opt-tactical.tar.gz -C /opt/tactical .
 fi
 
 local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
 if grep -q CERT_FILE "$local_settings"; then
-    mkdir -p ${tmp_dir}/certs/custom
-    CERT_FILE=$(grep "^CERT_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
-    KEY_FILE=$(grep "^KEY_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
-    cp -p $CERT_FILE ${tmp_dir}/certs/custom/cert
-    cp -p $KEY_FILE ${tmp_dir}/certs/custom/key
+	mkdir -p ${tmp_dir}/certs/custom
+	CERT_FILE=$(grep "^CERT_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
+	KEY_FILE=$(grep "^KEY_FILE" "$local_settings" | awk -F'[= "]' '{print $5}')
+	cp -p $CERT_FILE ${tmp_dir}/certs/custom/cert
+	cp -p $KEY_FILE ${tmp_dir}/certs/custom/key
 elif grep -q TRMM_INSECURE "$local_settings"; then
-    mkdir -p ${tmp_dir}/certs/selfsigned
-    certdir='/etc/ssl/tactical'
-    cp -p ${certdir}/key.pem ${tmp_dir}/certs/selfsigned/
-    cp -p ${certdir}/cert.pem ${tmp_dir}/certs/selfsigned/
+	mkdir -p ${tmp_dir}/certs/selfsigned
+	certdir='/etc/ssl/tactical'
+	cp -p ${certdir}/key.pem ${tmp_dir}/certs/selfsigned/
+	cp -p ${certdir}/cert.pem ${tmp_dir}/certs/selfsigned/
 fi
 
 for i in rmm frontend meshcentral; do
-    sudo cp /etc/nginx/sites-available/${i}.conf ${tmp_dir}/nginx/
+	sudo cp /etc/nginx/sites-enabled/${i}.conf ${tmp_dir}/nginx/
 done
 
 sudo tar -czvf ${tmp_dir}/confd/etc-confd.tar.gz -C /etc/conf.d .
@@ -132,30 +132,30 @@ cp $local_settings ${tmp_dir}/rmm/
 
 if [[ $* == *--auto* ]]; then
 
-    month_day=$(date +"%d")
-    week_day=$(date +"%u")
+	month_day=$(date +"%d")
+	week_day=$(date +"%u")
 
-    if [ "$month_day" -eq 10 ]; then
-        tar -cf /rmmbackups/monthly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
-    else
-        if [ "$week_day" -eq 5 ]; then
-            tar -cf /rmmbackups/weekly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
-        else
-            tar -cf /rmmbackups/daily/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
-        fi
-    fi
+	if [ "$month_day" -eq 10 ]; then
+		tar -cf /rmmbackups/monthly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+	else
+		if [ "$week_day" -eq 5 ]; then
+			tar -cf /rmmbackups/weekly/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+		else
+			tar -cf /rmmbackups/daily/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+		fi
+	fi
 
-    rm -rf ${tmp_dir}
+	rm -rf ${tmp_dir}
 
-    find /rmmbackups/daily/ -type f -mtime +14 -name '*.tar' -execdir rm -- '{}' \;
-    find /rmmbackups/weekly/ -type f -mtime +60 -name '*.tar' -execdir rm -- '{}' \;
-    find /rmmbackups/monthly/ -type f -mtime +380 -name '*.tar' -execdir rm -- '{}' \;
-    echo -ne "${GREEN}Backup Completed${NC}\n"
-    exit
+	find /rmmbackups/daily/ -type f -mtime +14 -name '*.tar' -execdir rm -- '{}' \;
+	find /rmmbackups/weekly/ -type f -mtime +60 -name '*.tar' -execdir rm -- '{}' \;
+	find /rmmbackups/monthly/ -type f -mtime +380 -name '*.tar' -execdir rm -- '{}' \;
+	echo -ne "${GREEN}Backup Completed${NC}\n"
+	exit
 
 else
-    tar -cf /rmmbackups/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
-    rm -rf ${tmp_dir}
+	tar -cf /rmmbackups/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
+	rm -rf ${tmp_dir}
 
-    echo -ne "${GREEN}Backup saved to /rmmbackups/rmm-backup-${dt_now}.tar${NC}\n"
+	echo -ne "${GREEN}Backup saved to /rmmbackups/rmm-backup-${dt_now}.tar${NC}\n"
 fi

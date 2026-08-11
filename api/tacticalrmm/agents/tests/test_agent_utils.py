@@ -1,9 +1,48 @@
+import pickle
 from unittest.mock import patch
 
 from django.conf import settings
+from django.test import SimpleTestCase
 
-from agents.utils import generate_linux_install, get_agent_url
+from agents.utils import (
+    generate_linux_install,
+    get_agent_url,
+    strip_relation_caches_for_cache,
+)
+from automation.models import Policy
+from checks.models import Check
+from scripts.models import Script
 from tacticalrmm.test import TacticalTestCase
+
+
+class TestStripRelationCaches(SimpleTestCase):
+    def test_returns_isolated_copy_with_only_required_relations(self):
+        policy = Policy(pk=1)
+        script = Script(pk=2)
+        check = Check(pk=3, policy=policy, script=script)
+        check._prefetched_objects_cache = {"assignedtasks": [object()]}
+        check.check_result = object()
+
+        cleaned = strip_relation_caches_for_cache([check])[0]
+
+        self.assertIsNot(cleaned, check)
+        self.assertIsNot(cleaned._state, check._state)
+        self.assertEqual(cleaned.policy_id, policy.pk)
+        self.assertEqual(cleaned.script_id, script.pk)
+        self.assertEqual(cleaned._state.fields_cache, {"script": script})
+        self.assertEqual(cleaned._prefetched_objects_cache, {})
+        self.assertNotIn("check_result", cleaned.__dict__)
+
+        restored = pickle.loads(pickle.dumps(cleaned))
+        self.assertEqual(restored.pk, check.pk)
+        self.assertEqual(restored.policy_id, policy.pk)
+        self.assertEqual(restored.script, script)
+
+        # should not modify instances that callers may still use
+        self.assertEqual(check._state.fields_cache["policy"], policy)
+        self.assertEqual(check._state.fields_cache["script"], script)
+        self.assertIn("assignedtasks", check._prefetched_objects_cache)
+        self.assertIn("check_result", check.__dict__)
 
 
 class TestAgentUtils(TacticalTestCase):

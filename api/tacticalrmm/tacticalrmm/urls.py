@@ -1,9 +1,15 @@
 from django.conf import settings
-from django.urls import include, path, register_converter
+from django.urls import include, path, re_path, register_converter
 from knox import views as knox_views
 
 from accounts.views import CheckCredsV2, LoginViewV2
-from agents.consumers import CommandStreamConsumer, TerminalStreamConsumer
+from agents.consumers import (
+    AgentTerminalConsumer,
+    CommandStreamConsumer,
+    TerminalStreamConsumer,
+)
+from agents.web_proxy import agent_web_proxy
+from agents.ws_proxy import ProxyWebSocketConsumer
 from core.consumers import DashInfo, TerminalConsumer
 from core.views import home
 from ee.sso.urls import allauth_urls
@@ -23,12 +29,15 @@ register_converter(AgentIDConverter, "agent")
 
 urlpatterns = [
     path("", home),
+    # Remote Web Proxy (served by the ASGI server via nginx /agentproxy/ route)
+    re_path(r"^agentproxy/(?P<token>[^/]+)/(?P<path>.*)$", agent_web_proxy),
     path("v2/checkcreds/", CheckCredsV2.as_view()),
     path("v2/login/", LoginViewV2.as_view()),
     path("logout/", knox_views.LogoutView.as_view()),
     path("logoutall/", knox_views.LogoutAllView.as_view()),
     path("clients/", include("clients.urls")),
     path("agents/", include("agents.urls")),
+    path("netdevices/", include("netdevices.urls")),
     path("checks/", include("checks.urls")),
     path("services/", include("services.urls")),
     path("winupdate/", include("winupdate.urls")),
@@ -80,6 +89,13 @@ if getattr(settings, "SWAGGER_ENABLED", False):
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),
+    # Remote Terminal (SSH/Telnet to a LAN device through the agent)
+    path("ws/agent/<str:agent_id>/term/", AgentTerminalConsumer.as_asgi()),
+    # Remote Web Proxy WebSocket (e.g. Proxmox/PBS consoles) - same /agentproxy/ path
+    re_path(
+        r"^agentproxy/(?P<token>[^/]+)/(?P<path>.*)$",
+        ProxyWebSocketConsumer.as_asgi(),
+    ),
 ]
 
 if not getattr(settings, "DEMO", False):

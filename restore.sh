@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="67"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
+SCRIPT_URL='https://raw.githubusercontent.com/RKBlack/tacticalrmm/develop/restore.sh'
 
 sudo apt update
 sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates

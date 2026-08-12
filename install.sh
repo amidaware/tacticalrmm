@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="92"
-SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/RKBlack/tacticalrmm/develop/install.sh"
 
 sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
 sudo apt install -y software-properties-common

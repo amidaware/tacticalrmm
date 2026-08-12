@@ -1,6 +1,6 @@
 ---
 user: "tactical"
-python_ver: "3.11.8"
+python_ver: "3.12.13"
 go_ver: "1.23.11"
 node_major: "24"
 backend_repo: "https://github.com/amidaware/tacticalrmm.git"

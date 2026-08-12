@@ -227,7 +227,8 @@ def sync_scheduled_tasks(self) -> str:
                 # create a list of tasks to be synced so we can run them asynchronously
                 for task in agent.get_tasks_with_policies():
                     # TODO can we just use agent??
-                    agent_obj: "Agent" = agent if task.policy else task.agent
+                    # changed from task.policy to task.policy_id when we added the strip_relation_caches_for_cache func to avoid n+1 query
+                    agent_obj: "Agent" = agent if task.policy_id else task.agent
 
                     # onboarding tasks require agent >= 2.6.0
                     if task.task_type == TaskType.ONBOARDING and pyver.parse(

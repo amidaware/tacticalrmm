@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="91"
+SCRIPT_VERSION="92"
 SCRIPT_URL="https://raw.githubusercontent.com/amidaware/tacticalrmm/master/install.sh"
 
 sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
@@ -15,7 +15,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.11.8'
+PYTHON_VER='3.12.13'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
@@ -428,7 +428,7 @@ mesh_pkg="$(
   "dependencies": {
     "archiver": "7.0.1",
     "meshcentral": "${MESH_VER}",
-    "otplib": "12.0.1",
+    "otplib": "13.4.1",
     "pg": "8.16.3"
   }
 }
@@ -561,7 +561,7 @@ sudo mkdir -p /opt/tactical/reporting/schemas
 sudo chown -R ${USER}:${USER} /opt/tactical
 
 cd /rmm/api
-python3.11 -m venv env
+python3.12 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir pip==25.1

@@ -179,7 +179,11 @@ class WinUpdates(APIView):
             user=request.user,
         )
 
+        returned_guids = list()
+
         for update in updates:
+            returned_guids.append(update["guid"])
+
             if agent.winupdates.filter(guid=update["guid"]).exists():  # type: ignore
                 u = agent.winupdates.filter(guid=update["guid"]).last()  # type: ignore
                 u.downloaded = update["downloaded"]
@@ -207,6 +211,11 @@ class WinUpdates(APIView):
                     support_url=update["support_url"],
                     revision_number=update["revision_number"],
                 ).save()
+
+        # remove stale updates not returned by agent
+        agent.winupdates.filter(installed=False).exclude(  # type: ignore
+            guid__in=returned_guids
+        ).delete()
 
         agent.delete_superseded_updates()
         return Response("ok")

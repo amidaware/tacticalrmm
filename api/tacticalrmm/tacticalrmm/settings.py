@@ -23,7 +23,7 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "1.5.1"
+TRMM_VERSION = "1.5.2"
 
 # https://github.com/amidaware/tacticalrmm-web
 WEB_VERSION = "0.101.64"
@@ -35,9 +35,9 @@ APP_VER = "0.0.203"
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.11.0"
 
-MESH_VER = "1.2.0"
+MESH_VER = "1.2.4"
 
-NATS_SERVER_VER = "2.14.2"
+NATS_SERVER_VER = "2.14.4"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
@@ -83,10 +83,10 @@ INSTALL_DENO_URL = ""
 DENO_DEFAULT_PERMISSIONS = "--allow-all"
 
 # for the update script, bump when need to recreate venv
-PIP_VER = "48"
+PIP_VER = "49"
 
-SETUPTOOLS_VER = "80.9.0"
-WHEEL_VER = "0.45.1"
+SETUPTOOLS_VER = "83.0.0"
+WHEEL_VER = "0.47.0"
 
 AGENT_BASE_URL = "https://agents.tacticalrmm.com"
 

@@ -21,4 +21,5 @@ class ReportScheduleAuditSerializer(ModelSerializer):
             "send_report_email",
             "email_settings",
             "timezone",
+            "conditions",
         ]

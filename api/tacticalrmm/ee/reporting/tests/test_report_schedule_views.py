@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 from model_bakery import baker
 
 from ..models import ReportSchedule, ReportHistory, ReportTemplate
+from ..utils import ScheduledReportRunResult
 from core.models import Schedule
 
 
@@ -93,7 +94,10 @@ class TestReportScheduleViews:
 
 @pytest.mark.django_db
 class TestRunReportScheduleView:
-    @patch("ee.reporting.views.run_scheduled_report", return_value=(None, None))
+    @patch(
+        "ee.reporting.views.run_scheduled_report",
+        return_value=ScheduledReportRunResult(status="success"),
+    )
     def test_run_schedule_success(
         self, mock_run, authenticated_client, report_schedule
     ):
@@ -101,13 +105,16 @@ class TestRunReportScheduleView:
         response = authenticated_client.post(url)
 
         assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == "success"
         mock_run.assert_called_once_with(
             schedule=report_schedule, user=authenticated_client.handler._force_user
         )
 
     @patch(
         "ee.reporting.views.run_scheduled_report",
-        return_value=(None, "Something went wrong"),
+        return_value=ScheduledReportRunResult(
+            status="error", error="Something went wrong"
+        ),
     )
     def test_run_schedule_with_error(
         self, mock_run, authenticated_client, report_schedule

@@ -19,6 +19,11 @@ class Command(BaseCommand):
             help="Delete agents that have not checked in for this many days",
         )
         parser.add_argument(
+            "--hours",
+            type=int,
+            help="Delete agents that have not checked in for this many hours",
+        )
+        parser.add_argument(
             "--agentver",
             type=str,
             help="Delete agents that equal to or less than this version",
@@ -46,16 +51,17 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         days = kwargs["days"]
+        hours = kwargs["hours"]
         agentver = kwargs["agentver"]
         site = kwargs["site"]
         client = kwargs["client"]
         hostname = kwargs["hostname"]
         delete = kwargs["delete"]
 
-        if not days and not agentver and not site and not client and not hostname:
+        if not days and not hours and not agentver and not site and not client and not hostname:
             self.stdout.write(
                 self.style.ERROR(
-                    "Must have at least one parameter: days, agentver, site, client or hostname"
+                    "Must have at least one parameter: days, hours, agentver, site, client or hostname"
                 )
             )
             return
@@ -64,6 +70,10 @@ class Command(BaseCommand):
 
         if days:
             overdue = djangotime.now() - djangotime.timedelta(days=days)
+            agents = agents.filter(last_seen__lt=overdue)
+
+        if hours:
+            overdue = djangotime.now() - djangotime.timedelta(hours=hours)
             agents = agents.filter(last_seen__lt=overdue)
 
         if site:

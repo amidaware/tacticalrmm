@@ -87,6 +87,7 @@ class GetEditCoreSettings(APIView):
             data["sync_mesh_with_trmm"] = True
             data["enable_server_scripts"] = False
             data["enable_server_webterminal"] = False
+            data["enable_ssh_gateway"] = False
 
         coresettings = CoreSettings.objects.first()
         serializer = CoreSettingsSerializer(
@@ -155,6 +156,7 @@ def dashboard_info(request):
             "run_cmd_placeholder_text": runcmd_placeholder_text(),
             "server_scripts_enabled": core_settings.server_scripts_enabled,
             "web_terminal_enabled": core_settings.web_terminal_enabled,
+            "ssh_gateway_enabled": core_settings.ssh_gateway_enabled,
             "block_local_user_logon": core_settings.block_local_user_logon,
             "sso_enabled": core_settings.sso_enabled,
         }

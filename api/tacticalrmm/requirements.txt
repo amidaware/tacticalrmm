@@ -1,3 +1,4 @@
+asyncssh==2.18.0
 asgiref==3.9.1
 celery[redis]==5.6.3
 hiredis==3.3.0

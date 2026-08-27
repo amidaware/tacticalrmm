@@ -220,6 +220,7 @@ class AuditActionType(models.TextChoices):
     TASK_RUN = "task_run", "Task Run"
     AGENT_INSTALL = "agent_install", "Agent Install"
     REMOTE_SESSION = "remote_session", "Remote Session"
+    SSH_SESSION = "ssh_session", "SSH Session"
     EXEC_SCRIPT = "execute_script", "Execute Script"
     EXEC_COMMAND = "execute_command", "Execute Command"
     BULK_ACTION = "bulk_action", "Bulk Action"

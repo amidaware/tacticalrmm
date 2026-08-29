@@ -7,6 +7,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone as djangotime
 
+from core.models import EmailTemplateSection
 from core.utils import get_core_settings
 from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
@@ -348,6 +349,29 @@ class CheckResult(models.Model):
         if self.assigned_check.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
             return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
+    def email_template_context(self, status: str, details: str) -> dict[str, str]:
+        policy_name = (
+            self.assigned_check.policy.name if self.assigned_check.policy else ""
+        )
+
+        return {
+            "alert_type": "check",
+            "alert_status": status,
+            "client": self.agent.client.name if self.agent else "",
+            "site": self.agent.site.name if self.agent else "",
+            "site_id": "" if not self.agent else str(self.agent.site_id),
+            "agent": self.agent.hostname if self.agent else "",
+            "policy": policy_name,
+            "alert_name": self.assigned_check.readable_desc,
+            "check_name": self.assigned_check.name or self.assigned_check.readable_desc,
+            "check_description": self.assigned_check.readable_desc,
+            "details": details,
+            "more_info": self.more_info or "",
+            "stdout": self.stdout or "",
+            "stderr": self.stderr or "",
+            "retcode": "" if self.retcode is None else str(self.retcode),
+        }
+
     def get_or_create_alert_if_needed(
         self, alert_template: "Optional[AlertTemplate]"
     ) -> "Optional[Alert]":
@@ -537,6 +561,7 @@ class CheckResult(models.Model):
         CORE = get_core_settings()
 
         body: str = ""
+        details: str = ""
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
         else:
@@ -557,17 +582,18 @@ class CheckResult(models.Model):
                 ][0]
                 percent_free = 100 - percent_used
 
-                body = subject + f" - Free: {percent_free}%, {text}"
+                details = f"Free: {percent_free}%, {text}".strip()
+                body = subject + f" - {details}"
             except:
-                body = subject + f" - Disk {self.assigned_check.disk} does not exist"
+                details = f"Disk {self.assigned_check.disk} does not exist"
+                body = subject + f" - {details}"
 
         elif self.assigned_check.check_type == CheckType.SCRIPT:
-            body = (
-                subject
-                + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
-            )
+            details = f"Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
+            body = subject + f" - {details}"
 
         elif self.assigned_check.check_type == CheckType.PING:
+            details = self.more_info or ""
             body = self.more_info
 
         elif self.assigned_check.check_type in (CheckType.CPU_LOAD, CheckType.MEMORY):
@@ -580,13 +606,16 @@ class CheckResult(models.Model):
             avg = int(mean(self.history))
 
             if self.assigned_check.check_type == CheckType.CPU_LOAD:
-                body = subject + f" - Average CPU utilization: {avg}%, {text}"
+                details = f"Average CPU utilization: {avg}%, {text}".strip()
+                body = subject + f" - {details}"
 
             elif self.assigned_check.check_type == CheckType.MEMORY:
-                body = subject + f" - Average memory usage: {avg}%, {text}"
+                details = f"Average memory usage: {avg}%, {text}".strip()
+                body = subject + f" - {details}"
 
         elif self.assigned_check.check_type == CheckType.WINSVC:
-            body = subject + f" - Status: {self.more_info}"
+            details = f"Status: {self.more_info}"
+            body = subject + f" - {details}"
 
         elif self.assigned_check.check_type == CheckType.EVENT_LOG:
             if self.assigned_check.event_source and self.assigned_check.event_message:
@@ -598,7 +627,8 @@ class CheckResult(models.Model):
             else:
                 start = f"Event ID {self.assigned_check.event_id} "
 
-            body = start + f"was found in the {self.assigned_check.log_name} log\n\n"
+            details = start + f"was found in the {self.assigned_check.log_name} log"
+            body = details + "\n\n"
 
             for i in self.extra_details["log"]:
                 try:
@@ -607,7 +637,15 @@ class CheckResult(models.Model):
                 except:
                     continue
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
+            details = body.strip()
+
+        return CORE.send_mail(
+            subject,
+            body,
+            alert_template=self.agent.alert_template,
+            template_context=self.email_template_context("failed", details),
+            template_section=EmailTemplateSection.CHECK,
+        )
 
     def send_sms(self):
         CORE = get_core_settings()
@@ -663,9 +701,19 @@ class CheckResult(models.Model):
         CORE = get_core_settings()
 
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Resolved"
-        body = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} is now back to normal"
+        details = f"{self} is now back to normal"
+        body = (
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname}"
+            f" - {details}"
+        )
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
+        return CORE.send_mail(
+            subject,
+            body,
+            alert_template=self.agent.alert_template,
+            template_context=self.email_template_context("resolved", details),
+            template_section=EmailTemplateSection.CHECK,
+        )
 
     def send_resolved_sms(self):
         CORE = get_core_settings()

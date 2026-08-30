@@ -70,6 +70,7 @@ class ClientSerializer(serializers.ModelSerializer[Client]):
 
 
 class SiteSerializer(serializers.ModelSerializer[Site]):
+    client_name = serializers.CharField(source="client.name", read_only=True)
     class Meta:
         model = Site
         fields = "__all__"

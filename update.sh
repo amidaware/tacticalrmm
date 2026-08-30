@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 SCRIPT_VERSION="160"
-SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/update.sh'
-LATEST_SETTINGS_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
+SCRIPT_URL='https://raw.githubusercontent.com/RKBlack/tacticalrmm/develop/update.sh'
+LATEST_SETTINGS_URL='https://raw.githubusercontent.com/RKBlack/tacticalrmm/develop/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'

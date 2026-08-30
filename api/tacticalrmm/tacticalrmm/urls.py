@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.http import HttpResponseNotFound
 from django.urls import include, path, register_converter
 from knox import views as knox_views
 
@@ -66,17 +67,37 @@ if getattr(settings, "ADMIN_ENABLED", False):
 if getattr(settings, "DEBUG", False) and not getattr(settings, "DEMO", False):
     urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
 
-if getattr(settings, "SWAGGER_ENABLED", False):
-    from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-    urlpatterns += (
-        path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-        path(
-            "api/schema/swagger-ui/",
-            SpectacularSwaggerView.as_view(url_name="schema"),
-            name="swagger-ui",
-        ),
-    )
+
+class SwaggerSpectacularAPIView(SpectacularAPIView):
+    def dispatch(self, request, *args, **kwargs):
+        from core.models import CoreSettings
+
+        cs = CoreSettings.objects.first()
+        if not cs or not cs.swagger_enabled:
+            return HttpResponseNotFound()
+        return super().dispatch(request, *args, **kwargs)
+
+
+class SwaggerSpectacularSwaggerView(SpectacularSwaggerView):
+    def dispatch(self, request, *args, **kwargs):
+        from core.models import CoreSettings
+
+        cs = CoreSettings.objects.first()
+        if not cs or not cs.swagger_enabled:
+            return HttpResponseNotFound()
+        return super().dispatch(request, *args, **kwargs)
+
+
+urlpatterns += (
+    path("api/schema/", SwaggerSpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/schema/swagger-ui/",
+        SwaggerSpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+)
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),

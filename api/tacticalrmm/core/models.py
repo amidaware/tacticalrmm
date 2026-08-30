@@ -125,6 +125,7 @@ class CoreSettings(BaseAuditModel):
 
     block_local_user_logon = models.BooleanField(default=False)
     sso_enabled = models.BooleanField(default=False)
+    enable_swagger = models.BooleanField(default=False)
 
     default_shell_windows = models.CharField(
         max_length=32,
@@ -272,6 +273,10 @@ class CoreSettings(BaseAuditModel):
             return False
 
         return self.enable_server_webterminal
+
+    @property
+    def swagger_enabled(self) -> bool:
+        return self.enable_swagger
 
     def send_mail(
         self,

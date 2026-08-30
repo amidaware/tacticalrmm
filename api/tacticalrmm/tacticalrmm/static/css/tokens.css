@@ -1,0 +1,52 @@
+/*
+  Design tokens for TacticalRMM UI
+  These variables are intentionally generic and safe to override per theme.
+*/
+
+:root {
+  /* Colors (dark defaults; light overrides in theme.css) */
+  --color-bg: #0b0f14;
+  --color-surface: #121923;
+  --color-elevated: #1a2532;
+  --color-border: rgba(148, 163, 184, 0.18);
+  --color-text: #e6edf3;
+  --color-muted: #9fb1c1;
+
+  --color-primary: #3b82f6;
+  --color-primary-contrast: #ffffff;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.18);
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --line: 1.5;
+}
+
+

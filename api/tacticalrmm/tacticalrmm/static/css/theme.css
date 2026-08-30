@@ -1,0 +1,55 @@
+/*
+  Theme layer: defines light/dark overrides for tokens.
+*/
+
+:root {
+  color-scheme: light dark;
+}
+
+/* Light theme (via media) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #f7f9fc;
+    --color-surface: #ffffff;
+    --color-elevated: #ffffff;
+    --color-border: rgba(2, 6, 23, 0.08);
+    --color-text: #0b1220;
+    --color-muted: #5b6b7a;
+  }
+}
+
+/* Explicit theme classes override media */
+.theme-light {
+  --color-bg: #f7f9fc;
+  --color-surface: #ffffff;
+  --color-elevated: #ffffff;
+  --color-border: rgba(2, 6, 23, 0.08);
+  --color-text: #0b1220;
+  --color-muted: #5b6b7a;
+}
+
+.theme-dark {
+  /* Dark theme uses defaults from tokens; customize if needed */
+}
+
+/* Base document colors */
+html, body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: var(--line);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+

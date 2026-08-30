@@ -48,7 +48,7 @@ class GetAddScripts(APIView):
 
         # obj.hash_script_body()
 
-        return Response(f"{obj.name} was added!")
+        return Response({"id": obj.id, "name": obj.name})
 
 
 class GetUpdateDeleteScript(APIView):

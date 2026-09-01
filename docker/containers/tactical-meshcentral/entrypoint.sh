@@ -8,8 +8,8 @@ set -e
 : "${MONGODB_PASSWORD:=mongopass}"
 : "${MONGODB_HOST:=tactical-mongodb}"
 : "${MONGODB_PORT:=27017}"
-: "${NGINX_HOST_IP:=172.20.0.20}"
-: "${NGINX_HOST_PORT:=4443}"
+: "${NGINX_HOST:=tactical-nginx}"
+: "${NGINX_PORT:=4443}"
 : "${MESH_COMPRESSION_ENABLED:=false}"
 : "${MESH_PERSISTENT_CONFIG:=0}"
 : "${MESH_WEBRTC_ENABLED:=false}"
@@ -32,7 +32,7 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
   "settings": {
     "mongodb": "${encoded_uri}",
     "cert": "${MESH_HOST}",
-    "tlsOffload": "${NGINX_HOST_IP}",
+    "tlsOffload": "uniquelocal",
     "redirPort": 8080,
     "WANonly": true,
     "minify": 1,
@@ -62,7 +62,7 @@ if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTE
       "newAccounts": false,
       "mstsc": true,
       "geoLocation": true,
-      "certUrl": "https://${NGINX_HOST_IP}:${NGINX_HOST_PORT}",
+      "certUrl": "https://${NGINX_HOST}:${NGINX_PORT}",
       "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]
     }
   },
@@ -95,7 +95,7 @@ if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
 fi
 
 # wait for nginx container
-until (echo >/dev/tcp/"${NGINX_HOST_IP}"/${NGINX_HOST_PORT}) &>/dev/null; do
+until (echo >/dev/tcp/"${NGINX_HOST}"/${NGINX_PORT}) &>/dev/null; do
   echo "waiting for nginx to start..."
   sleep 5
 done

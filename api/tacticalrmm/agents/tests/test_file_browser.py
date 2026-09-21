@@ -42,6 +42,7 @@ class BaseFileBrowserAPITest(TacticalTestCase):
             version="2.12.0",
             plat="windows",
             agent_id="filebrowser-test-agent-id-0001",
+            last_seen=djangotime.now(),
         )
         if self.api_name:
             self.url = reverse(self.api_name, args=[self.agent.agent_id])
@@ -988,6 +989,24 @@ class TestCancelFileUpload(BaseFileBrowserAPITest):
         mock_nats_cmd.assert_called_once()
         self.assertEqual(mock_nats_cmd.call_args[0][0]["func"], "files_upload_abort")
 
+    @patch("agents.views.clear_upload_session_redis")
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_cancel_file_upload_skips_nats_when_agent_offline(
+        self, mock_nats_cmd, _mock_clear
+    ) -> None:
+        """Offline cancel must still free the slot without waiting on nats."""
+        self.agent.last_seen = djangotime.now() - dt.timedelta(minutes=10)
+        self.agent.save(update_fields=["last_seen"])
+        session = self._make_transfer_session(status=FileTransferStatus.TRANSFERRING)
+        url = self._session_url("cancel_file_upload", session.session_id)
+        response = self.client.post(url, {}, format="json")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], FileTransferStatus.CANCELLED)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.CANCELLED)
+        mock_nats_cmd.assert_not_called()
+
     def test_cancel_file_upload_not_found(self) -> None:
         """Unknown session should 404."""
         url = self._session_url("cancel_file_upload", uuid4())
@@ -1323,6 +1342,29 @@ class TestCancelFileDownload(BaseFileBrowserAPITest):
             mock_nats_cmd.call_args[0][0]["func"], "files_download_finalize"
         )
 
+    @patch("agents.views.clear_download_session_redis")
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_cancel_file_download_skips_nats_when_agent_offline(
+        self, mock_nats_cmd, _mock_clear
+    ) -> None:
+        """Offline cancel must still free the slot without waiting on nats."""
+        self.agent.last_seen = djangotime.now() - dt.timedelta(minutes=10)
+        self.agent.save(update_fields=["last_seen"])
+        session = self._make_transfer_session(
+            operation=FileTransferOperation.DOWNLOAD,
+            status=FileTransferStatus.TRANSFERRING,
+            destination_path=r"C:\Users\Public\readme.txt",
+            filename="readme.txt",
+        )
+        url = self._session_url("cancel_file_download", session.session_id)
+        response = self.client.post(url, {}, format="json")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], FileTransferStatus.CANCELLED)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.CANCELLED)
+        mock_nats_cmd.assert_not_called()
+
     def test_cancel_other_users_download_is_not_found(self) -> None:
         """Cancel stays owner scoped; another user's download is not visible."""
         session = self._make_transfer_session(
@@ -1629,6 +1671,55 @@ class TestUploadFileChunk(BaseFileBrowserAPITest):
         self.assertEqual(session.status, FileTransferStatus.EXPIRED)
         mock_nats_cmd.assert_called_once()
         self.assertEqual(mock_nats_cmd.call_args[0][0]["func"], "files_upload_abort")
+
+    @patch("agents.views.get_accepted_offset")
+    @patch("agents.views.get_upload_ack", return_value=0)
+    def test_upload_chunk_ready_get_reports_can_put(self, _ack, mock_accepted) -> None:
+        """Bodyless get must report pipeline room without consuming a chunk body."""
+        chunk = FILE_TRANSFER_CHUNK_SIZE
+        total = (FILE_TRANSFER_PIPELINE_DEPTH + 1) * chunk
+        session = self._make_transfer_session(
+            status=FileTransferStatus.TRANSFERRING,
+            committed_offset=0,
+            total_size=total,
+            chunk_size=chunk,
+        )
+        url = self._chunk_url(session.session_id)
+
+        mock_accepted.return_value = 0
+        open_resp = self.client.get(url)
+        self.assertEqual(open_resp.status_code, 200)
+        self.assertTrue(open_resp.json()["can_put"])
+        self.assertEqual(open_resp.json()["accepted_offset"], 0)
+        self.assertEqual(open_resp.json()["committed_offset"], 0)
+
+        mock_accepted.return_value = FILE_TRANSFER_PIPELINE_DEPTH * chunk
+        full_resp = self.client.get(url)
+        self.assertEqual(full_resp.status_code, 200)
+        self.assertFalse(full_resp.json()["can_put"])
+        self.assertEqual(
+            full_resp.json()["accepted_offset"],
+            FILE_TRANSFER_PIPELINE_DEPTH * chunk,
+        )
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.TRANSFERRING)
+
+    @patch("agents.views.get_accepted_offset", return_value=0)
+    @patch("agents.views.get_upload_ack", return_value=0)
+    def test_upload_chunk_ready_get_terminal_does_not_fail_session(
+        self, _ack, _accepted
+    ) -> None:
+        """A failed session get reports can_put=false without changing status."""
+        session = self._make_transfer_session(
+            status=FileTransferStatus.FAILED,
+            error_message="Upload failed",
+        )
+        response = self.client.get(self._chunk_url(session.session_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["can_put"])
+        self.assertEqual(response.json()["status"], FileTransferStatus.FAILED)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.FAILED)
 
 
 class TestCompleteFileUpload(BaseFileBrowserAPITest):

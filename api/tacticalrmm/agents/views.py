@@ -2351,8 +2351,80 @@ class InitFileUpload(APIView):
         )
 
 
+_FILE_TRANSFER_CHUNK_ACTIVE_STATUSES = (
+    FileTransferStatus.AGENT_READY,
+    FileTransferStatus.TRANSFERRING,
+)
+_FILE_TRANSFER_CHUNK_TERMINAL_STATUSES = (
+    FileTransferStatus.COMPLETED,
+    FileTransferStatus.FAILED,
+    FileTransferStatus.CANCELLED,
+    FileTransferStatus.EXPIRED,
+)
+
+
+def _upload_relay_put_state(session):
+    """Return committed and accepted."""
+    redis_committed = get_upload_ack(session.session_id)
+    committed = max(session.committed_offset, redis_committed or 0)
+    redis_accepted = get_accepted_offset(session.session_id)
+    accepted = max(redis_accepted or 0, committed)
+    depth_bytes = FILE_TRANSFER_PIPELINE_DEPTH * session.chunk_size
+    can_put = (
+        session.status in _FILE_TRANSFER_CHUNK_ACTIVE_STATUSES
+        and accepted < session.total_size
+        and not pipeline_depth_full(accepted, committed, depth_bytes)
+    )
+    return committed, accepted, can_put
+
+
+def _upload_chunk_ready_payload(session, committed, accepted, can_put):
+    return {
+        "session_id": str(session.session_id),
+        "status": session.status,
+        "accepted_offset": accepted,
+        "committed_offset": committed,
+        "chunk_size": session.chunk_size,
+        "total_size": session.total_size,
+        "can_put": can_put,
+    }
+
+
 class UploadFileChunk(APIView):
     permission_classes = [IsAuthenticated, AgentFileBrowserPerms]
+
+    def get(self, request, agent_id, session_id):
+        agent = get_validated_agent(
+            agent_id, min_version=FILE_BROWSER_MIN_AGENT_VERSION
+        )
+        if isinstance(agent, Response):
+            return agent
+
+        session = get_object_or_404(
+            FileTransferSession,
+            session_id=session_id,
+            agent=agent,
+            user=request.user,
+            operation=FileTransferOperation.UPLOAD,
+        )
+
+        if session.expires_at <= djangotime.now():
+            _expire_transfer_session(session, agent)
+            return notify_error("Upload session has expired")
+
+        if session.status in _FILE_TRANSFER_CHUNK_TERMINAL_STATUSES:
+            committed, accepted, _can_put = _upload_relay_put_state(session)
+            return Response(
+                _upload_chunk_ready_payload(session, committed, accepted, False)
+            )
+
+        if session.status not in _FILE_TRANSFER_CHUNK_ACTIVE_STATUSES:
+            return notify_error("Upload session is not ready to receive chunks")
+
+        committed, accepted, can_put = _upload_relay_put_state(session)
+        return Response(
+            _upload_chunk_ready_payload(session, committed, accepted, can_put)
+        )
 
     def put(self, request, agent_id, session_id):
         """Accept one chunk from the client.
@@ -2362,8 +2434,8 @@ class UploadFileChunk(APIView):
             what the agent has committed (same cap as download).
           - The PUT returns immediately once the chunk is stored in Redis and
             NATS-notified. The client does not wait for the agent to write.
-          - If the pipeline is full, the put is retryable until the agent
-            commits enough to free a slot.
+          - If the pipeline is full, poll GET on this URL until can_put;
+            the PUT itself stays retryable for a race.
 
         Response fields:
           accepted_offset  — client should start the next chunk here
@@ -2387,10 +2459,7 @@ class UploadFileChunk(APIView):
             _expire_transfer_session(session, agent)
             return notify_error("Upload session has expired")
 
-        if session.status not in (
-            FileTransferStatus.AGENT_READY,
-            FileTransferStatus.TRANSFERRING,
-        ):
+        if session.status not in _FILE_TRANSFER_CHUNK_ACTIVE_STATUSES:
             return notify_error("Upload session is not ready to receive chunks")
 
         content_range = request.META.get("HTTP_CONTENT_RANGE", "")
@@ -2419,15 +2488,7 @@ class UploadFileChunk(APIView):
         if expected_len > FILE_TRANSFER_CHUNK_SIZE_MAX:
             return notify_error("Chunk exceeds maximum request size")
 
-        chunk_data = request.body
-        if len(chunk_data) != expected_len:
-            return notify_error("Request body size does not match Content-Range")
-
-        redis_committed = get_upload_ack(session.session_id)
-        committed = max(session.committed_offset, redis_committed or 0)
-
-        redis_accepted = get_accepted_offset(session.session_id)
-        accepted = max(redis_accepted or 0, committed)
+        committed, accepted, can_put = _upload_relay_put_state(session)
 
         if start < accepted:
             return Response(
@@ -2447,18 +2508,33 @@ class UploadFileChunk(APIView):
                 f"Chunk start offset {start} does not match expected {accepted}"
             )
 
-        depth_bytes = FILE_TRANSFER_PIPELINE_DEPTH * session.chunk_size
-        if pipeline_depth_full(start, committed, depth_bytes):
-            redis_committed = get_upload_ack(session.session_id)
-            committed = max(committed, redis_committed or 0)
-            if pipeline_depth_full(start, committed, depth_bytes):
+        if not can_put:
+            committed, accepted, can_put = _upload_relay_put_state(session)
+            if start < accepted:
+                return Response(
+                    {
+                        "session_id": str(session.session_id),
+                        "status": session.status,
+                        "accepted_offset": accepted,
+                        "committed_offset": committed,
+                        "chunk_start": start,
+                        "chunk_end": end,
+                        "chunk_bytes": expected_len,
+                    }
+                )
+            if not can_put:
                 session.refresh_from_db(fields=["status", "error_message"])
                 if session.status == FileTransferStatus.FAILED:
                     clear_upload_session_redis(session.session_id)
                     return notify_error(session.error_message or "Upload failed")
+                _ = request.body
                 return notify_retryable(
                     "Timed out waiting for agent to commit previous chunk"
                 )
+
+        chunk_data = request.body
+        if len(chunk_data) != expected_len:
+            return notify_error("Request body size does not match Content-Range")
 
         receive_t0 = time.monotonic()
         store_err = store_upload_chunk(session.session_id, start, end, chunk_data)
@@ -3272,22 +3348,23 @@ def _release_download_session(
         return
 
     clear_download_session_redis(session.session_id)
-    finalize_payload = {
-        "session_id": str(session.session_id),
-        "source_path": session.destination_path,
-    }
-    response = send_nats_command(
-        agent,
-        "files_download_finalize",
-        finalize_payload,
-        timeout=_FILE_TRANSFER_AGENT_RELEASE_TIMEOUT,
-    )
-    if isinstance(response, dict) and response.get("error"):
-        logger.warning(
-            "file_transfer download release session=%s agent finalize: %s",
-            session.session_id,
-            response.get("error"),
+    if agent is not None and agent.status == AGENT_STATUS_ONLINE:
+        finalize_payload = {
+            "session_id": str(session.session_id),
+            "source_path": session.destination_path,
+        }
+        response = send_nats_command(
+            agent,
+            "files_download_finalize",
+            finalize_payload,
+            timeout=_FILE_TRANSFER_AGENT_RELEASE_TIMEOUT,
         )
+        if isinstance(response, dict) and response.get("error"):
+            logger.warning(
+                "file_transfer download release session=%s agent finalize: %s",
+                session.session_id,
+                response.get("error"),
+            )
     if not _apply_transfer_terminal_status(session, new_status, error_message):
         return
     _log_transfer_terminal(session, error_message)
@@ -3304,19 +3381,20 @@ def _release_upload_session(
         return
 
     clear_upload_session_redis(session.session_id)
-    abort_payload = {"session_id": str(session.session_id)}
-    response = send_nats_command(
-        agent,
-        "files_upload_abort",
-        abort_payload,
-        timeout=_FILE_TRANSFER_AGENT_RELEASE_TIMEOUT,
-    )
-    if isinstance(response, dict) and response.get("error"):
-        logger.warning(
-            "file_transfer upload release session=%s agent abort: %s",
-            session.session_id,
-            response.get("error"),
+    if agent is not None and agent.status == AGENT_STATUS_ONLINE:
+        abort_payload = {"session_id": str(session.session_id)}
+        response = send_nats_command(
+            agent,
+            "files_upload_abort",
+            abort_payload,
+            timeout=_FILE_TRANSFER_AGENT_RELEASE_TIMEOUT,
         )
+        if isinstance(response, dict) and response.get("error"):
+            logger.warning(
+                "file_transfer upload release session=%s agent abort: %s",
+                session.session_id,
+                response.get("error"),
+            )
     if not _apply_transfer_terminal_status(session, new_status, error_message):
         return
     _log_transfer_terminal(session, error_message)

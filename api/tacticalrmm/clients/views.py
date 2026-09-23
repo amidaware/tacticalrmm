@@ -14,7 +14,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from agents.models import Agent
-from core.utils import get_core_settings
+from core.utils import get_core_settings, token_is_valid
+from tacticalrmm.constants import AgentPlat
 from tacticalrmm.helpers import notify_error
 from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
 
@@ -330,6 +331,7 @@ class AgentDeployment(APIView):
             site=site,
             expiry=expires,
             mon_type=request.data["agenttype"],
+            plat=request.data.get("plat", AgentPlat.WINDOWS),
             goarch=request.data["goarch"],
             auth_token=obj,
             token_key=token,
@@ -357,8 +359,6 @@ class GenerateAgent(APIView):
         if getattr(settings, "TRMM_INSECURE", False):
             return notify_error("Not available in insecure mode")
 
-        from tacticalrmm.utils import generate_winagent_exe
-
         try:
             _ = uuid.UUID(uid, version=4)
         except ValueError:
@@ -370,17 +370,56 @@ class GenerateAgent(APIView):
         site = d.site.name.replace(" ", "").lower()
         client = re.sub(r"([^a-zA-Z0-9]+)", "", client)
         site = re.sub(r"([^a-zA-Z0-9]+)", "", site)
-        file_name = f"trmm-{client}-{site}-{d.mon_type}-{d.goarch}.exe"
+        api = f"https://{request.get_host()}"
 
-        return generate_winagent_exe(
-            client=d.client.pk,
-            site=d.site.pk,
+        if d.plat == AgentPlat.WINDOWS:
+            from tacticalrmm.utils import generate_winagent_exe
+
+            file_name = f"trmm-{client}-{site}-{d.mon_type}-{d.goarch}.exe"
+            return generate_winagent_exe(
+                client=d.client.pk,
+                site=d.site.pk,
+                agent_type=d.mon_type,
+                rdp=d.install_flags["rdp"],
+                ping=d.install_flags["ping"],
+                power=d.install_flags["power"],
+                goarch=d.goarch,
+                token=d.token_key,
+                api=api,
+                file_name=file_name,
+            )
+
+        from agents.utils import (
+            generate_darwin_install,
+            generate_linux_install,
+            get_agent_url,
+        )
+
+        codesign_token, is_valid = token_is_valid()
+        if not is_valid:
+            return notify_error(
+                "Linux/Mac agents require code signing. Please see https://docs.tacticalrmm.com/code_signing/ for more info."
+            )
+
+        download_url = get_agent_url(goarch=d.goarch, plat=d.plat, token=codesign_token)
+
+        if d.plat == AgentPlat.LINUX:
+            return generate_linux_install(
+                client=str(d.client.pk),
+                site=str(d.site.pk),
+                agent_type=d.mon_type,
+                arch=d.goarch,
+                token=d.token_key,
+                api=api,
+                download_url=download_url,
+            )
+
+        return generate_darwin_install(
+            client=str(d.client.pk),
+            site=str(d.site.pk),
             agent_type=d.mon_type,
-            rdp=d.install_flags["rdp"],
-            ping=d.install_flags["ping"],
-            power=d.install_flags["power"],
-            goarch=d.goarch,
+            arch=d.goarch,
             token=d.token_key,
-            api=f"https://{request.get_host()}",
-            file_name=file_name,
+            api=api,
+            download_url=download_url,
         )

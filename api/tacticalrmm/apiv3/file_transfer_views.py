@@ -2,6 +2,7 @@ import datetime as dt
 import json
 import logging
 
+from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -44,6 +45,15 @@ _TERMINAL_STATUSES = (
     FileTransferStatus.EXPIRED,
 )
 _MAX_WARNINGS_CHARS = 8192
+
+
+def _agent_body_str(request, key: str) -> str:
+    if not isinstance(request.data, dict):
+        return ""
+    value = request.data.get(key)
+    if value is None:
+        return ""
+    return str(value).strip()
 
 
 class FileTransferNextChunk(APIView):
@@ -129,7 +139,7 @@ class FileTransferAck(APIView):
 
         try:
             committed_offset = int(request.data.get("committed_offset"))
-        except (TypeError, ValueError):
+        except (AttributeError, TypeError, ValueError):
             return notify_error("committed_offset must be a positive integer")
 
         if committed_offset < 1 or committed_offset > session.total_size:
@@ -376,25 +386,33 @@ class FileTransferFail(APIView):
             agent=agent,
         )
 
-        if session.status in _TERMINAL_STATUSES:
-            return Response(
-                {"status": session.status},
-                status=status.HTTP_409_CONFLICT,
-            )
-
-        error = (request.data.get("error") or "").strip()
+        error = _agent_body_str(request, "error")
         if not error:
             error = "Agent reported transfer failure"
         error = error[:2048]
+
+        with transaction.atomic():
+            # lock so a complete that lands at the same time is not
+            # overwritten with failed.
+            locked = (
+                FileTransferSession.objects.select_for_update()
+                .filter(pk=session.pk)
+                .first()
+            )
+            if locked is None or locked.status in _TERMINAL_STATUSES:
+                return Response(
+                    {"status": locked.status if locked else session.status},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            locked.status = FileTransferStatus.FAILED
+            locked.error_message = error
+            locked.save(update_fields=["status", "error_message", "updated_at"])
+        session = locked
 
         if session.operation == FileTransferOperation.DOWNLOAD:
             clear_download_session_redis(session.session_id)
         else:
             clear_upload_session_redis(session.session_id)
-
-        session.status = FileTransferStatus.FAILED
-        session.error_message = error
-        session.save(update_fields=["status", "error_message", "updated_at"])
         logger.error(
             "file_transfer agent fail session=%s operation=%s: %s",
             session.session_id,
@@ -431,7 +449,7 @@ class FileTransferArchiveReady(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        error = (request.data.get("error") or "").strip()
+        error = _agent_body_str(request, "error")
         if error:
             session.status = FileTransferStatus.FAILED
             session.error_message = error[:2048]
@@ -451,12 +469,12 @@ class FileTransferArchiveReady(APIView):
 
         try:
             total_size = int(request.data.get("total_size"))
-        except (TypeError, ValueError):
+        except (AttributeError, TypeError, ValueError):
             return notify_error("total_size must be a positive integer")
         if total_size < 1:
             return notify_error("Agent reported empty or invalid archive")
 
-        archive_path = (request.data.get("archive_path") or "").strip()
+        archive_path = _agent_body_str(request, "archive_path")
         if not archive_path:
             return notify_error("archive_path is required")
 

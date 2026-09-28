@@ -14,38 +14,23 @@ def file_transfer_timeout_ladder_check(app_configs, **kwargs):
     from django.conf import settings
 
     from tacticalrmm.constants import (
-        FILE_TRANSFER_ACK_WAIT_SECONDS,
+        FILE_TRANSFER_AGENT_ACK_WAIT_SECONDS,
         FILE_TRANSFER_CHUNK_SIZE_MAX,
-        FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS,
         FILE_TRANSFER_PIPELINE_DEPTH,
         FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS,
     )
 
     errors = []
 
-    if FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS <= FILE_TRANSFER_ACK_WAIT_SECONDS:
+    if FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS <= FILE_TRANSFER_AGENT_ACK_WAIT_SECONDS:
         errors.append(
             Error(
-                "FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS must be greater than "
-                "FILE_TRANSFER_ACK_WAIT_SECONDS so the agent's depth-check wait "
-                "outlives the client's chunk wait.",
-                hint=(
-                    f"DL_DEPTH_WAIT={FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS}, "
-                    f"ACK_WAIT={FILE_TRANSFER_ACK_WAIT_SECONDS}"
-                ),
-                id="agents.E001",
-            )
-        )
-
-    if FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS <= FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS:
-        errors.append(
-            Error(
-                "FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS must be greater than "
-                "FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS so buffered chunks do not "
-                "expire while a depth wait is in progress.",
+                "FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS must be greater than the "
+                "agent's client-ACK wait so a buffered download chunk does not "
+                "expire while the agent's stream is still waiting on it.",
                 hint=(
                     f"CHUNK_TTL={FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS}, "
-                    f"DL_DEPTH_WAIT={FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS}"
+                    f"agent ACK wait={FILE_TRANSFER_AGENT_ACK_WAIT_SECONDS}"
                 ),
                 id="agents.E002",
             )

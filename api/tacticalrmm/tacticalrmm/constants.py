@@ -72,13 +72,13 @@ FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS = getattr(
 FILE_TRANSFER_REDIS_ACK_TTL_SECONDS = getattr(
     settings, "FILE_TRANSFER_REDIS_ACK_TTL_SECONDS", 6 * 3600
 )
-FILE_TRANSFER_ACK_WAIT_SECONDS = getattr(settings, "FILE_TRANSFER_ACK_WAIT_SECONDS", 30)
 FILE_TRANSFER_ACK_CHECKPOINT_BYTES = getattr(
     settings, "FILE_TRANSFER_ACK_CHECKPOINT_BYTES", 25 * 1024 * 1024
 )
-FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS = getattr(
-    settings, "FILE_TRANSFER_DL_DEPTH_WAIT_SECONDS", 60
-)
+# not a setting: mirrors downloadPushAckWaitMax in the agent (how long a
+# download stream waits for the client to ACK before it parks). Buffered
+# chunks must outlive it
+FILE_TRANSFER_AGENT_ACK_WAIT_SECONDS = 120
 FILE_BROWSER_DEFAULT_PAGE_SIZE = getattr(
     settings, "FILE_BROWSER_DEFAULT_PAGE_SIZE", 500
 )

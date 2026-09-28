@@ -1,10 +1,12 @@
 import datetime as dt
 import logging
+from functools import partial
 from time import sleep
 from typing import TYPE_CHECKING, Optional
 
 from django.conf import settings
 from django.core.management import call_command
+from django.db import transaction
 from django.utils import timezone as djangotime
 
 from agents.models import Agent
@@ -275,7 +277,6 @@ _FILE_TRANSFER_ACTIVE_STATUSES = (
 def expire_stale_file_transfer_sessions(
     *, agent=None, notify_agent: bool = True
 ) -> int:
-    """Expire TTL'd sessions and never-started sessions idle past 10 minutes."""
     from agents.utils import send_nats_command
 
     from .file_transfer_relay import (
@@ -293,8 +294,6 @@ def expire_stale_file_transfer_sessions(
             clear_download_session_redis(session.session_id)
 
     def _notify_agent_release(session: "FileTransferSession") -> None:
-        if not notify_agent:
-            return
         agent_obj = session.agent
         if agent_obj is None or agent_obj.status != "online":
             return
@@ -313,6 +312,7 @@ def expire_stale_file_transfer_sessions(
                     {
                         "session_id": str(session.session_id),
                         "source_path": session.destination_path,
+                        "release": "true",
                     },
                     timeout=5,
                 )
@@ -327,7 +327,7 @@ def expire_stale_file_transfer_sessions(
         return max(session.committed_offset, redis_committed or 0)
 
     def _should_idle_expire(session: "FileTransferSession", idle_cutoff) -> bool:
-        if session.created_at > idle_cutoff:
+        if max(session.created_at, session.updated_at) > idle_cutoff:
             return False
         if session.last_ack_at is not None or session.committed_offset > 0:
             return False
@@ -349,21 +349,37 @@ def expire_stale_file_transfer_sessions(
     if agent is not None:
         qs = qs.filter(agent=agent)
 
+    def _release(session: "FileTransferSession") -> None:
+        _clear_redis(session)
+        _notify_agent_release(session)
+
     expired_count = 0
     for session in qs.iterator():
         ttl_expired = session.expires_at <= now
         idle_expired = _should_idle_expire(session, idle_cutoff)
         if not ttl_expired and not idle_expired:
             continue
-        _clear_redis(session)
-        _notify_agent_release(session)
-        session.status = FileTransferStatus.EXPIRED
-        session.error_message = session.error_message or (
-            "Session expired after 10 minutes with no data transferred"
-            if idle_expired and not ttl_expired
-            else "Session expired"
-        )
-        session.save(update_fields=["status", "error_message", "updated_at"])
+        with transaction.atomic():
+            # a complete or cancel may have finished it since the query
+            locked = (
+                FileTransferSession.objects.select_for_update()
+                .filter(pk=session.pk, status__in=_FILE_TRANSFER_ACTIVE_STATUSES)
+                .first()
+            )
+            if locked is None:
+                continue
+            locked.status = FileTransferStatus.EXPIRED
+            locked.error_message = locked.error_message or (
+                "Session expired after 10 minutes with no data transferred"
+                if idle_expired and not ttl_expired
+                else "Session expired"
+            )
+            locked.save(update_fields=["status", "error_message", "updated_at"])
+        session = locked
+        if notify_agent:
+            _release(session)
+        else:
+            transaction.on_commit(partial(_release, session))
         logger.error(
             "file_transfer session=%s operation=%s status=%s: %s",
             session.session_id,

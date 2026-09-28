@@ -326,15 +326,3 @@ class TestFileTransferAckKeys(SimpleTestCase):
                 for pattern in patterns
             )
         )
-
-    @patch("agents.file_transfer_relay._redis_client")
-    def test_wait_for_upload_ack_reads_scalar_key(self, mock_redis_client) -> None:
-        client = MagicMock()
-        client.get.return_value = b"8192"
-        mock_redis_client.return_value = client
-        from agents.file_transfer_relay import wait_for_upload_ack
-
-        session_id = uuid4()
-        self.assertEqual(wait_for_upload_ack(session_id, 4096, timeout=1), 8192)
-        client.get.assert_called_with(f"upload:ack:{session_id}")
-        client.blpop.assert_not_called()

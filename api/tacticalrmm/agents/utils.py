@@ -17,6 +17,7 @@ from checks.models import CheckResult
 from core.utils import get_core_settings, get_mesh_device_id, get_mesh_ws_url
 from tacticalrmm.constants import (
     AGENT_DEFER,
+    AgentPlat,
     AlertSeverity,
     CheckStatus,
     CheckType,
@@ -131,11 +132,13 @@ def _ensure_nats_notify_loop() -> asyncio.AbstractEventLoop:
 
 
 _NATS_UNAVAILABLE = ("timeout", "natsdown")
+NATS_UNAVAILABLE_MESSAGE = "Unable to contact the agent"
+NATS_FAILED_PREFIX = "NATS communication failed"
 
 
 def _nats_unavailable_error(result) -> Optional[Response]:
     if result in _NATS_UNAVAILABLE:
-        return notify_error("Unable to contact the agent")
+        return notify_error(NATS_UNAVAILABLE_MESSAGE)
     return None
 
 
@@ -149,7 +152,7 @@ def send_nats_notification(agent, func: str, payload: dict) -> Optional[Response
         )
         result = future.result(timeout=10)
     except Exception as e:
-        return notify_error(f"NATS communication failed: {str(e)}")
+        return notify_error(f"{NATS_FAILED_PREFIX}: {str(e)}")
     return _nats_unavailable_error(result)
 
 
@@ -160,7 +163,7 @@ def send_nats_command(
         data = {"func": func, "payload": payload}
         response = asyncio.run(agent.nats_cmd(data, timeout=timeout))
     except Exception as e:
-        return notify_error(f"NATS communication failed: {str(e)}")
+        return notify_error(f"{NATS_FAILED_PREFIX}: {str(e)}")
 
     unavailable = _nats_unavailable_error(response)
     if unavailable is not None:
@@ -307,8 +310,14 @@ def validate_fs_name(
     return None
 
 
-def validate_file_browser_name(raw_name, field: str = "name") -> Optional[str]:
-    return validate_fs_name(raw_name, field=field, ban_trailing_space_or_period=True)
+def validate_file_browser_name(
+    raw_name, field: str = "name", plat: Optional[str] = None
+) -> Optional[str]:
+    return validate_fs_name(
+        raw_name,
+        field=field,
+        ban_trailing_space_or_period=plat in (None, AgentPlat.WINDOWS),
+    )
 
 
 def validate_file_transfer_filename(

@@ -340,7 +340,9 @@ if SWAGGER_ENABLED:
 def _silky_intercept(request) -> bool:
     # Large binary relay endpoints break django-silk finalise on dev servers.
     path = request.path
-    if "/files/upload/" in path and path.endswith("/chunk/"):
+    if ("/files/upload/" in path or "/files/download/" in path) and path.endswith(
+        "/chunk/"
+    ):
         return False
     if "/api/v3/file-transfers/" in path:
         return False

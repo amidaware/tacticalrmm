@@ -1,5 +1,4 @@
 import json
-import time
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
@@ -9,7 +8,6 @@ from django.conf import settings
 from redis import Redis, from_url
 
 from tacticalrmm.constants import (
-    FILE_TRANSFER_ACK_WAIT_SECONDS,
     FILE_TRANSFER_REDIS_ACK_TTL_SECONDS,
     FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS,
 )
@@ -197,37 +195,6 @@ def signal_upload_ack(session_id: UUID, committed_offset: int) -> None:
     )
 
 
-def _wait_for_redis_offset(
-    key: str, min_offset: int, timeout: float, *, exclusive: bool = False
-) -> Optional[int]:
-    """Poll a scalar redis offset key. http handlers must not call this."""
-    client = _redis_client()
-    deadline = time.monotonic() + timeout
-    while True:
-        existing = client.get(key)
-        if existing is not None:
-            offset = int(existing.decode())
-            if offset > min_offset if exclusive else offset >= min_offset:
-                return offset
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            return None
-        time.sleep(min(0.05, remaining))
-
-
-def wait_for_upload_ack(
-    session_id: UUID, min_offset: int, timeout: Optional[float] = None
-) -> Optional[int]:
-    """Block until committed_offset >= min_offset, or until timeout.
-
-    HTTP request handlers must not call this. They peek Redis and return 408
-    so a uWSGI worker is not pinned for ACK_WAIT seconds.
-    """
-    if timeout is None:
-        timeout = float(FILE_TRANSFER_ACK_WAIT_SECONDS)
-    return _wait_for_redis_offset(_ack_key(session_id), min_offset, timeout)
-
-
 def clear_upload_session_redis(session_id: UUID) -> None:
     client = _redis_client()
     client.delete(_ack_key(session_id), _accepted_key(session_id))
@@ -340,26 +307,6 @@ def signal_download_ack(session_id: UUID, committed_offset: int) -> None:
         _dl_ack_key(session_id),
         str(committed_offset).encode(),
         ex=FILE_TRANSFER_REDIS_ACK_TTL_SECONDS,
-    )
-
-
-def wait_for_download_ack(
-    session_id: UUID, min_offset: int, timeout: Optional[float] = None
-) -> Optional[int]:
-    """Block until client committed_offset >= min_offset (depth-check for agent push)."""
-    if timeout is None:
-        timeout = float(FILE_TRANSFER_ACK_WAIT_SECONDS)
-    return _wait_for_redis_offset(_dl_ack_key(session_id), min_offset, timeout)
-
-
-def wait_for_download_chunk(
-    session_id: UUID, offset: int, timeout: Optional[float] = None
-) -> Optional[int]:
-    """Block until agent has pushed a chunk at `offset`, or until timeout."""
-    if timeout is None:
-        timeout = float(FILE_TRANSFER_ACK_WAIT_SECONDS)
-    return _wait_for_redis_offset(
-        _dl_offered_key(session_id), offset, timeout, exclusive=True
     )
 
 

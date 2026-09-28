@@ -156,6 +156,8 @@ from .file_transfer_relay import (
     store_upload_chunk,
 )
 from .utils import (
+    NATS_FAILED_PREFIX,
+    NATS_UNAVAILABLE_MESSAGE,
     get_validated_agent,
     normalize_file_browser_delete_results,
     normalize_file_browser_item,
@@ -2005,6 +2007,19 @@ def _log_transfer_terminal(session: FileTransferSession, detail: str = "") -> No
     )
 
 
+def _body_str(request, key: str):
+    """Return ``(stripped value, None)`` for a string body field, or
+    ``("", 400 response)`` when the body or the field has the wrong type."""
+    if not isinstance(request.data, dict):
+        return "", notify_error("Request body must be a JSON object")
+    value = request.data.get(key)
+    if value is None:
+        return "", None
+    if not isinstance(value, str):
+        return "", notify_error(f"{key} must be a string")
+    return value.strip(), None
+
+
 class CheckFileExists(APIView):
     permission_classes = [IsAuthenticated, AgentFileBrowserPerms]
 
@@ -2015,7 +2030,9 @@ class CheckFileExists(APIView):
         if isinstance(agent, Response):
             return agent
 
-        path = (request.data.get("path") or "").strip()
+        path, body_err = _body_str(request, "path")
+        if body_err:
+            return body_err
         if not path:
             return notify_error("path is required")
 
@@ -2034,7 +2051,7 @@ class CheckFileExists(APIView):
         names = []
         seen = set()
         for raw in raw_names:
-            name_err = validate_file_browser_name(raw, field="names")
+            name_err = validate_file_browser_name(raw, field="names", plat=agent.plat)
             if name_err:
                 return notify_error(name_err)
             name = str(raw).strip()
@@ -2080,7 +2097,9 @@ class CreateFileFolder(APIView):
         if isinstance(agent, Response):
             return agent
 
-        path = (request.data.get("path") or "").strip()
+        path, body_err = _body_str(request, "path")
+        if body_err:
+            return body_err
         raw_name = request.data.get("name")
         if not path:
             return notify_error("path is required")
@@ -2089,7 +2108,7 @@ class CreateFileFolder(APIView):
         if path_err:
             return notify_error(path_err)
 
-        name_err = validate_file_browser_name(raw_name, field="name")
+        name_err = validate_file_browser_name(raw_name, field="name", plat=agent.plat)
         if name_err:
             return notify_error(name_err)
 
@@ -2133,7 +2152,9 @@ class RenameFile(APIView):
         if isinstance(agent, Response):
             return agent
 
-        raw_path = (request.data.get("path") or "").strip()
+        raw_path, body_err = _body_str(request, "path")
+        if body_err:
+            return body_err
         raw_new_name = request.data.get("new_name")
         if not raw_path:
             return notify_error("path is required")
@@ -2142,7 +2163,9 @@ class RenameFile(APIView):
         if path_err:
             return notify_error(path_err)
 
-        name_err = validate_file_browser_name(raw_new_name, field="new_name")
+        name_err = validate_file_browser_name(
+            raw_new_name, field="new_name", plat=agent.plat
+        )
         if name_err:
             return notify_error(name_err)
 
@@ -2181,6 +2204,8 @@ def _delete_agent_files(request, agent_id):
     if isinstance(agent, Response):
         return agent
 
+    if not isinstance(request.data, dict):
+        return notify_error("Request body must be a JSON object")
     paths = request.data.get("paths")
     normalized_paths, paths_err = canonical_file_browser_paths(paths, agent.plat)
     if paths_err:
@@ -2233,7 +2258,9 @@ class InitFileUpload(APIView):
         filename = (data.get("filename") or "").strip()
         destination_path = (data.get("destination_path") or "").strip()
 
-        filename_err = validate_file_transfer_filename(filename)
+        filename_err = validate_file_transfer_filename(
+            filename, ban_trailing_space_or_period=agent.plat == AgentPlat.WINDOWS
+        )
         if filename_err:
             return notify_error(filename_err)
 
@@ -2440,6 +2467,8 @@ class UploadFileChunk(APIView):
         Response fields:
           accepted_offset  — client should start the next chunk here
           committed_offset — last offset confirmed written by the agent
+          can_put          — the next chunk fits in the pipeline now; when
+                             false, poll GET before sending it
         """
         agent = get_validated_agent(
             agent_id, min_version=FILE_BROWSER_MIN_AGENT_VERSION
@@ -2500,6 +2529,7 @@ class UploadFileChunk(APIView):
                     "chunk_start": start,
                     "chunk_end": end,
                     "chunk_bytes": expected_len,
+                    "can_put": can_put,
                 }
             )
 
@@ -2520,6 +2550,7 @@ class UploadFileChunk(APIView):
                         "chunk_start": start,
                         "chunk_end": end,
                         "chunk_bytes": expected_len,
+                        "can_put": can_put,
                     }
                 )
             if not can_put:
@@ -2564,6 +2595,9 @@ class UploadFileChunk(APIView):
             return notify_err
 
         accepted_offset = end + 1
+        # Tell the client whether the next chunk fits so it only polls the
+        # ready GET when the pipeline is actually full.
+        committed, _accepted, next_can_put = _upload_relay_put_state(session)
         logger.info(
             "file_transfer upload chunk accepted session=%s start=%s end=%s "
             "chunk_receive_ms=%.1f chunk_notify_ms=%.1f",
@@ -2583,6 +2617,7 @@ class UploadFileChunk(APIView):
                 "chunk_start": start,
                 "chunk_end": end,
                 "chunk_bytes": len(chunk_data),
+                "can_put": next_can_put,
             }
         )
 
@@ -2610,8 +2645,10 @@ class CompleteFileUpload(APIView):
             return notify_error("Upload session has expired")
 
         if session.status == FileTransferStatus.COMPLETED:
-            client_sha256 = (request.data.get("sha256") or "").strip().lower()
-            return Response(_upload_complete_body(session, client_sha256))
+            client_sha256, body_err = _body_str(request, "sha256")
+            if body_err:
+                return body_err
+            return Response(_upload_complete_body(session, client_sha256.lower()))
 
         if session.status not in (
             FileTransferStatus.AGENT_READY,
@@ -2652,7 +2689,10 @@ class CompleteFileUpload(APIView):
             or FileTransferConflictPolicy.REPLACE,
         }
 
-        client_sha256 = (request.data.get("sha256") or "").strip().lower()
+        client_sha256, body_err = _body_str(request, "sha256")
+        if body_err:
+            return body_err
+        client_sha256 = client_sha256.lower()
         if client_sha256:
             finalize_payload["sha256"] = client_sha256
         response = send_nats_command(
@@ -2844,9 +2884,24 @@ class InitFileDownload(APIView):
             )
             return notify_error("Agent reported empty or invalid file")
 
+        # The agent's stream may already have reported a failure (or the
+        # user cancelled) while the prepare call was in flight; do not put a
+        # terminal row back to agent_ready with no stream behind it.
+        updated = FileTransferSession.objects.filter(
+            pk=session.pk, status=FileTransferStatus.WAITING_FOR_AGENT
+        ).update(
+            total_size=total_size,
+            status=FileTransferStatus.AGENT_READY,
+            updated_at=djangotime.now(),
+        )
+        if not updated:
+            session.refresh_from_db(fields=["status", "error_message"])
+            return notify_error(
+                session.error_message
+                or f"Download session is no longer active (status: {session.status})"
+            )
         session.total_size = total_size
         session.status = FileTransferStatus.AGENT_READY
-        session.save(update_fields=["total_size", "status", "updated_at"])
 
         _audit_file_browser(
             request,
@@ -3028,16 +3083,18 @@ class GetFileDownloadChunk(APIView):
             session.committed_offset, redis_committed or 0, client_committed
         )
 
+        # No chunk yet is the normal state while the agent pushes; answer
+        # 204 (poll again) rather than an error status the browser logs.
         offered = get_download_offered_offset(session.session_id)
         if offered is None or offered <= committed:
             session.refresh_from_db(fields=["status", "error_message"])
             if session.status == FileTransferStatus.FAILED:
                 return notify_error(session.error_message or "Download failed")
-            return notify_retryable("Timed out waiting for agent to push chunk")
+            return HttpResponse(status=status.HTTP_204_NO_CONTENT)
 
         chunk = peek_download_chunk(session.session_id, committed)
         if chunk is None:
-            return notify_retryable("Timed out waiting for agent to push chunk")
+            return HttpResponse(status=status.HTTP_204_NO_CONTENT)
 
         logger.info(
             "file_transfer download chunk served session=%s start=%s end=%s",
@@ -3085,7 +3142,7 @@ class AckFileDownloadChunk(APIView):
 
         try:
             committed_offset = int(request.data.get("committed_offset"))
-        except (TypeError, ValueError):
+        except (AttributeError, TypeError, ValueError):
             return notify_error("committed_offset must be a positive integer")
 
         if committed_offset < 1 or committed_offset > session.total_size:
@@ -3259,6 +3316,13 @@ def _nats_finalize_error(response, fallback: str) -> str:
     return "Invalid agent response"
 
 
+def _nats_agent_unreachable(response) -> bool:
+    if not isinstance(response, Response):
+        return False
+    detail = str(response.data)
+    return detail == NATS_UNAVAILABLE_MESSAGE or detail.startswith(NATS_FAILED_PREFIX)
+
+
 def _session_completed_during_nats(session: FileTransferSession) -> bool:
     session.refresh_from_db()
     return session.status == FileTransferStatus.COMPLETED
@@ -3316,6 +3380,8 @@ def _upload_finalize_failure_response(
 ):
     if _session_completed_during_nats(session):
         return Response(_upload_complete_body(session, client_sha256))
+    if _nats_agent_unreachable(response):
+        return notify_retryable("Timed out waiting for agent to finalize upload")
     fail_message = _nats_finalize_error(response, "Agent failed to finalize upload")
     _fail_transfer_session(session, agent, fail_message)
     if session.status == FileTransferStatus.COMPLETED:
@@ -3328,6 +3394,8 @@ def _upload_finalize_failure_response(
 def _download_finalize_failure_response(session: FileTransferSession, agent, response):
     if _session_completed_during_nats(session):
         return Response(_download_complete_body(session, ""))
+    if _nats_agent_unreachable(response):
+        return notify_retryable("Timed out waiting for agent to finalize download")
     fail_message = _nats_finalize_error(response, "Agent failed to finalize download")
     _fail_transfer_session(session, agent, fail_message)
     if session.status == FileTransferStatus.COMPLETED:
@@ -3352,6 +3420,7 @@ def _release_download_session(
         finalize_payload = {
             "session_id": str(session.session_id),
             "source_path": session.destination_path,
+            "release": "true",
         }
         response = send_nats_command(
             agent,
@@ -3482,7 +3551,10 @@ class CancelFileDownload(APIView):
                 {"session_id": str(session.session_id), "status": session.status}
             )
 
-        reason = (request.data.get("reason") or "user").strip().lower()
+        reason, body_err = _body_str(request, "reason")
+        if body_err:
+            return body_err
+        reason = (reason or "user").lower()
         if reason == "error":
             new_status = FileTransferStatus.FAILED
             error_message = "Download released after failure"
@@ -3543,7 +3615,10 @@ class CancelFileUpload(APIView):
                 {"session_id": str(session.session_id), "status": session.status}
             )
 
-        reason = (request.data.get("reason") or "user").strip().lower()
+        reason, body_err = _body_str(request, "reason")
+        if body_err:
+            return body_err
+        reason = (reason or "user").lower()
         if reason == "error":
             new_status = FileTransferStatus.FAILED
             error_message = "Upload released after failure"

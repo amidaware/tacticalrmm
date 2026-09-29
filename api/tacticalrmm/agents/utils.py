@@ -268,6 +268,11 @@ def is_posix_abs_path(s: str) -> bool:
 
 
 _INVALID_FILENAME_CHARS = frozenset('<>:"/\\|?*\x00')
+_WINDOWS_RESERVED_NAMES = frozenset(
+    ["CON", "PRN", "AUX", "NUL"]
+    + [f"COM{i}" for i in range(10)]
+    + [f"LPT{i}" for i in range(10)]
+)
 _WINDOWS_ABS_PATH_RE = re.compile(r"^(?:[a-zA-Z]:\\|\\\\[^\\]+\\[^\\]+)")
 _PATH_CONTROL_CHARS = ("\n", "\r", "\x00")
 
@@ -286,6 +291,7 @@ def validate_fs_name(
     field: str = "name",
     *,
     ban_trailing_space_or_period: bool = True,
+    ban_windows_reserved: bool = False,
 ) -> Optional[str]:
     """
     Validate a single filesystem name segment (mkdir / rename / upload filename).
@@ -307,26 +313,37 @@ def validate_fs_name(
         return f"{field} is too long"
     if any(ch in _INVALID_FILENAME_CHARS for ch in trimmed):
         return f"{field} contains invalid characters"
+    if (
+        ban_windows_reserved
+        and trimmed.split(".")[0].rstrip(" ").upper() in _WINDOWS_RESERVED_NAMES
+    ):
+        return f"{field} is reserved by Windows (CON, PRN, AUX, NUL, COM1–9, LPT1–9)"
     return None
 
 
 def validate_file_browser_name(
     raw_name, field: str = "name", plat: Optional[str] = None
 ) -> Optional[str]:
+    windows = plat in (None, AgentPlat.WINDOWS)
     return validate_fs_name(
         raw_name,
         field=field,
-        ban_trailing_space_or_period=plat in (None, AgentPlat.WINDOWS),
+        ban_trailing_space_or_period=windows,
+        ban_windows_reserved=windows,
     )
 
 
 def validate_file_transfer_filename(
-    filename: str, *, ban_trailing_space_or_period: bool = True
+    filename: str,
+    *,
+    ban_trailing_space_or_period: bool = True,
+    ban_windows_reserved: bool = False,
 ) -> Optional[str]:
     return validate_fs_name(
         filename,
         field="filename",
         ban_trailing_space_or_period=ban_trailing_space_or_period,
+        ban_windows_reserved=ban_windows_reserved,
     )
 
 

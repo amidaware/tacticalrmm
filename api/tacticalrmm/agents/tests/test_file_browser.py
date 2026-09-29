@@ -11,6 +11,7 @@ from rest_framework import status
 from agents.models import Agent, FileTransferSession
 from logs.models import AuditLog
 from tacticalrmm.constants import (
+    AgentPlat,
     FILE_BROWSER_DEFAULT_PAGE_SIZE,
     FILE_BROWSER_MAX_PAGE,
     FILE_BROWSER_MAX_PAGE_SIZE,
@@ -827,6 +828,28 @@ class TestInitFileUpload(BaseFileBrowserAPITest):
     @patch("agents.views.clear_upload_session_redis")
     @patch("agents.views.get_upload_ack", return_value=None)
     @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_init_file_upload_resume_agent_unreachable_is_retryable(
+        self, mock_nats_cmd, _mock_ack, _mock_clear
+    ) -> None:
+        session = self._make_transfer_session(
+            status=FileTransferStatus.TRANSFERRING,
+            committed_offset=512,
+        )
+        mock_nats_cmd.return_value = "timeout"
+        response = self.client.post(
+            self.url,
+            {"session_id": str(session.session_id)},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 408)
+        self.assertIn("Unable to contact the agent", response.json())
+        self.assertNotIn("timed out waiting for agent to", response.json().lower())
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.TRANSFERRING)
+
+    @patch("agents.views.clear_upload_session_redis")
+    @patch("agents.views.get_upload_ack", return_value=None)
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
     def test_init_file_upload_resume_skips_session_cap(
         self, mock_nats_cmd, _mock_ack, _mock_clear
     ) -> None:
@@ -1554,6 +1577,32 @@ class TestUploadFileChunk(BaseFileBrowserAPITest):
         session.refresh_from_db()
         self.assertEqual(session.status, FileTransferStatus.TRANSFERRING)
 
+    @patch("agents.views.get_accepted_offset", return_value=1024)
+    @patch("agents.views.get_upload_ack", return_value=512)
+    def test_upload_failed_by_agent_reports_the_reason(self, _ack, _accepted) -> None:
+        session = self._make_transfer_session(
+            status=FileTransferStatus.FAILED,
+            error_message="insufficient disk space to upload file",
+            committed_offset=512,
+            total_size=2048,
+            chunk_size=512,
+        )
+        ready = self.client.get(self._chunk_url(session.session_id))
+        self.assertEqual(ready.status_code, 200)
+        self.assertEqual(ready.json()["status"], FileTransferStatus.FAILED)
+        self.assertEqual(
+            ready.json()["error"], "insufficient disk space to upload file"
+        )
+
+        put = self.client.put(
+            self._chunk_url(session.session_id),
+            data=b"x" * 512,
+            content_type="application/octet-stream",
+            HTTP_CONTENT_RANGE="bytes 1024-1535/2048",
+        )
+        self.assertEqual(put.status_code, 400)
+        self.assertEqual(put.json(), "insufficient disk space to upload file")
+
     @patch("agents.views.send_nats_notification", return_value=None)
     @patch("agents.views.store_upload_chunk", return_value=None)
     @patch("agents.views.get_accepted_offset")
@@ -1674,6 +1723,40 @@ class TestUploadFileChunk(BaseFileBrowserAPITest):
         session.refresh_from_db()
         self.assertEqual(session.status, FileTransferStatus.TRANSFERRING)
 
+    @patch("agents.views.clear_upload_session_redis")
+    @patch("agents.views.send_nats_notification", return_value=None)
+    @patch("agents.views.get_accepted_offset", return_value=0)
+    @patch("agents.views.get_upload_ack", return_value=0)
+    def test_cancel_during_first_chunk_is_not_overwritten(
+        self, _ack, _accepted, mock_notify, mock_clear
+    ) -> None:
+        """The first chunk PUT used to overwrite a cancel with transferring."""
+        session = self._make_transfer_session(
+            status=FileTransferStatus.AGENT_READY,
+            committed_offset=0,
+            total_size=1024,
+            chunk_size=512,
+        )
+
+        def cancel_meanwhile(*_args, **_kwargs):
+            FileTransferSession.objects.filter(pk=session.pk).update(
+                status=FileTransferStatus.CANCELLED
+            )
+            return None
+
+        with patch("agents.views.store_upload_chunk", side_effect=cancel_meanwhile):
+            response = self.client.put(
+                self._chunk_url(session.session_id),
+                data=b"x" * 512,
+                content_type="application/octet-stream",
+                HTTP_CONTENT_RANGE="bytes 0-511/1024",
+            )
+        self.assertEqual(response.status_code, 400)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.CANCELLED)
+        mock_clear.assert_called_once_with(session.session_id)
+        mock_notify.assert_not_called()
+
     @patch("agents.views.rollback_upload_chunk")
     @patch("agents.views.store_upload_chunk", return_value=None)
     @patch("agents.views.get_accepted_offset", return_value=0)
@@ -1683,7 +1766,7 @@ class TestUploadFileChunk(BaseFileBrowserAPITest):
     def test_upload_chunk_natsdown_rolls_back_chunk(
         self, mock_nats_cmd, mock_notify, _ack, _accepted, _store, mock_rollback
     ) -> None:
-        """A nats down notify must not leave the chunk accepted in redis."""
+        """Chunk is rolled back and the client retries, the session isn't failed."""
         mock_nats_cmd.return_value = {"status": "aborted"}
         mock_notify.return_value = notify_error("Unable to contact the agent")
         session = self._make_transfer_session(
@@ -1698,13 +1781,13 @@ class TestUploadFileChunk(BaseFileBrowserAPITest):
             content_type="application/octet-stream",
             HTTP_CONTENT_RANGE="bytes 0-511/1024",
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 408)
         self.assertIn("Unable to contact the agent", response.json())
+        self.assertNotIn("timed out waiting for agent to", response.json().lower())
         mock_rollback.assert_called_once()
         session.refresh_from_db()
-        self.assertEqual(session.status, FileTransferStatus.FAILED)
-        mock_nats_cmd.assert_called_once()
-        self.assertEqual(mock_nats_cmd.call_args[0][0]["func"], "files_upload_abort")
+        self.assertEqual(session.status, FileTransferStatus.TRANSFERRING)
+        mock_nats_cmd.assert_not_called()
 
     @patch("agents.views.clear_upload_session_redis")
     @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
@@ -2114,6 +2197,225 @@ class TestAgentDownloadPutChunk(BaseFileBrowserAPITest):
             full_resp.json()["offered_offset"],
             FILE_TRANSFER_PIPELINE_DEPTH * chunk,
         )
+
+
+class TestAgentDownloadPutCancelRace(BaseFileBrowserAPITest):
+    def setUp(self) -> None:
+        super().setUp()
+        self.authenticate_agent(self.agent)
+
+    @patch("apiv3.file_transfer_views.clear_download_session_redis")
+    @patch("apiv3.file_transfer_views.get_download_offered_offset", return_value=0)
+    @patch("apiv3.file_transfer_views.get_download_ack", return_value=0)
+    def test_cancel_during_first_push_is_not_overwritten(
+        self, _ack, _offered, mock_clear
+    ) -> None:
+        chunk = FILE_TRANSFER_CHUNK_SIZE
+        session = self._make_transfer_session(
+            operation=FileTransferOperation.DOWNLOAD,
+            status=FileTransferStatus.AGENT_READY,
+            committed_offset=0,
+            total_size=2 * chunk,
+            chunk_size=chunk,
+        )
+
+        def cancel_meanwhile(*_args, **_kwargs):
+            FileTransferSession.objects.filter(pk=session.pk).update(
+                status=FileTransferStatus.CANCELLED
+            )
+            return None
+
+        url = reverse("file_transfer_download_put_chunk", args=[session.session_id])
+        with patch(
+            "apiv3.file_transfer_views.store_download_chunk",
+            side_effect=cancel_meanwhile,
+        ):
+            response = self.client.put(
+                url,
+                data=b"x" * chunk,
+                content_type="application/octet-stream",
+                HTTP_CONTENT_RANGE=f"bytes 0-{chunk - 1}/{2 * chunk}",
+            )
+        self.assertEqual(response.status_code, 400)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.CANCELLED)
+        mock_clear.assert_called_once_with(session.session_id)
+
+
+class TestWindowsReservedNames(TacticalTestCase):
+    def test_reserved_device_names(self) -> None:
+        from agents.utils import (
+            validate_file_browser_name,
+            validate_file_transfer_filename,
+        )
+
+        for name in ("CON", "nul.txt", "com1.log", "Lpt9", "aux.tar.gz"):
+            self.assertIn(
+                "reserved by Windows",
+                validate_file_browser_name(name, plat=AgentPlat.WINDOWS) or "",
+                name,
+            )
+            self.assertIn(
+                "reserved by Windows",
+                validate_file_transfer_filename(name, ban_windows_reserved=True) or "",
+            )
+            self.assertIsNone(validate_file_browser_name(name, plat=AgentPlat.LINUX))
+        for name in ("console.txt", "nullable", "COM10", "lpt.txt"):
+            self.assertIsNone(validate_file_browser_name(name, plat=AgentPlat.WINDOWS))
+        self.assertIsNone(validate_file_transfer_filename("con.zip"))
+
+
+class TestUploadSameDestination(BaseFileBrowserAPITest):
+    api_name = "init_file_upload"
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_second_upload_to_same_file_is_refused(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "ready", "committed_offset": 0}
+        self._make_transfer_session(
+            status=FileTransferStatus.TRANSFERRING,
+            destination_path=r"C:\Users\Public\Report.txt",
+            filename="Report.txt",
+        )
+        body = {
+            "filename": "report.txt",
+            "destination_path": r"C:\Users\Public",
+            "total_size": 10,
+        }
+        response = self.client.post(self.url, body, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Another upload to this file", response.json())
+        mock_nats_cmd.assert_not_called()
+
+        body["filename"] = "other.txt"
+        response = self.client.post(self.url, body, format="json")
+        self.assertEqual(response.status_code, 200)
+
+
+class TestResumeCancelRace(BaseFileBrowserAPITest):
+    def _cancel_during(self, session, prepare_func):
+        calls = []
+
+        def nats(agent, func, payload, *args, **kwargs):
+            calls.append(func)
+            if func == prepare_func:
+                FileTransferSession.objects.filter(pk=session.pk).update(
+                    status=FileTransferStatus.CANCELLED
+                )
+                return {"status": "ready", "committed_offset": 512, "total_size": 1024}
+            return {"status": "ok"}
+
+        return calls, nats
+
+    @patch("agents.views.clear_upload_session_redis")
+    def test_upload_resume(self, _clear) -> None:
+        session = self._make_transfer_session(committed_offset=512)
+        calls, nats = self._cancel_during(session, "files_upload_prepare")
+        with patch("agents.views.send_nats_command", side_effect=nats):
+            response = self.client.post(
+                reverse("init_file_upload", args=[self.agent.agent_id]),
+                {"session_id": str(session.session_id)},
+                format="json",
+            )
+        self.assertEqual(response.status_code, 400)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.CANCELLED)
+        self.assertEqual(calls, ["files_upload_prepare", "files_upload_abort"])
+
+    @patch("agents.views.clear_download_session_redis")
+    def test_download_resume(self, _clear) -> None:
+        session = self._make_transfer_session(
+            operation=FileTransferOperation.DOWNLOAD,
+            destination_path=r"C:\Users\Public\demo.txt",
+            committed_offset=0,
+        )
+        calls, nats = self._cancel_during(session, "files_download_prepare")
+        with patch("agents.views.send_nats_command", side_effect=nats):
+            response = self.client.post(
+                reverse("init_file_download", args=[self.agent.agent_id]),
+                {"session_id": str(session.session_id), "resume_offset": 0},
+                format="json",
+            )
+        self.assertEqual(response.status_code, 400)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.CANCELLED)
+        self.assertEqual(calls, ["files_download_prepare", "files_download_finalize"])
+
+
+class TestArchiveReadyAfterCancel(BaseFileBrowserAPITest):
+    def setUp(self) -> None:
+        super().setUp()
+        self.authenticate_agent(self.agent)
+
+    def test_ready_after_cancel_is_refused(self) -> None:
+        session = self._make_transfer_session(
+            operation=FileTransferOperation.DOWNLOAD,
+            status=FileTransferStatus.WAITING_FOR_AGENT,
+            is_archive=True,
+        )
+        FileTransferSession.objects.filter(pk=session.pk).update(
+            status=FileTransferStatus.CANCELLED
+        )
+        # view still has the row from before the cancel
+        with patch("apiv3.file_transfer_views.get_object_or_404", return_value=session):
+            response = self.client.post(
+                reverse("file_transfer_archive_ready", args=[session.session_id]),
+                {"total_size": 10, "archive_path": "/tmp/trmm-archive-x.zip"},
+                format="json",
+            )
+        self.assertEqual(response.status_code, 409)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.CANCELLED)
+
+
+class TestAgentUploadPull(BaseFileBrowserAPITest):
+    def setUp(self) -> None:
+        super().setUp()
+        self.authenticate_agent(self.agent)
+
+    @patch("apiv3.file_transfer_views.peek_upload_chunk")
+    @patch("apiv3.file_transfer_views.get_upload_ack", return_value=0)
+    def test_next_chunk_is_not_consumed_by_the_pull(self, _ack, mock_peek) -> None:
+        from agents.file_transfer_relay import PendingUploadChunk
+
+        mock_peek.return_value = PendingUploadChunk(start=0, end=511, data=b"x" * 512)
+        session = self._make_transfer_session(
+            status=FileTransferStatus.TRANSFERRING,
+            committed_offset=0,
+            total_size=1024,
+            chunk_size=512,
+        )
+        url = reverse("file_transfer_next_chunk", args=[session.session_id])
+        for _ in range(2):
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response["X-Chunk-Start"], "0")
+        self.assertEqual(mock_peek.call_count, 2)
+
+    @patch("apiv3.file_transfer_views.signal_upload_ack")
+    @patch("apiv3.file_transfer_views.delete_upload_chunk")
+    @patch("apiv3.file_transfer_views.get_accepted_offset", return_value=1024)
+    @patch("apiv3.file_transfer_views.get_upload_ack")
+    def test_ack_deletes_the_acked_chunk_once(
+        self, mock_ack, _accepted, mock_delete, _signal
+    ) -> None:
+        session = self._make_transfer_session(
+            status=FileTransferStatus.TRANSFERRING,
+            committed_offset=0,
+            total_size=1024,
+            chunk_size=512,
+        )
+        url = reverse("file_transfer_ack", args=[session.session_id])
+
+        mock_ack.return_value = 0
+        response = self.client.post(url, {"committed_offset": 512}, format="json")
+        self.assertEqual(response.status_code, 200)
+        mock_delete.assert_called_once_with(session.session_id, 0)
+
+        # re-ack after a lost response
+        mock_ack.return_value = 512
+        response = self.client.post(url, {"committed_offset": 512}, format="json")
+        self.assertEqual(response.status_code, 200)
+        mock_delete.assert_called_once()
 
 
 class TestFileBrowserPermissions(BaseFileBrowserAPITest):

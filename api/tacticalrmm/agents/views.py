@@ -1750,7 +1750,30 @@ def create_file_transfer_session_locked(agent, user, **fields):
         limit_err = enforce_file_transfer_session_limits(agent, user)
         if limit_err is not None:
             return limit_err
+        if fields.get("operation") == FileTransferOperation.UPLOAD:
+            busy_err = _upload_destination_busy(agent, fields.get("destination_path"))
+            if busy_err is not None:
+                return busy_err
         return FileTransferSession.objects.create(agent=agent, user=user, **fields)
+
+
+def _upload_destination_busy(agent, destination_path):
+    """Two uploads to the same file would share the same .partial on the agent."""
+    active = FileTransferSession.objects.filter(
+        agent=agent,
+        operation=FileTransferOperation.UPLOAD,
+        status__in=_FILE_TRANSFER_RESUMABLE_STATUSES,
+    )
+    if agent.plat in (AgentPlat.WINDOWS, AgentPlat.DARWIN):
+        active = active.filter(destination_path__iexact=destination_path)
+    else:
+        active = active.filter(destination_path=destination_path)
+    if active.exists():
+        return notify_error(
+            "Another upload to this file is in progress or paused. "
+            "Wait for it, or resume or cancel it, then try again."
+        )
+    return None
 
 
 def _normalize_upload_conflict_policy(raw):
@@ -1779,6 +1802,27 @@ _FILE_TRANSFER_RESUMABLE_STATUSES = (
     FileTransferStatus.AGENT_READY,
     FileTransferStatus.TRANSFERRING,
 )
+
+
+def _mark_session_resumed(session: FileTransferSession, committed_offset: int) -> bool:
+    """Returns False if the session was cancelled during the agent prepare."""
+    now = djangotime.now()
+    expires_at = now + dt.timedelta(hours=FILE_TRANSFER_SESSION_TTL_HOURS)
+    updated = FileTransferSession.objects.filter(
+        pk=session.pk, status__in=_FILE_TRANSFER_RESUMABLE_STATUSES
+    ).update(
+        status=FileTransferStatus.AGENT_READY,
+        committed_offset=committed_offset,
+        expires_at=expires_at,
+        updated_at=now,
+    )
+    if not updated:
+        session.refresh_from_db()
+        return False
+    session.status = FileTransferStatus.AGENT_READY
+    session.committed_offset = committed_offset
+    session.expires_at = expires_at
+    return True
 
 
 def _resume_file_upload(request, agent, data):
@@ -1824,6 +1868,8 @@ def _resume_file_upload(request, agent, data):
         agent, "files_upload_prepare", prepare_payload, timeout=30
     )
 
+    if _nats_agent_unreachable(response):
+        return notify_retryable(f"{response.data}. Try again shortly.")
     if isinstance(response, Response):
         return response
     if not isinstance(response, dict):
@@ -1841,14 +1887,17 @@ def _resume_file_upload(request, agent, data):
 
     clear_upload_session_redis(session.session_id)
 
-    session.status = FileTransferStatus.AGENT_READY
-    session.committed_offset = committed_offset
-    session.expires_at = djangotime.now() + dt.timedelta(
-        hours=FILE_TRANSFER_SESSION_TTL_HOURS
-    )
-    session.save(
-        update_fields=["status", "committed_offset", "expires_at", "updated_at"]
-    )
+    if not _mark_session_resumed(session, committed_offset):
+        # cancelled during the prepare
+        send_nats_command(
+            agent,
+            "files_upload_abort",
+            {"session_id": str(session.session_id)},
+            timeout=_FILE_TRANSFER_AGENT_RELEASE_TIMEOUT,
+        )
+        return notify_error(
+            f"Upload session cannot be resumed (status: {session.status})"
+        )
 
     return Response(
         {
@@ -2259,7 +2308,9 @@ class InitFileUpload(APIView):
         destination_path = (data.get("destination_path") or "").strip()
 
         filename_err = validate_file_transfer_filename(
-            filename, ban_trailing_space_or_period=agent.plat == AgentPlat.WINDOWS
+            filename,
+            ban_trailing_space_or_period=agent.plat == AgentPlat.WINDOWS,
+            ban_windows_reserved=agent.plat == AgentPlat.WINDOWS,
         )
         if filename_err:
             return notify_error(filename_err)
@@ -2414,6 +2465,7 @@ def _upload_chunk_ready_payload(session, committed, accepted, can_put):
         "chunk_size": session.chunk_size,
         "total_size": session.total_size,
         "can_put": can_put,
+        "error": session.error_message,
     }
 
 
@@ -2488,6 +2540,8 @@ class UploadFileChunk(APIView):
             _expire_transfer_session(session, agent)
             return notify_error("Upload session has expired")
 
+        if session.status == FileTransferStatus.FAILED:
+            return notify_error(session.error_message or "Upload failed")
         if session.status not in _FILE_TRANSFER_CHUNK_ACTIVE_STATUSES:
             return notify_error("Upload session is not ready to receive chunks")
 
@@ -2573,9 +2627,12 @@ class UploadFileChunk(APIView):
         if store_err:
             return notify_error(store_err)
 
-        if session.status == FileTransferStatus.AGENT_READY:
-            session.status = FileTransferStatus.TRANSFERRING
-            session.save(update_fields=["status", "updated_at"])
+        if not _mark_transfer_transferring(session):
+            # cancelled or failed while the chunk was being stored
+            clear_upload_session_redis(session.session_id)
+            if session.status == FileTransferStatus.FAILED:
+                return notify_error(session.error_message or "Upload failed")
+            return notify_error("Upload session is not ready to receive chunks")
 
         notify_payload = {
             "session_id": str(session.session_id),
@@ -2590,9 +2647,15 @@ class UploadFileChunk(APIView):
         chunk_notify_ms = (time.monotonic() - notify_t0) * 1000
 
         if notify_err is not None:
+            # nats is probably restarting, let the client resend the chunk
             rollback_upload_chunk(session.session_id, start, prev_accepted=start)
-            _fail_transfer_session(session, agent, str(notify_err.data))
-            return notify_err
+            logger.warning(
+                "file_transfer upload chunk notify failed session=%s start=%s: %s",
+                session.session_id,
+                start,
+                notify_err.data,
+            )
+            return notify_retryable(f"{notify_err.data}. Retrying.")
 
         accepted_offset = end + 1
         # Tell the client whether the next chunk fits so it only polls the
@@ -2763,6 +2826,8 @@ def _resume_file_download(request, agent, data):
         agent, "files_download_prepare", prepare_payload, timeout=30
     )
 
+    if _nats_agent_unreachable(response):
+        return notify_retryable(f"{response.data}. Try again shortly.")
     if isinstance(response, Response):
         return response
     if not isinstance(response, dict):
@@ -2781,14 +2846,22 @@ def _resume_file_download(request, agent, data):
             "Source file changed since the transfer started; cannot resume"
         )
 
-    session.status = FileTransferStatus.AGENT_READY
-    session.committed_offset = resume_offset
-    session.expires_at = djangotime.now() + dt.timedelta(
-        hours=FILE_TRANSFER_SESSION_TTL_HOURS
-    )
-    session.save(
-        update_fields=["status", "committed_offset", "expires_at", "updated_at"]
-    )
+    if not _mark_session_resumed(session, resume_offset):
+        # cancelled during the prepare
+        clear_download_session_redis(session.session_id)
+        send_nats_command(
+            agent,
+            "files_download_finalize",
+            {
+                "session_id": str(session.session_id),
+                "source_path": session.destination_path,
+                "release": "true",
+            },
+            timeout=_FILE_TRANSFER_AGENT_RELEASE_TIMEOUT,
+        )
+        return notify_error(
+            f"Download session cannot be resumed (status: {session.status})"
+        )
 
     return Response(
         {
@@ -3176,10 +3249,8 @@ class AckFileDownloadChunk(APIView):
             session.expires_at = now + dt.timedelta(
                 hours=FILE_TRANSFER_SESSION_TTL_HOURS
             )
-            if session.status == FileTransferStatus.AGENT_READY:
-                session.status = FileTransferStatus.TRANSFERRING
-                update_fields.append("status")
             session.save(update_fields=update_fields)
+            _mark_transfer_transferring(session)
 
         if committed_offset > current_committed:
             delete_download_chunk(session.session_id, current_committed)
@@ -3345,6 +3416,22 @@ def _mark_transfer_completed(session: FileTransferSession) -> FileTransferSessio
         return locked
 
 
+def _mark_transfer_transferring(session: FileTransferSession) -> bool:
+    """Conditional update so we don't overwrite a cancel. Returns False if the
+    session is no longer active."""
+    if session.status != FileTransferStatus.AGENT_READY:
+        session.refresh_from_db(fields=["status", "error_message"])
+        return session.status in _FILE_TRANSFER_CHUNK_ACTIVE_STATUSES
+    updated = FileTransferSession.objects.filter(
+        pk=session.pk, status=FileTransferStatus.AGENT_READY
+    ).update(status=FileTransferStatus.TRANSFERRING, updated_at=djangotime.now())
+    if updated:
+        session.status = FileTransferStatus.TRANSFERRING
+        return True
+    session.refresh_from_db(fields=["status", "error_message"])
+    return session.status in _FILE_TRANSFER_CHUNK_ACTIVE_STATUSES
+
+
 def _apply_transfer_terminal_status(
     session: FileTransferSession,
     new_status: str,
@@ -3415,6 +3502,9 @@ def _release_download_session(
     if session.status in _FILE_TRANSFER_RELEASED_STATUSES:
         return
 
+    # set the status before clearing redis so the agent can't push into a
+    # session with no offsets
+    applied = _apply_transfer_terminal_status(session, new_status, error_message)
     clear_download_session_redis(session.session_id)
     if agent is not None and agent.status == AGENT_STATUS_ONLINE:
         finalize_payload = {
@@ -3434,9 +3524,12 @@ def _release_download_session(
                 session.session_id,
                 response.get("error"),
             )
-    if not _apply_transfer_terminal_status(session, new_status, error_message):
-        return
-    _log_transfer_terminal(session, error_message)
+    # again, in case a chunk was stored during the release
+    clear_download_session_redis(session.session_id)
+    # a complete may have won the race
+    session.refresh_from_db(fields=["status", "error_message"])
+    if applied:
+        _log_transfer_terminal(session, error_message)
 
 
 def _release_upload_session(
@@ -3449,6 +3542,9 @@ def _release_upload_session(
     if session.status in _FILE_TRANSFER_RELEASED_STATUSES:
         return
 
+    # set the status before clearing redis so the agent can't push into a
+    # session with no offsets
+    applied = _apply_transfer_terminal_status(session, new_status, error_message)
     clear_upload_session_redis(session.session_id)
     if agent is not None and agent.status == AGENT_STATUS_ONLINE:
         abort_payload = {"session_id": str(session.session_id)}
@@ -3464,9 +3560,12 @@ def _release_upload_session(
                 session.session_id,
                 response.get("error"),
             )
-    if not _apply_transfer_terminal_status(session, new_status, error_message):
-        return
-    _log_transfer_terminal(session, error_message)
+    # again, in case a chunk was stored during the release
+    clear_upload_session_redis(session.session_id)
+    # a complete may have won the race
+    session.refresh_from_db(fields=["status", "error_message"])
+    if applied:
+        _log_transfer_terminal(session, error_message)
 
 
 def _fail_transfer_session(

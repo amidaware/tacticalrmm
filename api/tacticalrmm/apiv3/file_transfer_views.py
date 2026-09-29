@@ -15,12 +15,13 @@ from rest_framework.views import APIView
 from agents.file_transfer_relay import (
     clear_download_session_redis,
     clear_upload_session_redis,
+    delete_upload_chunk,
     get_accepted_offset,
     get_download_ack,
     get_download_offered_offset,
     get_upload_ack,
+    peek_upload_chunk,
     pipeline_depth_full,
-    pop_upload_chunk,
     signal_upload_ack,
     store_download_chunk,
 )
@@ -90,7 +91,7 @@ class FileTransferNextChunk(APIView):
         redis_committed = get_upload_ack(session.session_id)
         committed = max(session.committed_offset, redis_committed or 0)
 
-        chunk = pop_upload_chunk(session.session_id, committed)
+        chunk = peek_upload_chunk(session.session_id, committed)
         if chunk is None:
             return Response("No pending chunk", status=status.HTTP_404_NOT_FOUND)
 
@@ -177,11 +178,12 @@ class FileTransferAck(APIView):
             session.expires_at = now + dt.timedelta(
                 hours=FILE_TRANSFER_SESSION_TTL_HOURS
             )
-            if session.status == FileTransferStatus.AGENT_READY:
-                session.status = FileTransferStatus.TRANSFERRING
-                update_fields.append("status")
             session.save(update_fields=update_fields)
+            from agents.views import _mark_transfer_transferring
 
+            _mark_transfer_transferring(session)
+
+        delete_upload_chunk(session.session_id, current_committed)
         signal_upload_ack(session.session_id, committed_offset)
 
         return Response({"committed_offset": committed_offset})
@@ -340,9 +342,12 @@ class FileTransferDownloadPutChunk(APIView):
         if store_err:
             return notify_error(store_err)
 
-        if session.status == FileTransferStatus.AGENT_READY:
-            session.status = FileTransferStatus.TRANSFERRING
-            session.save(update_fields=["status", "updated_at"])
+        from agents.views import _mark_transfer_transferring
+
+        if not _mark_transfer_transferring(session):
+            # cancelled or failed while the chunk was being stored
+            clear_download_session_redis(session.session_id)
+            return notify_error("Download session is not ready for chunk transfer")
 
         logger.info(
             "file_transfer download chunk stored session=%s start=%s end=%s",
@@ -451,9 +456,15 @@ class FileTransferArchiveReady(APIView):
 
         error = _agent_body_str(request, "error")
         if error:
-            session.status = FileTransferStatus.FAILED
+            # don't overwrite a cancel
+            FileTransferSession.objects.filter(
+                pk=session.pk, status=FileTransferStatus.WAITING_FOR_AGENT
+            ).update(
+                status=FileTransferStatus.FAILED,
+                error_message=error[:2048],
+                updated_at=djangotime.now(),
+            )
             session.error_message = error[:2048]
-            session.save(update_fields=["status", "error_message", "updated_at"])
             logger.error(
                 "file_transfer archive build failed session=%s: %s",
                 session.session_id,
@@ -486,21 +497,22 @@ class FileTransferArchiveReady(APIView):
             ]
 
         now = djangotime.now()
-        session.destination_path = archive_path
-        session.total_size = total_size
-        session.warnings = warnings_value
-        session.status = FileTransferStatus.AGENT_READY
-        session.expires_at = now + dt.timedelta(hours=FILE_TRANSFER_SESSION_TTL_HOURS)
-        session.save(
-            update_fields=[
-                "destination_path",
-                "total_size",
-                "warnings",
-                "status",
-                "expires_at",
-                "updated_at",
-            ]
+        updated = FileTransferSession.objects.filter(
+            pk=session.pk, status=FileTransferStatus.WAITING_FOR_AGENT
+        ).update(
+            destination_path=archive_path,
+            total_size=total_size,
+            warnings=warnings_value,
+            status=FileTransferStatus.AGENT_READY,
+            expires_at=now + dt.timedelta(hours=FILE_TRANSFER_SESSION_TTL_HOURS),
+            updated_at=now,
         )
+        if not updated:
+            # cancelled, the agent deletes the archive
+            return Response(
+                "Session is no longer active",
+                status=status.HTTP_409_CONFLICT,
+            )
         logger.info(
             "file_transfer archive ready session=%s total_size=%s",
             session.session_id,

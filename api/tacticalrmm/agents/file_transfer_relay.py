@@ -37,20 +37,6 @@ redis.call('SET', KEYS[3], ARGV[4], 'EX', ARGV[5])
 return 1
 """
 
-_POP_CHUNK_SCRIPT = """
-local meta = redis.call('GET', KEYS[1])
-if not meta then
-    return {false}
-end
-local data = redis.call('GET', KEYS[2])
-if not data then
-    redis.call('DEL', KEYS[1])
-    return {false}
-end
-redis.call('DEL', KEYS[1], KEYS[2])
-return {meta, data}
-"""
-
 _PEEK_CHUNK_SCRIPT = """
 local meta = redis.call('GET', KEYS[1])
 if not meta then
@@ -72,11 +58,6 @@ def _redis_client() -> Redis:
 @lru_cache(maxsize=1)
 def _store_chunk_redis_script():
     return _redis_client().register_script(_STORE_CHUNK_SCRIPT)
-
-
-@lru_cache(maxsize=1)
-def _pop_chunk_redis_script():
-    return _redis_client().register_script(_POP_CHUNK_SCRIPT)
 
 
 @lru_cache(maxsize=1)
@@ -163,17 +144,12 @@ def rollback_upload_chunk(session_id: UUID, start: int, prev_accepted: int) -> N
     )
 
 
-def pop_upload_chunk(session_id: UUID, start: int) -> Optional[PendingUploadChunk]:
-    """Atomically fetch and delete the chunk stored at `start`.
-
-    Executes via a Lua script so that GET meta + GET data + DEL both keys runs
-    as a single Redis transaction.  A concurrent caller at the same offset will
-    always see None rather than a partial result.
-    """
+def peek_upload_chunk(session_id: UUID, start: int) -> Optional[PendingUploadChunk]:
+    """Chunk is only deleted on ack so the agent can retry a lost pull."""
     meta_key = _chunk_meta_key_at(session_id, start)
     data_key = _chunk_data_key_at(session_id, start)
 
-    result = _pop_chunk_redis_script()(keys=[meta_key, data_key])
+    result = _peek_chunk_redis_script()(keys=[meta_key, data_key])
 
     if not result or result[0] is False or result[0] is None:
         return None
@@ -184,6 +160,13 @@ def pop_upload_chunk(session_id: UUID, start: int) -> Optional[PendingUploadChun
         start=int(meta["start"]),
         end=int(meta["end"]),
         data=data,
+    )
+
+
+def delete_upload_chunk(session_id: UUID, start: int) -> None:
+    _redis_client().delete(
+        _chunk_meta_key_at(session_id, start),
+        _chunk_data_key_at(session_id, start),
     )
 
 

@@ -1,6 +1,5 @@
 import datetime as dt
 import json
-import logging
 
 from django.db import transaction
 from django.http import HttpResponse
@@ -36,8 +35,7 @@ from tacticalrmm.constants import (
     FileTransferStatus,
 )
 from tacticalrmm.helpers import notify_error, notify_retryable
-
-logger = logging.getLogger("trmm.file_transfer")
+from tacticalrmm.logger import logger
 
 _TERMINAL_STATUSES = (
     FileTransferStatus.COMPLETED,

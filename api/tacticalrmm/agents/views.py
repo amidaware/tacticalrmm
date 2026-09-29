@@ -1,7 +1,6 @@
 import asyncio
 import datetime as dt
 import json
-import logging
 import random
 import string
 import time
@@ -87,6 +86,7 @@ from tacticalrmm.helpers import (
     notify_retryable,
     notify_serializer_error,
 )
+from tacticalrmm.logger import logger
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
@@ -177,8 +177,6 @@ from .utils import (
     validate_file_transfer_source_path,
     derive_archive_download_filename,
 )
-
-logger = logging.getLogger("trmm.file_transfer")
 
 
 class GetAgents(APIView):

@@ -1,5 +1,4 @@
 import datetime as dt
-import logging
 from functools import partial
 from time import sleep
 from typing import TYPE_CHECKING, Optional
@@ -26,9 +25,8 @@ from tacticalrmm.constants import (
     FileTransferStatus,
 )
 from tacticalrmm.helpers import rand_range
+from tacticalrmm.logger import logger
 from tacticalrmm.utils import redis_lock
-
-logger = logging.getLogger("trmm.file_transfer")
 
 if TYPE_CHECKING:
     from django.db.models.query import QuerySet

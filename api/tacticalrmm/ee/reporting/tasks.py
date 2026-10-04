@@ -106,12 +106,18 @@ def scheduled_reports_runner():
 
     for report in run_list:
         try:
-            _, error = run_scheduled_report(schedule=report)
+            result = run_scheduled_report(schedule=report)
         except Exception as e:
             logger.error(str(e))
         else:
-            if error:
-                logger.error(error)
+            if result.status == "error" and result.error:
+                logger.error(result.error)
+            elif result.status == "skipped":
+                logger.info(
+                    "Report schedule %s skipped: %s",
+                    report.pk,
+                    result.message or "condition",
+                )
 
 
 @app.task

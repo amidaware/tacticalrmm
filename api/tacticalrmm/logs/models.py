@@ -106,6 +106,23 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_reboot(
+        username: str,
+        agent: "Agent",
+        action_type: str,
+        debug_info: Dict[Any, Any] = {},
+    ) -> None:
+        AuditLog.objects.create(
+            username=username,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=AuditActionType.REBOOT_AGENT,
+            message=f"{username} initiated {action_type} on {agent.hostname}.",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
     def audit_object_changed(
         username: str,
         object_type: str,

@@ -2,10 +2,11 @@ import smtplib
 import ssl
 import traceback
 from contextlib import suppress
+from datetime import datetime
 from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import formatdate
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 
 import requests
 from django.conf import settings
@@ -40,6 +41,111 @@ if TYPE_CHECKING:
 TZ_CHOICES = [(_, _) for _ in ALL_TIMEZONES]
 
 
+def ordinal(value: int) -> str:
+    if 10 <= value % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(value % 10, "th")
+
+    return f"{value}{suffix}"
+
+
+def format_timezone_offset(date_obj: datetime, separator: str) -> str:
+    offset = date_obj.strftime("%z")
+    if not offset or not separator:
+        return offset
+
+    return f"{offset[:3]}{separator}{offset[3:]}"
+
+
+def format_quasar_date(date_obj: datetime, date_format: str) -> str:
+    day_of_year = int(date_obj.strftime("%j"))
+    week_of_year = date_obj.isocalendar().week
+    quarter = ((date_obj.month - 1) // 3) + 1
+    timestamp = date_obj.timestamp()
+    hour_12 = date_obj.hour % 12 or 12
+    token_values = {
+        "YYYY": f"{date_obj.year:04d}",
+        "YY": f"{date_obj.year % 100:02d}",
+        "MMMM": date_obj.strftime("%B"),
+        "MMM": date_obj.strftime("%b"),
+        "MM": f"{date_obj.month:02d}",
+        "Mo": ordinal(date_obj.month),
+        "M": str(date_obj.month),
+        "Qo": ordinal(quarter),
+        "Q": str(quarter),
+        "DDDD": f"{day_of_year:03d}",
+        "DDDo": ordinal(day_of_year),
+        "DDD": str(day_of_year),
+        "DD": f"{date_obj.day:02d}",
+        "Do": ordinal(date_obj.day),
+        "D": str(date_obj.day),
+        "dddd": date_obj.strftime("%A"),
+        "ddd": date_obj.strftime("%a"),
+        "dd": date_obj.strftime("%a")[:2],
+        "do": ordinal(int(date_obj.strftime("%w"))),
+        "d": date_obj.strftime("%w"),
+        "E": str(date_obj.isoweekday()),
+        "ww": f"{week_of_year:02d}",
+        "wo": ordinal(week_of_year),
+        "w": str(week_of_year),
+        "HH": f"{date_obj.hour:02d}",
+        "H": str(date_obj.hour),
+        "hh": f"{hour_12:02d}",
+        "h": str(hour_12),
+        "mm": f"{date_obj.minute:02d}",
+        "m": str(date_obj.minute),
+        "ss": f"{date_obj.second:02d}",
+        "s": str(date_obj.second),
+        "SSS": f"{date_obj.microsecond // 1000:03d}",
+        "SS": f"{date_obj.microsecond // 10000:02d}",
+        "S": str(date_obj.microsecond // 100000),
+        "ZZ": format_timezone_offset(date_obj, ""),
+        "Z": format_timezone_offset(date_obj, ":"),
+        "aa": "a.m." if date_obj.hour < 12 else "p.m.",
+        "A": "AM" if date_obj.hour < 12 else "PM",
+        "a": "am" if date_obj.hour < 12 else "pm",
+        "X": str(int(timestamp)),
+        "x": str(int(timestamp * 1000)),
+    }
+    tokens = sorted(token_values, key=len, reverse=True)
+    formatted = []
+    index = 0
+
+    while index < len(date_format):
+        if date_format[index] == "[":
+            end = date_format.find("]", index + 1)
+            if end != -1:
+                formatted.append(date_format[index + 1 : end])
+                index = end + 1
+                continue
+
+        token = next(
+            (token for token in tokens if date_format.startswith(token, index)), None
+        )
+        if token:
+            formatted.append(token_values[token])
+            index += len(token)
+        else:
+            formatted.append(date_format[index])
+            index += 1
+
+    return "".join(formatted)
+
+
+class EmailTemplateContext(dict[str, str]):
+    def __missing__(self, key: str) -> str:
+        return ""
+
+
+class EmailTemplateSection(models.TextChoices):
+    DEFAULT = "default", "Default"
+    CHECK = "check", "Check"
+    TASK = "task", "Task"
+    AGENT_OUTAGE = "agent_outage", "Agent Outage"
+    AGENT_RECOVERY = "agent_recovery", "Agent Recovery"
+
+
 class CoreSettings(BaseAuditModel):
     email_alert_recipients = ArrayField(
         models.EmailField(null=True, blank=True),
@@ -67,6 +173,34 @@ class CoreSettings(BaseAuditModel):
     )
     smtp_port = models.PositiveIntegerField(default=587, blank=True)
     smtp_requires_auth = models.BooleanField(default=True)
+    email_subject_template = models.CharField(
+        max_length=255, blank=True, default="{subject}"
+    )
+    email_body_template = models.CharField(
+        max_length=2048, blank=True, default="{body}"
+    )
+    check_email_subject_template = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    check_email_body_template = models.CharField(
+        max_length=2048, blank=True, default=""
+    )
+    task_email_subject_template = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    task_email_body_template = models.CharField(max_length=2048, blank=True, default="")
+    agent_outage_email_subject_template = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    agent_outage_email_body_template = models.CharField(
+        max_length=2048, blank=True, default=""
+    )
+    agent_recovery_email_subject_template = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    agent_recovery_email_body_template = models.CharField(
+        max_length=2048, blank=True, default=""
+    )
     default_time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, default="America/Los_Angeles"
     )
@@ -273,6 +407,89 @@ class CoreSettings(BaseAuditModel):
 
         return self.enable_server_webterminal
 
+    def build_email_template_context(
+        self,
+        subject: str,
+        body: str,
+        template_context: Optional[dict[str, Any]] = None,
+    ) -> EmailTemplateContext:
+        context = EmailTemplateContext(
+            subject=subject,
+            body=body,
+        )
+
+        if template_context:
+            for key, value in template_context.items():
+                context[key] = "" if value is None else str(value)
+
+        return context
+
+    def render_email_template(
+        self,
+        template: str,
+        fallback: str,
+        template_context: EmailTemplateContext,
+    ) -> str:
+        selected_template = template or fallback
+
+        try:
+            rendered = selected_template.format_map(template_context).strip()
+        except ValueError:
+            rendered = fallback
+
+        return rendered or fallback
+
+    def get_email_templates(self, template_section: str) -> tuple[str, str]:
+        templates = {
+            EmailTemplateSection.DEFAULT: (
+                self.email_subject_template,
+                self.email_body_template,
+            ),
+            EmailTemplateSection.CHECK: (
+                self.check_email_subject_template,
+                self.check_email_body_template,
+            ),
+            EmailTemplateSection.TASK: (
+                self.task_email_subject_template,
+                self.task_email_body_template,
+            ),
+            EmailTemplateSection.AGENT_OUTAGE: (
+                self.agent_outage_email_subject_template,
+                self.agent_outage_email_body_template,
+            ),
+            EmailTemplateSection.AGENT_RECOVERY: (
+                self.agent_recovery_email_subject_template,
+                self.agent_recovery_email_body_template,
+            ),
+        }
+
+        return templates.get(
+            template_section,
+            (self.email_subject_template, self.email_body_template),
+        )
+
+    def render_email_subject(
+        self,
+        subject: str,
+        body: str,
+        template_context: Optional[dict[str, Any]] = None,
+        template_section: str = EmailTemplateSection.DEFAULT,
+    ) -> str:
+        context = self.build_email_template_context(subject, body, template_context)
+        subject_template, _ = self.get_email_templates(template_section)
+        return self.render_email_template(subject_template, subject, context)
+
+    def render_email_body(
+        self,
+        body: str,
+        subject: str,
+        template_context: Optional[dict[str, Any]] = None,
+        template_section: str = EmailTemplateSection.DEFAULT,
+    ) -> str:
+        context = self.build_email_template_context(subject, body, template_context)
+        _, body_template = self.get_email_templates(template_section)
+        return self.render_email_template(body_template, body, context)
+
     def send_mail(
         self,
         subject: str,
@@ -283,6 +500,8 @@ class CoreSettings(BaseAuditModel):
         attachment_extension: Optional[str] = None,
         alert_template: "Optional[AlertTemplate]" = None,
         override_recipients: Optional[List[str]] = [],
+        template_context: Optional[dict[str, Any]] = None,
+        template_section: str = EmailTemplateSection.DEFAULT,
         test: bool = False,
     ) -> tuple[str, bool]:
         if test and not self.email_is_configured:
@@ -308,9 +527,21 @@ class CoreSettings(BaseAuditModel):
             return "There needs to be at least one email recipient configured", False
 
         try:
+            rendered_subject = self.render_email_subject(
+                subject,
+                body,
+                template_context=template_context,
+                template_section=template_section,
+            )
+            rendered_body = self.render_email_body(
+                body,
+                subject,
+                template_context=template_context,
+                template_section=template_section,
+            )
             msg = EmailMessage()
 
-            msg["Subject"] = subject
+            msg["Subject"] = rendered_subject
             msg["Date"] = formatdate(localtime=True)
 
             if self.smtp_from_name:
@@ -321,7 +552,7 @@ class CoreSettings(BaseAuditModel):
                 msg["From"] = from_address
 
             msg["To"] = email_recipients
-            msg.set_content(body)
+            msg.set_content(rendered_body)
 
             if attachment:
                 match attachment_type:
@@ -395,8 +626,7 @@ class CoreSettings(BaseAuditModel):
         except Exception as e:
             logger.error(traceback.format_exc())
             DebugLog.error(message=f"Sending email failed with error: {e}")
-            if test:
-                return str(e), False
+            return str(e), False
 
         if test:
             return "Email test ok!", True

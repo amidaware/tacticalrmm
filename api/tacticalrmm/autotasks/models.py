@@ -14,6 +14,7 @@ from django.db.models.fields.json import JSONField
 from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
 
+from core.models import EmailTemplateSection
 from core.utils import get_core_settings
 from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
@@ -549,6 +550,25 @@ class TaskResult(models.Model):
             skip_create=not self.task.should_create_alert(alert_template),
         )
 
+    def email_template_context(self, status: str, details: str) -> dict[str, str]:
+        policy_name = self.task.policy.name if self.task.policy else ""
+
+        return {
+            "alert_type": "task",
+            "alert_status": status,
+            "client": self.agent.client.name if self.agent else "",
+            "site": self.agent.site.name if self.agent else "",
+            "site_id": "" if not self.agent else str(self.agent.site_id),
+            "agent": self.agent.hostname if self.agent else "",
+            "policy": policy_name,
+            "alert_name": self.task.name,
+            "task_name": self.task.name,
+            "details": details,
+            "stdout": self.stdout or "",
+            "stderr": self.stderr or "",
+            "retcode": "" if self.retcode is None else str(self.retcode),
+        }
+
     def save_collector_results(self) -> None:
         agent_field = self.task.custom_field.get_or_create_field_value(self.agent)
 
@@ -568,12 +588,18 @@ class TaskResult(models.Model):
         else:
             subject = f"{self} Failed"
 
-        body = (
-            subject
-            + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
+        details = (
+            f"Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
+        body = subject + f" - {details}"
 
-        CORE.send_mail(subject, body, self.agent.alert_template)
+        return CORE.send_mail(
+            subject,
+            body,
+            alert_template=self.agent.alert_template,
+            template_context=self.email_template_context("failed", details),
+            template_section=EmailTemplateSection.TASK,
+        )
 
     def send_sms(self):
         CORE = get_core_settings()
@@ -595,12 +621,18 @@ class TaskResult(models.Model):
         CORE = get_core_settings()
 
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Resolved"
-        body = (
-            subject
-            + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
+        details = (
+            f"Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
+        body = subject + f" - {details}"
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
+        return CORE.send_mail(
+            subject,
+            body,
+            alert_template=self.agent.alert_template,
+            template_context=self.email_template_context("resolved", details),
+            template_section=EmailTemplateSection.TASK,
+        )
 
     def send_resolved_sms(self):
         CORE = get_core_settings()

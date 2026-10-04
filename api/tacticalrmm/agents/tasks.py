@@ -188,10 +188,13 @@ def run_script_email_results_task(
 
     import smtplib
     from email.message import EmailMessage
+    from email.utils import make_msgid
 
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = CORE.smtp_from_email
+    # RFC 5322: Gmail rejects messages without a Message-ID
+    msg["Message-ID"] = make_msgid(domain=CORE.smtp_from_email.split("@")[-1])
 
     if emails:
         msg["To"] = ", ".join(emails)

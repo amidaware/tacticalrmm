@@ -12,6 +12,7 @@ from tacticalrmm.constants import (
     AgentDblClick,
     AgentTableTabs,
     ClientTreeSort,
+    RemoteOpenMode,
 )
 
 
@@ -30,6 +31,9 @@ class User(AbstractUser, BaseAuditModel):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+    )
+    remote_open_mode = models.CharField(
+        max_length=50, choices=RemoteOpenMode.choices, default=RemoteOpenMode.WINDOW
     )
     default_agent_tbl_tab = models.CharField(
         max_length=50, choices=AgentTableTabs.choices, default=AgentTableTabs.MIXED

@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.db import models
 from django.db.models.fields import CharField, DateTimeField
 
+from core.agent_menu import validate_agent_menu_layout
 from logs.models import BaseAuditModel
 from tacticalrmm.constants import (
     ROLE_CACHE_PREFIX,
@@ -33,6 +34,10 @@ class User(AbstractUser, BaseAuditModel):
     )
     default_agent_tbl_tab = models.CharField(
         max_length=50, choices=AgentTableTabs.choices, default=AgentTableTabs.MIXED
+    )
+    # empty = company layout; see core/agent_menu.py
+    agent_menu_layout = models.JSONField(
+        default=dict, blank=True, validators=[validate_agent_menu_layout]
     )
     agents_per_page = models.PositiveIntegerField(default=50)  # not currently used
     client_tree_sort = models.CharField(

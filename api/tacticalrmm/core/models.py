@@ -16,6 +16,7 @@ from django.db import models
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwClient
 
+from core.agent_menu import validate_agent_menu_layout
 from logs.models import BaseAuditModel, DebugLog
 from tacticalrmm.constants import (
     ALL_TIMEZONES,
@@ -157,6 +158,11 @@ class CoreSettings(BaseAuditModel):
         choices=TerminalModeChoices.choices,
         default=TerminalModeChoices.NEW,
     )
+    # empty = TRMM default order; see core/agent_menu.py
+    agent_menu_layout = models.JSONField(
+        default=dict, blank=True, validators=[validate_agent_menu_layout]
+    )
+    agent_menu_allow_user = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs) -> None:
         from alerts.tasks import cache_agents_alert_template

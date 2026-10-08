@@ -1,7 +1,12 @@
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
 
+from accounts.models import User
 from core.agent_menu import effective_agent_menu_layout, validate_agent_menu_layout
+from core.models import CoreSettings
+from tacticalrmm.test import TacticalTestCase
+
+LAYOUT = {"order": ["run_script", "take_control"], "hidden": ["vnc"]}
 
 
 class TestValidateAgentMenuLayout(SimpleTestCase):
@@ -55,3 +60,44 @@ class TestEffectiveAgentMenuLayout(SimpleTestCase):
     def test_defaults(self):
         self.assertEqual(effective_agent_menu_layout({}, {}, True), {})
         self.assertEqual(effective_agent_menu_layout(None, None, True), {})
+
+
+class TestAgentMenuSettings(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
+    def test_core_settings_accepts_layout(self):
+        r = self.client.put(
+            "/core/settings/",
+            {"agent_menu_layout": LAYOUT, "agent_menu_allow_user": False},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        core = CoreSettings.objects.first()
+        self.assertEqual(core.agent_menu_layout, LAYOUT)
+        self.assertFalse(core.agent_menu_allow_user)
+
+    def test_core_settings_defaults(self):
+        core = CoreSettings.objects.first()
+        self.assertEqual(core.agent_menu_layout, {})
+        self.assertTrue(core.agent_menu_allow_user)
+
+    def test_core_settings_rejects_invalid_layout(self):
+        r = self.client.put(
+            "/core/settings/", {"agent_menu_layout": {"order": ["A B"]}}, format="json"
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_user_ui_accepts_layout(self):
+        r = self.client.patch(
+            "/accounts/users/ui/", {"agent_menu_layout": LAYOUT}, format="json"
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(User.objects.get(pk=self.john.pk).agent_menu_layout, LAYOUT)
+
+    def test_user_ui_rejects_invalid_layout(self):
+        r = self.client.patch(
+            "/accounts/users/ui/", {"agent_menu_layout": {"order": "x"}}, format="json"
+        )
+        self.assertEqual(r.status_code, 400)

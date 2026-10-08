@@ -20,6 +20,7 @@ class UserUISerializer(ModelSerializer):
             "agent_dblclick_action",
             "url_action",
             "default_agent_tbl_tab",
+            "agent_menu_layout",
             "client_tree_sort",
             "client_tree_splitter",
             "loading_bar_color",

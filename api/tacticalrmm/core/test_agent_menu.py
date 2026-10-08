@@ -136,6 +136,8 @@ class TestAgentMenuDashInfo(TacticalTestCase):
         data = self.dashinfo()
         self.assertEqual(data["agent_menu_layout"], {"order": ["vnc"]})
         self.assertEqual(data["agent_menu_user_layout"], {"order": ["vnc"]})
+        # Preferences needs the company layout to offer "use company default"
+        self.assertEqual(data["agent_menu_company_layout"], LAYOUT)
 
     def test_locked_uses_company_and_keeps_user_layout(self):
         self.set_company(LAYOUT, allow=False)

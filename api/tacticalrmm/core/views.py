@@ -144,6 +144,7 @@ def dashboard_info(request):
             ),
             "agent_menu_allow_user": core_settings.agent_menu_allow_user,
             "agent_menu_user_layout": request.user.agent_menu_layout,
+            "agent_menu_company_layout": core_settings.agent_menu_layout,
             "url_action": (
                 request.user.url_action.id if request.user.url_action else None
             ),

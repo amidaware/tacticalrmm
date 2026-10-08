@@ -2,10 +2,13 @@ import time
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
 from django.test import SimpleTestCase
+from django.test.utils import CaptureQueriesContext
 
 from branding.images import MAX_SIZE, detect_image_type, validate_image
 from branding.models import BrandingSettings, get_branding
+from logs.models import AuditLog
 from tacticalrmm.test import TacticalTestCase
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
@@ -239,3 +242,53 @@ class TestBrandingEdit(TacticalTestCase):
         self.client.force_authenticate(user=editor)
         r = self.client.put("/branding/", {"product_name": "x"}, format="json")
         self.assertEqual(r.status_code, 200)
+
+
+class TestBrandingEfficiencyAndAudit(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+        for kind, content in (
+            ("logo", PNG),
+            ("favicon", ICO),
+            ("login_background", JPEG),
+        ):
+            self.client.put(
+                f"/branding/image/{kind}/",
+                upload(f"{kind}.bin", content),
+                format="multipart",
+            )
+
+    def selected_sql(self, url):
+        self.client.logout()
+        with CaptureQueriesContext(connection) as ctx:
+            r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        return " ".join(
+            q["sql"] for q in ctx.captured_queries if "branding" in q["sql"]
+        )
+
+    def test_config_read_does_not_load_images(self):
+        sql = self.selected_sql("/branding/")
+        self.assertTrue(sql)
+        for column in ('"logo"', '"favicon"', '"login_background"'):
+            self.assertNotIn(column, sql)
+
+    def test_image_read_loads_only_that_image(self):
+        sql = self.selected_sql("/branding/image/logo/")
+        self.assertIn('"logo"', sql)
+        self.assertNotIn('"favicon"', sql)
+        self.assertNotIn('"login_background"', sql)
+
+    def test_replacing_an_image_is_audited(self):
+        before = AuditLog.objects.filter(object_type="brandingsettings").count()
+        r = self.client.put(
+            "/branding/image/logo/", upload("logo.png", PNG + b""), format="multipart"
+        )
+        self.assertEqual(r.status_code, 200)
+        entries = AuditLog.objects.filter(object_type="brandingsettings")
+        self.assertEqual(entries.count(), before + 1)
+        latest = entries.latest("pk")
+        self.assertNotEqual(
+            latest.before_value["logo_sha256"], latest.after_value["logo_sha256"]
+        )

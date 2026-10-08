@@ -1,3 +1,5 @@
+import hashlib
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -33,9 +35,16 @@ class BrandingSettings(BaseAuditModel):
 
     @staticmethod
     def serialize(branding):
+        # audit representation: images as hashes, so replacing one is logged without storing it
         from .serializers import BrandingSerializer
 
-        return BrandingSerializer(branding).data
+        data = dict(BrandingSerializer(branding).data)
+        for kind in IMAGE_KINDS:
+            image = getattr(branding, kind)
+            data[f"{kind}_sha256"] = (
+                hashlib.sha256(bytes(image)).hexdigest() if image else ""
+            )
+        return data
 
     @property
     def version(self) -> int:
@@ -45,8 +54,21 @@ class BrandingSettings(BaseAuditModel):
         return int(self.modified_time.timestamp() * 1000)
 
     def has_image(self, kind: str) -> bool:
-        return bool(getattr(self, kind))
+        # the type is set together with the image, so the blob itself is not loaded
+        return bool(getattr(self, f"{kind}_type"))
 
 
 def get_branding() -> BrandingSettings:
     return BrandingSettings.objects.first() or BrandingSettings()
+
+
+def get_branding_config() -> BrandingSettings:
+    # public reads happen on every page load, keep the image blobs out of them
+    return BrandingSettings.objects.defer(*IMAGE_KINDS).first() or BrandingSettings()
+
+
+def get_branding_image(kind: str) -> BrandingSettings:
+    return (
+        BrandingSettings.objects.only(kind, f"{kind}_type").first()
+        or BrandingSettings()
+    )

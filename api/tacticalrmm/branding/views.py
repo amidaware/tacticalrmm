@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from tacticalrmm.helpers import notify_error
 
 from .images import MAX_SIZE, validate_image
-from .models import IMAGE_KINDS, get_branding
+from .models import IMAGE_KINDS, get_branding, get_branding_config, get_branding_image
 from .permissions import BrandingPerms
 from .serializers import BrandingSerializer
 
@@ -26,7 +26,7 @@ class PublicReadView(APIView):
 
 class GetEditBranding(PublicReadView):
     def get(self, request):
-        return Response(BrandingSerializer(get_branding()).data)
+        return Response(BrandingSerializer(get_branding_config()).data)
 
     def put(self, request):
         serializer = BrandingSerializer(
@@ -44,7 +44,7 @@ class BrandingImage(PublicReadView):
         if kind not in IMAGE_KINDS:
             raise Http404
 
-        branding = get_branding()
+        branding = get_branding_image(kind)
         data = getattr(branding, kind)
         if not data:
             raise Http404

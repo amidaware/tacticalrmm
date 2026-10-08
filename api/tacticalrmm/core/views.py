@@ -22,6 +22,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.agent_menu import effective_agent_menu_layout
 from core.decorators import monitoring_view, monitoring_view_v2
 from core.tasks import sync_mesh_perms_task
 from core.utils import (
@@ -136,6 +137,13 @@ def dashboard_info(request):
             "show_community_scripts": request.user.show_community_scripts,
             "dbl_click_action": request.user.agent_dblclick_action,
             "default_agent_tbl_tab": request.user.default_agent_tbl_tab,
+            "agent_menu_layout": effective_agent_menu_layout(
+                request.user.agent_menu_layout,
+                core_settings.agent_menu_layout,
+                core_settings.agent_menu_allow_user,
+            ),
+            "agent_menu_allow_user": core_settings.agent_menu_allow_user,
+            "agent_menu_user_layout": request.user.agent_menu_layout,
             "url_action": (
                 request.user.url_action.id if request.user.url_action else None
             ),

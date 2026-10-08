@@ -101,3 +101,55 @@ class TestAgentMenuSettings(TacticalTestCase):
             "/accounts/users/ui/", {"agent_menu_layout": {"order": "x"}}, format="json"
         )
         self.assertEqual(r.status_code, 400)
+
+
+class TestAgentMenuDashInfo(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+        self.core = CoreSettings.objects.first()
+
+    def dashinfo(self):
+        r = self.client.get("/core/dashinfo/")
+        self.assertEqual(r.status_code, 200)
+        return r.data
+
+    def set_company(self, layout, allow=True):
+        self.core.agent_menu_layout = layout
+        self.core.agent_menu_allow_user = allow
+        self.core.save()
+
+    def test_defaults(self):
+        data = self.dashinfo()
+        self.assertEqual(data["agent_menu_layout"], {})
+        self.assertTrue(data["agent_menu_allow_user"])
+        self.assertEqual(data["agent_menu_user_layout"], {})
+
+    def test_company_layout(self):
+        self.set_company(LAYOUT)
+        self.assertEqual(self.dashinfo()["agent_menu_layout"], LAYOUT)
+
+    def test_user_override(self):
+        self.set_company(LAYOUT)
+        self.john.agent_menu_layout = {"order": ["vnc"]}
+        self.john.save()
+        data = self.dashinfo()
+        self.assertEqual(data["agent_menu_layout"], {"order": ["vnc"]})
+        self.assertEqual(data["agent_menu_user_layout"], {"order": ["vnc"]})
+
+    def test_locked_uses_company_and_keeps_user_layout(self):
+        self.set_company(LAYOUT, allow=False)
+        self.john.agent_menu_layout = {"order": ["vnc"]}
+        self.john.save()
+        data = self.dashinfo()
+        self.assertEqual(data["agent_menu_layout"], LAYOUT)
+        self.assertFalse(data["agent_menu_allow_user"])
+        self.assertEqual(data["agent_menu_user_layout"], {"order": ["vnc"]})
+        self.set_company(LAYOUT, allow=True)
+        self.assertEqual(self.dashinfo()["agent_menu_layout"], {"order": ["vnc"]})
+
+    def test_user_without_settings_permission_gets_company_layout(self):
+        self.set_company(LAYOUT)
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+        self.assertEqual(self.dashinfo()["agent_menu_layout"], LAYOUT)

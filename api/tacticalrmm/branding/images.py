@@ -19,11 +19,12 @@ MAX_SIZE = {
     "login_background": 2 * 1024 * 1024,
 }
 
-# whitespace, xml declaration, comments and doctype may precede the <svg> root;
-# each alternative consumes exactly one token, so there is no nested quantifier to backtrack
+# whitespace, xml declaration, comments and doctype may precede the <svg> root.
+# Every alternative matches exactly one unambiguous token (a comment body cannot
+# contain "-->") and the loop is possessive, so the pattern never backtracks.
 _SVG_START = re.compile(
-    rb"^(?:\s|<\?xml[^>]*\?>|<!--.*?-->|<!DOCTYPE[^>]*>)*<svg[\s>]",
-    re.DOTALL | re.IGNORECASE,
+    rb"^(?:\s|<\?xml[^>]*\?>|<!--(?:[^-]|-(?!->))*-->|<!DOCTYPE[^>]*>)*+<svg[\s>]",
+    re.IGNORECASE,
 )
 
 

@@ -1,6 +1,7 @@
 import time
 
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase
 
 from branding.images import MAX_SIZE, detect_image_type, validate_image
@@ -59,6 +60,18 @@ class TestImageValidation(SimpleTestCase):
         self.assertIsNone(detect_image_type(HTML))
         self.assertIsNone(detect_image_type(b"GIF89a"))
 
+    def test_detect_whitespace_flood_is_fast(self):
+        # nested quantifiers in the svg regex would backtrack exponentially here
+        start = time.monotonic()
+        self.assertIsNone(detect_image_type(b" " * 4096 + b"x"))
+        self.assertIsNone(detect_image_type(b" \n" * 2048 + b"<html>"))
+        # a comment must not be able to swallow the following ones
+        self.assertIsNone(detect_image_type(b"<!---->" * 580 + b"x"))
+        self.assertLess(time.monotonic() - start, 1)
+        self.assertEqual(
+            detect_image_type(b"<!-- a - b --><!-- c --><svg></svg>"), "image/svg+xml"
+        )
+
     def test_allowed_per_kind(self):
         self.assertEqual(validate_image("logo", SVG), "image/svg+xml")
         self.assertEqual(validate_image("favicon", ICO), "image/x-icon")
@@ -87,3 +100,142 @@ class TestImageValidation(SimpleTestCase):
             validate_image("login_background", PNG + b"\x00" * MAX_SIZE["logo"]),
             "image/png",
         )
+
+
+def upload(name, content):
+    return {"file": SimpleUploadedFile(name, content)}
+
+
+class TestBrandingPublic(TacticalTestCase):
+    def setUp(self):
+        self.setup_client()
+        self.setup_coresettings()
+
+    def test_get_defaults_unauthenticated(self):
+        r = self.client.get("/branding/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["product_name"], "")
+        self.assertEqual(r.data["primary"], "")
+        self.assertFalse(r.data["has_logo"])
+        self.assertEqual(r.data["version"], 0)
+
+    def test_get_with_invalid_token(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Token invalid")
+        self.assertEqual(self.client.get("/branding/").status_code, 200)
+        self.assertEqual(self.client.get("/branding/image/logo/").status_code, 404)
+
+    def test_image_not_set_and_unknown_kind(self):
+        self.assertEqual(self.client.get("/branding/image/logo/").status_code, 404)
+        self.assertEqual(self.client.get("/branding/image/evil/").status_code, 404)
+
+    def test_writes_need_auth(self):
+        self.check_not_authenticated("put", "/branding/")
+        self.check_not_authenticated("put", "/branding/image/logo/")
+        self.check_not_authenticated("delete", "/branding/image/logo/")
+
+
+class TestBrandingEdit(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
+    def test_put_name_and_colors(self):
+        data = {"product_name": "ACME RMM", "primary": "#112233", "header": "#ffeb3b"}
+        r = self.client.put("/branding/", data, format="json")
+        self.assertEqual(r.status_code, 200)
+        branding = BrandingSettings.objects.get()
+        self.assertEqual(branding.product_name, "ACME RMM")
+        self.assertEqual(branding.primary, "#112233")
+        self.assertEqual(branding.header, "#ffeb3b")
+
+    def test_put_resets_color_with_empty_string(self):
+        self.client.put("/branding/", {"primary": "#112233"}, format="json")
+        r = self.client.put("/branding/", {"primary": ""}, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(BrandingSettings.objects.get().primary, "")
+
+    def test_put_invalid_color(self):
+        for value in ("red", "#12345", "#1234567", "112233"):
+            r = self.client.put("/branding/", {"primary": value}, format="json")
+            self.assertEqual(r.status_code, 400, value)
+
+    def test_upload_get_delete_image(self):
+        r = self.client.put(
+            "/branding/image/logo/", upload("logo.jpg", PNG), format="multipart"
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.data["has_logo"])
+        version = r.data["version"]
+
+        r = self.client.get("/branding/image/logo/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, PNG)
+        self.assertEqual(r["Content-Type"], "image/png")
+        self.assertEqual(r["Cache-Control"], "public, max-age=86400")
+        self.assertEqual(r["X-Content-Type-Options"], "nosniff")
+
+        time.sleep(0.01)  # version has millisecond resolution
+        r = self.client.put(
+            "/branding/image/logo/", upload("logo.png", JPEG), format="multipart"
+        )
+        self.assertGreater(r.data["version"], version)
+
+        r = self.client.delete("/branding/image/logo/")
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.data["has_logo"])
+        self.assertEqual(self.client.get("/branding/image/logo/").status_code, 404)
+
+    def test_svg_served_with_csp(self):
+        self.client.put(
+            "/branding/image/logo/", upload("logo.svg", SVG), format="multipart"
+        )
+        r = self.client.get("/branding/image/logo/")
+        self.assertEqual(r["Content-Type"], "image/svg+xml")
+        self.assertEqual(
+            r["Content-Security-Policy"],
+            "default-src 'none'; style-src 'unsafe-inline'",
+        )
+
+    def test_upload_rejections(self):
+        r = self.client.put(
+            "/branding/image/logo/", upload("logo.png", HTML), format="multipart"
+        )
+        self.assertEqual(r.status_code, 400)
+        r = self.client.put(
+            "/branding/image/login_background/",
+            upload("bg.svg", SVG),
+            format="multipart",
+        )
+        self.assertEqual(r.status_code, 400)
+        too_big = PNG + b"\x00" * MAX_SIZE["logo"]
+        r = self.client.put(
+            "/branding/image/logo/", upload("logo.png", too_big), format="multipart"
+        )
+        self.assertEqual(r.status_code, 400)
+        r = self.client.put("/branding/image/logo/", {}, format="multipart")
+        self.assertEqual(r.status_code, 400)
+        r = self.client.put(
+            "/branding/image/evil/", upload("logo.png", PNG), format="multipart"
+        )
+        self.assertEqual(r.status_code, 404)
+        self.assertFalse(BrandingSettings.objects.filter(logo__isnull=False).exists())
+
+    def test_delete_without_row(self):
+        r = self.client.delete("/branding/image/favicon/")
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(BrandingSettings.objects.exists())
+
+    def test_permissions(self):
+        view_only = self.create_user_with_roles(["can_view_core_settings"])
+        self.client.force_authenticate(user=view_only)
+        self.check_not_authorized("put", "/branding/", {"product_name": "x"})
+        r = self.client.put(
+            "/branding/image/logo/", upload("logo.png", PNG), format="multipart"
+        )
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(self.client.delete("/branding/image/logo/").status_code, 403)
+
+        editor = self.create_user_with_roles(["can_edit_core_settings"])
+        self.client.force_authenticate(user=editor)
+        r = self.client.put("/branding/", {"product_name": "x"}, format="json")
+        self.assertEqual(r.status_code, 200)

@@ -243,6 +243,7 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
+    "branding",
     "ee.sso",
 ]
 

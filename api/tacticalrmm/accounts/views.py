@@ -111,8 +111,14 @@ class LoginViewV2(KnoxLoginView):
         if user.is_sso_user:
             return notify_error("Bad credentials")
 
-        token = request.data["twofactor"]
-        totp = pyotp.TOTP(user.totp_key)
+        # Use .get() so a request missing the "twofactor" field returns the same
+        # clean 400 rather than a KeyError -> HTTP 500. An empty token simply
+        # fails verification below and falls through to "Bad credentials".
+        token = request.data.get("twofactor", "")
+        # totp_key is NULL for users that never set up 2FA; pyotp.TOTP(None)
+        # raises TypeError (HTTP 500). An empty secret never verifies, so the
+        # request falls through to the same "Bad credentials" response.
+        totp = pyotp.TOTP(user.totp_key or "")
 
         if settings.DEBUG and token == "sekret":
             valid = True

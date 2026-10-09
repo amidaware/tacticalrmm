@@ -14,7 +14,6 @@ from django.utils import timezone as djangotime
 from packaging import version as pyver
 
 from accounts.models import User
-from accounts.utils import is_superuser
 from agents.models import Agent
 from agents.tasks import clear_faults_task, prune_agent_history
 from agents.utils import calculate_agent_checks
@@ -25,8 +24,10 @@ from checks.models import Check, CheckHistory, CheckResult
 from checks.tasks import prune_check_history
 from clients.models import Client, Site
 from core.mesh_utils import (
+    MESH_USER_PATTERN,
     MeshSync,
     build_mesh_display_name,
+    has_full_agent_access,
     has_mesh_perms,
     transform_mesh,
     transform_trmm,
@@ -492,6 +493,16 @@ def sync_mesh_perms_task(self):
                     "email": email,
                 }
 
+            # Users that can see every agent get one link to the mesh device group
+            # instead of one link per device. Per-device links make every mesh user
+            # record grow with the number of agents, and mesh rewrites the whole user
+            # record each time a device is added or removed.
+            group_user_ids = {
+                user.mesh_user_id
+                for user in users
+                if has_mesh_perms(user=user) and has_full_agent_access(user=user)
+            }
+
             new_trmm_agents = []
             for agent in Agent.objects.defer(*AGENT_DEFER):
                 if not agent.mesh_node_id:
@@ -506,9 +517,10 @@ def sync_mesh_perms_task(self):
                         logger.debug(f"No mesh perms for {user} on {agent.hostname}")
                         continue
 
-                    if (user.is_superuser or is_superuser(user)) or _has_perm_on_agent(
-                        user, agent.agent_id
-                    ):
+                    if user.mesh_user_id in group_user_ids:
+                        continue
+
+                    if _has_perm_on_agent(user, agent.agent_id):
                         tmp.append({"_id": user.mesh_user_id})
 
                 agent_dict["links"] = tmp
@@ -517,17 +529,41 @@ def sync_mesh_perms_task(self):
             final_trmm = transform_trmm(new_trmm_agents)
             final_mesh = transform_mesh(mesh_nodes_raw)
 
+            # mesh device groups that hold trmm agents, and their current trmm users
+            trmm_node_ids = set(trmm_agents_meshnodeids)
+            node_to_mesh = {}
+            for mesh_id, nodes in mesh_nodes_raw.items():
+                for node in nodes:
+                    if node["_id"] in trmm_node_ids:
+                        node_to_mesh[node["_id"]] = mesh_id
+
+            trmm_mesh_ids = set(node_to_mesh.values())
+            mesh_group_users = {
+                m["_id"]: {
+                    uid
+                    for uid in (m.get("links") or {})
+                    if MESH_USER_PATTERN.match(uid)
+                }
+                for m in ms.get_meshes()
+                if m["_id"] in trmm_mesh_ids
+            }
+
             # delete users first
-            source_users_global = set()
+            source_users_global = set(group_user_ids)
             for item in final_trmm:
                 source_users_global.update(item["user_ids"])
 
             target_users_global = set()
             for item in final_mesh:
                 target_users_global.update(item["user_ids"])
+            for group_users in mesh_group_users.values():
+                target_users_global.update(group_users)
 
             # identify and create new users
-            new_users = list(source_users_global - target_users_global)
+            # users that already exist in mesh (e.g. with only a group link) are not recreated
+            new_users = list(
+                source_users_global - target_users_global - set(ms.mesh_users)
+            )
             for user_id in new_users:
                 user_info = mesh_users_dict[user_id]
                 logger.info(f"Adding new user {user_info['username']} to mesh")
@@ -537,6 +573,20 @@ def sync_mesh_perms_task(self):
             for user_id in users_to_delete_globally:
                 logger.info(f"Deleting {user_id} from mesh")
                 ms.delete_user_from_mesh(mesh_user_id=user_id)
+
+            # group links: users that see every agent
+            for mesh_id, group_users in mesh_group_users.items():
+                # users created in this run are added on the next run, once mesh has them
+                to_add = group_user_ids - group_users - set(new_users)
+                if to_add:
+                    logger.info(f"Adding {list(to_add)} to device group {mesh_id}")
+                    ms.add_users_to_mesh_group(mesh_id=mesh_id, user_ids=list(to_add))
+
+                for user_id in (
+                    group_users - group_user_ids - set(users_to_delete_globally)
+                ):
+                    logger.info(f"Removing {user_id} from device group {mesh_id}")
+                    ms.remove_user_from_mesh_group(mesh_id=mesh_id, user_id=user_id)
 
             source_map = {item["node_id"]: set(item["user_ids"]) for item in final_trmm}
             target_map = {item["node_id"]: set(item["user_ids"]) for item in final_mesh}
@@ -558,8 +608,11 @@ def sync_mesh_perms_task(self):
                 if node_id not in trmm_agents_meshnodeids:
                     continue
 
-                target_users = target_map.get(node_id, set()) - set(
-                    users_to_delete_globally
+                # per-device links of group users are left to the throttled cleanup below
+                target_users = (
+                    target_map.get(node_id, set())
+                    - set(users_to_delete_globally)
+                    - group_user_ids
                 )
                 source_users_adjusted = source_users - set(users_to_delete_globally)
 
@@ -585,9 +638,39 @@ def sync_mesh_perms_task(self):
                     )
                     sleep(7)
 
+            # Remove leftover per-device links of users that now have the group link.
+            # Throttled: removing a device link rewrites the whole mesh user record, so
+            # doing this for thousands of devices at once can overload mesh.
+            cleanup_limit = getattr(
+                settings, "TRMM_MESH_SYNC_LEGACY_LINK_CLEANUP_PER_RUN", 10
+            )
+            cleaned = 0
+            for node_id, target_users in target_map.items():
+                if cleaned >= cleanup_limit:
+                    break
+
+                mesh_id = node_to_mesh.get(node_id)
+                if not mesh_id:
+                    continue
+
+                # only once the user already has the group link, so access is never lost
+                legacy = (
+                    target_users & group_user_ids & mesh_group_users.get(mesh_id, set())
+                ) - set(users_to_delete_globally)
+                if legacy:
+                    logger.info(
+                        f"Removing per-device links {list(legacy)} from {node_id}"
+                    )
+                    ms.delete_users_from_node(node_id=node_id, user_ids=list(legacy))
+                    cleaned += 1
+                    # spread the user record rewrites instead of sending them in a burst
+                    sleep(1)
+
             # after all done, see if need to update display name
             ms2 = MeshSync(uri)
-            unique_ids = ms2.get_unique_mesh_users(new_trmm_agents)
+            unique_ids = (
+                set(ms2.get_unique_mesh_users(new_trmm_agents)) | group_user_ids
+            )
             for user in unique_ids:
                 try:
                     mesh_realname = ms2.mesh_users[user]["realname"]

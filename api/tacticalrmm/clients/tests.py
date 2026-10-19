@@ -206,6 +206,39 @@ class TestClientViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
+    def test_maintenance_mode_requires_all_agents(self):
+        client = baker.make("clients.Client")
+        site = baker.make("clients.Site", client=client)
+        other_site = baker.make("clients.Site", client=client)
+
+        agent_1 = baker.make_recipe("agents.agent", site=site)
+        agent_2 = baker.make_recipe("agents.agent", site=site)
+        agent_3 = baker.make_recipe("agents.agent", site=other_site)
+
+        agent_1.maintenance_mode = True
+        agent_1.save(update_fields=["maintenance_mode"])
+
+        response = self.client.get(f"{base_url}/", format="json")
+
+        self.assertEqual(response.status_code, 200)
+        client_data = next(item for item in response.data if item["id"] == client.id)
+        site_data = next(item for item in client_data["sites"] if item["id"] == site.id)
+
+        self.assertFalse(site_data["maintenance_mode"])
+        self.assertFalse(client_data["maintenance_mode"])
+
+        agent_2.maintenance_mode = True
+        agent_2.save(update_fields=["maintenance_mode"])
+        agent_3.maintenance_mode = True
+        agent_3.save(update_fields=["maintenance_mode"])
+
+        response = self.client.get(f"{base_url}/", format="json")
+        client_data = next(item for item in response.data if item["id"] == client.id)
+        site_data = next(item for item in client_data["sites"] if item["id"] == site.id)
+
+        self.assertTrue(site_data["maintenance_mode"])
+        self.assertTrue(client_data["maintenance_mode"])
+
     def test_get_sites(self):
         # setup data
         baker.make("clients.Site", _quantity=5)

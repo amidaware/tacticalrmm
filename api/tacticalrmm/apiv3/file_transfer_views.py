@@ -29,6 +29,7 @@ from agents.utils import parse_upload_content_range
 from tacticalrmm.constants import (
     FILE_TRANSFER_ACK_CHECKPOINT_BYTES,
     FILE_TRANSFER_CHUNK_SIZE_MAX,
+    FILE_TRANSFER_IDLE_EXPIRE_MINUTES,
     FILE_TRANSFER_PIPELINE_DEPTH,
     FILE_TRANSFER_SESSION_TTL_HOURS,
     FileTransferOperation,
@@ -517,3 +518,135 @@ class FileTransferArchiveReady(APIView):
             total_size,
         )
         return Response({"status": "ready"})
+
+
+_EXTRACT_ACTIVE_STATUSES = (
+    FileTransferStatus.WAITING_FOR_AGENT,
+    FileTransferStatus.AGENT_READY,
+    FileTransferStatus.TRANSFERRING,
+)
+
+
+_MAX_FILE_COUNT = 2**31 - 1
+_MAX_BYTE_COUNT = 2**63 - 1
+
+
+def _agent_body_count(request, key: str, maximum: int = _MAX_FILE_COUNT) -> int:
+    """Non-negative int from the agent's body, clamped to the column's range."""
+    if not isinstance(request.data, dict):
+        return 0
+    try:
+        return min(max(int(request.data.get(key) or 0), 0), maximum)
+    except (TypeError, ValueError, OverflowError):
+        return 0
+
+
+def _agent_extract_session(request, session_id):
+    agent = getattr(request.user, "agent", None)
+    if agent is None:
+        return None, Response(
+            "Invalid agent credentials",
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    session = get_object_or_404(
+        FileTransferSession,
+        session_id=session_id,
+        agent=agent,
+        operation=FileTransferOperation.EXTRACT,
+    )
+    if session.status in _TERMINAL_STATUSES:
+        return None, Response(
+            "Session is no longer active",
+            status=status.HTTP_409_CONFLICT,
+        )
+    return session, None
+
+
+class FileTransferExtractProgress(APIView):
+    """Agent progress for an extract; also keeps the session from idling out."""
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, session_id):
+        session, err = _agent_extract_session(request, session_id)
+        if err is not None:
+            return err
+
+        now = djangotime.now()
+        updated = FileTransferSession.objects.filter(
+            pk=session.pk, status__in=_EXTRACT_ACTIVE_STATUSES
+        ).update(
+            status=FileTransferStatus.TRANSFERRING,
+            committed_offset=_agent_body_count(request, "written", _MAX_BYTE_COUNT),
+            total_size=_agent_body_count(request, "total", _MAX_BYTE_COUNT),
+            files_done=_agent_body_count(request, "files_done"),
+            files_total=_agent_body_count(request, "files_total"),
+            expires_at=now + dt.timedelta(minutes=FILE_TRANSFER_IDLE_EXPIRE_MINUTES),
+            updated_at=now,
+        )
+        if not updated:
+            return Response(
+                "Session is no longer active",
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response({"status": FileTransferStatus.TRANSFERRING})
+
+
+class FileTransferExtractDone(APIView):
+    """Agent callback that finishes an extract, successfully or not."""
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, session_id):
+        session, err = _agent_extract_session(request, session_id)
+        if err is not None:
+            return err
+
+        warnings_value = ""
+        warnings = request.data.get("warnings")
+        if isinstance(warnings, list) and warnings:
+            warnings_value = json.dumps([str(w) for w in warnings])[
+                :_MAX_WARNINGS_CHARS
+            ]
+        fields = {
+            "files_done": _agent_body_count(request, "files"),
+            "files_skipped": _agent_body_count(request, "skipped"),
+            "files_total": _agent_body_count(request, "files_total"),
+            "total_size": _agent_body_count(request, "total", _MAX_BYTE_COUNT),
+            "warnings": warnings_value,
+            "updated_at": djangotime.now(),
+        }
+        error = _agent_body_str(request, "error")[:2048]
+        if error:
+            fields.update(status=FileTransferStatus.FAILED, error_message=error)
+        else:
+            fields.update(
+                status=FileTransferStatus.COMPLETED,
+                error_message="",
+                committed_offset=fields["total_size"],
+            )
+
+        updated = FileTransferSession.objects.filter(
+            pk=session.pk, status__in=_EXTRACT_ACTIVE_STATUSES
+        ).update(**fields)
+        if not updated:
+            return Response(
+                "Session is no longer active",
+                status=status.HTTP_409_CONFLICT,
+            )
+        if error:
+            logger.error(
+                "file_transfer extract failed session=%s: %s",
+                session.session_id,
+                error,
+            )
+        else:
+            logger.info(
+                "file_transfer extract done session=%s files=%s skipped=%s",
+                session.session_id,
+                fields["files_done"],
+                fields["files_skipped"],
+            )
+        return Response({"status": fields["status"]})

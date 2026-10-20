@@ -272,6 +272,11 @@ _FILE_TRANSFER_ACTIVE_STATUSES = (
 )
 
 
+EXTRACT_EXPIRED_MESSAGE = (
+    "The agent stopped responding (it may have gone offline or restarted)."
+)
+
+
 def expire_stale_file_transfer_sessions(
     *, agent=None, notify_agent: bool = True
 ) -> int:
@@ -286,6 +291,8 @@ def expire_stale_file_transfer_sessions(
     from .models import FileTransferSession
 
     def _clear_redis(session: "FileTransferSession") -> None:
+        if session.operation == FileTransferOperation.EXTRACT:
+            return
         if session.operation == FileTransferOperation.UPLOAD:
             clear_upload_session_redis(session.session_id)
         else:
@@ -296,7 +303,14 @@ def expire_stale_file_transfer_sessions(
         if agent_obj is None or agent_obj.status != "online":
             return
         try:
-            if session.operation == FileTransferOperation.UPLOAD:
+            if session.operation == FileTransferOperation.EXTRACT:
+                send_nats_command(
+                    agent_obj,
+                    "files_extract_cancel",
+                    {"session_id": str(session.session_id)},
+                    timeout=5,
+                )
+            elif session.operation == FileTransferOperation.UPLOAD:
                 send_nats_command(
                     agent_obj,
                     "files_upload_abort",
@@ -318,6 +332,8 @@ def expire_stale_file_transfer_sessions(
             pass
 
     def _live_committed(session: "FileTransferSession") -> int:
+        if session.operation == FileTransferOperation.EXTRACT:
+            return session.committed_offset
         if session.operation == FileTransferOperation.UPLOAD:
             redis_committed = get_upload_ack(session.session_id)
         else:
@@ -367,6 +383,8 @@ def expire_stale_file_transfer_sessions(
             if locked is None:
                 continue
             locked.status = FileTransferStatus.EXPIRED
+            if locked.operation == FileTransferOperation.EXTRACT:
+                locked.error_message = locked.error_message or EXTRACT_EXPIRED_MESSAGE
             locked.error_message = locked.error_message or (
                 "Session expired after 10 minutes with no data transferred"
                 if idle_expired and not ttl_expired

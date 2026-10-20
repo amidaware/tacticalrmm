@@ -173,4 +173,19 @@ urlpatterns = [
         views.GetFileDownloadStatus.as_view(),
         name="get_file_download_status",
     ),
+    path(
+        "<agent:agent_id>/files/extract/",
+        views.InitFileExtract.as_view(),
+        name="init_file_extract",
+    ),
+    path(
+        "<agent:agent_id>/files/extract/<uuid:session_id>/",
+        views.GetFileExtractStatus.as_view(),
+        name="get_file_extract_status",
+    ),
+    path(
+        "<agent:agent_id>/files/extract/<uuid:session_id>/cancel/",
+        views.CancelFileExtract.as_view(),
+        name="cancel_file_extract",
+    ),
 ]

@@ -61,6 +61,10 @@ from tacticalrmm.constants import (
     FILE_BROWSER_MAX_ARCHIVE_SIZE_BYTES,
     FILE_BROWSER_MAX_ARCHIVE_DEPTH,
     FILE_BROWSER_ARCHIVE_BUILD_TTL_MINUTES,
+    FILE_BROWSER_MAX_EXTRACT_FILES,
+    FILE_BROWSER_MAX_EXTRACT_SIZE_BYTES,
+    FILE_BROWSER_MAX_EXTRACT_DEPTH,
+    FILE_TRANSFER_IDLE_EXPIRE_MINUTES,
     FILE_BROWSER_PROPERTIES_MAX_FILES,
     FILE_BROWSER_PROPERTIES_MAX_DEPTH,
     FILE_BROWSER_PROPERTIES_MAX_DURATION_SECONDS,
@@ -137,6 +141,7 @@ from .serializers import (
     InitFileUploadSerializer,
 )
 from .tasks import (
+    EXTRACT_EXPIRED_MESSAGE,
     bulk_recover_agents_task,
     run_script_email_results_task,
     send_agent_update_task,
@@ -170,6 +175,8 @@ from .utils import (
     collect_file_transfer_paths,
     canonical_file_browser_path,
     canonical_file_browser_paths,
+    normalize_file_browser_path,
+    validate_absolute_agent_path,
     validate_file_browser_name,
     sanitize_file_browser_name_filter,
     validate_file_transfer_destination_path,
@@ -3566,12 +3573,63 @@ def _release_upload_session(
         _log_transfer_terminal(session, error_message)
 
 
+def _release_extract_session(
+    session: FileTransferSession,
+    agent,
+    error_message: str = "Extract cancelled",
+    new_status: str = FileTransferStatus.FAILED,
+) -> None:
+    applied = FileTransferSession.objects.filter(
+        pk=session.pk, status__in=_FILE_TRANSFER_ACTIVE_STATUSES
+    ).update(
+        status=new_status, error_message=error_message, updated_at=djangotime.now()
+    )
+    if not applied:
+        session.refresh_from_db()
+        return
+    if agent is not None and agent.status == AGENT_STATUS_ONLINE:
+        response = send_nats_command(
+            agent,
+            "files_extract_cancel",
+            {"session_id": str(session.session_id)},
+            timeout=_FILE_TRANSFER_AGENT_RELEASE_TIMEOUT,
+        )
+        if isinstance(response, dict) and response.get("error"):
+            logger.warning(
+                "file_transfer extract release session=%s agent cancel: %s",
+                session.session_id,
+                response.get("error"),
+            )
+        elif isinstance(response, dict) and "files" in response:
+            FileTransferSession.objects.filter(pk=session.pk).update(
+                files_done=_non_negative_int(response.get("files")),
+                files_skipped=_non_negative_int(response.get("skipped")),
+            )
+    session.refresh_from_db()
+    _log_transfer_terminal(session, error_message)
+
+
+def _non_negative_int(value) -> int:
+    try:
+        return max(int(value), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _fail_transfer_session(
     session: FileTransferSession,
     agent,
     error_message: str,
 ) -> None:
     message = (error_message or "Transfer failed")[:2048]
+    if session.operation == FileTransferOperation.EXTRACT:
+        _release_extract_session(
+            session,
+            agent,
+            error_message=message,
+            new_status=FileTransferStatus.FAILED,
+        )
+        return
     if session.operation == FileTransferOperation.UPLOAD:
         _release_upload_session(
             session,
@@ -3590,6 +3648,14 @@ def _fail_transfer_session(
 
 def _expire_transfer_session(session: FileTransferSession, agent) -> None:
     message = session.error_message or "Session expired"
+    if session.operation == FileTransferOperation.EXTRACT:
+        _release_extract_session(
+            session,
+            agent,
+            error_message=session.error_message or EXTRACT_EXPIRED_MESSAGE,
+            new_status=FileTransferStatus.EXPIRED,
+        )
+        return
     if session.operation == FileTransferOperation.UPLOAD:
         _release_upload_session(
             session,
@@ -3748,6 +3814,8 @@ def _parse_file_transfer_warnings(raw) -> list:
 
 def _live_committed_offset(session: FileTransferSession) -> int:
     """DB committed_offset refined by the live Redis ACK when present."""
+    if session.operation == FileTransferOperation.EXTRACT:
+        return session.committed_offset
     if session.operation == FileTransferOperation.UPLOAD:
         redis_committed = get_upload_ack(session.session_id)
     else:
@@ -3792,6 +3860,8 @@ class ListFileTransfers(APIView):
                 item["conflict_policy"] = (
                     session.conflict_policy or FileTransferConflictPolicy.REPLACE
                 )
+            elif session.operation == FileTransferOperation.EXTRACT:
+                item.update(_extract_progress_fields(session))
             transfers.append(item)
 
         return Response({"transfers": transfers})
@@ -3833,6 +3903,200 @@ class GetFileDownloadStatus(APIView):
                 "is_archive": session.is_archive,
                 "warnings": _parse_file_transfer_warnings(session.warnings),
                 "error": session.error_message,
+            }
+        )
+
+
+def _extract_progress_fields(session: FileTransferSession) -> dict:
+    return {
+        "source_path": session.source_path,
+        "conflict_policy": session.conflict_policy,
+        "files_done": session.files_done,
+        "files_total": session.files_total,
+        "files_skipped": session.files_skipped,
+    }
+
+
+class InitFileExtract(APIView):
+    permission_classes = [IsAuthenticated, AgentFileBrowserPerms]
+
+    def post(self, request, agent_id):
+        agent = get_validated_agent(
+            agent_id, min_version=FILE_BROWSER_MIN_AGENT_VERSION
+        )
+        if isinstance(agent, Response):
+            return agent
+
+        paths = {}
+        for key, field in (
+            ("source_path", "The ZIP path"),
+            ("destination_path", "The destination"),
+        ):
+            raw, body_err = _body_str(request, key)
+            if body_err:
+                return body_err
+            if len(raw) > 4096:
+                return notify_error(f"{field} is too long")
+            value = normalize_file_browser_path(raw, agent.plat)
+            path_err = validate_absolute_agent_path(value, agent.plat, field=field)
+            if path_err:
+                return notify_error(path_err)
+            paths[key] = value
+        source_path, destination_path = paths["source_path"], paths["destination_path"]
+
+        filename = source_path.replace("\\", "/").split("/")[-1]
+        if not filename.lower().endswith(".zip") or len(filename) > 255:
+            return notify_error("Only .zip files can be extracted")
+
+        policy, body_err = _body_str(request, "conflict_policy")
+        if body_err:
+            return body_err
+        policy = (policy or FileTransferConflictPolicy.SKIP).lower()
+        if policy not in FileTransferConflictPolicy.values:
+            return notify_error("conflict_policy must be skip or replace")
+
+        session = create_file_transfer_session_locked(
+            agent,
+            request.user,
+            operation=FileTransferOperation.EXTRACT,
+            status=FileTransferStatus.WAITING_FOR_AGENT,
+            source_path=source_path,
+            destination_path=destination_path,
+            filename=filename,
+            conflict_policy=policy,
+            total_size=0,
+            chunk_size=0,
+            committed_offset=0,
+            expires_at=djangotime.now()
+            + dt.timedelta(minutes=FILE_TRANSFER_IDLE_EXPIRE_MINUTES),
+        )
+        if isinstance(session, Response):
+            return session
+
+        logger.info(
+            "file_transfer extract init session=%s agent=%s user=%s source=%s destination=%s",
+            session.session_id,
+            agent.agent_id,
+            request.user.pk,
+            source_path,
+            destination_path,
+        )
+
+        response = send_nats_command(
+            agent,
+            "files_extract_prepare",
+            {
+                "session_id": str(session.session_id),
+                "source_path": source_path,
+                "destination_path": destination_path,
+                "conflict_policy": policy,
+                "max_files": str(FILE_BROWSER_MAX_EXTRACT_FILES),
+                "max_size_bytes": str(FILE_BROWSER_MAX_EXTRACT_SIZE_BYTES),
+                "max_depth": str(FILE_BROWSER_MAX_EXTRACT_DEPTH),
+            },
+            timeout=30,
+            prefix_error=False,
+        )
+
+        if isinstance(response, Response):
+            _fail_transfer_session(session, agent, str(response.data))
+            return response
+
+        if not isinstance(response, dict) or response.get("status") != "extracting":
+            error_message = (
+                isinstance(response, dict) and response.get("error")
+            ) or "Agent failed to start the extraction"
+            _fail_transfer_session(session, agent, str(error_message))
+            return notify_error(str(error_message))
+
+        _audit_file_browser(
+            request,
+            agent,
+            AuditActionType.MODIFY,
+            "extract",
+            [source_path],
+            extra={
+                "destination": destination_path,
+                "conflict_policy": policy,
+                "session_id": str(session.session_id),
+            },
+        )
+        return Response(
+            {"session_id": str(session.session_id), "status": session.status},
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class GetFileExtractStatus(APIView):
+    permission_classes = [IsAuthenticated, AgentFileBrowserPerms]
+
+    def get(self, request, agent_id, session_id):
+        agent = get_validated_agent(
+            agent_id, min_version=FILE_BROWSER_MIN_AGENT_VERSION
+        )
+        if isinstance(agent, Response):
+            return agent
+
+        session = get_object_or_404(
+            FileTransferSession,
+            session_id=session_id,
+            agent=agent,
+            user=request.user,
+            operation=FileTransferOperation.EXTRACT,
+        )
+
+        if (
+            session.status in _FILE_TRANSFER_ACTIVE_STATUSES
+            and session.expires_at <= djangotime.now()
+        ):
+            _expire_transfer_session(session, agent)
+
+        return Response(
+            {
+                "session_id": str(session.session_id),
+                "status": session.status,
+                "filename": session.filename,
+                "destination_path": session.destination_path,
+                "total_size": session.total_size,
+                "committed_offset": session.committed_offset,
+                "warnings": _parse_file_transfer_warnings(session.warnings),
+                "error": session.error_message,
+                **_extract_progress_fields(session),
+            }
+        )
+
+
+class CancelFileExtract(APIView):
+    permission_classes = [IsAuthenticated, AgentFileBrowserPerms]
+
+    def post(self, request, agent_id, session_id):
+        agent = get_validated_agent(
+            agent_id, min_version=FILE_BROWSER_MIN_AGENT_VERSION
+        )
+        if isinstance(agent, Response):
+            return agent
+
+        session = get_object_or_404(
+            FileTransferSession,
+            session_id=session_id,
+            agent=agent,
+            user=request.user,
+            operation=FileTransferOperation.EXTRACT,
+        )
+
+        if session.status in _FILE_TRANSFER_ACTIVE_STATUSES:
+            _release_extract_session(
+                session,
+                agent,
+                error_message="Extract cancelled by user",
+                new_status=FileTransferStatus.CANCELLED,
+            )
+        return Response(
+            {
+                "session_id": str(session.session_id),
+                "status": session.status,
+                "files_done": session.files_done,
+                "files_skipped": session.files_skipped,
             }
         )
 

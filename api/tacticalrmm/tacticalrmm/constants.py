@@ -106,6 +106,13 @@ FILE_BROWSER_MAX_ARCHIVE_DEPTH = getattr(settings, "FILE_BROWSER_MAX_ARCHIVE_DEP
 FILE_BROWSER_ARCHIVE_BUILD_TTL_MINUTES = getattr(
     settings, "FILE_BROWSER_ARCHIVE_BUILD_TTL_MINUTES", 60
 )
+FILE_BROWSER_MAX_EXTRACT_FILES = getattr(
+    settings, "FILE_BROWSER_MAX_EXTRACT_FILES", 10_000
+)
+FILE_BROWSER_MAX_EXTRACT_SIZE_BYTES = getattr(
+    settings, "FILE_BROWSER_MAX_EXTRACT_SIZE_BYTES", 4 * 1024 * 1024 * 1024
+)
+FILE_BROWSER_MAX_EXTRACT_DEPTH = getattr(settings, "FILE_BROWSER_MAX_EXTRACT_DEPTH", 32)
 FILE_BROWSER_PROPERTIES_MAX_FILES = getattr(
     settings, "FILE_BROWSER_PROPERTIES_MAX_FILES", 100_000
 )
@@ -697,6 +704,7 @@ class FileBrowserModeChoices(models.TextChoices):
 class FileTransferOperation(models.TextChoices):
     UPLOAD = "upload", "Upload"
     DOWNLOAD = "download", "Download"
+    EXTRACT = "extract", "Extract"
 
 
 class FileTransferConflictPolicy(models.TextChoices):

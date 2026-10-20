@@ -28,6 +28,16 @@ urlpatterns = [
         file_transfer_views.FileTransferArchiveReady.as_view(),
         name="file_transfer_archive_ready",
     ),
+    path(
+        "file-transfers/<uuid:session_id>/extract-progress/",
+        file_transfer_views.FileTransferExtractProgress.as_view(),
+        name="file_transfer_extract_progress",
+    ),
+    path(
+        "file-transfers/<uuid:session_id>/extract-done/",
+        file_transfer_views.FileTransferExtractDone.as_view(),
+        name="file_transfer_extract_done",
+    ),
     path("checkrunner/", views.CheckRunner.as_view()),
     path("<str:agentid>/checkrunner/", views.CheckRunner.as_view()),
     path("<str:agentid>/runchecks/", views.RunChecks.as_view()),

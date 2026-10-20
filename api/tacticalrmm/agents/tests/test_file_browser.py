@@ -2755,3 +2755,832 @@ class TestAgentFileTransferFail(BaseFileBrowserAPITest):
         self.assertEqual(response.status_code, 409)
         session.refresh_from_db()
         self.assertEqual(session.status, FileTransferStatus.COMPLETED)
+
+
+class TestFileExtract(BaseFileBrowserAPITest):
+    api_name = "init_file_extract"
+    body = {
+        "source_path": r"C:\Users\Public\Bundle.ZIP",
+        "destination_path": r"C:\Users\Public\Bundle",
+    }
+
+    def _make_extract_session(self, **kwargs) -> FileTransferSession:
+        defaults = {
+            "operation": FileTransferOperation.EXTRACT,
+            "status": FileTransferStatus.WAITING_FOR_AGENT,
+            "source_path": self.body["source_path"],
+            "destination_path": self.body["destination_path"],
+            "filename": "Bundle.ZIP",
+            "conflict_policy": FileTransferConflictPolicy.SKIP,
+            "total_size": 0,
+            "chunk_size": 0,
+        }
+        defaults.update(kwargs)
+        return self._make_transfer_session(**defaults)
+
+    def test_validation(self) -> None:
+        for body, message in (
+            ({**self.body, "source_path": r"C:\Users\Public\a.rar"}, "Only .zip"),
+            ({**self.body, "source_path": "Bundle.zip"}, "The ZIP path must be"),
+            ({**self.body, "destination_path": "rel\\dir"}, "The destination must"),
+            ({**self.body, "destination_path": r"C:\a\..\b"}, "traversal"),
+            ({**self.body, "conflict_policy": "merge"}, "conflict_policy"),
+            ({"source_path": self.body["source_path"]}, "The destination is required"),
+            ({**self.body, "destination_path": 5}, "must be a string"),
+        ):
+            response = self.client.post(self.url, body, format="json")
+            self.assertEqual(response.status_code, 400, body)
+            self.assertIn(message, response.json())
+        self.assertFalse(FileTransferSession.objects.exists())
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_init_success(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "extracting"}
+        response = self.client.post(self.url, self.body, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        session = FileTransferSession.objects.get(
+            session_id=response.json()["session_id"]
+        )
+        self.assertEqual(session.operation, FileTransferOperation.EXTRACT)
+        self.assertEqual(session.status, FileTransferStatus.WAITING_FOR_AGENT)
+        self.assertEqual(session.filename, "Bundle.ZIP")
+        self.assertEqual(session.conflict_policy, FileTransferConflictPolicy.SKIP)
+        self.assertLessEqual(
+            session.expires_at,
+            djangotime.now() + dt.timedelta(minutes=FILE_TRANSFER_IDLE_EXPIRE_MINUTES),
+        )
+        sent = mock_nats_cmd.call_args[0][0]
+        self.assertEqual(sent["func"], "files_extract_prepare")
+        self.assertEqual(sent["payload"]["conflict_policy"], "skip")
+        self.assertEqual(sent["payload"]["max_files"], "10000")
+        self.assertEqual(sent["payload"]["max_size_bytes"], str(4 * 1024**3))
+        self.assertEqual(sent["payload"]["max_depth"], "32")
+        self.assertEqual(sent["payload"]["destination_path"], r"C:\Users\Public\Bundle")
+
+        log = AuditLog.objects.get(action=AuditActionType.MODIFY)
+        self.assertEqual(log.after_value["operation"], "extract")
+        self.assertEqual(log.after_value["paths"], [self.body["source_path"]])
+        self.assertEqual(log.after_value["destination"], self.body["destination_path"])
+        self.assertEqual(log.after_value["conflict_policy"], "skip")
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_replace_policy_and_linux_paths(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "extracting"}
+        self.agent.plat = AgentPlat.LINUX
+        self.agent.save(update_fields=["plat"])
+        response = self.client.post(
+            self.url,
+            {
+                "source_path": "/root/a.zip",
+                "destination_path": "/root/out/",
+                "conflict_policy": "Replace",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        payload = mock_nats_cmd.call_args[0][0]["payload"]
+        self.assertEqual(payload["conflict_policy"], "replace")
+        self.assertEqual(payload["destination_path"], "/root/out")
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_agent_error_fails_session(self, mock_nats_cmd) -> None:
+        for reply in ({"error": "invalid destination_path"}, "timeout"):
+            mock_nats_cmd.reset_mock()
+            mock_nats_cmd.return_value = reply
+            response = self.client.post(self.url, self.body, format="json")
+            self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            list(FileTransferSession.objects.values_list("status", flat=True)),
+            [FileTransferStatus.FAILED] * 2,
+        )
+        self.assertFalse(
+            AuditLog.objects.filter(action=AuditActionType.MODIFY).exists()
+        )
+
+    def test_slot_limit(self) -> None:
+        self._fill_agent_session_cap()
+        response = self.client.post(self.url, self.body, format="json")
+        self.assertEqual(response.status_code, 429)
+
+    def test_permissions(self) -> None:
+        session = self._make_extract_session()
+        user = self.create_user_with_roles(["can_use_mesh"])
+        self.client.force_authenticate(user=user)
+        self.check_not_authorized("post", self.url, self.body)
+        self.check_not_authorized(
+            "get", self._session_url("get_file_extract_status", session.session_id)
+        )
+        self.check_not_authorized(
+            "post", self._session_url("cancel_file_extract", session.session_id)
+        )
+
+    def test_owner_only(self) -> None:
+        session = self._make_extract_session()
+        other = self.create_user_with_roles(["can_use_file_browser"])
+        self.client.force_authenticate(user=other)
+        response = self.client.get(
+            self._session_url("get_file_extract_status", session.session_id)
+        )
+        self.assertEqual(response.status_code, 404)
+        response = self.client.post(
+            self._session_url("cancel_file_extract", session.session_id)
+        )
+        self.assertEqual(response.status_code, 404)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.WAITING_FOR_AGENT)
+
+    def test_status_and_listing(self) -> None:
+        session = self._make_extract_session(
+            status=FileTransferStatus.TRANSFERRING,
+            total_size=1000,
+            committed_offset=400,
+            files_done=4,
+            files_total=10,
+        )
+        response = self.client.get(
+            self._session_url("get_file_extract_status", session.session_id)
+        )
+        body = response.json()
+        self.assertEqual(body["status"], FileTransferStatus.TRANSFERRING)
+        self.assertEqual((body["committed_offset"], body["total_size"]), (400, 1000))
+        self.assertEqual((body["files_done"], body["files_total"]), (4, 10))
+        self.assertEqual(body["source_path"], self.body["source_path"])
+
+        listed = self.client.get(
+            reverse("list_file_transfers", args=[self.agent.agent_id])
+        ).json()["transfers"]
+        self.assertEqual(len(listed), 1)
+        self.assertEqual(listed[0]["operation"], FileTransferOperation.EXTRACT)
+        self.assertEqual(listed[0]["committed_offset"], 400)
+        self.assertEqual(listed[0]["files_total"], 10)
+        self.assertEqual(listed[0]["source_path"], self.body["source_path"])
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_status_expires_overdue_session(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "cancelled"}
+        session = self._make_extract_session(
+            expires_at=djangotime.now() - dt.timedelta(seconds=1)
+        )
+        body = self.client.get(
+            self._session_url("get_file_extract_status", session.session_id)
+        ).json()
+        self.assertEqual(body["status"], FileTransferStatus.EXPIRED)
+        self.assertIn("stopped responding", body["error"])
+        self.assertEqual(mock_nats_cmd.call_args[0][0]["func"], "files_extract_cancel")
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_cancel_records_agent_counts(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "cancelled", "files": 7, "skipped": 2}
+        session = self._make_extract_session(status=FileTransferStatus.TRANSFERRING)
+        response = self.client.post(
+            self._session_url("cancel_file_extract", session.session_id)
+        )
+        body = response.json()
+        self.assertEqual(body["status"], FileTransferStatus.CANCELLED)
+        self.assertEqual((body["files_done"], body["files_skipped"]), (7, 2))
+        self.assertEqual(mock_nats_cmd.call_args[0][0]["func"], "files_extract_cancel")
+        # a second cancel is a no-op
+        mock_nats_cmd.reset_mock()
+        response = self.client.post(
+            self._session_url("cancel_file_extract", session.session_id)
+        )
+        self.assertEqual(response.json()["status"], FileTransferStatus.CANCELLED)
+        mock_nats_cmd.assert_not_called()
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_cancel_does_not_overwrite_agent_failure(self, mock_nats_cmd) -> None:
+        """The agent's failure lands after the view read the session as active."""
+        session = self._make_extract_session(status=FileTransferStatus.TRANSFERRING)
+        FileTransferSession.objects.filter(pk=session.pk).update(
+            status=FileTransferStatus.FAILED, error_message="The ZIP is damaged"
+        )
+        with patch("agents.views.get_object_or_404", return_value=session):
+            response = self.client.post(
+                self._session_url("cancel_file_extract", session.session_id)
+            )
+        self.assertEqual(response.json()["status"], FileTransferStatus.FAILED)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.FAILED)
+        self.assertEqual(session.error_message, "The ZIP is damaged")
+        mock_nats_cmd.assert_not_called()
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_cancel_offline_agent_skips_nats(self, mock_nats_cmd) -> None:
+        self.agent.last_seen = djangotime.now() - dt.timedelta(days=1)
+        self.agent.save(update_fields=["last_seen"])
+        session = self._make_extract_session()
+        response = self.client.post(
+            self._session_url("cancel_file_extract", session.session_id)
+        )
+        self.assertEqual(response.json()["status"], FileTransferStatus.CANCELLED)
+        mock_nats_cmd.assert_not_called()
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_expiry_task(self, mock_nats_cmd) -> None:
+        from agents.tasks import expire_stale_file_transfer_sessions
+
+        mock_nats_cmd.return_value = {"status": "cancelled"}
+        stale = self._make_extract_session(
+            status=FileTransferStatus.TRANSFERRING,
+            committed_offset=500,
+            expires_at=djangotime.now() - dt.timedelta(seconds=1),
+        )
+        fresh = self._make_extract_session(
+            status=FileTransferStatus.TRANSFERRING,
+            expires_at=djangotime.now() + dt.timedelta(minutes=5),
+        )
+        self.assertEqual(expire_stale_file_transfer_sessions(), 1)
+        stale.refresh_from_db()
+        fresh.refresh_from_db()
+        self.assertEqual(stale.status, FileTransferStatus.EXPIRED)
+        self.assertIn("stopped responding", stale.error_message)
+        self.assertEqual(fresh.status, FileTransferStatus.TRANSFERRING)
+        self.assertEqual(mock_nats_cmd.call_args[0][0]["func"], "files_extract_cancel")
+
+
+class TestAgentExtractCallbacks(BaseFileBrowserAPITest):
+    def setUp(self) -> None:
+        super().setUp()
+        self.session = self._make_transfer_session(
+            operation=FileTransferOperation.EXTRACT,
+            status=FileTransferStatus.WAITING_FOR_AGENT,
+            total_size=0,
+            chunk_size=0,
+            expires_at=djangotime.now() + dt.timedelta(minutes=1),
+        )
+        self.agent_user = self.authenticate_agent(self.agent)
+        self.progress_url = reverse(
+            "file_transfer_extract_progress", args=[self.session.session_id]
+        )
+        self.done_url = reverse(
+            "file_transfer_extract_done", args=[self.session.session_id]
+        )
+
+    def test_progress_then_done(self) -> None:
+        response = self.client.post(
+            self.progress_url,
+            {"written": 100, "total": 1000, "files_done": 1, "files_total": 9},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, FileTransferStatus.TRANSFERRING)
+        self.assertEqual(
+            (self.session.committed_offset, self.session.total_size), (100, 1000)
+        )
+        self.assertEqual((self.session.files_done, self.session.files_total), (1, 9))
+        self.assertGreater(
+            self.session.expires_at, djangotime.now() + dt.timedelta(minutes=5)
+        )
+
+        response = self.client.post(
+            self.done_url,
+            {
+                "files": 8,
+                "skipped": 1,
+                "total": 1000,
+                "files_total": 9,
+                "warnings": ["skipped symlink a"],
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, FileTransferStatus.COMPLETED)
+        self.assertEqual(self.session.committed_offset, 1000)
+        self.assertEqual((self.session.files_done, self.session.files_skipped), (8, 1))
+        self.assertEqual(json.loads(self.session.warnings), ["skipped symlink a"])
+
+        # anything after the end is refused so the agent stops
+        response = self.client.post(self.progress_url, {"written": 1}, format="json")
+        self.assertEqual(response.status_code, 409)
+
+    def test_done_with_error(self) -> None:
+        response = self.client.post(
+            self.done_url,
+            {
+                "error": "This ZIP is password-protected, which isn't supported.",
+                "files": 0,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, FileTransferStatus.FAILED)
+        self.assertIn("password-protected", self.session.error_message)
+
+    def test_callbacks_after_cancel_get_409(self) -> None:
+        FileTransferSession.objects.filter(pk=self.session.pk).update(
+            status=FileTransferStatus.CANCELLED, files_done=3
+        )
+        for url in (self.progress_url, self.done_url):
+            response = self.client.post(url, {"files": 9, "written": 5}, format="json")
+            self.assertEqual(response.status_code, 409)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, FileTransferStatus.CANCELLED)
+        self.assertEqual(self.session.files_done, 3)
+
+    def test_done_does_not_overwrite_cancel_race(self) -> None:
+        """The view still has the row from before the cancel."""
+        FileTransferSession.objects.filter(pk=self.session.pk).update(
+            status=FileTransferStatus.CANCELLED
+        )
+        with patch(
+            "apiv3.file_transfer_views.get_object_or_404", return_value=self.session
+        ):
+            response = self.client.post(self.done_url, {"files": 1}, format="json")
+        self.assertEqual(response.status_code, 409)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, FileTransferStatus.CANCELLED)
+
+    def test_other_agent_and_other_operation_get_404(self) -> None:
+        other = baker.make(
+            Agent, version="2.12.0", plat="linux", agent_id="other-agent"
+        )
+        self.authenticate_agent(other)
+        response = self.client.post(self.progress_url, {"written": 1}, format="json")
+        self.assertEqual(response.status_code, 404)
+
+        self.client.force_authenticate(user=self.agent_user)
+        download = self._make_transfer_session(operation=FileTransferOperation.DOWNLOAD)
+        response = self.client.post(
+            reverse("file_transfer_extract_done", args=[download.session_id]),
+            {"files": 1},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+
+class TestFileExtractPermissions(BaseFileBrowserAPITest):
+    """Extract follows the File Browser rules: the role needs Use File
+    Browser and the agent must be in the user's clients/sites."""
+
+    body = {
+        "source_path": r"C:\Users\Public\Bundle.zip",
+        "destination_path": r"C:\Users\Public\Bundle",
+    }
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.other_agent = baker.make(
+            Agent,
+            version="2.12.0",
+            plat="windows",
+            agent_id="filebrowser-test-agent-id-0002",
+            last_seen=djangotime.now(),
+        )
+        self.assertNotEqual(self.agent.client, self.other_agent.client)
+
+    def _urls(self, agent, session_id):
+        return {
+            ("post", "init"): reverse("init_file_extract", args=[agent.agent_id]),
+            ("get", "status"): reverse(
+                "get_file_extract_status", args=[agent.agent_id, session_id]
+            ),
+            ("post", "cancel"): reverse(
+                "cancel_file_extract", args=[agent.agent_id, session_id]
+            ),
+            ("get", "list"): reverse("list_file_transfers", args=[agent.agent_id]),
+        }
+
+    def _session(self, user, agent=None):
+        return self._make_transfer_session(
+            agent=agent or self.agent,
+            user=user,
+            operation=FileTransferOperation.EXTRACT,
+            status=FileTransferStatus.TRANSFERRING,
+            source_path=self.body["source_path"],
+            destination_path=self.body["destination_path"],
+            filename="Bundle.zip",
+            total_size=0,
+            chunk_size=0,
+        )
+
+    def _assert_all(self, user_or_none, agent, session, expected, api_key=None):
+        # keep the per-agent slot cap out of it
+        FileTransferSession.objects.exclude(pk=session.pk).delete()
+        if api_key:
+            self.client.force_authenticate(user=None)
+            self.client.credentials(HTTP_X_API_KEY=api_key)
+        else:
+            self.client.force_authenticate(user=user_or_none)
+        for (method, name), url in self._urls(agent, session.session_id).items():
+            data = self.body if name == "init" else {}
+            r = getattr(self.client, method)(url, data, format="json")
+            want = expected[name] if isinstance(expected, dict) else expected
+            self.assertEqual(r.status_code, want, f"{name}: {r.content[:200]}")
+        self.client.credentials()
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_role_permission_and_agent_scope(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "extracting"}
+        user = self.create_user_with_roles([])
+        session = self._session(user)
+
+        self._assert_all(user, self.agent, session, 403)
+        for perm in ("can_use_mesh", "can_list_agents", "can_edit_agent"):
+            setattr(user.role, perm, True)
+        user.role.save()
+        self._assert_all(user, self.agent, session, 403)
+
+        user.role.can_use_file_browser = True
+        user.role.save()
+        allowed = {"init": 202, "status": 200, "cancel": 200, "list": 200}
+        self._assert_all(user, self.agent, session, allowed)
+
+        user.role.can_view_clients.set([self.other_agent.client])
+        user.role.save()
+        self._assert_all(user, self.agent, self._session(user), 403)
+        other_session = self._session(user, self.other_agent)
+        self._assert_all(user, self.other_agent, other_session, allowed)
+
+        user.role.can_view_clients.clear()
+        user.role.can_view_sites.set([self.agent.site])
+        user.role.save()
+        self._assert_all(user, self.other_agent, self._session(user), 403)
+        self._assert_all(user, self.agent, self._session(user), allowed)
+
+    def test_installer_user_is_refused(self) -> None:
+        user = self.create_user_with_roles(["can_use_file_browser"])
+        user.is_installer_user = True
+        user.save(update_fields=["is_installer_user"])
+        self._assert_all(user, self.agent, self._session(user), 403)
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_api_key_follows_the_key_users_role(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "extracting"}
+        user = self.create_user_with_roles([])
+        key = baker.make("accounts.APIKey", user=user, key="EXTRACTTESTKEY1").key
+        self._assert_all(None, self.agent, self._session(user), 403, api_key=key)
+
+        user.role.can_use_file_browser = True
+        user.role.save()
+        allowed = {"init": 202, "status": 200, "cancel": 200, "list": 200}
+        self._assert_all(None, self.agent, self._session(user), allowed, api_key=key)
+
+        user.role.can_view_clients.set([self.other_agent.client])
+        user.role.save()
+        self._assert_all(None, self.agent, self._session(user), 403, api_key=key)
+
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        self.client.force_authenticate(user=None)
+        self.client.credentials(HTTP_X_API_KEY=key)
+        r = self.client.post(
+            reverse("init_file_extract", args=[self.agent.agent_id]),
+            self.body,
+            format="json",
+        )
+        self.assertIn(r.status_code, (401, 403))
+        self.client.credentials()
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_sessions_are_owner_only_even_for_superusers(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "extracting"}
+        owner = self.create_user_with_roles(["can_use_file_browser"])
+        session = self._session(owner)
+        for other in (
+            self.create_user_with_roles(["can_use_file_browser"]),
+            self.alice,
+        ):
+            self._assert_all(
+                other,
+                self.agent,
+                session,
+                {"init": 202, "status": 404, "cancel": 404, "list": 200},
+            )
+            self.client.force_authenticate(user=other)
+            listed = self.client.get(
+                reverse("list_file_transfers", args=[self.agent.agent_id])
+            ).json()["transfers"]
+            self.assertNotIn(str(session.session_id), [t["session_id"] for t in listed])
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.TRANSFERRING)
+
+    def test_session_cannot_be_reached_through_another_agent(self) -> None:
+        session = self._session(self.john)
+        for name in ("get_file_extract_status", "cancel_file_extract"):
+            url = reverse(name, args=[self.other_agent.agent_id, session.session_id])
+            method = self.client.get if name.startswith("get") else self.client.post
+            self.assertEqual(method(url).status_code, 404)
+
+    def test_old_agent_version_is_refused(self) -> None:
+        self.agent.version = "2.11.0"
+        self.agent.save(update_fields=["version"])
+        r = self.client.post(
+            reverse("init_file_extract", args=[self.agent.agent_id]),
+            self.body,
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("2.12.0", r.json())
+        self.assertFalse(FileTransferSession.objects.exists())
+
+    def test_agent_callbacks_need_that_agents_token(self) -> None:
+        from rest_framework.authtoken.models import Token
+
+        session = self._session(self.john)
+        urls = [
+            reverse(name, args=[session.session_id])
+            for name in ("file_transfer_extract_progress", "file_transfer_extract_done")
+        ]
+        body = {"files": 1, "written": 1, "error": "x"}
+
+        # no credentials
+        self.client.force_authenticate(user=None)
+        for url in urls:
+            self.assertEqual(
+                self.client.post(url, body, format="json").status_code, 401
+            )
+
+        # a dashboard user's DRF token is not an agent
+        token = Token.objects.create(user=self.john)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        for url in urls:
+            self.assertEqual(
+                self.client.post(url, body, format="json").status_code, 403
+            )
+
+        # another agent's token
+        self.client.credentials()
+        self.authenticate_agent(self.other_agent)
+        for url in urls:
+            self.assertEqual(
+                self.client.post(url, body, format="json").status_code, 404
+            )
+
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.TRANSFERRING)
+        self.assertEqual(session.files_done, 0)
+
+
+class TestExtractDoesNotUseTransferRedis(BaseFileBrowserAPITest):
+    """Extract keeps its state in the database only: nothing in its
+    lifecycle may touch the chunk relay's Redis."""
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_full_lifecycle_never_touches_relay_redis(self, mock_nats_cmd) -> None:
+        from agents.tasks import expire_stale_file_transfer_sessions
+
+        mock_nats_cmd.return_value = {"status": "extracting"}
+        body = {
+            "source_path": r"C:\Users\Public\a.zip",
+            "destination_path": r"C:\Users\Public\a",
+        }
+        with patch(
+            "agents.file_transfer_relay._redis_client",
+            side_effect=AssertionError("extract used the relay's Redis"),
+        ):
+            sids = []
+            for _ in range(3):
+                r = self.client.post(
+                    reverse("init_file_extract", args=[self.agent.agent_id]),
+                    body,
+                    format="json",
+                )
+                self.assertEqual(r.status_code, 202)
+                sids.append(r.json()["session_id"])
+            done, cancelled, expired = sids
+
+            self.client.get(reverse("list_file_transfers", args=[self.agent.agent_id]))
+            self.authenticate_agent(self.agent)
+            for path, data in (
+                ("file_transfer_extract_progress", {"written": 5, "total": 9}),
+                ("file_transfer_extract_done", {"files": 1, "total": 9}),
+            ):
+                r = self.client.post(reverse(path, args=[done]), data, format="json")
+                self.assertEqual(r.status_code, 200)
+            self.client.force_authenticate(user=self.john)
+            mock_nats_cmd.return_value = {"status": "cancelled", "files": 0}
+            self.client.post(self._session_url("cancel_file_extract", cancelled))
+            FileTransferSession.objects.filter(pk=expired).update(
+                expires_at=djangotime.now() - dt.timedelta(seconds=1)
+            )
+            self.client.get(self._session_url("get_file_extract_status", done))
+            self.assertEqual(expire_stale_file_transfer_sessions(), 1)
+        statuses = {
+            str(sid): st
+            for sid, st in FileTransferSession.objects.values_list(
+                "session_id", "status"
+            )
+        }
+        self.assertEqual(
+            [statuses[s] for s in sids],
+            [
+                FileTransferStatus.COMPLETED,
+                FileTransferStatus.CANCELLED,
+                FileTransferStatus.EXPIRED,
+            ],
+        )
+
+
+class TestTransferRelayRedisHygiene(TacticalTestCase):
+    """Against a real Redis (scratch db 15): every relay key expires on its
+    own, and clearing a session leaves nothing behind. Guards against keys
+    that would pile up in Redis."""
+
+    DB = 15
+
+    def setUp(self) -> None:
+        from django.conf import settings
+        from redis import from_url
+
+        self.redis = from_url(
+            f"redis://{settings.REDIS_HOST}/{self.DB}", decode_responses=False
+        )
+        try:
+            self.redis.ping()
+        except Exception:
+            self.skipTest("Redis not reachable")
+        self.redis.flushdb()
+        patcher = patch(
+            "agents.file_transfer_relay._redis_client", return_value=self.redis
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.addCleanup(self.redis.flushdb)
+        from agents import file_transfer_relay as relay
+
+        # the Lua scripts are cached per client
+        for fn in (
+            relay._store_chunk_redis_script,
+            relay._peek_chunk_redis_script,
+            relay._store_download_chunk_redis_script,
+        ):
+            fn.cache_clear()
+            self.addCleanup(fn.cache_clear)
+
+    def _assert_all_keys_expire(self) -> None:
+        from tacticalrmm.constants import (
+            FILE_TRANSFER_REDIS_ACK_TTL_SECONDS,
+        )
+
+        keys = list(self.redis.scan_iter())
+        self.assertTrue(keys)
+        for key in keys:
+            ttl = self.redis.ttl(key)
+            self.assertGreater(ttl, 0, f"{key!r} never expires")
+            self.assertLessEqual(ttl, FILE_TRANSFER_REDIS_ACK_TTL_SECONDS)
+
+    def test_upload_keys_expire_and_clear_leaves_nothing(self) -> None:
+        from agents import file_transfer_relay as relay
+        from tacticalrmm.constants import FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS
+
+        sid, other = uuid4(), uuid4()
+        chunk = b"x" * (1 << 20)
+        for start in range(0, 4 << 20, 1 << 20):
+            self.assertIsNone(
+                relay.store_upload_chunk(sid, start, start + len(chunk) - 1, chunk)
+            )
+        relay.store_upload_chunk(other, 0, len(chunk) - 1, chunk)
+        relay.signal_upload_ack(sid, 1 << 20)
+        self._assert_all_keys_expire()
+        for key in self.redis.scan_iter(match="upload:chunk:*"):
+            self.assertLessEqual(
+                self.redis.ttl(key), FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS
+            )
+
+        # a pulled-and-acked chunk is gone, the rest stay until the session ends
+        self.assertEqual(relay.peek_upload_chunk(sid, 0).data, chunk)
+        relay.delete_upload_chunk(sid, 0)
+        self.assertIsNone(relay.peek_upload_chunk(sid, 0))
+        relay.clear_upload_session_redis(sid)
+        left = [k.decode() for k in self.redis.scan_iter()]
+        self.assertTrue(left)
+        self.assertFalse([k for k in left if str(sid) in k], left)
+        relay.clear_upload_session_redis(other)
+        self.assertEqual(self.redis.dbsize(), 0)
+
+    def test_download_keys_expire_and_clear_leaves_nothing(self) -> None:
+        from agents import file_transfer_relay as relay
+
+        sid = uuid4()
+        chunk = b"y" * (1 << 20)
+        for start in range(0, 4 << 20, 1 << 20):
+            self.assertIsNone(
+                relay.store_download_chunk(sid, start, start + len(chunk) - 1, chunk)
+            )
+        # the same offset twice is refused, not stored again
+        self.assertIsNotNone(relay.store_download_chunk(sid, 0, len(chunk) - 1, chunk))
+        relay.signal_download_ack(sid, 1 << 20)
+        self._assert_all_keys_expire()
+        self.assertEqual(relay.peek_download_chunk(sid, 0).data, chunk)
+        relay.clear_download_session_redis(sid)
+        self.assertEqual(self.redis.dbsize(), 0)
+
+    def test_rollback_restores_offset_without_leaving_chunks(self) -> None:
+        from agents import file_transfer_relay as relay
+
+        sid = uuid4()
+        relay.store_upload_chunk(sid, 0, 9, b"0123456789")
+        relay.rollback_upload_chunk(sid, 0, 0)
+        self.assertEqual(relay.get_accepted_offset(sid), 0)
+        self.assertFalse(list(self.redis.scan_iter(match="upload:chunk:*")))
+        self._assert_all_keys_expire()
+
+
+class TestFileExtractHostileInput(BaseFileBrowserAPITest):
+    """Malformed or hostile bodies get a clean 400 and never reach the agent."""
+
+    api_name = "init_file_extract"
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_bad_bodies_are_rejected_without_a_session(self, mock_nats_cmd) -> None:
+        good = {
+            "source_path": r"C:\Users\Public\a.zip",
+            "destination_path": r"C:\Users\Public\a",
+        }
+        bodies = [
+            [],
+            "a string",
+            {**good, "source_path": ["C:\\a.zip"]},
+            {**good, "source_path": {"x": 1}},
+            {**good, "destination_path": None},
+            {**good, "destination_path": 12},
+            {**good, "conflict_policy": ["skip"]},
+            {**good, "conflict_policy": "overwrite"},
+            {**good, "source_path": "C:\\Users\\Public\\a\x00.zip"},
+            {**good, "source_path": "C:\\Users\\Public\\a\n.zip"},
+            {**good, "destination_path": "C:\\Users\\Public\\a\rb"},
+            {**good, "destination_path": "C:\\Users\\..\\Windows"},
+            {**good, "destination_path": "C:Users\\Public"},
+            {**good, "destination_path": "/etc/x"},
+            {**good, "source_path": "C:\\Users\\Public\\a.zip\\"},
+            {**good, "source_path": "C:\\Users\\Public\\a.zip:stream"},
+            {**good, "source_path": "C:\\Users\\Public\\" + "a" * 300 + ".zip"},
+            {**good, "destination_path": "C:\\" + "d" * 5000},
+            {**good, "source_path": ""},
+            {},
+        ]
+        for body in bodies:
+            r = self.client.post(self.url, body, format="json")
+            self.assertEqual(r.status_code, 400, f"{body!r:.120}: {r.content[:120]}")
+        mock_nats_cmd.assert_not_called()
+        self.assertFalse(FileTransferSession.objects.exists())
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_unusual_but_valid_paths(self, mock_nats_cmd) -> None:
+        mock_nats_cmd.return_value = {"status": "extracting"}
+        for src, dest in (
+            (r"C:\Users\Public\Ünïcødé  spaces.ZIP", r"D:\Ziel mit Leerzeichen\日本"),
+            (r"\\fileserver\share\drop\a.zip", r"\\fileserver\share\drop\a"),
+            ("C:/Users/Public/forward.zip", "C:/Users/Public/forward"),
+            (r"C:\a.zip", "C:\\"),
+        ):
+            r = self.client.post(
+                self.url, {"source_path": src, "destination_path": dest}, format="json"
+            )
+            self.assertEqual(r.status_code, 202, f"{src} -> {dest}: {r.content}")
+            # keep the per-agent cap out of it
+            FileTransferSession.objects.all().delete()
+        payloads = [c[0][0]["payload"] for c in mock_nats_cmd.call_args_list]
+        self.assertEqual(payloads[2]["source_path"], r"C:\Users\Public\forward.zip")
+        self.assertEqual(payloads[3]["destination_path"], "C:\\")
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_duplicate_init_creates_independent_sessions(self, mock_nats_cmd) -> None:
+        """A double click starts two extractions (each gets its own partial
+        names on the agent); the per-agent cap still applies."""
+        mock_nats_cmd.return_value = {"status": "extracting"}
+        body = {
+            "source_path": r"C:\Users\Public\a.zip",
+            "destination_path": r"C:\Users\Public\a",
+        }
+        codes = [
+            self.client.post(self.url, body, format="json").status_code
+            for _ in range(4)
+        ]
+        self.assertEqual(codes, [202, 202, 202, 429])
+        sids = {c[0][0]["payload"]["session_id"] for c in mock_nats_cmd.call_args_list}
+        self.assertEqual(len(sids), 3)
+
+    def test_agent_callbacks_tolerate_garbage(self) -> None:
+        session = self._make_transfer_session(
+            operation=FileTransferOperation.EXTRACT,
+            status=FileTransferStatus.TRANSFERRING,
+            total_size=0,
+            chunk_size=0,
+        )
+        self.authenticate_agent(self.agent)
+        progress = reverse("file_transfer_extract_progress", args=[session.session_id])
+        done = reverse("file_transfer_extract_done", args=[session.session_id])
+        for body in (
+            [],
+            {"written": "lots", "total": -5, "files_done": None},
+            {"written": 2**70, "files_done": 2**40},
+        ):
+            r = self.client.post(progress, body, format="json")
+            self.assertEqual(r.status_code, 200, r.content)
+        session.refresh_from_db()
+        self.assertGreaterEqual(session.committed_offset, 0)
+        self.assertGreaterEqual(session.total_size, 0)
+        r = self.client.post(
+            done,
+            {"files": "x", "warnings": ["w"] * 10_000, "error": ""},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        session.refresh_from_db()
+        self.assertEqual(session.status, FileTransferStatus.COMPLETED)
+        self.assertLessEqual(len(session.warnings), 8192)

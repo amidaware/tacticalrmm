@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="34"
+SCRIPT_VERSION="35"
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -85,7 +85,7 @@ pg_dump --no-privileges --no-owner --dbname=postgresql://"${POSTGRES_USER}":"${P
 node /meshcentral/node_modules/meshcentral --dbexport # for import to postgres
 
 if grep -q postgres "/meshcentral/meshcentral-data/config.json"; then
-	if ! which jq >/dev/null; then
+	if ! command -v jq >/dev/null; then
 		sudo apt-get install -y jq >/dev/null
 	fi
 	MESH_POSTGRES_USER=$(jq '.settings.postgres.user' /meshcentral/meshcentral-data/config.json -r)

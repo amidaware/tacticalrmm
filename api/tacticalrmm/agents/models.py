@@ -570,7 +570,7 @@ class Agent(BaseAuditModel):
 
         for task in tasks:
             for result in results:
-                if result.task.id == task.pk:
+                if result.task_id == task.pk:  # avoid n+1
                     task.task_result = result
                     break
 
@@ -581,7 +581,7 @@ class Agent(BaseAuditModel):
 
         for check in checks:
             for result in results:
-                if result.assigned_check.id == check.pk:
+                if result.assigned_check_id == check.pk:  # avoid n+1
                     check.check_result = result
                     break
 

@@ -91,6 +91,7 @@ from tacticalrmm.helpers import (
     notify_serializer_error,
 )
 from tacticalrmm.logger import logger
+from tacticalrmm.pagination import StandardPagination
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
     _has_perm_on_client,
@@ -1330,6 +1331,8 @@ class WMI(APIView):
 
 
 class AgentHistoryView(APIView):
+    # TODO deprecated
+
     permission_classes = [IsAuthenticated, AgentHistoryPerms]
 
     def get(self, request, agent_id=None):
@@ -1340,6 +1343,30 @@ class AgentHistoryView(APIView):
             history = AgentHistory.objects.filter_by_role(request.user)  # type: ignore
         ctx = {"default_tz": get_default_timezone()}
         return Response(AgentHistorySerializer(history, many=True, context=ctx).data)
+
+
+class AgentHistoryViewV2(APIView):
+    permission_classes = [IsAuthenticated, AgentHistoryPerms]
+    ordering_fields = ("time", "type", "command", "username")
+
+    def get(self, request, agent_id=None):
+        if agent_id:
+            agent = get_object_or_404(Agent, agent_id=agent_id)
+            history = AgentHistory.objects.filter(agent=agent)
+        else:
+            history = AgentHistory.objects.filter_by_role(request.user)  # type: ignore
+
+        ordering = request.query_params.get("ordering", "-time")
+        if ordering.lstrip("-") not in self.ordering_fields:
+            ordering = "-time"
+        # id as tiebreaker so rows never shift between pages
+        history = history.select_related("script").order_by(ordering, "-id")
+
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(history, request, view=self)
+        ctx = {"default_tz": get_default_timezone()}
+        serializer = AgentHistorySerializer(page, many=True, context=ctx)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class ScriptRunHistory(APIView):

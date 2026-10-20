@@ -30,9 +30,12 @@ urlpatterns = [
     path("<agent:agent_id>/processes/", views.AgentProcesses.as_view()),
     path("<agent:agent_id>/processes/<int:pid>/", views.AgentProcesses.as_view()),
     path("<agent:agent_id>/eventlog/<str:logtype>/<int:days>/", views.get_event_log),
-    # agent history
-    path("history/", views.AgentHistoryView.as_view()),
-    path("<agent:agent_id>/history/", views.AgentHistoryView.as_view()),
+    path("history/", views.AgentHistoryView.as_view()),  # TODO deprecated
+    path(
+        "<agent:agent_id>/history/", views.AgentHistoryView.as_view()
+    ),  # TODO deprecated
+    path("v2/history/", views.AgentHistoryViewV2.as_view()),
+    path("v2/<agent:agent_id>/history/", views.AgentHistoryViewV2.as_view()),
     # agent notes
     path("notes/", views.GetAddNotes.as_view()),
     path("notes/<int:pk>/", views.GetEditDeleteNote.as_view()),

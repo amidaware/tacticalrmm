@@ -23,7 +23,7 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "1.5.2"
+TRMM_VERSION = "1.5.3-dev"
 
 # https://github.com/amidaware/tacticalrmm-web
 WEB_VERSION = "0.101.64"
@@ -35,9 +35,9 @@ APP_VER = "0.0.203"
 # https://github.com/amidaware/rmmagent
 LATEST_AGENT_VER = "2.11.0"
 
-MESH_VER = "1.2.4"
+MESH_VER = "1.2.5"
 
-NATS_SERVER_VER = "2.14.4"
+NATS_SERVER_VER = "2.15.0"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
@@ -45,7 +45,7 @@ INSTALL_NUSHELL = True
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_NUSHELL_VERSION = "0.112.2"
+INSTALL_NUSHELL_VERSION = "0.115.1"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.

@@ -115,14 +115,47 @@ for i in nginx nats-api nats rmm daphne; do
   sudo systemctl stop ${i}
 done
 
-if ! grep -q V4 /etc/systemd/system/celerybeat.service; then
+if ! grep -q V3 /etc/systemd/system/celery.service; then
+  sudo rm -f /etc/systemd/system/celery.service
+
+  celeryservice="$(
+    cat <<EOF
+[Unit]
+Description=Celery Service V3
+After=network.target redis-server.service postgresql.service
+BindsTo=redis-server.service
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
+ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+Restart=always
+RestartSec=15s
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target redis-server.service
+EOF
+  )"
+  echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service >/dev/null
+  sudo systemctl daemon-reload
+  sudo systemctl reenable celery.service
+fi
+
+if ! grep -q V5 /etc/systemd/system/celerybeat.service; then
   sudo rm -f /etc/systemd/system/celerybeat.service
 
   celerybeatservice="$(
     cat <<EOF
 [Unit]
-Description=Celery Beat Service V4
+Description=Celery Beat Service V5
 After=network.target redis-server.service postgresql.service
+BindsTo=redis-server.service
 
 [Service]
 Type=simple
@@ -135,13 +168,15 @@ ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
 ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
 Restart=always
 RestartSec=10s
+TimeoutStopSec=30
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target redis-server.service
 EOF
   )"
   echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null
   sudo systemctl daemon-reload
+  sudo systemctl reenable celerybeat.service
 fi
 
 # migrate daphne to uvicorn
@@ -535,9 +570,13 @@ if [ -d /rmmbackups ]; then
   sudo chown ${USER}:${USER} -R /rmmbackups
 fi
 
-CHECK_CELERY_CONFIG=$(grep "autoscale=20,2" /etc/conf.d/celery.conf)
+CHECK_CELERY_CONFIG=$(grep "soft-time-limit" /etc/conf.d/celery.conf)
 if ! [[ $CHECK_CELERY_CONFIG ]]; then
-  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"/g' /etc/conf.d/celery.conf
+  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=3600 --soft-time-limit=3300 --autoscale=10,4"/g' /etc/conf.d/celery.conf
+fi
+
+if ! grep -q "^AUTOSCALE_KEEPALIVE=" /etc/conf.d/celery.conf; then
+  echo 'AUTOSCALE_KEEPALIVE="600"' | tee -a /etc/conf.d/celery.conf >/dev/null
 fi
 
 CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED $local_settings)
@@ -616,7 +655,7 @@ if grep -q manage_etc_hosts /etc/hosts; then
   sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
   if ! grep -q "manage_etc_hosts: false" /etc/cloud/cloud.cfg; then
     echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
-    sudo systemctl restart cloud-init >/dev/null
+    sudo systemctl restart cloud-init >/dev/null 2>&1
   fi
 fi
 

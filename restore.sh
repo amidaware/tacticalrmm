@@ -287,6 +287,15 @@ sudo mkdir /etc/conf.d
 sudo tar -xzf $tmp_dir/confd/etc-confd.tar.gz -C /etc/conf.d
 sudo chown ${USER}:${USER} -R /etc/conf.d
 
+CHECK_CELERY_CONFIG=$(grep "soft-time-limit" /etc/conf.d/celery.conf)
+if ! [[ $CHECK_CELERY_CONFIG ]]; then
+  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=3600 --soft-time-limit=3300 --autoscale=10,4"/g' /etc/conf.d/celery.conf
+fi
+
+if ! grep -q "^AUTOSCALE_KEEPALIVE=" /etc/conf.d/celery.conf; then
+  echo 'AUTOSCALE_KEEPALIVE="600"' | tee -a /etc/conf.d/celery.conf >/dev/null
+fi
+
 print_green 'Restoring systemd services'
 
 sudo cp $tmp_dir/systemd/* /etc/systemd/system/
@@ -317,6 +326,66 @@ WantedBy=multi-user.target
 EOF
   )"
   echo "${uviservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
+fi
+
+if ! grep -q V3 /etc/systemd/system/celery.service; then
+  sudo rm -f /etc/systemd/system/celery.service
+
+  celeryservice="$(
+    cat <<EOF
+[Unit]
+Description=Celery Service V3
+After=network.target redis-server.service postgresql.service
+BindsTo=redis-server.service
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
+ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+Restart=always
+RestartSec=15s
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target redis-server.service
+EOF
+  )"
+  echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service >/dev/null
+fi
+
+if ! grep -q V5 /etc/systemd/system/celerybeat.service; then
+  sudo rm -f /etc/systemd/system/celerybeat.service
+
+  celerybeatservice="$(
+    cat <<EOF
+[Unit]
+Description=Celery Beat Service V5
+After=network.target redis-server.service postgresql.service
+BindsTo=redis-server.service
+
+[Service]
+Type=simple
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
+ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
+Restart=always
+RestartSec=10s
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target redis-server.service
+EOF
+  )"
+  echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null
 fi
 
 sudo systemctl daemon-reload
@@ -552,7 +621,6 @@ print_green 'Restoring hosts file'
 if grep -q manage_etc_hosts /etc/hosts; then
   sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
   echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
-  sudo systemctl restart cloud-init >/dev/null
 fi
 
 print_green 'Restoring nginx configs'

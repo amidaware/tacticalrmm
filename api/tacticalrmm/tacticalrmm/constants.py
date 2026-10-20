@@ -35,6 +35,10 @@ ORPHANED_WIN_TASK_LOCK = "orphaned-win-task-lock-key"
 SYNC_MESH_PERMS_TASK_LOCK = "sync-mesh-perms-lock-key"
 CACHE_DB_FIELDS_TASK_LOCK = "cache-db-fields-task-lock-key"
 
+# written by a worker every minute from a beat scheduled task, if it goes stale beat or the workers are not processing tasks
+CELERY_HEARTBEAT_CACHE_KEY = "celery_heartbeat"
+CELERY_HEARTBEAT_MAX_AGE = getattr(settings, "CELERY_HEARTBEAT_MAX_AGE", 300)  # seconds
+
 TRMM_WS_MAX_SIZE = getattr(settings, "TRMM_WS_MAX_SIZE", 100 * 2**20)
 TRMM_MAX_REQUEST_SIZE = getattr(settings, "TRMM_MAX_REQUEST_SIZE", 10 * 2**20)
 

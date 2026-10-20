@@ -212,7 +212,6 @@ fi
 if grep -q manage_etc_hosts /etc/hosts; then
   sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
   echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
-  sudo systemctl restart cloud-init >/dev/null
 fi
 
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
@@ -857,8 +856,9 @@ sudo mkdir /etc/conf.d
 celeryservice="$(
   cat <<EOF
 [Unit]
-Description=Celery Service V2
+Description=Celery Service V3
 After=network.target redis-server.service postgresql.service
+BindsTo=redis-server.service
 
 [Service]
 Type=forking
@@ -870,10 +870,11 @@ ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
 ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
 Restart=always
-RestartSec=10s
+RestartSec=15s
+TimeoutStopSec=30
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target redis-server.service
 EOF
 )"
 echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service >/dev/null
@@ -888,7 +889,7 @@ CELERY_APP="tacticalrmm"
 
 CELERYD_MULTI="multi"
 
-CELERYD_OPTS="--time-limit=86400 --autoscale=20,2"
+CELERYD_OPTS="--time-limit=3600 --soft-time-limit=3300 --autoscale=10,4"
 
 CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
@@ -896,6 +897,8 @@ CELERYD_LOG_LEVEL="ERROR"
 
 CELERYBEAT_PID_FILE="/rmm/api/tacticalrmm/beat.pid"
 CELERYBEAT_LOG_FILE="/var/log/celery/beat.log"
+
+AUTOSCALE_KEEPALIVE="600"
 EOF
 )"
 echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf >/dev/null
@@ -903,8 +906,9 @@ echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf >/dev/null
 celerybeatservice="$(
   cat <<EOF
 [Unit]
-Description=Celery Beat Service V4
+Description=Celery Beat Service V5
 After=network.target redis-server.service postgresql.service
+BindsTo=redis-server.service
 
 [Service]
 Type=simple
@@ -917,9 +921,10 @@ ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
 ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
 Restart=always
 RestartSec=10s
+TimeoutStopSec=30
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target redis-server.service
 EOF
 )"
 echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null

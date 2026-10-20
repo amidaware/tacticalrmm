@@ -4,10 +4,6 @@ version: "3.7"
 networks:
   proxy:
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.20.0.0/24
   api-db: null
   redis: null
   mesh-db: null
@@ -195,8 +191,7 @@ services:
       CERT_PUB_KEY: ${CERT_PUB_KEY}
       CERT_PRIV_KEY: ${CERT_PRIV_KEY}
     networks:
-      proxy:
-        ipv4_address: 172.20.0.20
+      - proxy
     ports:
       - "${TRMM_HTTP_PORT-80}:8080"
       - "${TRMM_HTTPS_PORT-443}:4443"

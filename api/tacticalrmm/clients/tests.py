@@ -411,6 +411,13 @@ class TestClientViews(TacticalTestCase):
 
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
+        # plat defaults to windows when not provided
+        self.assertEqual(Deployment.objects.get(site=site).plat, "windows")
+
+        payload["plat"] = "linux"
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(Deployment.objects.filter(site=site, plat="linux").exists())
 
         payload["site"] = "500"
         r = self.client.post(url, payload, format="json")
@@ -453,6 +460,7 @@ class TestClientViews(TacticalTestCase):
         # test valid download
         deployment = baker.make(
             "clients.Deployment",
+            plat="windows",
             install_flags={"rdp": True, "ping": False, "power": False},
         )
 
@@ -460,6 +468,49 @@ class TestClientViews(TacticalTestCase):
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
+
+    @patch("agents.utils.generate_linux_install", return_value=Response("ok"))
+    @patch("clients.views.token_is_valid", return_value=("sometoken", True))
+    def test_generate_deployment_linux(self, mock_valid, mock_gen):
+        deployment = baker.make(
+            "clients.Deployment",
+            plat="linux",
+            goarch="amd64",
+            install_flags={"rdp": True, "ping": False, "power": False},
+        )
+
+        url = f"/clients/{deployment.uid}/deploy/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        mock_gen.assert_called_once()
+
+    @patch("agents.utils.generate_darwin_install", return_value=Response("ok"))
+    @patch("clients.views.token_is_valid", return_value=("sometoken", True))
+    def test_generate_deployment_darwin(self, mock_valid, mock_gen):
+        deployment = baker.make(
+            "clients.Deployment",
+            plat="darwin",
+            goarch="amd64",
+            install_flags={"rdp": True, "ping": False, "power": False},
+        )
+
+        url = f"/clients/{deployment.uid}/deploy/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        mock_gen.assert_called_once()
+
+    @patch("clients.views.token_is_valid", return_value=("", False))
+    def test_generate_deployment_linux_requires_codesign(self, mock_valid):
+        deployment = baker.make(
+            "clients.Deployment",
+            plat="linux",
+            goarch="amd64",
+            install_flags={"rdp": True, "ping": False, "power": False},
+        )
+
+        url = f"/clients/{deployment.uid}/deploy/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
 
 
 class TestClientPermissions(TacticalTestCase):

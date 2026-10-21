@@ -4,7 +4,7 @@ import traceback
 from contextlib import suppress
 from email.headerregistry import Address
 from email.message import EmailMessage
-from email.utils import formatdate
+from email.utils import formatdate, make_msgid
 from typing import TYPE_CHECKING, List, Optional, cast
 
 import requests
@@ -312,6 +312,8 @@ class CoreSettings(BaseAuditModel):
 
             msg["Subject"] = subject
             msg["Date"] = formatdate(localtime=True)
+            # RFC 5322: Gmail rejects messages without a Message-ID
+            msg["Message-ID"] = make_msgid(domain=from_address.split("@")[-1])
 
             if self.smtp_from_name:
                 msg["From"] = Address(

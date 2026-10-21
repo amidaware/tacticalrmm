@@ -35,7 +35,7 @@ from tacticalrmm.throttles import (
 )
 from tacticalrmm.utils import get_core_settings
 
-from .models import APIKey, Role, User
+from .models import APIKey, Role, SSHPublicKey, User
 from .permissions import (
     AccountsPerms,
     APIKeyPerms,
@@ -46,6 +46,8 @@ from .permissions import (
 from .serializers import (
     APIKeySerializer,
     RoleSerializer,
+    SSHPublicKeyCreateSerializer,
+    SSHPublicKeySerializer,
     TOTPSetupSerializer,
     UserSerializer,
     UserUISerializer,
@@ -439,6 +441,95 @@ class GetUpdateDeleteAPIKey(APIView):
         apikey = get_object_or_404(APIKey, pk=pk)
         apikey.delete()
         return Response("The API Key was deleted")
+
+
+class GetAddSSHKeys(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        keys = SSHPublicKey.objects.filter(user=request.user)
+        return Response(SSHPublicKeySerializer(keys, many=True).data)
+
+    def post(self, request):
+        import asyncssh
+
+        raw_key = request.data.get("public_key", "").strip()
+        key_name = request.data.get("name", "").strip()
+
+        if not raw_key:
+            return notify_error("public_key is required")
+        if not key_name:
+            return notify_error("name is required")
+
+        try:
+            ssh_key = asyncssh.import_public_key(raw_key)
+        except (asyncssh.KeyImportError, ValueError, TypeError) as e:
+            return notify_error(f"Invalid public key: {e}")
+
+        fp = ssh_key.get_fingerprint()
+        key_type = ssh_key.get_algorithm()
+        import base64
+        key_data_b64 = base64.b64encode(ssh_key.public_data).decode()
+
+        comment = request.data.get("comment", "")
+        if not comment and " " in raw_key:
+            parts = raw_key.split()
+            if len(parts) >= 3:
+                comment = " ".join(parts[2:])
+
+        data = {
+            "user": request.user.pk,
+            "name": key_name,
+            "key_type": key_type,
+            "key_data": key_data_b64,
+            "fingerprint": fp,
+            "comment": comment,
+        }
+
+        serializer = SSHPublicKeyCreateSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(SSHPublicKeySerializer(serializer.instance).data)
+
+
+class GetUpdateDeleteSSHKey(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, request, pk):
+        try:
+            if request.user.is_superuser or (
+                request.user.role and getattr(request.user.role, "can_manage_accounts", False)
+            ):
+                return SSHPublicKey.objects.get(pk=pk)
+            return SSHPublicKey.objects.get(pk=pk, user=request.user)
+        except SSHPublicKey.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        key = self.get_object(request, pk)
+        if not key:
+            return notify_error("SSH key not found")
+        return Response(SSHPublicKeySerializer(key).data)
+
+    def put(self, request, pk):
+        key = self.get_object(request, pk)
+        if not key:
+            return notify_error("SSH key not found")
+
+        allowed = {"name", "comment"}
+        updates = {k: v for k, v in request.data.items() if k in allowed}
+
+        serializer = SSHPublicKeySerializer(instance=key, data=updates, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("SSH key was updated")
+
+    def delete(self, request, pk):
+        key = self.get_object(request, pk)
+        if not key:
+            return notify_error("SSH key not found")
+        key.delete()
+        return Response("SSH key was deleted")
 
 
 class ResetPass(APIView):

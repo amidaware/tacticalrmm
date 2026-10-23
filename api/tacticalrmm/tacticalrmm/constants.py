@@ -149,6 +149,11 @@ class AgentDblClick(models.TextChoices):
     URL_ACTION = "urlaction", "URL Action"
 
 
+class RemoteOpenMode(models.TextChoices):
+    WINDOW = "window", "New Window"
+    TAB = "tab", "New Tab"
+
+
 class ScriptShell(models.TextChoices):
     POWERSHELL = "powershell", "Powershell"
     CMD = "cmd", "Batch (CMD)"

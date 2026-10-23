@@ -19,6 +19,7 @@ class UserUISerializer(ModelSerializer):
             "show_community_scripts",
             "agent_dblclick_action",
             "url_action",
+            "remote_open_mode",
             "default_agent_tbl_tab",
             "client_tree_sort",
             "client_tree_splitter",

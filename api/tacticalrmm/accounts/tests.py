@@ -5,7 +5,12 @@ from model_bakery import baker, seq
 
 from accounts.models import APIKey, User
 from accounts.serializers import APIKeySerializer
-from tacticalrmm.constants import AgentDblClick, AgentTableTabs, ClientTreeSort
+from tacticalrmm.constants import (
+    AgentDblClick,
+    AgentTableTabs,
+    ClientTreeSort,
+    RemoteOpenMode,
+)
 from tacticalrmm.test import TacticalTestCase
 
 
@@ -291,9 +296,13 @@ class TestUserAction(TacticalTestCase):
             "client_tree_splitter": 14,
             "loading_bar_color": "green",
             "clear_search_when_switching": False,
+            "remote_open_mode": RemoteOpenMode.TAB,
         }
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            User.objects.get(pk=self.john.pk).remote_open_mode, RemoteOpenMode.TAB
+        )
 
         self.check_not_authenticated("patch", url)
 

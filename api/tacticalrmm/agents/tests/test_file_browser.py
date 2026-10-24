@@ -2451,6 +2451,17 @@ class TestFileBrowserPermissions(BaseFileBrowserAPITest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.json()["supports_new_file_browser"])
 
+    def test_file_browser_defaults_max_upload_file_size(self) -> None:
+        url = reverse("file_browser_defaults", args=[self.agent.agent_id])
+        response = self.client.get(url)
+        self.assertEqual(response.json()["max_upload_file_size_bytes"], 0)
+
+        with patch(
+            "agents.serializers.FILE_BROWSER_MAX_UPLOAD_FILE_SIZE_BYTES", 2 * 2**30
+        ):
+            response = self.client.get(url)
+        self.assertEqual(response.json()["max_upload_file_size_bytes"], 2 * 2**30)
+
     def test_copy_mesh_permission_to_file_browser(self) -> None:
         import importlib
 

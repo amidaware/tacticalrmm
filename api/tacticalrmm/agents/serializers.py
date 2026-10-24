@@ -7,6 +7,7 @@ from tacticalrmm.constants import (
     AGENT_CHECKS_CACHE_PREFIX,
     AGENT_STATUS_ONLINE,
     ALL_TIMEZONES,
+    FILE_BROWSER_MAX_UPLOAD_FILE_SIZE_BYTES,
     FileBrowserModeChoices,
     TerminalModeChoices,
 )
@@ -265,6 +266,7 @@ class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
 class AgentFileBrowserDefaultsSerializer(serializers.ModelSerializer):
     file_browser_mode = serializers.SerializerMethodField()
     supports_new_file_browser = serializers.SerializerMethodField()
+    max_upload_file_size_bytes = serializers.SerializerMethodField()
 
     def get_file_browser_mode(self, obj):
         settings = self.context.get("core_settings")
@@ -272,6 +274,9 @@ class AgentFileBrowserDefaultsSerializer(serializers.ModelSerializer):
 
     def get_supports_new_file_browser(self, obj):
         return self.context.get("supports_new_file_browser", True)
+
+    def get_max_upload_file_size_bytes(self, obj):
+        return FILE_BROWSER_MAX_UPLOAD_FILE_SIZE_BYTES
 
     class Meta:
         model = Agent
@@ -281,6 +286,7 @@ class AgentFileBrowserDefaultsSerializer(serializers.ModelSerializer):
             "plat",
             "file_browser_mode",
             "supports_new_file_browser",
+            "max_upload_file_size_bytes",
         )
 
 

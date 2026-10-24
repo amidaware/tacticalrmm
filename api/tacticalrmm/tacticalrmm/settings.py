@@ -136,34 +136,34 @@ with suppress(ImportError):
     from .local_settings import *  # noqa
 
 try:
-    TRMM_MAX_REQUEST_SIZE
+    TRMM_MAX_REQUEST_SIZE  # noqa: F405
 except NameError:
     TRMM_MAX_REQUEST_SIZE = 10 * 2**20
 
 try:
-    FILE_TRANSFER_CHUNK_SIZE_MAX
+    FILE_TRANSFER_CHUNK_SIZE_MAX  # noqa: F405
 except NameError:
     FILE_TRANSFER_CHUNK_SIZE_MAX = 16 * 2**20
 
 try:
-    DATA_UPLOAD_MAX_MEMORY_SIZE
+    DATA_UPLOAD_MAX_MEMORY_SIZE  # noqa: F405
 except NameError:
     DATA_UPLOAD_MAX_MEMORY_SIZE = max(
         TRMM_MAX_REQUEST_SIZE, FILE_TRANSFER_CHUNK_SIZE_MAX + 2**20
     )
 
 # cross-origin file transfers and content-range on chunk PUT/GET.
-from corsheaders.defaults import default_headers
+from corsheaders.defaults import default_headers  # noqa: E402
 
 try:
-    _cors_allow_headers = CORS_ALLOW_HEADERS
+    _cors_allow_headers = CORS_ALLOW_HEADERS  # noqa: F405
 except NameError:
     _cors_allow_headers = default_headers
 
 CORS_ALLOW_HEADERS = tuple(dict.fromkeys([*_cors_allow_headers, "content-range"]))
 
 try:
-    _cors_expose_headers = CORS_EXPOSE_HEADERS
+    _cors_expose_headers = CORS_EXPOSE_HEADERS  # noqa: F405
 except NameError:
     _cors_expose_headers = ()
 

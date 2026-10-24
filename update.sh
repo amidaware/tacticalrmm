@@ -387,7 +387,7 @@ fi
 NODE_MAJOR=24
 
 reinstall_nodejs() {
-  printf >&2 "${YELLOW}Node.js/npm is missing or broken, reinstalling from NodeSource${NC}\n"
+  printf >&2 "${YELLOW}Node.js/npm is too old, missing or broken, reinstalling from NodeSource${NC}\n"
   sudo systemctl stop meshcentral
 
   sudo apt remove -y nodejs npm
@@ -445,6 +445,8 @@ EOF
 }
 
 if ! command -v npm >/dev/null || ! node -v >/dev/null 2>&1; then
+  reinstall_nodejs
+elif [ "$(node -p 'process.versions.node.split(".")[0]')" -le 20 ]; then
   reinstall_nodejs
 fi
 

@@ -24,9 +24,10 @@ from agents.file_transfer_relay import (
     signal_upload_ack,
     store_download_chunk,
 )
-from agents.models import FileTransferSession
+from agents.models import Agent, FileTransferSession
 from agents.utils import parse_upload_content_range
 from tacticalrmm.constants import (
+    AGENT_DEFER,
     FILE_TRANSFER_ACK_CHECKPOINT_BYTES,
     FILE_TRANSFER_CHUNK_SIZE_MAX,
     FILE_TRANSFER_IDLE_EXPIRE_MINUTES,
@@ -61,12 +62,10 @@ class FileTransferNextChunk(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, session_id):
-        agent = getattr(request.user, "agent", None)
-        if agent is None:
-            return Response(
-                "Invalid agent credentials",
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
+        )
 
         session = get_object_or_404(
             FileTransferSession,
@@ -111,12 +110,10 @@ class FileTransferAck(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, session_id):
-        agent = getattr(request.user, "agent", None)
-        if agent is None:
-            return Response(
-                "Invalid agent credentials",
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
+        )
 
         session = get_object_or_404(
             FileTransferSession,
@@ -212,12 +209,10 @@ class FileTransferDownloadPutChunk(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, session_id):
-        agent = getattr(request.user, "agent", None)
-        if agent is None:
-            return Response(
-                "Invalid agent credentials",
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
+        )
 
         session = get_object_or_404(
             FileTransferSession,
@@ -266,12 +261,10 @@ class FileTransferDownloadPutChunk(APIView):
         )
 
     def put(self, request, session_id):
-        agent = getattr(request.user, "agent", None)
-        if agent is None:
-            return Response(
-                "Invalid agent credentials",
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
+        )
 
         session = get_object_or_404(
             FileTransferSession,
@@ -377,12 +370,10 @@ class FileTransferFail(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, session_id):
-        agent = getattr(request.user, "agent", None)
-        if agent is None:
-            return Response(
-                "Invalid agent credentials",
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
+        )
 
         session = get_object_or_404(
             FileTransferSession,
@@ -433,12 +424,10 @@ class FileTransferArchiveReady(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, session_id):
-        agent = getattr(request.user, "agent", None)
-        if agent is None:
-            return Response(
-                "Invalid agent credentials",
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        agent = get_object_or_404(
+            Agent.objects.defer(*AGENT_DEFER),
+            user=request.user,
+        )
 
         session = get_object_or_404(
             FileTransferSession,
@@ -542,12 +531,10 @@ def _agent_body_count(request, key: str, maximum: int = _MAX_FILE_COUNT) -> int:
 
 
 def _agent_extract_session(request, session_id):
-    agent = getattr(request.user, "agent", None)
-    if agent is None:
-        return None, Response(
-            "Invalid agent credentials",
-            status=status.HTTP_403_FORBIDDEN,
-        )
+    agent = get_object_or_404(
+        Agent.objects.defer(*AGENT_DEFER),
+        user=request.user,
+    )
     session = get_object_or_404(
         FileTransferSession,
         session_id=session_id,

@@ -3299,7 +3299,7 @@ class TestFileExtractPermissions(BaseFileBrowserAPITest):
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
         for url in urls:
             self.assertEqual(
-                self.client.post(url, body, format="json").status_code, 403
+                self.client.post(url, body, format="json").status_code, 404
             )
 
         # another agent's token

@@ -174,6 +174,7 @@ def convert_to_iso_duration(string: str) -> str:
 
     return f"PT{tmp}"
 
+
 _VALID_AGENT_ID = re.compile(r"[A-Za-z0-9]+")
 
 

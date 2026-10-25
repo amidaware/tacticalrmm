@@ -12,9 +12,9 @@ class ClientsPerms(permissions.BasePermission):
     def has_permission(self, r, view) -> bool:
         if r.method == "GET":
             if "pk" in view.kwargs.keys():
-                return _has_perm(
-                    r, "can_list_clients"
-                ) and _has_partial_perm_on_client(r.user, view.kwargs["pk"])
+                return _has_perm(r, "can_list_clients") and _has_partial_perm_on_client(
+                    r.user, view.kwargs["pk"]
+                )
             else:
                 return _has_perm(r, "can_list_clients")
         elif r.method in ("PUT", "DELETE"):

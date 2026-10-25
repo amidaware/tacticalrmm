@@ -135,6 +135,49 @@ with suppress(ImportError):
 with suppress(ImportError):
     from .local_settings import *  # noqa
 
+try:
+    TRMM_MAX_REQUEST_SIZE  # noqa: F405
+except NameError:
+    TRMM_MAX_REQUEST_SIZE = 10 * 2**20
+
+try:
+    FILE_TRANSFER_CHUNK_SIZE_MAX  # noqa: F405
+except NameError:
+    FILE_TRANSFER_CHUNK_SIZE_MAX = 16 * 2**20
+
+try:
+    DATA_UPLOAD_MAX_MEMORY_SIZE  # noqa: F405
+except NameError:
+    DATA_UPLOAD_MAX_MEMORY_SIZE = max(
+        TRMM_MAX_REQUEST_SIZE, FILE_TRANSFER_CHUNK_SIZE_MAX + 2**20
+    )
+
+# cross-origin file transfers and content-range on chunk PUT/GET.
+from corsheaders.defaults import default_headers  # noqa: E402
+
+try:
+    _cors_allow_headers = CORS_ALLOW_HEADERS  # noqa: F405
+except NameError:
+    _cors_allow_headers = default_headers
+
+CORS_ALLOW_HEADERS = tuple(dict.fromkeys([*_cors_allow_headers, "content-range"]))
+
+try:
+    _cors_expose_headers = CORS_EXPOSE_HEADERS  # noqa: F405
+except NameError:
+    _cors_expose_headers = ()
+
+CORS_EXPOSE_HEADERS = tuple(
+    dict.fromkeys(
+        [
+            *_cors_expose_headers,
+            "content-range",
+            "x-chunk-start",
+            "x-chunk-end",
+        ]
+    )
+)
+
 if "GHACTIONS" in os.environ:
     print("-----------------------GHACTIONS----------------------------")
     DATABASES = {
@@ -293,6 +336,19 @@ MIDDLEWARE = [
 if SWAGGER_ENABLED:
     INSTALLED_APPS += ("drf_spectacular",)
 
+
+def _silky_intercept(request) -> bool:
+    # Large binary relay endpoints break django-silk finalise on dev servers.
+    path = request.path
+    if ("/files/upload/" in path or "/files/download/" in path) and path.endswith(
+        "/chunk/"
+    ):
+        return False
+    if "/api/v3/file-transfers/" in path:
+        return False
+    return True
+
+
 if DEBUG and not DEMO:
     INSTALLED_APPS.insert(0, "daphne")
     INSTALLED_APPS += (
@@ -301,6 +357,7 @@ if DEBUG and not DEMO:
     )
 
     MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
+    SILKY_INTERCEPT_FUNC = _silky_intercept
 
 if ADMIN_ENABLED:
     MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)

@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.cache import cache
 from rest_framework import serializers
 
@@ -5,6 +7,8 @@ from tacticalrmm.constants import (
     AGENT_CHECKS_CACHE_PREFIX,
     AGENT_STATUS_ONLINE,
     ALL_TIMEZONES,
+    FILE_BROWSER_MAX_UPLOAD_FILE_SIZE_BYTES,
+    FileBrowserModeChoices,
     TerminalModeChoices,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -257,3 +261,125 @@ class AgentTerminalDefaultsSerializer(serializers.ModelSerializer):
             "terminal_mode",
             "supports_new_terminal",
         )
+
+
+class AgentFileBrowserDefaultsSerializer(serializers.ModelSerializer):
+    file_browser_mode = serializers.SerializerMethodField()
+    supports_new_file_browser = serializers.SerializerMethodField()
+    max_upload_file_size_bytes = serializers.SerializerMethodField()
+
+    def get_file_browser_mode(self, obj):
+        settings = self.context.get("core_settings")
+        return settings.file_browser_mode if settings else FileBrowserModeChoices.NEW
+
+    def get_supports_new_file_browser(self, obj):
+        return self.context.get("supports_new_file_browser", True)
+
+    def get_max_upload_file_size_bytes(self, obj):
+        return FILE_BROWSER_MAX_UPLOAD_FILE_SIZE_BYTES
+
+    class Meta:
+        model = Agent
+        fields = (
+            "agent_id",
+            "hostname",
+            "plat",
+            "file_browser_mode",
+            "supports_new_file_browser",
+            "max_upload_file_size_bytes",
+        )
+
+
+class OptionalUUIDField(serializers.UUIDField):
+    """Blank stays omitted so transfer init can start a fresh session."""
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("required", False)
+        kwargs.setdefault("allow_null", True)
+        kwargs.setdefault(
+            "error_messages",
+            {"invalid": "session_id must be a valid UUID"},
+        )
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        if data in (None, ""):
+            return None
+        try:
+            value = str(data).strip()
+        except (AttributeError, TypeError):
+            self.fail("invalid")
+        if not value:
+            return None
+        try:
+            return uuid.UUID(value)
+        except (ValueError, AttributeError, TypeError):
+            self.fail("invalid")
+
+
+class InitFileUploadSerializer(serializers.Serializer):
+    session_id = OptionalUUIDField()
+    filename = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=255
+    )
+    destination_path = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=4096
+    )
+    total_size = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=1,
+        max_value=2**63 - 1,
+        error_messages={
+            "invalid": "total_size must be a positive integer",
+            "min_value": "total_size must be a positive integer",
+            "max_value": "total_size must be a positive integer",
+        },
+    )
+    chunk_size = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        error_messages={"invalid": "chunk_size must be a positive integer"},
+    )
+    conflict_policy = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
+
+
+class InitFileDownloadSerializer(serializers.Serializer):
+    session_id = OptionalUUIDField()
+    source_path = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=4096
+    )
+    chunk_size = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        error_messages={"invalid": "chunk_size must be a positive integer"},
+    )
+    resume_offset = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        error_messages={
+            "invalid": "resume_offset must be a non-negative integer",
+            "min_value": "resume_offset must be a non-negative integer",
+        },
+    )
+
+
+class InitFileDownloadArchiveSerializer(serializers.Serializer):
+    paths = serializers.ListField(
+        child=serializers.CharField(allow_blank=True, max_length=4096),
+        required=False,
+        allow_empty=True,
+        allow_null=True,
+        error_messages={"not_a_list": "paths must be a non-empty array"},
+    )
+    filename = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=255
+    )
+    chunk_size = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        error_messages={"invalid": "chunk_size must be a positive integer"},
+    )

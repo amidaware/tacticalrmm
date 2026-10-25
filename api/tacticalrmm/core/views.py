@@ -43,7 +43,7 @@ from tacticalrmm.helpers import get_certs, notify_error
 from tacticalrmm.logger import logger
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
-    _has_perm_on_client,
+    _has_partial_perm_on_client,
     _has_perm_on_site,
 )
 
@@ -428,7 +428,7 @@ class RunURLAction(APIView):
 
             instance = get_object_or_404(Site, pk=request.data["site"])
         elif "client" in request.data.keys():
-            if not _has_perm_on_client(request.user, request.data["client"]):
+            if not _has_partial_perm_on_client(request.user, request.data["client"]):
                 raise PermissionDenied()
 
             instance = get_object_or_404(Client, pk=request.data["client"])
@@ -490,7 +490,7 @@ class RunTestURLAction(APIView):
                 raise PermissionDenied()
 
         elif instance_type == "client":
-            if not _has_perm_on_client(request.user, instance_id):
+            if not _has_partial_perm_on_client(request.user, instance_id):
                 raise PermissionDenied()
 
         result, replaced_url, replaced_body = run_test_url_rest_action(

@@ -175,37 +175,40 @@ def convert_to_iso_duration(string: str) -> str:
     return f"PT{tmp}"
 
 
+_VALID_AGENT_ID = re.compile(r"[A-Za-z0-9]+")
+
+
+def is_valid_agent_id(agent_id: str) -> bool:
+    return isinstance(agent_id, str) and _VALID_AGENT_ID.fullmatch(agent_id) is not None
+
+
 def reload_nats() -> None:
-    users = [
-        {
-            "user": "tacticalrmm",
-            "password": settings.SECRET_KEY,
-            "permissions": {"publish": ">", "subscribe": ">"},
-        }
-    ]
+    allow_response = {
+        "expires": getattr(settings, "NATS_ALLOW_RESPONSE_EXPIRATION", "1435m")
+    }
+
+    agent_users = []
     agents = Agent.objects.prefetch_related("user").only(
         "pk", "agent_id"
     )  # type: ignore
     for agent in agents:
+        if not is_valid_agent_id(agent.agent_id):
+            continue
         try:
-            users.append(
+            agent_users.append(
                 {
                     "user": agent.agent_id,
                     "password": agent.user.auth_token.key,
                     "permissions": {
                         "publish": {
                             "allow": [
-                                f"{agent.agent_id}",
+                                f"fromagent.{agent.agent_id}",
                                 f"{agent.agent_id}.cmdoutput.>",
                                 f"{agent.agent_id}.terminal.>",
                             ]
                         },
                         "subscribe": {"allow": [f"{agent.agent_id}"]},
-                        "allow_responses": {
-                            "expires": getattr(
-                                settings, "NATS_ALLOW_RESPONSE_EXPIRATION", "1435m"
-                            )
-                        },
+                        "allow_responses": allow_response,
                     },
                 }
             )
@@ -220,8 +223,47 @@ def reload_nats() -> None:
     nats_std_host, nats_ws_host, _ = get_nats_hosts()
     nats_std_port, nats_ws_port = get_nats_ports()
 
+    accounts = {
+        "TRMM": {
+            "users": [
+                {
+                    "user": "tacticalrmm",
+                    "password": settings.SECRET_KEY,
+                    "permissions": {"publish": ">", "subscribe": ">"},
+                }
+            ],
+            "mappings": {"*": "cmd.{{wildcard(1)}}"},
+            "exports": [{"stream": "cmd.*"}],
+            "imports": [
+                {
+                    "stream": {"account": "AGENTS", "subject": "fromagent.*"},
+                    "to": "{{wildcard(1)}}",
+                },
+                {"stream": {"account": "AGENTS", "subject": "_INBOX.>"}},
+                {"stream": {"account": "AGENTS", "subject": "*.cmdoutput.>"}},
+                {"stream": {"account": "AGENTS", "subject": "*.terminal.>"}},
+            ],
+        },
+        "AGENTS": {
+            "users": agent_users,
+            "mappings": {"*": "fromagent.{{wildcard(1)}}"},
+            "exports": [
+                {"stream": "fromagent.*"},
+                {"stream": "_INBOX.>"},
+                {"stream": "*.cmdoutput.>"},
+                {"stream": "*.terminal.>"},
+            ],
+            "imports": [
+                {
+                    "stream": {"account": "TRMM", "subject": "cmd.*"},
+                    "to": "{{wildcard(1)}}",
+                }
+            ],
+        },
+    }
+
     config = {
-        "authorization": {"users": users},
+        "accounts": accounts,
         "max_payload": 67108864,
         "host": nats_std_host,
         "port": nats_std_port,  # internal only

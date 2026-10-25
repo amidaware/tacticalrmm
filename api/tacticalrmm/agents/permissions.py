@@ -145,3 +145,13 @@ class AgentTerminalPerms(permissions.BasePermission):
             )
 
         return _has_perm(r, "can_use_terminal")
+
+
+class AgentFileBrowserPerms(permissions.BasePermission):
+    def has_permission(self, r, view) -> bool:
+        if "agent_id" in view.kwargs.keys():
+            return _has_perm(r, "can_use_file_browser") and _has_perm_on_agent(
+                r.user, view.kwargs["agent_id"]
+            )
+
+        return _has_perm(r, "can_use_file_browser")

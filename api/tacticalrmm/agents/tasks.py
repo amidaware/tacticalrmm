@@ -1,9 +1,11 @@
 import datetime as dt
+from functools import partial
 from time import sleep
 from typing import TYPE_CHECKING, Optional
 
 from django.conf import settings
 from django.core.management import call_command
+from django.db import transaction
 from django.utils import timezone as djangotime
 
 from agents.models import Agent
@@ -15,10 +17,15 @@ from tacticalrmm.constants import (
     AGENT_DEFER,
     AGENT_OUTAGES_LOCK,
     AGENT_STATUS_OVERDUE,
+    FILE_TRANSFER_IDLE_EXPIRE_MINUTES,
+    FILE_TRANSFER_SESSION_RETENTION_HOURS,
     CheckStatus,
     DebugLogType,
+    FileTransferOperation,
+    FileTransferStatus,
 )
 from tacticalrmm.helpers import rand_range
+from tacticalrmm.logger import logger
 from tacticalrmm.utils import redis_lock
 
 if TYPE_CHECKING:
@@ -256,6 +263,192 @@ def prune_agent_history(older_than_days: int) -> str:
     ).delete()
 
     return "ok"
+
+
+_FILE_TRANSFER_ACTIVE_STATUSES = (
+    FileTransferStatus.WAITING_FOR_AGENT,
+    FileTransferStatus.AGENT_READY,
+    FileTransferStatus.TRANSFERRING,
+)
+
+
+EXTRACT_EXPIRED_MESSAGE = (
+    "The agent stopped responding (it may have gone offline or restarted)."
+)
+
+
+def expire_stale_file_transfer_sessions(
+    *, agent=None, notify_agent: bool = True
+) -> int:
+    from agents.utils import send_nats_command
+
+    from .file_transfer_relay import (
+        clear_download_session_redis,
+        clear_upload_session_redis,
+        get_download_ack,
+        get_upload_ack,
+    )
+    from .models import FileTransferSession
+
+    def _clear_redis(session: "FileTransferSession") -> None:
+        if session.operation == FileTransferOperation.EXTRACT:
+            return
+        if session.operation == FileTransferOperation.UPLOAD:
+            clear_upload_session_redis(session.session_id)
+        else:
+            clear_download_session_redis(session.session_id)
+
+    def _notify_agent_release(session: "FileTransferSession") -> None:
+        agent_obj = session.agent
+        if agent_obj is None or agent_obj.status != "online":
+            return
+        try:
+            if session.operation == FileTransferOperation.EXTRACT:
+                send_nats_command(
+                    agent_obj,
+                    "files_extract_cancel",
+                    {"session_id": str(session.session_id)},
+                    timeout=5,
+                )
+            elif session.operation == FileTransferOperation.UPLOAD:
+                send_nats_command(
+                    agent_obj,
+                    "files_upload_abort",
+                    {"session_id": str(session.session_id)},
+                    timeout=5,
+                )
+            else:
+                send_nats_command(
+                    agent_obj,
+                    "files_download_finalize",
+                    {
+                        "session_id": str(session.session_id),
+                        "source_path": session.destination_path,
+                        "release": "true",
+                    },
+                    timeout=5,
+                )
+        except Exception:
+            pass
+
+    def _live_committed(session: "FileTransferSession") -> int:
+        if session.operation == FileTransferOperation.EXTRACT:
+            return session.committed_offset
+        if session.operation == FileTransferOperation.UPLOAD:
+            redis_committed = get_upload_ack(session.session_id)
+        else:
+            redis_committed = get_download_ack(session.session_id)
+        return max(session.committed_offset, redis_committed or 0)
+
+    def _should_idle_expire(session: "FileTransferSession", idle_cutoff) -> bool:
+        if max(session.created_at, session.updated_at) > idle_cutoff:
+            return False
+        if session.last_ack_at is not None or session.committed_offset > 0:
+            return False
+        if (
+            session.is_archive
+            and session.status == FileTransferStatus.WAITING_FOR_AGENT
+        ):
+            return False
+        try:
+            return _live_committed(session) <= 0
+        except Exception:
+            return False
+
+    now = djangotime.now()
+    idle_cutoff = now - dt.timedelta(minutes=FILE_TRANSFER_IDLE_EXPIRE_MINUTES)
+    qs = FileTransferSession.objects.filter(
+        status__in=_FILE_TRANSFER_ACTIVE_STATUSES,
+    ).select_related("agent")
+    if agent is not None:
+        qs = qs.filter(agent=agent)
+
+    def _release(session: "FileTransferSession") -> None:
+        _clear_redis(session)
+        _notify_agent_release(session)
+
+    expired_count = 0
+    for session in qs.iterator():
+        ttl_expired = session.expires_at <= now
+        idle_expired = _should_idle_expire(session, idle_cutoff)
+        if not ttl_expired and not idle_expired:
+            continue
+        with transaction.atomic():
+            # a complete or cancel may have finished it since the query
+            locked = (
+                FileTransferSession.objects.select_for_update()
+                .filter(pk=session.pk, status__in=_FILE_TRANSFER_ACTIVE_STATUSES)
+                .first()
+            )
+            if locked is None:
+                continue
+            locked.status = FileTransferStatus.EXPIRED
+            if locked.operation == FileTransferOperation.EXTRACT:
+                locked.error_message = locked.error_message or EXTRACT_EXPIRED_MESSAGE
+            locked.error_message = locked.error_message or (
+                "Session expired after 10 minutes with no data transferred"
+                if idle_expired and not ttl_expired
+                else "Session expired"
+            )
+            locked.save(update_fields=["status", "error_message", "updated_at"])
+        locked.agent = session.agent
+        session = locked
+        if notify_agent:
+            _release(session)
+        else:
+            transaction.on_commit(partial(_release, session))
+        logger.error(
+            "file_transfer session=%s operation=%s status=%s: %s",
+            session.session_id,
+            session.operation,
+            session.status,
+            session.error_message,
+        )
+        expired_count += 1
+
+    if notify_agent:
+        leftover_expired = FileTransferSession.objects.filter(
+            status=FileTransferStatus.EXPIRED,
+            error_message="",
+        ).select_related("agent")
+        if agent is not None:
+            leftover_expired = leftover_expired.filter(agent=agent)
+        for session in leftover_expired.iterator():
+            _clear_redis(session)
+            _notify_agent_release(session)
+            session.error_message = "Session expired"
+            session.save(update_fields=["error_message", "updated_at"])
+            logger.error(
+                "file_transfer session=%s operation=%s status=%s: %s",
+                session.session_id,
+                session.operation,
+                session.status,
+                session.error_message,
+            )
+            expired_count += 1
+    return expired_count
+
+
+@app.task
+def cleanup_expired_file_transfers_task() -> str:
+    from .models import FileTransferSession
+
+    expired_count = expire_stale_file_transfer_sessions()
+
+    now = djangotime.now()
+    retention_cutoff = now - dt.timedelta(hours=FILE_TRANSFER_SESSION_RETENTION_HOURS)
+    old_terminal = FileTransferSession.objects.filter(
+        status__in=(
+            FileTransferStatus.COMPLETED,
+            FileTransferStatus.FAILED,
+            FileTransferStatus.EXPIRED,
+            FileTransferStatus.CANCELLED,
+        ),
+        updated_at__lt=retention_cutoff,
+    )
+    deleted_count, _ = old_terminal.delete()
+
+    return f"expired={expired_count} deleted={deleted_count}"
 
 
 @app.task

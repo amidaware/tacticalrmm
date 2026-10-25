@@ -27,6 +27,7 @@ from tacticalrmm.constants import (
     LinuxTerminalShellChoices,
     MonthlyType,
     ScheduleType,
+    FileBrowserModeChoices,
     TerminalModeChoices,
     URLActionRestMethod,
     URLActionType,
@@ -156,6 +157,11 @@ class CoreSettings(BaseAuditModel):
         max_length=20,
         choices=TerminalModeChoices.choices,
         default=TerminalModeChoices.NEW,
+    )
+    file_browser_mode = models.CharField(
+        max_length=20,
+        choices=FileBrowserModeChoices.choices,
+        default=FileBrowserModeChoices.NEW,
     )
 
     def save(self, *args, **kwargs) -> None:

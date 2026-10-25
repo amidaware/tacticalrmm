@@ -65,7 +65,7 @@ if [ -d /meshcentral/meshcentral-coredumps ]; then
 fi
 
 dt_now=$(date '+%Y_%m_%d__%H_%M_%S')
-tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
+tmp_dir=$(mktemp -d -p /var/tmp tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
 sysd="/etc/systemd/system"
 
 mkdir -p ${tmp_dir}/meshcentral/mongo

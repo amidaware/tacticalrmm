@@ -574,7 +574,7 @@ fi
 
 CHECK_CELERY_CONFIG=$(grep "soft-time-limit" /etc/conf.d/celery.conf)
 if ! [[ $CHECK_CELERY_CONFIG ]]; then
-  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=3600 --soft-time-limit=3300 --autoscale=10,4"/g' /etc/conf.d/celery.conf
+  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=14400 --soft-time-limit=14100 --autoscale=10,4"/g' /etc/conf.d/celery.conf
 fi
 
 CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED $local_settings)

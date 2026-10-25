@@ -141,7 +141,7 @@ fetch_key() {
 }
 
 print_green 'Unpacking backup'
-tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
+tmp_dir=$(mktemp -d -p /var/tmp tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
 
 tar -xf ${1} -C $tmp_dir
 
@@ -289,7 +289,7 @@ sudo chown ${USER}:${USER} -R /etc/conf.d
 
 CHECK_CELERY_CONFIG=$(grep "soft-time-limit" /etc/conf.d/celery.conf)
 if ! [[ $CHECK_CELERY_CONFIG ]]; then
-  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=3600 --soft-time-limit=3300 --autoscale=10,4"/g' /etc/conf.d/celery.conf
+  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=14400 --soft-time-limit=14100 --autoscale=10,4"/g' /etc/conf.d/celery.conf
 fi
 
 print_green 'Restoring systemd services'
@@ -824,6 +824,8 @@ fi
 print_green 'Starting meshcentral'
 sudo systemctl enable meshcentral
 sudo systemctl start meshcentral
+
+rm -rf $tmp_dir
 
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"

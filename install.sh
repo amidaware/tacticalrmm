@@ -889,7 +889,7 @@ CELERY_APP="tacticalrmm"
 
 CELERYD_MULTI="multi"
 
-CELERYD_OPTS="--time-limit=3600 --soft-time-limit=3300 --autoscale=10,4"
+CELERYD_OPTS="--time-limit=14400 --soft-time-limit=14100 --autoscale=10,4"
 
 CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"

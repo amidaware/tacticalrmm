@@ -391,6 +391,7 @@ def expire_stale_file_transfer_sessions(
                 else "Session expired"
             )
             locked.save(update_fields=["status", "error_message", "updated_at"])
+        locked.agent = session.agent
         session = locked
         if notify_agent:
             _release(session)

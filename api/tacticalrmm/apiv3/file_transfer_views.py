@@ -46,6 +46,7 @@ _TERMINAL_STATUSES = (
     FileTransferStatus.EXPIRED,
 )
 _MAX_WARNINGS_CHARS = 8192
+_MAX_BYTE_COUNT = 2**63 - 1
 
 
 def _agent_body_str(request, key: str) -> str:
@@ -54,7 +55,20 @@ def _agent_body_str(request, key: str) -> str:
     value = request.data.get(key)
     if value is None:
         return ""
-    return str(value).strip()
+    return str(value).replace("\x00", "").strip()
+
+
+def _warnings_json(warnings) -> str:
+    """JSON list of the agent's warnings, dropping items so it fits the cap."""
+    if not isinstance(warnings, list) or not warnings:
+        return ""
+    items = [str(w).replace("\x00", "") for w in warnings]
+    while items:
+        value = json.dumps(items)
+        if len(value) <= _MAX_WARNINGS_CHARS:
+            return value
+        items.pop()
+    return ""
 
 
 class FileTransferNextChunk(APIView):
@@ -470,19 +484,16 @@ class FileTransferArchiveReady(APIView):
             total_size = int(request.data.get("total_size"))
         except (AttributeError, TypeError, ValueError):
             return notify_error("total_size must be a positive integer")
-        if total_size < 1:
+        if total_size < 1 or total_size > _MAX_BYTE_COUNT:
             return notify_error("Agent reported empty or invalid archive")
 
         archive_path = _agent_body_str(request, "archive_path")
         if not archive_path:
             return notify_error("archive_path is required")
+        if len(archive_path) > 4096:
+            return notify_error("archive_path is too long")
 
-        warnings_value = ""
-        warnings = request.data.get("warnings")
-        if isinstance(warnings, list) and warnings:
-            warnings_value = json.dumps([str(w) for w in warnings])[
-                :_MAX_WARNINGS_CHARS
-            ]
+        warnings_value = _warnings_json(request.data.get("warnings"))
 
         now = djangotime.now()
         updated = FileTransferSession.objects.filter(
@@ -517,7 +528,6 @@ _EXTRACT_ACTIVE_STATUSES = (
 
 
 _MAX_FILE_COUNT = 2**31 - 1
-_MAX_BYTE_COUNT = 2**63 - 1
 
 
 def _agent_body_count(request, key: str, maximum: int = _MAX_FILE_COUNT) -> int:
@@ -591,12 +601,7 @@ class FileTransferExtractDone(APIView):
         if err is not None:
             return err
 
-        warnings_value = ""
-        warnings = request.data.get("warnings")
-        if isinstance(warnings, list) and warnings:
-            warnings_value = json.dumps([str(w) for w in warnings])[
-                :_MAX_WARNINGS_CHARS
-            ]
+        warnings_value = _warnings_json(request.data.get("warnings"))
         fields = {
             "files_done": _agent_body_count(request, "files"),
             "files_skipped": _agent_body_count(request, "skipped"),

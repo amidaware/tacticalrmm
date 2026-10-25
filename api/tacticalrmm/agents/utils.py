@@ -607,11 +607,6 @@ def canonical_file_browser_paths(
     return canonical, None
 
 
-def validate_file_browser_paths(paths, plat: str) -> Optional[str]:
-    _canonical, err = canonical_file_browser_paths(paths, plat)
-    return err
-
-
 def collect_file_transfer_paths(
     paths,
     plat: str,

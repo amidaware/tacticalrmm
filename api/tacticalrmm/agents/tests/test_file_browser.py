@@ -3595,3 +3595,64 @@ class TestFileExtractHostileInput(BaseFileBrowserAPITest):
         session.refresh_from_db()
         self.assertEqual(session.status, FileTransferStatus.COMPLETED)
         self.assertLessEqual(len(session.warnings), 8192)
+        self.assertIsInstance(json.loads(session.warnings), list)
+
+
+class TestOutOfRangeBodies(BaseFileBrowserAPITest):
+    """Values the database can't store get a 400, never a 500."""
+
+    @patch("agents.models.Agent.nats_cmd", new_callable=AsyncMock)
+    def test_upload_total_size_too_large(self, mock_nats_cmd) -> None:
+        url = reverse("init_file_upload", args=[self.agent.agent_id])
+        r = self.client.post(
+            url,
+            {
+                "filename": "a.txt",
+                "destination_path": r"C:\Users\Public",
+                "total_size": 2**63,
+            },
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400, r.content)
+        mock_nats_cmd.assert_not_called()
+        self.assertFalse(FileTransferSession.objects.exists())
+
+    @patch("apiv3.file_transfer_views.clear_download_session_redis")
+    def test_agent_strings_with_nul_and_huge_sizes(self, _clear) -> None:
+        self.authenticate_agent(self.agent)
+        failing = self._make_transfer_session(operation=FileTransferOperation.DOWNLOAD)
+        r = self.client.post(
+            reverse("file_transfer_fail", args=[failing.session_id]),
+            {"error": "disk\x00 full"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200, r.content)
+        failing.refresh_from_db()
+        self.assertEqual(failing.error_message, "disk full")
+
+        archive = self._make_transfer_session(
+            operation=FileTransferOperation.DOWNLOAD,
+            status=FileTransferStatus.WAITING_FOR_AGENT,
+        )
+        url = reverse("file_transfer_archive_ready", args=[archive.session_id])
+        for body in (
+            {"total_size": 2**63, "archive_path": r"C:\t.zip"},
+            {"total_size": 10, "archive_path": "C:\\" + "a" * 5000},
+        ):
+            r = self.client.post(url, body, format="json")
+            self.assertEqual(r.status_code, 400, r.content)
+        r = self.client.post(
+            url,
+            {
+                "total_size": 10,
+                "archive_path": "C:\\t\x00.zip",
+                "warnings": ["C:\\" + "x" * 150] * 60,
+            },
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200, r.content)
+        archive.refresh_from_db()
+        self.assertEqual(archive.destination_path, r"C:\t.zip")
+        warnings = json.loads(archive.warnings)
+        self.assertTrue(0 < len(warnings) < 60)
+        self.assertLessEqual(len(archive.warnings), 8192)

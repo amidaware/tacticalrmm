@@ -329,6 +329,7 @@ class InitFileUploadSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
         min_value=1,
+        max_value=2**63 - 1,
         error_messages={
             "invalid": "total_size must be a positive integer",
             "min_value": "total_size must be a positive integer",

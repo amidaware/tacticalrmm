@@ -94,7 +94,7 @@ from tacticalrmm.logger import logger
 from tacticalrmm.pagination import StandardPagination
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
-    _has_perm_on_client,
+    _has_partial_perm_on_client,
     _has_perm_on_site,
 )
 from tacticalrmm.utils import get_default_timezone, reload_nats
@@ -1170,7 +1170,7 @@ def bulk(request):
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
-        if not _has_perm_on_client(request.user, request.data["client"]):
+        if not _has_partial_perm_on_client(request.user, request.data["client"]):
             raise PermissionDenied()
         q = Agent.objects.filter_by_role(request.user).filter(  # type: ignore
             site__client_id=request.data["client"]
@@ -1281,7 +1281,7 @@ def bulk(request):
 @permission_classes([IsAuthenticated, AgentPerms])
 def agent_maintenance(request):
     if request.data["type"] == "Client":
-        if not _has_perm_on_client(request.user, request.data["id"]):
+        if not _has_partial_perm_on_client(request.user, request.data["id"]):
             raise PermissionDenied()
 
         count = (
@@ -2078,8 +2078,14 @@ def _audit_file_browser(request, agent, action: str, operation: str, paths, extr
 
 
 def _log_transfer_terminal(session: FileTransferSession, detail: str = "") -> None:
+    if session.status == FileTransferStatus.COMPLETED:
+        # a complete won the race
+        return
     message = detail or session.error_message or session.status
-    logger.error(
+    log = (
+        logger.info if session.status == FileTransferStatus.CANCELLED else logger.error
+    )
+    log(
         "file_transfer session=%s operation=%s status=%s: %s",
         session.session_id,
         session.operation,
@@ -2653,9 +2659,7 @@ class UploadFileChunk(APIView):
         if len(chunk_data) != expected_len:
             return notify_error("Request body size does not match Content-Range")
 
-        receive_t0 = time.monotonic()
         store_err = store_upload_chunk(session.session_id, start, end, chunk_data)
-        chunk_receive_ms = (time.monotonic() - receive_t0) * 1000
         if store_err:
             return notify_error(store_err)
 
@@ -2672,11 +2676,9 @@ class UploadFileChunk(APIView):
             "chunk_end": str(end),
             "chunk_size": str(len(chunk_data)),
         }
-        notify_t0 = time.monotonic()
         notify_err = send_nats_notification(
             agent, "files_upload_chunk_available", notify_payload
         )
-        chunk_notify_ms = (time.monotonic() - notify_t0) * 1000
 
         if notify_err is not None:
             # nats is probably restarting, let the client resend the chunk
@@ -2694,13 +2696,10 @@ class UploadFileChunk(APIView):
         # ready GET when the pipeline is actually full.
         committed, _accepted, next_can_put = _upload_relay_put_state(session)
         logger.info(
-            "file_transfer upload chunk accepted session=%s start=%s end=%s "
-            "chunk_receive_ms=%.1f chunk_notify_ms=%.1f",
+            "file_transfer upload chunk accepted session=%s start=%s end=%s",
             session.session_id,
             start,
             end,
-            chunk_receive_ms,
-            chunk_notify_ms,
         )
 
         return Response(

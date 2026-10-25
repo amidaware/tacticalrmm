@@ -181,7 +181,7 @@ def signal_upload_ack(session_id: UUID, committed_offset: int) -> None:
 def clear_upload_session_redis(session_id: UUID) -> None:
     client = _redis_client()
     client.delete(_ack_key(session_id), _accepted_key(session_id))
-    for key in client.scan_iter(match=f"{_chunk_prefix(session_id)}*"):
+    for key in client.scan_iter(match=f"{_chunk_prefix(session_id)}*", count=1000):
         client.delete(key)
 
 
@@ -299,5 +299,5 @@ def clear_download_session_redis(session_id: UUID) -> None:
         _dl_offered_key(session_id),
         _dl_ack_key(session_id),
     )
-    for key in client.scan_iter(match=f"{_dl_chunk_prefix(session_id)}*"):
+    for key in client.scan_iter(match=f"{_dl_chunk_prefix(session_id)}*", count=1000):
         client.delete(key)

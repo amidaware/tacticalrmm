@@ -69,14 +69,26 @@ def _has_perm_on_client(user: "User", client_id: int) -> bool:
 
     client = get_object_or_404(Client, pk=client_id)
     can_view_clients = role.can_view_clients.all() if role else None
+    can_view_sites = role.can_view_sites.all() if role else None
 
-    if not can_view_clients:
+    if not can_view_clients and not can_view_sites:
         return True
 
     elif can_view_clients and client in can_view_clients:
         return True
 
     return False
+
+
+def _has_partial_perm_on_client(user: "User", client_id: int) -> bool:
+    if _has_perm_on_client(user, client_id):
+        return True
+
+    role = user.get_and_set_role_cache()
+    if not role:
+        return False
+
+    return any(site.client_id == int(client_id) for site in role.can_view_sites.all())
 
 
 def _has_perm_on_site(user: "User", site_id: int) -> bool:

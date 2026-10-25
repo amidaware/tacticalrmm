@@ -26,18 +26,18 @@ AUTH_USER_MODEL = "accounts.User"
 TRMM_VERSION = "1.5.3-dev"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.64"
+WEB_VERSION = "0.101.65"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.203"
+APP_VER = "0.0.204"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.11.0"
+LATEST_AGENT_VER = "2.12.0"
 
-MESH_VER = "1.2.5"
+MESH_VER = "1.3.1"
 
-NATS_SERVER_VER = "2.15.0"
+NATS_SERVER_VER = "2.15.1"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
@@ -45,7 +45,7 @@ INSTALL_NUSHELL = True
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_NUSHELL_VERSION = "0.115.1"
+INSTALL_NUSHELL_VERSION = "0.116.1"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.

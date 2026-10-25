@@ -1445,10 +1445,11 @@ class ScriptRunHistory(APIView):
             "agent__block_policy_inheritance",
         )
         hists = (
-            AgentHistory.objects.filter(type=AgentHistoryType.SCRIPT_RUN)
+            AgentHistory.objects.filter_by_role(request.user)  # type: ignore
             .select_related("agent")
             .select_related("script")
             .defer(*AGENT_R_DEFER)
+            .filter(type=AgentHistoryType.SCRIPT_RUN)
             .filter(date_range_filter)
             .filter(script_name_filter)
             .order_by("-time")

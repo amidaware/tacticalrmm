@@ -292,10 +292,6 @@ if ! [[ $CHECK_CELERY_CONFIG ]]; then
   sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=3600 --soft-time-limit=3300 --autoscale=10,4"/g' /etc/conf.d/celery.conf
 fi
 
-if ! grep -q "^AUTOSCALE_KEEPALIVE=" /etc/conf.d/celery.conf; then
-  echo 'AUTOSCALE_KEEPALIVE="600"' | tee -a /etc/conf.d/celery.conf >/dev/null
-fi
-
 print_green 'Restoring systemd services'
 
 sudo cp $tmp_dir/systemd/* /etc/systemd/system/

@@ -897,8 +897,6 @@ CELERYD_LOG_LEVEL="ERROR"
 
 CELERYBEAT_PID_FILE="/rmm/api/tacticalrmm/beat.pid"
 CELERYBEAT_LOG_FILE="/var/log/celery/beat.log"
-
-AUTOSCALE_KEEPALIVE="600"
 EOF
 )"
 echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf >/dev/null

@@ -136,6 +136,14 @@ with suppress(ImportError):
     from .local_settings import *  # noqa
 
 try:
+    import uwsgi as _uwsgi  # only importable inside uWSGI
+
+    DATABASES["default"]["CONN_MAX_AGE"] = 600  # noqa
+    DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa
+except ImportError:
+    pass
+
+try:
     TRMM_MAX_REQUEST_SIZE  # noqa: F405
 except NameError:
     TRMM_MAX_REQUEST_SIZE = 10 * 2**20

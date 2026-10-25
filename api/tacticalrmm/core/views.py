@@ -87,9 +87,9 @@ class GetEditCoreSettings(APIView):
         data = request.data.copy()
 
         if getattr(settings, "HOSTED", False):
-            data.pop("mesh_site")
-            data.pop("mesh_token")
-            data.pop("mesh_username")
+            for i in ("mesh_site", "mesh_token", "mesh_username"):
+                data.pop(i, None)
+
             data["sync_mesh_with_trmm"] = True
             data["enable_server_scripts"] = False
             data["enable_server_webterminal"] = False

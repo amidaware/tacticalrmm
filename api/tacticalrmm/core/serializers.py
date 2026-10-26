@@ -28,6 +28,7 @@ class HostedCoreMixin:
             ret["sync_mesh_with_trmm"] = True
             ret["enable_server_scripts"] = False
             ret["enable_server_webterminal"] = False
+            ret["enable_ssh_gateway"] = False
 
         return ret
 

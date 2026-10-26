@@ -1,10 +1,11 @@
 asgiref==3.9.1
+brotli==1.2.1
 celery[redis]==5.6.3
 hiredis==3.4.2
-certifi==2026.7.22
+certifi==2026.10.23
 channels==4.3.2
 channels_redis==4.3.0
-cryptography==50.0.1
+cryptography==50.0.2
 Django==4.2.30
 django-cors-headers==4.9.0
 django-allauth[socialaccount]==65.2.0
@@ -13,11 +14,11 @@ django-rest-knox==4.2.0
 djangorestframework==3.15.2
 drf-spectacular==0.29.0
 meshctrl==0.1.15
-msgpack==1.1.2
+msgpack==1.2.3
 nats-py==2.16.0
 packaging==26.3
 psutil==7.2.2
-psycopg[binary]==3.3.5
+psycopg[binary]==3.3.6
 pycparser==2.22
 pycryptodome==3.23.0
 pyotp==2.9.0
@@ -30,7 +31,7 @@ six==1.17.0
 sqlparse==0.5.3
 tldextract==5.3.2
 twilio==8.13.0
-urllib3==2.7.0
+urllib3==2.8.0
 uvicorn[standard]==0.53.0
 uWSGI==2.0.31
 validators==0.24.0
@@ -42,5 +43,5 @@ kaleido==1.2.0
 jinja2==3.1.6
 Markdown==3.10.3
 plotly==6.5.0
-weasyprint==66.0
+weasyprint==70.0
 ocxsect==0.1.5

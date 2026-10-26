@@ -35,8 +35,95 @@ ORPHANED_WIN_TASK_LOCK = "orphaned-win-task-lock-key"
 SYNC_MESH_PERMS_TASK_LOCK = "sync-mesh-perms-lock-key"
 CACHE_DB_FIELDS_TASK_LOCK = "cache-db-fields-task-lock-key"
 
+# written by a worker every minute from a beat scheduled task, if it goes stale beat or the workers are not processing tasks
+CELERY_HEARTBEAT_CACHE_KEY = "celery_heartbeat"
+CELERY_HEARTBEAT_MAX_AGE = getattr(settings, "CELERY_HEARTBEAT_MAX_AGE", 300)  # seconds
+
 TRMM_WS_MAX_SIZE = getattr(settings, "TRMM_WS_MAX_SIZE", 100 * 2**20)
 TRMM_MAX_REQUEST_SIZE = getattr(settings, "TRMM_MAX_REQUEST_SIZE", 10 * 2**20)
+
+FILE_TRANSFER_CHUNK_SIZE = getattr(
+    settings, "FILE_TRANSFER_CHUNK_SIZE", 8 * 1024 * 1024
+)
+FILE_TRANSFER_CHUNK_SIZE_MIN = getattr(
+    settings, "FILE_TRANSFER_CHUNK_SIZE_MIN", 1 * 1024 * 1024
+)
+FILE_TRANSFER_CHUNK_SIZE_MAX = getattr(
+    settings, "FILE_TRANSFER_CHUNK_SIZE_MAX", 16 * 1024 * 1024
+)
+FILE_TRANSFER_PIPELINE_DEPTH = getattr(settings, "FILE_TRANSFER_PIPELINE_DEPTH", 4)
+FILE_TRANSFER_SESSION_TTL_HOURS = getattr(
+    settings, "FILE_TRANSFER_SESSION_TTL_HOURS", 1
+)
+FILE_TRANSFER_IDLE_EXPIRE_MINUTES = getattr(
+    settings, "FILE_TRANSFER_IDLE_EXPIRE_MINUTES", 10
+)
+FILE_TRANSFER_SESSION_RETENTION_HOURS = getattr(
+    settings, "FILE_TRANSFER_SESSION_RETENTION_HOURS", 24
+)
+FILE_TRANSFER_MAX_SESSIONS_PER_AGENT = getattr(
+    settings, "FILE_TRANSFER_MAX_SESSIONS_PER_AGENT", 3
+)
+FILE_TRANSFER_MAX_SESSIONS_PER_USER = getattr(
+    settings, "FILE_TRANSFER_MAX_SESSIONS_PER_USER", 10
+)
+FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS = getattr(
+    settings, "FILE_TRANSFER_REDIS_CHUNK_TTL_SECONDS", 300
+)
+FILE_TRANSFER_REDIS_ACK_TTL_SECONDS = getattr(
+    settings, "FILE_TRANSFER_REDIS_ACK_TTL_SECONDS", 6 * 3600
+)
+FILE_TRANSFER_ACK_CHECKPOINT_BYTES = getattr(
+    settings, "FILE_TRANSFER_ACK_CHECKPOINT_BYTES", 25 * 1024 * 1024
+)
+# not a setting: mirrors downloadPushAckWaitMax in the agent (how long a
+# download stream waits for the client to ACK before it parks). Buffered
+# chunks must outlive it
+FILE_TRANSFER_AGENT_ACK_WAIT_SECONDS = 120
+FILE_BROWSER_DEFAULT_PAGE_SIZE = getattr(
+    settings, "FILE_BROWSER_DEFAULT_PAGE_SIZE", 500
+)
+FILE_BROWSER_MAX_PAGE_SIZE = getattr(settings, "FILE_BROWSER_MAX_PAGE_SIZE", 1000)
+FILE_BROWSER_MAX_PAGE = getattr(settings, "FILE_BROWSER_MAX_PAGE", 10_000)
+FILE_BROWSER_MAX_NAME_FILTER_LEN = getattr(
+    settings, "FILE_BROWSER_MAX_NAME_FILTER_LEN", 255
+)
+# File browser upload validation (0 on max file size = unlimited).
+FILE_BROWSER_MAX_UPLOAD_FILE_SIZE_BYTES = getattr(
+    settings, "FILE_BROWSER_MAX_UPLOAD_FILE_SIZE_BYTES", 0
+)
+FILE_BROWSER_MAX_DELETE_PATHS = getattr(settings, "FILE_BROWSER_MAX_DELETE_PATHS", 100)
+FILE_BROWSER_MAX_EXISTS_NAMES = getattr(settings, "FILE_BROWSER_MAX_EXISTS_NAMES", 500)
+FILE_BROWSER_MAX_ARCHIVE_PATHS = getattr(
+    settings, "FILE_BROWSER_MAX_ARCHIVE_PATHS", 100
+)
+FILE_BROWSER_MAX_ARCHIVE_FILES = getattr(
+    settings, "FILE_BROWSER_MAX_ARCHIVE_FILES", 10_000
+)
+FILE_BROWSER_MAX_ARCHIVE_SIZE_BYTES = getattr(
+    settings, "FILE_BROWSER_MAX_ARCHIVE_SIZE_BYTES", 4 * 1024 * 1024 * 1024
+)
+FILE_BROWSER_MAX_ARCHIVE_DEPTH = getattr(settings, "FILE_BROWSER_MAX_ARCHIVE_DEPTH", 32)
+FILE_BROWSER_ARCHIVE_BUILD_TTL_MINUTES = getattr(
+    settings, "FILE_BROWSER_ARCHIVE_BUILD_TTL_MINUTES", 60
+)
+FILE_BROWSER_MAX_EXTRACT_FILES = getattr(
+    settings, "FILE_BROWSER_MAX_EXTRACT_FILES", 10_000
+)
+FILE_BROWSER_MAX_EXTRACT_SIZE_BYTES = getattr(
+    settings, "FILE_BROWSER_MAX_EXTRACT_SIZE_BYTES", 4 * 1024 * 1024 * 1024
+)
+FILE_BROWSER_MAX_EXTRACT_DEPTH = getattr(settings, "FILE_BROWSER_MAX_EXTRACT_DEPTH", 32)
+FILE_BROWSER_PROPERTIES_MAX_FILES = getattr(
+    settings, "FILE_BROWSER_PROPERTIES_MAX_FILES", 100_000
+)
+FILE_BROWSER_PROPERTIES_MAX_DEPTH = getattr(
+    settings, "FILE_BROWSER_PROPERTIES_MAX_DEPTH", 32
+)
+FILE_BROWSER_PROPERTIES_MAX_DURATION_SECONDS = getattr(
+    settings, "FILE_BROWSER_PROPERTIES_MAX_DURATION_SECONDS", 20
+)
+FILE_BROWSER_MIN_AGENT_VERSION = "2.12.0"
 
 
 class GoArch(models.TextChoices):
@@ -222,6 +309,7 @@ class AuditActionType(models.TextChoices):
     REMOTE_SESSION = "remote_session", "Remote Session"
     EXEC_SCRIPT = "execute_script", "Execute Script"
     EXEC_COMMAND = "execute_command", "Execute Command"
+    FILE_TRANSFER = "file_transfer", "File Transfer"
     BULK_ACTION = "bulk_action", "Bulk Action"
     URL_ACTION = "url_action", "URL Action"
 
@@ -607,3 +695,29 @@ AGENT_DARWIN_SHELL_TOKENS = {
 class TerminalModeChoices(models.TextChoices):
     NEW = "new", "Use new terminal"
     LEGACY = "legacy", "Use legacy terminal"
+
+
+class FileBrowserModeChoices(models.TextChoices):
+    NEW = "new", "Use new file browser"
+    LEGACY = "legacy", "Use legacy file browser"
+
+
+class FileTransferOperation(models.TextChoices):
+    UPLOAD = "upload", "Upload"
+    DOWNLOAD = "download", "Download"
+    EXTRACT = "extract", "Extract"
+
+
+class FileTransferConflictPolicy(models.TextChoices):
+    REPLACE = "replace", "Replace"
+    SKIP = "skip", "Skip"
+
+
+class FileTransferStatus(models.TextChoices):
+    WAITING_FOR_AGENT = "waiting_for_agent", "Waiting for agent"
+    AGENT_READY = "agent_ready", "Agent ready"
+    TRANSFERRING = "transferring", "Transferring"
+    COMPLETED = "completed", "Completed"
+    FAILED = "failed", "Failed"
+    CANCELLED = "cancelled", "Cancelled"
+    EXPIRED = "expired", "Expired"

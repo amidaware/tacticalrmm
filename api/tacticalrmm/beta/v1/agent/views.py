@@ -1,21 +1,22 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework import viewsets
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.serializers import BaseSerializer
 
 from agents.models import Agent
 from agents.permissions import AgentPerms
 from beta.v1.agent.filter import AgentFilter
-from beta.v1.pagination import StandardResultsSetPagination
+from tacticalrmm.pagination import StandardPagination
+
 from ..serializers import DetailAgentSerializer, ListAgentSerializer
 
 
 class AgentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, AgentPerms]
     queryset = Agent.objects.all()
-    pagination_class = StandardResultsSetPagination
+    pagination_class = StandardPagination
     http_method_names = ["get", "put"]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = AgentFilter

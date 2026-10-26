@@ -106,6 +106,45 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_file_browser_action(
+        username: str,
+        agent: "Agent",
+        action: str,
+        operation: str,
+        paths: list[str],
+        debug_info: Dict[Any, Any] = {},
+        extra: Optional[Dict[Any, Any]] = None,
+    ) -> None:
+        """Record a file browser or file transfer action against an agent."""
+        safe_paths = [str(p) for p in paths if p]
+        preview = "; ".join(safe_paths[:2])
+        leftover = len(safe_paths) - 2
+        if leftover > 0:
+            preview = f"{preview} (+{leftover} more)"
+        if preview:
+            message = f"{username} {operation} on {agent.hostname}: {preview}"
+        else:
+            message = f"{username} {operation} on {agent.hostname}"
+
+        after_value: Dict[Any, Any] = {
+            "operation": operation,
+            "paths": safe_paths,
+        }
+        if extra:
+            after_value.update(extra)
+
+        AuditLog.objects.create(
+            username=username,
+            agent=agent.hostname,
+            agent_id=agent.agent_id,
+            object_type=AuditObjType.AGENT,
+            action=action,
+            message=message,
+            after_value=after_value,
+            debug_info=debug_info,
+        )
+
+    @staticmethod
     def audit_object_changed(
         username: str,
         object_type: str,

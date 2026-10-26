@@ -23,21 +23,21 @@ MAC_UNINSTALL = BASE_DIR / "core" / "mac_uninstall.sh"
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "1.5.2"
+TRMM_VERSION = "1.6.0"
 
 # https://github.com/amidaware/tacticalrmm-web
-WEB_VERSION = "0.101.64"
+WEB_VERSION = "0.101.65"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.203"
+APP_VER = "0.0.204"
 
 # https://github.com/amidaware/rmmagent
-LATEST_AGENT_VER = "2.11.0"
+LATEST_AGENT_VER = "2.12.0"
 
-MESH_VER = "1.2.4"
+MESH_VER = "1.3.1"
 
-NATS_SERVER_VER = "2.14.4"
+NATS_SERVER_VER = "2.15.1"
 
 # Install Nushell on the agent
 # https://github.com/nushell/nushell
@@ -45,7 +45,7 @@ INSTALL_NUSHELL = True
 # GitHub version to download. The file will be downloaded from GitHub, extracted and installed.
 # Version to download. If INSTALL_NUSHELL_URL is not provided, the file will be downloaded from GitHub,
 # extracted and installed.
-INSTALL_NUSHELL_VERSION = "0.112.2"
+INSTALL_NUSHELL_VERSION = "0.116.1"
 # URL to download directly. This is expected to be the direct URL, unauthenticated, uncompressed, ready to be installed.
 # Use {OS}, {ARCH} and {VERSION} to specify the GOOS, GOARCH and INSTALL_NUSHELL_VERSION respectively.
 # Windows: The ".exe" extension will be added automatically.
@@ -134,6 +134,57 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     from .local_settings import *  # noqa
+
+try:
+    import uwsgi  # noqa: F401 only importable inside uWSGI
+except ImportError:
+    pass
+else:
+    DATABASES["default"].setdefault("CONN_MAX_AGE", 600)  # noqa: F405
+    DATABASES["default"].setdefault("CONN_HEALTH_CHECKS", True)  # noqa: F405
+
+try:
+    TRMM_MAX_REQUEST_SIZE  # noqa: F405
+except NameError:
+    TRMM_MAX_REQUEST_SIZE = 10 * 2**20
+
+try:
+    FILE_TRANSFER_CHUNK_SIZE_MAX  # noqa: F405
+except NameError:
+    FILE_TRANSFER_CHUNK_SIZE_MAX = 16 * 2**20
+
+try:
+    DATA_UPLOAD_MAX_MEMORY_SIZE  # noqa: F405
+except NameError:
+    DATA_UPLOAD_MAX_MEMORY_SIZE = max(
+        TRMM_MAX_REQUEST_SIZE, FILE_TRANSFER_CHUNK_SIZE_MAX + 2**20
+    )
+
+# cross-origin file transfers and content-range on chunk PUT/GET.
+from corsheaders.defaults import default_headers  # noqa: E402
+
+try:
+    _cors_allow_headers = CORS_ALLOW_HEADERS  # noqa: F405
+except NameError:
+    _cors_allow_headers = default_headers
+
+CORS_ALLOW_HEADERS = tuple(dict.fromkeys([*_cors_allow_headers, "content-range"]))
+
+try:
+    _cors_expose_headers = CORS_EXPOSE_HEADERS  # noqa: F405
+except NameError:
+    _cors_expose_headers = ()
+
+CORS_EXPOSE_HEADERS = tuple(
+    dict.fromkeys(
+        [
+            *_cors_expose_headers,
+            "content-range",
+            "x-chunk-start",
+            "x-chunk-end",
+        ]
+    )
+)
 
 if "GHACTIONS" in os.environ:
     print("-----------------------GHACTIONS----------------------------")
@@ -293,6 +344,19 @@ MIDDLEWARE = [
 if SWAGGER_ENABLED:
     INSTALLED_APPS += ("drf_spectacular",)
 
+
+def _silky_intercept(request) -> bool:
+    # Large binary relay endpoints break django-silk finalise on dev servers.
+    path = request.path
+    if ("/files/upload/" in path or "/files/download/" in path) and path.endswith(
+        "/chunk/"
+    ):
+        return False
+    if "/api/v3/file-transfers/" in path:
+        return False
+    return True
+
+
 if DEBUG and not DEMO:
     INSTALLED_APPS.insert(0, "daphne")
     INSTALLED_APPS += (
@@ -301,6 +365,7 @@ if DEBUG and not DEMO:
     )
 
     MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
+    SILKY_INTERCEPT_FUNC = _silky_intercept
 
 if ADMIN_ENABLED:
     MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)

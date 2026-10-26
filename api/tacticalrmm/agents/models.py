@@ -2,6 +2,7 @@ import asyncio
 import logging
 import random
 import re
+import uuid
 from collections import Counter
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union, cast
@@ -44,6 +45,9 @@ from tacticalrmm.constants import (
     AgentTerminalShellChoices,
     CustomFieldType,
     DebugLogType,
+    FileTransferOperation,
+    FileTransferConflictPolicy,
+    FileTransferStatus,
     GoArch,
     PAAction,
     PAStatus,
@@ -566,7 +570,7 @@ class Agent(BaseAuditModel):
 
         for task in tasks:
             for result in results:
-                if result.task.id == task.pk:
+                if result.task_id == task.pk:  # avoid n+1
                     task.task_result = result
                     break
 
@@ -577,7 +581,7 @@ class Agent(BaseAuditModel):
 
         for check in checks:
             for result in results:
-                if result.assigned_check.id == check.pk:
+                if result.assigned_check_id == check.pk:  # avoid n+1
                     check.check_result = result
                     break
 
@@ -1325,3 +1329,56 @@ class AgentHistory(models.Model):
 
     def __str__(self) -> str:
         return f"{self.agent.hostname} - {self.type}"
+
+
+class FileTransferSession(models.Model):
+    session_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    agent = models.ForeignKey(
+        Agent,
+        related_name="file_transfer_sessions",
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="file_transfer_sessions",
+        on_delete=models.CASCADE,
+    )
+    operation = models.CharField(
+        max_length=16,
+        choices=FileTransferOperation.choices,
+    )
+    status = models.CharField(
+        max_length=32,
+        choices=FileTransferStatus.choices,
+        default=FileTransferStatus.WAITING_FOR_AGENT,
+    )
+    destination_path = models.CharField(max_length=4096)
+    filename = models.CharField(max_length=255)
+    conflict_policy = models.CharField(
+        max_length=16,
+        choices=FileTransferConflictPolicy.choices,
+        default=FileTransferConflictPolicy.REPLACE,
+    )
+    total_size = models.BigIntegerField()
+    chunk_size = models.PositiveIntegerField()
+    committed_offset = models.BigIntegerField(default=0)
+    last_ack_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True, default="")
+    is_archive = models.BooleanField(default=False)
+    warnings = models.TextField(blank=True, default="")
+    source_path = models.CharField(max_length=4096, blank=True, default="")
+    files_done = models.IntegerField(default=0)
+    files_total = models.IntegerField(default=0)
+    files_skipped = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["agent", "status"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.session_id} ({self.operation}/{self.status})"

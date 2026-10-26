@@ -30,9 +30,12 @@ urlpatterns = [
     path("<agent:agent_id>/processes/", views.AgentProcesses.as_view()),
     path("<agent:agent_id>/processes/<int:pid>/", views.AgentProcesses.as_view()),
     path("<agent:agent_id>/eventlog/<str:logtype>/<int:days>/", views.get_event_log),
-    # agent history
-    path("history/", views.AgentHistoryView.as_view()),
-    path("<agent:agent_id>/history/", views.AgentHistoryView.as_view()),
+    path("history/", views.AgentHistoryView.as_view()),  # TODO deprecated
+    path(
+        "<agent:agent_id>/history/", views.AgentHistoryView.as_view()
+    ),  # TODO deprecated
+    path("v2/history/", views.AgentHistoryViewV2.as_view()),
+    path("v2/<agent:agent_id>/history/", views.AgentHistoryViewV2.as_view()),
     # agent notes
     path("notes/", views.GetAddNotes.as_view()),
     path("notes/<int:pk>/", views.GetEditDeleteNote.as_view()),
@@ -83,4 +86,109 @@ urlpatterns = [
         name="modify_registry_value",
     ),
     path("<agent:agent_id>/terminal-defaults/", views.AgentTerminalDefaults.as_view()),
+    path(
+        "<agent:agent_id>/file-browser-defaults/",
+        views.AgentFileBrowserDefaults.as_view(),
+        name="file_browser_defaults",
+    ),
+    path(
+        "<agent:agent_id>/files/",
+        views.ListFiles.as_view(),
+        name="list_files",
+    ),
+    path(
+        "<agent:agent_id>/files/properties/",
+        views.GetFileProperties.as_view(),
+        name="get_file_properties",
+    ),
+    path(
+        "<agent:agent_id>/files/exists/",
+        views.CheckFileExists.as_view(),
+        name="check_file_exists",
+    ),
+    path(
+        "<agent:agent_id>/files/folder/",
+        views.CreateFileFolder.as_view(),
+        name="create_file_folder",
+    ),
+    path(
+        "<agent:agent_id>/files/rename/",
+        views.RenameFile.as_view(),
+        name="rename_file",
+    ),
+    path(
+        "<agent:agent_id>/files/transfers/",
+        views.ListFileTransfers.as_view(),
+        name="list_file_transfers",
+    ),
+    path(
+        "<agent:agent_id>/files/upload/init/",
+        views.InitFileUpload.as_view(),
+        name="init_file_upload",
+    ),
+    path(
+        "<agent:agent_id>/files/upload/<uuid:session_id>/chunk/",
+        views.UploadFileChunk.as_view(),
+        name="upload_file_chunk",
+    ),
+    path(
+        "<agent:agent_id>/files/upload/<uuid:session_id>/complete/",
+        views.CompleteFileUpload.as_view(),
+        name="complete_file_upload",
+    ),
+    path(
+        "<agent:agent_id>/files/upload/<uuid:session_id>/cancel/",
+        views.CancelFileUpload.as_view(),
+        name="cancel_file_upload",
+    ),
+    path(
+        "<agent:agent_id>/files/download/init/",
+        views.InitFileDownload.as_view(),
+        name="init_file_download",
+    ),
+    path(
+        "<agent:agent_id>/files/download/archive/init/",
+        views.InitFileDownloadArchive.as_view(),
+        name="init_file_download_archive",
+    ),
+    path(
+        "<agent:agent_id>/files/download/<uuid:session_id>/chunk/",
+        views.GetFileDownloadChunk.as_view(),
+        name="get_file_download_chunk",
+    ),
+    path(
+        "<agent:agent_id>/files/download/<uuid:session_id>/ack/",
+        views.AckFileDownloadChunk.as_view(),
+        name="ack_file_download_chunk",
+    ),
+    path(
+        "<agent:agent_id>/files/download/<uuid:session_id>/complete/",
+        views.CompleteFileDownload.as_view(),
+        name="complete_file_download",
+    ),
+    path(
+        "<agent:agent_id>/files/download/<uuid:session_id>/cancel/",
+        views.CancelFileDownload.as_view(),
+        name="cancel_file_download",
+    ),
+    path(
+        "<agent:agent_id>/files/download/<uuid:session_id>/status/",
+        views.GetFileDownloadStatus.as_view(),
+        name="get_file_download_status",
+    ),
+    path(
+        "<agent:agent_id>/files/extract/",
+        views.InitFileExtract.as_view(),
+        name="init_file_extract",
+    ),
+    path(
+        "<agent:agent_id>/files/extract/<uuid:session_id>/",
+        views.GetFileExtractStatus.as_view(),
+        name="get_file_extract_status",
+    ),
+    path(
+        "<agent:agent_id>/files/extract/<uuid:session_id>/cancel/",
+        views.CancelFileExtract.as_view(),
+        name="cancel_file_extract",
+    ),
 ]

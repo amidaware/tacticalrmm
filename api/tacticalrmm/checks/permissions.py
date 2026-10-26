@@ -1,9 +1,9 @@
 from rest_framework import permissions
 
 from tacticalrmm.permissions import (
+    _has_partial_perm_on_client,
     _has_perm,
     _has_perm_on_agent,
-    _has_perm_on_client,
     _has_perm_on_site,
 )
 
@@ -34,7 +34,7 @@ class BulkRunChecksPerms(permissions.BasePermission):
             return False
 
         if view.kwargs["target"] == "client":
-            return _has_perm_on_client(user=r.user, client_id=view.kwargs["pk"])
+            return _has_partial_perm_on_client(user=r.user, client_id=view.kwargs["pk"])
 
         elif view.kwargs["target"] == "site":
             return _has_perm_on_site(user=r.user, site_id=view.kwargs["pk"])

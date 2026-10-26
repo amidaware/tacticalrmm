@@ -588,6 +588,11 @@ elif [[ "$osname" == "ubuntu" ]]; then
   fi
 fi
 
+# lets weasyprint subset fonts with harfbuzz instead of fonttools (not packaged on older distros)
+if ! dpkg -l | grep -q "^ii  libharfbuzz-subset0" && apt-cache show libharfbuzz-subset0 >/dev/null 2>&1; then
+  sudo apt install -y libharfbuzz-subset0
+fi
+
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 

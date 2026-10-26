@@ -231,6 +231,11 @@ elif [[ "$osname" == "ubuntu" ]]; then
   fi
 fi
 
+# lets weasyprint subset fonts with harfbuzz instead of fonttools (not packaged on older distros)
+if ! dpkg -l | grep -q "^ii  libharfbuzz-subset0" && apt-cache show libharfbuzz-subset0 >/dev/null 2>&1; then
+  sudo apt install -y libharfbuzz-subset0
+fi
+
 codename=$(lsb_release -sc)
 
 # refresh an armored key in place. only replaces the existing file if the download is valid

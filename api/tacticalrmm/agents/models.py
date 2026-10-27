@@ -55,6 +55,7 @@ from tacticalrmm.constants import (
 )
 from tacticalrmm.helpers import has_script_actions, has_webhook, setup_nats_options
 from tacticalrmm.models import PermissionQuerySet
+from tacticalrmm.nats_utils import nats_request
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate
@@ -933,8 +934,11 @@ class Agent(BaseAuditModel):
 
         if wait:
             try:
-                msg = await nc.request(
-                    self.agent_id, msgpack.dumps(data), timeout=timeout
+                msg = await nats_request(
+                    nc=nc,
+                    subject=self.agent_id,
+                    payload=msgpack.dumps(data),
+                    timeout=timeout,
                 )
             except TimeoutError:
                 ret = "timeout"

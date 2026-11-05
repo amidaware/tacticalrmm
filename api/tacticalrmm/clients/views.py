@@ -4,7 +4,16 @@ import uuid
 from contextlib import suppress
 
 from django.conf import settings
-from django.db.models import Count, Exists, OuterRef, Prefetch, prefetch_related_objects
+from django.db.models import (
+    BooleanField,
+    Case,
+    Count,
+    Exists,
+    OuterRef,
+    Prefetch,
+    When,
+    prefetch_related_objects,
+)
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from knox.models import AuthToken
@@ -48,25 +57,39 @@ class GetAddClients(APIView):
                     .select_related("client")
                     .filter_by_role(request.user)
                     .prefetch_related("custom_fields__field")
+                    .annotate(agent_count=Count("agents"))
                     .annotate(
-                        maintenance_mode=Exists(
-                            Agent.objects.filter(
-                                site=OuterRef("pk"), maintenance_mode=True
-                            )
+                        maintenance_mode=Case(
+                            When(
+                                agent_count__gt=0,
+                                then=~Exists(
+                                    Agent.objects.filter(site=OuterRef("pk")).exclude(
+                                        maintenance_mode=True
+                                    )
+                                ),
+                            ),
+                            default=False,
+                            output_field=BooleanField(),
                         )
-                    )
-                    .annotate(agent_count=Count("agents")),
+                    ),
                     to_attr="filtered_sites",
                 ),
             )
+            .annotate(agent_count=Count("sites__agents"))
             .annotate(
-                maintenance_mode=Exists(
-                    Agent.objects.filter(
-                        site__client=OuterRef("pk"), maintenance_mode=True
-                    )
+                maintenance_mode=Case(
+                    When(
+                        agent_count__gt=0,
+                        then=~Exists(
+                            Agent.objects.filter(site__client=OuterRef("pk")).exclude(
+                                maintenance_mode=True
+                            )
+                        ),
+                    ),
+                    default=False,
+                    output_field=BooleanField(),
                 )
             )
-            .annotate(agent_count=Count("sites__agents"))
         )
         return Response(ClientSerializer(clients, many=True).data)
 
@@ -126,12 +149,21 @@ class GetUpdateDeleteClient(APIView):
                 .select_related("client")
                 .filter_by_role(request.user)
                 .prefetch_related("custom_fields__field")
+                .annotate(agent_count=Count("agents"))
                 .annotate(
-                    maintenance_mode=Exists(
-                        Agent.objects.filter(site=OuterRef("pk"), maintenance_mode=True)
+                    maintenance_mode=Case(
+                        When(
+                            agent_count__gt=0,
+                            then=~Exists(
+                                Agent.objects.filter(site=OuterRef("pk")).exclude(
+                                    maintenance_mode=True
+                                )
+                            ),
+                        ),
+                        default=False,
+                        output_field=BooleanField(),
                     )
-                )
-                .annotate(agent_count=Count("agents")),
+                ),
                 to_attr="filtered_sites",
             ),
         )

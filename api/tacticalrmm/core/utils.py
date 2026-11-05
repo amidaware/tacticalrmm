@@ -236,7 +236,7 @@ def get_meshagent_url(
     *, ident: "MeshAgentIdent", plat: str, mesh_site: str, mesh_device_id: str
 ) -> str:
     if settings.DOCKER_BUILD:
-        base = settings.MESH_WS_URL.replace("ws://", "http://")
+        base = settings.MESH_WS_URL.replace("ws://", "http://").replace("wss://", "https://")
     elif getattr(settings, "USE_EXTERNAL_MESH", False):
         base = mesh_site
     else:

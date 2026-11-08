@@ -15,6 +15,9 @@ from tacticalrmm.logger import logger
 if TYPE_CHECKING:
     from accounts.models import User
 
+# mesh users created by trmm: user//<username>___<pk>
+MESH_USER_PATTERN = re.compile(r"(user//)?.*___\d+")
+
 
 def build_mesh_display_name(
     *, first_name: str | None, last_name: str | None, company_name: str | None
@@ -39,6 +42,21 @@ def has_mesh_perms(*, user: "User") -> bool:
         return True
 
     return user.role and getattr(user.role, "can_use_mesh")
+
+
+def has_full_agent_access(*, user: "User") -> bool:
+    """True when the user can see every agent (superuser, or a role without client/site limits).
+
+    These users get one link to the mesh device group instead of one link per device.
+    """
+    if user.is_superuser or is_superuser(user):
+        return True
+
+    role = user.role
+    if not role:
+        return False
+
+    return not role.can_view_clients.exists() and not role.can_view_sites.exists()
 
 
 def make_mesh_password() -> str:
@@ -151,6 +169,27 @@ class MeshSync:
             "remove": True,
         }
         self.mesh_action(payload=payload, wait=False)
+
+    def get_meshes(self) -> list[dict[str, Any]]:
+        r = self.mesh_action(payload={"action": "meshes"}, wait=True)
+        return r["meshes"] if r else []
+
+    def add_users_to_mesh_group(self, *, mesh_id: str, user_ids: list[str]) -> None:
+        payload = {
+            "action": "addmeshuser",
+            "meshid": mesh_id,
+            "userids": user_ids,
+            "meshadmin": 4088024,
+        }
+        self.mesh_action(payload=payload, wait=True)
+
+    def remove_user_from_mesh_group(self, *, mesh_id: str, user_id: str) -> None:
+        payload = {
+            "action": "removemeshuser",
+            "meshid": mesh_id,
+            "userid": user_id,
+        }
+        self.mesh_action(payload=payload, wait=True)
 
     def update_mesh_displayname(self, *, user_info: dict[str, Any]) -> None:
         payload = {

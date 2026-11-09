@@ -7,12 +7,12 @@ certifi==2026.10.23
 channels==4.3.2
 channels_redis==4.3.0
 cryptography==50.0.2
-Django==4.2.30
+Django==5.2.19
 django-cors-headers==4.9.0
 django-allauth[socialaccount]==65.2.0
 django-filter==25.1
 django-rest-knox==4.2.0
-djangorestframework==3.15.2
+djangorestframework==3.18.3
 drf-spectacular==0.29.0
 meshctrl==0.1.15
 msgpack==1.2.3

@@ -87,7 +87,7 @@ services:
   # postgres database for api service
   postgres-dev:
     container_name: trmm-postgres-dev
-    image: postgres:13-alpine
+    image: postgres:17-alpine
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}

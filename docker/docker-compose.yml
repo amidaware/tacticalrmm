@@ -24,7 +24,7 @@ services:
   # postgres database for api service
   tactical-postgres:
     container_name: trmm-postgres
-    image: postgres:13-alpine
+    image: postgres:17-alpine
     restart: always
     environment:
       POSTGRES_DB: tacticalrmm

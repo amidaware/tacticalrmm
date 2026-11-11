@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-SCRIPT_VERSION="66"
+SCRIPT_VERSION="68"
 SCRIPT_URL='https://raw.githubusercontent.com/amidaware/tacticalrmm/master/restore.sh'
 
 sudo apt update
-sudo apt install -y curl wget jq dirmngr gnupg lsb-release ca-certificates
+sudo apt install -y curl wget jq lsb-release ca-certificates openssl
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -13,7 +13,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 SCRIPTS_DIR='/opt/trmm-community-scripts'
-PYTHON_VER='3.11.8'
+PYTHON_VER='3.12.13'
 SETTINGS_FILE='/rmm/api/tacticalrmm/tacticalrmm/settings.py'
 local_settings='/rmm/api/tacticalrmm/tacticalrmm/local_settings.py'
 
@@ -64,19 +64,19 @@ relno=$(lsb_release -sr | cut -d. -f1)
 fullrelno=$(lsb_release -sr)
 
 not_supported() {
-  echo -ne "${RED}ERROR: Only Debian 11, Debian 12 and Ubuntu 22.04 are supported.${NC}\n"
+  echo -ne "${RED}ERROR: Only Debian 13 and Ubuntu 26.04 are supported.${NC}\n"
 }
 
 if [[ "$osname" == "debian" ]]; then
-  if [[ "$relno" -ne 11 && "$relno" -ne 12 ]]; then
+  [[ "$relno" -eq 13 ]] || {
     not_supported
     exit 1
-  fi
+  }
 elif [[ "$osname" == "ubuntu" ]]; then
-  if [[ "$fullrelno" != "22.04" ]]; then
+  [[ "$fullrelno" == "26.04" ]] || {
     not_supported
     exit 1
-  fi
+  }
 else
   not_supported
   exit 1
@@ -110,7 +110,6 @@ if [ "$arch" = "x86_64" ]; then
 else
   pgarch='arm64'
 fi
-postgresql_repo="deb [arch=${pgarch} signed-by=/etc/apt/keyrings/postgresql-archive-keyring.gpg] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 if [ ! -f "${1}" ]; then
   echo -ne "\n${RED}usage: ./restore.sh rmm-backup-xxxx.tar${NC}\n"
@@ -125,8 +124,24 @@ print_green() {
   printf >&2 "\n"
 }
 
+print_error() {
+  printf >&2 "${RED}${1}${NC}\n"
+}
+
+fetch_key() {
+  if ! curl -fsSL "$1" | sudo tee "$2" >/dev/null; then
+    print_error "ERROR: failed to download signing key from $1"
+    exit 1
+  fi
+  if ! grep -q "BEGIN PGP PUBLIC KEY BLOCK" "$2"; then
+    print_error "ERROR: $1 did not return an armored PGP key"
+    exit 1
+  fi
+  sudo chmod 644 "$2"
+}
+
 print_green 'Unpacking backup'
-tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
+tmp_dir=$(mktemp -d -p /var/tmp tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)
 
 tar -xf ${1} -C $tmp_dir
 
@@ -147,9 +162,21 @@ sudo apt update
 print_green 'Installing NodeJS'
 
 sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+
 NODE_MAJOR=24
-echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+fetch_key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key /etc/apt/keyrings/nodesource.asc
+
+noderepo="$(
+  cat <<EOF
+Types: deb
+URIs: https://deb.nodesource.com/node_${NODE_MAJOR}.x
+Suites: nodistro
+Components: main
+Signed-By: /etc/apt/keyrings/nodesource.asc
+EOF
+)"
+echo "${noderepo}" | sudo tee /etc/apt/sources.list.d/nodesource.sources >/dev/null
+
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
@@ -157,14 +184,19 @@ sudo npm install -g npm
 
 print_green 'Restoring Nginx'
 
-wget -qO - https://nginx.org/keys/nginx_signing.key | sudo gpg --dearmor -o /etc/apt/keyrings/nginx-archive-keyring.gpg
+fetch_key https://nginx.org/keys/nginx_signing.key /etc/apt/keyrings/nginx.asc
 
 nginxrepo="$(
   cat <<EOF
-deb [signed-by=/etc/apt/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/$osname $codename nginx
+Types: deb
+URIs: https://nginx.org/packages/${osname}
+Suites: ${codename}
+Components: nginx
+Signed-By: /etc/apt/keyrings/nginx.asc
 EOF
 )"
-echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.list >/dev/null
+echo "${nginxrepo}" | sudo tee /etc/apt/sources.list.d/nginx.sources >/dev/null
+printf 'Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n' | sudo tee /etc/apt/preferences.d/99nginx >/dev/null
 
 sudo apt update
 sudo apt install -y nginx
@@ -209,8 +241,7 @@ done
 
 print_green 'Restoring certbot'
 
-sudo apt install -y software-properties-common
-sudo apt install -y certbot openssl
+sudo apt install -y certbot
 
 print_green 'Restoring certs'
 
@@ -256,6 +287,11 @@ sudo mkdir /etc/conf.d
 sudo tar -xzf $tmp_dir/confd/etc-confd.tar.gz -C /etc/conf.d
 sudo chown ${USER}:${USER} -R /etc/conf.d
 
+CHECK_CELERY_CONFIG=$(grep "soft-time-limit" /etc/conf.d/celery.conf)
+if ! [[ $CHECK_CELERY_CONFIG ]]; then
+  sed -i 's/CELERYD_OPTS=.*/CELERYD_OPTS="--time-limit=14400 --soft-time-limit=14100 --autoscale=10,4"/g' /etc/conf.d/celery.conf
+fi
+
 print_green 'Restoring systemd services'
 
 sudo cp $tmp_dir/systemd/* /etc/systemd/system/
@@ -288,11 +324,71 @@ EOF
   echo "${uviservice}" | sudo tee /etc/systemd/system/daphne.service >/dev/null
 fi
 
+if ! grep -q V3 /etc/systemd/system/celery.service; then
+  sudo rm -f /etc/systemd/system/celery.service
+
+  celeryservice="$(
+    cat <<EOF
+[Unit]
+Description=Celery Service V3
+After=network.target redis-server.service postgresql.service
+BindsTo=redis-server.service
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
+ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+Restart=always
+RestartSec=15s
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target redis-server.service
+EOF
+  )"
+  echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service >/dev/null
+fi
+
+if ! grep -q V5 /etc/systemd/system/celerybeat.service; then
+  sudo rm -f /etc/systemd/system/celerybeat.service
+
+  celerybeatservice="$(
+    cat <<EOF
+[Unit]
+Description=Celery Beat Service V5
+After=network.target redis-server.service postgresql.service
+BindsTo=redis-server.service
+
+[Service]
+Type=simple
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+ExecStartPre=rm -f /rmm/api/tacticalrmm/beat.pid
+ExecStartPre=rm -f /rmm/api/tacticalrmm/celerybeat-schedule
+Restart=always
+RestartSec=10s
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target redis-server.service
+EOF
+  )"
+  echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service >/dev/null
+fi
+
 sudo systemctl daemon-reload
 
 print_green "Installing Python ${PYTHON_VER}"
 
-sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+sudo apt install -y build-essential zlib1g-dev libncurses-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)
 cd ~
 wget https://www.python.org/ftp/python/${PYTHON_VER}/Python-${PYTHON_VER}.tgz
@@ -309,8 +405,20 @@ sudo apt install -y redis git
 
 print_green 'Installing postgresql'
 
-echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql-archive-keyring.gpg
+fetch_key https://www.postgresql.org/media/keys/ACCC4CF8.asc /etc/apt/keyrings/postgresql.asc
+
+pgrepo="$(
+  cat <<EOF
+Types: deb
+URIs: https://apt.postgresql.org/pub/repos/apt
+Suites: ${codename}-pgdg
+Components: main
+Architectures: ${pgarch}
+Signed-By: /etc/apt/keyrings/postgresql.asc
+EOF
+)"
+echo "${pgrepo}" | sudo tee /etc/apt/sources.list.d/pgdg.sources >/dev/null
+
 sudo apt update
 sudo apt install -y postgresql-18
 sleep 2
@@ -420,7 +528,7 @@ mesh_pkg="$(
   "dependencies": {
     "archiver": "7.0.1",
     "meshcentral": "${MESH_VER}",
-    "otplib": "12.0.1",
+    "otplib": "13.4.1",
     "pg": "8.16.3"
   }
 }
@@ -477,11 +585,16 @@ elif [[ "$osname" == "ubuntu" ]]; then
   fi
 fi
 
+# lets weasyprint subset fonts with harfbuzz instead of fonttools (not packaged on older distros)
+if ! dpkg -l | grep -q "^ii  libharfbuzz-subset0" && apt-cache show libharfbuzz-subset0 >/dev/null 2>&1; then
+  sudo apt install -y libharfbuzz-subset0
+fi
+
 SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 cd /rmm/api
-python3.11 -m venv env
+python3.12 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir pip==25.1
@@ -509,7 +622,6 @@ print_green 'Restoring hosts file'
 if grep -q manage_etc_hosts /etc/hosts; then
   sudo sed -i '/manage_etc_hosts: true/d' /etc/cloud/cloud.cfg >/dev/null
   echo -e "\nmanage_etc_hosts: false" | sudo tee --append /etc/cloud/cloud.cfg >/dev/null
-  sudo systemctl restart cloud-init >/dev/null
 fi
 
 print_green 'Restoring nginx configs'
@@ -643,9 +755,9 @@ rm -f /tmp/${webtar}
 sudo chown ${USER}:${USER} -R /rmm
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /etc/conf.d/
-sudo chown -R $USER:$GROUP /home/${USER}/.npm
-sudo chown -R $USER:$GROUP /home/${USER}/.config
-sudo chown -R $USER:$GROUP /home/${USER}/.cache
+sudo chown -R $USER:$USER /home/${USER}/.npm
+sudo chown -R $USER:$USER /home/${USER}/.config
+sudo chown -R $USER:$USER /home/${USER}/.cache
 
 print_green 'Enabling and starting services'
 
@@ -694,12 +806,12 @@ apply_jq_filter='
 )
 '
 
-if ! which jq >/dev/null; then
+if ! command -v jq >/dev/null; then
   echo "installing jq"
   sudo apt-get install -y jq >/dev/null
 fi
 
-if which jq >/dev/null; then
+if command -v jq >/dev/null; then
   if ! jq -e "$check_jq_filter" "$mesh_cfg" >/dev/null; then
     echo "Disabling mesh compression"
     # backup to homedir first
@@ -717,6 +829,8 @@ fi
 print_green 'Starting meshcentral'
 sudo systemctl enable meshcentral
 sudo systemctl start meshcentral
+
+rm -rf $tmp_dir
 
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"

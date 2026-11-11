@@ -3,10 +3,13 @@ from datetime import datetime as dt
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.permissions import RunServerScriptPerms
+from tacticalrmm.constants import AlertTemplateActionType
 from tacticalrmm.helpers import notify_error
 
 from .models import Alert, AlertTemplate
@@ -96,6 +99,7 @@ class GetAddAlerts(APIView):
 
             alerts = (
                 Alert.objects.filter_by_role(request.user)  # type: ignore
+                .filter(hidden=False)
                 .filter(clientFilter)
                 .filter(severityFilter)
                 .filter(resolvedFilter)
@@ -105,7 +109,9 @@ class GetAddAlerts(APIView):
             return Response(AlertSerializer(alerts, many=True).data)
 
         else:
-            alerts = Alert.objects.filter_by_role(request.user)  # type: ignore
+            alerts = Alert.objects.filter_by_role(request.user).filter(  # type: ignore
+                hidden=False
+            )
             return Response(AlertSerializer(alerts, many=True).data)
 
     def post(self, request):
@@ -227,6 +233,16 @@ class GetUpdateDeleteAlertTemplate(APIView):
 
     def put(self, request, pk):
         alert_template = get_object_or_404(AlertTemplate, pk=pk)
+
+        action_type = request.data.get("action_type", alert_template.action_type)
+        resolved_action_type = request.data.get(
+            "resolved_action_type", alert_template.resolved_action_type
+        )
+        if action_type == (
+            AlertTemplateActionType.SERVER
+            or resolved_action_type == AlertTemplateActionType.SERVER
+        ) and not RunServerScriptPerms().has_permission(request, self):
+            raise PermissionDenied()
 
         serializer = AlertTemplateSerializer(
             instance=alert_template, data=request.data, partial=True

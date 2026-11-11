@@ -9,6 +9,7 @@ import inspect
 import json
 import re
 from enum import Enum
+from types import SimpleNamespace
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -60,6 +61,11 @@ RE_ASSET_URL = re.compile(
 RE_DEPENDENCY_VALUE = re.compile(r"(\{\{\s*(.*)\s*\}\})")
 
 
+def public_mod(module):
+    exported = getattr(module, "__all__", ())
+    return SimpleNamespace(**{i: getattr(module, i) for i in exported})
+
+
 # this will lookup the Jinja parent template in the DB
 # Example: {% extends "MASTER_TEMPLATE_NAME or REPORT_TEMPLATE_NAME" %}
 def db_template_loader(template_name: str) -> Optional[str]:
@@ -89,9 +95,9 @@ env = SandboxedEnvironment(
 
 
 custom_globals = {
-    "datetime": datetime,
+    "datetime": public_mod(datetime),
     "ZoneInfo": ZoneInfo,
-    "re": re,
+    "re": public_mod(re),
 }
 
 env.globals.update(custom_globals)

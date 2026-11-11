@@ -7,6 +7,7 @@ import requests
 import validators
 from cryptography import x509
 from django.conf import settings
+from django.core.cache import cache
 from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -32,12 +33,17 @@ from core.utils import (
     token_is_valid,
 )
 from logs.models import AuditLog
-from tacticalrmm.constants import AuditActionType, PAStatus
+from tacticalrmm.constants import (
+    CELERY_HEARTBEAT_CACHE_KEY,
+    CELERY_HEARTBEAT_MAX_AGE,
+    AuditActionType,
+    PAStatus,
+)
 from tacticalrmm.helpers import get_certs, notify_error
 from tacticalrmm.logger import logger
 from tacticalrmm.permissions import (
     _has_perm_on_agent,
-    _has_perm_on_client,
+    _has_partial_perm_on_client,
     _has_perm_on_site,
 )
 
@@ -81,9 +87,9 @@ class GetEditCoreSettings(APIView):
         data = request.data.copy()
 
         if getattr(settings, "HOSTED", False):
-            data.pop("mesh_site")
-            data.pop("mesh_token")
-            data.pop("mesh_username")
+            for i in ("mesh_site", "mesh_token", "mesh_username"):
+                data.pop(i, None)
+
             data["sync_mesh_with_trmm"] = True
             data["enable_server_scripts"] = False
             data["enable_server_webterminal"] = False
@@ -422,7 +428,7 @@ class RunURLAction(APIView):
 
             instance = get_object_or_404(Site, pk=request.data["site"])
         elif "client" in request.data.keys():
-            if not _has_perm_on_client(request.user, request.data["client"]):
+            if not _has_partial_perm_on_client(request.user, request.data["client"]):
                 raise PermissionDenied()
 
             instance = get_object_or_404(Client, pk=request.data["client"])
@@ -484,7 +490,7 @@ class RunTestURLAction(APIView):
                 raise PermissionDenied()
 
         elif instance_type == "client":
-            if not _has_perm_on_client(request.user, instance_id):
+            if not _has_partial_perm_on_client(request.user, instance_id):
                 raise PermissionDenied()
 
         result, replaced_url, replaced_body = run_test_url_rest_action(
@@ -659,6 +665,16 @@ def status_v2(request):
         celery_queue_health = "unhealthy"
         logger.error(f"Error getting celery queue length: {e}")
 
+    # -1 means no heartbeat has ever been recorded or redis is unreachable
+    celery_heartbeat_age = -1
+    celery_heartbeat_health = "unhealthy"
+    with suppress(Exception):
+        last_heartbeat = cache.get(CELERY_HEARTBEAT_CACHE_KEY)
+        if last_heartbeat is not None:
+            celery_heartbeat_age = int(djangotime.now().timestamp()) - last_heartbeat
+            if celery_heartbeat_age <= CELERY_HEARTBEAT_MAX_AGE:
+                celery_heartbeat_health = "healthy"
+
     nats_std_port, nats_ws_port = get_nats_ports()
     mesh_port = getattr(settings, "MESH_PORT", 4430)
 
@@ -675,6 +691,8 @@ def status_v2(request):
         "redis_ping": redis_ping,
         "celery_queue_len": queue_len,
         "celery_queue_health": celery_queue_health,
+        "celery_heartbeat_age": celery_heartbeat_age,
+        "celery_heartbeat_health": celery_heartbeat_health,
         "nats_std_ping": localhost_port_is_open(nats_std_port),
         "nats_ws_ping": localhost_port_is_open(nats_ws_port),
         "mesh_ping": localhost_port_is_open(mesh_port),

@@ -43,6 +43,7 @@ from tacticalrmm.constants import (
     AGENT_STATUS_ONLINE,
     AGENT_STATUS_OVERDUE,
     CACHE_DB_FIELDS_TASK_LOCK,
+    CELERY_HEARTBEAT_CACHE_KEY,
     RESOLVE_ALERTS_LOCK,
     SYNC_MESH_PERMS_TASK_LOCK,
     SYNC_SCHED_TASK_LOCK,
@@ -227,7 +228,8 @@ def sync_scheduled_tasks(self) -> str:
                 # create a list of tasks to be synced so we can run them asynchronously
                 for task in agent.get_tasks_with_policies():
                     # TODO can we just use agent??
-                    agent_obj: "Agent" = agent if task.policy else task.agent
+                    # changed from task.policy to task.policy_id when we added the strip_relation_caches_for_cache func to avoid n+1 query
+                    agent_obj: "Agent" = agent if task.policy_id else task.agent
 
                     # onboarding tasks require agent >= 2.6.0
                     if task.task_type == TaskType.ONBOARDING and pyver.parse(
@@ -601,6 +603,11 @@ def sync_mesh_perms_task(self):
 
         except Exception:
             logger.debug(traceback.format_exc())
+
+
+@app.task(ignore_result=True)
+def celery_heartbeat_task() -> None:
+    cache.set(CELERY_HEARTBEAT_CACHE_KEY, int(djangotime.now().timestamp()), None)
 
 
 @app.task

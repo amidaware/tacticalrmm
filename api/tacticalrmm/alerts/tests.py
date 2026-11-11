@@ -1,6 +1,6 @@
 from datetime import timedelta
 from itertools import cycle
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from alerts.tasks import cache_agents_alert_template
 from autotasks.models import TaskResult
@@ -521,6 +521,14 @@ class TestAlertTasks(TacticalTestCase):
         self.assertEqual(server.set_alert_template().pk, alert_templates[2].pk)
 
     @patch("agents.tasks.sleep")
+    @patch(
+        "core.models.CoreSettings.email_is_configured",
+        new=PropertyMock(return_value=True),
+    )
+    @patch(
+        "core.models.CoreSettings.sms_is_configured",
+        new=PropertyMock(return_value=True),
+    )
     @patch("core.models.CoreSettings.send_mail")
     @patch("core.models.CoreSettings.send_sms")
     @patch("agents.tasks.agent_outage_sms_task.delay")
@@ -730,6 +738,14 @@ class TestAlertTasks(TacticalTestCase):
         )
 
     @patch("checks.tasks.sleep")
+    @patch(
+        "core.models.CoreSettings.email_is_configured",
+        new=PropertyMock(return_value=True),
+    )
+    @patch(
+        "core.models.CoreSettings.sms_is_configured",
+        new=PropertyMock(return_value=True),
+    )
     @patch("core.models.CoreSettings.send_mail")
     @patch("core.models.CoreSettings.send_sms")
     @patch("checks.tasks.handle_check_sms_alert_task.delay")
@@ -1056,6 +1072,14 @@ class TestAlertTasks(TacticalTestCase):
         send_sms.assert_called()
 
     @patch("autotasks.tasks.sleep")
+    @patch(
+        "core.models.CoreSettings.email_is_configured",
+        new=PropertyMock(return_value=True),
+    )
+    @patch(
+        "core.models.CoreSettings.sms_is_configured",
+        new=PropertyMock(return_value=True),
+    )
     @patch("core.models.CoreSettings.send_mail")
     @patch("core.models.CoreSettings.send_sms")
     @patch("autotasks.tasks.handle_task_sms_alert.delay")

@@ -2,6 +2,7 @@ import asyncio
 import logging
 import random
 import re
+import uuid
 from collections import Counter
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union, cast
@@ -25,6 +26,7 @@ from agents.utils import (
     get_agent_url,
     is_posix_abs_path,
     is_windows_path,
+    strip_relation_caches_for_cache,
 )
 from core.models import (
     EmailTemplateSection,
@@ -48,6 +50,9 @@ from tacticalrmm.constants import (
     AgentTerminalShellChoices,
     CustomFieldType,
     DebugLogType,
+    FileTransferOperation,
+    FileTransferConflictPolicy,
+    FileTransferStatus,
     GoArch,
     PAAction,
     PAStatus,
@@ -55,6 +60,7 @@ from tacticalrmm.constants import (
 )
 from tacticalrmm.helpers import has_script_actions, has_webhook, setup_nats_options
 from tacticalrmm.models import PermissionQuerySet
+from tacticalrmm.nats_utils import nats_request
 
 if TYPE_CHECKING:
     from alerts.models import Alert, AlertTemplate
@@ -570,7 +576,7 @@ class Agent(BaseAuditModel):
 
         for task in tasks:
             for result in results:
-                if result.task.id == task.pk:
+                if result.task_id == task.pk:  # avoid n+1
                     task.task_result = result
                     break
 
@@ -581,7 +587,7 @@ class Agent(BaseAuditModel):
 
         for check in checks:
             for result in results:
-                if result.assigned_check.id == check.pk:
+                if result.assigned_check_id == check.pk:  # avoid n+1
                     check.check_result = result
                     break
 
@@ -589,6 +595,7 @@ class Agent(BaseAuditModel):
 
     def get_agent_policies(self) -> "Dict[str, Optional[Policy]]":
         from checks.models import Check
+        from clients.models import Client, Site
 
         site_policy = getattr(self.site, f"{self.monitoring_type}_policy", None)
         client_policy = getattr(self.client, f"{self.monitoring_type}_policy", None)
@@ -596,16 +603,19 @@ class Agent(BaseAuditModel):
             get_core_settings(), f"{self.monitoring_type}_policy", None
         )
 
-        # prefetch excluded objects on polices only if policy is not Non
+        # prefetch excluded objects on polices only if policy is not None
+        # exclusions are only ever checked by pk (is_agent_excluded), so don't
+        # load full rows; a policy with many excluded agents would otherwise
+        # drag every excluded agent's wmi_detail/services into memory
         models.prefetch_related_objects(
             [
                 policy
                 for policy in (self.policy, site_policy, client_policy, default_policy)
                 if policy
             ],
-            "excluded_agents",
-            "excluded_sites",
-            "excluded_clients",
+            models.Prefetch("excluded_agents", queryset=Agent.objects.only("pk")),
+            models.Prefetch("excluded_sites", queryset=Site.objects.only("pk")),
+            models.Prefetch("excluded_clients", queryset=Client.objects.only("pk")),
             models.Prefetch(
                 "policychecks", queryset=Check.objects.select_related("script")
             ),
@@ -892,7 +902,7 @@ class Agent(BaseAuditModel):
             self.agentchecks.update(overridden_by_policy=False)  # type: ignore
 
             # get agent checks based on policies
-            checks = Policy.get_policy_checks(self)
+            checks = strip_relation_caches_for_cache(Policy.get_policy_checks(self))
             cache.set(cache_key, checks, 600)
             return checks
 
@@ -914,7 +924,7 @@ class Agent(BaseAuditModel):
             return cached_tasks
         else:
             # get agent tasks based on policies
-            tasks = Policy.get_policy_tasks(self)
+            tasks = strip_relation_caches_for_cache(Policy.get_policy_tasks(self))
             cache.set(cache_key, tasks, 600)
             return tasks
 
@@ -929,8 +939,11 @@ class Agent(BaseAuditModel):
 
         if wait:
             try:
-                msg = await nc.request(
-                    self.agent_id, msgpack.dumps(data), timeout=timeout
+                msg = await nats_request(
+                    nc=nc,
+                    subject=self.agent_id,
+                    payload=msgpack.dumps(data),
+                    timeout=timeout,
                 )
             except TimeoutError:
                 ret = "timeout"
@@ -1361,3 +1374,56 @@ class AgentHistory(models.Model):
 
     def __str__(self) -> str:
         return f"{self.agent.hostname} - {self.type}"
+
+
+class FileTransferSession(models.Model):
+    session_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    agent = models.ForeignKey(
+        Agent,
+        related_name="file_transfer_sessions",
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="file_transfer_sessions",
+        on_delete=models.CASCADE,
+    )
+    operation = models.CharField(
+        max_length=16,
+        choices=FileTransferOperation.choices,
+    )
+    status = models.CharField(
+        max_length=32,
+        choices=FileTransferStatus.choices,
+        default=FileTransferStatus.WAITING_FOR_AGENT,
+    )
+    destination_path = models.CharField(max_length=4096)
+    filename = models.CharField(max_length=255)
+    conflict_policy = models.CharField(
+        max_length=16,
+        choices=FileTransferConflictPolicy.choices,
+        default=FileTransferConflictPolicy.REPLACE,
+    )
+    total_size = models.BigIntegerField()
+    chunk_size = models.PositiveIntegerField()
+    committed_offset = models.BigIntegerField(default=0)
+    last_ack_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True, default="")
+    is_archive = models.BooleanField(default=False)
+    warnings = models.TextField(blank=True, default="")
+    source_path = models.CharField(max_length=4096, blank=True, default="")
+    files_done = models.IntegerField(default=0)
+    files_total = models.IntegerField(default=0)
+    files_skipped = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["agent", "status"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.session_id} ({self.operation}/{self.status})"

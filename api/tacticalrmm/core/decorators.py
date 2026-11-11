@@ -1,4 +1,5 @@
 import json
+import secrets
 from functools import wraps
 
 from django.conf import settings
@@ -23,7 +24,7 @@ def monitoring_view(function):
         if not token:
             return HttpResponse("Missing token\n", status=401)
 
-        if data.get("auth") != token:
+        if not secrets.compare_digest(data.get("auth"), token):
             return HttpResponse("Not authenticated\n", status=401)
 
         return function(request, *args, **kwargs)
@@ -47,7 +48,7 @@ def monitoring_view_v2(function):
         if not mon_token:
             return HttpResponse("Missing mon token\n", status=401)
 
-        if http_token != mon_token:
+        if not secrets.compare_digest(http_token, mon_token):
             return HttpResponse("Not authenticated\n", status=401)
 
         return function(request, *args, **kwargs)

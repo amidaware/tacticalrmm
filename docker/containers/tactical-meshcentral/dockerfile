@@ -17,7 +17,7 @@ RUN MESH_VER=$(grep -o 'MESH_VER.*' /tmp/settings.py | cut -d'"' -f 2) && \
     "archiver": "7.0.1",
     "meshcentral": "$MESH_VER",
     "mongodb": "4.13.0",
-    "otplib": "12.0.1",
+    "otplib": "13.4.1",
     "pg": "8.16.3",
     "saslprep": "1.0.3"
   }

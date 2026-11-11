@@ -52,6 +52,7 @@ from tacticalrmm.constants import (
     TaskRunStatus,
 )
 from tacticalrmm.helpers import make_random_password, notify_error
+from tacticalrmm.utils import is_valid_agent_id
 from tacticalrmm.utils import reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
@@ -179,7 +180,11 @@ class WinUpdates(APIView):
             user=request.user,
         )
 
+        returned_guids = list()
+
         for update in updates:
+            returned_guids.append(update["guid"])
+
             if agent.winupdates.filter(guid=update["guid"]).exists():  # type: ignore
                 u = agent.winupdates.filter(guid=update["guid"]).last()  # type: ignore
                 u.downloaded = update["downloaded"]
@@ -207,6 +212,11 @@ class WinUpdates(APIView):
                     support_url=update["support_url"],
                     revision_number=update["revision_number"],
                 ).save()
+
+        # remove stale updates not returned by agent
+        agent.winupdates.filter(installed=False).exclude(  # type: ignore
+            guid__in=returned_guids
+        ).delete()
 
         agent.delete_superseded_updates()
         return Response("ok")
@@ -515,6 +525,9 @@ class NewAgent(APIView):
         from logs.models import AuditLog
 
         """ Creates the agent """
+
+        if not is_valid_agent_id(request.data.get("agent_id", "")):
+            return notify_error("Invalid agent_id")
 
         try:
             with transaction.atomic():

@@ -465,7 +465,7 @@ class Alert(models.Model):
             always_email = False
 
         # send email if enabled
-        if email_alert or always_email:
+        if core.email_is_configured and (email_alert or always_email):
             # check if alert template is set and specific severities are configured
             if not alert_template or (
                 alert_template
@@ -489,7 +489,7 @@ class Alert(models.Model):
             always_text = False
 
         # send text if enabled
-        if text_alert or always_text:
+        if core.sms_is_configured and (text_alert or always_text):
             # check if alert template is set and specific severities are configured
             if not alert_template or (
                 alert_template and text_severities and alert.severity in text_severities
@@ -698,7 +698,11 @@ class Alert(models.Model):
         alert.resolve()
 
         # check if a resolved email notification should be send
-        if email_on_resolved and not alert.resolved_email_sent:
+        if (
+            core.email_is_configured
+            and email_on_resolved
+            and not alert.resolved_email_sent
+        ):
             if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
                 pass
 
@@ -713,7 +717,7 @@ class Alert(models.Model):
                 resolved_email_task.delay(pk=alert.pk)
 
         # check if resolved text should be sent
-        if text_on_resolved and not alert.resolved_sms_sent:
+        if core.sms_is_configured and text_on_resolved and not alert.resolved_sms_sent:
             if alert.severity == AlertSeverity.INFO and not core.notify_on_info_alerts:
                 pass
 

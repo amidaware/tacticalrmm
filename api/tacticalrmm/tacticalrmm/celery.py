@@ -11,13 +11,25 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
 
 redis_host = f"redis://{settings.REDIS_HOST}"
 app = Celery("tacticalrmm", backend=redis_host, broker=redis_host)
-app.accept_content = ["application/json"]
-app.result_serializer = "json"
-app.task_serializer = "json"
+app.conf.accept_content = ["application/json"]
+app.conf.result_serializer = "json"
+app.conf.task_serializer = "json"
 app.conf.task_track_started = True
 app.conf.worker_proc_alive_timeout = 30
-app.conf.worker_max_tasks_per_child = 2
+app.conf.worker_max_memory_per_child = 250_000  # KB
 app.conf.broker_connection_retry_on_startup = True
+app.conf.broker_transport_options = {
+    "socket_timeout": 30,
+    "socket_connect_timeout": 10,
+    "socket_keepalive": True,
+    "retry_on_timeout": True,
+}
+app.conf.redis_socket_timeout = 30
+app.conf.redis_socket_connect_timeout = 10
+app.conf.redis_socket_keepalive = True
+app.conf.redis_retry_on_timeout = True
+app.conf.redis_backend_health_check_interval = 30
+app.conf.result_expires = 3600
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
@@ -49,6 +61,10 @@ app.conf.beat_schedule = {
         "task": "core.tasks.core_maintenance_tasks",
         "schedule": crontab(minute=15, hour="*"),
     },
+    "cleanup-expired-file-transfers": {
+        "task": "agents.tasks.cleanup_expired_file_transfers_task",
+        "schedule": crontab(minute="*/10"),
+    },
     "cache-db-fields-task": {
         "task": "core.tasks.cache_db_fields_task",
         "schedule": crontab(minute="*/3", hour="*"),
@@ -76,6 +92,10 @@ app.conf.beat_schedule = {
     "trmm-reports-scheduler": {
         "task": "ee.reporting.tasks.scheduled_reports_runner",
         "schedule": crontab(),
+    },
+    "celery-heartbeat": {
+        "task": "core.tasks.celery_heartbeat_task",
+        "schedule": timedelta(seconds=60.0),
     },
 }
 

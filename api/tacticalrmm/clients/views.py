@@ -25,7 +25,7 @@ from rest_framework.views import APIView
 from agents.models import Agent
 from core.utils import get_core_settings
 from tacticalrmm.helpers import notify_error
-from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
+from tacticalrmm.permissions import _has_partial_perm_on_client, _has_perm_on_site
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .permissions import ClientsPerms, DeploymentPerms, SitesPerms
@@ -230,7 +230,9 @@ class GetAddSites(APIView):
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
-        if not _has_perm_on_client(request.user, request.data["site"]["client"]):
+        if not _has_partial_perm_on_client(
+            request.user, request.data["site"]["client"]
+        ):
             raise PermissionDenied()
 
         serializer = SiteSerializer(data=request.data["site"])

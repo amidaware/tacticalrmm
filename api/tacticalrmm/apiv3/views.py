@@ -52,6 +52,7 @@ from tacticalrmm.constants import (
     TaskRunStatus,
 )
 from tacticalrmm.helpers import make_random_password, notify_error
+from tacticalrmm.utils import is_valid_agent_id
 from tacticalrmm.utils import reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
@@ -524,6 +525,9 @@ class NewAgent(APIView):
         from logs.models import AuditLog
 
         """ Creates the agent """
+
+        if not is_valid_agent_id(request.data.get("agent_id", "")):
+            return notify_error("Invalid agent_id")
 
         try:
             with transaction.atomic():

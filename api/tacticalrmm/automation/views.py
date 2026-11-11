@@ -8,7 +8,7 @@ from agents.models import Agent
 from autotasks.models import TaskResult
 from checks.models import CheckResult
 from clients.models import Client, Site
-from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
+from tacticalrmm.permissions import _has_partial_perm_on_client, _has_perm_on_site
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 from django.db.models import Prefetch
@@ -186,7 +186,7 @@ class ResetPatchPolicy(APIView):
     # bulk reset agent patch policy
     def post(self, request):
         if "client" in request.data:
-            if not _has_perm_on_client(request.user, request.data["client"]):
+            if not _has_partial_perm_on_client(request.user, request.data["client"]):
                 raise PermissionDenied()
 
             agents = (

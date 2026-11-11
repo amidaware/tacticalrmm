@@ -39,6 +39,29 @@ def notify_error(msg: str) -> Response:
     return Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
 
+def notify_serializer_error(serializer) -> Response:
+    """Return the first drf serializer error as a string 400."""
+    errors = getattr(serializer, "errors", None) or {}
+    for field, messages in errors.items():
+        if isinstance(messages, dict):
+            nested = next(iter(messages.values()), None)
+            message = nested[0] if isinstance(nested, list) and nested else nested
+        elif isinstance(messages, (list, tuple)) and messages:
+            message = messages[0]
+        else:
+            message = messages
+        text = str(message)
+        if field and field != "non_field_errors" and field not in text:
+            text = f"{field}: {text}"
+        return notify_error(text)
+    return notify_error("Invalid request")
+
+
+def notify_retryable(msg: str) -> Response:
+    """408: the same request can be retried. Do not fail the transfer session."""
+    return Response(msg, status=status.HTTP_408_REQUEST_TIMEOUT)
+
+
 def get_nats_ports() -> tuple[int, int]:
     """
     Returns: tuple[nats_standard_port: int, nats_websocket_port: int]

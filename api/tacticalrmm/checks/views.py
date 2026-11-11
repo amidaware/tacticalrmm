@@ -226,6 +226,7 @@ def bulk_run_checks(request, target, pk):
 
     agent_ids = list(
         Agent.objects.only("agent_id", "site")
+        .filter_by_role(request.user)  # type: ignore
         .filter(q)
         .values_list("agent_id", flat=True)
     )

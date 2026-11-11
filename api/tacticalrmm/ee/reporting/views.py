@@ -359,6 +359,12 @@ class ImportReportTemplate(APIView):
 class ReportScheduleSerializer(ModelSerializer):
     report_template_name = ReadOnlyField(source="report_template.name")
     schedule_name = ReadOnlyField(source="schedule.name")
+    conditions = ListField(
+        child=CharField(allow_blank=True),
+        required=False,
+        allow_empty=True,
+        default=list,
+    )
 
     class Meta:
         model = ReportSchedule
@@ -373,11 +379,44 @@ class ReportScheduleSerializer(ModelSerializer):
             "schedule_name",
             "email_recipients",
             "dependencies",
+            "conditions",
             "send_report_email",
             "last_run",
+            "last_run_status",
+            "last_run_message",
             "email_settings",
             "timezone",
         ]
+        read_only_fields = ["last_run", "last_run_status", "last_run_message"]
+
+    def validate_conditions(self, value):
+        from .utils import condition_env
+
+        if value is None:
+            return []
+
+        if not isinstance(value, list):
+            raise ValidationError("Conditions must be a list")
+
+        cleaned = []
+        for index, expression in enumerate(value):
+            if not isinstance(expression, str):
+                raise ValidationError(
+                    f"Condition {index + 1} must be text"
+                )
+            expr = expression.strip()
+            if expr.startswith("{{") and expr.endswith("}}"):
+                expr = expr[2:-2].strip()
+            if not expr:
+                continue
+            try:
+                condition_env.compile_expression(expr)
+            except Exception as error:
+                raise ValidationError(
+                    f"Condition {index + 1} is not valid: {error}"
+                ) from error
+            cleaned.append(expr)
+        return cleaned
 
 
 class GetAddReportSchedule(APIView):
@@ -430,13 +469,22 @@ class RunReportSchedule(APIView):
     def post(self, request: Request, pk: int) -> Response:
         schedule = get_object_or_404(ReportSchedule, pk=pk)
 
-        _, error = run_scheduled_report(schedule=schedule, user=request.user)
+        result = run_scheduled_report(schedule=schedule, user=request.user)
 
-        if error:
-            return notify_error(error)
+        if result.status == "error":
+            return notify_error(result.error or "Unknown error")
 
-        return Response()
+        if result.status == "skipped":
+            return Response(
+                {
+                    "status": "skipped",
+                    "reason": "condition",
+                    "index": result.skip_index,
+                    "message": result.message,
+                }
+            )
 
+        return Response({"status": "success"})
 
 class ReportHistorySerializer(ModelSerializer):
     report_template_name = ReadOnlyField(source="report_template.name")

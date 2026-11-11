@@ -10,9 +10,11 @@ import json
 import re
 from enum import Enum
 from types import SimpleNamespace
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
+    Collection,
     Dict,
     List,
     Literal,
@@ -28,9 +30,9 @@ import yaml
 from django.apps import apps
 from django.conf import settings
 from django.utils import timezone as djangotime
-from jinja2 import FunctionLoader
+from jinja2 import FunctionLoader, StrictUndefined, Undefined
 from jinja2.sandbox import SandboxedEnvironment
-from jinja2.exceptions import TemplateError
+from jinja2.exceptions import TemplateError, UndefinedError
 from rest_framework.serializers import ValidationError
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
@@ -59,6 +61,18 @@ RE_ASSET_URL = re.compile(
 )
 
 RE_DEPENDENCY_VALUE = re.compile(r"(\{\{\s*(.*)\s*\}\})")
+
+RE_DATA_SOURCE_ATTR = re.compile(r"data_sources\.([A-Za-z_][A-Za-z0-9_]*)")
+RE_DATA_SOURCE_ITEM = re.compile(r"data_sources\[\s*(['\"])(.*?)\1\s*\]")
+
+
+@dataclass
+class ScheduledReportRunResult:
+    status: Literal["success", "skipped", "error"]
+    history: Optional["ReportHistory"] = None
+    error: Optional[str] = None
+    skip_index: Optional[int] = None
+    message: Optional[str] = None
 
 
 def public_mod(module):
@@ -106,6 +120,10 @@ env.globals.update(custom_globals)
 for name, func in inspect.getmembers(custom_filters, inspect.isfunction):
     env.filters[name] = func
 
+# Default Undefined is falsy, so a typo like `undefined_name` would skip
+# instead of erroring. Conditions must fail closed on missing names.
+condition_env = env.overlay(undefined=StrictUndefined)
+
 
 def generate_pdf(*, html: str, css: str = "") -> bytes:
     font_config = FontConfiguration()
@@ -126,6 +144,7 @@ def generate_html(
     variables: str = "",
     dependencies: Optional[Dict[str, int]] = None,
     user: Optional["User"] = None,
+    prepared_variables: Optional[Dict[str, Any]] = None,
 ) -> Tuple[str, Dict[str, Any]]:
     if dependencies is None:
         dependencies = {}
@@ -150,9 +169,12 @@ def generate_html(
 
     tm = env.from_string(template_string)
 
-    variables_dict = prep_variables_for_template(
-        variables=variables, dependencies=dependencies, user=user
-    )
+    if prepared_variables is not None:
+        variables_dict = prepared_variables
+    else:
+        variables_dict = prep_variables_for_template(
+            variables=variables, dependencies=dependencies, user=user
+        )
 
     return (tm.render(css=css, **variables_dict), variables_dict)
 
@@ -176,12 +198,32 @@ def make_dataqueries_inline(*, variables: str) -> str:
     return yaml.dump(variables_obj)
 
 
+def data_source_keys_referenced_by(
+    expressions: List[str],
+) -> Optional[Collection[str]]:
+    """Return data_sources keys named by expressions, or None to load all keys."""
+    keys: set[str] = set()
+    for expr in expressions:
+        if not expr or not str(expr).strip():
+            continue
+        text = str(expr)
+        attrs = RE_DATA_SOURCE_ATTR.findall(text)
+        items = [m[1] for m in RE_DATA_SOURCE_ITEM.findall(text)]
+        keys.update(attrs)
+        keys.update(items)
+        if re.search(r"\bdata_sources\b", text) and not attrs and not items:
+            return None
+    return keys
+
+
 def prep_variables_for_template(
     *,
     variables: str,
     dependencies: Optional[Dict[str, Any]] = None,
     limit_query_results: Optional[int] = None,
     user: Optional["User"] = None,
+    data_source_keys: Optional[Collection[str]] = None,
+    include_charts: bool = True,
 ) -> Dict[str, Any]:
     if not dependencies:
         dependencies = {}
@@ -197,11 +239,14 @@ def prep_variables_for_template(
     # replace the data_sources with the actual data from DB. This will be passed to the template
     # in the form of {{data_sources.data_source_name}}
     variables_dict = process_data_sources(
-        variables=variables_dict, limit_query_results=limit_query_results, user=user
+        variables=variables_dict,
+        limit_query_results=limit_query_results,
+        user=user,
+        data_source_keys=data_source_keys,
     )
 
-    # generate and replace charts in the variables
-    variables_dict = process_chart_variables(variables=variables_dict)
+    if include_charts:
+        variables_dict = process_chart_variables(variables=variables_dict)
 
     return variables_dict
 
@@ -584,19 +629,23 @@ def process_data_sources(
     variables: Dict[str, Any],
     limit_query_results: Optional[int] = None,
     user: Optional["User"] = None,
+    data_source_keys: Optional[Collection[str]] = None,
 ) -> Dict[str, Any]:
     data_sources = variables.get("data_sources")
 
     if isinstance(data_sources, dict):
         for key, value in data_sources.items():
-            if isinstance(value, dict):
-                modified_datasource = resolve_model(data_source=value)
-                queryset = build_queryset(
-                    data_source=modified_datasource,
-                    limit=limit_query_results,
-                    user=user,
-                )
-                data_sources[key] = queryset
+            if data_source_keys is not None and key not in data_source_keys:
+                continue
+            if not isinstance(value, dict):
+                continue
+            modified_datasource = resolve_model(data_source=value)
+            queryset = build_queryset(
+                data_source=modified_datasource,
+                limit=limit_query_results,
+                user=user,
+            )
+            data_sources[key] = queryset
 
     return variables
 
@@ -740,6 +789,7 @@ def run_report(
     dependencies: Dict[str, int],
     format: Literal["html", "pdf", "plaintext"],
     user: Optional["User"] = None,
+    prepared_variables: Optional[Dict[str, Any]] = None,
 ) -> Tuple[Optional[str] | bytes, Optional[str], "ReportHistory"]:
     error_text = ""
     try:
@@ -753,6 +803,7 @@ def run_report(
             variables=template.template_variables,
             dependencies=dependencies,
             user=user,
+            prepared_variables=prepared_variables,
         )
 
         html_report = normalize_asset_url(html_report, format)
@@ -791,20 +842,109 @@ def build_report_link(id: int, format: str) -> str:
     return f"{settings.CORS_ORIGIN_WHITELIST[0]}/reports/history/{id}/?format={format}"
 
 
+def _update_schedule_last_run(
+    *,
+    schedule: "ReportSchedule",
+    status: str,
+    message: str = "",
+) -> None:
+    schedule.last_run = djangotime.now()
+    schedule.last_run_status = status
+    schedule.last_run_message = message[:500] if message else ""
+    schedule.save(
+        update_fields=["last_run", "last_run_status", "last_run_message"]
+    )
+
+
 def run_scheduled_report(
     *,
     schedule: "ReportSchedule",
     user: Optional["User"] = None,
-) -> Tuple["ReportHistory", Optional[str]]:
+) -> ScheduledReportRunResult:
+    template = schedule.report_template
+    prepared_variables: Optional[Dict[str, Any]] = None
+    conditions = list(schedule.conditions or [])
+
+    if conditions:
+        try:
+            keys = data_source_keys_referenced_by(conditions)
+            prepared_variables = prep_variables_for_template(
+                variables=template.template_variables,
+                dependencies=schedule.dependencies,
+                user=user,
+                data_source_keys=keys,
+                include_charts=False,
+            )
+            for index, expression in enumerate(conditions):
+                # compile_expression defaults to undefined_to_none=True, which
+                # turns a typo like `undefined_name` into None (falsy → skip).
+                value = condition_env.compile_expression(
+                    expression, undefined_to_none=False
+                )(**prepared_variables)
+                if isinstance(value, Undefined):
+                    raise UndefinedError(
+                        f"Condition {index + 1} used a name that does not exist: {expression}"
+                    )
+                if not value:
+                    message = f"Condition {index + 1} was not true"
+                    _update_schedule_last_run(
+                        schedule=schedule,
+                        status="skipped",
+                        message=message,
+                    )
+                    logger.info(
+                        "Report schedule %s skipped: %s",
+                        schedule.pk,
+                        message,
+                    )
+                    return ScheduledReportRunResult(
+                        status="skipped",
+                        skip_index=index,
+                        message=message,
+                    )
+
+            prepared_variables = process_data_sources(
+                variables=prepared_variables,
+                user=user,
+            )
+            prepared_variables = process_chart_variables(
+                variables=prepared_variables
+            )
+        except Exception as error:
+            error_text = str(error)
+            _update_schedule_last_run(
+                schedule=schedule,
+                status="error",
+                message=error_text,
+            )
+            logger.error(
+                "Report schedule %s condition error: %s",
+                schedule.pk,
+                error_text,
+            )
+            return ScheduledReportRunResult(status="error", error=error_text)
 
     report, error, history = run_report(
-        template=schedule.report_template,
+        template=template,
         dependencies=schedule.dependencies,
         format=schedule.format,
         user=user,
+        prepared_variables=prepared_variables,
     )
-    schedule.last_run = djangotime.now()
-    schedule.save(update_fields=["last_run"])
+
+    if error:
+        _update_schedule_last_run(
+            schedule=schedule,
+            status="error",
+            message=error,
+        )
+        return ScheduledReportRunResult(
+            status="error",
+            history=history,
+            error=error,
+        )
+
+    _update_schedule_last_run(schedule=schedule, status="success")
 
     if schedule.send_report_email:
         ee.reporting.tasks.email_report.delay(
@@ -820,7 +960,7 @@ def run_scheduled_report(
             include_report_link=schedule.email_settings.get("include_report_link"),
         )
 
-    return history, error
+    return ScheduledReportRunResult(status="success", history=history)
 
 
 # import report functions

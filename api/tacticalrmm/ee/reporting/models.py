@@ -75,6 +75,12 @@ class ReportRunFormat(models.TextChoices):
     PLAINTEXT = "plaintext", "Plain Text"
 
 
+class ReportScheduleLastRunStatus(models.TextChoices):
+    SUCCESS = "success", "Success"
+    SKIPPED = "skipped", "Skipped"
+    ERROR = "error", "Error"
+
+
 class ReportSchedule(BaseAuditModel):
 
     name = models.CharField(
@@ -100,6 +106,11 @@ class ReportSchedule(BaseAuditModel):
     )
 
     dependencies = models.JSONField(default=dict)
+    conditions = ArrayField(
+        models.TextField(),
+        blank=True,
+        default=list,
+    )
     email_recipients = ArrayField(
         base_field=models.EmailField(),
         blank=True,
@@ -107,6 +118,13 @@ class ReportSchedule(BaseAuditModel):
     )
     send_report_email = models.BooleanField(default=True)
     last_run = models.DateTimeField(null=True, blank=True)
+    last_run_status = models.CharField(
+        max_length=20,
+        choices=ReportScheduleLastRunStatus.choices,
+        blank=True,
+        default="",
+    )
+    last_run_message = models.CharField(max_length=500, blank=True, default="")
     locked_at = models.DateTimeField(null=True, blank=True)
     email_settings = models.JSONField(default=dict)
     timezone = models.CharField(max_length=100, null=True, blank=True)

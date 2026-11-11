@@ -341,8 +341,7 @@ MIDDLEWARE = [
     "ee.sso.middleware.SSOIconMiddleware",
 ]
 
-if SWAGGER_ENABLED:
-    INSTALLED_APPS += ("drf_spectacular",)
+INSTALLED_APPS += ("drf_spectacular",)
 
 
 def _silky_intercept(request) -> bool:

@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import json
 import os
@@ -224,6 +225,28 @@ async def remove_mesh_agent(uri: str, mesh_node_id: str) -> None:
                 }
             )
         )
+        # MeshCentral acks the "removedevices" request immediately, but the
+        # actual node removal (db.Remove) happens in a *later* async callback
+        # (see meshuser.js, "removedevices" handler). Leaving the `async with`
+        # block right after send() closes the websocket before that callback
+        # runs, so the removal can be dropped and the node is left orphaned in
+        # the mesh database.
+        #
+        # Fix: keep the socket open until MeshCentral emits the "removenode"
+        # event, which it only fires once db.Remove has actually executed.
+        # Note we can't just do a single recv(): control.ashx pushes unsolicited
+        # frames (serverinfo/userinfo/...) before answering our request, so one
+        # recv() would grab the handshake's serverinfo and close too early. We
+        # drain incoming frames until the removenode event instead. Best-effort,
+        # bounded to 10s so a missing/renamed event can never hang the caller.
+        async def _wait_removenode() -> None:
+            async for message in ws:
+                r = json.loads(message)
+                if (r.get("event") or {}).get("action") == "removenode":
+                    return
+
+        with suppress(Exception):
+            await asyncio.wait_for(_wait_removenode(), timeout=10)
 
 
 def sysd_svc_is_running(svc: str) -> bool:

@@ -30,6 +30,7 @@ class UserUISerializer(ModelSerializer):
             "clear_search_when_switching",
             "block_dashboard_login",
             "date_format",
+            "language",
         ]
 
 

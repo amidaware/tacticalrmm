@@ -91,6 +91,12 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/dashinfo/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["language"], "")
+
+        self.john.language = "pt-BR"
+        self.john.save(update_fields=["language"])
+        r = self.client.get(url)
+        self.assertEqual(r.data["language"], "pt-BR")
 
         self.check_not_authenticated("get", url)
 

@@ -291,9 +291,20 @@ class TestUserAction(TacticalTestCase):
             "client_tree_splitter": 14,
             "loading_bar_color": "green",
             "clear_search_when_switching": False,
+            "language": "pt-BR",
         }
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(User.objects.get(pk=self.john.pk).language, "pt-BR")
+
+        # empty = automatic (browser language)
+        r = self.client.patch(url, {"language": ""}, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(User.objects.get(pk=self.john.pk).language, "")
+
+        # only the languages the dashboard has
+        r = self.client.patch(url, {"language": "xx-XX"}, format="json")
+        self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("patch", url)
 

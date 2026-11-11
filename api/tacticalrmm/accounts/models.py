@@ -14,6 +14,14 @@ from tacticalrmm.constants import (
     ClientTreeSort,
 )
 
+# UI languages available in the web dashboard (web: src/i18n).
+# An empty value means "automatic" (browser language).
+LANGUAGE_CHOICES = [
+    ("", "Auto"),
+    ("en-US", "English"),
+    ("pt-BR", "Português (Brasil)"),
+]
+
 
 class User(AbstractUser, BaseAuditModel):
     is_active = models.BooleanField(default=True)
@@ -46,6 +54,9 @@ class User(AbstractUser, BaseAuditModel):
     dash_warning_color = models.CharField(max_length=255, default="warning")
     clear_search_when_switching = models.BooleanField(default=True)
     date_format = models.CharField(max_length=30, blank=True, null=True)
+    language = models.CharField(
+        max_length=10, blank=True, default="", choices=LANGUAGE_CHOICES
+    )
     is_installer_user = models.BooleanField(default=False)
     last_login_ip = models.GenericIPAddressField(default=None, blank=True, null=True)
 

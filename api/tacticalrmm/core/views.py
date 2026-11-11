@@ -151,6 +151,7 @@ def dashboard_info(request):
             "clear_search_when_switching": request.user.clear_search_when_switching,
             "hosted": getattr(settings, "HOSTED", False),
             "date_format": request.user.date_format,
+            "language": request.user.language,
             "default_date_format": core_settings.date_format,
             "token_is_expired": token_is_expired(),
             "open_ai_integration_enabled": bool(core_settings.open_ai_token),

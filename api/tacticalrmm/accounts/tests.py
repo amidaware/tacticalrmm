@@ -71,6 +71,24 @@ class TestAccounts(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn("non_field_errors", r.data.keys())
 
+    def test_login_view_malformed_requests(self):
+        url = "/v2/login/"
+
+        # user that never set up 2FA (totp_key is NULL) gets a 400, not a 500
+        self.assertIsNone(self.bob.totp_key)
+        data = {"username": "bob", "password": "hunter2", "twofactor": "123456"}
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data, "Bad credentials")
+
+        # request without the twofactor field gets a 400, not a 500
+        self.bob.totp_key = "AB5RI6YPFTZAS52G"
+        self.bob.save()
+        data = {"username": "bob", "password": "hunter2"}
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data, "Bad credentials")
+
     # @override_settings(DEBUG=True)
     # @patch("pyotp.TOTP.verify")
     # def test_debug_login_view(self, mock_verify):

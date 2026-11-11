@@ -95,6 +95,44 @@ def generate_linux_install(
         )
 
 
+def generate_darwin_install(
+    client: str,
+    site: str,
+    agent_type: str,
+    arch: str,
+    token: str,
+    api: str,
+    download_url: str,
+) -> FileResponse:
+    version = settings.LATEST_AGENT_VER
+    inno = f"tacticalagent-v{version}-{AgentPlat.DARWIN}-{arch}"
+
+    install_flags = [
+        f"sudo ./{inno}",
+        "-m",
+        "install",
+        "--api",
+        api,
+        "--client-id",
+        client,
+        "--site-id",
+        site,
+        "--agent-type",
+        agent_type,
+        "--auth",
+        token,
+    ]
+
+    dl = f"curl -L -o {inno} '{download_url}'"
+    cmd = dl + f" && chmod +x {inno} && " + " ".join(str(i) for i in install_flags)
+
+    text = "#!/bin/sh\n" + cmd + "\n"
+    with StringIO(text) as fp:
+        return FileResponse(
+            fp.read(), as_attachment=True, filename="mac_agent_install.sh"
+        )
+
+
 def get_validated_agent(agent_id, min_version="2.10.0"):
     from .models import Agent
 

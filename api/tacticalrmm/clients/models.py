@@ -7,7 +7,13 @@ from django.db import models
 
 from agents.models import Agent
 from logs.models import BaseAuditModel
-from tacticalrmm.constants import AGENT_DEFER, AgentMonType, CustomFieldType, GoArch
+from tacticalrmm.constants import (
+    AGENT_DEFER,
+    AgentMonType,
+    AgentPlat,
+    CustomFieldType,
+    GoArch,
+)
 from tacticalrmm.models import PermissionQuerySet
 
 
@@ -171,6 +177,9 @@ class Deployment(models.Model):
     )
     mon_type = models.CharField(
         max_length=255, choices=AgentMonType.choices, default=AgentMonType.SERVER
+    )
+    plat = models.CharField(
+        max_length=255, choices=AgentPlat.choices, default=AgentPlat.WINDOWS
     )
     goarch = models.CharField(
         max_length=255, choices=GoArch.choices, default=GoArch.AMD64

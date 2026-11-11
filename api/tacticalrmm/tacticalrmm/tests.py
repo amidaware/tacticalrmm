@@ -14,12 +14,31 @@ from tacticalrmm.constants import (
 )
 from tacticalrmm.test import TacticalTestCase
 
-from .utils import bitdays_to_string, generate_winagent_exe, get_bit_days, reload_nats
+from .utils import (
+    bitdays_to_string,
+    generate_winagent_exe,
+    get_bit_days,
+    install_power_flag,
+    reload_nats,
+)
 
 
 class TestUtils(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
+
+    def test_install_power_flag(self):
+        # servers always get --power, whatever the request says
+        self.assertEqual(install_power_flag("server", 0), 1)
+        self.assertEqual(install_power_flag("server", "0"), 1)
+        self.assertEqual(install_power_flag("server", None), 1)
+        # workstations keep the option
+        self.assertEqual(install_power_flag("workstation", 1), 1)
+        self.assertEqual(install_power_flag("workstation", "1"), 1)
+        self.assertEqual(install_power_flag("workstation", 0), 0)
+        self.assertEqual(install_power_flag("workstation", "0"), 0)
+        self.assertEqual(install_power_flag("workstation", None), 0)
+        self.assertEqual(install_power_flag("workstation", "abc"), 0)
 
     @patch("requests.post")
     @patch("__main__.__builtins__.open", new_callable=mock_open)

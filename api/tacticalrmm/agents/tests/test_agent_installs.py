@@ -57,11 +57,29 @@ class TestAgentInstalls(TacticalTestCase):
             agent_type="server",
             rdp=1,
             ping=0,
-            power=0,
+            power=1,  # server installs always disable sleep/hibernate
             goarch="amd64",
             token="token",
             api="https://api.example.com",
             file_name="rmm-client-site-server.exe",
+        )
+
+        # workstations keep the power option as sent
+        data["agenttype"] = "workstation"
+        data["fileName"] = "rmm-client-site-workstation.exe"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        mock_gen_win_exe.assert_called_with(
+            client=self.site2.client.pk,
+            site=self.site2.pk,
+            agent_type="workstation",
+            rdp=1,
+            ping=0,
+            power=0,
+            goarch="amd64",
+            token="token",
+            api="https://api.example.com",
+            file_name="rmm-client-site-workstation.exe",
         )
 
         # test linux no code sign

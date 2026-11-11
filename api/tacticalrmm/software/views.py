@@ -115,7 +115,7 @@ class UninstallSoftware(APIView):
                 "command": uninstall_cmd,
                 "shell": "cmd",
             },
-            "run_as_user": request.data["run_as_user"],
+            "run_as_user": request.data.get("run_as_user", False),
         }
 
         hist = AgentHistory.objects.create(

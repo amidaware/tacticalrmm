@@ -244,3 +244,20 @@ class TestSoftwarePermissions(TacticalTestCase):
 
         # should work now
         self.check_authorized("post", url)
+
+    @patch("agents.models.Agent.nats_cmd")
+    def test_uninstall_software_run_as_user_defaults_to_false_when_omitted(
+        self, nats_cmd
+    ):
+        # Older API clients omit run_as_user; it must default to False
+        # rather than raising KeyError -> HTTP 500.
+        self.authenticate()
+        nats_cmd.return_value = "ok"
+        agent = baker.make_recipe("agents.agent")
+        url = f"{base_url}/{agent.agent_id}/uninstall/"
+
+        data = {"name": "Some App", "command": "msiexec /x {GUID} /qn", "timeout": 30}
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(nats_cmd.call_args.args[0]["run_as_user"])

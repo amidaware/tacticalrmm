@@ -164,7 +164,7 @@ class TestScript(APIView):
                 "code": script_body,
                 "shell": request.data["shell"],
             },
-            "run_as_user": request.data["run_as_user"],
+            "run_as_user": request.data.get("run_as_user", False),
             "env_vars": parsed_env_vars,
             "nushell_enable_config": settings.NUSHELL_ENABLE_CONFIG,
             "deno_default_permissions": settings.DENO_DEFAULT_PERMISSIONS,

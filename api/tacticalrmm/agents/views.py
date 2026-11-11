@@ -97,7 +97,11 @@ from tacticalrmm.permissions import (
     _has_partial_perm_on_client,
     _has_perm_on_site,
 )
-from tacticalrmm.utils import get_default_timezone, reload_nats
+from tacticalrmm.utils import (
+    get_default_timezone,
+    install_power_flag,
+    reload_nats,
+)
 from winupdate.models import WinUpdate, WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
@@ -798,6 +802,8 @@ def install_agent(request):
     client_id = request.data["client"]
     site_id = request.data["site"]
     version = settings.LATEST_AGENT_VER
+    # servers never sleep/hibernate (see install_power_flag)
+    power = install_power_flag(request.data["agenttype"], request.data.get("power", 0))
     goarch = request.data["goarch"]
     plat = request.data["plat"]
 
@@ -847,7 +853,7 @@ def install_agent(request):
             agent_type=request.data["agenttype"],
             rdp=request.data["rdp"],
             ping=request.data["ping"],
-            power=request.data["power"],
+            power=power,
             goarch=goarch,
             token=token,
             api=request.data["api"],
@@ -887,7 +893,7 @@ def install_agent(request):
                 cmd.append("--rdp")
             if int(request.data["ping"]):
                 cmd.append("--ping")
-            if int(request.data["power"]):
+            if power:
                 cmd.append("--power")
 
             if insecure:
@@ -917,7 +923,7 @@ def install_agent(request):
             "sitechange": str(site_id),
             "apichange": request.data["api"],
             "atypechange": request.data["agenttype"],
-            "powerchange": str(request.data["power"]),
+            "powerchange": str(power),
             "rdpchange": str(request.data["rdp"]),
             "pingchange": str(request.data["ping"]),
             "downloadchange": download_url,

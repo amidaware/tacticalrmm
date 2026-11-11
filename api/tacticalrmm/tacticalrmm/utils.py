@@ -47,6 +47,21 @@ if TYPE_CHECKING:
     from clients.models import Client, Site
 
 
+def install_power_flag(agent_type: str, power) -> int:
+    """
+    --power (disable sleep/hibernate) of an agent install. A server must never
+    sleep: server installs always disable it (the dashboard only offers the
+    option for workstations). Windows Server already has no sleep, but a
+    Windows 10/11 used as a server has.
+    """
+    if agent_type == "server":
+        return 1
+    try:
+        return 1 if int(power) else 0
+    except (TypeError, ValueError):
+        return 0
+
+
 def generate_winagent_exe(
     *,
     client: int,
@@ -76,7 +91,7 @@ def generate_winagent_exe(
         "agenttype": agent_type,
         "rdp": str(rdp),
         "ping": str(ping),
-        "power": str(power),
+        "power": str(install_power_flag(agent_type, power)),
         "goarch": goarch,
         "token": token,
         "inno": inno,

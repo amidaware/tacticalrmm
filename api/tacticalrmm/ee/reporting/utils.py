@@ -7,7 +7,9 @@ For details, see: https://license.tacticalrmm.com/ee
 import datetime
 import inspect
 import json
+import os
 import re
+from urllib.parse import unquote, urlsplit
 from enum import Enum
 from types import SimpleNamespace
 from typing import (
@@ -33,6 +35,7 @@ from jinja2.sandbox import SandboxedEnvironment
 from jinja2.exceptions import TemplateError
 from rest_framework.serializers import ValidationError
 from weasyprint import CSS, HTML
+from weasyprint.urls import URLFetcher
 from weasyprint.text.fonts import FontConfiguration
 
 import ee.reporting.tasks
@@ -40,6 +43,7 @@ from tacticalrmm.logger import logger
 from tacticalrmm.utils import RE_DB_VALUE, get_db_value
 
 from . import custom_filters
+from .settings import settings as reporting_settings
 from .constants import REPORTING_MODELS, get_property_fields
 from .markdown.config import Markdown
 from .models import (
@@ -107,10 +111,37 @@ for name, func in inspect.getmembers(custom_filters, inspect.isfunction):
     env.filters[name] = func
 
 
+class ReportAssetURLFetcher(URLFetcher):
+    """URL fetcher used for report PDF generation.
+
+    The PDF renderer only needs to load remote resources (http/https/data)
+    and the report assets that ``normalize_asset_url`` inlines as
+    ``file://{asset.file.path}`` under REPORT_ASSETS_BASE_PATH. Everything
+    else (notably arbitrary ``file://`` URLs embedded in user-editable
+    template HTML) is rejected so the renderer cannot read local files.
+    """
+
+    def fetch(self, url, headers=None):  # type: ignore[override]
+        scheme = url.partition(":")[0].lower()
+        if scheme == "file":
+            path = os.path.normpath(os.path.abspath(unquote(urlsplit(url).path)))
+            base = os.path.normpath(
+                os.path.abspath(str(reporting_settings.REPORTING_ASSETS_BASE_PATH)) + os.sep
+            )
+            if not path.startswith(base):
+                raise ValueError(
+                    f"file:// URL outside REPORT_ASSETS_BASE_PATH is not allowed: {url}"
+                )
+        elif scheme not in ("http", "https", "data"):
+            raise ValueError(f"URL protocol not allowed: {url}")
+
+        return super().fetch(url, headers)
+
+
 def generate_pdf(*, html: str, css: str = "") -> bytes:
     font_config = FontConfiguration()
 
-    pdf_bytes: bytes = HTML(string=html).write_pdf(
+    pdf_bytes: bytes = HTML(string=html, url_fetcher=ReportAssetURLFetcher()).write_pdf(
         stylesheets=[CSS(string=css, font_config=font_config)], font_config=font_config
     )
 
